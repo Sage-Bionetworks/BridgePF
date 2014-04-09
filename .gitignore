@@ -1,0 +1,8 @@
+.classpath
+.project
+.settings
+target
+application.log
+node_modules
+bower_components
+.sass-cache

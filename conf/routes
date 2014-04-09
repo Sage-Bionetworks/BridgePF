@@ -1,0 +1,15 @@
+# Redirect to application
+
+# API
+GET    /api/test         @controllers.ApplicationInterface.test
+
+GET    /api/auth/signIn          @controllers.Authentication.signIn
+# POST   /api/auth/signIn          @controllers.Authentication.signIn
+GET    /api/auth/signOut         @controllers.Authentication.signOut
+POST   /api/auth/forgotPassword  @controllers.Authentication.forgotPassword
+POST   /api/auth/resetPassword   @controllers.Authentication.resetPassword    
+    
+# AngularJS application
+GET     /                 @controllers.Application.redirectToApp
+GET     /*file            controllers.Assets.at(path="/public/app", file)
+
