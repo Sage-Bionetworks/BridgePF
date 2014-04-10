@@ -1,40 +1,56 @@
 package controllers;
 
-import org.sagebionetworks.client.SynapseClient;
-import org.sagebionetworks.repo.model.auth.Session;
+import models.JsonPayload;
+
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.repo.model.UserProfile;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import play.mvc.*;
 
-@org.springframework.stereotype.Controller
 public class Authentication extends BaseController {
 
-	public SynapseClient synapseClient;
-	
-	/**
-	 * TODO: What happens if an exception is thrown
-	 * TODO: How do we get the values
-	 * TODO: We just set a cookie? That's it? I think we might
-	 * want to return the profile to the user as well.
-	 * @return
-	 */
-	public Result signIn() throws Exception {
-		Session session = synapseClient.login("", "");
-		String sessionToken = session.getSessionToken();
-		// check terms of use.
-		// set cookie with token.
-		
-		return jsonMessage(200, "Signed in.");
-	}
-	
-	public Result signOut() {
-		return jsonError(500, "Sign out not implemented.");
-	}
-	
-	public Result forgotPassword() {
-		return jsonError(500, "Forgot password not implemented.");
+	private AuthenticationService authenticationService;
+
+	public void setAuthenticationService(AuthenticationService authenticationService) {
+		this.authenticationService = authenticationService;
 	}
 
-	public Result resetPassword() {
-		return jsonError(500, "Reset password not implemented.");
+	public Result signIn() throws Exception {
+		// I cannot find a way, in Play, to convert the JSON payload to a bound Java object.
+		// serving as a form object. And I'm pretty sure the problem here is Play, not me.
+		// There are alternative code paths, but none work.
+		JsonNode body = request().body().asJson();
+		String username = body.get("username").asText();
+		String password = body.get("password").asText();
+		
+		String sessionToken = authenticationService.signIn(username, password);
+		response().setCookie(BridgeConstants.SESSION_TOKEN, sessionToken);
+
+		return jsonResult(new JsonPayload<String>("SessionToken", sessionToken));
+	}
+
+	public Result signOut() throws Exception {
+		String sessionToken = getSessionToken();
+		authenticationService.signOut(sessionToken);
+		response().discardCookie(BridgeConstants.SESSION_TOKEN);
+		return jsonResult("Signed out.");
+	}
+
+	public Result resetPassword() throws Exception {
+		JsonNode body = request().body().asJson();
+		String email = body.get("email").asText();
+		authenticationService.resetPassword(email);
+		response().discardCookie(BridgeConstants.SESSION_TOKEN);
+		return jsonResult("An email has been sent allowing you to set a new password.");
+	}
+	
+	public Result getUserProfile() throws Exception {
+		String sessionToken = getSessionToken();
+		UserProfile profile = authenticationService.getUserProfile(sessionToken);
+		
+		return jsonResult(new JsonPayload<UserProfile>(profile));
 	}
 }
