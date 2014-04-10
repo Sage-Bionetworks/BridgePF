@@ -27,15 +27,12 @@ public class Authentication extends BaseController {
 		String password = body.get("password").asText();
 		
 		String sessionToken = authenticationService.signIn(username, password);
-		response().setCookie(BridgeConstants.SESSION_TOKEN, sessionToken);
-
 		return jsonResult(new JsonPayload<String>("SessionToken", sessionToken));
 	}
 
 	public Result signOut() throws Exception {
 		String sessionToken = getSessionToken();
 		authenticationService.signOut(sessionToken);
-		response().discardCookie(BridgeConstants.SESSION_TOKEN);
 		return jsonResult("Signed out.");
 	}
 
@@ -43,7 +40,6 @@ public class Authentication extends BaseController {
 		JsonNode body = request().body().asJson();
 		String email = body.get("email").asText();
 		authenticationService.resetPassword(email);
-		response().discardCookie(BridgeConstants.SESSION_TOKEN);
 		return jsonResult("An email has been sent allowing you to set a new password.");
 	}
 	

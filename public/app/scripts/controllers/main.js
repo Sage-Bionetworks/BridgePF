@@ -1,5 +1,5 @@
 angular.module('bridge').controller('MainController', ['$scope','$http', function($scope, $http) {
-	
+
 	function handle(data, status) {
 		console.log(arguments);
 		switch(status) {
@@ -13,21 +13,27 @@ angular.module('bridge').controller('MainController', ['$scope','$http', functio
 	}
 
 	$scope.signIn = function() {
-		var p = $http.post('/api/auth/signIn', {'username': 'test1', 'password': 'password'})
-			.success(handle).error(handle);
+		var p = $http.post('/api/auth/signIn', {'username': 'test2', 'password': 'password'})
+			.success(function(data, status) {
+				$http.defaults.headers.common['Bridge-Session'] = data.payload;
+				handle(data, status);
+			}).error(handle);
 	};
 	$scope.signOut = function() {
 		var p = $http.get('/api/auth/signOut')
-			.success(handle).error(handle);
+			.success(function(data, status) {
+				delete $http.defaults.headers.common['Bridge-Session'];
+				handle(data, status);
+			}).error(handle);
 	};
 	$scope.resetPassword = function() {
-		var p = $http.post('/api/auth/resetPassword', {'email': 'test1@sagebase.org'})
+		var p = $http.post('/api/auth/resetPassword', {'email': 'test2@sagebase.org'})
 			.success(handle).error(handle);
 	};
 	$scope.getUserProfile = function() {
 		var p = $http.get('/api/auth/getUserProfile')
 			.success(function(data) {
-				$scope.message = data.emails.join(', ');
+				$scope.message = data.email;
 			}).error(handle);
 	};
 	$scope.bootstrap = function() {

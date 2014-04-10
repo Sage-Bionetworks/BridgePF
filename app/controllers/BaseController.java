@@ -4,25 +4,21 @@ import models.JsonPayload;
 
 import models.StatusMessage;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.client.exceptions.SynapseUnauthorizedException;
 
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Result;
-import play.mvc.Http.Cookie;
 
 @org.springframework.stereotype.Controller
 public class BaseController extends Controller {
 	
 	protected String getSessionToken() throws Exception {
-		Cookie cookie = request().cookie(BridgeConstants.SESSION_TOKEN);
-		if (cookie == null) {
+		String[] session = request().headers().get("Bridge-Session");
+		if (session == null || session.length == 0) {
 			throw new SynapseUnauthorizedException();
 		}
-		// Note that the cookie may not be valid. There's no way to check other than to contact Synapse.
-		// If this is part of a bridge call, then we *must* contact Synapse to determine this.
-		return cookie.value();
+		return session[0];
 	}
 	
 	protected Result jsonResult(String message) {

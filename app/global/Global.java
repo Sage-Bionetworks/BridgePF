@@ -49,9 +49,10 @@ public class Global extends GlobalSettings {
 		if (throwable instanceof SynapseServerException) {
 			status = ((SynapseServerException)throwable).getStatusCode();
 		} else if (throwable instanceof TermsOfUseException) {
-			status = 412; // "Precondition Failed"
+			// "Precondition Failed" - SynapseTermsOfUseException uses the forbidden code, not quite right I think
+			status = 412; 
 		}
-		
+
 		JsonPayload<?> message = null;
 		if (throwable.getMessage() != null) {
 			message = new ExceptionMessage(throwable);
