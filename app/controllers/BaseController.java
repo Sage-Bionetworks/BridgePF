@@ -1,10 +1,11 @@
 package controllers;
 
 import models.JsonPayload;
+
 import models.StatusMessage;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.exceptions.AuthenticationRequiredException;
+import org.sagebionetworks.client.exceptions.SynapseUnauthorizedException;
 
 import play.libs.Json;
 import play.mvc.Controller;
@@ -17,7 +18,7 @@ public class BaseController extends Controller {
 	protected String getSessionToken() throws Exception {
 		Cookie cookie = request().cookie(BridgeConstants.SESSION_TOKEN);
 		if (cookie == null) {
-			throw new AuthenticationRequiredException();
+			throw new SynapseUnauthorizedException();
 		}
 		// Note that the cookie may not be valid. There's no way to check other than to contact Synapse.
 		// If this is part of a bridge call, then we *must* contact Synapse to determine this.

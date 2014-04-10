@@ -4,7 +4,8 @@ import models.ExceptionMessage;
 import models.JsonPayload;
 import models.StatusMessage;
 
-import org.sagebionetworks.bridge.stubs.StubOnStartupHandler;
+import org.sagebionetworks.client.exceptions.SynapseServerException;
+import org.sagebionetworks.repo.model.TermsOfUseException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -42,8 +43,14 @@ public class Global extends GlobalSettings {
 	public Promise<SimpleResult> onError(RequestHeader request, Throwable throwable) {
 		// This is the only hook for dealing with errors that I can find in Play.
 		// The biggest issue with this is that we can't adjust the status appropriately.
-		
 		throwable = Throwables.getRootCause(throwable);
+
+		int status = 500;
+		if (throwable instanceof SynapseServerException) {
+			status = ((SynapseServerException)throwable).getStatusCode();
+		} else if (throwable instanceof TermsOfUseException) {
+			status = 412; // "Precondition Failed"
+		}
 		
 		JsonPayload<?> message = null;
 		if (throwable.getMessage() != null) {
@@ -51,7 +58,7 @@ public class Global extends GlobalSettings {
 		} else {
 			message = new StatusMessage("ServerError", "There has been a server error. We cannot fulfill your request at this time.");
 		}
-		return Promise.<SimpleResult>pure(Results.status(500, Json.toJson(message)));
+		return Promise.<SimpleResult>pure(Results.status(status, Json.toJson(message)));
 	}
 	
 	/* These don't work. Is it possible to redirect like this in Play? 
