@@ -10,21 +10,25 @@
         http://www.springframework.org/schema/mvc
         http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
+    <!-- Play controllers. -->
+    
     <bean id="controllers.Application" class="controllers.Application"/>
     
-    <bean id="controllers.ApplicationInterface" class="controllers.ApplicationInterface">
-        <property name="bean" ref="MyTestSpringBean"/>
-    </bean>
-    
     <bean id="controllers.Authentication" class="controllers.Authentication">
-        <property name="synapseClient" ref="synapseClient"/>
+        <property name="authenticationService" ref="authenticationService"/>
     </bean>
     
-    <bean id="MyTestSpringBean" class="spring.MyTestSpringBean">
-        <property name="name" value="Hello kitty world"/>
-    </bean>
+    <!-- Services -->
 
-    <bean id="synapseClient" class="org.sagebionetworks.client.SynapseClientImpl">
+    <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl"/>
+
+    <!-- Synapse -->
+
+    <!-- 
+    <bean id="synapseClient" class="org.sagebionetworks.bridge.stubs.StubSynapseClient" 
+        factory-method="createInstance" scope="prototype"/>
+ -->
+    <bean id="synapseClient" class="org.sagebionetworks.client.SynapseClientImpl" scope="prototype">
         <constructor-arg index="0" value= "BRIDGE"/>
         
         <property name="repositoryEndpoint">

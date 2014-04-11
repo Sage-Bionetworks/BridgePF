@@ -37,6 +37,7 @@ module.exports = function(grunt) {
     			dest: '<%= output %>/bridge.min.js'
     		}
     	},
+    	// Run jasmine tests through ghostdriver on the command line
         jasmine: {
             src: [ 
                 'app/bower_components/angular/angular.js',
@@ -48,12 +49,10 @@ module.exports = function(grunt) {
                 specs: ['test/**/*_spec.js']
             }
         },
-    	// Run jasmine tests through ghostdriver on the command line
-    	
     	// run 'grunt watch' to have files processed any time they are changed while you work.
     	watch: {
     		all: {
-    			files: ['app/srcipts/*.js', 'app/styles/*.scss', 'app/styles/*.css'],
+    			files: ['app/scripts/**/*.js', 'app/styles/**/*.scss', 'app/styles/**/*.css'],
     			tasks: 'default',
     			spawn: false
     		}

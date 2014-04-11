@@ -1,33 +1,37 @@
 package controllers;
 
-import org.apache.commons.lang3.StringUtils;
+import models.JsonPayload;
+import models.StatusMessage;
 
-import global.StatusMessage;
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.client.exceptions.SynapseUnauthorizedException;
+
 import play.libs.Json;
 import play.mvc.Controller;
+import play.mvc.Http.Cookie;
 import play.mvc.Result;
 
+@org.springframework.stereotype.Controller
 public class BaseController extends Controller {
 
-	protected Result jsonMessage(int code, String message) {
-		if (code == 0) {
-			throw new IllegalArgumentException("Invalid status code: 0");
+	protected String getSessionToken() throws Exception {
+		Cookie sessionCookie = request().cookie(BridgeConstants.SESSION_TOKEN);
+		if (sessionCookie != null && sessionCookie.value() != null) {
+			return sessionCookie.value();
 		}
-		if (StringUtils.isBlank(message)) {
-			throw new IllegalArgumentException("Invalid status message");
+		String[] session = request().headers().get(BridgeConstants.SESSION_TOKEN);
+		if (session == null || session.length == 0) {
+			throw new SynapseUnauthorizedException();
 		}
-		return ok(Json.toJson(new StatusMessage(code, message)));
+		return session[0];
 	}
-	
-	protected Result jsonError(int code, String message) {
-		if (code == 0) {
-			throw new IllegalArgumentException("Invalid status code: 0");
-		}
-		if (StringUtils.isBlank(message)) {
-			throw new IllegalArgumentException("Invalid status message");
-		}
-		return status(code, Json.toJson(new StatusMessage(code, message)));
+
+	protected Result jsonResult(String message) {
+		return ok(Json.toJson(new StatusMessage(message)));
 	}
-	
-	
+
+	protected Result jsonResult(JsonPayload<?> payload) {
+		return ok(Json.toJson(payload));
+	}
+
 }
