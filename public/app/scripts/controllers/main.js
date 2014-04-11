@@ -1,5 +1,7 @@
 angular.module('bridge').controller('MainController', ['$scope','$http', function($scope, $http) {
 
+	$scope.credentials = {};
+	
 	function handle(data, status) {
 		console.log(arguments);
 		switch(status) {
@@ -13,10 +15,10 @@ angular.module('bridge').controller('MainController', ['$scope','$http', functio
 	}
 
 	$scope.signIn = function() {
-		var p = $http.post('/api/auth/signIn', {'username': 'test2', 'password': 'password'})
+		var p = $http.post('/api/auth/signIn', $scope.credentials)
 			.success(function(data, status) {
-				$http.defaults.headers.common['Bridge-Session'] = data.payload;
-				handle(data, status);
+				$http.defaults.headers.common['Bridge-Session'] = data.payload.sessionToken;
+				$scope.message = data.payload.sessionToken;
 			}).error(handle);
 	};
 	$scope.signOut = function() {
@@ -33,7 +35,7 @@ angular.module('bridge').controller('MainController', ['$scope','$http', functio
 	$scope.getUserProfile = function() {
 		var p = $http.get('/api/auth/getUserProfile')
 			.success(function(data) {
-				$scope.message = data.email;
+				$scope.message = data.payload.emails[0];
 			}).error(handle);
 	};
 	$scope.bootstrap = function() {

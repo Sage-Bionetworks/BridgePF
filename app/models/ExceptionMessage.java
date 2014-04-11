@@ -3,7 +3,13 @@ package models;
 public class ExceptionMessage extends JsonPayload<String> {
 
 	public ExceptionMessage(Throwable throwable) {
-		super(throwable.getClass().getSimpleName(), throwable.getMessage());
+		super(throwable.getMessage());
+		this.type = throwable.getClass().getName();
 	}
 
+	public ExceptionMessage(Throwable throwable, String message) {
+		super(message);
+		this.type = throwable.getClass().getName();
+	}
+	
 }

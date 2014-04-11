@@ -1,10 +1,13 @@
 package controllers;
 
 import models.JsonPayload;
+import models.SignIn;
+import models.SignUp;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.repo.model.UserProfile;
+import org.sagebionetworks.repo.model.auth.Session;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -19,34 +22,28 @@ public class Authentication extends BaseController {
 	}
 
 	public Result signIn() throws Exception {
-		// I cannot find a way, in Play, to convert the JSON payload to a bound Java object.
-		// serving as a form object. And I'm pretty sure the problem here is Play, not me.
-		// There are alternative code paths, but none work.
-		JsonNode body = request().body().asJson();
-		String username = body.get("username").asText();
-		String password = body.get("password").asText();
-		
-		String sessionToken = authenticationService.signIn(username, password);
-		return jsonResult(new JsonPayload<String>("SessionToken", sessionToken));
+		SignIn signIn = SignIn.fromJson(request().body().asJson());
+		Session session = authenticationService.signIn(signIn.getUsername(), signIn.getPassword());
+		response().setCookie(BridgeConstants.SESSION_TOKEN, session.getSessionToken());
+		return jsonResult(new JsonPayload<Session>(session));
 	}
 
 	public Result signOut() throws Exception {
 		String sessionToken = getSessionToken();
 		authenticationService.signOut(sessionToken);
+		response().discardCookie(BridgeConstants.SESSION_TOKEN);
 		return jsonResult("Signed out.");
 	}
 
 	public Result resetPassword() throws Exception {
-		JsonNode body = request().body().asJson();
-		String email = body.get("email").asText();
-		authenticationService.resetPassword(email);
+		SignUp signUp = SignUp.fromJson(request().body().asJson());
+		authenticationService.resetPassword(signUp.getEmail());
 		return jsonResult("An email has been sent allowing you to set a new password.");
 	}
 	
 	public Result getUserProfile() throws Exception {
 		String sessionToken = getSessionToken();
 		UserProfile profile = authenticationService.getUserProfile(sessionToken);
-		
 		return jsonResult(new JsonPayload<UserProfile>(profile));
 	}
 }

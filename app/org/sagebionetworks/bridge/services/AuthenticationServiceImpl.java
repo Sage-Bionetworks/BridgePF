@@ -26,12 +26,12 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	}
 	
 	@Override
-	public String signIn(String username, String password) throws Exception {
+	public Session signIn(String username, String password) throws Exception {
 		Session session = getSynapseClient(null).login(username, password);
 		if (!session.getAcceptsTermsOfUse()) {
 			throw new TermsOfUseException();
 		}
-		return session.getSessionToken();
+		return session;
 	}
 
 	@Override

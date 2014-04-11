@@ -1,6 +1,6 @@
 describe('Controller: MainCtrl', function() {
 	
-	var MainController, scope, $httpBackend;
+	var MainController, $rootScope, $httpBackend;
 
 	beforeEach(module('bridge'));
 	
@@ -18,10 +18,14 @@ describe('Controller: MainCtrl', function() {
     	$httpBackend.verifyNoOutstandingRequest();
     });	
 	
-	it('should call the test web service', function() {
-		$httpBackend.expectGET('/api/test').respond({message: 'Hello kitty world'});
+	it('should call the signIn web service', function() {
+		$httpBackend.expectPOST('/api/auth/signIn').respond({
+			"type":"org.sagebionetworks.repo.model.auth.Session",
+			"payload":{"sessionToken": "1ed844ba-953e-4260-82b2-89aa9d4855ff"}
+		});
 		MainController = createController();
+		$rootScope.credentials = { "username": "test2", "password": "password" };
+		$rootScope.signIn();
 		$httpBackend.flush();
-		console.log(MainController);
 	});
 });

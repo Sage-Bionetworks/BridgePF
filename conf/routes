@@ -1,5 +1,8 @@
 # Redirect to application
 
+# These routes won't support an URL that maps to an internal AngularJS state (those would all be routed to /public/app")
+GET    /                         @controllers.Application.redirectToApp
+
 # API
 POST   /api/auth/signIn          @controllers.Authentication.signIn
 GET    /api/auth/signOut         @controllers.Authentication.signOut
@@ -7,7 +10,6 @@ POST   /api/auth/resetPassword   @controllers.Authentication.resetPassword
 GET    /api/auth/getUserProfile  @controllers.Authentication.getUserProfile    
     
 # AngularJS application
-GET     /                 @controllers.Application.redirectToApp
 GET     /bootstrap        @controllers.Application.bootstrap
 GET     /*file            controllers.Assets.at(path="/public/app", file)
 
