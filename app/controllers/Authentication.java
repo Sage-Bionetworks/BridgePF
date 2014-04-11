@@ -1,40 +1,49 @@
 package controllers;
 
-import org.sagebionetworks.client.SynapseClient;
+import models.JsonPayload;
+import models.SignIn;
+import models.SignUp;
+
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.repo.model.UserProfile;
 import org.sagebionetworks.repo.model.auth.Session;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import play.mvc.*;
 
-@org.springframework.stereotype.Controller
 public class Authentication extends BaseController {
 
-	public SynapseClient synapseClient;
-	
-	/**
-	 * TODO: What happens if an exception is thrown
-	 * TODO: How do we get the values
-	 * TODO: We just set a cookie? That's it? I think we might
-	 * want to return the profile to the user as well.
-	 * @return
-	 */
-	public Result signIn() throws Exception {
-		Session session = synapseClient.login("", "");
-		String sessionToken = session.getSessionToken();
-		// check terms of use.
-		// set cookie with token.
-		
-		return jsonMessage(200, "Signed in.");
-	}
-	
-	public Result signOut() {
-		return jsonError(500, "Sign out not implemented.");
-	}
-	
-	public Result forgotPassword() {
-		return jsonError(500, "Forgot password not implemented.");
+	private AuthenticationService authenticationService;
+
+	public void setAuthenticationService(AuthenticationService authenticationService) {
+		this.authenticationService = authenticationService;
 	}
 
-	public Result resetPassword() {
-		return jsonError(500, "Reset password not implemented.");
+	public Result signIn() throws Exception {
+		SignIn signIn = SignIn.fromJson(request().body().asJson());
+		Session session = authenticationService.signIn(signIn.getUsername(), signIn.getPassword());
+		response().setCookie(BridgeConstants.SESSION_TOKEN, session.getSessionToken());
+		return jsonResult(new JsonPayload<Session>(session));
+	}
+
+	public Result signOut() throws Exception {
+		String sessionToken = getSessionToken();
+		authenticationService.signOut(sessionToken);
+		response().discardCookie(BridgeConstants.SESSION_TOKEN);
+		return jsonResult("Signed out.");
+	}
+
+	public Result resetPassword() throws Exception {
+		SignUp signUp = SignUp.fromJson(request().body().asJson());
+		authenticationService.resetPassword(signUp.getEmail());
+		return jsonResult("An email has been sent allowing you to set a new password.");
+	}
+	
+	public Result getUserProfile() throws Exception {
+		String sessionToken = getSessionToken();
+		UserProfile profile = authenticationService.getUserProfile(sessionToken);
+		return jsonResult(new JsonPayload<UserProfile>(profile));
 	}
 }
