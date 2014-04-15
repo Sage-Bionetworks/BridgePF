@@ -14,14 +14,18 @@ import play.mvc.Result;
 @org.springframework.stereotype.Controller
 public class BaseController extends Controller {
 
-	protected String getSessionToken() throws Exception {
+	protected String getSessionToken(boolean throwException) throws Exception {
 		Cookie sessionCookie = request().cookie(BridgeConstants.SESSION_TOKEN);
 		if (sessionCookie != null && sessionCookie.value() != null) {
 			return sessionCookie.value();
 		}
 		String[] session = request().headers().get(BridgeConstants.SESSION_TOKEN);
 		if (session == null || session.length == 0) {
-			throw new SynapseUnauthorizedException();
+			if (throwException) {
+				throw new SynapseUnauthorizedException();	
+			} else {
+				return null;
+			}
 		}
 		return session[0];
 	}

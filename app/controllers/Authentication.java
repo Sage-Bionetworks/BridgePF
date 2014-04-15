@@ -3,13 +3,10 @@ package controllers;
 import models.JsonPayload;
 import models.SignIn;
 import models.SignUp;
+import models.UserSession;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.repo.model.UserProfile;
-import org.sagebionetworks.repo.model.auth.Session;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 import play.mvc.*;
 
@@ -23,13 +20,14 @@ public class Authentication extends BaseController {
 
 	public Result signIn() throws Exception {
 		SignIn signIn = SignIn.fromJson(request().body().asJson());
-		Session session = authenticationService.signIn(signIn.getUsername(), signIn.getPassword());
+		UserSession session = authenticationService.signIn(signIn.getUsername(), signIn.getPassword());
+		session.setAuthenticated(true);
 		response().setCookie(BridgeConstants.SESSION_TOKEN, session.getSessionToken());
-		return jsonResult(new JsonPayload<Session>(session));
+		return jsonResult(new JsonPayload<UserSession>(session));
 	}
 
 	public Result signOut() throws Exception {
-		String sessionToken = getSessionToken();
+		String sessionToken = getSessionToken(true);
 		authenticationService.signOut(sessionToken);
 		response().discardCookie(BridgeConstants.SESSION_TOKEN);
 		return jsonResult("Signed out.");
@@ -41,9 +39,4 @@ public class Authentication extends BaseController {
 		return jsonResult("An email has been sent allowing you to set a new password.");
 	}
 	
-	public Result getUserProfile() throws Exception {
-		String sessionToken = getSessionToken();
-		UserProfile profile = authenticationService.getUserProfile(sessionToken);
-		return jsonResult(new JsonPayload<UserProfile>(profile));
-	}
 }

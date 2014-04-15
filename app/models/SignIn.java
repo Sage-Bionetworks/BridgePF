@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public final class SignIn {
 
+	private static final String PASSWORD_FIELD = "password";
+	private static final String USERNAME_FIELD = "username";
+	
 	private final String username;
 	private final String password;
 	
@@ -13,7 +16,15 @@ public final class SignIn {
 	}
 	
 	public static final SignIn fromJson(JsonNode node) {
-		return new SignIn(node.get("username").asText(), node.get("password").asText());
+		String username = null;
+		String password = null;
+		if (node != null && node.get(USERNAME_FIELD) != null) {
+			username = node.get(USERNAME_FIELD).asText();
+		}
+		if (node != null && node.get(PASSWORD_FIELD) != null) {
+			password = node.get(PASSWORD_FIELD).asText();
+		}
+		return new SignIn(username, password);
 	}
 
 	public String getUsername() {
