@@ -12,7 +12,9 @@
 
     <!-- Play controllers. -->
     
-    <bean id="controllers.Application" class="controllers.Application"/>
+    <bean id="controllers.Application" class="controllers.Application">
+        <property name="authenticationService" ref="authenticationService"/>
+    </bean>
     
     <bean id="controllers.Authentication" class="controllers.Authentication">
         <property name="authenticationService" ref="authenticationService"/>

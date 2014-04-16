@@ -23,12 +23,22 @@ module.exports = function(grunt) {
     	},
 		concat: {
     	    js: {
-                src: ['app/scripts/app.js', 'app/scripts/controllers/*.js', 'app/scripts/analytics/*.js'],
-                dest: '<%= output %>/bridge.js'
+                src: [
+                    'app/bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
+                    'app/scripts/app.js', 
+                    'app/scripts/controllers/*.js'
+                ],
+                dest: '<%= output %>/bridge.js',
+                nonull: true
     	    },
     	    sass: {
-    	    	src: ['app/styles/*.scss', 'app/styles/*.css'],
-    	    	dest: '<%= output %>/bridge.scss'
+    	    	src: [
+    	    	    'app/bower_components/bootstrap/dist/css/bootstrap.css',
+    	    	    'app/bower_components/bootstrap/dist/css/bootstrap-theme.css',
+	    	      	'app/styles/*.scss'
+	    	    ],
+    	    	dest: '<%= output %>/bridge.scss',
+    	    	nonull: true
     	    }
     	},
     	uglify: {
@@ -42,6 +52,8 @@ module.exports = function(grunt) {
             src: [ 
                 'app/bower_components/angular/angular.js',
                 'app/bower_components/angular-mocks/angular-mocks.js',
+                'app/bower_components/angular-route/angular-route.js',
+                'app/bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
                 '<%= output %>/bridge.min.js'
             ],
             options: {
@@ -52,7 +64,7 @@ module.exports = function(grunt) {
     	// run 'grunt watch' to have files processed any time they are changed while you work.
     	watch: {
     		all: {
-    			files: ['app/scripts/**/*.js', 'app/styles/**/*.scss', 'app/styles/**/*.css'],
+    			files: ['Gruntfile.js', 'app/scripts/**/*.js', 'app/styles/**/*.scss', 'app/styles/**/*.css'],
     			tasks: 'default',
     			spawn: false
     		}

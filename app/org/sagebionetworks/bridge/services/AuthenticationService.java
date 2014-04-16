@@ -1,16 +1,15 @@
 package org.sagebionetworks.bridge.services;
 
-import org.sagebionetworks.repo.model.UserProfile;
-import org.sagebionetworks.repo.model.auth.Session;
+import models.UserSession;
 
 public interface AuthenticationService {
 	
-	public Session signIn(String username, String password) throws Exception;
+	public UserSession signIn(String usernameOrEmail, String password) throws Exception;
+	
+	public UserSession getSession(String sessionToken);
 	
 	public void signOut(String sessionToken) throws Exception;
 	
 	public void resetPassword(String email) throws Exception;
-	
-	public UserProfile getUserProfile(String sessionToken) throws Exception;
 	
 }

@@ -1,7 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
-import org.sagebionetworks.bridge.BridgeConstants;
+import models.UserSession;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.repo.model.TermsOfUseException;
 import org.sagebionetworks.repo.model.UserProfile;
@@ -26,12 +27,31 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	}
 	
 	@Override
-	public Session signIn(String username, String password) throws Exception {
-		Session session = getSynapseClient(null).login(username, password);
+	public UserSession signIn(String usernameOrEmail, String password) throws Exception {
+		Session session = getSynapseClient(null).login(usernameOrEmail, password);
 		if (!session.getAcceptsTermsOfUse()) {
 			throw new TermsOfUseException();
 		}
-		return session;
+		return getSession(session.getSessionToken());
+	}
+	
+	@Override
+	public UserSession getSession(String sessionToken) {
+		try {
+			UserSessionData data = getSynapseClient(sessionToken).getUserSessionData();
+			// Does the user ever *not* have a username?
+			String username = data.getProfile().getUserName();
+			if (username == null) {
+				username = data.getProfile().getEmail();
+			}
+			UserSession userSession = new UserSession();
+			userSession.setSessionToken(data.getSession().getSessionToken());
+			userSession.setUsername(username);
+			userSession.setAuthenticated(true);
+			return userSession;
+		} catch(Throwable throwable) {
+			return new UserSession();
+		}
 	}
 
 	@Override
@@ -42,12 +62,6 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	@Override
 	public void resetPassword(String email) throws Exception {
 		getSynapseClient(null).sendPasswordResetEmail(email);
-	}
-
-	@Override
-	public UserProfile getUserProfile(String sessionToken) throws Exception {
-		UserSessionData data = getSynapseClient(sessionToken).getUserSessionData();
-		return data.getProfile();
 	}
 
 }

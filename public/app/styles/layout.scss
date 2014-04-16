@@ -1,0 +1,36 @@
+.main-pane {
+    padding: 2rem;
+    background-color: white;
+    min-height: 50rem;
+    box-shadow: 0px 1px 3px silver inset;
+    
+    .nav-tabs {
+        margin-bottom: 2rem;
+    }
+}
+.header {
+    background-color: rgb(118,172,105);
+    font-family: 'Archivo Narrow', sans-serif;
+
+    a, a:visited, a:active {
+        color: white;
+    } 
+
+    .partner-header {
+        height: 6rem;
+        font-size: 2.2rem;
+        line-height: 6rem;
+        margin-left: -15px; 
+        background: transparent url('http://placehold.it/350x60&text=Partner+Logo') left center no-repeat;
+    }
+    .bridge-header {
+        line-height: 6rem;
+        text-align: right;
+        span {
+            padding-right: 2rem;
+        } 
+        form {
+            margin-right: -15px; /* Squish login form to far right of box, no additional padding */
+        }
+    }
+}
