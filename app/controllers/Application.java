@@ -1,15 +1,31 @@
 package controllers;
 
+import models.UserSession;
+
 import org.sagebionetworks.StackConfiguration;
+import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.stubs.SynapseBootstrap;
 
+import play.libs.Json;
 import play.mvc.*;
 
 @org.springframework.stereotype.Controller
 public class Application extends BaseController {
 
-    public Result redirectToApp() {
-    	return redirect("/index.html"); 
+	private AuthenticationService authenticationService;
+
+	public void setAuthenticationService(AuthenticationService authenticationService) {
+		this.authenticationService = authenticationService;
+	}
+
+	public Result redirectToApp() {
+		return redirect("/");
+	}
+	
+    public Result loadApp() throws Exception {
+		String sessionToken = getSessionToken(false);
+		UserSession session = authenticationService.getSession(sessionToken);
+    	return ok(views.html.index.render(Json.toJson(session).toString()));
     }
     
     // REMOVEME (when we figure out how to expose this as part of the build)
