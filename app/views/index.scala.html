@@ -25,7 +25,7 @@
                             <a class="btn" ng-click="resetPassword()">Forgot Password</a>
                         </form>
                     </div>
-                    <div ng-show="session.authenticated">
+                    <div ng-hide="!session.authenticated">
                         <span ng-bind="session.username"></span>
                         <button class="btn btn-default" ng-show="session.sessionToken" ng-click="signOut()">Sign Out</button>
                     </div>
@@ -47,9 +47,10 @@
             </p>
         </div>
     </div>
+    
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-route.js"></script>
-    <script src="build/bridge.min.js"></script>
+    <script src="build/bridge.js"></script>
     <script>
     var _gaq = _gaq || [];
     _gaq.push(['_setAccount', 'UA-46518505-1']);

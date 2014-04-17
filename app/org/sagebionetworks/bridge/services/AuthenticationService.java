@@ -10,6 +10,10 @@ public interface AuthenticationService {
 	
 	public void signOut(String sessionToken) throws Exception;
 	
-	public void resetPassword(String email) throws Exception;
+	public void requestResetPassword(String email) throws Exception;
+	
+	public void resetPassword(String sessionToken, String password) throws Exception;
+	
+	public void consentToResearch(String sessionToken) throws Exception;
 	
 }

@@ -33,10 +33,23 @@ public class Authentication extends BaseController {
 		return jsonResult("Signed out.");
 	}
 
-	public Result resetPassword() throws Exception {
+	public Result requestResetPassword() throws Exception {
 		SignUp signUp = SignUp.fromJson(request().body().asJson());
-		authenticationService.resetPassword(signUp.getEmail());
+		authenticationService.requestResetPassword(signUp.getEmail());
 		return jsonResult("An email has been sent allowing you to set a new password.");
+	}
+	
+	public Result resetPassword() throws Exception {
+		String sessionToken = getSessionToken(true);
+		SignIn signIn = SignIn.fromJson(request().body().asJson());
+		authenticationService.resetPassword(sessionToken, signIn.getPassword());
+		return jsonResult("Password has been changed.");
+	}
+	
+	public Result consentToResearch() throws Exception {
+		String sessionToken = getSessionToken(true);
+		authenticationService.consentToResearch(sessionToken);
+		return jsonResult("Consent to research has been recorded.");
 	}
 	
 }

@@ -1,18 +1,11 @@
-angular.module('bridge').controller('ApplicationController', ['$scope', '$http', '$location', '$window', 'SessionService', 
-function($scope, $http, $location, $window, SessionService) {
+angular.module('bridge').controller('ApplicationController', 
+['$scope', '$http', '$location', '$modal', '$humane', '$window', 'SessionService', 'RequestResetPasswordService', 
+function($scope, $http, $location, $modal, $humane, $window, SessionService, RequestResetPasswordService) {
 
 	var DEFAULT_PATHS = ["","/","index.html","/index.html"];
 	
 	$scope.credentials = {};
 	$scope.session = SessionService;
-	
-	function handleError(data, status) {
-		if (status === 401) {
-			$window.alert("You must sign in to continue.");
-		} else {
-			$window.alert(data.payload);
-		}
-	}
 	
 	$scope.tabs = [
         {link: '/#/health', label: "My Health"},
@@ -27,16 +20,16 @@ function($scope, $http, $location, $window, SessionService) {
 		}
 		return (tab.link.indexOf(path) > -1);
 	};
-	
+
 	$scope.signIn = function() {
 		$http.post('/api/auth/signIn', angular.extend({}, $scope.credentials))
 			.success(function(data, status) {
 				SessionService.init(data.payload);
 			}).error(function(data, status) {
 				if (status === 412) {
-					$window.alert("You must first sign the terms of use.");
+				    $location.path("/consent/" + data.sessionToken);
 				} else {
-					$window.alert("Wrong user name or password.");	
+					$humane.error(data.payload);
 				}
 			});
 		$scope.credentials.password = '';
@@ -46,16 +39,16 @@ function($scope, $http, $location, $window, SessionService) {
 			.success(function(data, status) {
 				// Because of all the user data that could be in the browser, just refresh.
 				$window.location.replace("/");
-			}).error(handleError);
+			}).error(function(data) {
+			    $humane.error(data.payload);
+			});
 	};
-	$scope.resetPassword = function() {
-		$http.post('/api/auth/resetPassword', {'email': 'test2@sagebase.org'})
-			.success(function() {
-				$window.alert("Not yet implemented");
-			}).error(handleError);
-	};
-	
+    $scope.resetPassword = function() {
+        RequestResetPasswordService.open();
+    };
+
 	// Anonymous users can't access user routes.
+    // TODO: Should this just go in a config instead?
 	$scope.$root.$on('$routeChangeStart', function(e, next, current) {
 		if (!next.access.allowAnonymous && !$scope.session.authenticated) {
 			console.warn("Page requires authentication, redirecting");
