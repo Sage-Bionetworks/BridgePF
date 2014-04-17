@@ -51,12 +51,12 @@ describe("ApplicationController authentication support", function() {
 		expect(SessionService.sessionToken).toEqual("someToken");
 	});
 	it("does not authenticate user with bad credentials", function() {
-		$httpBackend.expectPOST('/api/auth/signIn').respond(404, {});
+		$httpBackend.expectPOST('/api/auth/signIn').respond(404, {payload: "Did not find a user with alias: asdf"});
 		ApplicationController = createController();
 		$rootScope.credentials = { "username": "asdf", "password": "asdf" };
 		$rootScope.signIn();
 		$httpBackend.flush();
-		expect($window.alert).toHaveBeenCalledWith("Wrong user name or password.");
+		expect($window.alert).toHaveBeenCalledWith("Did not find a user with alias: asdf");
 		expectNotLoggedIn();
 	});
 	it("does not authenticate user and alerts when TOS have not been signed", function() {

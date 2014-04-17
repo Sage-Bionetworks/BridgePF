@@ -5,6 +5,7 @@ import models.JsonPayload;
 import models.StatusMessage;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.client.exceptions.SynapseServerException;
 import org.sagebionetworks.repo.model.TermsOfUseException;
 import org.springframework.context.ApplicationContext;
@@ -25,7 +26,7 @@ public class Global extends GlobalSettings {
 	@Override
     public void onStart(Application application) {
         applicationContext = new ClassPathXmlApplicationContext("application-context.xml");
-        
+
         // If the context has been wired to use a stub, then we populate the stub with some
         // user accounts, etc. so we can manipulate the application. This needs to be 
         // configurable in a manner that probably involves:
@@ -47,19 +48,24 @@ public class Global extends GlobalSettings {
 		int status = 500;
 		if (throwable instanceof SynapseServerException) {
 			status = ((SynapseServerException)throwable).getStatusCode();
-		} else if (throwable instanceof TermsOfUseException) {
-			status = 412; // "Precondition Failed" - SynapseTermsOfUseException uses the forbidden code, not quite right I think
 		}
-
 		String message = throwable.getMessage();
 		if (StringUtils.isBlank(message)) {
 			message = "There has been a server error. We cannot fulfill your request at this time.";
 		}
-		ExceptionMessage exceptionMessage = new ExceptionMessage(throwable, message);
+		
+		ExceptionMessage exceptionMessage = createMessagePayload(throwable, status, message);
 		return Promise.<SimpleResult>pure(Results.status(status, Json.toJson(exceptionMessage)));
 	}
+
+	private ExceptionMessage createMessagePayload(Throwable throwable, int status, String message) {
+		if (status == 412) {
+			return new ExceptionMessage(throwable, message, ((ConsentRequiredException)throwable).getSessionToken());
+		}
+		return new ExceptionMessage(throwable, message);
+	}
 	
-	/* These don't work. Is it possible to redirect like this in Play? 
+	/* These don't work. Is it possible to redirect like this in Play?  
 	@Override
 	public Promise<SimpleResult> onHandlerNotFound(RequestHeader header) {
 		//return Promise.<SimpleResult>pure(null);
