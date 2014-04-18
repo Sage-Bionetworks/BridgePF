@@ -6098,6 +6098,7 @@ body {
   .header a, .header a:visited, .header a:active {
     color: white; }
   .header .partner-header {
+    display: block;
     height: 6rem;
     font-size: 2.2rem;
     line-height: 6rem;

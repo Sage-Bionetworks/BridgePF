@@ -37,7 +37,7 @@ module.exports = function(grunt) {
     	    	src: [
     	    	    'app/bower_components/bootstrap/dist/css/bootstrap.css',
     	    	    'app/bower_components/bootstrap/dist/css/bootstrap-theme.css',
-    	    	    'app/styles/humane-modified.css',
+    	    	    'app/styles/humane-modified.css', // to work with bootstrap
 	    	      	'app/styles/*.scss'
 	    	    ],
     	    	dest: '<%= output %>/bridge.scss',
@@ -56,7 +56,6 @@ module.exports = function(grunt) {
                 'app/bower_components/angular/angular.js',
                 'app/bower_components/angular-mocks/angular-mocks.js',
                 'app/bower_components/angular-route/angular-route.js',
-                'app/bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
                 '<%= output %>/bridge.min.js'
             ],
             options: {
