@@ -6210,6 +6210,7 @@ body {
     } 
 
     .partner-header {
+        display: block;
         height: 6rem;
         font-size: 2.2rem;
         line-height: 6rem;
@@ -6244,7 +6245,6 @@ body {
 }
 
 /* Changes to humane.js CSS */
-
 body {
     background-color: rgb(239,239,239);
     font-family: Open Sans, sans-serif;
@@ -6252,7 +6252,6 @@ body {
 h1, h2, h3, h4 {
     font-family: 'Archivo Narrow', sans-serif;
 }
-
 .topSpacer {
     margin-top: 20px;
 }

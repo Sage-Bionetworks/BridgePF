@@ -3686,9 +3686,9 @@ angular.module("template/typeahead/typeahead-popup.html", []).run(["$templateCac
  */
 
 ;!function (name, context, definition) {
-   if (typeof module !== 'undefined') module.exports = definition(name, context)
+   /*if (typeof module !== 'undefined') module.exports = definition(name, context)
    else if (typeof define === 'function' && typeof define.amd  === 'object') define(definition)
-   else context[name] = definition(name, context)
+   else*/ context[name] = definition(name, context)
 }('humane', this, function (name, context) {
    var win = window
    var doc = document
@@ -3968,31 +3968,45 @@ angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
 
 	return service;
 }])
-.service('$humane', function() {
-    var hmn = humane.create({addnCls: "alert alert-success", timeout: 3000});
-    var err = hmn.spawn({addnCls: 'alert alert-danger'});
+.service('$humane', ['$window', function($window) {
+    var notifier = $window.humane.create({addnCls: "alert alert-success", timeout: 3000});
+    var err = $window.humane.create({addnCls: "alert alert-danger", timeout: 3000});
     return {
-        confirm: function(s) { hmn.log(s); },
-        error: function(s) { err(s); } 
+        confirm: angular.bind(notifier, notifier.log),
+        error: angular.bind(err, err.log)
     };
-})
+}])
 .directive('validateEquals', function() {
     return {
         restrict: 'A',
         require: 'ngModel',
-        link: function(scope, element, attrs, ngModelController) {
-            function validateEqual(myValue) {
-                var valid = (myValue === scope.$eval(attrs.validateEquals).$modelValue);
-                ngModelController.$setValidity('equal', valid);
-                return valid ? myValue : undefined;
+        link: function(scope, element, attrs, controller) {
+            function getComparisonValue(expr) {
+                var comparisonModel = scope.$eval(expr);
+                return (comparisonModel && comparisonModel.$viewValue) ? comparisonModel.$viewValue : undefined;
             }
-            ngModelController.$parsers.push(validateEqual);
-            ngModelController.$formatters.push(validateEqual);
+            // http://stackoverflow.com/questions/20982751/custom-form-validation-directive-to-compare-two-fields
+            var validate = function(viewValue) {
+                var comparisonModel = getComparisonValue(attrs.validateEquals);
+
+                var valid = true;
+                if (!viewValue || !comparisonModel) {
+                    controller.$setValidity('equal', true);
+                } else {
+                    valid = (viewValue === comparisonModel);
+                    controller.$setValidity('equal', valid);
+                }
+                return (valid) ? viewValue : undefined;
+            };
             
-            // Change in model 
+            controller.$parsers.unshift(validate);
+            controller.$formatters.push(validate);
+            // This really doesn't seem to do anything.
             /*
-            scope.$watch(attrs.validateEquals, function() {
-                ngModelController.$setViewValue(ngModelController.$viewValue);
+            scope.$watch(attrs.validateEquals, function(comparisonModel) {
+                if (controller.$dirty) {
+                    controller.$setViewValue(controller.$viewValue);    
+                }
             });
             */
         }
@@ -4080,7 +4094,7 @@ function($scope, $http, $location, $modal, $humane, $window, SessionService, Req
 				if (status === 412) {
 				    $location.path("/consent/" + data.sessionToken);
 				} else {
-					$humane.error(data.payload);
+					$humane.error("Wrong user name or password.");
 				}
 			});
 		$scope.credentials.password = '';
@@ -4150,7 +4164,7 @@ function($scope, $rootScope, $route, $http, $humane, $location, SessionService) 
     // The URL from Synapse should be:
     // https://bridge.synapse.org/#/resetPassword/ + sessionToken
     // Change this at: ./services/repository-managers/src/main/java/org/sagebionetworks/repo/manager/MessageManagerImpl.java : 666
-
+    
     SessionService.clear();
     $scope.sessionToken = $route.current.params.sessionToken;
     
@@ -4166,12 +4180,12 @@ function($scope, $rootScope, $route, $http, $humane, $location, SessionService) 
     };
     $scope.change = function() {
         if ($scope.resetPasswordForm.$valid) {
-            $http.post('/api/auth/resetPassword', {password: $scope.resetPasswordForm.password}, {
+            $http.post('/api/auth/resetPassword', {password: $scope.password}, {
                 headers: {'Bridge-Session': $scope.sessionToken}
             })
             .success(function(data, status) {
                 $location.path("/");
-                $humane.confirm("Your password has been changed");
+                $humane.confirm("Your password has been changed.");
             }).error(function(data, status) {
                 $humane.error(data.payload);
             });

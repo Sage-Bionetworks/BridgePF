@@ -29,7 +29,7 @@ function($scope, $http, $location, $modal, $humane, $window, SessionService, Req
 				if (status === 412) {
 				    $location.path("/consent/" + data.sessionToken);
 				} else {
-					$humane.error(data.payload);
+					$humane.error("Wrong user name or password.");
 				}
 			});
 		$scope.credentials.password = '';
