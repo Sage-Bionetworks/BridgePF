@@ -13,7 +13,7 @@ resolvers += "Sage Snapshot Repository" at "http://sagebionetworks.artifactoryon
 libraryDependencies ++= Seq(
   cache,
   "org.springframework" % "spring-context" % "4.0.3.RELEASE",
-  "org.sagebionetworks" % "synapseJavaClient" % "[2014,)",
+  "org.sagebionetworks" % "synapseJavaClient" % "develop-SNAPSHOT",
   "cglib" % "cglib" % "2.2.2"
 )     
 

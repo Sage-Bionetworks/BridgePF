@@ -29,10 +29,10 @@
     <!-- 
     <bean id="synapseClient" class="org.sagebionetworks.bridge.stubs.StubSynapseClient" 
         factory-method="createInstance" scope="prototype"/>
- -->
+    -->
     <bean id="synapseClient" class="org.sagebionetworks.client.SynapseClientImpl" scope="prototype">
         <constructor-arg index="0" value= "BRIDGE"/>
-        <!-- 
+
         <property name="repositoryEndpoint">
             <bean class="org.sagebionetworks.StackConfiguration"
                 factory-method="getRepositoryServiceEndpoint"/>
@@ -45,7 +45,6 @@
             <bean class="org.sagebionetworks.StackConfiguration"
                 factory-method="getFileServiceEndpoint"/>
         </property>
-         -->
     </bean>
     
 </beans>
