@@ -1,7 +1,13 @@
 .classpath
 .project
 .settings
-target
+.history
+target/native_libraries 
+target/resolution-cache
+target/scala-2.10
+target/streams
+target/universal/stage/share/doc
+target/universal/tmp
 application.log
 node_modules
 bower_components

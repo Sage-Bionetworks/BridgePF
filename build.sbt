@@ -2,11 +2,11 @@ name := "BridgePF"
 
 version := "0.1-SNAPSHOT"
 
-resolvers += "Sage Snapshot Repository" at "http://sagebionetworks.artifactoryonline.com/sagebionetworks/libs-snapshots-local"
+resolvers += "Sage Ext Repository" at "http://sagebionetworks.artifactoryonline.com/sagebionetworks/ext-releases-local"
 
 resolvers += "Sage Local Repository" at "http://sagebionetworks.artifactoryonline.com/sagebionetworks/libs-releases-local"
 
-resolvers += "Sage Ext Repository" at "http://sagebionetworks.artifactoryonline.com/sagebionetworks/ext-releases-local"
+resolvers += "Sage Snapshot Repository" at "http://sagebionetworks.artifactoryonline.com/sagebionetworks/libs-snapshots-local"
 
 libraryDependencies ++= Seq(
   cache,
