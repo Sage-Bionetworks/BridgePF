@@ -1,3 +1,4 @@
+package test;
 import org.junit.*;
 
 import play.mvc.*;
@@ -19,7 +20,7 @@ public class IntegrationTest {
     public void test() {
         running(testServer(3333, fakeApplication(inMemoryDatabase())), HTMLUNIT, new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
-                browser.goTo("http://localhost:3333");
+                browser.goTo(TestConstants.TEST_URL);
                 assertThat(browser.pageSource()).contains("Bridge: Patients");
             }
         });
