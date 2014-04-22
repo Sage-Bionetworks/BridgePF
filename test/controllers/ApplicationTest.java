@@ -4,6 +4,7 @@ import org.junit.*;
 import play.libs.WS;
 import play.libs.WS.Response;
 import play.libs.WS.WSRequestHolder;
+import test.TestConstants;
 import static org.fest.assertions.Assertions.*;
 import static play.test.Helpers.*;
 
@@ -25,7 +26,7 @@ public class ApplicationTest {
     public void indexRedirectsToApp() {
     	running(testServer(3333), new Runnable() {
 			public void run() {
-				WSRequestHolder holder = WS.url("http://localhost:3333/index.html").setFollowRedirects(false);
+				WSRequestHolder holder = WS.url(TestConstants.TEST_URL+"/index.html").setFollowRedirects(false);
 				Response response = holder.get().get();
 				assertThat(response.getStatus()).isEqualTo(SEE_OTHER);
 				assertThat(response.getHeader(LOCATION)).isEqualTo("/");
@@ -40,7 +41,7 @@ public class ApplicationTest {
     public void canLoadApp() {
     	running(testServer(3333), new Runnable() {
 			public void run() {
-				WSRequestHolder holder = WS.url("http://localhost:3333/");
+				WSRequestHolder holder = WS.url(TestConstants.TEST_URL);
 				Response response = holder.get().get();
 				assertThat(response.getStatus()).isEqualTo(OK);
 				assertThat(response.getBody()).contains("Bridge: Patients &amp; Researchers in Partnership - Sage Bionetworks");
