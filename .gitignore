@@ -6,5 +6,6 @@ target
 application.log
 node_modules
 bower_components
+project/target
 .sass-cache
 .target
