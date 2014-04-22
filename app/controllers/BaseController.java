@@ -38,4 +38,7 @@ public class BaseController extends Controller {
 		return ok(Json.toJson(payload));
 	}
 
+	protected Result jsonError(String message) {
+		return internalServerError(Json.toJson(new StatusMessage(message)));
+	}
 }
