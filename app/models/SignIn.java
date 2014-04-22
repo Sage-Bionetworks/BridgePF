@@ -1,5 +1,7 @@
 package models;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public final class SignIn {
@@ -33,5 +35,9 @@ public final class SignIn {
 
 	public String getPassword() {
 		return password;
+	}
+	
+	public boolean isBlank() {
+		return StringUtils.isBlank(username) && StringUtils.isBlank(password);
 	}
 }
