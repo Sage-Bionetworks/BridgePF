@@ -3,7 +3,7 @@
  */
 describe("ApplicationController authentication support", function() {
 	
-	var ApplicationController, SessionService, $rootScope, $httpBackend;
+	var ApplicationController, authService, $rootScope, $httpBackend;
 
 	beforeEach(function() {
 		module('bridge');
@@ -28,7 +28,7 @@ describe("ApplicationController authentication support", function() {
 	beforeEach(inject(function($injector) {
         $httpBackend = $injector.get('$httpBackend');
         $rootScope = $injector.get('$rootScope');
-        SessionService = $injector.get("SessionService");
+        authService = $injector.get("authService");
         var $controller = $injector.get('$controller');
         createController = function() {
         	return $controller('ApplicationController', {'$scope' : $rootScope });
@@ -39,9 +39,9 @@ describe("ApplicationController authentication support", function() {
     	$httpBackend.verifyNoOutstandingRequest();
     });	
 	function expectNotLoggedIn() {
-		expect(SessionService.authenticated).toEqual(false);
-		expect(SessionService.username).toEqual("");
-		expect(SessionService.sessionToken).toEqual("");
+		expect(authService.authenticated).toEqual(false);
+		expect(authService.username).toEqual("");
+		expect(authService.sessionToken).toEqual("");
 	}
 	
 	it('calls the sign in service on a sign in', function() {
@@ -54,9 +54,9 @@ describe("ApplicationController authentication support", function() {
 		$rootScope.signIn();
 		$httpBackend.flush();
 		
-		expect(SessionService.authenticated).toEqual(true);
-		expect(SessionService.username).toEqual("test2");
-		expect(SessionService.sessionToken).toEqual("someToken");
+		expect(authService.authenticated).toEqual(true);
+		expect(authService.username).toEqual("test2");
+		expect(authService.sessionToken).toEqual("someToken");
 	});
 	it("does not authenticate user with bad credentials", function() {
 		$httpBackend.expectPOST('/api/auth/signIn').respond(404, {payload: "Wrong user name or password."});
