@@ -15,13 +15,17 @@ libraryDependencies ++= Seq(
   javaEbean,
   cache,
   "org.springframework" % "spring-context" % "4.0.3.RELEASE",
-  "org.sagebionetworks" % "synapseJavaClient" % "[2014,)",
-  "org.sagebionetworks" % "lib-stackConfiguration" % "[2014,)",
+  "org.sagebionetworks" % "synapseJavaClient" % "develop-SNAPSHOT",
+  "org.sagebionetworks" % "lib-stackConfiguration" % "develop-SNAPSHOT",
   "cglib" % "cglib" % "2.2.2",
   "org.codehaus.jackson" % "jackson-mapper-asl" % "1.9.13"
 )
 
 play.Project.playJavaSettings
 
-// Only for development
+// Production
+// "org.sagebionetworks" % "synapseJavaClient" % "[2014,)",
+
+// Dev
+// "org.sagebionetworks" % "synapseJavaClient" % "develop-SNAPSHOT",
 // "org.sagebionetworks" % "lib-stackConfiguration" % "develop-SNAPSHOT",
