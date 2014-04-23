@@ -3676,6 +3676,236 @@ angular.module("template/typeahead/typeahead-popup.html", []).run(["$templateCac
     "</ul>");
 }]);
 
+/**
+ * humane.js
+ * Humanized Messages for Notifications
+ * @author Marc Harter (@wavded)
+ * @example
+ *   humane.log('hello world');
+ * See more usage examples at: http://wavded.github.com/humane-js/
+ */
+
+;!function (name, context, definition) {
+   /*if (typeof module !== 'undefined') module.exports = definition(name, context)
+   else if (typeof define === 'function' && typeof define.amd  === 'object') define(definition)
+   else*/ context[name] = definition(name, context)
+}('humane', this, function (name, context) {
+   var win = window
+   var doc = document
+
+   var ENV = {
+      on: function (el, type, cb) {
+         'addEventListener' in win ? el.addEventListener(type,cb,false) : el.attachEvent('on'+type,cb)
+      },
+      off: function (el, type, cb) {
+         'removeEventListener' in win ? el.removeEventListener(type,cb,false) : el.detachEvent('on'+type,cb)
+      },
+      bind: function (fn, ctx) {
+         return function () { fn.apply(ctx,arguments) }
+      },
+      isArray: Array.isArray || function (obj) { return Object.prototype.toString.call(obj) === '[object Array]' },
+      config: function (preferred, fallback) {
+         return preferred != null ? preferred : fallback
+      },
+      transSupport: false,
+      useFilter: /msie [678]/i.test(navigator.userAgent), // sniff, sniff
+      _checkTransition: function () {
+         var el = doc.createElement('div')
+         var vendors = { webkit: 'webkit', Moz: '', O: 'o', ms: 'MS' }
+
+         for (var vendor in vendors)
+            if (vendor + 'Transition' in el.style) {
+               this.vendorPrefix = vendors[vendor]
+               this.transSupport = true
+            }
+      }
+   }
+   ENV._checkTransition()
+
+   var Humane = function (o) {
+      o || (o = {})
+      this.queue = []
+      this.baseCls = o.baseCls || 'humane'
+      this.addnCls = o.addnCls || ''
+      this.timeout = 'timeout' in o ? o.timeout : 2500
+      this.waitForMove = o.waitForMove || false
+      this.clickToClose = o.clickToClose || false
+      this.timeoutAfterMove = o.timeoutAfterMove || false 
+      this.container = o.container
+
+      try { this._setupEl() } // attempt to setup elements
+      catch (e) {
+        ENV.on(win,'load',ENV.bind(this._setupEl, this)) // dom wasn't ready, wait till ready
+      }
+   }
+
+   Humane.prototype = {
+      constructor: Humane,
+      _setupEl: function () {
+         var el = doc.createElement('div')
+         el.style.display = 'none'
+         if (!this.container){
+           if(doc.body) this.container = doc.body;
+           else throw 'document.body is null'
+         }
+         this.container.appendChild(el)
+         this.el = el
+         this.removeEvent = ENV.bind(function(){ if (!this.timeoutAfterMove){this.remove()} else {setTimeout(ENV.bind(this.remove,this),this.timeout);}},this)
+         this.transEvent = ENV.bind(this._afterAnimation,this)
+         this._run()
+      },
+      _afterTimeout: function () {
+         if (!ENV.config(this.currentMsg.waitForMove,this.waitForMove)) this.remove()
+
+         else if (!this.removeEventsSet) {
+            ENV.on(doc.body,'mousemove',this.removeEvent)
+            ENV.on(doc.body,'click',this.removeEvent)
+            ENV.on(doc.body,'keypress',this.removeEvent)
+            ENV.on(doc.body,'touchstart',this.removeEvent)
+            this.removeEventsSet = true
+         }
+      },
+      _run: function () {
+         if (this._animating || !this.queue.length || !this.el) return
+
+         this._animating = true
+         if (this.currentTimer) {
+            clearTimeout(this.currentTimer)
+            this.currentTimer = null
+         }
+
+         var msg = this.queue.shift()
+         var clickToClose = ENV.config(msg.clickToClose,this.clickToClose)
+
+         if (clickToClose) {
+            ENV.on(this.el,'click',this.removeEvent)
+            ENV.on(this.el,'touchstart',this.removeEvent)
+         }
+
+         var timeout = ENV.config(msg.timeout,this.timeout)
+
+         if (timeout > 0)
+            this.currentTimer = setTimeout(ENV.bind(this._afterTimeout,this), timeout)
+
+         if (ENV.isArray(msg.html)) msg.html = '<ul><li>'+msg.html.join('<li>')+'</ul>'
+
+         this.el.innerHTML = msg.html
+         this.currentMsg = msg
+         this.el.className = this.baseCls
+         if (ENV.transSupport) {
+            this.el.style.display = 'block'
+            setTimeout(ENV.bind(this._showMsg,this),50)
+         } else {
+            this._showMsg()
+         }
+
+      },
+      _setOpacity: function (opacity) {
+         if (ENV.useFilter){
+            try{
+               this.el.filters.item('DXImageTransform.Microsoft.Alpha').Opacity = opacity*100
+            } catch(err){}
+         } else {
+            this.el.style.opacity = String(opacity)
+         }
+      },
+      _showMsg: function () {
+         var addnCls = ENV.config(this.currentMsg.addnCls,this.addnCls)
+         if (ENV.transSupport) {
+            this.el.className = this.baseCls+' '+addnCls+' '+this.baseCls+'-animate'
+         }
+         else {
+            var opacity = 0
+            this.el.className = this.baseCls+' '+addnCls+' '+this.baseCls+'-js-animate'
+            this._setOpacity(0) // reset value so hover states work
+            this.el.style.display = 'block'
+
+            var self = this
+            var interval = setInterval(function(){
+               if (opacity < 1) {
+                  opacity += 0.1
+                  if (opacity > 1) opacity = 1
+                  self._setOpacity(opacity)
+               }
+               else clearInterval(interval)
+            }, 30)
+         }
+      },
+      _hideMsg: function () {
+         var addnCls = ENV.config(this.currentMsg.addnCls,this.addnCls)
+         if (ENV.transSupport) {
+            this.el.className = this.baseCls+' '+addnCls
+            ENV.on(this.el,ENV.vendorPrefix ? ENV.vendorPrefix+'TransitionEnd' : 'transitionend',this.transEvent)
+         }
+         else {
+            var opacity = 1
+            var self = this
+            var interval = setInterval(function(){
+               if(opacity > 0) {
+                  opacity -= 0.1
+                  if (opacity < 0) opacity = 0
+                  self._setOpacity(opacity);
+               }
+               else {
+                  self.el.className = self.baseCls+' '+addnCls
+                  clearInterval(interval)
+                  self._afterAnimation()
+               }
+            }, 30)
+         }
+      },
+      _afterAnimation: function () {
+         if (ENV.transSupport) ENV.off(this.el,ENV.vendorPrefix ? ENV.vendorPrefix+'TransitionEnd' : 'transitionend',this.transEvent)
+
+         if (this.currentMsg.cb) this.currentMsg.cb()
+         this.el.style.display = 'none'
+
+         this._animating = false
+         this._run()
+      },
+      remove: function (e) {
+         var cb = typeof e == 'function' ? e : null
+
+         ENV.off(doc.body,'mousemove',this.removeEvent)
+         ENV.off(doc.body,'click',this.removeEvent)
+         ENV.off(doc.body,'keypress',this.removeEvent)
+         ENV.off(doc.body,'touchstart',this.removeEvent)
+         ENV.off(this.el,'click',this.removeEvent)
+         ENV.off(this.el,'touchstart',this.removeEvent)
+         this.removeEventsSet = false
+
+         if (cb && this.currentMsg) this.currentMsg.cb = cb
+         if (this._animating) this._hideMsg()
+         else if (cb) cb()
+      },
+      log: function (html, o, cb, defaults) {
+         var msg = {}
+         if (defaults)
+           for (var opt in defaults)
+               msg[opt] = defaults[opt]
+
+         if (typeof o == 'function') cb = o
+         else if (o)
+            for (var opt in o) msg[opt] = o[opt]
+
+         msg.html = html
+         if (cb) msg.cb = cb
+         this.queue.push(msg)
+         this._run()
+         return this
+      },
+      spawn: function (defaults) {
+         var self = this
+         return function (html, o, cb) {
+            self.log.call(self,html,o,cb,defaults)
+            return self
+         }
+      },
+      create: function (o) { return new Humane(o) }
+   }
+   return new Humane()
+})
+
 angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
 
 .config(['$routeProvider', function($routeProvider) {
@@ -3694,6 +3924,16 @@ angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
 		controller: 'JournalController',
 		access: {allowAnonymous: false}
 	})
+	.when('/resetPassword/:sessionToken', {
+        templateUrl: '/views/resetPassword.html',
+        controller: 'ResetPasswordController',
+        access: {allowAnonymous: true}
+	})
+    .when('/consent/:sessionToken', {
+        templateUrl: '/views/consent.html',
+        controller: 'ConsentController',
+        access: {allowAnonymous: true}
+    })
 	// As a default, you see the landing page, which is the research information page.
 	// Eventually this can vary by project.
 	.otherwise({
@@ -3722,28 +3962,115 @@ angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
 			$rootScope.$broadcast('session', this);
 		}
 	};
-	
+
 	angular.extend(service, window.auth);
 	delete window.auth;
 
 	return service;
+}])
+.service('$humane', ['$window', function($window) {
+    var notifier = $window.humane.create({addnCls: "alert alert-success", timeout: 3000});
+    var err = $window.humane.create({addnCls: "alert alert-danger", timeout: 3000});
+    return {
+        confirm: angular.bind(notifier, notifier.log),
+        error: angular.bind(err, err.log)
+    };
+}])
+.directive('validateEquals', function() {
+    return {
+        restrict: 'A',
+        require: 'ngModel',
+        link: function(scope, element, attrs, controller) {
+            function getComparisonValue(expr) {
+                var comparisonModel = scope.$eval(expr);
+                return (comparisonModel && comparisonModel.$viewValue) ? comparisonModel.$viewValue : undefined;
+            }
+            // http://stackoverflow.com/questions/20982751/custom-form-validation-directive-to-compare-two-fields
+            var validate = function(viewValue) {
+                var comparisonModel = getComparisonValue(attrs.validateEquals);
+
+                var valid = true;
+                if (!viewValue || !comparisonModel) {
+                    controller.$setValidity('equal', true);
+                } else {
+                    valid = (viewValue === comparisonModel);
+                    controller.$setValidity('equal', valid);
+                }
+                return (valid) ? viewValue : undefined;
+            };
+            
+            controller.$parsers.unshift(validate);
+            controller.$formatters.push(validate);
+            // This really doesn't seem to do anything.
+            /*
+            scope.$watch(attrs.validateEquals, function(comparisonModel) {
+                if (controller.$dirty) {
+                    controller.$setViewValue(controller.$viewValue);    
+                }
+            });
+            */
+        }
+    };
+});
+
+angular.module('bridge').service('RequestResetPasswordService', ['$modal', 'SessionService', function($modal, SessionService) {
+    
+    SessionService.clear();
+    
+    var modalInstance;
+    
+    var ModalInstanceController = function($scope, $http) {
+        $scope.credentials = {email:''};
+        $scope.messageType = "info";
+        $scope.message = "";
+        $scope.state = 'pre';
+
+        $scope.send = function () {
+            if ($scope.credentials.email === "") {
+                $scope.messageType = "danger";
+                $scope.message = "Please enter an email address.";
+                return;
+            }
+            $http.post('/api/auth/requestResetPassword', {
+                'email': $scope.credentials.email
+            }).success(function(data) {
+                $scope.messageType = "success";
+                $scope.message = "Please look for further instructions in your email inbox.";
+                $scope.state = 'post';
+            }).error(function(data) {
+                $scope.messageType = "danger";
+                $scope.message = data.payload;
+            });
+        };
+        $scope.cancel = function () {
+            modalInstance.dismiss('cancel');
+        };
+    };
+    
+    return {
+        open: function() {
+            modalInstance = $modal.open({
+                templateUrl: 'views/dialogs/requestResetPassword.html',
+                controller: ModalInstanceController
+            });
+        },
+        close: function() {
+            if (modalInstance) {
+                modalInstance.dismiss('cancel');
+            }
+        }
+    };
+
 }]);
 
-angular.module('bridge').controller('ApplicationController', ['$scope', '$http', '$location', '$window', 'SessionService', 
-function($scope, $http, $location, $window, SessionService) {
+angular.module('bridge').controller('ApplicationController', 
+['$scope', '$http', '$location', '$modal', '$humane', '$window', 'SessionService', 'RequestResetPasswordService', 
+function($scope, $http, $location, $modal, $humane, $window, SessionService, RequestResetPasswordService) {
 
 	var DEFAULT_PATHS = ["","/","index.html","/index.html"];
 	
 	$scope.credentials = {};
 	$scope.session = SessionService;
-	
-	function handleError(data, status) {
-		if (status === 401) {
-			$window.alert("You must sign in to continue.");
-		} else {
-			$window.alert(data.payload);
-		}
-	}
 	
 	$scope.tabs = [
         {link: '/#/health', label: "My Health"},
@@ -3758,16 +4085,18 @@ function($scope, $http, $location, $window, SessionService) {
 		}
 		return (tab.link.indexOf(path) > -1);
 	};
-	
+
 	$scope.signIn = function() {
 		$http.post('/api/auth/signIn', angular.extend({}, $scope.credentials))
 			.success(function(data, status) {
 				SessionService.init(data.payload);
 			}).error(function(data, status) {
 				if (status === 412) {
-					$window.alert("You must first sign the terms of use.");
+				    $location.path("/consent/" + data.sessionToken);
+				} else if (status === 404) {
+					$humane.error("Wrong user name or password.");
 				} else {
-					$window.alert("Wrong user name or password.");	
+				    $humane.error("There has been a server error.");
 				}
 			});
 		$scope.credentials.password = '';
@@ -3777,16 +4106,16 @@ function($scope, $http, $location, $window, SessionService) {
 			.success(function(data, status) {
 				// Because of all the user data that could be in the browser, just refresh.
 				$window.location.replace("/");
-			}).error(handleError);
+			}).error(function(data) {
+			    $humane.error(data.payload);
+			});
 	};
-	$scope.resetPassword = function() {
-		$http.post('/api/auth/resetPassword', {'email': 'test2@sagebase.org'})
-			.success(function() {
-				$window.alert("Not yet implemented");
-			}).error(handleError);
-	};
-	
+    $scope.resetPassword = function() {
+        RequestResetPasswordService.open();
+    };
+
 	// Anonymous users can't access user routes.
+    // TODO: Should this just go in a config instead?
 	$scope.$root.$on('$routeChangeStart', function(e, next, current) {
 		if (!next.access.allowAnonymous && !$scope.session.authenticated) {
 			console.warn("Page requires authentication, redirecting");
@@ -3797,6 +4126,28 @@ function($scope, $http, $location, $window, SessionService) {
 	
 }]);
 
+angular.module('bridge').controller('ConsentController', ['$scope', '$http', '$location', '$route', '$humane', 
+function($scope, $http, $location, $route, $humane) {
+
+    $scope.sessionToken = $route.current.params.sessionToken;
+
+    $scope.agree = function() {
+        $http.post('/api/auth/consentToResearch', {}, {
+            headers: {'Bridge-Session': $scope.sessionToken}
+        })
+        .success(function(data, status) {
+            $location.path("/");
+            $humane.confirm("Thank you for your participation! You can sign in now and get started.");
+        }).error(function(data, status) {
+            $humane.error(data.payload);
+        });
+    };
+    
+    $scope.decline = function() {
+        $location.path("/");
+    };
+    
+}]);
 angular.module('bridge').controller('HealthController', ['$scope', function($scope) {
 	
 }]);
@@ -3808,4 +4159,39 @@ angular.module('bridge').controller('QuestionsController', ['$scope', function($
 }]);
 angular.module('bridge').controller('ResearchController', ['$scope', function($scope) {
 	
+}]);
+angular.module('bridge').controller('ResetPasswordController', ['$scope', '$rootScope', '$route', '$http', '$humane', '$location', 'SessionService', 
+function($scope, $rootScope, $route, $http, $humane, $location, SessionService) {
+    
+    // The URL from Synapse should be:
+    // https://bridge.synapse.org/#/resetPassword/ + sessionToken
+    // Change this at: ./services/repository-managers/src/main/java/org/sagebionetworks/repo/manager/MessageManagerImpl.java : 666
+    
+    SessionService.clear();
+    $scope.sessionToken = $route.current.params.sessionToken;
+    
+    $scope.hasErrors = function(model) {
+        return {'has-error': model.$dirty && model.$invalid};
+    };
+    $scope.hasFieldError = function(model, type) {
+        return model.$dirty && model.$error[type];
+    };
+    $scope.canChange = function() {
+        var form = $scope.resetPasswordForm;
+        return form.$dirty && form.$valid;
+    };
+    $scope.change = function() {
+        if ($scope.resetPasswordForm.$valid) {
+            $http.post('/api/auth/resetPassword', {password: $scope.password}, {
+                headers: {'Bridge-Session': $scope.sessionToken}
+            })
+            .success(function(data, status) {
+                $location.path("/");
+                $humane.confirm("Your password has been changed.");
+            }).error(function(data, status) {
+                $humane.error(data.payload);
+            });
+        }
+    };
+    
 }]);

@@ -11,15 +11,15 @@
         http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
     <!-- Play controllers. -->
-    
+
     <bean id="controllers.Application" class="controllers.Application">
         <property name="authenticationService" ref="authenticationService"/>
     </bean>
-    
+
     <bean id="controllers.Authentication" class="controllers.Authentication">
         <property name="authenticationService" ref="authenticationService"/>
     </bean>
-    
+
     <!-- Services -->
 
     <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl"/>
@@ -29,22 +29,14 @@
     <!-- 
     <bean id="synapseClient" class="org.sagebionetworks.bridge.stubs.StubSynapseClient" 
         factory-method="createInstance" scope="prototype"/>
- -->
+    -->
     <bean id="synapseClient" class="org.sagebionetworks.client.SynapseClientImpl" scope="prototype">
         <constructor-arg index="0" value= "BRIDGE"/>
-        
-        <property name="repositoryEndpoint">
-            <bean class="org.sagebionetworks.StackConfiguration"
-                factory-method="getRepositoryServiceEndpoint"/>
-        </property>
-        <property name="authEndpoint">
-            <bean class="org.sagebionetworks.StackConfiguration"
-                factory-method="getAuthenticationServicePublicEndpoint"/>
-        </property>
-        <property name="fileEndpoint">
-            <bean class="org.sagebionetworks.StackConfiguration"
-                factory-method="getFileServiceEndpoint"/>
-        </property>
+
+        <!-- These just 404, however. -->
+        <property name="repositoryEndpoint" value="https://repo-prod.prod.sagebase.org/repo/v1"/>
+        <property name="authEndpoint" value="https://repo-prod.prod.sagebase.org/auth/v1"/>
+        <property name="fileEndpoint" value="https://repo-prod.prod.sagebase.org/file/v1"/>
     </bean>
     
 </beans>
