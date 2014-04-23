@@ -5,17 +5,16 @@
     <meta charset="utf-8" />
     <title>Bridge: Patients &amp; Researchers in Partnership - Sage Bionetworks</title>
     <meta name="viewport" content="width=device-width" />
-    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Archivo+Narrow" type="text/css" />
     <link rel="stylesheet" href="build/bridge.css" />
     <script>window.auth = @Html(auth);</script>
 </head>
 <body ng-app="bridge" ng-controller="ApplicationController">
     <div class="container">
         <div class="row header">
-            <div class="col-sm-6">
-                <div class="partner-header"></div>
+            <div class="col-sm-4">
+                <a href="/" class="partner-header"></a>
             </div>
-            <div class="col-sm-6">
+            <div class="col-sm-8">
                 <div class="bridge-header" ng-cloak>
                     <div ng-hide="session.authenticated">
                         <form name="signInForm" class="form-inline">
@@ -25,7 +24,7 @@
                             <a class="btn" ng-click="resetPassword()">Forgot Password</a>
                         </form>
                     </div>
-                    <div ng-show="session.authenticated">
+                    <div ng-hide="!session.authenticated">
                         <span ng-bind="session.username"></span>
                         <button class="btn btn-default" ng-show="session.sessionToken" ng-click="signOut()">Sign Out</button>
                     </div>
@@ -47,9 +46,10 @@
             </p>
         </div>
     </div>
+    
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-route.js"></script>
-    <script src="build/bridge.min.js"></script>
+    <script src="build/bridge.js"></script>
     <script>
     var _gaq = _gaq || [];
     _gaq.push(['_setAccount', 'UA-46518505-1']);

@@ -16,7 +16,7 @@ public class BaseController extends Controller {
 
 	protected String getSessionToken(boolean throwException) throws Exception {
 		Cookie sessionCookie = request().cookie(BridgeConstants.SESSION_TOKEN);
-		if (sessionCookie != null && sessionCookie.value() != null) {
+		if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
 			return sessionCookie.value();
 		}
 		String[] session = request().headers().get(BridgeConstants.SESSION_TOKEN);
@@ -38,4 +38,7 @@ public class BaseController extends Controller {
 		return ok(Json.toJson(payload));
 	}
 
+	protected Result jsonError(String message) {
+		return internalServerError(Json.toJson(new StatusMessage(message)));
+	}
 }

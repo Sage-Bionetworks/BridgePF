@@ -5,11 +5,12 @@ GET    /                         @controllers.Application.loadApp
 GET    /index.html               @controllers.Application.redirectToApp
 
 # API
-POST   /api/auth/signIn          @controllers.Authentication.signIn
-GET    /api/auth/signOut         @controllers.Authentication.signOut
-POST   /api/auth/resetPassword   @controllers.Authentication.resetPassword
+POST   /api/auth/signIn                 @controllers.Authentication.signIn
+GET    /api/auth/signOut                @controllers.Authentication.signOut
+POST   /api/auth/resetPassword          @controllers.Authentication.resetPassword
+POST   /api/auth/requestResetPassword   @controllers.Authentication.requestResetPassword
+POST   /api/auth/consentToResearch      @controllers.Authentication.consentToResearch
     
 # AngularJS application
-GET     /bootstrap              @controllers.Application.bootstrap
 GET     /*file                  controllers.Assets.at(path="/public/app", file)
 
