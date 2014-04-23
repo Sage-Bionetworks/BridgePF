@@ -35,3 +35,9 @@
         }
     }
 }
+/* Login */
+form[name='signInForm'] {
+    input[name='username'], input[name='password'] {
+        width: 10rem;
+    }
+}
