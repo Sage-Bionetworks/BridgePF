@@ -16,6 +16,7 @@ libraryDependencies ++= Seq(
   cache,
   "org.springframework" % "spring-context" % "4.0.3.RELEASE",
   "org.sagebionetworks" % "synapseJavaClient" % "[2014,)",
+  "org.sagebionetworks" % "lib-stackConfiguration" % "[2014,)",
   "cglib" % "cglib" % "2.2.2",
   "org.codehaus.jackson" % "jackson-mapper-asl" % "1.9.13"
 )
