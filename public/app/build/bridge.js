@@ -4087,16 +4087,19 @@ function($scope, $http, $location, $modal, $humane, $window, SessionService, Req
 	};
 
 	$scope.signIn = function() {
+	    if (!$scope.credentials.username && !$scope.credentials.password) {
+	        return;
+	    }
 		$http.post('/api/auth/signIn', angular.extend({}, $scope.credentials))
 			.success(function(data, status) {
 				SessionService.init(data.payload);
 			}).error(function(data, status) {
 				if (status === 412) {
 				    $location.path("/consent/" + data.sessionToken);
-				} else if (status === 404) {
+				} else if (status === 404 || status === 401) {
 					$humane.error("Wrong user name or password.");
 				} else {
-				    $humane.error("There has been a server error.");
+				    $humane.error("There has been an error.");
 				}
 			});
 		$scope.credentials.password = '';
