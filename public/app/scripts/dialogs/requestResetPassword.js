@@ -1,6 +1,4 @@
-angular.module('bridge').service('RequestResetPasswordService', ['$modal', 'SessionService', function($modal, SessionService) {
-    
-    SessionService.clear();
+angular.module('bridge').service('requestResetPasswordService', ['$modal', function($modal) {
     
     var modalInstance;
     

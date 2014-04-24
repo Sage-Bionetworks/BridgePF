@@ -1,11 +1,11 @@
-angular.module('bridge').controller('ResetPasswordController', ['$scope', '$rootScope', '$route', '$http', '$humane', '$location', 'SessionService', 
-function($scope, $rootScope, $route, $http, $humane, $location, SessionService) {
+angular.module('bridge').controller('ResetPasswordController', ['$scope', '$rootScope', '$route', '$http', '$humane', '$location', 'authService', 
+function($scope, $rootScope, $route, $http, $humane, $location, authService) {
     
     // The URL from Synapse should be:
     // https://bridge.synapse.org/#/resetPassword/ + sessionToken
     // Change this at: ./services/repository-managers/src/main/java/org/sagebionetworks/repo/manager/MessageManagerImpl.java : 666
     
-    SessionService.clear();
+    authService.clear();
     $scope.sessionToken = $route.current.params.sessionToken;
     
     $scope.hasErrors = function(model) {

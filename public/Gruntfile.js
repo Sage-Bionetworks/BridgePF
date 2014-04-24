@@ -26,7 +26,8 @@ module.exports = function(grunt) {
                 src: [
                     'app/bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
                     'app/bower_components/humane-js/humane.js',
-                    'app/scripts/app.js', 
+                    'app/scripts/app.js',
+                    'app/scripts/auth-service.js', 
                     'app/scripts/dialogs/*.js',
                     'app/scripts/controllers/*.js'
                 ],
