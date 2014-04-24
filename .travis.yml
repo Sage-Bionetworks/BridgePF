@@ -5,6 +5,10 @@ before_script:
   - npm install bower
   - npm install grunt-cli
   - gem install sass
+  - cd public
+  - npm install
+  - bower install
+  - cd ..
 script:
   - sbt test
   - grunt test
