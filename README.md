@@ -19,6 +19,10 @@ following:
     npm install
     bower install
 
+Run 'grunt githooks' from the public folder, to create a hook that will run the 
+grunt build before a commit, ensuring the files are up-to-date after 
+JS/SCSS/CSS are merged.
+
 Thereafter while working you can run `grunt` or even better, `grunt watch`, and 
 the JS/SASS/CSS files will be pre-processed while you work (the "built" versions 
 are the versions linked to in the code, so you must do this build to see your 
