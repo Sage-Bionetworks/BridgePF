@@ -1,6 +1,7 @@
 Bridge (Play Framework, Spring, AngularJS)
-[![Build Status](https://travis-ci.org/Sage-Bionetworks/BridgePF.svg?branch=develop)](https://travis-ci.org/Sage-Bionetworks/BridgePF)
 =========================================
+
+[![Build Status](https://travis-ci.org/Sage-Bionetworks/BridgePF.svg?branch=develop)](https://travis-ci.org/Sage-Bionetworks/BridgePF)
 
 Install Play Framework 2.2.x, node + npm, and bower (npm install -g bower). 
 
