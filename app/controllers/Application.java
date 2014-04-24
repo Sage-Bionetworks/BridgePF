@@ -2,6 +2,7 @@ package controllers;
 
 import models.UserSession;
 
+import org.aopalliance.intercept.Interceptor;
 import org.sagebionetworks.StackConfiguration;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.stubs.SynapseBootstrap;
