@@ -3934,39 +3934,11 @@ angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
         controller: 'ConsentController',
         access: {allowAnonymous: true}
     })
-	// As a default, you see the landing page, which is the research information page.
-	// Eventually this can vary by project.
-	.otherwise({
+	.otherwise({ // the landing page, which is the research information page.
 		templateUrl: '/views/research.html',
 		controller: 'ResearchController',
 		access: {allowAnonymous: true}
 	});
-}])
-.service('SessionService', ['$http', '$rootScope', function($http, $rootScope) {
-	var service = {
-		sessionToken: '',
-		username: '',
-		authenticated: false,
-		init: function(data) {
-			$http.defaults.headers.common['Bridge-Session'] = data.sessionToken;
-			this.sessionToken = data.sessionToken;
-			this.username = data.username;
-			this.authenticated = true;
-			$rootScope.$broadcast('session', this);
-		},
-		clear: function() {
-			delete $http.defaults.headers.common['Bridge-Session'];
-			this.sessionToken = '';
-			this.username = '';
-			this.authenticated = false;
-			$rootScope.$broadcast('session', this);
-		}
-	};
-
-	angular.extend(service, window.auth);
-	delete window.auth;
-
-	return service;
 }])
 .service('$humane', ['$window', function($window) {
     var notifier = $window.humane.create({addnCls: "alert alert-success", timeout: 3000});
@@ -4013,9 +3985,67 @@ angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
     };
 });
 
-angular.module('bridge').service('RequestResetPasswordService', ['$modal', 'SessionService', function($modal, SessionService) {
+angular.module('bridge').service('authService', ['$http', '$rootScope', '$location', '$window', '$humane',   
+function($http, $rootScope, $location, $window, $humane) {
+    var service = {
+        sessionToken: '',
+        username: '',
+        authenticated: false,
+        init: function(data) {
+            $http.defaults.headers.common['Bridge-Session'] = data.sessionToken;
+            this.sessionToken = data.sessionToken;
+            this.username = data.username;
+            this.authenticated = true;
+        },
+        clear: function() {
+            delete $http.defaults.headers.common['Bridge-Session'];
+            this.sessionToken = '';
+            this.username = '';
+            this.authenticated = false;
+        },
+        signIn: function(credentials) {
+            if (!credentials.username && !credentials.password) {
+                return;
+            }
+            credentials = angular.extend({}, credentials);
+            
+            $http.post('/api/auth/signIn', credentials).success(function(data, status) {
+                service.init(data.payload);
+            }).error(function(data, status) {
+                if (status === 412) {
+                    $location.path("/consent/" + data.sessionToken);
+                } else if (status === 404 || status === 401) {
+                    $humane.error("Wrong user name or password.");
+                } else {
+                    $humane.error("There has been an error.");
+                }
+            });
+        },
+        signOut: function(errorCallback) {
+            $http.get('/api/auth/signOut').success(function(data, status) {
+                $window.location.replace("/");
+            }).error(function(data) {
+                $humane.error(data.payload);
+            });
+        }
+    };
+
+    angular.extend(service, window.bridgeAuth);
+    delete window.bridgeAuth;
+
+    // Anonymous users can't access user routes.
+    $rootScope.$on('$routeChangeStart', function(e, next, current) {
+        if (!next.access.allowAnonymous && !service.authenticated) {
+            console.warn("Page requires authentication, redirecting");
+            e.preventDefault();
+            $location.path("/");
+        }
+    });
     
-    SessionService.clear();
+    return service;
+    
+}]);
+angular.module('bridge').service('requestResetPasswordService', ['$modal', function($modal) {
     
     var modalInstance;
     
@@ -4064,13 +4094,13 @@ angular.module('bridge').service('RequestResetPasswordService', ['$modal', 'Sess
 }]);
 
 angular.module('bridge').controller('ApplicationController', 
-['$scope', '$http', '$location', '$modal', '$humane', '$window', 'SessionService', 'RequestResetPasswordService', 
-function($scope, $http, $location, $modal, $humane, $window, SessionService, RequestResetPasswordService) {
+['$scope', '$http', '$location', '$modal', '$humane', '$window', 'authService', 'requestResetPasswordService', 
+function($scope, $http, $location, $modal, $humane, $window, authService, requestResetPasswordService) {
 
 	var DEFAULT_PATHS = ["","/","index.html","/index.html"];
 	
 	$scope.credentials = {};
-	$scope.session = SessionService;
+	$scope.session = authService;
 	
 	$scope.tabs = [
         {link: '/#/health', label: "My Health"},
@@ -4087,46 +4117,16 @@ function($scope, $http, $location, $modal, $humane, $window, SessionService, Req
 	};
 
 	$scope.signIn = function() {
-	    if (!$scope.credentials.username && !$scope.credentials.password) {
-	        return;
-	    }
-		$http.post('/api/auth/signIn', angular.extend({}, $scope.credentials))
-			.success(function(data, status) {
-				SessionService.init(data.payload);
-			}).error(function(data, status) {
-				if (status === 412) {
-				    $location.path("/consent/" + data.sessionToken);
-				} else if (status === 404 || status === 401) {
-					$humane.error("Wrong user name or password.");
-				} else {
-				    $humane.error("There has been an error.");
-				}
-			});
+	    authService.signIn($scope.credentials);
 		$scope.credentials.password = '';
 	};
 	$scope.signOut = function() {
-		$http.get('/api/auth/signOut')
-			.success(function(data, status) {
-				// Because of all the user data that could be in the browser, just refresh.
-				$window.location.replace("/");
-			}).error(function(data) {
-			    $humane.error(data.payload);
-			});
+	    authService.signOut();
 	};
     $scope.resetPassword = function() {
-        RequestResetPasswordService.open();
+        requestResetPasswordService.open();
     };
 
-	// Anonymous users can't access user routes.
-    // TODO: Should this just go in a config instead?
-	$scope.$root.$on('$routeChangeStart', function(e, next, current) {
-		if (!next.access.allowAnonymous && !$scope.session.authenticated) {
-			console.warn("Page requires authentication, redirecting");
-			e.preventDefault();
-			$location.path("/");
-		}
-	});
-	
 }]);
 
 angular.module('bridge').controller('ConsentController', ['$scope', '$http', '$location', '$route', '$humane', 
@@ -4163,14 +4163,14 @@ angular.module('bridge').controller('QuestionsController', ['$scope', function($
 angular.module('bridge').controller('ResearchController', ['$scope', function($scope) {
 	
 }]);
-angular.module('bridge').controller('ResetPasswordController', ['$scope', '$rootScope', '$route', '$http', '$humane', '$location', 'SessionService', 
-function($scope, $rootScope, $route, $http, $humane, $location, SessionService) {
+angular.module('bridge').controller('ResetPasswordController', ['$scope', '$rootScope', '$route', '$http', '$humane', '$location', 'authService', 
+function($scope, $rootScope, $route, $http, $humane, $location, authService) {
     
     // The URL from Synapse should be:
     // https://bridge.synapse.org/#/resetPassword/ + sessionToken
     // Change this at: ./services/repository-managers/src/main/java/org/sagebionetworks/repo/manager/MessageManagerImpl.java : 666
     
-    SessionService.clear();
+    authService.clear();
     $scope.sessionToken = $route.current.params.sessionToken;
     
     $scope.hasErrors = function(model) {

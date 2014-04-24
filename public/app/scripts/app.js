@@ -26,39 +26,11 @@ angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
         controller: 'ConsentController',
         access: {allowAnonymous: true}
     })
-	// As a default, you see the landing page, which is the research information page.
-	// Eventually this can vary by project.
-	.otherwise({
+	.otherwise({ // the landing page, which is the research information page.
 		templateUrl: '/views/research.html',
 		controller: 'ResearchController',
 		access: {allowAnonymous: true}
 	});
-}])
-.service('SessionService', ['$http', '$rootScope', function($http, $rootScope) {
-	var service = {
-		sessionToken: '',
-		username: '',
-		authenticated: false,
-		init: function(data) {
-			$http.defaults.headers.common['Bridge-Session'] = data.sessionToken;
-			this.sessionToken = data.sessionToken;
-			this.username = data.username;
-			this.authenticated = true;
-			$rootScope.$broadcast('session', this);
-		},
-		clear: function() {
-			delete $http.defaults.headers.common['Bridge-Session'];
-			this.sessionToken = '';
-			this.username = '';
-			this.authenticated = false;
-			$rootScope.$broadcast('session', this);
-		}
-	};
-
-	angular.extend(service, window.auth);
-	delete window.auth;
-
-	return service;
 }])
 .service('$humane', ['$window', function($window) {
     var notifier = $window.humane.create({addnCls: "alert alert-success", timeout: 3000});
