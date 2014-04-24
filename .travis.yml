@@ -11,4 +11,5 @@ before_script:
   - cd ..
 script:
   - sbt test
+  - cd public
   - grunt test
