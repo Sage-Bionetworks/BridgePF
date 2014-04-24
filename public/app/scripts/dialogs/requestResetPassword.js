@@ -2,7 +2,7 @@ angular.module('bridge').service('requestResetPasswordService', ['$modal', funct
     
     var modalInstance;
     
-    var ModalInstanceController = function($scope, $http) {
+    var ModalInstanceController = ['$scope', '$http', function($scope, $http) {
         $scope.credentials = {email:''};
         $scope.messageType = "info";
         $scope.message = "";
@@ -28,7 +28,7 @@ angular.module('bridge').service('requestResetPasswordService', ['$modal', funct
         $scope.cancel = function () {
             modalInstance.dismiss('cancel');
         };
-    };
+    }];
     
     return {
         open: function() {
