@@ -3686,9 +3686,9 @@ angular.module("template/typeahead/typeahead-popup.html", []).run(["$templateCac
  */
 
 ;!function (name, context, definition) {
-   /*if (typeof module !== 'undefined') module.exports = definition(name, context)
+   if (typeof module !== 'undefined') module.exports = definition(name, context)
    else if (typeof define === 'function' && typeof define.amd  === 'object') define(definition)
-   else*/ context[name] = definition(name, context)
+   else context[name] = definition(name, context)
 }('humane', this, function (name, context) {
    var win = window
    var doc = document
