@@ -77,11 +77,12 @@ module.exports = function(grunt) {
                 dest: '../.git/hooks'
             },
             all: {
-                'pre-commit': 'release'
+                'pre-commit': 'precommit'
             }
         }
     });
     
+    grunt.registerTask('precommit', ['jshint','concat','sass','uglify','jasmine']);
     grunt.registerTask('test', ['release']);
     grunt.registerTask('default', ['jshint','concat','sass','uglify']);
     grunt.registerTask('release', ['jshint','concat','sass','uglify','jasmine']);
