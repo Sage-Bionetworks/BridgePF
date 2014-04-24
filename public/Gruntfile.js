@@ -82,9 +82,9 @@ module.exports = function(grunt) {
         }
     });
     
-    grunt.registerTask('precommit', ['jshint','concat','sass','uglify','jasmine']);
+    grunt.registerTask('precommit', ['jshint','clean','concat','sass','uglify','jasmine']);
     grunt.registerTask('test', ['release']);
-    grunt.registerTask('default', ['jshint','concat','sass','uglify']);
-    grunt.registerTask('release', ['jshint','concat','sass','uglify','jasmine']);
+    grunt.registerTask('default', ['jshint','clean','concat','sass','uglify']);
+    grunt.registerTask('release', ['jshint','clean','concat','sass','uglify','jasmine']);
     
 };
