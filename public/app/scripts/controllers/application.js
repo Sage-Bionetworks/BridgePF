@@ -31,5 +31,4 @@ function($scope, $http, $location, $modal, $humane, $window, authService, reques
     $scope.resetPassword = function() {
         requestResetPasswordService.open();
     };
-
 }]);
