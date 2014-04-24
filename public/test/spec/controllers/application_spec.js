@@ -1,6 +1,6 @@
 describe("ApplicationController", function() {
 	
-	var ApplicationController, SessionService, $rootScope;
+	var ApplicationController, $rootScope;
 
 	beforeEach(function() {
 		module('bridge');
@@ -13,7 +13,6 @@ describe("ApplicationController", function() {
 	
 	beforeEach(inject(function($injector) {
         $rootScope = $injector.get('$rootScope');
-        SessionService = $injector.get("SessionService");
         var $controller = $injector.get('$controller');
         createController = function() {
         	return $controller('ApplicationController', {'$scope' : $rootScope });
