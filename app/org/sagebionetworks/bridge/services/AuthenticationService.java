@@ -8,7 +8,7 @@ public interface AuthenticationService {
 	
 	public UserSession getSession(String sessionToken);
 	
-	public void signOut(String sessionToken) throws Exception;
+	public void signOut(String sessionToken);
 	
 	public void requestResetPassword(String email) throws Exception;
 	
