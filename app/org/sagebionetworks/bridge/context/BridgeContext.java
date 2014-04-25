@@ -15,7 +15,7 @@ public class BridgeContext {
 	private final Map<String, String> nameValueMap = new HashMap<String, String>();
 	 
 	public BridgeContext() {
-		nameValueMap.put(ENVIRONMENT, "development");
+		nameValueMap.put(ENVIRONMENT, "stub");
 		readEnv();
         readSystemProperties();
 	}
