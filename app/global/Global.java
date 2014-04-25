@@ -1,23 +1,9 @@
 package global;
 
-import models.ExceptionMessage;
-import models.JsonPayload;
-import models.StatusMessage;
-
-import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
-import org.sagebionetworks.client.exceptions.SynapseServerException;
-import org.sagebionetworks.repo.model.TermsOfUseException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import com.google.common.base.Throwables;
-
 import play.*;
-import play.mvc.*;
-import play.mvc.Http.*;
-import play.libs.Json;
-import play.libs.F.*;
 
 public class Global extends GlobalSettings {
 
@@ -40,30 +26,6 @@ public class Global extends GlobalSettings {
         }
         */
     }
-	
-	@Override
-	public Promise<SimpleResult> onError(RequestHeader request, Throwable throwable) {
-		throwable = Throwables.getRootCause(throwable);
-
-		int status = 500;
-		if (throwable instanceof SynapseServerException) {
-			status = ((SynapseServerException)throwable).getStatusCode();
-		}
-		String message = throwable.getMessage();
-		if (StringUtils.isBlank(message)) {
-			message = "There has been a server error. We cannot fulfill your request at this time.";
-		}
-		
-		ExceptionMessage exceptionMessage = createMessagePayload(throwable, status, message);
-		return Promise.<SimpleResult>pure(Results.status(status, Json.toJson(exceptionMessage)));
-	}
-
-	private ExceptionMessage createMessagePayload(Throwable throwable, int status, String message) {
-		if (status == 412) {
-			return new ExceptionMessage(throwable, message, ((ConsentRequiredException)throwable).getSessionToken());
-		}
-		return new ExceptionMessage(throwable, message);
-	}
 	
 	/* These don't work. Is it possible to redirect like this in Play?  
 	@Override
