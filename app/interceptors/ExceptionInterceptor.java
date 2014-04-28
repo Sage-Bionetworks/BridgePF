@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.client.exceptions.SynapseServerException;
 
+import play.Logger;
 import play.libs.Json;
 import play.mvc.Results;
 
@@ -15,12 +16,19 @@ import com.google.common.base.Throwables;
 
 public class ExceptionInterceptor implements MethodInterceptor {
 
+	
+	
 	@Override
 	public Object invoke(MethodInvocation method) throws Throwable {
 		try {
+			
 			return method.proceed();
+			
 		} catch(Throwable throwable) {
+			
 			throwable = Throwables.getRootCause(throwable);
+			
+			Logger.error(throwable.getMessage(), throwable);
 
 			int status = 500;
 			if (throwable instanceof SynapseServerException) {

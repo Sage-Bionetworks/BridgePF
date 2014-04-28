@@ -1,5 +1,7 @@
 package global;
 
+import org.sagebionetworks.bridge.context.BridgeContext;
+
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -11,34 +13,23 @@ public class Global extends GlobalSettings {
 	
 	@Override
     public void onStart(Application application) {
-        applicationContext = new ClassPathXmlApplicationContext("application-context.xml");
-
-        // If the context has been wired to use a stub, then we populate the stub with some
-        // user accounts, etc. so we can manipulate the application. This needs to be 
-        // configurable in a manner that probably involves:
-        // http://stackoverflow.com/questions/17193795/how-to-add-environment-profile-config-to-sbt/20573422#20573422
-        /*
-        try {
-            StubOnStartupHandler handler = new StubOnStartupHandler();
-            handler.stub(applicationContext);
-        } catch(Throwable throwable) {
-        	throw new RuntimeException(throwable);
-        }
-        */
+		BridgeContext context = new BridgeContext();
+		String env = context.getEnvironment();
+		Logger.info("Environment: " + env);
+		
+        applicationContext = new ClassPathXmlApplicationContext(env + "-application-context.xml");
     }
 	
-	/* These don't work. Is it possible to redirect like this in Play?  
+	/* Don't work because the /* route handles all misses
 	@Override
 	public Promise<SimpleResult> onHandlerNotFound(RequestHeader header) {
-		//return Promise.<SimpleResult>pure(null);
 		return Promise.<SimpleResult>pure(redirect("/404.html"));
 	}
 	
 	@Override
 	public Promise<SimpleResult> onError(RequestHeader request, Throwable throwable) {
 		return Promise.<SimpleResult>pure(redirect("/500.html"));
-	}
-	*/
+	} */
 	
 	@Override
     public <T> T getControllerInstance(Class<T> clazz) {

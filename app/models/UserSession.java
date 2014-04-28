@@ -10,6 +10,7 @@ public class UserSession {
 	private boolean authenticated;
 	private String sessionToken;
 	private String username;
+	private String environment;
 	
 	public UserSession() {
 		this.sessionToken = "";
@@ -33,5 +34,11 @@ public class UserSession {
 	}
 	public void setAuthenticated(boolean authenticated) {
 		this.authenticated = authenticated;
+	}
+	public String getEnvironment() {
+		return environment;
+	}
+	public void setEnvironment(String environment) {
+		this.environment = environment;
 	}
 }
