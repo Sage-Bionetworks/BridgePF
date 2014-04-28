@@ -5,15 +5,17 @@ import models.UserSession;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.client.SynapseClient;
-import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.repo.model.DomainType;
-import org.sagebionetworks.repo.model.TermsOfUseException;
 import org.sagebionetworks.repo.model.UserSessionData;
 import org.sagebionetworks.repo.model.auth.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 
 public class AuthenticationServiceImpl implements AuthenticationService, BeanFactoryAware {
+	
+	final static Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 	
 	private BeanFactory beanFactory;
 	
@@ -30,11 +32,11 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	
 	@Override
 	public UserSession signIn(String usernameOrEmail, String password) throws Exception {
-		Session session = getSynapseClient(null).login(usernameOrEmail, password);
-		if (!session.getAcceptsTermsOfUse()) {
-			throw new ConsentRequiredException(session.getSessionToken());
-		}
-		return getSession(session.getSessionToken());
+        Session session = getSynapseClient(null).login(usernameOrEmail, password);
+        if (!session.getAcceptsTermsOfUse()) {
+            throw new ConsentRequiredException(session.getSessionToken());
+        }
+        return getSession(session.getSessionToken());
 	}
 	
 	@Override
@@ -57,8 +59,14 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	}
 
 	@Override
-	public void signOut(String sessionToken) throws Exception {
-		getSynapseClient(sessionToken).logout();
+	public void signOut(String sessionToken) {
+		// Synapse requires a session token, but it's not an error if it's missing
+		// (e.g. user has deleted the cookie).
+		try {
+			getSynapseClient(sessionToken).logout();	
+		} catch(Throwable e) {
+			logger.warn(e.getMessage(), e);
+		}
 	}
 
 	@Override

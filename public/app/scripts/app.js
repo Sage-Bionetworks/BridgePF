@@ -40,39 +40,26 @@ angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
         error: angular.bind(err, err.log)
     };
 }])
-.directive('validateEquals', function() {
+.directive('bgCompare', function() {
+    function compareFunc(controller, field1, field2) {
+        return function(e) {
+            if (field1.$dirty && field2.$dirty) {
+                var value1 = field1.$viewValue;
+                var value2 = field2.$viewValue;
+                controller.$setValidity('equal', value1 === value2);
+            }
+        };
+    }
     return {
         restrict: 'A',
-        require: 'ngModel',
+        require: 'form',
         link: function(scope, element, attrs, controller) {
-            function getComparisonValue(expr) {
-                var comparisonModel = scope.$eval(expr);
-                return (comparisonModel && comparisonModel.$viewValue) ? comparisonModel.$viewValue : undefined;
-            }
-            // http://stackoverflow.com/questions/20982751/custom-form-validation-directive-to-compare-two-fields
-            var validate = function(viewValue) {
-                var comparisonModel = getComparisonValue(attrs.validateEquals);
+            var fieldNames = attrs.bgCompare.split(",").map(function(s) { return s.trim(); });
 
-                var valid = true;
-                if (!viewValue || !comparisonModel) {
-                    controller.$setValidity('equal', true);
-                } else {
-                    valid = (viewValue === comparisonModel);
-                    controller.$setValidity('equal', valid);
-                }
-                return (valid) ? viewValue : undefined;
-            };
-            
-            controller.$parsers.unshift(validate);
-            controller.$formatters.push(validate);
-            // This really doesn't seem to do anything.
-            /*
-            scope.$watch(attrs.validateEquals, function(comparisonModel) {
-                if (controller.$dirty) {
-                    controller.$setViewValue(controller.$viewValue);    
-                }
-            });
-            */
+            var field1 = controller[fieldNames[0]];
+            var field2 = controller[fieldNames[1]];
+            scope.$watch(fieldNames[0], compareFunc(controller, field1, field2));
+            scope.$watch(fieldNames[1], compareFunc(controller, field1, field2));
         }
     };
 });
