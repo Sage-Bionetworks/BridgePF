@@ -1,4 +1,6 @@
 package controllers;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -8,13 +10,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import play.libs.WS;
 import play.libs.WS.Response;
-import play.libs.WS.WSRequestHolder;
-import play.mvc.Result;
-import play.test.FakeRequest;
 import test.TestConstants;
 import static org.fest.assertions.Assertions.*;
 import static org.junit.Assert.fail;
-import static play.mvc.Http.HeaderNames.LOCATION;
 import static play.mvc.Http.Status.*;
 import static play.test.Helpers.*;
 
@@ -32,7 +30,7 @@ public class AuthenticationTest {
     	running(testServer(3333), new Runnable() {
 			public void run() {
 				ObjectNode node = JsonNodeFactory.instance.objectNode();
-				Response response = WS.url(TestConstants.TEST_URL+"/api/auth/signIn").post(node).get();
+				Response response = WS.url(TestConstants.TEST_URL+"/api/auth/signIn").post(node).get(1L, TimeUnit.SECONDS);
 				assertThat(response.getStatus()).isEqualTo(INTERNAL_SERVER_ERROR);
 			}
 		});
@@ -42,7 +40,7 @@ public class AuthenticationTest {
 	public void signInGarbageCredentialsFailsWith500() {
     	running(testServer(3333), new Runnable() {
 			public void run() {
-				Response response = WS.url(TestConstants.TEST_URL+"/api/auth/signIn").post("username=bob&password=foo").get();
+				Response response = WS.url(TestConstants.TEST_URL+"/api/auth/signIn").post("username=bob&password=foo").get(1L, TimeUnit.SECONDS);
 				assertThat(response.getStatus()).isEqualTo(INTERNAL_SERVER_ERROR);
 			}
 		});
@@ -51,7 +49,7 @@ public class AuthenticationTest {
 	public void signInBadCredentialsFailsWith401() {
     	running(testServer(3333), new Runnable() {
 			public void run() {
-				Response response = WS.url(TestConstants.TEST_URL+"/api/auth/signIn").setContentType("application/json").post("{\"username\":\"bob\",\"password\":\"foo\"}").get();
+				Response response = WS.url(TestConstants.TEST_URL+"/api/auth/signIn").setContentType("application/json").post("{\"username\":\"bob\",\"password\":\"foo\"}").get(1L, TimeUnit.SECONDS);
 				assertThat(response.getStatus()).isEqualTo(NOT_FOUND);
 			}
 		});
@@ -66,7 +64,7 @@ public class AuthenticationTest {
 				ObjectNode node = JsonNodeFactory.instance.objectNode();
 				node.put("username", "validname");
 				node.put("password", "password");
-				Response response = WS.url(TestConstants.TEST_URL+"/api/auth/signIn").post(node).get();
+				Response response = WS.url(TestConstants.TEST_URL+"/api/auth/signIn").post(node).get(1L, TimeUnit.SECONDS);
 				
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode responseNode = mapper.readTree(response.getBody());

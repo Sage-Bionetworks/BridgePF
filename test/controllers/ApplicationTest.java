@@ -1,4 +1,6 @@
 package controllers;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.*;
 
 import play.libs.WS;
@@ -27,7 +29,7 @@ public class ApplicationTest {
     	running(testServer(3333), new Runnable() {
 			public void run() {
 				WSRequestHolder holder = WS.url(TestConstants.TEST_URL+"/index.html").setFollowRedirects(false);
-				Response response = holder.get().get();
+				Response response = holder.get().get(1L, TimeUnit.SECONDS);
 				assertThat(response.getStatus()).isEqualTo(SEE_OTHER);
 				assertThat(response.getHeader(LOCATION)).isEqualTo("/");
 			}
@@ -42,7 +44,7 @@ public class ApplicationTest {
     	running(testServer(3333), new Runnable() {
 			public void run() {
 				WSRequestHolder holder = WS.url(TestConstants.TEST_URL);
-				Response response = holder.get().get();
+				Response response = holder.get().get(1L, TimeUnit.SECONDS);
 				assertThat(response.getStatus()).isEqualTo(OK);
 				assertThat(response.getBody()).contains("Bridge: Patients &amp; Researchers in Partnership - Sage Bionetworks");
 			}
