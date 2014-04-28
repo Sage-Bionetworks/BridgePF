@@ -32,11 +32,11 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	
 	@Override
 	public UserSession signIn(String usernameOrEmail, String password) throws Exception {
-		Session session = getSynapseClient(null).login(usernameOrEmail, password);
-		if (!session.getAcceptsTermsOfUse()) {
-			throw new ConsentRequiredException(session.getSessionToken());
-		}
-		return getSession(session.getSessionToken());
+        Session session = getSynapseClient(null).login(usernameOrEmail, password);
+        if (!session.getAcceptsTermsOfUse()) {
+            throw new ConsentRequiredException(session.getSessionToken());
+        }
+        return getSession(session.getSessionToken());
 	}
 	
 	@Override
@@ -65,7 +65,7 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 		try {
 			getSynapseClient(sessionToken).logout();	
 		} catch(Throwable e) {
-			logger.error(e.getMessage(), e);
+			logger.warn(e.getMessage(), e);
 		}
 	}
 
