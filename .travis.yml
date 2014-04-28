@@ -16,5 +16,6 @@ script:
 deploy:
   provider: heroku
   api_key: "mgc+E/IvRsGjPfLNDJjXwTmuG+Rbptin3vU7M8ebYzd0QuMF+Jakj72GhRTiFVxcaNB80FJ6Su4jft4ytr33czM+26VOBOHruFccxs4iLELGUvv5UYrzeeB3A3DxKKD/CfxFipZYcxrPXpN6ZG0FodL2xmuq0vf8hTUGge7lK6k="
+  skip_cleanup: true
   app:
     develop: bridge-development
