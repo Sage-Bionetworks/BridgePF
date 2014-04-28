@@ -44,7 +44,7 @@ public class ApplicationTest {
     	running(testServer(3333), new Runnable() {
 			public void run() {
 				WSRequestHolder holder = WS.url(TestConstants.TEST_URL);
-				Response response = holder.get().get(1L, TimeUnit.SECONDS);
+				Response response = holder.get().get(10L, TimeUnit.SECONDS);
 				assertThat(response.getStatus()).isEqualTo(OK);
 				assertThat(response.getBody()).contains("Bridge: Patients &amp; Researchers in Partnership - Sage Bionetworks");
 			}
