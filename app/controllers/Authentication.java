@@ -7,6 +7,7 @@ import models.UserSession;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.context.BridgeContext;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 
 import play.mvc.*;
@@ -21,12 +22,7 @@ public class Authentication extends BaseController {
 
 	public Result signIn() throws Exception {
 		SignIn signIn = SignIn.fromJson(request().body().asJson());
-		if (signIn.isBlank()) {
-			return jsonError("Invalid credentials, supply: {username: '<username>', password: '<password>'}");
-		}
-		
 		UserSession session = authenticationService.signIn(signIn.getUsername(), signIn.getPassword());
-		session.setAuthenticated(true);
 		response().setCookie(BridgeConstants.SESSION_TOKEN, session.getSessionToken());
 		return jsonResult(new JsonPayload<UserSession>(session));
 	}
