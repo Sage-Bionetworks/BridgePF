@@ -18,6 +18,6 @@ deploy:
   provider: heroku
   api_key:
     secure: RwSpEp49ALY8s4x6/HonZXrm0URSl8rgyLsZ8PhRQHN/P/pgPnUwsEWh6yxcHKR4dyq1ib6doKNzkAHfafoUvgIKgnTruJ9KmR3yqvXx8wZpd9Kos57XXKm0yfhfc8XVBgeBst79zTFDAO7WDs0Lp0r+xRCHo0nTqulD/xRXxJU=
-  buildpack: heroku/play
+  buildpack: heroku/scala
   app:
     develop: bridge-development
