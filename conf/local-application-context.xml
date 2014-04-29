@@ -14,7 +14,7 @@
         the result.
      -->
     
-    <import resource="classpath:application-context.xml"/>
+    <import resource="application-context.xml"/>
 
     <bean id="synapseClient" class="org.sagebionetworks.client.SynapseClientImpl" scope="prototype">
         <constructor-arg index="0" value= "BRIDGE"/>
