@@ -13,6 +13,7 @@ script:
 - sbt test
 - cd public
 - grunt test
+- play dist
 deploy:
   provider: heroku
   api_key:
