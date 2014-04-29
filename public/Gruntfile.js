@@ -71,14 +71,6 @@ module.exports = function(grunt) {
                 tasks: 'default',
                 spawn: false
             }
-        },
-        githooks: {
-            options: {
-                dest: '../.git/hooks'
-            },
-            all: {
-                'pre-commit': 'precommit'
-            }
         }
     });
     
