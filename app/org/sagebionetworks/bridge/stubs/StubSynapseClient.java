@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.stubs;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +34,7 @@ public abstract class StubSynapseClient implements SynapseClient, SynapseAdminCl
 	String sessionToken; // when this isn't separate from UserSessionData.getProfile().getSession() there are errors.
 	Set<String> agreedTOUs = Sets.newHashSet();
 	Map<String,UserSessionData> usersById = Maps.newHashMap();
+    Map<String,String> usersByChangedPasswords = new HashMap<String,String>();
 	
 	Map<String,String> emailByUserId = Maps.newHashMap();
 
@@ -103,7 +105,12 @@ public abstract class StubSynapseClient implements SynapseClient, SynapseAdminCl
 	public Session login(String userName, String password) throws SynapseException {
 		currentUserData = null;
 		UserSessionData data = usersById.get(userName);
-		if (data == null || !"password".equals(password)) {
+		
+		String changedPassword = usersByChangedPasswords.get(userName);
+		if (changedPassword == null) {
+		    changedPassword = "password"; // the defaults
+		}
+		if (data == null || !changedPassword.equals(password)) {
 			throw new SynapseNotFoundException();
 		}
 		currentUserData = data;
@@ -129,7 +136,7 @@ public abstract class StubSynapseClient implements SynapseClient, SynapseAdminCl
 		}
 		return currentUserData;
 	}
-
+	
 	@Override
 	public String getUserName() {
 		if (currentUserData != null && currentUserData.getProfile() != null) {
@@ -186,10 +193,13 @@ public abstract class StubSynapseClient implements SynapseClient, SynapseAdminCl
 		usersById.put(user.getUserName(), data);
 		usersById.put(USER_ID, data);		
 	}
-
+	
 	@Override
 	public void changePassword(String sessionToken, String newPassword) throws SynapseException {
-		// noop
+	    if (sessionToken != "asdf") {
+	        throw new SynapseClientException("Invalid session token ("+sessionToken+")");
+	    }
+	    usersByChangedPasswords.put(currentUserData.getProfile().getUserName(), newPassword);
 	}
 
 	@Override
@@ -198,10 +208,6 @@ public abstract class StubSynapseClient implements SynapseClient, SynapseAdminCl
 			throw new IllegalArgumentException("Don't call this method with any other domain than Bridge");
 		}
 		if (acceptTerms) {
-			System.out.println("Adding TOU for user: " + sessionToken);
-			for (String key : usersById.keySet()) {
-				System.out.println(key);	
-			}
 			// session tokens are set to the user's ID, so this will work.
 			agreedTOUs.add(usersById.get(sessionToken).getProfile().getOwnerId());
 		}		

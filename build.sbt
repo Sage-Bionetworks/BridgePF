@@ -11,6 +11,7 @@ libraryDependencies ++= Seq(
   javaEbean,
   cache,
   "org.springframework" % "spring-context" % "4.0.3.RELEASE",
+  "org.springframework" % "spring-test" % "4.0.3.RELEASE",
   "org.sagebionetworks" % "synapseJavaClient" % "2014-04-23-1152-e52b875",
   "org.sagebionetworks" % "lib-stackConfiguration" % "2014-04-23-1152-e52b875",
   "cglib" % "cglib" % "2.2.2",

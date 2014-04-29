@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import models.UserSession;
 
+import org.apache.commons.lang.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.context.BridgeContext;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.repo.model.DomainType;
@@ -32,6 +34,9 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	
 	@Override
 	public UserSession signIn(String usernameOrEmail, String password) throws Exception {
+	    if (StringUtils.isBlank(usernameOrEmail) || StringUtils.isBlank(password)) {
+	        throw new IllegalArgumentException("Invalid credentials, supply username/email and password");
+	    }
         Session session = getSynapseClient(null).login(usernameOrEmail, password);
         if (!session.getAcceptsTermsOfUse()) {
             throw new ConsentRequiredException(session.getSessionToken());
@@ -52,6 +57,7 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 			userSession.setSessionToken(data.getSession().getSessionToken());
 			userSession.setUsername(username);
 			userSession.setAuthenticated(true);
+	        userSession.setEnvironment(new BridgeContext().getEnvironment());
 			return userSession;
 		} catch(Throwable throwable) {
 			return new UserSession();
@@ -71,6 +77,9 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 
 	@Override
 	public void requestResetPassword(String email) throws Exception {
+	    if (StringUtils.isBlank(email)) {
+	        throw new IllegalArgumentException("Email is required");
+	    }
 		getSynapseClient(null).sendPasswordResetEmail(email);
 	}
 	
