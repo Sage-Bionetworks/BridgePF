@@ -1,5 +1,15 @@
 language: scala
 scala:
   - 2.10.3
-script: sbt test
-
+before_script:
+  - npm install bower
+  - npm install grunt-cli
+  - gem install sass
+  - cd public
+  - npm install
+  - bower install
+  - cd ..
+script:
+  - sbt test
+  - cd public
+  - grunt test
