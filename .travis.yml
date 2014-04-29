@@ -10,10 +10,10 @@ before_script:
 - bower install
 - cd ..
 script:
+- sbt test
 - cd public
 - grunt test
 - cd ..
-- sbt test
 deploy:
   provider: heroku
   api_key:
