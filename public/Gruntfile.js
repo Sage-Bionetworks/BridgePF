@@ -10,7 +10,8 @@ module.exports = function(grunt) {
         pkg: grunt.file.readJSON('package.json'),
         
         clean: {
-            all: ['<%= output %>']
+            build: ['<%= output %>'],
+            release: ['node_modules', 'app/bower_components']
         },
         jshint: {
             options: { node: true, globals: { "angular": false } },
@@ -74,7 +75,7 @@ module.exports = function(grunt) {
         }
     });
 
-    grunt.registerTask('test', ['release']);
-    grunt.registerTask('default', ['jshint','clean','concat','sass','uglify']);
-    grunt.registerTask('release', ['jshint','clean','concat','sass','uglify','jasmine']);
+    grunt.registerTask('test', ['build', 'jasmine']);
+    grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify']);
+    grunt.registerTask('release', ['build', 'clean:release']);
 };
