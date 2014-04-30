@@ -1,18 +1,26 @@
 language: scala
 scala:
 - 2.10.3
-env:
-# Parallelize JavaScript and sbt
-- TARGET=js JS_RELEASED=false
-- TARGET=sbt
-script: ./travis.sh
+before_script:
+- npm install bower
+- npm install grunt-cli
+- gem install sass
+- cd public
+- npm install
+- bower install
+- cd ..
+script:
+- cd public
+- grunt test
+- cd ..
+- sbt test
+after_success:
+- cd public
+- grunt release
+- cd ..
 deploy:
   provider: heroku
   api_key:
     secure: RwSpEp49ALY8s4x6/HonZXrm0URSl8rgyLsZ8PhRQHN/P/pgPnUwsEWh6yxcHKR4dyq1ib6doKNzkAHfafoUvgIKgnTruJ9KmR3yqvXx8wZpd9Kos57XXKm0yfhfc8XVBgeBst79zTFDAO7WDs0Lp0r+xRCHo0nTqulD/xRXxJU=
-  skip_cleanup: true
   app:
     develop: bridge-development
-  on:
-    condition: "$TARGET = sbt"
-#    condition: "$JS_RELEASED = true"
