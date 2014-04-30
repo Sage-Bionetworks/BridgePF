@@ -1,8 +1,7 @@
 #!/bin/bash
 set -ev
-if [ "${TARGET}" = "JavaScript" ]
+if [ "${TARGET}" = "js" ]
     then
-        export JS_RELEASED=false
         npm install bower
         npm install grunt-cli
         gem install sass
