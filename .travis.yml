@@ -14,3 +14,4 @@ deploy:
     develop: bridge-development
   on:
     condition: "$TARGET = sbt"
+    condition: "$JS_RELEASED"
