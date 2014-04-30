@@ -1,6 +1,6 @@
 #!/bin/bash
 set -ev
-if [ "${TARGET}" -eq "JavaScript" ]
+if [ "${TARGET}" = "JavaScript" ]
     then
         export JS_RELEASED=false
         npm install bower
