@@ -1,23 +1,16 @@
 language: scala
 scala:
 - 2.10.3
-before_script:
-- npm install bower
-- npm install grunt-cli
-- gem install sass
-- cd public
-- npm install
-- bower install
-- cd ..
-script:
-- cd public
-- grunt test
-- grunt release
-- cd ..
-- sbt test
+env:
+# Parallelize JavaScript and sbt
+- TARGET=JavaScript
+- TARGET=sbt
+script: ./travis.sh
 deploy:
   provider: heroku
   api_key:
     secure: RwSpEp49ALY8s4x6/HonZXrm0URSl8rgyLsZ8PhRQHN/P/pgPnUwsEWh6yxcHKR4dyq1ib6doKNzkAHfafoUvgIKgnTruJ9KmR3yqvXx8wZpd9Kos57XXKm0yfhfc8XVBgeBst79zTFDAO7WDs0Lp0r+xRCHo0nTqulD/xRXxJU=
   app:
     develop: bridge-development
+  on:
+    condition: "$TARGET = sbt"
