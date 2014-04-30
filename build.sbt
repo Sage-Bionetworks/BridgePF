@@ -2,8 +2,6 @@ name := "BridgePF"
 
 version := "0.1-SNAPSHOT"
 
-resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
-
 resolvers += "Sage Local Repository" at "http://sagebionetworks.artifactoryonline.com/sagebionetworks/libs-releases-local"
 
 libraryDependencies ++= Seq(
