@@ -3,7 +3,7 @@ scala:
 - 2.10.3
 env:
 # Parallelize JavaScript and sbt
-- TARGET=JavaScript
+- TARGET=js JS_RELEASED=false
 - TARGET=sbt
 script: ./travis.sh
 deploy:
@@ -14,4 +14,4 @@ deploy:
     develop: bridge-development
   on:
     condition: "$TARGET = sbt"
-    condition: "$JS_RELEASED = true"
+#    condition: "$JS_RELEASED = true"
