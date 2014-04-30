@@ -18,3 +18,11 @@ libraryDependencies ++= Seq(
 )
 
 play.Project.playJavaSettings
+
+val gruntRelease = taskKey[Unit]("Run the 'grunt release' task to build JavaScript/CSS.")
+
+gruntRelease := {
+  "cd public && npm install && bower install && grunt release && cd .." !
+}
+
+(compile in Compile) <<= (compile in Compile) dependsOn gruntRelease
