@@ -8,7 +8,7 @@
         http://www.springframework.org/schema/context 
         http://www.springframework.org/schema/context/spring-context-3.0.xsd">
         
-    <import resource="classpath:application-context.xml"/>
+    <import resource="application-context.xml"/>
 
     <bean id="synapseClient" class="org.sagebionetworks.bridge.stubs.StubSynapseClient" 
         factory-method="createInstance" scope="singleton">

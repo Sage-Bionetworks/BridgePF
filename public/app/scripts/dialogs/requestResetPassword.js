@@ -2,28 +2,26 @@ angular.module('bridge').service('requestResetPasswordService', ['$modal', funct
     
     var modalInstance;
     
-    var ModalInstanceController = ['$scope', '$http', function($scope, $http) {
+    var ModalInstanceController = ['$scope', '$http', '$humane', function($scope, $http, $humane) {
         $scope.credentials = {email:''};
         $scope.messageType = "info";
         $scope.message = "";
         $scope.state = 'pre';
 
         $scope.send = function () {
-            if ($scope.credentials.email === "") {
-                $scope.messageType = "danger";
-                $scope.message = "Please enter an email address.";
-                return;
-            }
             $http.post('/api/auth/requestResetPassword', {
                 'email': $scope.credentials.email
             }).success(function(data) {
-                $scope.messageType = "success";
-                $scope.message = "Please look for further instructions in your email inbox.";
+                modalInstance.dismiss('cancel');
+                $humane.confirm("Please look for further instructions in your email inbox.");
                 $scope.state = 'post';
             }).error(function(data) {
                 $scope.messageType = "danger";
                 $scope.message = data.payload;
             });
+        };
+        $scope.canSubmit = function() {
+            return $scope.credentials.email;
         };
         $scope.cancel = function () {
             modalInstance.dismiss('cancel');

@@ -13,8 +13,6 @@ public class UserSession {
 	private String environment;
 	
 	public UserSession() {
-		this.sessionToken = "";
-		this.username = "";
 	}
 	
 	public String getSessionToken() {
