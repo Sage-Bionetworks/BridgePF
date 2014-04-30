@@ -18,9 +18,9 @@
                 <div class="bridge-header" ng-cloak>
                     <div ng-hide="session.authenticated">
                         <form name="signInForm" class="form-inline">
-                            <input class="form-control input-sm" placeholder="Username" type="text" name="username" ng-model="credentials.username"/>
-                            <input class="form-control input-sm" placeholder="Password" type="password" name="password" ng-model="credentials.password"/>
-                            <button class="btn btn-default btn-sm" ng-hide="session.sessionToken" ng-click="signIn()">Sign In</button>
+                            <input class="form-control input-sm" required placeholder="Username" type="text" name="username" ng-model="credentials.username"/>
+                            <input class="form-control input-sm" required placeholder="Password" type="password" name="password" ng-model="credentials.password"/>
+                            <button class="btn btn-default btn-sm" ng-hide="session.sessionToken" ng-disabled="!canSubmit()" ng-click="signIn()">Sign In</button>
                             <a class="btn" ng-click="resetPassword()">Forgot Password</a>
                         </form>
                     </div>
