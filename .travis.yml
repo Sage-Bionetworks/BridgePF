@@ -5,7 +5,6 @@ before_install:
 - npm install bower
 - npm install grunt-cli
 - gem install sass
-before_script:
 - cd public
 - npm install
 - bower install
