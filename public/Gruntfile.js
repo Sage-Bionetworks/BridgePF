@@ -77,5 +77,5 @@ module.exports = function(grunt) {
 
     grunt.registerTask('test', ['build', 'jasmine']);
     grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify']);
-    grunt.registerTask('release', ['build', 'clean:release']);
+    grunt.registerTask('release', ['test', 'clean:release']);
 };

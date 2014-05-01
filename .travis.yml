@@ -9,7 +9,6 @@ script:
   - cd public
   - npm install
   - bower install
-  - grunt test
   - grunt release
   - cd ..
   - sbt test
