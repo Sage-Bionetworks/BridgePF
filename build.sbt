@@ -25,4 +25,4 @@ gruntRelease := {
   "grunt -b public --gruntfile public/Gruntfile.js release" !
 }
 
-(compile in Compile) <<= (compile in Compile) dependsOn gruntRelease
+(Keys.`package` in Compile) <<= (Keys.`package` in Compile) dependsOn gruntRelease

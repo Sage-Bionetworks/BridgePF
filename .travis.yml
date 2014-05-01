@@ -1,10 +1,11 @@
 language: scala
 scala:
 - 2.10.3
-before_script:
+before_install:
 - npm install bower
 - npm install grunt-cli
 - gem install sass
+before_script:
 - cd public
 - npm install
 - bower install
