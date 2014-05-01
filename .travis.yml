@@ -5,12 +5,10 @@ before_install:
   - npm install -g bower
   - npm install -g grunt-cli
   - gem install sass
+script:
   - cd public
   - npm install
   - bower install
-  - cd ..
-script:
-  - cd public
   - grunt test
   - grunt release
   - cd ..
