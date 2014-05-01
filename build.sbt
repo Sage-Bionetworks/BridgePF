@@ -22,7 +22,7 @@ play.Project.playJavaSettings
 lazy val gruntRelease = taskKey[Unit]("Run the 'grunt release' task to build JavaScript/CSS.")
 
 gruntRelease := {
-  "grunt -b public --gruntfile public/Gruntfile.js release" !
+  "/home/travis/.nvm/v0.10.26/bin/grunt -b public --gruntfile public/Gruntfile.js release" !
 }
 
 (packageBin in Compile) <<= (packageBin in Compile) dependsOn gruntRelease
