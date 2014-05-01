@@ -4,6 +4,7 @@ scala:
 before_install:
   - npm install bower
   - npm install grunt-cli
+  - pwd
   - which grunt
   - gem install sass
   - cd public
