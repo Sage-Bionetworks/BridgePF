@@ -4,8 +4,6 @@ scala:
 before_install:
   - npm install -g bower
   - npm install -g grunt-cli
-  - pwd
-  - which grunt
   - gem install sass
   - cd public
   - npm install
@@ -22,12 +20,3 @@ deploy:
     secure: RwSpEp49ALY8s4x6/HonZXrm0URSl8rgyLsZ8PhRQHN/P/pgPnUwsEWh6yxcHKR4dyq1ib6doKNzkAHfafoUvgIKgnTruJ9KmR3yqvXx8wZpd9Kos57XXKm0yfhfc8XVBgeBst79zTFDAO7WDs0Lp0r+xRCHo0nTqulD/xRXxJU=
   app:
     develop: bridge-development
-  run:
-    - npm install bower
-    - npm install grunt-cli
-    - gem install sass
-    - cd public
-    - npm install
-    - bower install
-    - grunt release
-    - cd ..
