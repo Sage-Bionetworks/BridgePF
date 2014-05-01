@@ -1,27 +1,31 @@
 language: scala
 scala:
-- 2.10.3
+  - 2.10.4
 before_install:
-- npm install bower
-- npm install grunt-cli
-- gem install sass
-- cd public
-- npm install
-- bower install
-- cd ..
+  - npm install bower
+  - npm install grunt-cli
+  - gem install sass
+  - cd public
+  - npm install
+  - bower install
+  - cd ..
 script:
-- cd public
-- grunt test
-- cd ..
-- sbt test
-before_deploy:
-- cd public
-- grunt release
-- cd ..
+  - cd public
+  - grunt test
+  - cd ..
+  - sbt test
 deploy:
   provider: heroku
   api_key:
     secure: RwSpEp49ALY8s4x6/HonZXrm0URSl8rgyLsZ8PhRQHN/P/pgPnUwsEWh6yxcHKR4dyq1ib6doKNzkAHfafoUvgIKgnTruJ9KmR3yqvXx8wZpd9Kos57XXKm0yfhfc8XVBgeBst79zTFDAO7WDs0Lp0r+xRCHo0nTqulD/xRXxJU=
-  skip_cleanup:true
   app:
     develop: bridge-development
+  run:
+    - npm install bower
+    - npm install grunt-cli
+    - gem install sass
+    - cd public
+    - npm install
+    - bower install
+    - grunt release
+    - cd ..
