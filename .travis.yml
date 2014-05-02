@@ -17,7 +17,7 @@ script:
 deploy:
   provider: heroku
   api_key:
-    secure: To9IEKT4ppYgFW7vHVfC5s5FHzxALA+/Krg9fLv8Fx9BI3rMB91yN+MfE0yhWySaTs8BEHfAdOBN/zvWcXGyhpta10TtvKs04DzZt9foP+MPbRDbE5WEQ9M2n3uAy10ACX2Kxj3ebv3d97I8TYD2qfVBArIIOG29FZlJsRDYIWg=
+    secure: RwSpEp49ALY8s4x6/HonZXrm0URSl8rgyLsZ8PhRQHN/P/pgPnUwsEWh6yxcHKR4dyq1ib6doKNzkAHfafoUvgIKgnTruJ9KmR3yqvXx8wZpd9Kos57XXKm0yfhfc8XVBgeBst79zTFDAO7WDs0Lp0r+xRCHo0nTqulD/xRXxJU=
   skip_cleanup: true
   app:
     develop: bridge-development
