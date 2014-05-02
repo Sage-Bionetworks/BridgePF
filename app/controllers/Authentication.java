@@ -6,7 +6,6 @@ import models.SignUp;
 import models.UserSession;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.context.BridgeContext;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 
 import play.mvc.*;

@@ -11,3 +11,4 @@ project/target
 public/app/build
 .sass-cache
 .target
+.cache
