@@ -4,13 +4,19 @@
 GET    /                         @controllers.Application.loadApp
 GET    /index.html               @controllers.Application.redirectToApp
 
-# API
+# API - Authentication
 POST   /api/auth/signIn                 @controllers.Authentication.signIn
 GET    /api/auth/signOut                @controllers.Authentication.signOut
 POST   /api/auth/resetPassword          @controllers.Authentication.resetPassword
 POST   /api/auth/requestResetPassword   @controllers.Authentication.requestResetPassword
 POST   /api/auth/consentToResearch      @controllers.Authentication.consentToResearch
-    
+
+# API - Health Data
+POST   /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthData.appendHealthData(studyId: Long, trackerId: Long)
+GET    /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthData.getAllHealthData(studyId: Long, trackerId: Long)
+GET    /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthData.getHealthDataByDate(studyId: Long, trackerId: Long, date: Long)
+GET    /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthData.getHealthDataByDateRange(studyId: Long, trackerId: Long, startDate: Long, endDate: Long)
+GET    /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthData.getHealthDataEntry(studyId: Long, trackerId: Long, recordId: String)
+
 # AngularJS application
 GET     /*file                  controllers.Assets.at(path="/public/app", file)
-

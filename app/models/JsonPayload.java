@@ -1,5 +1,7 @@
 package models;
 
+import java.util.List;
+
 /**
  * Intended to provide a consistent JSON structure so the client code has a way
  * to interrogate responses and determine what their content is. For example, 
@@ -13,10 +15,15 @@ public class JsonPayload<T> {
 	protected T payload;
 	
 	public JsonPayload(T payload) {
-		this.type = payload.getClass().getName();
+	    this.type = payload.getClass().getName();
 		this.payload = payload;
 	}
 	
+    public JsonPayload(String type, T payload) {
+        this.type = type;
+        this.payload = payload;
+    }
+    
 	public String getType() {
 		return type;
 	}

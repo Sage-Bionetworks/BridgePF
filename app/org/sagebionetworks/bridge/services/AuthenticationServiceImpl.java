@@ -5,6 +5,7 @@ import models.UserSession;
 import org.apache.commons.lang.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.context.BridgeContext;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.repo.model.DomainType;
@@ -33,15 +34,19 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	}
 	
 	@Override
-	public UserSession signIn(String usernameOrEmail, String password) throws Exception {
+	public UserSession signIn(String usernameOrEmail, String password) throws ConsentRequiredException, BridgeServiceException {
 	    if (StringUtils.isBlank(usernameOrEmail) || StringUtils.isBlank(password)) {
-	        throw new IllegalArgumentException("Invalid credentials, supply username/email and password");
+	        throw new BridgeServiceException("Invalid credentials, supply username/email and password");
 	    }
-        Session session = getSynapseClient(null).login(usernameOrEmail, password);
-        if (!session.getAcceptsTermsOfUse()) {
-            throw new ConsentRequiredException(session.getSessionToken());
-        }
-        return getSession(session.getSessionToken());
+	    try {
+	        Session session = getSynapseClient(null).login(usernameOrEmail, password);
+	        if (!session.getAcceptsTermsOfUse()) {
+	            throw new ConsentRequiredException(session.getSessionToken());
+	        }
+	        return getSession(session.getSessionToken());
+	    } catch(Exception e) {
+	        throw new BridgeServiceException(e);
+	    }
 	}
 	
 	@Override
@@ -76,21 +81,33 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	}
 
 	@Override
-	public void requestResetPassword(String email) throws Exception {
+	public void requestResetPassword(String email) throws BridgeServiceException {
 	    if (StringUtils.isBlank(email)) {
-	        throw new IllegalArgumentException("Email is required");
+	        throw new BridgeServiceException("Email is required");
 	    }
-		getSynapseClient(null).sendPasswordResetEmail(email);
+	    try {
+	        getSynapseClient(null).sendPasswordResetEmail(email);    
+	    } catch(Exception e) {
+	        throw new BridgeServiceException(e);
+	    }
 	}
 	
 	@Override
-	public void resetPassword(String sessionToken, String password) throws Exception {
-		getSynapseClient(null).changePassword(sessionToken, password);
+	public void resetPassword(String sessionToken, String password) throws BridgeServiceException {
+	    try {
+	        getSynapseClient(null).changePassword(sessionToken, password);    
+	    } catch(Exception e) {
+	        throw new BridgeServiceException(e);
+	    }
 	}
 	
 	@Override
-	public void consentToResearch(String sessionToken) throws Exception {
-		getSynapseClient(sessionToken).signTermsOfUse(sessionToken, DomainType.BRIDGE, true);
+	public void consentToResearch(String sessionToken) throws BridgeServiceException {
+        try {
+            getSynapseClient(sessionToken).signTermsOfUse(sessionToken, DomainType.BRIDGE, true);
+        } catch(Exception e) {
+            throw new BridgeServiceException(e);
+        }
 	}
 
 }
