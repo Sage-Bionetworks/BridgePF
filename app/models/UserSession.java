@@ -11,7 +11,7 @@ public class UserSession {
 	private String sessionToken;
 	private String username;
 	private String environment;
-	
+
 	public UserSession() {
 	}
 	

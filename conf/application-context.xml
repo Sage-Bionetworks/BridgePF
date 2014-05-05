@@ -37,8 +37,78 @@
         </property>
     </bean>
     
+    <bean id="controllers.HealthData" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.HealthData">
+                <property name="healthDataService" ref="healthDataService"/>
+            </bean>
+        </property>
+    </bean>
+    
     <!-- Services -->
 
     <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl"/>
+    
+    <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">
+        <property name="updateMapper">
+            <bean class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
+                <constructor-arg index="0" ref="dynamoDbClient"/>
+                <constructor-arg index="1">
+                    <bean class="org.sagebionetworks.bridge.dynamodb.DynamoDBMapperConfigFactory" factory-method="getUpdateMapper"/>
+                </constructor-arg>
+            </bean>
+        </property>
+        <property name="createMapper">
+            <bean class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
+                <constructor-arg index="0" ref="dynamoDbClient"/>
+                <constructor-arg index="1">
+                    <bean class="org.sagebionetworks.bridge.dynamodb.DynamoDBMapperConfigFactory" factory-method="getCreateMapper"/>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+    
+    <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" scope="prototype">
+        <constructor-arg>
+            <bean class="com.amazonaws.auth.BasicAWSCredentials">
+                <constructor-arg value="AKIAJIUIX2FBNYRAX3PQ"/>
+                <constructor-arg value="f//sRfCR4SzgSvFM/8jaTlTbVpbjIUL31lBYW9on"/>
+            </bean>
+        </constructor-arg>
+    </bean>    
+    
+    
+    <!--
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
+    
+    private DynamoDBMapper getMapper(DynamoDBMapperConfig.SaveBehavior behavior) {
+        AmazonDynamoDB dynamo = new AmazonDynamoDBClient(awsCredentials);
+        DynamoDBMapperConfig config = new DynamoDBMapperConfig(behavior);
+        DynamoDBMapper mapper = new DynamoDBMapper(dynamo, config);
+        return mapper;
+    }
+    
+    private DynamoDBMapper getCreateMapper() {
+        return getMapper(DynamoDBMapperConfig.SaveBehavior.CLOBBER);
+    }
+    
+    private DynamoDBMapper getUpdateMapper() {
+        return getMapper(DynamoDBMapperConfig.SaveBehavior.UPDATE);
+    }
+     
+     -->
+    
+    
+    
+    
+    
     
 </beans>

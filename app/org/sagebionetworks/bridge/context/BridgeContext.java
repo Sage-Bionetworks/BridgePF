@@ -10,7 +10,7 @@ public class BridgeContext {
 	
 	private static final String ENVIRONMENT = "environment";
 
-	private Logger logger = LoggerFactory.getLogger(BridgeContext.class);
+	private static final Logger logger = LoggerFactory.getLogger(BridgeContext.class);
 	
 	private final Map<String, String> nameValueMap = new HashMap<String, String>();
 	 
