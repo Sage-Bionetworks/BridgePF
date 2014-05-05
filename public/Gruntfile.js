@@ -10,7 +10,8 @@ module.exports = function(grunt) {
         pkg: grunt.file.readJSON('package.json'),
         
         clean: {
-            all: ['<%= output %>']
+            build: ['<%= output %>'],
+            release: ['node_modules', 'app/bower_components']
         },
         jshint: {
             options: { node: true, globals: { "angular": false } },
@@ -39,7 +40,7 @@ module.exports = function(grunt) {
                     'app/bower_components/bootstrap/dist/css/bootstrap.css',
                     'app/bower_components/bootstrap/dist/css/bootstrap-theme.css',
                     'app/styles/humane-modified.css', // to work with bootstrap
-                      'app/styles/*.scss'
+                    'app/styles/*.scss'
                 ],
                 dest: '<%= output %>/bridge.scss',
                 nonull: true
@@ -73,10 +74,8 @@ module.exports = function(grunt) {
             }
         }
     });
-    
-    grunt.registerTask('precommit', ['jshint','clean','concat','sass','uglify','jasmine']);
-    grunt.registerTask('test', ['release']);
-    grunt.registerTask('default', ['jshint','clean','concat','sass','uglify']);
-    grunt.registerTask('release', ['jshint','clean','concat','sass','uglify','jasmine']);
-    
+
+    grunt.registerTask('test', ['build', 'jasmine']);
+    grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify']);
+    grunt.registerTask('release', ['test', 'clean:release']);
 };
