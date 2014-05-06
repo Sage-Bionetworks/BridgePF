@@ -61,14 +61,7 @@ public class HealthDataEntryImpl implements HealthDataEntry {
                 endDate = node.get(END_DATE).asLong();
             }
             if (node.get(DATA) != null) {
-                try {
-                    ObjectMapper mapper = new ObjectMapper();
-                    data = mapper.readTree(node.get(DATA).asText());
-                } catch (JsonProcessingException e) {
-                    logger.error("Error retrieving JSON from DynamoDB (corrupt?)", e);
-                } catch (IOException e) {
-                    logger.error("Error retrieving JSON from DynamoDB", e);
-                }
+                data = node.get(DATA);
             }
         }
         return new HealthDataEntryImpl(id, startDate, endDate, data);
