@@ -3,21 +3,32 @@ package org.sagebionetworks.bridge.context;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jasypt.encryption.pbe.PBEStringEncryptor;
+import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BridgeContext {
-	
-	private static final String ENVIRONMENT = "environment";
 
-	private static final Logger logger = LoggerFactory.getLogger(BridgeContext.class);
+    private static final Logger logger = LoggerFactory.getLogger(BridgeContext.class);
+
+    private static final String PASSWORD = "pwd";
+	private static final String ENVIRONMENT = "environment";
 	
 	private final Map<String, String> nameValueMap = new HashMap<String, String>();
+	private final PBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
 	 
 	public BridgeContext() {
 		nameValueMap.put(ENVIRONMENT, "stub");
 		readEnv();
         readSystemProperties();
+        
+        String pwd = nameValueMap.get(PASSWORD);
+        if (pwd == null || pwd.isEmpty()) {
+            logger.warn("Missing decryptor password.");
+        } else {
+            encryptor.setPassword(pwd);
+        }
 	}
 
 	public String getEnvironment() {
@@ -38,6 +49,10 @@ public class BridgeContext {
 	
 	public String get(String key) {
 		return nameValueMap.get(key);
+	}
+	
+	public String getEncrypted(String key) {
+	    return encryptor.decrypt(nameValueMap.get(key));
 	}
 	
 	private void readEnv() {

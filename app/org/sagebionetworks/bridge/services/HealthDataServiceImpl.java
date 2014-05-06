@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,6 +14,7 @@ import java.util.UUID;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.healthdata.BloodPressureReading;
 import org.sagebionetworks.bridge.healthdata.HealthDataEntry;
 import org.sagebionetworks.bridge.healthdata.HealthDataKey;
 
@@ -20,6 +23,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.amazonaws.services.dynamodbv2.model.ConditionalOperator;
+import com.google.common.collect.Lists;
 
 public class HealthDataServiceImpl implements HealthDataService {
 
@@ -41,6 +46,13 @@ public class HealthDataServiceImpl implements HealthDataService {
     public void setUpdateMapper(DynamoDBMapper updateMapper) {
         this.updateMapper = updateMapper;
     }    
+    
+    private static final Comparator<HealthDataEntry> START_DATE_COMPARATOR = new Comparator<HealthDataEntry>() {
+        @Override
+        public int compare(HealthDataEntry entry1, HealthDataEntry entry2) {
+            return (int)(entry1.getStartDate() - entry2.getStartDate());
+        }
+    };
     
     private String healthDataKeyToAnonimizedKeyString(HealthDataKey key) {
         if (key == null) {
@@ -65,6 +77,7 @@ public class HealthDataServiceImpl implements HealthDataService {
         for (DynamoRecord r : records) {
             entries.add(r.toEntry());
         }
+        Collections.sort(entries, START_DATE_COMPARATOR);
         return entries;
     }
     
@@ -119,8 +132,6 @@ public class HealthDataServiceImpl implements HealthDataService {
     
     @Override
     public List<HealthDataEntry> getHealthDataByDateRange(HealthDataKey key, Date startDate, Date endDate) throws BridgeServiceException {
-        throw new UnsupportedOperationException("Not currently implemented");
-        /*
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey cannot be null");
         } else if (startDate == null) {
@@ -128,50 +139,55 @@ public class HealthDataServiceImpl implements HealthDataService {
         } else if (endDate == null) {
             throw new BridgeServiceException("endDate cannot be null");
         }
-        try {
+        try {                
             DynamoDBMapper mapper = getCreateMapper();
-
             DynamoRecord record = new DynamoRecord(healthDataKeyToAnonimizedKeyString(key));
-                                                            
-            AttributeValue start = new AttributeValue().withN(Long.toString(startDate.getTime()));
-            AttributeValue end = new AttributeValue().withN(Long.toString(endDate.getTime()));
+            
+            // (start date <= end date window) AND (start date window <= end date OR end date is null)
+            // BUT, you cannot create queries that combine and/or. So we make two queries right now,
+            // and take the intersection
+    
+            AttributeValue endDateWindow = new AttributeValue().withN(Long.toString(endDate.getTime()));
 
-            Condition lowerBound = new Condition()
+            Condition startDateCondition = new Condition()
                 .withComparisonOperator(ComparisonOperator.LE)
-                .withAttributeValueList(end);
-            DynamoDBQueryExpression<DynamoRecord> lowerBoundQuery = new DynamoDBQueryExpression<DynamoRecord>()
-                    .withHashKeyValues(record)
-                    .withRangeKeyCondition("startDate", lowerBound);
-            List<DynamoRecord> records1 = mapper.query(DynamoRecord.class, lowerBoundQuery);
+                .withAttributeValueList(endDateWindow);
             
-            // AND
+            Map<String, Condition> keyConditions = new HashMap<String, Condition>();
+            keyConditions.put("startDate", startDateCondition);
             
-            // The end date is after the window start date, or it's 0 (not ended). 
-            Condition upperBound = new Condition()
-                .withComparisonOperator(ComparisonOperator.GE)
-                .withAttributeValueList(start);
-            
-            Condition upperBoundEmpty = new Condition()
-                .withComparisonOperator(ComparisonOperator.EQ)
-                .withAttributeValueList(new AttributeValue().withN("0"));
-            
-            Map<String, Condition> conditions = new HashMap<String, Condition>();
-            conditions.put("endDate", upperBound);
-            conditions.put("endDate", upperBoundEmpty);
-            
-            DynamoDBQueryExpression<DynamoRecord> upperBoundQuery = new DynamoDBQueryExpression<DynamoRecord>()
+            DynamoDBQueryExpression<DynamoRecord> query = new DynamoDBQueryExpression<DynamoRecord>()
                 .withHashKeyValues(record)
-                .withRangeKeyConditions(conditions);
+                .withRangeKeyConditions(keyConditions);
             
-            List<DynamoRecord> records2 = mapper.query(DynamoRecord.class, upperBoundQuery);
+            List<DynamoRecord> records1 = mapper.query(DynamoRecord.class, query);
+
+            AttributeValue startDateWindow = new AttributeValue().withN(Long.toString(startDate.getTime()));
+            
+            Condition endDateCondition = new Condition()
+                .withComparisonOperator(ComparisonOperator.GE)
+                .withAttributeValueList(startDateWindow);
+            
+            query = new DynamoDBQueryExpression<DynamoRecord>()
+                .withHashKeyValues(record)
+                .withRangeKeyCondition("endDate", endDateCondition);
+
+            /* Throws an error, how do you test that end date is null?
+            query.setConditionalOperator(ConditionalOperator.OR);
+            
+            Condition endDateConditionNull = new Condition()
+                .withComparisonOperator(ComparisonOperator.NULL);
+            query.withRangeKeyCondition("endDate", endDateConditionNull);
+            */
+            List<DynamoRecord> records2 = mapper.query(DynamoRecord.class, query);
             
             Set<DynamoRecord> intersection = new HashSet<DynamoRecord>(records1);
-            intersection.containsAll( new HashSet<DynamoRecord>(records2) );
+            intersection.retainAll( new HashSet<DynamoRecord>(records2) );
             
             return toHealthDataEntries(intersection);
         } catch(BridgeServiceException e) {
             throw new BridgeServiceException(e);
-        }*/
+        }
     }
 
     @Override

@@ -23,7 +23,7 @@ public class DynamoRecord implements HealthDataEntry {
     private String id;
     private long startDate;
     private long endDate;
-    private JsonNode payload;
+    private JsonNode data;
 
     public DynamoRecord() {
     }
@@ -37,11 +37,11 @@ public class DynamoRecord implements HealthDataEntry {
         this.id = entry.getId();
         this.startDate = entry.getStartDate();
         this.endDate = entry.getEndDate();
-        this.payload = entry.getPayload();
+        this.data = entry.getData();
     }
     
     public HealthDataEntry toEntry() {
-        return new HealthDataEntryImpl(id, startDate, endDate, payload);
+        return new HealthDataEntryImpl(id, startDate, endDate, data);
     }
     
     @DynamoDBHashKey
@@ -87,12 +87,12 @@ public class DynamoRecord implements HealthDataEntry {
     @Override 
     @DynamoDBAttribute
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
-    public JsonNode getPayload() { 
-        return payload; 
+    public JsonNode getData() { 
+        return data; 
     }
     @Override
-    public void setPayload(JsonNode payload) { 
-        this.payload = payload; 
+    public void setData(JsonNode payload) { 
+        this.data = payload; 
     }
 
     @Override
