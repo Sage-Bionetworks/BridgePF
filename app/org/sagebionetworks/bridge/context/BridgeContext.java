@@ -17,10 +17,14 @@ public class BridgeContext {
 	
 	private final Map<String, String> nameValueMap = new HashMap<String, String>();
 	private final PBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
-	 
+
 	public BridgeContext() {
-		nameValueMap.put(ENVIRONMENT, "stub");
-		readEnv();
+	    nameValueMap.put(PASSWORD, "");
+        nameValueMap.put(ENVIRONMENT, "stub");
+        // TODO: Have a properties file or files, switched by environment.
+        nameValueMap.put("aws.key", "XszaP+EsOz1dVz9P5TTuaabZoOR6KYC5O46IbJy/9bY=");
+        nameValueMap.put("aws.secret.key", "wtQuhjk8qxLofjgmkW+TgB0ZHO/V5sDx4Qm1PxiAdawBC9BVJ0aTqOb+kfnfz+zUrJqwlg72doU=");
+        readEnv();
         readSystemProperties();
         
         String pwd = nameValueMap.get(PASSWORD);
@@ -51,7 +55,7 @@ public class BridgeContext {
 		return nameValueMap.get(key);
 	}
 	
-	public String getEncrypted(String key) {
+	public String getDecrypted(String key) {
 	    return encryptor.decrypt(nameValueMap.get(key));
 	}
 	
@@ -80,4 +84,5 @@ public class BridgeContext {
             }
         }
     }
+    
 }
