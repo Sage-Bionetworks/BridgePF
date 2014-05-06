@@ -17,7 +17,8 @@ libraryDependencies ++= Seq(
   "cglib" % "cglib" % "2.2.2",
   "org.codehaus.jackson" % "jackson-mapper-asl" % "1.9.13",
   "com.google.guava" % "guava" % "17.0",
-  "org.mockito" % "mockito-all" % "1.9.5"
+  "org.mockito" % "mockito-all" % "1.9.5",
+  "org.jasypt" % "jasypt" % "1.9.2"
 )
 
 play.Project.playJavaSettings

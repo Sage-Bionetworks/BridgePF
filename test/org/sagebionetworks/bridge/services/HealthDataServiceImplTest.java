@@ -153,7 +153,7 @@ public class HealthDataServiceImplTest {
         List<HealthDataEntry> entries = service.getAllHealthData(key);
         assertThat(entries.size()).isEqualTo(6);
         assertThat(entries.get(0)).isInstanceOf(HealthDataEntry.class);
-        assertThat(entries.get(0).getPayload()).isNotNull();
+        assertThat(entries.get(0).getData()).isNotNull();
     }
     
     @Test(expected=BridgeServiceException.class)

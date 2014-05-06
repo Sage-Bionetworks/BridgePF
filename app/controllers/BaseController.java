@@ -2,8 +2,10 @@ package controllers;
 
 import models.JsonPayload;
 import models.StatusMessage;
+import models.UserSession;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.client.exceptions.SynapseUnauthorizedException;
 
 import play.libs.Json;
@@ -14,6 +16,17 @@ import play.mvc.Result;
 @org.springframework.stereotype.Controller
 public class BaseController extends Controller {
 
+    protected AuthenticationService authenticationService;
+
+    public void setAuthenticationService(AuthenticationService authenticationService) {
+        this.authenticationService = authenticationService;
+    }
+    
+    protected UserSession getSession() throws Exception {
+        String sessionToken = getSessionToken(true);
+        return authenticationService.getSession(sessionToken);
+    }
+    
 	protected String getSessionToken(boolean throwException) throws Exception {
 		Cookie sessionCookie = request().cookie(BridgeConstants.SESSION_TOKEN);
 		if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {

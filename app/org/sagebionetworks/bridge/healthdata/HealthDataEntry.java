@@ -13,7 +13,7 @@ public interface HealthDataEntry {
     public long getEndDate();
     public void setEndDate(long endDate);
     
-    public JsonNode getPayload();
-    public void setPayload(JsonNode payload);
+    public JsonNode getData();
+    public void setData(JsonNode data);
     
 }

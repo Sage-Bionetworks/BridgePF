@@ -8,19 +8,19 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class Weight extends HealthDataEntryImpl {
 
     public Weight() {
-        payload = new ObjectMapper().createObjectNode();
+        data = new ObjectMapper().createObjectNode();
     }
     public Weight(HealthDataEntry entry) {
-        super(entry.getId(), entry.getStartDate(), entry.getPayload());
+        super(entry.getId(), entry.getStartDate(), entry.getData());
     }
 
     @DynamoDBAttribute
     public int getWeight() {
-        JsonNode node = payload.get("weight");
+        JsonNode node = data.get("weight");
         return (node == null) ? 0 : node.asInt();
     }
     public void setWeight(int weight) {
-        ((ObjectNode)payload).put("weight", weight);
+        ((ObjectNode)data).put("weight", weight);
     }
     @Override
     public String toString() {

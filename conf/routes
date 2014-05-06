@@ -14,9 +14,12 @@ POST   /api/auth/consentToResearch      @controllers.Authentication.consentToRes
 # API - Health Data
 POST   /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthData.appendHealthData(studyId: Long, trackerId: Long)
 GET    /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthData.getAllHealthData(studyId: Long, trackerId: Long)
-GET    /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthData.getHealthDataByDate(studyId: Long, trackerId: Long, date: Long)
 GET    /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthData.getHealthDataByDateRange(studyId: Long, trackerId: Long, startDate: Long, endDate: Long)
+
+# API - Individual health data record
 GET    /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthData.getHealthDataEntry(studyId: Long, trackerId: Long, recordId: String)
+POST   /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthData.getHealthDataEntry(studyId: Long, trackerId: Long, recordId: String)
+DELETE /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthData.deleteHealthDataEntry(studyId: Long, trackerId: Long, recordId: String)
 
 # AngularJS application
 GET     /*file                  controllers.Assets.at(path="/public/app", file)

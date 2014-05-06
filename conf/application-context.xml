@@ -20,7 +20,7 @@
             <list><value>exceptionInterceptor</value></list>
         </property>
     </bean>
-    
+
     <bean id="controllers.Application" parent="proxiedController">
         <property name="target">
             <bean class="controllers.Application">
@@ -41,6 +41,7 @@
         <property name="target">
             <bean class="controllers.HealthData">
                 <property name="healthDataService" ref="healthDataService"/>
+                <property name="authenticationService" ref="authenticationService"/>
             </bean>
         </property>
     </bean>
@@ -71,42 +72,10 @@
     <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" scope="prototype">
         <constructor-arg>
             <bean class="com.amazonaws.auth.BasicAWSCredentials">
+                <constructor-arg value="AKIAIJNNKNT6WZCEQI4A"/>
+                <constructor-arg value="m696Dq+RaZn7MumqsfXNS/z4LZfAwiN7i0t14qQt"/>
             </bean>
         </constructor-arg>
     </bean>    
-    
-    
-    <!--
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
-import com.amazonaws.services.dynamodbv2.model.Condition;
-    
-    private DynamoDBMapper getMapper(DynamoDBMapperConfig.SaveBehavior behavior) {
-        AmazonDynamoDB dynamo = new AmazonDynamoDBClient(awsCredentials);
-        DynamoDBMapperConfig config = new DynamoDBMapperConfig(behavior);
-        DynamoDBMapper mapper = new DynamoDBMapper(dynamo, config);
-        return mapper;
-    }
-    
-    private DynamoDBMapper getCreateMapper() {
-        return getMapper(DynamoDBMapperConfig.SaveBehavior.CLOBBER);
-    }
-    
-    private DynamoDBMapper getUpdateMapper() {
-        return getMapper(DynamoDBMapperConfig.SaveBehavior.UPDATE);
-    }
-     
-     -->
-    
-    
-    
-    
-    
     
 </beans>

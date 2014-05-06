@@ -15,37 +15,37 @@ public class HealthDataEntryImpl implements HealthDataEntry {
     private static final String ID = "id";
     private static final String START_DATE = "startDate";
     private static final String END_DATE = "endDate";
-    private static final String PAYLOAD = "payload";
+    private static final String DATA = "data";
 
     private static final Logger logger = LoggerFactory.getLogger(BridgeContext.class);    
 
     protected String id;
     protected long startDate;
     protected long endDate;
-    protected JsonNode payload;
+    protected JsonNode data;
     
     public HealthDataEntryImpl() {
     }
     
-    public HealthDataEntryImpl(String id, long date, JsonNode payload) {
+    public HealthDataEntryImpl(String id, long date, JsonNode data) {
         this.id = id;
         this.startDate = date;
         this.endDate = date;
-        this.payload = payload;
+        this.data = data;
     }
     
-    public HealthDataEntryImpl(String id, long startDate, long endDate, JsonNode payload) {
+    public HealthDataEntryImpl(String id, long startDate, long endDate, JsonNode data) {
         this.id = id;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.payload = payload;
+        this.data = data;
     }
     
     public static final HealthDataEntryImpl fromJson(JsonNode node) {
         String id = null;
         long startDate = 0L;
         long endDate = 0L;
-        JsonNode payload = null;
+        JsonNode data = null;
         
         if (node != null) {
             if (node.get(ID) != null) {
@@ -60,10 +60,10 @@ public class HealthDataEntryImpl implements HealthDataEntry {
             if (node.get(END_DATE) != null) {
                 endDate = node.get(END_DATE).asLong();
             }
-            if (node.get(PAYLOAD) != null) {
+            if (node.get(DATA) != null) {
                 try {
                     ObjectMapper mapper = new ObjectMapper();
-                    payload = mapper.readTree(node.get(PAYLOAD).asText());
+                    data = mapper.readTree(node.get(DATA).asText());
                 } catch (JsonProcessingException e) {
                     logger.error("Error retrieving JSON from DynamoDB (corrupt?)", e);
                 } catch (IOException e) {
@@ -71,7 +71,7 @@ public class HealthDataEntryImpl implements HealthDataEntry {
                 }
             }
         }
-        return new HealthDataEntryImpl(id, startDate, endDate, payload);
+        return new HealthDataEntryImpl(id, startDate, endDate, data);
     }
     
     
@@ -91,10 +91,36 @@ public class HealthDataEntryImpl implements HealthDataEntry {
     public void setEndDate(long endDate) { this.endDate = endDate; }
 
     @Override
-    public JsonNode getPayload() { return payload; }
+    public JsonNode getData() { return data; }
     @Override
-    public void setPayload(JsonNode payload) { this.payload = payload; }
+    public void setData(JsonNode data) { this.data = data; }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        HealthDataEntryImpl other = (HealthDataEntryImpl) obj;
+        if (id == null) {
+            if (other.id != null)
+                return false;
+        } else if (!id.equals(other.id))
+            return false;
+        return true;
+    }
+
+    /*
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -125,5 +151,5 @@ public class HealthDataEntryImpl implements HealthDataEntry {
             return false;
         return true;
     }
-    
+    */
 }
