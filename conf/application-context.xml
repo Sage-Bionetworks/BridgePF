@@ -70,9 +70,8 @@
     </bean>
     
     <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" scope="prototype">
-        <constructor-arg>
-            <bean class="com.amazonaws.auth.BasicAWSCredentials">
-            </bean>
+        <constructor-arg index="0">
+            <bean class="org.sagebionetworks.bridge.dynamodb.CredentialsFactory" factory-method="getCredentials"/>
         </constructor-arg>
     </bean>    
     

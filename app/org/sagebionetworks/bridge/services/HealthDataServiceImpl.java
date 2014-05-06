@@ -14,7 +14,6 @@ import java.util.UUID;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.healthdata.BloodPressureReading;
 import org.sagebionetworks.bridge.healthdata.HealthDataEntry;
 import org.sagebionetworks.bridge.healthdata.HealthDataKey;
 
@@ -23,8 +22,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
-import com.amazonaws.services.dynamodbv2.model.ConditionalOperator;
-import com.google.common.collect.Lists;
 
 public class HealthDataServiceImpl implements HealthDataService {
 
