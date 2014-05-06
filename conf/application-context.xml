@@ -72,8 +72,6 @@
     <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" scope="prototype">
         <constructor-arg>
             <bean class="com.amazonaws.auth.BasicAWSCredentials">
-                <constructor-arg value="AKIAIJNNKNT6WZCEQI4A"/>
-                <constructor-arg value="m696Dq+RaZn7MumqsfXNS/z4LZfAwiN7i0t14qQt"/>
             </bean>
         </constructor-arg>
     </bean>    
