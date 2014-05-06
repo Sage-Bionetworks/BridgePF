@@ -61,8 +61,9 @@ public class HealthDataServiceImpl implements HealthDataService {
         } else if (key.getSessionToken() == null) {
             throw new BridgeServiceException("HealthDataKey does not have a session token");
         }
-        // Translation from session token to user to health data code would happen here
-        return String.format("%s:%s:%s", key.getStudyId(), key.getTrackerId(), key.getSessionToken());
+        // Translation from session token to user to health data code would happen here.
+        // For the time being, it's always 1.
+        return String.format("%s:%s:%s", key.getStudyId(), key.getTrackerId(), "1");
     }
     
     private String generateId() {

@@ -7,6 +7,7 @@ import models.IdHolder;
 import models.JsonPayload;
 import models.UserSession;
 
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.healthdata.HealthDataEntry;
 import org.sagebionetworks.bridge.healthdata.HealthDataEntryImpl;
 import org.sagebionetworks.bridge.healthdata.HealthDataKey;

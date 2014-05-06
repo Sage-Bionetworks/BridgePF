@@ -1,1 +1,15 @@
-<p>This is the "my health" view. </p>
+<p>Blood Pressure Tracker</p>
+
+<input type="number" name="systolic" ng-model="data.systolic"/>
+<input type="number" name="diastolic" ng-model="data.diastolic"/>
+<input type="date" name="startDate" ng-model="data.startDate"/>
+
+<button class="btn btn-default" ng-click="create()">Add Record</button>
+
+<table>
+    <tr ng-repeat="record in records">
+        <td style="padding: .25rem 3rem">{{record.startDate | date}}</td>
+        <td style="padding: .25rem 3rem">{{record.data.systolic}}</td>
+        <td style="padding: .25rem 3rem">{{record.data.diastolic}}</td>
+    </tr>
+</table>
