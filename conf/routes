@@ -18,7 +18,7 @@ GET    /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthD
 
 # API - Individual health data record
 GET    /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthData.getHealthDataEntry(studyId: Long, trackerId: Long, recordId: String)
-POST   /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthData.getHealthDataEntry(studyId: Long, trackerId: Long, recordId: String)
+POST   /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthData.updateHealthDataEntry(studyId: Long, trackerId: Long, recordId: String)
 DELETE /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthData.deleteHealthDataEntry(studyId: Long, trackerId: Long, recordId: String)
 
 # AngularJS application

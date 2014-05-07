@@ -12,8 +12,8 @@ public class BridgeContext {
 
     private static final Logger logger = LoggerFactory.getLogger(BridgeContext.class);
 
-    private static final String PASSWORD = "pwd";
-	private static final String ENVIRONMENT = "environment";
+    public static final String PASSWORD = "pwd";
+	public static final String ENVIRONMENT = "environment";
 	
 	private final Map<String, String> nameValueMap = new HashMap<String, String>();
 	private final PBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
@@ -58,7 +58,11 @@ public class BridgeContext {
 	public String getDecrypted(String key) {
 	    return encryptor.decrypt(nameValueMap.get(key));
 	}
-	
+    
+    public String encryptValue(String value) {
+        return encryptor.encrypt(value);
+    }
+    
 	private void readEnv() {
         try {
             populateNameValueMap(new EnvReader());
