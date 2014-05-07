@@ -9,7 +9,7 @@ import play.libs.Json;
 import play.mvc.*;
 
 @org.springframework.stereotype.Controller
-public class Application extends BaseController {
+public class ApplicationController extends BaseController {
 
 	private AuthenticationService authenticationService;
 

@@ -59,10 +59,6 @@ public class BridgeContext {
 	    return encryptor.decrypt(nameValueMap.get(key));
 	}
     
-    public String encryptValue(String value) {
-        return encryptor.encrypt(value);
-    }
-    
 	private void readEnv() {
         try {
             populateNameValueMap(new EnvReader());

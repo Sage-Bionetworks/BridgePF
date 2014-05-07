@@ -21,25 +21,25 @@
         </property>
     </bean>
 
-    <bean id="controllers.Application" parent="proxiedController">
+    <bean id="controllers.ApplicationController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.Application">
+            <bean class="controllers.ApplicationController">
                 <property name="authenticationService" ref="authenticationService"/>
             </bean>
         </property>
     </bean>
     
-    <bean id="controllers.Authentication" parent="proxiedController">
+    <bean id="controllers.AuthenticationController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.Authentication">
+            <bean class="controllers.AuthenticationController">
                 <property name="authenticationService" ref="authenticationService"/>
             </bean>
         </property>
     </bean>
     
-    <bean id="controllers.HealthData" parent="proxiedController">
+    <bean id="controllers.HealthDataController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.HealthData">
+            <bean class="controllers.HealthDataController">
                 <property name="healthDataService" ref="healthDataService"/>
                 <property name="authenticationService" ref="authenticationService"/>
             </bean>

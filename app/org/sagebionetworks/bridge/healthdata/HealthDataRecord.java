@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.healthdata;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public interface HealthDataEntry {
+public interface HealthDataRecord {
 
     public String getRecordId();
     public void setRecordId(String recordId);
