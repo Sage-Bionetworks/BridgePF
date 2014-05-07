@@ -34,12 +34,11 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 
-public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAware, InitializingBean {
+public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAware {
 
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
     private BeanFactory beanFactory;
-    private final StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
     
     public DynamoDBMapper getCreateMapper() {
         return createMapper;
@@ -61,14 +60,6 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         this.beanFactory = factory;
     }
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        BridgeContext context = new BridgeContext();
-        encryptor.setPassword(context.get(BridgeContext.PASSWORD));
-        // We need stable production of a token.
-        encryptor.setSaltGenerator(new ZeroSaltGenerator());
-    }
-    
     private SynapseClient getSynapseClient(String sessionToken) {
         SynapseClient client = beanFactory.getBean("synapseClient", SynapseClient.class);
         client.setSessionToken(sessionToken);
@@ -99,9 +90,7 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         if (StringUtils.isBlank(ownerId)) {
             throw new BridgeServiceException("Cannot find ID for user");
         }
-        String encryptedValue = encryptor.encrypt(ownerId);
-        
-        return String.format("%s:%s:%s", key.getStudyId(), key.getTrackerId(), encryptedValue);
+        return String.format("%s:%s:%s", key.getStudyId(), key.getTrackerId(), ownerId);
     }
     
     private String generateId() {
