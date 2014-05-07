@@ -1,0 +1,59 @@
+.loadingclock {
+  position: absolute;
+  left: 320px;
+  top: 17px;
+  width: 28px;
+  height: 28px;
+  border: 2px solid white;
+  border-radius: 100%;
+  
+  &:before {
+    display: block;
+    position: absolute;
+    left: ( 24px / 2 ) - 1px;
+    top: 2px;
+    
+    width: 2px;
+    height: ( 24px / 2 ) - 2px;
+    
+    background-color: white;
+    
+    animation: spin 3s linear infinite;
+    -webkit-animation: spin 3s linear infinite;
+    -ms-animation: spin 3s linear infinite;
+    content: "";
+    transform-origin: 1px ( 24px / 2 ) - 2px;
+    -webkit-transform-origin: 1px ( 24px / 2 ) - 2px;
+    -ms-transform-origin: 1px ( 24px / 2 ) - 2px;
+  }
+  &:after {
+    display: block;
+    position: absolute;
+    left: ( 24px / 2 ) - 1px;
+    top: 3px;
+    
+    width: 2px;
+    height: ( 24px / 2 ) - 3px;
+    
+    background-color: white;
+    
+    animation: spin 6 * 3s linear infinite;
+    -webkit-animation: spin 6 * 3s linear infinite;
+    -ms-animation: spin 6 * 3s linear infinite;
+    content: "";
+    transform-origin: 1px ( 24px / 2 ) - 3px;
+    -webkit-transform-origin: 1px ( 24px / 2 ) - 3px;
+    -ms-transform-origin: 1px ( 24px / 2 ) - 3px;
+  }
+  
+}
+@keyframes spin {
+  to {
+    transform: rotate( 360deg );
+  }
+}
+@-webkit-keyframes spin {
+  to {
+    -webkit-transform: rotate( 360deg );
+  }
+}

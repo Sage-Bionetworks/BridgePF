@@ -23,11 +23,14 @@ function($http, $rootScope, $location, $window, $humane, $q) {
             credentials = angular.extend({}, credentials);
             
             var deferred = $q.defer();
+            $rootScope.loading++;
             $http.post('/api/auth/signIn', credentials).success(function(data, status) {
+                $rootScope.loading--;
                 service.init(data.payload);
                 data.status = status;
                 deferred.resolve(data);
             }).error(function(data, status) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.reject(data);
             });
@@ -35,10 +38,13 @@ function($http, $rootScope, $location, $window, $humane, $q) {
         },
         signOut: function() {
             var deferred = $q.defer();
+            $rootScope.loading++;
             $http.get('/api/auth/signOut').success(function(data, status) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.resolve(data);
             }).error(function(data) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.reject(data);
             });
