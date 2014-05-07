@@ -2,14 +2,26 @@ angular.module('bridge').controller('HealthController', ['$scope', '$humane', 'h
     $scope.record = {data:{}};
     
     function adjustValues(record) {
-        var data = angular.extend({}, record);
-        data.startDate = new Date(data.startDate).getTime();
-        if (data.endDate) {
-            data.endDate = new Date(data.endDate).getTime();
-        } else {
-            data.endDate = new Date(data.startDate).getTime();    
+        var object = {data: {}};
+        if (record.recordId) { 
+            object.recordId = record.recordId; 
         }
-        return data;
+        if (record.startDate) {
+            object.startDate = new Date(record.startDate).getTime();
+        } else {
+            object.startDate = new Date().getTime();
+        }
+        if (record.endDate) {
+            object.endDate = new Date(record.endDate).getTime();
+        } else {
+            object.endDate = object.startDate;
+        }
+        for (var prop in record) {
+            if (['recordId', 'startDate', 'endDate'].indexOf(prop) === -1) {
+                object.data[prop] = record[prop];
+            }
+        }
+        return object;
     }
     
     $scope.create = function() {
