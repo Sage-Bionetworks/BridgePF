@@ -46,7 +46,7 @@ public class HealthDataServiceImplTest {
         updateMapper = mock(DynamoDBMapper.class);
         service.setCreateMapper(createMapper);
         service.setUpdateMapper(updateMapper);
-        
+
         UserSessionData data = new UserSessionData();
         UserProfile profile = new UserProfile();
         profile.setOwnerId("1");

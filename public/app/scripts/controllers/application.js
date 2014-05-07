@@ -22,11 +22,23 @@ function($scope, $http, $location, $modal, $humane, $window, authService, reques
 	};
 
 	$scope.signIn = function() {
-	    authService.signIn($scope.credentials);
+	    authService.signIn($scope.credentials).then(function() {}, function(data) {
+            if (data.status === 412) {
+                $location.path("/consent/" + data.sessionToken);
+            } else if (data.status === 404 || data.status === 401) {
+                $humane.error("Wrong user name or password.");
+            } else {
+                $humane.error("There has been an error.");
+            }
+	    });
 		$scope.credentials.password = '';
 	};
 	$scope.signOut = function() {
-	    authService.signOut();
+	    authService.signOut().then(function() {
+	        $window.location.replace("/");  
+	    }, function(data) {
+	        $humane.error(data.payload); 
+	    });
 	};
     $scope.resetPassword = function() {
         requestResetPasswordService.open();
