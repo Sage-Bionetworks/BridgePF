@@ -16,51 +16,48 @@ angular.module('bridge').controller('HealthController', ['$scope', '$humane', 'h
         } else {
             object.endDate = object.startDate;
         }
-        for (var prop in record) {
-            if (['recordId', 'startDate', 'endDate'].indexOf(prop) === -1) {
-                object.data[prop] = record[prop];
-            }
+        for (var prop in record.data) {
+            object.data[prop] = record.data[prop];
         }
         return object;
     }
     
     $scope.create = function() {
-        if ($scope.record.diastolic && $scope.record.systolic && $scope.record.startDate) {
-            
+        if ($scope.record.data.diastolic && $scope.record.data.systolic && $scope.record.startDate) {
             var data = adjustValues($scope.record);
             
-            healthDataService.create(1, 1, data).then(function(data, status) {
+            healthDataService.create(1, 1, data).then(function(data) {
                 $humane.confirm("Saved");
                 updateTable();
-            }, function(data, status) {
+            }, function(data) {
                 $humane.error(data.payload);
             });
         }
     };
     $scope.remove = function(record) {
-        healthDataService.remove(1, 1, record.recordId).then(function(data, status) {
+        healthDataService.remove(1, 1, record.recordId).then(function(data) {
             $humane.confirm("Deleted");
             updateTable();
-        }, function(data, status) {
+        }, function(data) {
             $humane.error(data.payload);
         });
     };
     $scope.edit = function(record) {
-        console.log($scope.record, record);
-        $scope.record.systolic = record.data.systolic;
-        $scope.record.diastolic = record.data.diastolic;
-        $scope.record.startDate = new Date(record.startDate).toISOString().split("T")[0];
         $scope.record.recordId = record.recordId;
+        $scope.record.startDate = new Date(record.startDate).toISOString().split("T")[0];
+        $scope.record.endDate = new Date(record.endDate).toISOString().split("T")[0];
+        $scope.record.data.systolic = record.data.systolic;
+        $scope.record.data.diastolic = record.data.diastolic;
     };
     $scope.update = function(record) {
-        if ($scope.record.diastolic && $scope.record.systolic && $scope.record.startDate) {
+        if ($scope.record.data.diastolic && $scope.record.data.systolic && $scope.record.startDate) {
             
             var data = adjustValues($scope.record);
             
-            healthDataService.update(1, 1, data).then(function(data, status) {
+            healthDataService.update(1, 1, data).then(function(data) {
                 $humane.confirm("Updated");
                 updateTable();
-            }, function(data, status) {
+            }, function(data) {
                 $humane.error(data.payload);
             });
         }
@@ -70,9 +67,9 @@ angular.module('bridge').controller('HealthController', ['$scope', '$humane', 'h
     updateTable();
 
     function updateTable() {
-        healthDataService.getAll(1, 1).then(function(data, status) {
+        healthDataService.getAll(1, 1).then(function(data) {
             $scope.records = data.payload.reverse();
-        }, function(data,status) {
+        }, function(data) {
             $humane.error(data.payload);
         });
     }

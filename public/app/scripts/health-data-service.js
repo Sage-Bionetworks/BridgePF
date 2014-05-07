@@ -4,9 +4,11 @@ angular.module('bridge').service('healthDataService', ['$http', '$q', function($
             var deferred = $q.defer();
             var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId;
             $http.get(url).success(function(data, status) {
-                deferred.resolve(data, status);
+                data.status = status;
+                deferred.resolve(data);
             }).error(function(data, status) {
-                deferred.reject(data, status);
+                data.status = status;
+                deferred.reject(data);
             });
             return deferred.promise;
         },
@@ -14,9 +16,11 @@ angular.module('bridge').service('healthDataService', ['$http', '$q', function($
             var deferred = $q.defer();
             var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId+"/record/"+recordId;
             $http.get(url).success(function(data, status) {
-                deferred.resolve(data, status);
+                data.status = status;
+                deferred.resolve(data);
             }).error(function(data, status) {
-                deferred.reject(data, status);
+                data.status = status;
+                deferred.reject(data);
             });
             return deferred.promise;
         },
@@ -27,22 +31,26 @@ angular.module('bridge').service('healthDataService', ['$http', '$q', function($
             var deferred = $q.defer();
             var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId;
             $http.post(url, JSON.stringify(object)).success(function(data, status) {
-                deferred.resolve(data, status);
+                data.status = status;
+                deferred.resolve(data);
             }).error(function(data, status) {
-                deferred.reject(data, status);
+                data.status = status;
+                deferred.reject(data);
             });
             return deferred.promise;
         },
         update: function(studyId, trackerId, object) {
-            if (object.recordId) {
+            if (!object.recordId) {
                 throw new Error("Trying to update a record with no recordId");
             }
             var deferred = $q.defer();
             var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId+'/record/'+object.recordId;
             $http.post(url, JSON.stringify(object)).success(function(data, status) {
-                deferred.resolve(data, status);
+                data.status = status;
+                deferred.resolve(data);
             }).error(function(data, status) {
-                deferred.reject(data, status);
+                data.status = status;
+                deferred.reject(data);
             });
             return deferred.promise;
         },
@@ -50,9 +58,11 @@ angular.module('bridge').service('healthDataService', ['$http', '$q', function($
             var deferred = $q.defer();
             var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId+'/record/'+recordId;
             $http.delete(url).success(function(data, status) {
-                deferred.resolve(data, status);
+                data.status = status;
+                deferred.resolve(data);
             }).error(function(data, status) {
-                deferred.reject(data, status);
+                data.status = status;
+                deferred.reject(data);
             });
             return deferred.promise;
         }
