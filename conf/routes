@@ -1,16 +1,25 @@
 # Redirect to application
 
 # These routes won't support an URL that maps to an internal AngularJS state (those would all be routed to /public/app")
-GET    /                         @controllers.Application.loadApp
-GET    /index.html               @controllers.Application.redirectToApp
+GET    /                         @controllers.ApplicationController.loadApp
+GET    /index.html               @controllers.ApplicationController.redirectToApp
 
-# API
-POST   /api/auth/signIn                 @controllers.Authentication.signIn
-GET    /api/auth/signOut                @controllers.Authentication.signOut
-POST   /api/auth/resetPassword          @controllers.Authentication.resetPassword
-POST   /api/auth/requestResetPassword   @controllers.Authentication.requestResetPassword
-POST   /api/auth/consentToResearch      @controllers.Authentication.consentToResearch
-    
+# API - Authentication
+POST   /api/auth/signIn                 @controllers.AuthenticationController.signIn
+GET    /api/auth/signOut                @controllers.AuthenticationController.signOut
+POST   /api/auth/resetPassword          @controllers.AuthenticationController.resetPassword
+POST   /api/auth/requestResetPassword   @controllers.AuthenticationController.requestResetPassword
+POST   /api/auth/consentToResearch      @controllers.AuthenticationController.consentToResearch
+
+# API - Health Data
+POST   /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthDataController.appendHealthData(studyId: Long, trackerId: Long)
+GET    /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthDataController.getAllHealthData(studyId: Long, trackerId: Long)
+GET    /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthDataController.getHealthDataByDateRange(studyId: Long, trackerId: Long, startDate: Long, endDate: Long)
+
+# API - Individual health data record
+GET    /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(studyId: Long, trackerId: Long, recordId: String)
+POST   /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthDataController.updateHealthDataRecord(studyId: Long, trackerId: Long, recordId: String)
+DELETE /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(studyId: Long, trackerId: Long, recordId: String)
+
 # AngularJS application
 GET     /*file                  controllers.Assets.at(path="/public/app", file)
-

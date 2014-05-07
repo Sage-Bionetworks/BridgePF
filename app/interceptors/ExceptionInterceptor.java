@@ -15,15 +15,11 @@ import play.mvc.Results;
 import com.google.common.base.Throwables;
 
 public class ExceptionInterceptor implements MethodInterceptor {
-
-	
 	
 	@Override
 	public Object invoke(MethodInvocation method) throws Throwable {
 		try {
-			
 			return method.proceed();
-			
 		} catch(Throwable throwable) {
 			
 			throwable = Throwables.getRootCause(throwable);
@@ -38,7 +34,7 @@ public class ExceptionInterceptor implements MethodInterceptor {
 			if (StringUtils.isBlank(message)) {
 				message = "There has been a server error. We cannot fulfill your request at this time.";
 			}
-			
+
 			ExceptionMessage exceptionMessage = createMessagePayload(throwable, status, message);
 			return Results.status(status, Json.toJson(exceptionMessage));
 		}
