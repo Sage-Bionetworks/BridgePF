@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public interface HealthDataEntry {
 
-    public String getId();
-    public void setId(String id);
+    public String getRecordId();
+    public void setRecordId(String recordId);
     
     public long getStartDate();
     public void setStartDate(long startDate);

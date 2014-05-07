@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class DynamoRecord implements HealthDataEntry {
 
     private String key;
-    private String id;
+    private String recordId;
     private long startDate;
     private long endDate;
     private JsonNode data;
@@ -34,14 +34,14 @@ public class DynamoRecord implements HealthDataEntry {
     
     public DynamoRecord(String key, HealthDataEntry entry) {
         this.key = key;
-        this.id = entry.getId();
+        this.recordId = entry.getRecordId();
         this.startDate = entry.getStartDate();
         this.endDate = entry.getEndDate();
         this.data = entry.getData();
     }
     
     public HealthDataEntry toEntry() {
-        return new HealthDataEntryImpl(id, startDate, endDate, data);
+        return new HealthDataEntryImpl(recordId, startDate, endDate, data);
     }
     
     @DynamoDBHashKey
@@ -54,12 +54,12 @@ public class DynamoRecord implements HealthDataEntry {
     
     @Override 
     @DynamoDBRangeKey
-    public String getId() { 
-        return id; 
+    public String getRecordId() { 
+        return recordId; 
     }
     @Override
-    public void setId(String id) { 
-        this.id = id;
+    public void setRecordId(String recordId) { 
+        this.recordId = recordId;
     }
     
     @Override 
@@ -100,7 +100,7 @@ public class DynamoRecord implements HealthDataEntry {
         final int prime = 31;
         int result = 1;
         result = prime * result + (int) (endDate ^ (endDate >>> 32));
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        result = prime * result + ((recordId == null) ? 0 : recordId.hashCode());
         result = prime * result + ((key == null) ? 0 : key.hashCode());
         result = prime * result + (int) (startDate ^ (startDate >>> 32));
         return result;
@@ -117,10 +117,10 @@ public class DynamoRecord implements HealthDataEntry {
         DynamoRecord other = (DynamoRecord) obj;
         if (endDate != other.endDate)
             return false;
-        if (id == null) {
-            if (other.id != null)
+        if (recordId == null) {
+            if (other.recordId != null)
                 return false;
-        } else if (!id.equals(other.id))
+        } else if (!recordId.equals(other.recordId))
             return false;
         if (key == null) {
             if (other.key != null)
