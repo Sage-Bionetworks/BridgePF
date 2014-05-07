@@ -1,5 +1,7 @@
 angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
-
+.run(['$rootScope', function($rootScope) {
+    $rootScope.loading = 0;
+}])
 .config(['$routeProvider', function($routeProvider) {
 	$routeProvider.when('/health', {
 		templateUrl: '/views/health.html',

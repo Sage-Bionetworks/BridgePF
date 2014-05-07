@@ -1,12 +1,15 @@
-angular.module('bridge').service('healthDataService', ['$http', '$q', function($http,   $q) {
+angular.module('bridge').service('healthDataService', ['$http', '$rootScope', '$q', function($http, $rootScope, $q) {
     var service = {
         getAll: function(studyId, trackerId) {
             var deferred = $q.defer();
             var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId;
+            $rootScope.loading++;
             $http.get(url).success(function(data, status) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.resolve(data);
             }).error(function(data, status) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.reject(data);
             });
@@ -15,10 +18,13 @@ angular.module('bridge').service('healthDataService', ['$http', '$q', function($
         get: function(studyId, trackerId, recordId) {
             var deferred = $q.defer();
             var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId+"/record/"+recordId;
+            $rootScope.loading++;
             $http.get(url).success(function(data, status) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.resolve(data);
             }).error(function(data, status) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.reject(data);
             });
@@ -30,10 +36,13 @@ angular.module('bridge').service('healthDataService', ['$http', '$q', function($
             }
             var deferred = $q.defer();
             var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId;
+            $rootScope.loading++;
             $http.post(url, JSON.stringify(object)).success(function(data, status) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.resolve(data);
             }).error(function(data, status) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.reject(data);
             });
@@ -45,10 +54,13 @@ angular.module('bridge').service('healthDataService', ['$http', '$q', function($
             }
             var deferred = $q.defer();
             var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId+'/record/'+object.recordId;
+            $rootScope.loading++;
             $http.post(url, JSON.stringify(object)).success(function(data, status) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.resolve(data);
             }).error(function(data, status) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.reject(data);
             });
@@ -57,10 +69,13 @@ angular.module('bridge').service('healthDataService', ['$http', '$q', function($
         remove: function(studyId, trackerId, recordId) {
             var deferred = $q.defer();
             var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId+'/record/'+recordId;
+            $rootScope.loading++;
             $http.delete(url).success(function(data, status) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.resolve(data);
             }).error(function(data, status) {
+                $rootScope.loading--;
                 data.status = status;
                 deferred.reject(data);
             });
