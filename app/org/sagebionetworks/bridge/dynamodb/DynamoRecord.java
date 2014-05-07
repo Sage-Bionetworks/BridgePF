@@ -14,6 +14,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * Used by the services to join a HealthDataKey to a HealthDataEntry, into a complete 
  * DynamoDB record. Not exposed to consumers.
+ * 
+ * Table structure:
+ *  Hash Key: key
+ *  Range Key: recordId
+ *  
+ * Indexes:
+ *  endDate-index (key + endDate)
+ *  startDate-index (key + startDate)
  *
  */
 @DynamoDBTable(tableName = "dev-adark-TestTable")
@@ -35,6 +43,14 @@ public class DynamoRecord implements HealthDataEntry {
     public DynamoRecord(String key, HealthDataEntry entry) {
         this.key = key;
         this.recordId = entry.getRecordId();
+        this.startDate = entry.getStartDate();
+        this.endDate = entry.getEndDate();
+        this.data = entry.getData();
+    }
+    
+    public DynamoRecord(String key, String recordId, HealthDataEntry entry) {
+        this.key = key;
+        this.recordId = recordId;
         this.startDate = entry.getStartDate();
         this.endDate = entry.getEndDate();
         this.data = entry.getData();

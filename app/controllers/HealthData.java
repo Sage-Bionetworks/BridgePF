@@ -7,7 +7,6 @@ import models.IdHolder;
 import models.JsonPayload;
 import models.UserSession;
 
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.healthdata.HealthDataEntry;
 import org.sagebionetworks.bridge.healthdata.HealthDataEntryImpl;
 import org.sagebionetworks.bridge.healthdata.HealthDataKey;
@@ -15,6 +14,7 @@ import org.sagebionetworks.bridge.services.HealthDataService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import play.Logger;
 import play.mvc.Result;
 
 public class HealthData extends BaseController {

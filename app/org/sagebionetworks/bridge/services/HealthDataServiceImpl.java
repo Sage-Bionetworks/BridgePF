@@ -12,10 +12,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
+import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
+import org.jasypt.salt.ZeroSaltGenerator;
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.context.BridgeContext;
 import org.sagebionetworks.bridge.dynamodb.DynamoRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.healthdata.HealthDataEntry;
 import org.sagebionetworks.bridge.healthdata.HealthDataKey;
+import org.sagebionetworks.client.SynapseClient;
+import org.sagebionetworks.client.exceptions.SynapseException;
+import org.sagebionetworks.repo.model.UserSessionData;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.InitializingBean;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -23,10 +34,12 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 
-public class HealthDataServiceImpl implements HealthDataService {
+public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAware, InitializingBean {
 
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
+    private BeanFactory beanFactory;
+    private final StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
     
     public DynamoDBMapper getCreateMapper() {
         return createMapper;
@@ -42,7 +55,26 @@ public class HealthDataServiceImpl implements HealthDataService {
 
     public void setUpdateMapper(DynamoDBMapper updateMapper) {
         this.updateMapper = updateMapper;
-    }    
+    }
+    
+    public void setBeanFactory(BeanFactory factory) {
+        this.beanFactory = factory;
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        BridgeContext context = new BridgeContext();
+        encryptor.setPassword(context.get(BridgeContext.PASSWORD));
+        // We need stable production of a token.
+        encryptor.setSaltGenerator(new ZeroSaltGenerator());
+    }
+    
+    private SynapseClient getSynapseClient(String sessionToken) {
+        SynapseClient client = beanFactory.getBean("synapseClient", SynapseClient.class);
+        client.setSessionToken(sessionToken);
+        client.appendUserAgent(BridgeConstants.USER_AGENT);
+        return client;
+    }
     
     private static final Comparator<HealthDataEntry> START_DATE_COMPARATOR = new Comparator<HealthDataEntry>() {
         @Override
@@ -51,7 +83,7 @@ public class HealthDataServiceImpl implements HealthDataService {
         }
     };
     
-    private String healthDataKeyToAnonimizedKeyString(HealthDataKey key) {
+    private String healthDataKeyToAnonimizedKeyString(HealthDataKey key) throws BridgeServiceException, SynapseException {
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey cannot be null");
         } else if (key.getStudyId() == 0) {
@@ -61,9 +93,15 @@ public class HealthDataServiceImpl implements HealthDataService {
         } else if (key.getSessionToken() == null) {
             throw new BridgeServiceException("HealthDataKey does not have a session token");
         }
-        // Translation from session token to user to health data code would happen here.
-        // For the time being, it's always 1.
-        return String.format("%s:%s:%s", key.getStudyId(), key.getTrackerId(), "1");
+        
+        UserSessionData data = getSynapseClient(key.getSessionToken()).getUserSessionData();
+        String ownerId = data.getProfile().getOwnerId();
+        if (StringUtils.isBlank(ownerId)) {
+            throw new BridgeServiceException("Cannot find ID for user");
+        }
+        String encryptedValue = encryptor.encrypt(ownerId);
+        
+        return String.format("%s:%s:%s", key.getStudyId(), key.getTrackerId(), encryptedValue);
     }
     
     private String generateId() {
@@ -114,7 +152,7 @@ public class HealthDataServiceImpl implements HealthDataService {
             DynamoDBMapper mapper = getCreateMapper();
             DynamoRecord record = new DynamoRecord(healthDataKeyToAnonimizedKeyString(key));
             DynamoDBQueryExpression<DynamoRecord> queryExpression = new DynamoDBQueryExpression<DynamoRecord>().withHashKeyValues(record);
-            
+
             List<DynamoRecord> records = mapper.query(DynamoRecord.class, queryExpression);
             return toHealthDataEntries(records);
         } catch(Exception e) {
@@ -183,7 +221,7 @@ public class HealthDataServiceImpl implements HealthDataService {
             intersection.retainAll( new HashSet<DynamoRecord>(records2) );
             
             return toHealthDataEntries(intersection);
-        } catch(BridgeServiceException e) {
+        } catch(Exception e) {
             throw new BridgeServiceException(e);
         }
     }
@@ -211,7 +249,7 @@ public class HealthDataServiceImpl implements HealthDataService {
                 throw new BridgeServiceException("getHealthDataEntry for '"+recordId+ "' matched more than one record");
             }
             return (results.isEmpty()) ? null : results.get(0).toEntry();
-        } catch(BridgeServiceException e) {
+        } catch(Exception e) {
             throw new BridgeServiceException(e);
         }
     }
@@ -228,12 +266,13 @@ public class HealthDataServiceImpl implements HealthDataService {
             throw new BridgeServiceException("HealthDataEntry record ID is required on update (it's null)");
         }
         try {
+
             DynamoDBMapper mapper = getUpdateMapper();
-            
-            String recordId = healthDataKeyToAnonimizedKeyString(key);
-            DynamoRecord record = new DynamoRecord(recordId, entry);
+            String anonKey = healthDataKeyToAnonimizedKeyString(key);
+            DynamoRecord record = new DynamoRecord(anonKey, entry);
             mapper.save(record);
-        } catch(BridgeServiceException e) {
+
+        } catch(Exception e) {
             throw new BridgeServiceException(e);
         }
     }
@@ -251,7 +290,10 @@ public class HealthDataServiceImpl implements HealthDataService {
                 throw new BridgeServiceException("Object does not exist: " + key.toString() + ", record ID #" + recordId);
             }
             DynamoDBMapper mapper = getUpdateMapper();
-            mapper.delete(entry);
+            String anonKey = healthDataKeyToAnonimizedKeyString(key);
+            DynamoRecord record = new DynamoRecord(anonKey, recordId, entry);
+            mapper.delete(record);
+            
         } catch(Exception e) {
             throw new BridgeServiceException(e);
         }
