@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class HealthDataEntryImpl implements HealthDataEntry {
+public class HealthDataRecordImpl implements HealthDataRecord {
 
     private static final String RECORD_ID = "recordId";
     private static final String START_DATE = "startDate";
@@ -20,24 +20,24 @@ public class HealthDataEntryImpl implements HealthDataEntry {
     protected long endDate;
     protected JsonNode data;
     
-    public HealthDataEntryImpl() {
+    public HealthDataRecordImpl() {
     }
     
-    public HealthDataEntryImpl(String recordId, long date, JsonNode data) {
+    public HealthDataRecordImpl(String recordId, long date, JsonNode data) {
         this.recordId = recordId;
         this.startDate = date;
         this.endDate = date;
         this.data = data;
     }
     
-    public HealthDataEntryImpl(String recordId, long startDate, long endDate, JsonNode data) {
+    public HealthDataRecordImpl(String recordId, long startDate, long endDate, JsonNode data) {
         this.recordId = recordId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.data = data;
     }
     
-    public static final HealthDataEntryImpl fromJson(JsonNode node) {
+    public static final HealthDataRecordImpl fromJson(JsonNode node) {
         String recordId = null;
         long startDate = 0L;
         long endDate = 0L;
@@ -60,7 +60,7 @@ public class HealthDataEntryImpl implements HealthDataEntry {
                 data = node.get(DATA);
             }
         }
-        return new HealthDataEntryImpl(recordId, startDate, endDate, data);
+        return new HealthDataRecordImpl(recordId, startDate, endDate, data);
     }
     
     
@@ -100,7 +100,7 @@ public class HealthDataEntryImpl implements HealthDataEntry {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        HealthDataEntryImpl other = (HealthDataEntryImpl) obj;
+        HealthDataRecordImpl other = (HealthDataRecordImpl) obj;
         if (recordId == null) {
             if (other.recordId != null)
                 return false;

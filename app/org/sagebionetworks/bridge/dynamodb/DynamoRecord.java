@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import org.sagebionetworks.bridge.healthdata.HealthDataEntry;
-import org.sagebionetworks.bridge.healthdata.HealthDataEntryImpl;
+import org.sagebionetworks.bridge.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.healthdata.HealthDataRecordImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -12,7 +12,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Used by the services to join a HealthDataKey to a HealthDataEntry, into a complete 
+ * Used by the services to join a HealthDataKey to a HealthDataRecord, into a complete 
  * DynamoDB record. Not exposed to consumers.
  * 
  * Table structure:
@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  *
  */
 @DynamoDBTable(tableName = "dev-adark-TestTable")
-public class DynamoRecord implements HealthDataEntry {
+public class DynamoRecord implements HealthDataRecord {
 
     private String key;
     private String recordId;
@@ -40,24 +40,24 @@ public class DynamoRecord implements HealthDataEntry {
         this.key = key;
     }
     
-    public DynamoRecord(String key, HealthDataEntry entry) {
+    public DynamoRecord(String key, HealthDataRecord record) {
         this.key = key;
-        this.recordId = entry.getRecordId();
-        this.startDate = entry.getStartDate();
-        this.endDate = entry.getEndDate();
-        this.data = entry.getData();
+        this.recordId = record.getRecordId();
+        this.startDate = record.getStartDate();
+        this.endDate = record.getEndDate();
+        this.data = record.getData();
     }
     
-    public DynamoRecord(String key, String recordId, HealthDataEntry entry) {
+    public DynamoRecord(String key, String recordId, HealthDataRecord record) {
         this.key = key;
         this.recordId = recordId;
-        this.startDate = entry.getStartDate();
-        this.endDate = entry.getEndDate();
-        this.data = entry.getData();
+        this.startDate = record.getStartDate();
+        this.endDate = record.getEndDate();
+        this.data = record.getData();
     }
     
-    public HealthDataEntry toEntry() {
-        return new HealthDataEntryImpl(recordId, startDate, endDate, data);
+    public HealthDataRecord toHealthDataRecord() {
+        return new HealthDataRecordImpl(recordId, startDate, endDate, data);
     }
     
     @DynamoDBHashKey

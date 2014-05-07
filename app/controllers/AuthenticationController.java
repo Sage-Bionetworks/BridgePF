@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 
 import play.mvc.*;
 
-public class Authentication extends BaseController {
+public class AuthenticationController extends BaseController {
 
 	public Result signIn() throws Exception {
 		SignIn signIn = SignIn.fromJson(request().body().asJson());

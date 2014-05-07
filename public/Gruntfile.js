@@ -29,6 +29,7 @@ module.exports = function(grunt) {
                     'app/scripts/humane-modified.js',
                     'app/scripts/app.js',
                     'app/scripts/auth-service.js', 
+                    'app/scripts/health-data-service.js', 
                     'app/scripts/dialogs/*.js',
                     'app/scripts/controllers/*.js'
                 ],
