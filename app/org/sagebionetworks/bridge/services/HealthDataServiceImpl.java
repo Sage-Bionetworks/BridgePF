@@ -85,21 +85,21 @@ public class HealthDataServiceImpl implements HealthDataService {
             throw new BridgeServiceException("Cannot create a new HealthDataEntry instance without specifying a HealthDataKey");
         } else if (entry == null) {
             throw new BridgeServiceException("New HealthDataEntry instance is null");
-        } else if (entry.getId() != null) {
-            throw new BridgeServiceException("New HealthDataEntry instance has an ID (should be blank)");
+        } else if (entry.getRecordId() != null) {
+            throw new BridgeServiceException("New HealthDataEntry instance has a record ID (should be blank)");
         } else if (entry.getStartDate() == 0) {
             throw new BridgeServiceException("New HealthDataEntry instance does not have a startDate set");
         }
         try {
             DynamoDBMapper mapper = getCreateMapper();
 
-            String id = generateId();
-            entry.setId(id);
+            String recordId = generateId();
+            entry.setRecordId(recordId);
             String anonKey = healthDataKeyToAnonimizedKeyString(key);
             DynamoRecord record = new DynamoRecord(anonKey, entry);
             
             mapper.save(record);
-            return id;
+            return recordId;
         } catch(Exception e) {
             throw new BridgeServiceException(e);
         }
@@ -189,9 +189,9 @@ public class HealthDataServiceImpl implements HealthDataService {
     }
 
     @Override
-    public HealthDataEntry getHealthDataEntry(HealthDataKey key, String id) throws BridgeServiceException {
-        if (id == null) {
-            throw new BridgeServiceException("HealthDataEntry ID cannot be null");
+    public HealthDataEntry getHealthDataEntry(HealthDataKey key, String recordId) throws BridgeServiceException {
+        if (recordId == null) {
+            throw new BridgeServiceException("HealthDataEntry record ID cannot be null");
         }
         try {
             DynamoDBMapper mapper = getCreateMapper();
@@ -200,15 +200,15 @@ public class HealthDataServiceImpl implements HealthDataService {
             
             Condition rangeKeyCondition = new Condition()
                 .withComparisonOperator(ComparisonOperator.EQ)
-                .withAttributeValueList(new AttributeValue().withS(id));
+                .withAttributeValueList(new AttributeValue().withS(recordId));
 
             DynamoDBQueryExpression<DynamoRecord> queryExpression = new DynamoDBQueryExpression<DynamoRecord>()
                     .withHashKeyValues(record)
-                    .withRangeKeyCondition("id", rangeKeyCondition);
+                    .withRangeKeyCondition("recordId", rangeKeyCondition);
             
             List<DynamoRecord> results = mapper.query(DynamoRecord.class, queryExpression);
             if (results.size() > 1) {
-                throw new BridgeServiceException("getHealthDataEntry for '"+id+ "' matched more than one record");
+                throw new BridgeServiceException("getHealthDataEntry for '"+recordId+ "' matched more than one record");
             }
             return (results.isEmpty()) ? null : results.get(0).toEntry();
         } catch(BridgeServiceException e) {
@@ -224,14 +224,14 @@ public class HealthDataServiceImpl implements HealthDataService {
             throw new BridgeServiceException("HealthDataEntry is required on update (it's null)");
         } else if (entry.getStartDate() == 0L) {
             throw new BridgeServiceException("HealthDataEntry startDate & endDate are required on update (point-in-time events set the same time for both fields");
-        } else if (entry.getId() == null) {
-            throw new BridgeServiceException("HealthDataEntry id is required on update (it's null)");
+        } else if (entry.getRecordId() == null) {
+            throw new BridgeServiceException("HealthDataEntry record ID is required on update (it's null)");
         }
         try {
             DynamoDBMapper mapper = getUpdateMapper();
             
-            String id = healthDataKeyToAnonimizedKeyString(key);
-            DynamoRecord record = new DynamoRecord(id, entry);
+            String recordId = healthDataKeyToAnonimizedKeyString(key);
+            DynamoRecord record = new DynamoRecord(recordId, entry);
             mapper.save(record);
         } catch(BridgeServiceException e) {
             throw new BridgeServiceException(e);
@@ -239,16 +239,16 @@ public class HealthDataServiceImpl implements HealthDataService {
     }
     
     @Override
-    public void deleteHealthDataEntry(HealthDataKey key, String id) throws BridgeServiceException {
+    public void deleteHealthDataEntry(HealthDataKey key, String recordId) throws BridgeServiceException {
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey is required for delete (it's null)");
-        } else if (id == null) {
-            throw new BridgeServiceException("HealthDataEntry ID is required for delete (it's null)");
+        } else if (recordId == null) {
+            throw new BridgeServiceException("HealthDataEntry record ID is required for delete (it's null)");
         }
         try {
-            HealthDataEntry entry = getHealthDataEntry(key, id);
+            HealthDataEntry entry = getHealthDataEntry(key, recordId);
             if (entry == null) {
-                throw new BridgeServiceException("Object does not exist: " + key.toString() + ", ID #" + id);
+                throw new BridgeServiceException("Object does not exist: " + key.toString() + ", record ID #" + recordId);
             }
             DynamoDBMapper mapper = getUpdateMapper();
             mapper.delete(entry);

@@ -103,7 +103,7 @@ public class HealthDataServiceImplTest {
     public void appendHealthDataErrorExistingEntry() throws Exception {
         HealthDataKey key = new HealthDataKey(1, 1, "belgium");
         HealthDataEntry entry = new HealthDataEntryImpl();
-        entry.setId("beluga");
+        entry.setRecordId("beluga");
         service.appendHealthData(key, entry);
     }
     @Test
@@ -114,7 +114,7 @@ public class HealthDataServiceImplTest {
         String identifier = service.appendHealthData(key, entry);
 
         verify(createMapper).save(any(DynamoRecord.class));
-        assertThat(entry.getId()).isEqualTo(identifier);
+        assertThat(entry.getRecordId()).isEqualTo(identifier);
         
         verifyNoMoreInteractions(createMapper);
     }
@@ -192,7 +192,7 @@ public class HealthDataServiceImplTest {
         
         HealthDataEntry result = service.getHealthDataEntry(key, "foo");
         
-        assertThat(result.getId()).isEqualTo(entry.getId());
+        assertThat(result.getRecordId()).isEqualTo(entry.getRecordId());
         assertThat(result.getStartDate()).isEqualTo(entry.getStartDate());
         assertThat(result.getEndDate()).isEqualTo(entry.getEndDate());
     }

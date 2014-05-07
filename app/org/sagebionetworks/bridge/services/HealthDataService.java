@@ -15,10 +15,10 @@ public interface HealthDataService {
     
     public List<HealthDataEntry> getHealthDataByDateRange(HealthDataKey key, Date startDate, Date endDate) throws BridgeServiceException;
     
-    public HealthDataEntry getHealthDataEntry(HealthDataKey key, String id) throws BridgeServiceException;
+    public HealthDataEntry getHealthDataEntry(HealthDataKey key, String recordId) throws BridgeServiceException;
 
     public void updateHealthDataEntry(HealthDataKey key, HealthDataEntry entry) throws BridgeServiceException;
 
-    public void deleteHealthDataEntry(HealthDataKey key, String id) throws BridgeServiceException;
+    public void deleteHealthDataEntry(HealthDataKey key, String recordId) throws BridgeServiceException;
     
 }
