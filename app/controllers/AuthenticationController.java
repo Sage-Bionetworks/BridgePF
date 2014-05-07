@@ -6,17 +6,10 @@ import models.SignUp;
 import models.UserSession;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.services.AuthenticationService;
 
 import play.mvc.*;
 
-public class Authentication extends BaseController {
-
-	private AuthenticationService authenticationService;
-
-	public void setAuthenticationService(AuthenticationService authenticationService) {
-		this.authenticationService = authenticationService;
-	}
+public class AuthenticationController extends BaseController {
 
 	public Result signIn() throws Exception {
 		SignIn signIn = SignIn.fromJson(request().body().asJson());

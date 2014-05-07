@@ -20,18 +20,27 @@
             <list><value>exceptionInterceptor</value></list>
         </property>
     </bean>
-    
-    <bean id="controllers.Application" parent="proxiedController">
+
+    <bean id="controllers.ApplicationController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.Application">
+            <bean class="controllers.ApplicationController">
                 <property name="authenticationService" ref="authenticationService"/>
             </bean>
         </property>
     </bean>
     
-    <bean id="controllers.Authentication" parent="proxiedController">
+    <bean id="controllers.AuthenticationController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.Authentication">
+            <bean class="controllers.AuthenticationController">
+                <property name="authenticationService" ref="authenticationService"/>
+            </bean>
+        </property>
+    </bean>
+    
+    <bean id="controllers.HealthDataController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.HealthDataController">
+                <property name="healthDataService" ref="healthDataService"/>
                 <property name="authenticationService" ref="authenticationService"/>
             </bean>
         </property>
@@ -40,5 +49,30 @@
     <!-- Services -->
 
     <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl"/>
+    
+    <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">
+        <property name="updateMapper">
+            <bean class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
+                <constructor-arg index="0" ref="dynamoDbClient"/>
+                <constructor-arg index="1">
+                    <bean class="org.sagebionetworks.bridge.dynamodb.DynamoDBMapperConfigFactory" factory-method="getUpdateMapper"/>
+                </constructor-arg>
+            </bean>
+        </property>
+        <property name="createMapper">
+            <bean class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
+                <constructor-arg index="0" ref="dynamoDbClient"/>
+                <constructor-arg index="1">
+                    <bean class="org.sagebionetworks.bridge.dynamodb.DynamoDBMapperConfigFactory" factory-method="getCreateMapper"/>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+    
+    <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" scope="prototype">
+        <constructor-arg index="0">
+            <bean class="org.sagebionetworks.bridge.dynamodb.CredentialsFactory" factory-method="getCredentials"/>
+        </constructor-arg>
+    </bean>    
     
 </beans>
