@@ -1,5 +1,5 @@
-angular.module('bridge').service('authService', ['$http', '$rootScope', '$location', '$window', '$humane',   
-function($http, $rootScope, $location, $window, $humane) {
+angular.module('bridge').service('authService', ['$http', '$rootScope', '$location', '$window', '$humane', '$q',    
+function($http, $rootScope, $location, $window, $humane, $q) {
     var service = {
         sessionToken: '',
         username: '',
@@ -22,24 +22,33 @@ function($http, $rootScope, $location, $window, $humane) {
             }
             credentials = angular.extend({}, credentials);
             
+            var deferred = $q.defer();
+            $rootScope.loading++;
             $http.post('/api/auth/signIn', credentials).success(function(data, status) {
+                $rootScope.loading--;
                 service.init(data.payload);
+                data.status = status;
+                deferred.resolve(data);
             }).error(function(data, status) {
-                if (status === 412) {
-                    $location.path("/consent/" + data.sessionToken);
-                } else if (status === 404 || status === 401) {
-                    $humane.error("Wrong user name or password.");
-                } else {
-                    $humane.error("There has been an error.");
-                }
+                $rootScope.loading--;
+                data.status = status;
+                deferred.reject(data);
             });
+            return deferred.promise;
         },
-        signOut: function(errorCallback) {
+        signOut: function() {
+            var deferred = $q.defer();
+            $rootScope.loading++;
             $http.get('/api/auth/signOut').success(function(data, status) {
-                $window.location.replace("/");
+                $rootScope.loading--;
+                data.status = status;
+                deferred.resolve(data);
             }).error(function(data) {
-                $humane.error(data.payload);
+                $rootScope.loading--;
+                data.status = status;
+                deferred.reject(data);
             });
+            return deferred.promise;
         }
     };
 

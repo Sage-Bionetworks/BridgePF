@@ -41,6 +41,7 @@ module.exports = function(grunt) {
                     'app/bower_components/bootstrap/dist/css/bootstrap.css',
                     'app/bower_components/bootstrap/dist/css/bootstrap-theme.css',
                     'app/styles/humane-modified.css', // to work with bootstrap
+                    'app/styles/*.css',
                     'app/styles/*.scss'
                 ],
                 dest: '<%= output %>/bridge.scss',
