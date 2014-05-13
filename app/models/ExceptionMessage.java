@@ -1,5 +1,9 @@
 package models;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+@JsonInclude(Include.NON_NULL)
 public class ExceptionMessage extends JsonPayload<String> {
 
 	/**
@@ -12,17 +16,17 @@ public class ExceptionMessage extends JsonPayload<String> {
 	
 	public ExceptionMessage(Throwable throwable) {
 		super(throwable.getMessage());
-		this.type = throwable.getClass().getSimpleName();
+		this.type = "BridgeServiceException";
 	}
 
 	public ExceptionMessage(Throwable throwable, String message) {
 		super(message);
-		this.type = throwable.getClass().getSimpleName();
+        this.type = "BridgeServiceException";
 	}
 	
 	public ExceptionMessage(Throwable throwable, String message, String sessionToken) {
 		super(message);
-		this.type = throwable.getClass().getSimpleName();
+        this.type = "BridgeServiceException";
 		this.sessionToken = sessionToken;
 	}
 	

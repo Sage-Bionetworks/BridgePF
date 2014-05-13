@@ -26,7 +26,7 @@ angular.module('bridge').controller('HealthController', ['$scope', '$humane', 'h
         if ($scope.record.data.diastolic && $scope.record.data.systolic && $scope.record.startDate) {
             var data = adjustValues($scope.record);
             
-            healthDataService.create(1, 1, data).then(function(data) {
+            healthDataService.create(1, data).then(function(data) {
                 $humane.confirm("Saved");
                 updateTable();
             }, function(data) {
@@ -35,7 +35,7 @@ angular.module('bridge').controller('HealthController', ['$scope', '$humane', 'h
         }
     };
     $scope.remove = function(record) {
-        healthDataService.remove(1, 1, record.recordId).then(function(data) {
+        healthDataService.remove(1, record.recordId).then(function(data) {
             $humane.confirm("Deleted");
             updateTable();
         }, function(data) {
@@ -54,7 +54,7 @@ angular.module('bridge').controller('HealthController', ['$scope', '$humane', 'h
             
             var data = adjustValues($scope.record);
             
-            healthDataService.update(1, 1, data).then(function(data) {
+            healthDataService.update(1, data).then(function(data) {
                 $humane.confirm("Updated");
                 updateTable();
             }, function(data) {
@@ -67,7 +67,7 @@ angular.module('bridge').controller('HealthController', ['$scope', '$humane', 'h
     updateTable();
 
     function updateTable() {
-        healthDataService.getAll(1, 1).then(function(data) {
+        healthDataService.getAll(1).then(function(data) {
             $scope.records = data.payload.reverse();
         }, function(data) {
             $humane.error(data.payload);

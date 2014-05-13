@@ -1,0 +1,19 @@
+{
+    "type": "object",
+    "required": ["startDate", "endDate", "data"],
+    "additionalProperties": false,
+    "properties": {
+        "key": {"type": "string"},
+        "recordId": {"type": "string"},
+        "startDate": {"type": "number"},
+        "endDate": {"type": "number"},
+        "data": {
+            "type": "object",
+            "required": ["systolic", "diastolic"],
+            "properties": {
+                "systolic": {"type": "number"},
+                "diastolic": {"type": "number"}
+            }
+        }
+    }
+}

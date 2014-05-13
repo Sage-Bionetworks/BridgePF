@@ -7,9 +7,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.healthdata.HealthDataRecordImpl;
-import org.sagebionetworks.bridge.healthdata.HealthDataKey;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.repo.model.UserProfile;
 import org.sagebionetworks.repo.model.UserSessionData;
@@ -24,13 +24,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 import static org.fest.assertions.Assertions.*;
 
 public class HealthDataServiceImplTest {
@@ -197,7 +195,7 @@ public class HealthDataServiceImplTest {
     public void getHealthDataRecordInvalidId() throws Exception {
         HealthDataKey key = new HealthDataKey(1, 1, "belgium");
         
-        doThrow(new BridgeServiceException("Test")).when(createMapper).query((Class<DynamoRecord>) any(),
+        doThrow(new BridgeServiceException("Test", 500)).when(createMapper).query((Class<DynamoRecord>) any(),
                 (DynamoDBQueryExpression<DynamoRecord>) any());
         
         service.getHealthDataRecord(key, "foo");

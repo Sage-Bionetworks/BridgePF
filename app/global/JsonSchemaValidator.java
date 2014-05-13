@@ -1,0 +1,57 @@
+package global;
+
+import java.io.IOException;
+
+import org.apache.commons.httpclient.HttpStatus;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.Tracker;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonschema.core.report.ProcessingMessage;
+import com.github.fge.jsonschema.core.report.ProcessingReport;
+import com.github.fge.jsonschema.main.JsonSchema;
+import com.github.fge.jsonschema.main.JsonSchemaFactory;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+
+public class JsonSchemaValidator {
+    
+    private CacheLoader<Tracker, JsonNode> loader = new CacheLoader<Tracker, JsonNode>() {
+        public JsonNode load(Tracker tracker) throws JsonProcessingException, IOException {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readTree(tracker.getSchemaFile().getInputStream());
+        }
+    };
+
+    private LoadingCache<Tracker, JsonNode> cache = CacheBuilder.newBuilder().build(loader);
+
+    public JsonNode getSchemaAsNode(Tracker tracker) throws Exception {
+        return cache.get(tracker);
+    }
+    
+    public void validate(Tracker tracker, JsonNode node) throws Exception {
+        // Why does validation occur here? Because the validation is occurring in the transfer
+        // format, not the service API format, and the error messages will make more sense to the 
+        // client if the validation occurs here. However that means there's no validation at the 
+        // service level, we'd have to convert *back* to JSON to use the same schema for that purpose, 
+        // and do it all twice.
+        JsonSchemaFactory factory = JsonSchemaFactory.byDefault();
+        JsonNode schemaFile = getSchemaAsNode(tracker);
+        JsonSchema schema = factory.getJsonSchema(schemaFile);
+
+        ProcessingReport report = schema.validate(node);
+        if (!report.isSuccess()) {
+            StringBuilder sb = new StringBuilder();
+            for (ProcessingMessage message : report) {
+                sb.append(message.getMessage());
+                sb.append(". ");
+            }
+            throw new BridgeServiceException(sb.toString(), HttpStatus.SC_BAD_REQUEST);
+        }
+    }
+
+
+}

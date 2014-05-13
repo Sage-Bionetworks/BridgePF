@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.healthdata;
+package org.sagebionetworks.bridge.models.healthdata;
 
 public final class HealthDataKey {
 
