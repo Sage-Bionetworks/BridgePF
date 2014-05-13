@@ -12,14 +12,18 @@ POST   /api/auth/requestResetPassword   @controllers.AuthenticationController.re
 POST   /api/auth/consentToResearch      @controllers.AuthenticationController.consentToResearch
 
 # API - Health Data
-POST   /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthDataController.appendHealthData(studyId: Long, trackerId: Long)
-GET    /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthDataController.getAllHealthData(studyId: Long, trackerId: Long)
-GET    /api/healthdata/study/:studyId/tracker/:trackerId    @controllers.HealthDataController.getHealthDataByDateRange(studyId: Long, trackerId: Long, startDate: Long, endDate: Long)
+POST   /api/healthdata/:trackerId    @controllers.HealthDataController.appendHealthData(trackerId: Long)
+GET    /api/healthdata/:trackerId    @controllers.HealthDataController.getAllHealthData(trackerId: Long)
+GET    /api/healthdata/:trackerId    @controllers.HealthDataController.getHealthDataByDateRange(trackerId: Long, startDate: Long, endDate: Long)
 
 # API - Individual health data record
-GET    /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(studyId: Long, trackerId: Long, recordId: String)
-POST   /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthDataController.updateHealthDataRecord(studyId: Long, trackerId: Long, recordId: String)
-DELETE /api/healthdata/study/:studyId/tracker/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(studyId: Long, trackerId: Long, recordId: String)
+GET    /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(trackerId: Long, recordId: String)
+POST   /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.updateHealthDataRecord(trackerId: Long, recordId: String)
+DELETE /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(trackerId: Long, recordId: String)
+
+# API - trackers
+GET    /api/trackers                   @controllers.TrackerController.getTrackers
+GET    /api/trackers/schema/:trackerId @controllers.TrackerController.getTrackerSchema(trackerId: Long)
 
 # AngularJS application
 GET     /*file                  controllers.Assets.at(path="/public/app", file)

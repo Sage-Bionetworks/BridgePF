@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import org.sagebionetworks.bridge.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.healthdata.HealthDataRecordImpl;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;

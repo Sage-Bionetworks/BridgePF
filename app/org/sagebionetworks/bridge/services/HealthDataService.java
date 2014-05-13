@@ -4,8 +4,8 @@ import java.util.Date;
 import java.util.List;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.healthdata.HealthDataKey;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 public interface HealthDataService {
 

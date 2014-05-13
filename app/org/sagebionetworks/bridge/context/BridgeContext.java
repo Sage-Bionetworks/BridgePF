@@ -9,11 +9,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BridgeContext {
-
+ 
     private static final Logger logger = LoggerFactory.getLogger(BridgeContext.class);
 
     public static final String PASSWORD = "pwd";
 	public static final String ENVIRONMENT = "environment";
+    private static final String AWS_KEY = "aws.key";
+    private static final String AWS_SECRET_KEY = "aws.secret.key";
 	
 	private final Map<String, String> nameValueMap = new HashMap<String, String>();
 	private final PBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
@@ -22,8 +24,8 @@ public class BridgeContext {
 	    nameValueMap.put(PASSWORD, "");
         nameValueMap.put(ENVIRONMENT, "stub");
         // TODO: Have a properties file or files, switched by environment.
-        nameValueMap.put("aws.key", "XszaP+EsOz1dVz9P5TTuaabZoOR6KYC5O46IbJy/9bY=");
-        nameValueMap.put("aws.secret.key", "wtQuhjk8qxLofjgmkW+TgB0ZHO/V5sDx4Qm1PxiAdawBC9BVJ0aTqOb+kfnfz+zUrJqwlg72doU=");
+        nameValueMap.put(AWS_KEY, "XszaP+EsOz1dVz9P5TTuaabZoOR6KYC5O46IbJy/9bY=");
+        nameValueMap.put(AWS_SECRET_KEY, "wtQuhjk8qxLofjgmkW+TgB0ZHO/V5sDx4Qm1PxiAdawBC9BVJ0aTqOb+kfnfz+zUrJqwlg72doU=");
         readEnv();
         readSystemProperties();
         

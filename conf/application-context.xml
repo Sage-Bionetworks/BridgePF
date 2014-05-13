@@ -1,6 +1,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
    xmlns:context="http://www.springframework.org/schema/context"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns:util="http://www.springframework.org/schema/util"
    xmlns:mvc="http://www.springframework.org/schema/mvc"
    xsi:schemaLocation="
         http://www.springframework.org/schema/beans     
@@ -8,7 +9,9 @@
         http://www.springframework.org/schema/context 
         http://www.springframework.org/schema/context/spring-context-3.0.xsd
         http://www.springframework.org/schema/mvc
-        http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+        http://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/util 
+        http://www.springframework.org/schema/util/spring-util-2.0.xsd">
 
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"></bean>
 
@@ -42,8 +45,48 @@
             <bean class="controllers.HealthDataController">
                 <property name="healthDataService" ref="healthDataService"/>
                 <property name="authenticationService" ref="authenticationService"/>
+		        <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
+    </bean>
+    
+    <bean id="controllers.TrackerController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.TrackerController">
+                <property name="jsonSchemaValidator">
+                    <bean class="global.JsonSchemaValidator"/>
+                </property>
+                <property name="studyControllerService" ref="studyControllerService"/>
+            </bean>
+        </property>
+    </bean>
+    
+    <bean id="studyControllerService" class="controllers.StudyControllerService">
+        <property name="studies">
+            <list>
+		        <bean class="org.sagebionetworks.bridge.models.Study">
+		            <property name="hostnames">
+		                <list>
+		                    <value>localhost</value>
+		                    <value>bridge-development.herokuapp.com</value>
+		                </list>
+		            </property>
+		            <property name="id" value="1"/>
+		            <property name="trackers">
+		                <list>
+		                    <ref bean="pb-tracker"/>
+		                </list>
+		            </property>
+		        </bean>
+            </list>
+        </property>
+    </bean>
+    
+    <bean id="pb-tracker" class="org.sagebionetworks.bridge.models.Tracker">
+        <property name="name" value="Blood Pressure Reading"/>
+        <property name="type" value="BloodPressure"/>
+        <property name="id" value="1"/>
+        <property name="schemaFile" value="file:conf/schemas/bloodpressure.json"/>
     </bean>
     
     <!-- Services -->
