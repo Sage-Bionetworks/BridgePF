@@ -14,6 +14,8 @@ import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -22,8 +24,6 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.repo.model.UserSessionData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 
@@ -32,10 +32,12 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
 
 public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAware {
 
-    final static Logger logger = LoggerFactory.getLogger(HealthDataServiceImpl.class);
+    protected final Log logger = LogFactory.getLog(getClass());
 
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
@@ -88,6 +90,7 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         
         UserSessionData data = getSynapseClient(key.getSessionToken()).getUserSessionData();
         String ownerId = data.getProfile().getOwnerId();
+        
         if (StringUtils.isBlank(ownerId)) {
             throw new BridgeServiceException("Cannot find ID for user", HttpStatus.SC_NOT_FOUND);
         }
@@ -158,15 +161,29 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
     // I think this is okay. That's per user per tracker per study. That's 160k records.
     
     @Override
-    public List<HealthDataRecord> getHealthDataByDateRange(HealthDataKey key, Date startDate, Date endDate) throws BridgeServiceException {
+    public List<HealthDataRecord> getHealthDataByDateRange(HealthDataKey key, final Date startDate, final Date endDate) throws BridgeServiceException {
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey cannot be null", HttpStatus.SC_BAD_REQUEST);
-        } else if (startDate == null) {
-            throw new BridgeServiceException("startDate cannot be null", HttpStatus.SC_BAD_REQUEST);
-        } else if (endDate == null) {
-            throw new BridgeServiceException("endDate cannot be null", HttpStatus.SC_BAD_REQUEST);
+        } else if (startDate == null || startDate.getTime() == 0) {
+            throw new BridgeServiceException("startDate cannot be null/0", HttpStatus.SC_BAD_REQUEST);
+        } else if (endDate == null || endDate.getTime() == 0) {
+            throw new BridgeServiceException("endDate cannot be null/0", HttpStatus.SC_BAD_REQUEST);
         }
-        try {                
+        try {
+            /* Works for sure, very inefficient. Need to change global secondary indexes to local secondary 
+             * indexes for the query version, do not know all the consequences of the two index types.
+             * 
+             * This does make one query, though
+             * 
+            return FluentIterable.from(getAllHealthData(key)).filter(new Predicate<HealthDataRecord>() {
+                public boolean apply(HealthDataRecord record) {
+                    if ((record.getEndDate() != 0 && record.getEndDate() < startDate.getTime()) || record.getStartDate() > endDate.getTime()) {
+                        return false;
+                    }
+                    return true;
+                }
+            }).toList();
+             */
             DynamoDBMapper mapper = getCreateMapper();
             DynamoRecord dynamoRecord = new DynamoRecord(healthDataKeyToAnonimizedKeyString(key));
             
@@ -175,7 +192,7 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
             // and take the intersection
     
             AttributeValue endDateWindow = new AttributeValue().withN(Long.toString(endDate.getTime()));
-
+            
             Condition startDateCondition = new Condition()
                 .withComparisonOperator(ComparisonOperator.LE)
                 .withAttributeValueList(endDateWindow);
@@ -199,18 +216,10 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
                 .withHashKeyValues(dynamoRecord)
                 .withRangeKeyCondition("endDate", endDateCondition);
 
-            /* Throws an error, how do you test that end date is null?
-            query.setConditionalOperator(ConditionalOperator.OR);
-            
-            Condition endDateConditionNull = new Condition()
-                .withComparisonOperator(ComparisonOperator.NULL);
-            query.withRangeKeyCondition("endDate", endDateConditionNull);
-            */
             List<DynamoRecord> records2 = mapper.query(DynamoRecord.class, query);
             
             Set<DynamoRecord> intersection = new HashSet<DynamoRecord>(records1);
             intersection.retainAll( new HashSet<DynamoRecord>(records2) );
-            
             return toHealthDataEntries(intersection);
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);

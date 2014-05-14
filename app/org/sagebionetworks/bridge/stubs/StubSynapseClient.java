@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.stubs;
 
 import java.lang.reflect.Method;
+
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.HashMap;
 import java.util.List;
@@ -21,7 +22,6 @@ import org.sagebionetworks.repo.model.DomainType;
 import org.sagebionetworks.repo.model.UserProfile;
 import org.sagebionetworks.repo.model.UserSessionData;
 import org.sagebionetworks.repo.model.auth.NewIntegrationTestUser;
-import org.sagebionetworks.repo.model.auth.NewUser;
 import org.sagebionetworks.repo.model.auth.Session;
 import org.sagebionetworks.schema.adapter.JSONObjectAdapterException;
 
@@ -31,14 +31,11 @@ import com.google.common.collect.Sets;
 public abstract class StubSynapseClient implements SynapseClient, SynapseAdminClient {
 	
 	UserSessionData currentUserData;
-	String sessionToken; // when this isn't separate from UserSessionData.getProfile().getSession() there are errors.
 	Set<String> agreedTOUs = Sets.newHashSet();
 	Map<String,UserSessionData> usersById = Maps.newHashMap();
     Map<String,String> usersByChangedPasswords = new HashMap<String,String>();
 	
 	Map<String,String> emailByUserId = Maps.newHashMap();
-
-	int idCount = 2;
 
 	public StubSynapseClient() {
 	}
@@ -68,42 +65,60 @@ public abstract class StubSynapseClient implements SynapseClient, SynapseAdminCl
 	}
 
 	public void setStubUsers(List<Map<String,String>> stubUsers) throws Exception {
+	    int id = 1;
 		for (Map<String,String> entry : stubUsers) {
+		    String idString = Long.toString(id++);
 			NewIntegrationTestUser newUser = new NewIntegrationTestUser();
 			newUser.setUsername(entry.get("username"));
 			newUser.setEmail(entry.get("email"));
 			newUser.setPassword("password");
-			long id = createUser(newUser);
+			createStubUser(newUser, idString);
 			if ("true".equals(entry.get("tou"))) {
-				agreedTOUs.add(new Long(id).toString());
+				agreedTOUs.add(idString);
 			}
 			if ("true".equals(entry.get("admin"))) {
 				// nothing for now.
 			}
 		}
 	}
-	
-	private String newId() {
-		return Integer.toString(++idCount);
-	}
-	
+
+    private void createStubUser(NewIntegrationTestUser user, String idString) throws SynapseException, JSONObjectAdapterException {
+        UserProfile profile = new UserProfile();
+        profile.setUserName(user.getUsername());
+        profile.setOwnerId(idString);
+        Session session = new Session();
+        session.setSessionToken(idString);
+        UserSessionData data = new UserSessionData();
+        data.setIsSSO(false);
+        data.setProfile(profile);
+        data.setSession(session);
+        usersById.put(user.getUsername(), data);
+        usersById.put(idString, data);
+        emailByUserId.put(idString, user.getEmail());
+    }
+    
 	@Override
 	public void appendUserAgent(String toAppend) {
 	}
 
 	@Override
 	public void setSessionToken(String sessionToken) {
-		this.sessionToken = sessionToken;
+	    for (UserSessionData data : usersById.values()) {
+	        if (data.getSession().getSessionToken().equals(sessionToken)) {
+	            currentUserData = data;
+	        }
+	    }
 	}
 
 	@Override
 	public String getCurrentSessionToken() {
-		return this.sessionToken;
+	    return currentUserData.getSession().getSessionToken();
 	}
 	
 	@Override
 	public Session login(String userName, String password) throws SynapseException {
 		currentUserData = null;
+		
 		UserSessionData data = usersById.get(userName);
 		
 		String changedPassword = usersByChangedPasswords.get(userName);
@@ -120,7 +135,7 @@ public abstract class StubSynapseClient implements SynapseClient, SynapseAdminCl
 			session.setAcceptsTermsOfUse(false);
 			currentUserData = null;
 		}
-		data.setSession(session);
+		//data.setSession(session);
 		return session;
 	}
 
@@ -145,55 +160,6 @@ public abstract class StubSynapseClient implements SynapseClient, SynapseAdminCl
 		return null;
 	}
 
-	@Override
-	public long createUser(NewIntegrationTestUser user) throws SynapseException, JSONObjectAdapterException {
-		String id = newId();
-		UserProfile profile = new UserProfile();
-		profile.setUserName(user.getUsername());
-		profile.setOwnerId(id);
-		Session session = new Session();
-		session.setSessionToken(id);
-		UserSessionData data = new UserSessionData();
-		data.setIsSSO(false);
-		data.setProfile(profile);
-		data.setSession(session);
-		usersById.put(user.getUsername(), data);
-		usersById.put(id, data);
-		emailByUserId.put(id, user.getEmail());
-		return Long.parseLong(id);
-	}
-
-	@Override
-	public void createUser(NewUser user) throws SynapseException {
-		if (usersById.get(user.getUserName()) != null) {
-			throw new SynapseClientException("Service Error(409): FAILURE: Got HTTP status 409 for  Response Content: {\"reason\":\"User '"+user.getUserName()+"' already exists\n\"}");
-		}
-		// Check email too
-		for (UserSessionData data : usersById.values()) {
-			String email = emailByUserId.get(data.getProfile().getOwnerId());
-			if (user.getEmail().equals(email)) {
-				throw new SynapseClientException("Service Error(409): FAILURE: Got HTTP status 409 for  Response Content: {\"reason\":\"User email '"+email+"' already exists\n\"}");
-			}
-		}
-
-		String USER_ID = newId();
-		emailByUserId.put(USER_ID, user.getEmail());
-		
-		UserProfile profile = new UserProfile();
-		profile.setUserName(user.getUserName());
-		profile.setFirstName(user.getFirstName());
-		profile.setLastName(user.getLastName());
-		profile.setOwnerId(USER_ID);
-		Session session = new Session();
-		session.setSessionToken(USER_ID);
-		UserSessionData data = new UserSessionData();
-		data.setSession(session);
-		data.setProfile(profile);
-		// ARGH!
-		usersById.put(user.getUserName(), data);
-		usersById.put(USER_ID, data);		
-	}
-	
 	@Override
 	public void changePassword(String sessionToken, String newPassword) throws SynapseException {
 	    if (sessionToken != "asdf") {
