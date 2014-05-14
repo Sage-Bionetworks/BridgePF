@@ -17,7 +17,7 @@ import play.mvc.Result;
 public class BaseController extends Controller {
 
     protected AuthenticationService authenticationService;
-
+    
     public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
@@ -42,7 +42,7 @@ public class BaseController extends Controller {
 		}
 		return session[0];
 	}
-
+	
 	protected Result jsonResult(String message) {
 		return ok(Json.toJson(new StatusMessage(message)));
 	}

@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.healthdata;
+package org.sagebionetworks.bridge.models.healthdata;
 
 import org.sagebionetworks.bridge.context.BridgeContext;
 import org.slf4j.Logger;

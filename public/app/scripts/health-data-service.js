@@ -1,8 +1,8 @@
 angular.module('bridge').service('healthDataService', ['$http', '$rootScope', '$q', function($http, $rootScope, $q) {
     var service = {
-        getAll: function(studyId, trackerId) {
+        getAll: function(trackerId) {
             var deferred = $q.defer();
-            var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId;
+            var url = '/api/healthdata/'+trackerId;
             $rootScope.loading++;
             $http.get(url).success(function(data, status) {
                 $rootScope.loading--;
@@ -15,9 +15,9 @@ angular.module('bridge').service('healthDataService', ['$http', '$rootScope', '$
             });
             return deferred.promise;
         },
-        get: function(studyId, trackerId, recordId) {
+        get: function(trackerId, recordId) {
             var deferred = $q.defer();
-            var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId+"/record/"+recordId;
+            var url = '/api/healthdata/'+trackerId+"/record/"+recordId;
             $rootScope.loading++;
             $http.get(url).success(function(data, status) {
                 $rootScope.loading--;
@@ -30,12 +30,12 @@ angular.module('bridge').service('healthDataService', ['$http', '$rootScope', '$
             });
             return deferred.promise;
         },
-        create: function(studyId, trackerId, object) {
+        create: function(trackerId, object) {
             if (object.recordId) {
                 throw new Error("Trying to create a record with a pre-existing recordId");
             }
             var deferred = $q.defer();
-            var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId;
+            var url = '/api/healthdata/'+trackerId;
             $rootScope.loading++;
             $http.post(url, JSON.stringify(object)).success(function(data, status) {
                 $rootScope.loading--;
@@ -48,12 +48,12 @@ angular.module('bridge').service('healthDataService', ['$http', '$rootScope', '$
             });
             return deferred.promise;
         },
-        update: function(studyId, trackerId, object) {
+        update: function(trackerId, object) {
             if (!object.recordId) {
                 throw new Error("Trying to update a record with no recordId");
             }
             var deferred = $q.defer();
-            var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId+'/record/'+object.recordId;
+            var url = '/api/healthdata/'+trackerId+'/record/'+object.recordId;
             $rootScope.loading++;
             $http.post(url, JSON.stringify(object)).success(function(data, status) {
                 $rootScope.loading--;
@@ -66,9 +66,9 @@ angular.module('bridge').service('healthDataService', ['$http', '$rootScope', '$
             });
             return deferred.promise;
         },
-        remove: function(studyId, trackerId, recordId) {
+        remove: function(trackerId, recordId) {
             var deferred = $q.defer();
-            var url = '/api/healthdata/study/'+studyId+'/tracker/'+trackerId+'/record/'+recordId;
+            var url = '/api/healthdata/'+trackerId+'/record/'+recordId;
             $rootScope.loading++;
             $http.delete(url).success(function(data, status) {
                 $rootScope.loading--;
