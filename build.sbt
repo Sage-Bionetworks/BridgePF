@@ -18,7 +18,9 @@ libraryDependencies ++= Seq(
   "org.codehaus.jackson" % "jackson-mapper-asl" % "1.9.13",
   "com.google.guava" % "guava" % "17.0",
   "org.mockito" % "mockito-all" % "1.9.5",
-  "org.jasypt" % "jasypt" % "1.9.2"
+  "org.jasypt" % "jasypt" % "1.9.2",
+  "com.github.fge" % "json-schema-validator" % "2.2.3",
+  "commons-httpclient" % "commons-httpclient" % "3.1"
 )
 
 play.Project.playJavaSettings

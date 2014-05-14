@@ -2,12 +2,15 @@ package org.sagebionetworks.bridge.services;
 
 import models.UserSession;
 
+import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.context.BridgeContext;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.client.SynapseClient;
+import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 import org.sagebionetworks.repo.model.DomainType;
 import org.sagebionetworks.repo.model.UserSessionData;
 import org.sagebionetworks.repo.model.auth.Session;
@@ -34,19 +37,24 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	}
 	
 	@Override
-	public UserSession signIn(String usernameOrEmail, String password) throws ConsentRequiredException, BridgeServiceException {
+    public UserSession signIn(String usernameOrEmail, String password) throws ConsentRequiredException,
+            BridgeNotFoundException, BridgeServiceException {
 	    if (StringUtils.isBlank(usernameOrEmail) || StringUtils.isBlank(password)) {
-	        throw new BridgeServiceException("Invalid credentials, supply username/email and password");
+            throw new BridgeServiceException("Invalid credentials, supply username/email and password",
+                    HttpStatus.SC_BAD_REQUEST);
 	    }
+	    Session session = null;
 	    try {
-	        Session session = getSynapseClient(null).login(usernameOrEmail, password);
-	        if (!session.getAcceptsTermsOfUse()) {
-	            throw new ConsentRequiredException(session.getSessionToken());
-	        }
-	        return getSession(session.getSessionToken());
-	    } catch(Exception e) {
-	        throw new BridgeServiceException(e);
+	        session = getSynapseClient(null).login(usernameOrEmail, password);
+	    } catch(SynapseNotFoundException e) { // NOTE: Do we need this now?
+	        throw new BridgeNotFoundException(e);
+	    } catch(Throwable e) {
+	        throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
 	    }
+        if (!session.getAcceptsTermsOfUse()) {
+            throw new ConsentRequiredException(session.getSessionToken());
+        }
+        return getSession(session.getSessionToken());
 	}
 	
 	@Override
@@ -83,12 +91,12 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	@Override
 	public void requestResetPassword(String email) throws BridgeServiceException {
 	    if (StringUtils.isBlank(email)) {
-	        throw new BridgeServiceException("Email is required");
+	        throw new BridgeServiceException("Email is required", HttpStatus.SC_BAD_REQUEST);
 	    }
 	    try {
 	        getSynapseClient(null).sendPasswordResetEmail(email);    
 	    } catch(Exception e) {
-	        throw new BridgeServiceException(e);
+	        throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
 	    }
 	}
 	
@@ -97,7 +105,7 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	    try {
 	        getSynapseClient(null).changePassword(sessionToken, password);    
 	    } catch(Exception e) {
-	        throw new BridgeServiceException(e);
+	        throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
 	    }
 	}
 	
@@ -106,7 +114,7 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
         try {
             getSynapseClient(sessionToken).signTermsOfUse(sessionToken, DomainType.BRIDGE, true);
         } catch(Exception e) {
-            throw new BridgeServiceException(e);
+            throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
 	}
 

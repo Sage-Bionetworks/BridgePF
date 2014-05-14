@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.exceptions;
 
-import org.sagebionetworks.client.exceptions.SynapseServerException;
+import org.apache.commons.httpclient.HttpStatus;
 
 /**
  * This is similar to the Synapse TermsOfUseException, except that it 
@@ -8,14 +8,13 @@ import org.sagebionetworks.client.exceptions.SynapseServerException;
  * needed to make the consent call (this is not in the TermsOfUseException).
  *
  */
-public class ConsentRequiredException extends SynapseServerException {
+public class ConsentRequiredException extends BridgeServiceException {
 	private static final long serialVersionUID = 3057825897435345541L;
 	
 	private final String sessionToken;
 	
-	// 412 == "Precondition Failed"
 	public ConsentRequiredException(String sessionToken) {
-		super(412, "Consent is required before signing in");
+		super("Consent is required before signing in", HttpStatus.SC_PRECONDITION_FAILED);
 		this.sessionToken = sessionToken;
 	}
 

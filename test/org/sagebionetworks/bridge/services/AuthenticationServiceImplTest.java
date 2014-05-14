@@ -8,9 +8,9 @@ import models.UserSession;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
-import org.sagebionetworks.client.exceptions.SynapseClientException;
-import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -21,17 +21,17 @@ public class AuthenticationServiceImplTest {
     @Resource
     AuthenticationServiceImpl service;
     
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected=BridgeServiceException.class)
     public void signInNoUsername() throws Exception {
         service.signIn(null, "bar");
     }
     
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected=BridgeServiceException.class)
     public void signInNoPassword() throws Exception {
         service.signIn("foo", null);
     }
     
-    @Test(expected=SynapseNotFoundException.class)
+    @Test(expected=BridgeNotFoundException.class)
     public void signInInvalidCredentials() throws Exception {
         service.signIn("foo", "bar");
     }
@@ -75,12 +75,12 @@ public class AuthenticationServiceImplTest {
         assertThat(session.getSessionToken()).isNotEmpty();
     }
     
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected=BridgeServiceException.class)
     public void requestPasswordResetFailsOnNull() throws Exception {
         service.requestResetPassword(null);
     }
     
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected=BridgeServiceException.class)
     public void requestPasswordResetFailsOnEmptyString() throws Exception {
         service.requestResetPassword("");
     }
@@ -95,7 +95,7 @@ public class AuthenticationServiceImplTest {
         service.resetPassword("asdf", "password");
     }
     
-    @Test(expected=SynapseClientException.class)
+    @Test(expected=BridgeServiceException.class)
     public void resetPasswordWithBadTokenFails() throws Exception {
         service.signIn("test2", "password");
         service.resetPassword("foo", "newpassword");

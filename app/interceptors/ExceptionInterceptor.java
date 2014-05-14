@@ -4,7 +4,9 @@ import models.ExceptionMessage;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.client.exceptions.SynapseServerException;
 
@@ -23,16 +25,17 @@ public class ExceptionInterceptor implements MethodInterceptor {
 		} catch(Throwable throwable) {
 			
 			throwable = Throwables.getRootCause(throwable);
-			
 			Logger.error(throwable.getMessage(), throwable);
 
 			int status = 500;
 			if (throwable instanceof SynapseServerException) {
 				status = ((SynapseServerException)throwable).getStatusCode();
+			} else if (throwable instanceof BridgeServiceException) {
+			    status = ((BridgeServiceException)throwable).getStatusCode();
 			}
 			String message = throwable.getMessage();
 			if (StringUtils.isBlank(message)) {
-				message = "There has been a server error. We cannot fulfill your request at this time.";
+			    message = HttpStatus.getStatusText(status);
 			}
 
 			ExceptionMessage exceptionMessage = createMessagePayload(throwable, status, message);
@@ -41,9 +44,9 @@ public class ExceptionInterceptor implements MethodInterceptor {
 	}
 	
 	private ExceptionMessage createMessagePayload(Throwable throwable, int status, String message) {
-		if (status == 412) {
-			return new ExceptionMessage(throwable, message, ((ConsentRequiredException)throwable).getSessionToken());
-		}
+	    if (throwable instanceof ConsentRequiredException) {
+            return new ExceptionMessage(throwable, message, ((ConsentRequiredException) throwable).getSessionToken());
+	    }
 		return new ExceptionMessage(throwable, message);
 	}
 
