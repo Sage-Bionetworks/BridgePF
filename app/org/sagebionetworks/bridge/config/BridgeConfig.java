@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.context;
+package org.sagebionetworks.bridge.config;
 
 import java.io.File;
 import java.io.FileInputStream;
