@@ -28,8 +28,8 @@ public class BridgeConfigTest {
     public void testDefault() {
         BridgeConfig config = new BridgeConfig(app);
         assertTrue(config.isLocal());
-        assertEquals("XszaP+EsOz1dVz9P5TTuaabZoOR6KYC5O46IbJy/9bY=", config.getProperty("aws.key"));
-        assertEquals("wtQuhjk8qxLofjgmkW+TgB0ZHO/V5sDx4Qm1PxiAdawBC9BVJ0aTqOb+kfnfz+zUrJqwlg72doU=", config.getProperty("aws.secret.key"));
+        assertEquals("fake.aws.key", config.getProperty("aws.key"));
+        assertEquals("fake.aws.secret.key", config.getProperty("aws.secret.key"));
         assertNull(config.getProperty("someFakePropertyThatDoesNotExist"));
     }
 
