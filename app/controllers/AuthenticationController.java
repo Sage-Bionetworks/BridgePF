@@ -19,7 +19,7 @@ public class AuthenticationController extends BaseController {
 	}
 
 	public Result signOut() throws Exception {
-		String sessionToken = getSessionToken(true);
+		String sessionToken = getSessionToken(false);
 		authenticationService.signOut(sessionToken);
 		response().discardCookie(BridgeConstants.SESSION_TOKEN);
 		return jsonResult("Signed out.");

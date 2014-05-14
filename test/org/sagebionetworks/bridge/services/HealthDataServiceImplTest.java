@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
@@ -39,6 +40,8 @@ public class HealthDataServiceImplTest {
 
     @Before
     public void before() {
+        TestUtils.deleteAllHealthData();
+        
         service = new HealthDataServiceImpl();
         createMapper = mock(DynamoDBMapper.class);
         updateMapper = mock(DynamoDBMapper.class);

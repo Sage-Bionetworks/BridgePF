@@ -14,14 +14,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * Used by the services to join a HealthDataKey to a HealthDataRecord, into a complete 
  * DynamoDB record. Not exposed to consumers.
- * 
+ *
  * Table structure:
- *  Hash Key: key
- *  Range Key: recordId
+ *  Hash Key: String key
+ *  Range Key: String recordId
  *  
- * Indexes:
- *  endDate-index (key + endDate)
- *  startDate-index (key + startDate)
+ * Indexes (local secondary indexes):
+ *  endDate-index (key String + endDate Number)
+ *  startDate-index (key String + startDate Number)
  *
  */
 @DynamoDBTable(tableName = "dev-adark-TestTable")
