@@ -12,7 +12,7 @@ import org.jasypt.properties.EncryptableProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import play.api.Play;
+import play.api.Application;
 import scala.Option;
 
 public class BridgeConfig {
@@ -23,7 +23,7 @@ public class BridgeConfig {
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
 
     private static final String PASSWORD = "pwd";
-    private static final String ENVIRONMENT = "env";
+    private static final String ENVIRONMENT = "bridge.env";
     private static final String ENV_LOCAL = "local";
     private static final String ENV_DEV = "dev";
     private static final String ENV_PROD = "prod";
@@ -55,11 +55,11 @@ public class BridgeConfig {
         }
     };
 
-    public BridgeConfig() {
+    public BridgeConfig(Application app) {
 
         // Load default config from source code
         final Properties properties = new Properties();
-        Option<InputStream> config  = Play.resourceAsStream(CONFIG_FILE, Play.current());
+        Option<InputStream> config  = app.resourceAsStream(CONFIG_FILE);
         if (config.isEmpty()) {
             throw new RuntimeException("Missing brige config file " + CONFIG_FILE);
         }
