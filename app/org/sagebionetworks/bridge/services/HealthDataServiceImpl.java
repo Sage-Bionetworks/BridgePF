@@ -32,8 +32,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
-import com.google.common.base.Predicate;
-import com.google.common.collect.FluentIterable;
 
 public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAware {
 
