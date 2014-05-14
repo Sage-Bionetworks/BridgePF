@@ -9,6 +9,7 @@ import java.util.Properties;
 
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.jasypt.properties.EncryptableProperties;
+import org.jasypt.salt.StringFixedSaltGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,8 +23,15 @@ public class BridgeConfig {
     private static final String CONFIG_FILE = "bridge.conf";
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
 
-    private static final String PASSWORD = "pwd";
+    // Property name for the environment
     private static final String ENVIRONMENT = "bridge.env";
+
+    // Property name for the encryption/decryption password
+    private static final String PASSWORD = "bridge.pwd";
+    // Property name for the encryption/decryption salt
+    private static final String SALT = "bridge.salt";
+
+    // Predefined environments
     private static final String ENV_LOCAL = "local";
     private static final String ENV_DEV = "dev";
     private static final String ENV_PROD = "prod";
@@ -61,7 +69,7 @@ public class BridgeConfig {
         final Properties properties = new Properties();
         Option<InputStream> config  = app.resourceAsStream(CONFIG_FILE);
         if (config.isEmpty()) {
-            throw new RuntimeException("Missing brige config file " + CONFIG_FILE);
+            throw new RuntimeException("Missing bridge config file " + CONFIG_FILE);
         }
         loadProperties(config.get(), properties);
 
@@ -81,21 +89,19 @@ public class BridgeConfig {
 
         final StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
         // TODO: Better encryption
-        // encryptor.setAlgorithm("alogrithm");
+        // encryptor.setAlgorithm("PBEWithMD5AndTripleDES");
         // encryptor.setKeyObtentionIterations(1000);
-        // encryptor.setSaltGenerator(saltGenerator);
+        // encryptor.setSaltGenerator(new RandomSaltGenerator());
 
         // Read the password for encryption/decryption
         final String pwd = read(PASSWORD, properties);
-        if (pwd == null) {
-            logger.warn("Missing encryptor/decryptor password.");
-        } else {
-            encryptor.setPassword(pwd);
-        }
+        encryptor.setPassword(pwd);
+        final String salt = read(SALT, properties);
+        encryptor.setSaltGenerator(new StringFixedSaltGenerator(salt));
 
         // Decrypted properties
         this.properties = new EncryptableProperties(collapsed, encryptor);
-	}
+    }
 
     public String getEnvironment() {
         return environment;
