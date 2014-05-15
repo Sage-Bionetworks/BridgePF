@@ -12,7 +12,14 @@
 
     <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfig" />
 
-    <bean id="awsCredentials" class="org.sagebionetworks.bridge.dynamodb.AwsCredentials" />
+    <bean id="awsCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
+        <constructor-arg index="0">
+            <value>"#{bridgeConfig.getProperty('aws.key')}"</value>
+        </constructor-arg>
+        <constructor-arg index="1">
+            <value>"#{bridgeConfig.getProperty('aws.secret.key')}"</value>
+        </constructor-arg>
+    </bean>
 
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
 
@@ -116,7 +123,7 @@
     
     <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" scope="prototype">
         <constructor-arg index="0">
-            <value>#{awsCredentials.credentials}</value>
+            <ref bean="awsCredentials" />
         </constructor-arg>
     </bean>    
     
