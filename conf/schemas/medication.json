@@ -1,0 +1,21 @@
+{
+    "type": "object",
+    "required": ["startDate", "data"],
+    "additionalProperties": false,
+    "properties": {
+        "key": {"type": "string"},
+        "recordId": {"type": "string"},
+        "startDate": {"type": "number"},
+        "endDate": {"type": "number"},
+        "data": {
+            "type": "object",
+            "required": ["medication", "dosage", "frequency"],
+            "properties": {
+                "medication": {"type": "string"},
+                "dosage": {"type": "string"},
+                "frequency": {"type": "string"},
+                "instructions": {"type": "string"}
+            }
+        }
+    }
+}
