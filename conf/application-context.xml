@@ -10,7 +10,18 @@
         http://www.springframework.org/schema/mvc
         http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
-    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"></bean>
+    <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfig" />
+
+    <bean id="awsCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
+        <constructor-arg index="0">
+            <value>"#{bridgeConfig.getProperty('aws.key')}"</value>
+        </constructor-arg>
+        <constructor-arg index="1">
+            <value>"#{bridgeConfig.getProperty('aws.secret.key')}"</value>
+        </constructor-arg>
+    </bean>
+
+    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
 
     <!-- Play controllers. -->
 
@@ -24,7 +35,8 @@
     <bean id="controllers.ApplicationController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.ApplicationController">
-                <property name="authenticationService" ref="authenticationService"/>
+                <property name="authenticationService" ref="authenticationService" />
+                <property name="bridgeConfig" ref="bridgeConfig" />
             </bean>
         </property>
     </bean>
@@ -42,7 +54,7 @@
             <bean class="controllers.HealthDataController">
                 <property name="healthDataService" ref="healthDataService"/>
                 <property name="authenticationService" ref="authenticationService"/>
-		        <property name="studyControllerService" ref="studyControllerService"/>
+                <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
     </bean>
@@ -61,20 +73,20 @@
     <bean id="studyControllerService" class="controllers.StudyControllerService">
         <property name="studies">
             <list>
-		        <bean class="org.sagebionetworks.bridge.models.Study">
-		            <property name="hostnames">
-		                <list>
-		                    <value>localhost</value>
-		                    <value>bridge-development.herokuapp.com</value>
-		                </list>
-		            </property>
-		            <property name="id" value="1"/>
-		            <property name="trackers">
-		                <list>
-		                    <ref bean="pb-tracker"/>
-		                </list>
-		            </property>
-		        </bean>
+                <bean class="org.sagebionetworks.bridge.models.Study">
+                    <property name="hostnames">
+                        <list>
+                            <value>localhost</value>
+                            <value>bridge-development.herokuapp.com</value>
+                        </list>
+                    </property>
+                    <property name="id" value="1"/>
+                    <property name="trackers">
+                        <list>
+                            <ref bean="pb-tracker"/>
+                        </list>
+                    </property>
+                </bean>
             </list>
         </property>
     </bean>
@@ -111,7 +123,7 @@
     
     <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" scope="prototype">
         <constructor-arg index="0">
-            <bean class="org.sagebionetworks.bridge.dynamodb.CredentialsFactory" factory-method="getCredentials"/>
+            <ref bean="awsCredentials" />
         </constructor-arg>
     </bean>    
     

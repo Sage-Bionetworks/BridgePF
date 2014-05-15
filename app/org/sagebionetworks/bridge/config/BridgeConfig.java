@@ -13,14 +13,12 @@ import org.jasypt.salt.StringFixedSaltGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import play.api.Application;
-import scala.Option;
-
 public class BridgeConfig {
 
     private final Logger logger = LoggerFactory.getLogger(BridgeConfig.class);
 
     private static final String CONFIG_FILE = "bridge.conf";
+    private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
 
     // Property name for the environment
@@ -33,6 +31,7 @@ public class BridgeConfig {
 
     // Predefined environments
     private static final String ENV_LOCAL = "local";
+    private static final String ENV_STUB = "stub";
     private static final String ENV_DEV = "dev";
     private static final String ENV_PROD = "prod";
 
@@ -63,15 +62,19 @@ public class BridgeConfig {
         }
     };
 
-    public BridgeConfig(Application app) {
+    public BridgeConfig() {
+        this(new File(DEFAULT_CONFIG_FILE));
+    }
+
+    public BridgeConfig(File defaultConfig) {
 
         // Load default config from source code
         final Properties properties = new Properties();
-        Option<InputStream> config  = app.resourceAsStream(CONFIG_FILE);
-        if (config.isEmpty()) {
-            throw new RuntimeException("Missing bridge config file " + CONFIG_FILE);
+        try {
+            loadProperties(new FileInputStream(defaultConfig), properties);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("Missing default config at " + defaultConfig.getAbsolutePath());
         }
-        loadProperties(config.get(), properties);
 
         // Load additional config from the user's sbt home
         // This overwrites properties of the same name in the default config
@@ -109,6 +112,10 @@ public class BridgeConfig {
 
     public boolean isLocal() {
         return ENV_LOCAL.equals(environment);
+    }
+
+    public boolean isStub() {
+        return ENV_STUB.equals(environment);
     }
 
     public boolean isDevelopment() {
@@ -155,7 +162,10 @@ public class BridgeConfig {
             logger.info("Environment not set. Is this local development?");
             return ENV_LOCAL;
         }
-        if (!ENV_LOCAL.equals(env) && !ENV_DEV.equals(env) && !ENV_PROD.equals(env)) {
+        if (!ENV_LOCAL.equals(env)
+                && !ENV_STUB.equals(env)
+                && !ENV_DEV.equals(env)
+                && !ENV_PROD.equals(env)) {
             throw new RuntimeException("Invalid environment " + env + " from config.");
         }
         return env;
@@ -216,6 +226,9 @@ public class BridgeConfig {
      */
     private boolean isDefaultProperty(String name) {
         if (name.startsWith(ENV_LOCAL + ".")) {
+            return false;
+        }
+        if (name.startsWith(ENV_STUB + ".")) {
             return false;
         }
         if (name.startsWith(ENV_DEV + ".")) {
