@@ -5,11 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
@@ -177,7 +173,8 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
              */
             return FluentIterable.from(getAllHealthData(key)).filter(new Predicate<HealthDataRecord>() {
                 public boolean apply(HealthDataRecord record) {
-                    if ((record.getEndDate() != 0 && record.getEndDate() < startDate.getTime()) || record.getStartDate() > endDate.getTime()) {
+                    if ((record.getEndDate() != 0 && record.getEndDate() < startDate.getTime())
+                      || record.getStartDate() > endDate.getTime()) {
                         return false;
                     }
                     return true;

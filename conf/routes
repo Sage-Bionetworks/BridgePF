@@ -27,3 +27,4 @@ GET    /api/trackers/schema/:trackerId @controllers.TrackerController.getTracker
 
 # AngularJS application
 GET     /*file                  controllers.Assets.at(path="/public/app", file)
+HEAD    /*file                  controllers.Assets.at(path="/public/app", file)

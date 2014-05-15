@@ -28,11 +28,11 @@ public class BaseController extends Controller {
     }
     
 	protected String getSessionToken(boolean throwException) throws Exception {
-		Cookie sessionCookie = request().cookie(BridgeConstants.SESSION_TOKEN);
+		Cookie sessionCookie = request().cookie(BridgeConstants.SESSION_TOKEN_HEADER);
 		if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
 			return sessionCookie.value();
 		}
-		String[] session = request().headers().get(BridgeConstants.SESSION_TOKEN);
+		String[] session = request().headers().get(BridgeConstants.SESSION_TOKEN_HEADER);
 		if (session == null || session.length == 0) {
 			if (throwException) {
 				throw new SynapseUnauthorizedException();	
