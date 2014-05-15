@@ -10,8 +10,6 @@ import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -20,6 +18,8 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.repo.model.UserSessionData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 
@@ -33,8 +33,8 @@ import com.google.common.collect.FluentIterable;
 
 public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAware {
 
-    protected final Log logger = LogFactory.getLog(getClass());
-
+    final static Logger logger = LoggerFactory.getLogger(HealthDataServiceImpl.class);
+    
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
     private BeanFactory beanFactory;
