@@ -14,14 +14,14 @@ public class AuthenticationController extends BaseController {
 	public Result signIn() throws Exception {
 		SignIn signIn = SignIn.fromJson(request().body().asJson());
 		UserSession session = authenticationService.signIn(signIn.getUsername(), signIn.getPassword());
-		response().setCookie(BridgeConstants.SESSION_TOKEN, session.getSessionToken());
+		response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken());
 		return jsonResult(new JsonPayload<UserSession>(session));
 	}
 
 	public Result signOut() throws Exception {
-		String sessionToken = getSessionToken(true);
+		String sessionToken = getSessionToken(false);
 		authenticationService.signOut(sessionToken);
-		response().discardCookie(BridgeConstants.SESSION_TOKEN);
+		response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 		return jsonResult("Signed out.");
 	}
 

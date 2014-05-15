@@ -77,13 +77,13 @@ public class AuthenticationControllerTest {
                 node.put(USERNAME, "test3");
                 node.put(PASSWORD, PASSWORD);
                 Response response = WS.url(TEST_URL+SIGN_IN_URL).post(node).get(TIMEOUT);
-                WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN);
+                WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
                 assertThat(cookie.getValue()).isNotEmpty();
                 
-                response = WS.url(TEST_URL + SIGN_OUT_URL).setHeader(BridgeConstants.SESSION_TOKEN, cookie.getValue())
+                response = WS.url(TEST_URL + SIGN_OUT_URL).setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue())
                         .get().get(TIMEOUT);
                 
-                cookie = response.getCookie(BridgeConstants.SESSION_TOKEN);
+                cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
                 assertThat(cookie.getValue()).isEqualTo("");
 	        }
 	    });

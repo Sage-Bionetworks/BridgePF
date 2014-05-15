@@ -9,20 +9,22 @@
     <script>window.bridgeAuth = @Html(auth);</script>
 </head>
 <body ng-app="bridge" ng-controller="ApplicationController">
-    
-    <div class="container" style="position: relative">
-        <div class="loadingclock" ng-show="loading"></div>
+    <div class="container">
         <div class="row header">
             <div class="col-sm-4">
                 <a href="/" class="partner-header"></a>
             </div>
             <div class="col-sm-8">
                 <div class="bridge-header" ng-cloak>
+                    <div class="loadingclock" ng-show="loading"></div>
                     <div ng-hide="session.authenticated">
                         <form name="signInForm" class="form-inline">
-                            <input class="form-control input-sm" required placeholder="Username" type="text" name="username" ng-model="credentials.username"/>
-                            <input class="form-control input-sm" required placeholder="Password" type="password" name="password" ng-model="credentials.password"/>
-                            <button class="btn btn-default btn-sm" ng-hide="session.sessionToken" ng-disabled="!canSubmit()" ng-click="signIn()">Sign In</button>
+                            <input class="form-control input-sm" required placeholder="Username" 
+                                type="text" name="username" ng-model="credentials.username"/>
+                            <input class="form-control input-sm" required placeholder="Password" 
+                                type="password" name="password" ng-model="credentials.password"/>
+                            <button class="btn btn-default btn-sm" ng-hide="session.sessionToken" 
+                                ng-disabled="!canSubmit()" ng-click="signIn()">Sign In</button>
                             <a class="btn" ng-click="resetPassword()">Forgot Password</a>
                         </form>
                     </div>
@@ -42,13 +44,10 @@
             <div id="content-pane" ng-view></div>
         </div>
         <div class="footer-break">
-            <p>
-                &copy; 2014 <a href="http://www.sagebase.org">Sage Bionetworks</a><br> 
-                <span><small>bridge: TODO, repo: TODO</small></span>
-            </p>
+            <p>&copy; 2014 <a href="http://www.sagebase.org">Sage Bionetworks</a> &mdash; @request().host()</p>
         </div>
     </div>
-    
+
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-route.js"></script>
     <script src="build/bridge.min.js"></script>

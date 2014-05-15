@@ -11,15 +11,15 @@ POST   /api/auth/resetPassword          @controllers.AuthenticationController.re
 POST   /api/auth/requestResetPassword   @controllers.AuthenticationController.requestResetPassword
 POST   /api/auth/consentToResearch      @controllers.AuthenticationController.consentToResearch
 
-# API - Health Data
-POST   /api/healthdata/:trackerId    @controllers.HealthDataController.appendHealthData(trackerId: Long)
-GET    /api/healthdata/:trackerId    @controllers.HealthDataController.getAllHealthData(trackerId: Long)
-GET    /api/healthdata/:trackerId    @controllers.HealthDataController.getHealthDataByDateRange(trackerId: Long, startDate: Long, endDate: Long)
-
 # API - Individual health data record
 GET    /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(trackerId: Long, recordId: String)
 POST   /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.updateHealthDataRecord(trackerId: Long, recordId: String)
 DELETE /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(trackerId: Long, recordId: String)
+
+# API - Health Data
+POST   /api/healthdata/:trackerId                       @controllers.HealthDataController.appendHealthData(trackerId: Long)
+GET    /api/healthdata/:trackerId/:startDate/:endDate   @controllers.HealthDataController.getHealthDataByDateRange(trackerId: Long, startDate: Long, endDate: Long)
+GET    /api/healthdata/:trackerId                       @controllers.HealthDataController.getAllHealthData(trackerId: Long)
 
 # API - trackers
 GET    /api/trackers                   @controllers.TrackerController.getTrackers
@@ -27,3 +27,4 @@ GET    /api/trackers/schema/:trackerId @controllers.TrackerController.getTracker
 
 # AngularJS application
 GET     /*file                  controllers.Assets.at(path="/public/app", file)
+HEAD    /*file                  controllers.Assets.at(path="/public/app", file)
