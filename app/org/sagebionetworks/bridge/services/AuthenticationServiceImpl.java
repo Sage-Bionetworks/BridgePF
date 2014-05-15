@@ -5,7 +5,7 @@ import models.UserSession;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.context.BridgeContext;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -70,7 +70,7 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 			userSession.setSessionToken(data.getSession().getSessionToken());
 			userSession.setUsername(username);
 			userSession.setAuthenticated(true);
-	        userSession.setEnvironment(new BridgeContext().getEnvironment());
+	        userSession.setEnvironment(beanFactory.getBean("bridgeConfig", BridgeConfig.class).getEnvironment());
 			return userSession;
 		} catch(Throwable throwable) {
 			return new UserSession();

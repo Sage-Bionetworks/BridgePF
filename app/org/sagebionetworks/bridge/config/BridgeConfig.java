@@ -13,14 +13,12 @@ import org.jasypt.salt.StringFixedSaltGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import play.api.Application;
-import scala.Option;
-
 public class BridgeConfig {
 
     private final Logger logger = LoggerFactory.getLogger(BridgeConfig.class);
 
-    private static final String CONFIG_FILE = "bridge.conf";
+    public static final String CONFIG_FILE = "bridge.conf";
+    private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
 
     // Property name for the environment
@@ -63,15 +61,19 @@ public class BridgeConfig {
         }
     };
 
-    public BridgeConfig(Application app) {
+    public BridgeConfig() {
+        this(new File(DEFAULT_CONFIG_FILE));
+    }
+
+    public BridgeConfig(File defaultConfig) {
 
         // Load default config from source code
         final Properties properties = new Properties();
-        Option<InputStream> config  = app.resourceAsStream(CONFIG_FILE);
-        if (config.isEmpty()) {
-            throw new RuntimeException("Missing bridge config file " + CONFIG_FILE);
+        try {
+            loadProperties(new FileInputStream(defaultConfig), properties);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("Missing default config at " + defaultConfig.getAbsolutePath());
         }
-        loadProperties(config.get(), properties);
 
         // Load additional config from the user's sbt home
         // This overwrites properties of the same name in the default config
