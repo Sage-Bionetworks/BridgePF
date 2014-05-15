@@ -30,6 +30,9 @@ public class HealthDataControllerTest {
         return getTestRecord(1399666566890L, 1399666566890L);
     }
     
+    // The test record used here is a medication record, which can have 
+    // duration (no end date), which makes it important for the date-based
+    // query methods of the service.
     private JsonNode getTestRecord(long startDate, long endDate) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("startDate", startDate);
