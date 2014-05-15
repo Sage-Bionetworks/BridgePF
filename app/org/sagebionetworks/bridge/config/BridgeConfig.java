@@ -31,6 +31,7 @@ public class BridgeConfig {
 
     // Predefined environments
     private static final String ENV_LOCAL = "local";
+    private static final String ENV_STUB = "stub";
     private static final String ENV_DEV = "dev";
     private static final String ENV_PROD = "prod";
 
@@ -113,6 +114,10 @@ public class BridgeConfig {
         return ENV_LOCAL.equals(environment);
     }
 
+    public boolean isStub() {
+        return ENV_STUB.equals(environment);
+    }
+
     public boolean isDevelopment() {
         return ENV_DEV.equals(environment);
     }
@@ -157,7 +162,10 @@ public class BridgeConfig {
             logger.info("Environment not set. Is this local development?");
             return ENV_LOCAL;
         }
-        if (!ENV_LOCAL.equals(env) && !ENV_DEV.equals(env) && !ENV_PROD.equals(env)) {
+        if (!ENV_LOCAL.equals(env)
+                && !ENV_STUB.equals(env)
+                && !ENV_DEV.equals(env)
+                && !ENV_PROD.equals(env)) {
             throw new RuntimeException("Invalid environment " + env + " from config.");
         }
         return env;
@@ -218,6 +226,9 @@ public class BridgeConfig {
      */
     private boolean isDefaultProperty(String name) {
         if (name.startsWith(ENV_LOCAL + ".")) {
+            return false;
+        }
+        if (name.startsWith(ENV_STUB + ".")) {
             return false;
         }
         if (name.startsWith(ENV_DEV + ".")) {
