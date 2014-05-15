@@ -14,10 +14,10 @@
 
     <bean id="awsCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
         <constructor-arg index="0">
-            <value>"#{bridgeConfig.getProperty('aws.key')}"</value>
+            <value>#{bridgeConfig.getProperty('aws.key')}</value>
         </constructor-arg>
         <constructor-arg index="1">
-            <value>"#{bridgeConfig.getProperty('aws.secret.key')}"</value>
+            <value>#{bridgeConfig.getProperty('aws.secret.key')}</value>
         </constructor-arg>
     </bean>
 
