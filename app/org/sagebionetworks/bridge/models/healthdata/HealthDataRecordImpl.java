@@ -1,9 +1,5 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
-import org.sagebionetworks.bridge.context.BridgeContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class HealthDataRecordImpl implements HealthDataRecord {
@@ -12,8 +8,6 @@ public class HealthDataRecordImpl implements HealthDataRecord {
     private static final String START_DATE = "startDate";
     private static final String END_DATE = "endDate";
     private static final String DATA = "data";
-
-    private static final Logger logger = LoggerFactory.getLogger(BridgeContext.class);    
 
     protected String recordId;
     protected long startDate;

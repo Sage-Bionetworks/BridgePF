@@ -39,7 +39,7 @@ public class ApplicationControllerTest {
     	running(testServer(3333), new Runnable() {
 			public void run() {
 				WSRequestHolder holder = WS.url(TEST_URL);
-				Response response = holder.get().get(REQUEST_TIMEOUT);
+				Response response = holder.get().get(TIMEOUT);
 				assertThat(response.getStatus()).isEqualTo(OK);
 				assertThat(response.getBody()).contains("Bridge: Patients &amp; Researchers in Partnership - Sage Bionetworks");
 			}
