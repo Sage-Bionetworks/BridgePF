@@ -1,4 +1,4 @@
-angular.module('bridge').controller('ApplicationController', 
+bridge.controller('ApplicationController', 
 ['$scope', '$http', '$location', '$modal', '$humane', '$window', 'authService', 'requestResetPasswordService', 
 function($scope, $http, $location, $modal, $humane, $window, authService, requestResetPasswordService) {
 

@@ -29,6 +29,7 @@ module.exports = function(grunt) {
                     'app/scripts/humane-modified.js',
                     'app/scripts/app.js',
                     'app/scripts/services/*.js',
+                    'app/scripts/directives/*.js',
                     'app/scripts/controllers/*.js',
                     'app/scripts/controllers/trackers/*.js'
                 ],

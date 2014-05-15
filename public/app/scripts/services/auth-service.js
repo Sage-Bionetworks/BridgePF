@@ -1,4 +1,4 @@
-angular.module('bridge').service('authService', ['$http', '$rootScope', '$location', '$window', '$humane', '$q',    
+bridge.service('authService', ['$http', '$rootScope', '$location', '$window', '$humane', '$q',    
 function($http, $rootScope, $location, $window, $humane, $q) {
     var service = {
         sessionToken: '',

@@ -1,4 +1,4 @@
-angular.module('bridge').controller('ResetPasswordController', ['$scope', '$rootScope', '$route', '$http', '$humane', '$location', 'authService', 
+bridge.controller('ResetPasswordController', ['$scope', '$rootScope', '$route', '$http', '$humane', '$location', 'authService', 
 function($scope, $rootScope, $route, $http, $humane, $location, authService) {
     
     // TODO: The URL from Synapse should be:
