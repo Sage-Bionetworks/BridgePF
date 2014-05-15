@@ -1,6 +1,10 @@
+/* Only needed for this spinner */
+.container {
+    position: relative ! important;
+}
 .loadingclock {
   position: absolute;
-  left: 320px;
+  right: 180px;
   top: 17px;
   width: 28px;
   height: 28px;

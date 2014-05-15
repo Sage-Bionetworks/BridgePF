@@ -1,4 +1,8 @@
-<p>Blood Pressure Tracker</p>
+<ul>
+    <li ng-repeat="tracker in trackers">
+        <a ng-href="/#/health/tracker/{{tracker.type}}">{{tracker.name}}</a>
+    </li>
+</ul>
 
 <input type="number" name="systolic" ng-model="record.data.systolic"/>
 <input type="number" name="diastolic" ng-model="record.data.diastolic"/>

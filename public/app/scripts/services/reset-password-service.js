@@ -1,4 +1,4 @@
-angular.module('bridge').service('requestResetPasswordService', ['$modal', function($modal) {
+bridge.service('requestResetPasswordService', ['$modal', function($modal) {
     
     var modalInstance;
     

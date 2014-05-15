@@ -1,0 +1,3 @@
+bridge.controller('BloodPressureController', [function() {
+    
+}]);

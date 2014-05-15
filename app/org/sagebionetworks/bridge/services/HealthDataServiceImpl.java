@@ -5,11 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
@@ -32,11 +28,13 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
 
 public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAware {
 
     final static Logger logger = LoggerFactory.getLogger(HealthDataServiceImpl.class);
-
+    
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
     private BeanFactory beanFactory;
@@ -88,6 +86,7 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         
         UserSessionData data = getSynapseClient(key.getSessionToken()).getUserSessionData();
         String ownerId = data.getProfile().getOwnerId();
+        
         if (StringUtils.isBlank(ownerId)) {
             throw new BridgeServiceException("Cannot find ID for user", HttpStatus.SC_NOT_FOUND);
         }
@@ -158,60 +157,64 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
     // I think this is okay. That's per user per tracker per study. That's 160k records.
     
     @Override
-    public List<HealthDataRecord> getHealthDataByDateRange(HealthDataKey key, Date startDate, Date endDate) throws BridgeServiceException {
+    public List<HealthDataRecord> getHealthDataByDateRange(HealthDataKey key, final Date startDate, final Date endDate) throws BridgeServiceException {
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey cannot be null", HttpStatus.SC_BAD_REQUEST);
-        } else if (startDate == null) {
-            throw new BridgeServiceException("startDate cannot be null", HttpStatus.SC_BAD_REQUEST);
-        } else if (endDate == null) {
-            throw new BridgeServiceException("endDate cannot be null", HttpStatus.SC_BAD_REQUEST);
+        } else if (startDate == null || startDate.getTime() == 0) {
+            throw new BridgeServiceException("startDate cannot be null/0", HttpStatus.SC_BAD_REQUEST);
+        } else if (endDate == null || endDate.getTime() == 0) {
+            throw new BridgeServiceException("endDate cannot be null/0", HttpStatus.SC_BAD_REQUEST);
         }
-        try {                
-            DynamoDBMapper mapper = getCreateMapper();
-            DynamoRecord dynamoRecord = new DynamoRecord(healthDataKeyToAnonimizedKeyString(key));
-            
-            // (start date <= end date window) AND (start date window <= end date OR end date is null)
-            // BUT, you cannot create queries that combine and/or. So we make two queries right now,
-            // and take the intersection
-    
-            AttributeValue endDateWindow = new AttributeValue().withN(Long.toString(endDate.getTime()));
-
-            Condition startDateCondition = new Condition()
-                .withComparisonOperator(ComparisonOperator.LE)
-                .withAttributeValueList(endDateWindow);
-            
-            Map<String, Condition> keyConditions = new HashMap<String, Condition>();
-            keyConditions.put("startDate", startDateCondition);
-            
-            DynamoDBQueryExpression<DynamoRecord> query = new DynamoDBQueryExpression<DynamoRecord>()
-                .withHashKeyValues(dynamoRecord)
-                .withRangeKeyConditions(keyConditions);
-            
-            List<DynamoRecord> records1 = mapper.query(DynamoRecord.class, query);
-
-            AttributeValue startDateWindow = new AttributeValue().withN(Long.toString(startDate.getTime()));
-            
-            Condition endDateCondition = new Condition()
-                .withComparisonOperator(ComparisonOperator.GE)
-                .withAttributeValueList(startDateWindow);
-            
-            query = new DynamoDBQueryExpression<DynamoRecord>()
-                .withHashKeyValues(dynamoRecord)
-                .withRangeKeyCondition("endDate", endDateCondition);
-
-            /* Throws an error, how do you test that end date is null?
-            query.setConditionalOperator(ConditionalOperator.OR);
-            
-            Condition endDateConditionNull = new Condition()
-                .withComparisonOperator(ComparisonOperator.NULL);
-            query.withRangeKeyCondition("endDate", endDateConditionNull);
+        try {
+            /* Works for sure, very inefficient. Code below this at least queries out records that start after 
+             * the query window.
+            return FluentIterable.from(getAllHealthData(key)).filter(new Predicate<HealthDataRecord>() {
+                public boolean apply(HealthDataRecord record) {
+                    if ((record.getEndDate() != 0 && record.getEndDate() < startDate.getTime())
+                      || record.getStartDate() > endDate.getTime()) {
+                        return false;
+                    }
+                    return true;
+                }
+            }).toList();
             */
-            List<DynamoRecord> records2 = mapper.query(DynamoRecord.class, query);
             
-            Set<DynamoRecord> intersection = new HashSet<DynamoRecord>(records1);
-            intersection.retainAll( new HashSet<DynamoRecord>(records2) );
+            // Find records whose start date is before the window end date, and whose end date is after the window start date (or zero)
+            DynamoRecord dynamoRecord = new DynamoRecord(healthDataKeyToAnonimizedKeyString(key));
+
+            Condition isLessThanOrEqualToEndDateWindow = new Condition()
+                .withComparisonOperator(ComparisonOperator.LE.toString())
+                .withAttributeValueList(new AttributeValue().withN(Long.toString(endDate.getTime())));
+
+            DynamoDBQueryExpression<DynamoRecord> queryExpression = new DynamoDBQueryExpression<DynamoRecord>()
+                .withHashKeyValues(dynamoRecord)
+                .withRangeKeyCondition("startDate", isLessThanOrEqualToEndDateWindow);
             
-            return toHealthDataEntries(intersection);
+            /* DynamoDB cannot make compound queries like this. I'm about 99% sure of it at this point.
+             * We have to pull more records than we intend, and then filter.
+            Condition isGreaterThanOrEqualToStartDateWindow = new Condition()
+                .withComparisonOperator(ComparisonOperator.GE.toString())
+                .withAttributeValueList(new AttributeValue().withN(Long.toString(startDate.getTime())));
+            
+            Condition isEqualToZero = new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ.toString())
+                .withAttributeValueList(new AttributeValue().withN("0"));
+
+            DynamoDBQueryExpression<DynamoRecord> queryExpression2 = new DynamoDBQueryExpression<DynamoRecord>()
+                .withHashKeyValues(dynamoRecord)
+                .withRangeKeyCondition("endDate", isGreaterThanOrEqualToStartDateWindow)
+                .withRangeKeyCondition("endDate", isEqualToZero);
+            */
+            
+            DynamoDBMapper mapper = getCreateMapper();
+            List<DynamoRecord> records = mapper.query(DynamoRecord.class, queryExpression);
+            
+            return toHealthDataEntries(FluentIterable.from(records).filter(new Predicate<DynamoRecord>() {
+                public boolean apply(DynamoRecord record) {
+                    return !(record.getEndDate() != 0 && record.getEndDate() < startDate.getTime());
+                }
+            }).toList());
+            
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }

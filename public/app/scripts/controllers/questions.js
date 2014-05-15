@@ -1,3 +1,3 @@
-angular.module('bridge').controller('QuestionsController', ['$scope', function($scope) {
+bridge.controller('QuestionsController', ['$scope', function($scope) {
 	
 }]);

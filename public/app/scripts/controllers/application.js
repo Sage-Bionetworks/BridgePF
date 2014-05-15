@@ -1,4 +1,4 @@
-angular.module('bridge').controller('ApplicationController', 
+bridge.controller('ApplicationController', 
 ['$scope', '$http', '$location', '$modal', '$humane', '$window', 'authService', 'requestResetPasswordService', 
 function($scope, $http, $location, $modal, $humane, $window, authService, requestResetPasswordService) {
 
@@ -6,7 +6,7 @@ function($scope, $http, $location, $modal, $humane, $window, authService, reques
 	
 	$scope.credentials = {};
 	$scope.session = authService;
-	
+
 	$scope.tabs = [
         {link: '/#/health', label: "My Health"},
         {link: '/#/questions', label: "Questions"},
@@ -15,6 +15,9 @@ function($scope, $http, $location, $modal, $humane, $window, authService, reques
     ]; 
 	$scope.tabClass = function(tab) {
 		var path = $location.path();
+		if (path.indexOf("/tracker/") > -1) {
+		    path = "/health";
+		}
 		if (DEFAULT_PATHS.indexOf(path) > -1) {
 			path = "/research";
 		}

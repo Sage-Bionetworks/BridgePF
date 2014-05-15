@@ -1,4 +1,4 @@
-angular.module('bridge').controller('ConsentController', ['$scope', '$http', '$location', '$route', '$humane', 
+bridge.controller('ConsentController', ['$scope', '$http', '$location', '$route', '$humane', 
 function($scope, $http, $location, $route, $humane) {
 
     $scope.sessionToken = $route.current.params.sessionToken;

@@ -1,3 +1,3 @@
-angular.module('bridge').controller('JournalController', ['$scope', function($scope) {
+bridge.controller('JournalController', ['$scope', function($scope) {
 	
 }]);
