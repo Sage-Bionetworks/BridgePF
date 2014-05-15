@@ -1,4 +1,4 @@
-angular.module('bridge').service('healthDataService', ['$http', '$rootScope', '$q', function($http, $rootScope, $q) {
+bridge.service('healthDataService', ['$http', '$rootScope', '$q', function($http, $rootScope, $q) {
     
     function call($http) {
         var deferred = $q.defer();

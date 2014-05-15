@@ -1,4 +1,4 @@
-angular.module('bridge').controller('HealthController',
+bridge.controller('HealthController',
         [ '$scope', '$humane', '$http', 'healthDataService', function($scope, $humane, $http, healthDataService) {
     
     $scope.trackers = [];
