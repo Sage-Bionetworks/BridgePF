@@ -1,14 +1,7 @@
 package org.sagebionetworks.bridge;
 
 import static org.junit.Assert.fail;
-import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
-import static org.sagebionetworks.bridge.TestConstants.RECORD_URL;
-import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_URL;
-import static org.sagebionetworks.bridge.TestConstants.SIGN_OUT_URL;
-import static org.sagebionetworks.bridge.TestConstants.TEST_URL;
-import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
-import static org.sagebionetworks.bridge.TestConstants.TRACKER_URL;
-import static org.sagebionetworks.bridge.TestConstants.USERNAME;
+import static org.sagebionetworks.bridge.TestConstants.*;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 import play.libs.WS;
@@ -37,18 +30,18 @@ public class TestUtils {
 
     public static String signIn() throws Exception {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put(USERNAME, "test2");
+        node.put(USERNAME, TEST_USER);
         node.put(PASSWORD, PASSWORD);
 
         Response response = WS.url(TEST_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
         
         ObjectMapper mapper = new ObjectMapper();
         JsonNode responseNode = mapper.readTree(response.getBody());
-        return responseNode.get("payload").get("sessionToken").asText();
+        return responseNode.get(PAYLOAD).get("sessionToken").asText();
     }
 
     public static WSRequestHolder getURL(String sessionToken, String path) {
-        return WS.url(TEST_URL + path).setHeader("Bridge-Session", sessionToken);
+        return WS.url(TEST_URL + path).setHeader(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken);
     }
     
     public static void signOut() {
@@ -63,18 +56,18 @@ public class TestUtils {
                 Response response = getURL(sessionToken, TRACKER_URL).get().get(TIMEOUT);
                 
                 JsonNode body = response.asJson();
-                ArrayNode array = (ArrayNode)body.get("payload");
+                ArrayNode array = (ArrayNode)body.get(PAYLOAD);
                 if (array.isArray()) {
                     for (int i=0; i < array.size(); i++) {
                         JsonNode child = array.get(i);
-                        String recordId = child.get("recordId").asText();
+                        String recordId = child.get(RECORD_ID).asText();
                         response = getURL(sessionToken, RECORD_URL + recordId).delete().get(TIMEOUT);
                     }
                 }
                 
                 response = getURL(sessionToken, TRACKER_URL).get().get(TIMEOUT);
                 body = response.asJson();
-                array = (ArrayNode)body.get("payload");
+                array = (ArrayNode)body.get(PAYLOAD);
                 
                 signOut();
             }
