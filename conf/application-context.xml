@@ -47,7 +47,7 @@
             <bean class="controllers.HealthDataController">
                 <property name="healthDataService" ref="healthDataService"/>
                 <property name="authenticationService" ref="authenticationService"/>
-		        <property name="studyControllerService" ref="studyControllerService"/>
+                <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
     </bean>
@@ -66,20 +66,20 @@
     <bean id="studyControllerService" class="controllers.StudyControllerService">
         <property name="studies">
             <list>
-		        <bean class="org.sagebionetworks.bridge.models.Study">
-		            <property name="hostnames">
-		                <list>
-		                    <value>localhost</value>
-		                    <value>bridge-development.herokuapp.com</value>
-		                </list>
-		            </property>
-		            <property name="id" value="1"/>
-		            <property name="trackers">
-		                <list>
-		                    <ref bean="pb-tracker"/>
-		                </list>
-		            </property>
-		        </bean>
+                <bean class="org.sagebionetworks.bridge.models.Study">
+                    <property name="hostnames">
+                        <list>
+                            <value>localhost</value>
+                            <value>bridge-development.herokuapp.com</value>
+                        </list>
+                    </property>
+                    <property name="id" value="1"/>
+                    <property name="trackers">
+                        <list>
+                            <ref bean="pb-tracker"/>
+                        </list>
+                    </property>
+                </bean>
             </list>
         </property>
     </bean>

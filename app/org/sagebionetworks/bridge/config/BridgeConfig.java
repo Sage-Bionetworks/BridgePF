@@ -17,7 +17,7 @@ public class BridgeConfig {
 
     private final Logger logger = LoggerFactory.getLogger(BridgeConfig.class);
 
-    public static final String CONFIG_FILE = "bridge.conf";
+    private static final String CONFIG_FILE = "bridge.conf";
     private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
 
