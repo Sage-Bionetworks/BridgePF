@@ -28,10 +28,9 @@ module.exports = function(grunt) {
                     'app/bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
                     'app/scripts/humane-modified.js',
                     'app/scripts/app.js',
-                    'app/scripts/auth-service.js', 
-                    'app/scripts/health-data-service.js', 
-                    'app/scripts/dialogs/*.js',
-                    'app/scripts/controllers/*.js'
+                    'app/scripts/services/*.js',
+                    'app/scripts/controllers/*.js',
+                    'app/scripts/controllers/trackers/*.js'
                 ],
                 dest: '<%= output %>/bridge.js',
                 nonull: true

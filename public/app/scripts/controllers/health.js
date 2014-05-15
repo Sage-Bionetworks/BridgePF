@@ -1,4 +1,14 @@
-angular.module('bridge').controller('HealthController', ['$scope', '$humane', 'healthDataService', function($scope, $humane, healthDataService) {
+angular.module('bridge').controller('HealthController',
+        [ '$scope', '$humane', '$http', 'healthDataService', function($scope, $humane, $http, healthDataService) {
+    
+    $scope.trackers = [];
+    
+    $http.get('/api/trackers').success(function(data, status) {
+        $scope.trackers = data;
+    }).error(function(data, status) {
+        $humane.error(data.payload);
+    });
+    
     $scope.record = {data:{}};
     
     function adjustValues(record) {
