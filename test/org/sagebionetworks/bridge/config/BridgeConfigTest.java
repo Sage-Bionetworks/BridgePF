@@ -5,28 +5,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
-
-import org.junit.Before;
 import org.junit.Test;
-
-import play.api.Application;
-import play.api.DefaultApplication;
-import play.api.Mode;
 
 public class BridgeConfigTest {
 
-    private Application app;
-
-    @Before
-    public void before(){
-        app = new DefaultApplication(new File("."),
-                BridgeConfigTest.class.getClassLoader(), null, Mode.Dev());
-    }
-
     @Test
     public void testDefault() {
-        BridgeConfig config = new BridgeConfig(app);
+        BridgeConfig config = new BridgeConfig();
         assertTrue(config.isLocal());
         assertEquals("fake.aws.key", config.getProperty("aws.key"));
         assertEquals("fake.aws.secret.key", config.getProperty("aws.secret.key"));
@@ -37,7 +22,7 @@ public class BridgeConfigTest {
     public void testMockedProd() {
         System.setProperty("bridge.env", "prod");
         System.setProperty("aws.key", "myFakeTestKey");
-        BridgeConfig config = new BridgeConfig(app);
+        BridgeConfig config = new BridgeConfig();
         assertFalse(config.isLocal());
         assertFalse(config.isDevelopment());
         assertTrue(config.isProduction());

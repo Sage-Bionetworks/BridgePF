@@ -1,32 +1,39 @@
 package global;
 
+import java.io.File;
+
 import models.StatusMessage;
 
-import org.sagebionetworks.bridge.context.BridgeContext;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
 
 import play.*;
 import play.libs.Json;
 import play.libs.F.Promise;
 import play.mvc.SimpleResult;
 import play.mvc.Http.RequestHeader;
-
 import static play.mvc.Results.*;
 
 public class Global extends GlobalSettings {
 
-	private static ApplicationContext applicationContext;
-	
-	@Override
+    private static ApplicationContext applicationContext;
+
+    @Override
     public void onStart(Application application) {
-		BridgeContext context = new BridgeContext();
-		String env = context.getEnvironment();
-		Logger.info("Environment: " + env);
-		
-        applicationContext = new ClassPathXmlApplicationContext(env + "-application-context.xml");
+
+        BridgeConfig bridgeConfig = new BridgeConfig();
+        final String env = bridgeConfig.getEnvironment();
+        Logger.info("Environment: " + env);
+
+
+
+		String contextXml = env + "-application-context.xml";
+        applicationContext = new ClassPathXmlApplicationContext(contextXml);
     }
-	
+
 	/* Don't work because the /* route handles all misses
 	@Override
 	public Promise<SimpleResult> onHandlerNotFound(RequestHeader header) {

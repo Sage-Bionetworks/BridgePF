@@ -10,7 +10,11 @@
         http://www.springframework.org/schema/mvc
         http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
-    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"></bean>
+    <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfig" />
+
+    <bean id="awsCredentials" class="org.sagebionetworks.bridge.dynamodb.AwsCredentials" />
+
+    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
 
     <!-- Play controllers. -->
 
@@ -24,7 +28,8 @@
     <bean id="controllers.ApplicationController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.ApplicationController">
-                <property name="authenticationService" ref="authenticationService"/>
+                <property name="authenticationService" ref="authenticationService" />
+                <property name="bridgeConfig" ref="bridgeConfig" />
             </bean>
         </property>
     </bean>
@@ -111,7 +116,7 @@
     
     <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" scope="prototype">
         <constructor-arg index="0">
-            <bean class="org.sagebionetworks.bridge.dynamodb.CredentialsFactory" factory-method="getCredentials"/>
+            <value>#{awsCredentials.credentials}</value>
         </constructor-arg>
     </bean>    
     
