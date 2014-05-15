@@ -32,6 +32,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
 
 public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAware {
 
@@ -172,7 +174,7 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
              * indexes for the query version, do not know all the consequences of the two index types.
              * 
              * This does make one query, though
-             * 
+             */
             return FluentIterable.from(getAllHealthData(key)).filter(new Predicate<HealthDataRecord>() {
                 public boolean apply(HealthDataRecord record) {
                     if ((record.getEndDate() != 0 && record.getEndDate() < startDate.getTime()) || record.getStartDate() > endDate.getTime()) {
@@ -181,7 +183,8 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
                     return true;
                 }
             }).toList();
-             */
+            
+            /* Two queries and pulls everything anyway
             DynamoDBMapper mapper = getCreateMapper();
             DynamoRecord dynamoRecord = new DynamoRecord(healthDataKeyToAnonimizedKeyString(key));
             
@@ -219,6 +222,7 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
             Set<DynamoRecord> intersection = new HashSet<DynamoRecord>(records1);
             intersection.retainAll( new HashSet<DynamoRecord>(records2) );
             return toHealthDataEntries(intersection);
+            */
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }

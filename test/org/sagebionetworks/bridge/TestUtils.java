@@ -54,7 +54,6 @@ public class TestUtils {
     public static void signOut() {
         WS.url(TEST_URL + SIGN_OUT_URL).get().get(TIMEOUT);
     }
-    
 
     public static void deleteAllHealthData() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
@@ -69,7 +68,7 @@ public class TestUtils {
                     for (int i=0; i < array.size(); i++) {
                         JsonNode child = array.get(i);
                         String recordId = child.get("recordId").asText();
-                        getURL(sessionToken, RECORD_URL + recordId).delete().get(TIMEOUT);
+                        response = getURL(sessionToken, RECORD_URL + recordId).delete().get(TIMEOUT);
                     }
                 }
                 
