@@ -24,7 +24,7 @@ public class Global extends GlobalSettings {
         BridgeConfig bridgeConfig = new BridgeConfig();
         final String env = bridgeConfig.getEnvironment();
         Logger.info("Environment: " + env);
-        applicationContext = new ClassPathXmlApplicationContext(env + "-application-context.xml");
+        applicationContext = new ClassPathXmlApplicationContext("application-context.xml");
     }
 
     /* Don't work because the /* route handles all misses
