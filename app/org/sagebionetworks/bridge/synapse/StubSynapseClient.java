@@ -1,10 +1,9 @@
-package org.sagebionetworks.bridge.stubs;
+package org.sagebionetworks.bridge.synapse;
 
 import java.lang.reflect.Method;
 
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,7 +22,6 @@ import org.sagebionetworks.repo.model.UserProfile;
 import org.sagebionetworks.repo.model.UserSessionData;
 import org.sagebionetworks.repo.model.auth.NewIntegrationTestUser;
 import org.sagebionetworks.repo.model.auth.Session;
-import org.sagebionetworks.schema.adapter.JSONObjectAdapterException;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -34,10 +32,18 @@ public abstract class StubSynapseClient implements SynapseClient, SynapseAdminCl
 	Set<String> agreedTOUs = Sets.newHashSet();
 	Map<String,UserSessionData> usersById = Maps.newHashMap();
     Map<String,String> usersByChangedPasswords = new HashMap<String,String>();
-	
 	Map<String,String> emailByUserId = Maps.newHashMap();
 
 	public StubSynapseClient() {
+        try {
+            int id = 1;
+            addStubUser("test1", "test1@sagebase.org", false, false, id++);    
+            addStubUser("test2", "test2@sagebase.org", true, false, id++);
+            addStubUser("test3", "test3@sagebase.org", true, true, id++);
+            addStubUser("test4", "test4@sagebase.org", false, true, id++);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
 	}
 
 	private static StubSynapseClient singleStub = null;
@@ -64,27 +70,16 @@ public abstract class StubSynapseClient implements SynapseClient, SynapseAdminCl
 		return singleStub;
 	}
 
-	public void setStubUsers(List<Map<String,String>> stubUsers) throws Exception {
-	    int id = 1;
-		for (Map<String,String> entry : stubUsers) {
-		    String idString = Long.toString(id++);
-			NewIntegrationTestUser newUser = new NewIntegrationTestUser();
-			newUser.setUsername(entry.get("username"));
-			newUser.setEmail(entry.get("email"));
-			newUser.setPassword("password");
-			createStubUser(newUser, idString);
-			if ("true".equals(entry.get("tou"))) {
-				agreedTOUs.add(idString);
-			}
-			if ("true".equals(entry.get("admin"))) {
-				// nothing for now.
-			}
-		}
-	}
-
-    private void createStubUser(NewIntegrationTestUser user, String idString) throws SynapseException, JSONObjectAdapterException {
+    private void addStubUser(String username, String email, boolean tou, boolean admin, int id)
+            throws Exception {
+        String idString = Integer.toString(id);
+        NewIntegrationTestUser newUser = new NewIntegrationTestUser();
+        newUser.setUsername(username);
+        newUser.setEmail(email);
+        newUser.setPassword("password");
         UserProfile profile = new UserProfile();
-        profile.setUserName(user.getUsername());
+        
+        profile.setUserName(newUser.getUsername());
         profile.setOwnerId(idString);
         Session session = new Session();
         session.setSessionToken(idString);
@@ -92,11 +87,17 @@ public abstract class StubSynapseClient implements SynapseClient, SynapseAdminCl
         data.setIsSSO(false);
         data.setProfile(profile);
         data.setSession(session);
-        usersById.put(user.getUsername(), data);
+        usersById.put(newUser.getUsername(), data);
         usersById.put(idString, data);
-        emailByUserId.put(idString, user.getEmail());
-    }
-    
+        emailByUserId.put(idString, newUser.getEmail());
+        if (tou) {
+            agreedTOUs.add(idString);
+        }
+        if (admin) {
+            // nothing for now.
+        }
+	}
+	
 	@Override
 	public void appendUserAgent(String toAppend) {
 	}
