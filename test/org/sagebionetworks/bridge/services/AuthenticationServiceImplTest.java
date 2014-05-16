@@ -14,7 +14,7 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@ContextConfiguration("file:conf/stub-application-context.xml")
+@ContextConfiguration("file:conf/application-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class AuthenticationServiceImplTest {
 
