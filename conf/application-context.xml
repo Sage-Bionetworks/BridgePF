@@ -13,12 +13,8 @@
     <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfig" />
 
     <bean id="awsCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
-        <constructor-arg index="0">
-            <value>#{bridgeConfig.getProperty('aws.key')}</value>
-        </constructor-arg>
-        <constructor-arg index="1">
-            <value>#{bridgeConfig.getProperty('aws.secret.key')}</value>
-        </constructor-arg>
+        <constructor-arg index="0" value="#{bridgeConfig.getProperty('aws.key')}"/>
+        <constructor-arg index="1" value="#{bridgeConfig.getProperty('aws.secret.key')}"/>
     </bean>
 
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
@@ -84,6 +80,7 @@
                     <property name="trackers">
                         <list>
                             <ref bean="pb-tracker"/>
+                            <ref bean="med-tracker"/>
                         </list>
                     </property>
                 </bean>
