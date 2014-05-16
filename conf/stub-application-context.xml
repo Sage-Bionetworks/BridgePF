@@ -10,8 +10,7 @@
         
     <import resource="application-context.xml"/>
 
-    <bean id="synapseClient" class="org.sagebionetworks.bridge.stubs.StubSynapseClient" 
-        factory-method="createInstance" scope="singleton">
+    <bean id="synapseClient" class="org.sagebionetworks.bridge.stubs.StubSynapseClient" factory-method="createInstance" scope="singleton">
         <property name="stubUsers">
             <list>
 	            <map>
