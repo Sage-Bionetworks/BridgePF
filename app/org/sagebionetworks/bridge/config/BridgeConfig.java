@@ -7,9 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
+import org.jasypt.encryption.StringEncryptor;
 import org.jasypt.properties.EncryptableProperties;
-import org.jasypt.salt.StringFixedSaltGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,39 +27,37 @@ public class BridgeConfig {
     // Property name for the environment
     private static final String ENVIRONMENT = "bridge.env";
 
-    // Property name for the encryption/decryption password
+    // Property name for the encryption password
     private static final String PASSWORD = "bridge.pwd";
-    // Property name for the encryption/decryption salt
+    // Property name for the encryption salt
     private static final String SALT = "bridge.salt";
 
-    // Predefined environments
-    private static final String ENV_LOCAL = "local";
-    private static final String ENV_STUB = "stub";
-    private static final String ENV_DEV = "dev";
-    private static final String ENV_PROD = "prod";
-
-    private final String environment;
+    private final Environment environment;
     private final Properties properties;
 
+    // Reads the environment variables
     private final ConfigReader envReader = new ConfigReader() {
         @Override
         public String read(String name) {
             try {
                 return System.getenv(name);
             } catch(SecurityException e) {
-                logger.error("Cannot read environment variable " + name + " because of SecurityException.");
+                logger.error("Cannot read environment variable " + name
+                        + " because of SecurityException.");
                 return null;
             }
         }
     };
 
-    private final ConfigReader cmdArgReader = new ConfigReader() {
+    // Reads the command-line arguments
+    private final ConfigReader argsReader = new ConfigReader() {
         @Override
         public String read(String name) {
             try {
                 return System.getProperty(name);
             } catch(SecurityException e) {
-                logger.error("Cannot read system property " + name + " because of SecurityException.");
+                logger.error("Cannot read system property " + name
+                        + " because of SecurityException.");
                 return null;
             }
         }
@@ -72,7 +69,7 @@ public class BridgeConfig {
 
     public BridgeConfig(File defaultConfig) {
 
-        // Load default config from source code
+        // Load default config
         final Properties properties = new Properties();
         try {
             loadProperties(new FileInputStream(defaultConfig), properties);
@@ -88,46 +85,38 @@ public class BridgeConfig {
         // Find out the environment
         environment = readEnvironment(properties);
         if (environment == null) {
-            throw new NullPointerException("Environment undetermined.");
+            throw new NullPointerException("Environment not set.");
         }
 
         // Collapse the properties for the current environment
-        Properties collapsed = collapse(properties, environment);
+        Properties collapsed = collapse(properties, environment.getEnvName());
 
-        final StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
-        // TODO: Better encryption
-        // encryptor.setAlgorithm("PBEWithMD5AndTripleDES");
-        // encryptor.setKeyObtentionIterations(1000);
-        // encryptor.setSaltGenerator(new RandomSaltGenerator());
-
-        // Read the password for encryption/decryption
         final String pwd = read(PASSWORD, properties);
-        encryptor.setPassword(pwd);
         final String salt = read(SALT, properties);
-        encryptor.setSaltGenerator(new StringFixedSaltGenerator(salt));
+        final StringEncryptor encryptor = EncryptorUtil.getEncryptor(pwd, salt);
 
-        // Decrypted properties
+        // Decryptable properties
         this.properties = new EncryptableProperties(collapsed, encryptor);
     }
 
     public String getEnvironment() {
-        return environment;
-    }
-
-    public boolean isLocal() {
-        return ENV_LOCAL.equals(environment);
+        return environment.getEnvName();
     }
 
     public boolean isStub() {
-        return ENV_STUB.equals(environment);
+        return Environment.STUB.equals(environment);
+    }
+
+    public boolean isLocal() {
+        return Environment.LOCAL.equals(environment);
     }
 
     public boolean isDevelopment() {
-        return ENV_DEV.equals(environment);
+        return Environment.DEV.equals(environment);
     }
 
     public boolean isProduction() {
-        return ENV_PROD.equals(environment);
+        return Environment.PROD.equals(environment);
     }
 
     public String getProperty(String name) {
@@ -172,29 +161,28 @@ public class BridgeConfig {
         }
     }
 
-    private String readEnvironment(final Properties properties) {
-        final String env = read(ENVIRONMENT, properties);
-        if (env == null) {
-            logger.info("Environment not set. Is this local development?");
-            return ENV_LOCAL;
+    private Environment readEnvironment(final Properties properties) {
+        final String envName = read(ENVIRONMENT, properties);
+        if (envName == null) {
+            logger.info("Environment not set. Is this the stub development?");
+            return Environment.STUB;
         }
-        if (!ENV_LOCAL.equals(env)
-                && !ENV_STUB.equals(env)
-                && !ENV_DEV.equals(env)
-                && !ENV_PROD.equals(env)) {
-            throw new RuntimeException("Invalid environment " + env + " from config.");
+        for (Environment env : Environment.values()) {
+            if (env.getEnvName().equals(envName)) {
+                return env;
+            };
         }
-        return env;
+        throw new RuntimeException("Invalid environment " + envName + " from config.");
     }
 
     private String read(final String name, final Properties properties) {
-        // First command line argument (System.getProperty())
-        String value = cmdArgReader.read(name);
-        // Then environment variable
+        // First the command-line arguments (via System.getProperty())
+        String value = argsReader.read(name);
+        // Then the environment variables
         if (value == null) {
             value = envReader.read(name);
         }
-        // Then properties file
+        // Then the properties file
         if (value == null) {
             value = properties.getProperty(name);
         }
@@ -204,9 +192,9 @@ public class BridgeConfig {
     /**
      * Collapses the properties into new properties relevant to the current environment.
      * Start with default properties. Overwrite with properties for the current environment
-     * and properties read from the environment and the command line.
+     * and properties read from the environment and the command-line.
      */
-    private Properties collapse(final Properties properties, final String environment) {
+    private Properties collapse(final Properties properties, final String envName) {
         Properties collapsed = new Properties();
         // Read the default properties
         for (Object key : properties.keySet()) {
@@ -218,15 +206,15 @@ public class BridgeConfig {
         // Overwrite with properties for the current environment
         for (Object key : properties.keySet()) {
             final String name = key.toString();
-            if (name.startsWith(environment + ".")) {
-                String strippedName = name.substring(environment.length() + 1);
+            if (name.startsWith(envName + ".")) {
+                String strippedName = name.substring(envName.length() + 1);
                 collapsed.setProperty(strippedName, properties.getProperty(name));
             }
         }
         // Overwrite with command line arguments and environment variables
         for (Object key : collapsed.keySet()) {
             final String name = key.toString();
-            String value = cmdArgReader.read(name);
+            String value = argsReader.read(name);
             if (value == null) {
                 value = envReader.read(name);
             }
@@ -238,20 +226,14 @@ public class BridgeConfig {
     }
 
     /**
-     * If the property is not bound to a particular environment.
+     * When the property is not bound to a particular environment.
      */
-    private boolean isDefaultProperty(String name) {
-        if (name.startsWith(ENV_LOCAL + ".")) {
-            return false;
-        }
-        if (name.startsWith(ENV_STUB + ".")) {
-            return false;
-        }
-        if (name.startsWith(ENV_DEV + ".")) {
-            return false;
-        }
-        if (name.startsWith(ENV_PROD + ".")) {
-            return false;
+    private boolean isDefaultProperty(String propName) {
+        for (Environment env : Environment.values()) {
+            String envPrefix = env.getEnvName() + ".";
+            if (propName.startsWith(envPrefix)) {
+                return false;
+            }
         }
         return true;
     }
