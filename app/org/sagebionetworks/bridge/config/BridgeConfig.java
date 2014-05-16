@@ -7,9 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
+import org.jasypt.encryption.StringEncryptor;
 import org.jasypt.properties.EncryptableProperties;
-import org.jasypt.salt.StringFixedSaltGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,17 +87,9 @@ public class BridgeConfig {
         // Collapse the properties for the current environment
         Properties collapsed = collapse(properties, environment.getEnvName());
 
-        final StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
-        // TODO: Better encryption
-        // encryptor.setAlgorithm("PBEWithMD5AndTripleDES");
-        // encryptor.setKeyObtentionIterations(1000);
-        // encryptor.setSaltGenerator(new RandomSaltGenerator());
-
-        // Read the encryption password
         final String pwd = read(PASSWORD, properties);
-        encryptor.setPassword(pwd);
         final String salt = read(SALT, properties);
-        encryptor.setSaltGenerator(new StringFixedSaltGenerator(salt));
+        final StringEncryptor encryptor = EncryptorUtil.getEncryptor(pwd, salt);
 
         // Decryptable properties
         this.properties = new EncryptableProperties(collapsed, encryptor);
@@ -155,16 +146,17 @@ public class BridgeConfig {
     }
 
     private Environment readEnvironment(final Properties properties) {
-        final String env = read(ENVIRONMENT, properties);
-        if (env == null) {
+        final String envName = read(ENVIRONMENT, properties);
+        if (envName == null) {
             logger.info("Environment not set. Is this the stub development?");
             return Environment.STUB;
         }
-        Environment environment = Environment.valueOf(env);
-        if (environment == null) {
-            throw new RuntimeException("Invalid environment " + env + " from config.");
+        for (Environment env : Environment.values()) {
+            if (env.getEnvName().equals(envName)) {
+                return env;
+            };
         }
-        return environment;
+        throw new RuntimeException("Invalid environment " + envName + " from config.");
     }
 
     private String read(final String name, final Properties properties) {
@@ -186,7 +178,7 @@ public class BridgeConfig {
      * Start with default properties. Overwrite with properties for the current environment
      * and properties read from the environment and the command-line.
      */
-    private Properties collapse(final Properties properties, final String environment) {
+    private Properties collapse(final Properties properties, final String envName) {
         Properties collapsed = new Properties();
         // Read the default properties
         for (Object key : properties.keySet()) {
@@ -198,8 +190,8 @@ public class BridgeConfig {
         // Overwrite with properties for the current environment
         for (Object key : properties.keySet()) {
             final String name = key.toString();
-            if (name.startsWith(environment + ".")) {
-                String strippedName = name.substring(environment.length() + 1);
+            if (name.startsWith(envName + ".")) {
+                String strippedName = name.substring(envName.length() + 1);
                 collapsed.setProperty(strippedName, properties.getProperty(name));
             }
         }
@@ -220,10 +212,10 @@ public class BridgeConfig {
     /**
      * When the property is not bound to a particular environment.
      */
-    private boolean isDefaultProperty(String name) {
+    private boolean isDefaultProperty(String propName) {
         for (Environment env : Environment.values()) {
             String envPrefix = env.getEnvName() + ".";
-            if (name.startsWith(envPrefix)) {
+            if (propName.startsWith(envPrefix)) {
                 return false;
             }
         }
