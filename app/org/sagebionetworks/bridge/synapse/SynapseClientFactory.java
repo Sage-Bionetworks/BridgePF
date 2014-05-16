@@ -7,8 +7,10 @@ import org.sagebionetworks.repo.model.DomainType;
 
 public class SynapseClientFactory {
 
-    public static SynapseClient createSynapseClient(String repoEndpoint, String authEndpoint, String fileEndpoint) {
-        if (new BridgeConfig().isStub()) {
+    public static SynapseClient createSynapseClient(BridgeConfig config, String repoEndpoint, String authEndpoint,
+            String fileEndpoint) {
+        
+        if (config.isStub()) {
             return StubSynapseClient.createInstance();            
         } else {
             SynapseClient client = new SynapseClientImpl(DomainType.BRIDGE);
