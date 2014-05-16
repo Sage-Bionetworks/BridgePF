@@ -12,9 +12,9 @@ public class SynapseClientFactory {
             return StubSynapseClient.createInstance();            
         } else {
             SynapseClient client = new SynapseClientImpl(DomainType.BRIDGE);
-            client.setRepositoryEndpoint(config.getProperty("synapse.repo.endpoint"));
-            client.setAuthEndpoint(config.getProperty("synapse.auth.endpoint"));
-            client.setFileEndpoint(config.getProperty("synapse.file.endpoint"));
+            client.setRepositoryEndpoint(config.getSynapseRepoEndpoint());
+            client.setAuthEndpoint(config.getSynapseAuthEndpoint());
+            client.setFileEndpoint(config.getSynapseFileEndpoint());
             return client;
         }
     }
