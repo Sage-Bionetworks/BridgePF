@@ -17,6 +17,10 @@ public class BridgeConfig {
 
     private final Logger logger = LoggerFactory.getLogger(BridgeConfig.class);
 
+    private static final String SYNAPSE_REPO_ENDPOINT =  "synapse.repo.endpoint";
+    private static final String SYNAPSE_AUTH_ENDPOINT =  "synapse.auth.endpoint";
+    private static final String SYNAPSE_FILE_ENDPOINT =  "synapse.file.endpoint";
+    
     private static final String CONFIG_FILE = "bridge.conf";
     private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
@@ -128,6 +132,18 @@ public class BridgeConfig {
 
     public String getProperty(String name) {
         return properties.getProperty(name);
+    }
+    
+    public String getSynapseRepoEndpoint() {
+        return getProperty(SYNAPSE_REPO_ENDPOINT);
+    }
+
+    public String getSynapseAuthEndpoint() {
+        return getProperty(SYNAPSE_AUTH_ENDPOINT);
+    }
+
+    public String getSynapseFileEndpoint() {
+        return getProperty(SYNAPSE_FILE_ENDPOINT);
     }
 
     ///////////////////////////
