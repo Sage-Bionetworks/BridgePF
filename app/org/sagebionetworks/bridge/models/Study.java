@@ -34,6 +34,6 @@ public class Study {
                 return tracker;
             }
         }
-        throw new BridgeNotFoundException(String.format("Tracker %s not available for study '%s'", id.toString(), id));
+        throw new BridgeNotFoundException(String.format("Tracker %s not available for study '%s'", id.toString(), this.id.toString()));
     }
 }
