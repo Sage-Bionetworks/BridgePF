@@ -19,6 +19,13 @@
 
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
 
+    <bean id="synapseClient" class="org.sagebionetworks.bridge.synapse.SynapseClientFactory" 
+        factory-method="createSynapseClient" scope="prototype">
+        <constructor-arg index="0" value="#{bridgeConfig.getProperty('synapse.repo.endpoint')}"/>
+        <constructor-arg index="1" value="#{bridgeConfig.getProperty('synapse.auth.endpoint')}"/>
+        <constructor-arg index="2" value="#{bridgeConfig.getProperty('synapse.file.endpoint')}"/>
+    </bean>
+
     <!-- Play controllers. -->
 
     <bean id="proxiedController" class="org.springframework.aop.framework.ProxyFactoryBean">
