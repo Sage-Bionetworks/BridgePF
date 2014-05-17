@@ -14,12 +14,14 @@ public class BridgeConfigTest {
     public void before() {
         System.setProperty("bridge.pwd", "when.the.password.is.not.a.password");
         System.setProperty("bridge.salt", "when.the.salt.is.some.random.sea.salt");
+        System.setProperty("bridge.user", "unit.test");
     }
 
     @After
     public void after() {
         System.clearProperty("bridge.pwd");
         System.clearProperty("bridge.salt");
+        System.clearProperty("bridge.user");
         System.clearProperty("bridge.env");
     }
 
@@ -42,5 +44,11 @@ public class BridgeConfigTest {
         System.setProperty("bridge.env", "dev");
         BridgeConfig config = new BridgeConfig();
         assertEquals("example.value.for.dev", config.getProperty("example.property"));
+    }
+
+    @Test
+    public void testUser() {
+        BridgeConfig config = new BridgeConfig();
+        assertEquals("unit.test", config.getProperty("bridge.user"));
     }
 }
