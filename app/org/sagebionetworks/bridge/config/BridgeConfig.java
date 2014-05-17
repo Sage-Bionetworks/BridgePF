@@ -67,11 +67,11 @@ public class BridgeConfig {
         }
     };
 
-    public BridgeConfig() {
+    BridgeConfig() {
         this(new File(DEFAULT_CONFIG_FILE));
     }
 
-    public BridgeConfig(File defaultConfig) {
+    BridgeConfig(File defaultConfig) {
 
         // Load default config
         final Properties properties = new Properties();
