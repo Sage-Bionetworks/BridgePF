@@ -24,6 +24,9 @@ public class BridgeConfig {
     private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
 
+    // Property name for the user
+    private static final String USER = "bridge.user";
+
     // Property name for the environment
     private static final String ENVIRONMENT = "bridge.env";
 
@@ -32,6 +35,7 @@ public class BridgeConfig {
     // Property name for the encryption salt
     private static final String SALT = "bridge.salt";
 
+    private final String user;
     private final Environment environment;
     private final Properties properties;
 
@@ -63,11 +67,11 @@ public class BridgeConfig {
         }
     };
 
-    public BridgeConfig() {
+    BridgeConfig() {
         this(new File(DEFAULT_CONFIG_FILE));
     }
 
-    public BridgeConfig(File defaultConfig) {
+    BridgeConfig(File defaultConfig) {
 
         // Load default config
         final Properties properties = new Properties();
@@ -81,6 +85,12 @@ public class BridgeConfig {
         // This overwrites properties of the same name in the default config
         File file = new File(USER_CONFIG_FILE);
         loadProperties(file, properties);
+
+        final String user = read(USER, properties);
+        if (user == null || user.isEmpty()) {
+            throw new RuntimeException("Missing user. Please set '" + USER + "'");
+        }
+        this.user = user;
 
         // Find out the environment
         environment = readEnvironment(properties);
@@ -97,6 +107,10 @@ public class BridgeConfig {
 
         // Decryptable properties
         this.properties = new EncryptableProperties(collapsed, encryptor);
+    }
+
+    public String getUser() {
+        return user;
     }
 
     public String getEnvironment() {
