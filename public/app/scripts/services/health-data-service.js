@@ -29,7 +29,7 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q', function($http
                 throw new Error("Trying to create a record with a pre-existing recordId");
             }
             var url = '/api/healthdata/'+trackerId;
-            return call($http.post(url, JSON.stringify(object)));
+            return call($http.post(url, JSON.stringify([object])));
         },
         update: function(trackerId, object) {
             if (!object.recordId) {

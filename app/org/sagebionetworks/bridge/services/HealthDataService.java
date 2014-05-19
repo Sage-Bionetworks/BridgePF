@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 public interface HealthDataService {
 
-    public String appendHealthData(HealthDataKey key, HealthDataRecord record) throws BridgeServiceException;
+    public List<String> appendHealthData(HealthDataKey key, List<HealthDataRecord> records) throws BridgeServiceException;
     
     public List<HealthDataRecord> getAllHealthData(HealthDataKey key) throws BridgeServiceException;
     
