@@ -1,6 +1,8 @@
 bridge.controller('HealthController',
         [ '$scope', '$humane', '$http', 'healthDataService', function($scope, $humane, $http, healthDataService) {
     
+    var TRACKER_ID = 1;
+            
     $scope.trackers = [];
     
     $http.get('/api/trackers').success(function(data, status) {
@@ -36,7 +38,7 @@ bridge.controller('HealthController',
         if ($scope.record.data.diastolic && $scope.record.data.systolic && $scope.record.startDate) {
             var data = adjustValues($scope.record);
             
-            healthDataService.create(1, data).then(function(data) {
+            healthDataService.create(TRACKER_ID, data).then(function(data) {
                 $humane.confirm("Saved");
                 updateTable();
             }, function(data) {
@@ -45,7 +47,7 @@ bridge.controller('HealthController',
         }
     };
     $scope.remove = function(record) {
-        healthDataService.remove(1, record.recordId).then(function(data) {
+        healthDataService.remove(TRACKER_ID, record.recordId).then(function(data) {
             $humane.confirm("Deleted");
             updateTable();
         }, function(data) {
@@ -57,14 +59,18 @@ bridge.controller('HealthController',
         $scope.record.startDate = new Date(record.startDate).toISOString().split("T")[0];
         $scope.record.endDate = new Date(record.endDate).toISOString().split("T")[0];
         $scope.record.data.systolic = record.data.systolic;
-        $scope.record.data.diastolic = record.data.diastolic;
+    };
+    $scope.load = function(record) {
+        healthDataService.get(TRACKER_ID, record.recordId).then(function(data) {
+           console.log(data); 
+        });
     };
     $scope.update = function(record) {
         if ($scope.record.data.diastolic && $scope.record.data.systolic && $scope.record.startDate) {
             
             var data = adjustValues($scope.record);
             
-            healthDataService.update(1, data).then(function(data) {
+            healthDataService.update(TRACKER_ID, data).then(function(data) {
                 $humane.confirm("Updated");
                 updateTable();
             }, function(data) {
@@ -77,7 +83,7 @@ bridge.controller('HealthController',
     updateTable();
 
     function updateTable() {
-        healthDataService.getAll(1).then(function(data) {
+        healthDataService.getAll(TRACKER_ID).then(function(data) {
             $scope.records = data.payload.reverse();
         }, function(data) {
             $humane.error(data.payload);

@@ -16,10 +16,10 @@ import org.sagebionetworks.repo.model.UserProfile;
 import org.sagebionetworks.repo.model.UserSessionData;
 import org.springframework.beans.factory.BeanFactory;
 
-import com.amazonaws.services.cloudsearchv2.model.LimitExceededException;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.model.LimitExceededException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
@@ -55,13 +55,13 @@ public class HealthDataServiceImplTest {
         
         SynapseClient client = mock(SynapseClient.class);
         try {
-            doReturn(data).when(client).getUserSessionData();    
+            doReturn(data).when(client).getUserSessionData();
         } catch(Throwable t) {
         }
-        
+
         BeanFactory factory = mock(BeanFactory.class);
         doReturn(client).when(factory).getBean("synapseClient", SynapseClient.class);
-        
+
         service.setBeanFactory(factory);
     }
 
@@ -108,48 +108,49 @@ public class HealthDataServiceImplTest {
     @Test(expected=BridgeServiceException.class)
     public void appendHealthDataErrorNullRecord() throws Exception {
         HealthDataRecord record = new HealthDataRecordImpl();
-        service.appendHealthData(null, record);
+        service.appendHealthData(null, Lists.newArrayList(record));
     }
     @Test(expected=BridgeServiceException.class)
     public void appendHealthDataErrorBadKey() throws Exception {
         HealthDataKey key = new HealthDataKey(0, 0, null);
         HealthDataRecord record = new HealthDataRecordImpl();
-        service.appendHealthData(key, record);
+        service.appendHealthData(key, Lists.newArrayList(record));
     }
     @Test(expected=BridgeServiceException.class)
     public void appendHealthDataErrorBadRecord() throws Exception {
         HealthDataKey key = new HealthDataKey(1, 1, "belgium");
         HealthDataRecord record = new HealthDataRecordImpl();
-        service.appendHealthData(key, record);
+        service.appendHealthData(key, Lists.newArrayList(record));
     }
     @Test(expected=BridgeServiceException.class)
     public void appendHealthDataErrorExistingRecord() throws Exception {
         HealthDataKey key = new HealthDataKey(1, 1, "belgium");
         HealthDataRecord record = new HealthDataRecordImpl();
         record.setRecordId("beluga");
-        service.appendHealthData(key, record);
+        service.appendHealthData(key, Lists.newArrayList(record));
     }
     @Test
+    @SuppressWarnings("unchecked")
     public void appendHealthDataSuccess() throws Exception {
         HealthDataKey key = new HealthDataKey(1, 1, "belgium");
         HealthDataRecord record = createHealthDataRecord();
 
-        String identifier = service.appendHealthData(key, record);
+        List<String> identifiers = service.appendHealthData(key, Lists.newArrayList(record));
 
-        verify(createMapper).save(any(DynamoRecord.class));
-        assertThat(record.getRecordId()).isEqualTo(identifier);
+        verify(createMapper).batchSave(any(List.class));
+        assertThat(record.getRecordId()).isEqualTo(identifiers.get(0));
         
         verifyNoMoreInteractions(createMapper);
     }
     @Test(expected=BridgeServiceException.class)
+    @SuppressWarnings("unchecked")
     public void appendHealthDataServiceError() throws Exception {
         HealthDataKey key = new HealthDataKey(1, 1, "belgium");
         HealthDataRecord record = createHealthDataRecord();
-
-        doThrow(new LimitExceededException("Limit exceeded")).when(createMapper).save(any(DynamoRecord.class));
-        service.appendHealthData(key, record);
+        
+        doThrow(new LimitExceededException("Limit exceeded")).when(createMapper).batchSave(any(List.class));
+        service.appendHealthData(key, Lists.newArrayList(record));
     }
-    
     @Test(expected=BridgeServiceException.class)
     public void getAllHealthDataErrorBadKeyNoStudy() throws Exception {
         HealthDataKey key = new HealthDataKey(0, 1, "belgium");
