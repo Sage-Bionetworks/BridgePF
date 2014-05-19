@@ -14,8 +14,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -26,32 +30,39 @@ import static org.sagebionetworks.bridge.TestConstants.*;
 
 public class HealthDataControllerTest {
 
-    private JsonNode getTestRecord() {
-        return getTestRecord(1399666566890L, 1399666566890L);
+    private ObjectMapper mapper = new ObjectMapper();
+
+    public HealthDataControllerTest() {
+        mapper.setSerializationInclusion(Include.NON_NULL);
+    }
+    
+    private List<HealthDataRecord> getTestRecords() throws Exception {
+        return getTestRecords(1399666566890L, 1399666566890L);
     }
     
     // The test record used here is a medication record, which can have 
     // duration (no end date), which makes it important for the date-based
     // query methods of the service.
-    private JsonNode getTestRecord(long startDate, long endDate) {
-        ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put("startDate", startDate);
+    private List<HealthDataRecord> getTestRecords(long startDate, long endDate) throws Exception {
+        HealthDataRecord record = new HealthDataRecordImpl();
+        record.setStartDate(startDate);
         if (endDate > 0) {
-            node.put("endDate", endDate);    
+            record.setEndDate(endDate);    
         }
         ObjectNode data = JsonNodeFactory.instance.objectNode();
         data.put("medication", "Lionipril");
         data.put("dosage", "10mg");
         data.put("frequency", "1x/day");
-        node.put("data", data);
-        return node;
+        record.setData(data);
+        
+        return Lists.newArrayList(record);
     }
     
     private String retrieveNewId(Response response) {
         JsonNode body = response.asJson();
         JsonNode payload = body.get("payload");
-        String id = payload.get("id").asText();
-        return id;
+        JsonNode ids = payload.get("ids");
+        return ids.get(0).asText();
     }
     
     private List<String> getIds(Response response) {
@@ -81,9 +92,10 @@ public class HealthDataControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 String sessionToken = TestUtils.signIn();
-                JsonNode node = getTestRecord();
+                List<HealthDataRecord> records = getTestRecords();
                 
-                Response response = TestUtils.getURL(sessionToken, TRACKER_URL).post(node).get(TIMEOUT);
+                Response response = TestUtils.getURL(sessionToken, TRACKER_URL)
+                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 assertThat(response.getStatus()).isEqualTo(OK);
                 
                 String id = retrieveNewId(response);
@@ -100,10 +112,13 @@ public class HealthDataControllerTest {
             public void testCode() throws Exception {
                 String sessionToken = TestUtils.signIn();
                 
-                TestUtils.getURL(sessionToken, TRACKER_URL).post(getTestRecord()).get(TIMEOUT);
-                TestUtils.getURL(sessionToken, TRACKER_URL).post(getTestRecord()).get(TIMEOUT);
-                TestUtils.getURL(sessionToken, TRACKER_URL).post(getTestRecord()).get(TIMEOUT);
-
+                TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(getTestRecords()))
+                        .get(TIMEOUT);
+                TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(getTestRecords()))
+                        .get(TIMEOUT);
+                TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(getTestRecords()))
+                        .get(TIMEOUT);
+                
                 Response response = TestUtils.getURL(sessionToken, TRACKER_URL).get().get(TIMEOUT);
                 
                 JsonNode body = response.asJson();
@@ -143,28 +158,28 @@ public class HealthDataControllerTest {
                 long time5 = thousandDaysAgo + threeDays*5;
                 long time6 = thousandDaysAgo + threeDays*6;
 
-                ObjectNode node = (ObjectNode)getTestRecord(time1, time2-1);
-                Response response = TestUtils.getURL(sessionToken, TRACKER_URL).post(node).get(TIMEOUT);
+                List<HealthDataRecord> records = getTestRecords(time1, time2-1);
+                Response response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id1 = retrieveNewId(response);
 
-                node = (ObjectNode)getTestRecord(time1, time3);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(node).get(TIMEOUT);
+                records = getTestRecords(time1, time3);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id2 = retrieveNewId(response);
                 
-                node = (ObjectNode)getTestRecord(time4, time6);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(node).get(TIMEOUT);
+                records = getTestRecords(time4, time6);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id3 = retrieveNewId(response);
                 
-                node = (ObjectNode)getTestRecord(time3, time4);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(node).get(TIMEOUT);
+                records = getTestRecords(time3, time4);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id4 = retrieveNewId(response);
                 
-                node = (ObjectNode)getTestRecord(time5+1, time6);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(node).get(TIMEOUT);
+                records = getTestRecords(time5+1, time6);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 retrieveNewId(response); // never appears in queries
                 
-                node = (ObjectNode)getTestRecord(time3, 0);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(node).get(TIMEOUT);
+                records = getTestRecords(time3, 0);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id6 = retrieveNewId(response);
                 
                 String queryPath = String.format("/%s/%s", Long.toString(time2), Long.toString(time5));
@@ -193,20 +208,21 @@ public class HealthDataControllerTest {
             public void testCode() throws Exception {
                 String sessionToken = TestUtils.signIn();
 
-                JsonNode node = getTestRecord();
-                Response response = TestUtils.getURL(sessionToken, TRACKER_URL).post(node).get(TIMEOUT);
+                List<HealthDataRecord> records = getTestRecords();
+                
+                Response response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
 
                 // Get the id and set it on the object
                 String id = retrieveNewId(response);
                 
-                // Change some values, add the ID
-                ObjectNode onode = (ObjectNode)node.get("data");
+                // Add the ID, change a value
+                records.get(0).setRecordId(id);
+                ObjectNode onode = (ObjectNode)records.get(0).getData();
                 onode.put("systolic", 200L);
-                ((ObjectNode)node).put("recordId", id);
 
                 // Save it (update)
-                response = TestUtils.getURL(sessionToken, RECORD_URL + id).post(node).get(TIMEOUT);
+                response = TestUtils.getURL(sessionToken, RECORD_URL + id).post(mapper.writeValueAsString(records.get(0))).get(TIMEOUT);
                 assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
 
                 // Get it and verify that it was persisted.
@@ -227,10 +243,10 @@ public class HealthDataControllerTest {
             public void testCode() throws Exception {
                 String sessionToken = TestUtils.signIn();
                 
-                JsonNode node = getTestRecord();
+                List<HealthDataRecord> records = getTestRecords();
                 
-                Response response = TestUtils.getURL(sessionToken, TRACKER_URL).post(node).get(TIMEOUT);
-                
+                // Create a record, retrieve its ID
+                Response response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id = retrieveNewId(response);
                 
                 response = TestUtils.getURL(sessionToken, RECORD_URL + id).delete().get(TIMEOUT);

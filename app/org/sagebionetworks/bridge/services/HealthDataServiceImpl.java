@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
@@ -28,8 +29,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.Lists;
 
 public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAware {
 
@@ -107,31 +110,40 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
     }
     
     @Override
-    public String appendHealthData(HealthDataKey key, HealthDataRecord record) throws BridgeServiceException {
+    public List<String> appendHealthData(HealthDataKey key, List<HealthDataRecord> records) throws BridgeServiceException {
         if (key == null) {
             throw new BridgeServiceException("Cannot create a new HealthDataRecord instance without specifying a HealthDataKey", HttpStatus.SC_BAD_REQUEST);
-        } else if (record == null) {
-            throw new BridgeServiceException("New HealthDataRecord instance is null", HttpStatus.SC_BAD_REQUEST);
-        } else if (record.getRecordId() != null) {
-            throw new BridgeServiceException("New HealthDataRecord instance has a record ID (should be blank)", HttpStatus.SC_BAD_REQUEST);
-        } else if (record.getStartDate() == 0) {
-            throw new BridgeServiceException("New HealthDataRecord instance does not have a startDate set", HttpStatus.SC_BAD_REQUEST);
+        } else if (records == null) {
+            throw new BridgeServiceException("Health data records are null", HttpStatus.SC_BAD_REQUEST);
+        } else if (records.isEmpty()) {
+            throw new BridgeServiceException("No health data records to add", HttpStatus.SC_BAD_REQUEST);
         }
         try {
             DynamoDBMapper mapper = getCreateMapper();
-
-            String recordId = generateId();
-            record.setRecordId(recordId);
             String anonKey = healthDataKeyToAnonimizedKeyString(key);
-            DynamoRecord dynamoRecord = new DynamoRecord(anonKey, record);
             
-            mapper.save(dynamoRecord);
-            return recordId;
+            List<String> ids = Lists.newArrayListWithCapacity(records.size());
+            List<DynamoRecord> recordsToSave = Lists.newArrayListWithCapacity(records.size());
+
+            for (HealthDataRecord record : records) {
+                if (record.getStartDate() == 0) {
+                    throw new BridgeServiceException("New health data record instance does not have a startDate", HttpStatus.SC_BAD_REQUEST);
+                }
+                String recordId = generateId();
+                record.setRecordId(recordId);
+                ids.add(recordId);
+                recordsToSave.add( new DynamoRecord(anonKey, record) );
+            }
+            // TODO: The docs say that individual records in the batch can fail, and that these will be retried
+            // with exponential back-off. However, I could find no examples to verify that all this happens, or 
+            // is configured in a way that we would be happy with (how many retries, what's the back-off, etc.)
+            mapper.batchSave(recordsToSave);
+            return ids;
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
     }
-
+    
     @Override
     public List<HealthDataRecord> getAllHealthData(HealthDataKey key) throws BridgeServiceException {
         if (key == null) {
