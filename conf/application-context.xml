@@ -100,6 +100,7 @@
         <property name="id" value="1"/>
         <property name="schemaFile" value="file:conf/schemas/bloodpressure.json"/>
     </bean>
+
     <bean id="med-tracker" class="org.sagebionetworks.bridge.models.Tracker">
         <property name="name" value="Medication"/>
         <property name="type" value="Medication"/>
