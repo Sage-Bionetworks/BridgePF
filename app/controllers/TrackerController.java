@@ -4,6 +4,8 @@ import global.JsonSchemaValidator;
 
 import java.util.List;
 
+import models.JsonPayload;
+
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.TrackerInfo;
@@ -33,7 +35,7 @@ public class TrackerController extends BaseController {
         for (Tracker tracker : study.getTrackers()) {
             infos.add(new TrackerInfo(tracker));
         }
-        return ok(Json.toJson(infos));
+        return jsonResult(new JsonPayload<>("Tracker[]", infos));
     }
     
     

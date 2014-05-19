@@ -1,18 +1,20 @@
 package models;
 
+import java.util.List;
+
 public class IdHolder {
 
-    private String id;
+    private List<String> ids;
     
-    public IdHolder(String id) {
-        this.id = id;
+    public IdHolder(List<String> ids) {
+        this.ids = ids;
     }
 
-    public String getId() {
-        return id;
+    public List<String> getIds() {
+        return ids;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setIds(List<String> ids) {
+        this.ids = ids;
     }
 }

@@ -1,5 +1,5 @@
 <ul>
-    <li ng-repeat="tracker in trackers">
+    <li ng-repeat="tracker in trackers.payload">
         <a ng-href="/#/health/tracker/{{tracker.type}}">{{tracker.name}}</a>
     </li>
 </ul>
@@ -16,7 +16,8 @@
     <tr ng-repeat="record in records">
         <td>
             <a ng-click="remove(record)">Delete</a> &bull; 
-            <a ng-click="edit(record)">Edit</a>
+            <a ng-click="edit(record)">Edit</a> &bull;
+            <a ng-click="load(record)">Load</a> 
         </td>
         <td style="padding: .25rem 3rem">{{record.startDate | date}}</td>
         <td style="padding: .25rem 3rem">{{record.data.systolic}}</td>
