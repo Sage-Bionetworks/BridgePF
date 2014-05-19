@@ -10,7 +10,8 @@
         http://www.springframework.org/schema/mvc
         http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
-    <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfig" />
+    <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfigFactory"
+            factory-method="getConfig" />
 
     <bean id="awsCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
         <constructor-arg index="0" value="#{bridgeConfig.getProperty('aws.key')}"/>
