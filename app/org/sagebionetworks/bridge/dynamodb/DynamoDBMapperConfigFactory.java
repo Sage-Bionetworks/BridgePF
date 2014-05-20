@@ -11,7 +11,7 @@ public class DynamoDBMapperConfigFactory {
     public static DynamoDBMapperConfig getCreateMapper() {
         return new DynamoDBMapperConfig(DynamoDBMapperConfig.SaveBehavior.CLOBBER);
     }
-    
+
     public static DynamoDBMapperConfig getUpdateMapper() {
         return new DynamoDBMapperConfig(DynamoDBMapperConfig.SaveBehavior.UPDATE);
     }

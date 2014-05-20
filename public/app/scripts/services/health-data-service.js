@@ -20,6 +20,10 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q', function($http
             var url = '/api/healthdata/'+trackerId;
             return call($http.get(url));
         },
+        getByDateRange: function(trackerId, startDate, endDate) {
+            var url = '/api/healthdata/'+trackerId+'?startDate='+startDate+'&endDate='+endDate;
+            return call($http.get(url));
+        },
         get: function(trackerId, recordId) {
             var url = '/api/healthdata/'+trackerId+"/record/"+recordId;
             return call($http.get(url));

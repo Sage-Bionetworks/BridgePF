@@ -31,6 +31,7 @@ module.exports = function(grunt) {
                     'app/scripts/services/*.js',
                     'app/scripts/directives/*.js',
                     'app/scripts/controllers/*.js',
+                    'app/scripts/controllers/directives/*.js',
                     'app/scripts/controllers/trackers/*.js'
                 ],
                 dest: '<%= output %>/bridge.js',
