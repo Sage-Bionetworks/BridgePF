@@ -1,4 +1,4 @@
-bridge.controller('DashboardController', ['$scope', 'trackerService', 'dygraphService', '$humane', function($scope, trackerService, dygraphService, $humane) {
+bridge.controller('DashboardController', ['$scope', 'trackerService', '$humane', function($scope, trackerService, $humane) {
     
     trackerService.getAll().then(function(data) {
         $scope.trackers = data.payload;

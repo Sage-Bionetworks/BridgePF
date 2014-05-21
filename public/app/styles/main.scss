@@ -1,14 +1,3 @@
-/* Fixes the boostrap CSS in the Angular version of Bootstrap. */
-.nav, .pagination, .carousel, .panel-title a { 
-    cursor: pointer; 
-}
-.modal-dialog { width: 300px; }
-.modal-footer { padding: 15px; margin: 0; }
-.modal-body {
-    .form-group { margin: 0; }
-    .alert { margin: 0; }
-}
-
 /* Hides Angular during initialization */
 [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
     display: none !important;

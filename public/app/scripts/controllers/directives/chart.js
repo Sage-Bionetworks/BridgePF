@@ -1,8 +1,74 @@
-bridge.controller('ChartController', ['$scope', 'healthDataService', 'dygraphService', '$q', '$modal', 
-function($scope, healthDataService, dygraphService, $q, $modal) {
+bridge.controller('ChartController', ['$scope', 'healthDataService', 'dashboardService', '$q', '$modal', 
+function($scope, healthDataService, dashboardService, $q, $modal) {
 
+    function sortByStartDate(a,b) {
+        return a.startDate - b.startDate;
+    }
+    
+    function TimeSeries() {
+        this.array = [];
+        this.labels = [];
+        this.originalData = {};
+    }
+    TimeSeries.prototype = {
+        convert: function(array) {
+            if (array && array.length) {
+                this.createLabels(array[0]);
+                for (var i=0, len = array.length; i < len; i++) {
+                    this.add(array[i]);
+                }
+            }
+            this.convert = function() {};
+        },
+        createLabels: function(entry) {
+            if (this.labels.length === 0) {
+                this.labels.push('Date');
+                for (var prop in entry.data) {
+                    this.labels.push(prop);
+                }
+            } else {
+                console.log("Updating...");
+            }
+        },
+        add: function(entry) {
+            this.originalData[entry.startDate] = entry;
+            this.array.push([entry.startDate, entry.data.systolic, entry.data.diastolic]);
+            this.array.sort(sortByStartDate);
+        }
+    };
+    
+    $scope.dataset = new TimeSeries();
+
+    /*
     $scope.dataset = {array: [], labels: [], originalData: {}};
     
+    function addToTimeSeries(entry, originalData) {
+        originalData[entry.startDate] = entry;
+        return [entry.startDate, entry.data.systolic, entry.data.diastolic];
+    }
+    
+    function convertTimeSeriesData(array) {
+        array = array || [];
+        var originalData = {};
+        
+        array.sort(function(a,b) {
+            return a.startDate - b.startDate;
+        });
+        
+        var labels = [];
+        if (array.length) {
+            labels.push('Date');
+            for (var prop in array[0].data) {
+                labels.push(prop);
+            }
+        }
+        array = array.map(function(entry) {
+            return addToTimeSeries(entry, originalData);
+        });
+        return {array: array, labels: labels, originalData: originalData};
+    }
+    */
+    /*
     var modalInstance, chartScope = $scope;
     
     // All of this stuff is very specific to the blood pressure form, and needs to be factored out.
@@ -69,7 +135,7 @@ function($scope, healthDataService, dygraphService, $q, $modal) {
             modalInstance.dismiss('cancel');
         };
     }];
-    
+    */
     $scope.options = function() {
         // Don't think this should be a modal dialog...
         /*
@@ -81,15 +147,19 @@ function($scope, healthDataService, dygraphService, $q, $modal) {
     };
     $scope.create = function() {
         var name = $scope.tracker.type.toLowerCase();
-        modalInstance = $modal.open({
+        $scope.modalInstance = $modal.open({
+            scope: $scope,
             templateUrl: 'views/trackers/'+name+'.html',
-            controller: ModalInstanceController
+            //controller: ModalInstanceController,
+            controller: $scope.tracker.type + "Controller",
+            size: 'sm', // doesn't work though, using .sm .modal-dialog CSS rules instead
+            windowClass: 'sm'
         });
     };
 
+    /*
     function addToTimeSeries(entry, originalData) {
         originalData[entry.startDate] = entry;
-        console.log(entry.startDate);
         return [entry.startDate, entry.data.systolic, entry.data.diastolic];
     }
     
@@ -110,27 +180,25 @@ function($scope, healthDataService, dygraphService, $q, $modal) {
         }
         array = array.map(function(entry) {
             return addToTimeSeries(entry, originalData);
-            /*
-            originalData[entry.startDate] = entry;
-            return [entry.startDate, entry.data.systolic, entry.data.diastolic];
-            */
         });
         return {array: array, labels: labels, originalData: originalData};
     }
+    */
     
     // Scope stuff
     
     this.load = function() {
         var deferred = $q.defer();
-        var start = dygraphService.dateWindow[0];
-        var end = dygraphService.dateWindow[1];
+        var start = dashboardService.dateWindow[0];
+        var end = dashboardService.dateWindow[1];
         
         // We want more data than the window. We want it to be possible for the user to scroll
         // back in time. Grab 2x the period and make that the date range for the data, but not the UI.
         start = start - ((end-start)*2);
         
         healthDataService.getByDateRange($scope.tracker.id, start, end).then(function(data, status) {
-            $scope.dataset = convertTimeSeriesData(data.payload);
+            $scope.dataset.convert(data.payload);
+            //$scope.dataset = convertTimeSeriesData(data.payload);
             deferred.resolve($scope.dataset);
         }, function(data, status) {
             deferred.reject(data);
