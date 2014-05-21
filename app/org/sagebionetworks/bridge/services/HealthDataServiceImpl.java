@@ -179,7 +179,7 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         }
         try {
             /* Works for sure, very inefficient. Code below this at least queries out records that start after 
-             * the query window.
+             * the query window. 
             return FluentIterable.from(getAllHealthData(key)).filter(new Predicate<HealthDataRecord>() {
                 public boolean apply(HealthDataRecord record) {
                     if ((record.getEndDate() != 0 && record.getEndDate() < startDate.getTime())
@@ -190,7 +190,6 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
                 }
             }).toList();
             */
-            
             // Find records whose start date is before the window end date, and whose end date is after the window start date (or zero)
             DynamoRecord dynamoRecord = new DynamoRecord(healthDataKeyToAnonimizedKeyString(key));
 
@@ -226,7 +225,6 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
                     return !(record.getEndDate() != 0 && record.getEndDate() < startDate.getTime());
                 }
             }).toList());
-            
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }

@@ -42,3 +42,23 @@
     
 .scroller { margin: -10px -15px 0px -15px; border: 1px solid #e5e5e5;
     padding: 3px; height: 130px; overflow-y: scroll; }
+
+.noChart {
+    width: 100%; height: 100%; text-align: center; padding: 40px 0px;
+    font-style: italic;				
+}
+
+/* Modal dialog tweaks for blood pressure dialog with date picker */
+
+.modal-body label {
+    margin-top: 10px;
+}
+table[datepicker] {
+	margin: 5px;
+}
+table[datepicker] th {
+	padding: 3px;
+}
+table[datepicker] button {
+    background-image: none;
+}

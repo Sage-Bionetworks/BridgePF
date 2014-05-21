@@ -1,12 +1,13 @@
+/**
+ * Represents all the shared state that creates a dashboard and interaction
+ * between the individual charts.
+ */
 bridge.service('dygraphService', function() {
-    
-    var self = this;
     
     function dateFormatter(number, granularity, opts, dygraph) {
         return Dygraph.dateAxisFormatter(new Date(number), Dygraph.DAILY);
     }
     function redrawAll(me, initial) {
-        console.log(this);
         if (this.blockRedraw || initial) return;
         this.blockRedraw = true;
         var range = me.xAxisRange();
@@ -18,14 +19,14 @@ bridge.service('dygraphService', function() {
         this.dateWindowGraph.updateOptions({ dateWindow: range });
         this.blockRedraw = false;
     }
-
-    var dateWindow = [new Date().getTime() - (14*24*60*60*1000), new Date().getTime()];
     
-    return {
-        trackers: [],
-        blockRedraw: false,
-        xAxisOffset: 40,
-        dateWindow: dateWindow,
+    function DygraphService() {
+        this.trackers = [];
+        this.blockRedraw = false;
+        this.xAxisOffset = 40;
+        this.dateWindow = [new Date().getTime() - (14*24*60*60*1000), new Date().getTime()];
+    }
+    DygraphService.prototype = {
         options: function(target) {
             var opts = {
                 highlightSeriesOpts: { strokeWidth: 2 },
@@ -39,7 +40,7 @@ bridge.service('dygraphService', function() {
                 drawYGrid: false,
                 showRangeSelector: false,
                 drawCallback: redrawAll.bind(this),
-                dateWindow: dateWindow,
+                dateWindow: this.dateWindow,
                 xRangePad: 0,
                 errorBars: false, 
                 // This might vary though because there's buggy behavior when the charts don't have data across the same timeframes
@@ -53,6 +54,47 @@ bridge.service('dygraphService', function() {
                 }
             }
             return target;
+        },
+        dateWindowControl: function(element) {
+            var getData = function() {
+                return [ [this.dateWindow[0], 0], [this.dateWindow[1], 0] ];
+            }.bind(this);
+
+            this.dateWindowGraph = new Dygraph(element, getData, this.options({
+                showRangeSelector: true,
+                rangeSelectorHeight: 30,
+                height: 53,
+                dateWindow: this.dateWindow,
+                drawXAxis: true
+            }));
+        },
+        createTimeSeriesChart: function(scope, element) {
+            var originalData = scope.dataset.originalData;
+            
+            var hchandler = function(event, x, points, row, seriesName) {
+                var record = originalData[x];
+                
+                // Making a tooltip, very exciting.
+                /*
+                makeTooltipForTimeSeries(event.target, x, {
+                    title: new Date(data.date).toLocaleDateString(),
+                    text: data.value
+                });
+                */
+            };       
+            
+            var g = new Dygraph(element, function() { return scope.dataset.array; }, this.options({
+                highlightSeriesOpts: false,
+                labels: scope.dataset.labels,
+                height: 170,
+                width: element.offsetWidth-10,
+                drawPoints: true,
+                drawYAxis: true,
+                yAxisLabelWidth: this.xAxisOffset,
+                highlightCallback: hchandler
+            }));  
+            this.trackers.push({graph: g}); // why is graph called out here...
         }
     };
+    return new DygraphService();
 });
