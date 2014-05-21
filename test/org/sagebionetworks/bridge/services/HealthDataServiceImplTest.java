@@ -212,7 +212,7 @@ public class HealthDataServiceImplTest {
         HealthDataRecord record = new HealthDataRecordImpl("A0", date, date, null);
         
         List<DynamoHealthDataRecord> records = getRecordsFromDynamo(record);
-        doReturn(records).when(updateMapper).load((Class<DynamoHealthDataRecord>)any());
+        doReturn(records.get(0)).when(updateMapper).load((Class<DynamoHealthDataRecord>)any());
         
         HealthDataRecord result = service.getHealthDataRecord(key, "foo");
         
