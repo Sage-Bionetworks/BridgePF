@@ -5,9 +5,9 @@ import models.UserSession;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
@@ -70,7 +70,7 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 			userSession.setSessionToken(data.getSession().getSessionToken());
 			userSession.setUsername(username);
 			userSession.setAuthenticated(true);
-	        userSession.setEnvironment(beanFactory.getBean("bridgeConfig", BridgeConfig.class).getEnvironment());
+	        userSession.setEnvironment(BridgeConfigFactory.getConfig().getEnvironment().getEnvName());
 			return userSession;
 		} catch(Throwable throwable) {
 			return new UserSession();

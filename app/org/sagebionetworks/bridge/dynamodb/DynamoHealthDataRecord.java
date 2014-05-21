@@ -24,8 +24,8 @@ import com.fasterxml.jackson.databind.JsonNode;
  *  startDate-index (key String + startDate Number)
  *
  */
-@DynamoDBTable(tableName = "dev-adark-TestTable")
-public class DynamoRecord implements HealthDataRecord {
+@DynamoDBTable(tableName = "HealthDataRecord")
+public class DynamoHealthDataRecord implements HealthDataRecord, DynamoDbRecord {
 
     private String key;
     private String recordId;
@@ -33,14 +33,14 @@ public class DynamoRecord implements HealthDataRecord {
     private long endDate;
     private JsonNode data;
 
-    public DynamoRecord() {
+    public DynamoHealthDataRecord() {
     }
     
-    public DynamoRecord(String key) {
+    public DynamoHealthDataRecord(String key) {
         this.key = key;
     }
     
-    public DynamoRecord(String key, HealthDataRecord record) {
+    public DynamoHealthDataRecord(String key, HealthDataRecord record) {
         this.key = key;
         this.recordId = record.getRecordId();
         this.startDate = record.getStartDate();
@@ -48,7 +48,7 @@ public class DynamoRecord implements HealthDataRecord {
         this.data = record.getData();
     }
     
-    public DynamoRecord(String key, String recordId, HealthDataRecord record) {
+    public DynamoHealthDataRecord(String key, String recordId, HealthDataRecord record) {
         this.key = key;
         this.recordId = recordId;
         this.startDate = record.getStartDate();
@@ -130,7 +130,7 @@ public class DynamoRecord implements HealthDataRecord {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        DynamoRecord other = (DynamoRecord) obj;
+        DynamoHealthDataRecord other = (DynamoHealthDataRecord) obj;
         if (endDate != other.endDate)
             return false;
         if (recordId == null) {

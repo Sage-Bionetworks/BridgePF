@@ -6,13 +6,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.dynamodb.DynamoRecord;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -29,7 +28,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
-import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
@@ -37,27 +35,19 @@ import com.google.common.collect.Lists;
 public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAware {
 
     final static Logger logger = LoggerFactory.getLogger(HealthDataServiceImpl.class);
-    
+
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
     private BeanFactory beanFactory;
-    
-    public DynamoDBMapper getCreateMapper() {
-        return createMapper;
-    }
 
     public void setCreateMapper(DynamoDBMapper createMapper) {
         this.createMapper = createMapper;
     }
 
-    public DynamoDBMapper getUpdateMapper() {
-        return updateMapper;
-    }
-
     public void setUpdateMapper(DynamoDBMapper updateMapper) {
         this.updateMapper = updateMapper;
     }
-    
+
     public void setBeanFactory(BeanFactory factory) {
         this.beanFactory = factory;
     }
@@ -100,9 +90,9 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         return UUID.randomUUID().toString();
     }
     
-    private List<HealthDataRecord> toHealthDataEntries(Collection<DynamoRecord> records) {
+    private List<HealthDataRecord> toHealthDataEntries(Collection<DynamoHealthDataRecord> records) {
         List<HealthDataRecord> entries = new ArrayList<HealthDataRecord>(records.size());
-        for (DynamoRecord r : records) {
+        for (DynamoHealthDataRecord r : records) {
             entries.add(r.toHealthDataRecord());
         }
         Collections.sort(entries, START_DATE_COMPARATOR);
@@ -119,11 +109,10 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
             throw new BridgeServiceException("No health data records to add", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            DynamoDBMapper mapper = getCreateMapper();
             String anonKey = healthDataKeyToAnonimizedKeyString(key);
             
             List<String> ids = Lists.newArrayListWithCapacity(records.size());
-            List<DynamoRecord> recordsToSave = Lists.newArrayListWithCapacity(records.size());
+            List<DynamoHealthDataRecord> recordsToSave = Lists.newArrayListWithCapacity(records.size());
 
             for (HealthDataRecord record : records) {
                 if (record.getStartDate() == 0) {
@@ -132,12 +121,12 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
                 String recordId = generateId();
                 record.setRecordId(recordId);
                 ids.add(recordId);
-                recordsToSave.add( new DynamoRecord(anonKey, record) );
+                recordsToSave.add( new DynamoHealthDataRecord(anonKey, record) );
             }
             // TODO: The docs say that individual records in the batch can fail, and that these will be retried
             // with exponential back-off. However, I could find no examples to verify that all this happens, or 
             // is configured in a way that we would be happy with (how many retries, what's the back-off, etc.)
-            mapper.batchSave(recordsToSave);
+            createMapper.batchSave(recordsToSave);
             return ids;
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -150,12 +139,11 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
             throw new BridgeServiceException("HealthDataKey key is null", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            DynamoDBMapper mapper = getCreateMapper();
-            DynamoRecord dynamoRecord = new DynamoRecord(healthDataKeyToAnonimizedKeyString(key));
-            DynamoDBQueryExpression<DynamoRecord> queryExpression = new DynamoDBQueryExpression<DynamoRecord>()
+            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(healthDataKeyToAnonimizedKeyString(key));
+            DynamoDBQueryExpression<DynamoHealthDataRecord> queryExpression = new DynamoDBQueryExpression<DynamoHealthDataRecord>()
                     .withHashKeyValues(dynamoRecord);
 
-            List<DynamoRecord> records = mapper.query(DynamoRecord.class, queryExpression);
+            List<DynamoHealthDataRecord> records = updateMapper.query(DynamoHealthDataRecord.class, queryExpression);
             return toHealthDataEntries(records);
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -192,13 +180,13 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
             */
             
             // Find records whose start date is before the window end date, and whose end date is after the window start date (or zero)
-            DynamoRecord dynamoRecord = new DynamoRecord(healthDataKeyToAnonimizedKeyString(key));
+            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(healthDataKeyToAnonimizedKeyString(key));
 
             Condition isLessThanOrEqualToEndDateWindow = new Condition()
                 .withComparisonOperator(ComparisonOperator.LE.toString())
                 .withAttributeValueList(new AttributeValue().withN(Long.toString(endDate.getTime())));
 
-            DynamoDBQueryExpression<DynamoRecord> queryExpression = new DynamoDBQueryExpression<DynamoRecord>()
+            DynamoDBQueryExpression<DynamoHealthDataRecord> queryExpression = new DynamoDBQueryExpression<DynamoHealthDataRecord>()
                 .withHashKeyValues(dynamoRecord)
                 .withRangeKeyCondition("startDate", isLessThanOrEqualToEndDateWindow);
             
@@ -217,12 +205,11 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
                 .withRangeKeyCondition("endDate", isGreaterThanOrEqualToStartDateWindow)
                 .withRangeKeyCondition("endDate", isEqualToZero);
             */
+
+            List<DynamoHealthDataRecord> records = updateMapper.query(DynamoHealthDataRecord.class, queryExpression);
             
-            DynamoDBMapper mapper = getCreateMapper();
-            List<DynamoRecord> records = mapper.query(DynamoRecord.class, queryExpression);
-            
-            return toHealthDataEntries(FluentIterable.from(records).filter(new Predicate<DynamoRecord>() {
-                public boolean apply(DynamoRecord record) {
+            return toHealthDataEntries(FluentIterable.from(records).filter(new Predicate<DynamoHealthDataRecord>() {
+                public boolean apply(DynamoHealthDataRecord record) {
                     return !(record.getEndDate() != 0 && record.getEndDate() < startDate.getTime());
                 }
             }).toList());
@@ -238,26 +225,9 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
             throw new BridgeServiceException("HealthDataRecord record ID cannot be null", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            DynamoDBMapper mapper = getCreateMapper();
-
-            DynamoRecord dynamoRecord = new DynamoRecord(healthDataKeyToAnonimizedKeyString(key));
-            
-            Condition rangeKeyCondition = new Condition()
-                .withComparisonOperator(ComparisonOperator.EQ)
-                .withAttributeValueList(new AttributeValue().withS(recordId));
-
-            DynamoDBQueryExpression<DynamoRecord> queryExpression = new DynamoDBQueryExpression<DynamoRecord>()
-                    .withHashKeyValues(dynamoRecord)
-                    .withRangeKeyCondition("recordId", rangeKeyCondition);
-            
-            List<DynamoRecord> results = mapper.query(DynamoRecord.class, queryExpression);
-            if (results.size() == 0) {
-                throw new BridgeServiceException("Health data record cannot be found", HttpStatus.SC_NOT_FOUND);
-            } else if (results.size() > 1) {
-                throw new BridgeServiceException("More than one health data record matches ID " + recordId,
-                        HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            }
-            return results.get(0).toHealthDataRecord();
+            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(healthDataKeyToAnonimizedKeyString(key));
+            dynamoRecord.setRecordId(recordId);
+            return updateMapper.load(dynamoRecord).toHealthDataRecord();
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
@@ -281,10 +251,9 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         }
         try {
 
-            DynamoDBMapper mapper = getUpdateMapper();
             String anonKey = healthDataKeyToAnonimizedKeyString(key);
-            DynamoRecord dynamoRecord = new DynamoRecord(anonKey, record);
-            mapper.save(dynamoRecord);
+            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(anonKey, record);
+            updateMapper.save(dynamoRecord);
 
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -306,10 +275,9 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
                 throw new BridgeServiceException("Object does not exist: " + key.toString() + ", record ID #"
                         + recordId, HttpStatus.SC_NOT_FOUND);
             }
-            DynamoDBMapper mapper = getUpdateMapper();
             String anonKey = healthDataKeyToAnonimizedKeyString(key);
-            DynamoRecord dynamoRecord = new DynamoRecord(anonKey, recordId, record);
-            mapper.delete(dynamoRecord);
+            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(anonKey, recordId, record);
+            updateMapper.delete(dynamoRecord);
             
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
