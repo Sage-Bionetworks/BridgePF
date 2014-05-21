@@ -6,7 +6,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoRecord;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -72,24 +72,24 @@ public class HealthDataServiceImplTest {
         record.setEndDate(date.getTime());
         return record;
     }
-    private PaginatedQueryList<DynamoRecord> getRecordsFromDynamo(int count) throws Exception {
+    private PaginatedQueryList<DynamoHealthDataRecord> getRecordsFromDynamo(int count) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode data = mapper.readTree("{\"weight\": 20}");
         
-        List<DynamoRecord> list = Lists.newArrayList(); 
+        List<DynamoHealthDataRecord> list = Lists.newArrayList(); 
         for (int i=0; i < count; i++) {
-            list.add(new DynamoRecord("1:1:1", new HealthDataRecordImpl("A"+i, new Date().getTime(), new Date().getTime(), data)));
+            list.add(new DynamoHealthDataRecord("1:1:1", new HealthDataRecordImpl("A"+i, new Date().getTime(), new Date().getTime(), data)));
         }
         return toPaginatedQueryList(list);
     }
-    private PaginatedQueryList<DynamoRecord> getRecordsFromDynamo(HealthDataRecord record) throws Exception {
-        List<DynamoRecord> list = Lists.newArrayList();
-        list.add(new DynamoRecord("1:1:1", record));
+    private PaginatedQueryList<DynamoHealthDataRecord> getRecordsFromDynamo(HealthDataRecord record) throws Exception {
+        List<DynamoHealthDataRecord> list = Lists.newArrayList();
+        list.add(new DynamoHealthDataRecord("1:1:1", record));
         return toPaginatedQueryList(list);
     }
     @SuppressWarnings("unchecked")
-    private PaginatedQueryList<DynamoRecord> toPaginatedQueryList(final List<DynamoRecord> list) {
-        PaginatedQueryList<DynamoRecord> results = mock(PaginatedQueryList.class);
+    private PaginatedQueryList<DynamoHealthDataRecord> toPaginatedQueryList(final List<DynamoHealthDataRecord> list) {
+        PaginatedQueryList<DynamoHealthDataRecord> results = mock(PaginatedQueryList.class);
         doReturn(list.iterator()).when(results).iterator();
         doReturn(list.size()).when(results).size();
         doReturn(list.get(0)).when(results).get(0);
@@ -171,8 +171,8 @@ public class HealthDataServiceImplTest {
     public void getAllHealthDataSuccessful() throws Exception {
         HealthDataKey key = new HealthDataKey(1, 1, "belgium");
 
-        List<DynamoRecord> records = getRecordsFromDynamo(6);
-        doReturn(records).when(createMapper).query((Class<DynamoRecord>)any(), (DynamoDBQueryExpression<DynamoRecord>)any());
+        List<DynamoHealthDataRecord> records = getRecordsFromDynamo(6);
+        doReturn(records).when(updateMapper).query((Class<DynamoHealthDataRecord>)any(), (DynamoDBQueryExpression<DynamoHealthDataRecord>)any());
         
         List<HealthDataRecord> entries = service.getAllHealthData(key);
         assertThat(entries.size()).isEqualTo(6);
@@ -199,8 +199,8 @@ public class HealthDataServiceImplTest {
     public void getHealthDataRecordInvalidId() throws Exception {
         HealthDataKey key = new HealthDataKey(1, 1, "belgium");
         
-        doThrow(new BridgeServiceException("Test", 500)).when(createMapper).query((Class<DynamoRecord>) any(),
-                (DynamoDBQueryExpression<DynamoRecord>) any());
+        doThrow(new BridgeServiceException("Test", 500)).when(createMapper).query((Class<DynamoHealthDataRecord>) any(),
+                (DynamoDBQueryExpression<DynamoHealthDataRecord>) any());
         
         service.getHealthDataRecord(key, "foo");
     }
@@ -211,8 +211,8 @@ public class HealthDataServiceImplTest {
         HealthDataKey key = new HealthDataKey(1, 1, "belgium");
         HealthDataRecord record = new HealthDataRecordImpl("A0", date, date, null);
         
-        List<DynamoRecord> records = getRecordsFromDynamo(record);
-        doReturn(records).when(createMapper).query((Class<DynamoRecord>)any(), (DynamoDBQueryExpression<DynamoRecord>)any());
+        List<DynamoHealthDataRecord> records = getRecordsFromDynamo(record);
+        doReturn(records.get(0)).when(updateMapper).load((Class<DynamoHealthDataRecord>)any());
         
         HealthDataRecord result = service.getHealthDataRecord(key, "foo");
         
@@ -227,7 +227,7 @@ public class HealthDataServiceImplTest {
         HealthDataRecord record = new HealthDataRecordImpl("A0", new Date().getTime(), new Date().getTime(), null);
         
         service.updateHealthDataRecord(key, record);
-        verify(updateMapper).save(any(DynamoRecord.class));
+        verify(updateMapper).save(any(DynamoHealthDataRecord.class));
     }
     @Test(expected=BridgeServiceException.class)
     public void updateHealthDataRecordNoKey() throws Exception {
@@ -251,6 +251,6 @@ public class HealthDataServiceImplTest {
         HealthDataRecord record = new HealthDataRecordImpl("A0", new Date().getTime(), new Date().getTime(), null);
         
         service.updateHealthDataRecord(key, record);
-        verify(updateMapper).save(any(DynamoRecord.class));
+        verify(updateMapper).save(any(DynamoHealthDataRecord.class));
     }
 }

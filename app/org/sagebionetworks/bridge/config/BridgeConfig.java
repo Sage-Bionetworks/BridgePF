@@ -113,8 +113,8 @@ public class BridgeConfig {
         return user;
     }
 
-    public String getEnvironment() {
-        return environment.getEnvName();
+    public Environment getEnvironment() {
+        return environment;
     }
 
     public boolean isStub() {
