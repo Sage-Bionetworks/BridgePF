@@ -172,7 +172,7 @@ public class HealthDataServiceImplTest {
         HealthDataKey key = new HealthDataKey(1, 1, "belgium");
 
         List<DynamoHealthDataRecord> records = getRecordsFromDynamo(6);
-        doReturn(records).when(createMapper).query((Class<DynamoHealthDataRecord>)any(), (DynamoDBQueryExpression<DynamoHealthDataRecord>)any());
+        doReturn(records).when(updateMapper).query((Class<DynamoHealthDataRecord>)any(), (DynamoDBQueryExpression<DynamoHealthDataRecord>)any());
         
         List<HealthDataRecord> entries = service.getAllHealthData(key);
         assertThat(entries.size()).isEqualTo(6);
@@ -212,7 +212,7 @@ public class HealthDataServiceImplTest {
         HealthDataRecord record = new HealthDataRecordImpl("A0", date, date, null);
         
         List<DynamoHealthDataRecord> records = getRecordsFromDynamo(record);
-        doReturn(records).when(createMapper).query((Class<DynamoHealthDataRecord>)any(), (DynamoDBQueryExpression<DynamoHealthDataRecord>)any());
+        doReturn(records).when(updateMapper).load((Class<DynamoHealthDataRecord>)any());
         
         HealthDataRecord result = service.getHealthDataRecord(key, "foo");
         
