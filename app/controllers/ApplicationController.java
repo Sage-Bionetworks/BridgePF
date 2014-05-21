@@ -29,7 +29,7 @@ public class ApplicationController extends BaseController {
     public Result loadApp() throws Exception {
         String sessionToken = getSessionToken(false);
         UserSession session = authenticationService.getSession(sessionToken);
-        session.setEnvironment(bridgeConfig.getEnvironment());
+        session.setEnvironment(bridgeConfig.getEnvironment().getEnvName());
         return ok(views.html.index.render(Json.toJson(session).toString()));
     }
 }

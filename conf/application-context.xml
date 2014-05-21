@@ -117,7 +117,9 @@
             <bean class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
                 <constructor-arg index="0" ref="dynamoDbClient"/>
                 <constructor-arg index="1">
-                    <bean class="org.sagebionetworks.bridge.dynamodb.DynamoDBMapperConfigFactory" factory-method="getUpdateMapper"/>
+                    <bean class="org.sagebionetworks.bridge.dynamodb.DynamoDBMapperConfigFactory" factory-method="getUpdateMapper">
+                        <constructor-arg><value>org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord</value></constructor-arg>
+                    </bean>
                 </constructor-arg>
             </bean>
         </property>
@@ -125,7 +127,9 @@
             <bean class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
                 <constructor-arg index="0" ref="dynamoDbClient"/>
                 <constructor-arg index="1">
-                    <bean class="org.sagebionetworks.bridge.dynamodb.DynamoDBMapperConfigFactory" factory-method="getCreateMapper"/>
+                    <bean class="org.sagebionetworks.bridge.dynamodb.DynamoDBMapperConfigFactory" factory-method="getCreateMapper">
+                        <constructor-arg><value>org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord</value></constructor-arg>
+                    </bean>
                 </constructor-arg>
             </bean>
         </property>
