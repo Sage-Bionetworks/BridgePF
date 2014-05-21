@@ -1,1 +1,36 @@
-<p>Blood pressure</p>
+<form role="form" name="bpForm" novalidate>
+	<div class="modal-header">
+	    <button type="button" class="close" ng-click="cancel()" aria-hidden="true">&times;</button>
+	    <h4 class="modal-title">Blood Pressure</h4>
+	</div>
+	<div class="modal-body">
+        <div class="form-group">
+            <label>Systolic</label>
+            <input type="number" class="form-control" required="true" 
+                name="systolic" ng-model="systolic"/>
+        </div>
+        <div class="form-group">
+            <label>Diastolic</label>
+            <input type="number" class="form-control" required="true" 
+                name="diastolic" ng-model="diastolic"/>
+        </div>
+        <div class="form-group">
+            <label for="date">Date of Reading</label>
+	        <p class="input-group">
+	            <input type="text" class="form-control" datepicker-popup="{{format}}" 
+	               ng-model="date" name="date" is-open="opened" datepicker-options="dateOptions" show-weeks="false" 
+	               date-disabled="disabled(date, mode)" required="true" close-text="Close" />
+	            <span class="input-group-btn">
+	                <button type="button" class="btn btn-default" 
+                        ng-click="open($event)"><i class="glyphicon glyphicon-calendar"></i></button>
+	            </span>
+	        </p>
+        </div>
+	</div>
+	<div class="modal-footer">
+		<button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
+		<button type="button" class="btn btn-primary" ng-disabled="!canSave()" ng-click="save()">Save</button>
+	</div>
+    {{setFormReference(bpForm)}}
+</form>
+	

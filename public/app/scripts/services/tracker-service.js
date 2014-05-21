@@ -1,27 +1,10 @@
-bridge.service('trackerService', ['$http', '$q', '$rootScope', function($http, $q, $rootScope) {
-    
-    // Duplicated from healthDataService and probably shared.
-    function call($http) {
-        var deferred = $q.defer();
-        $rootScope.loading++;
-        $http.success(function(data, status) {
-            $rootScope.loading--;
-            data.status = status;
-            deferred.resolve(data);
-        }).error(function(data, status) {
-            $rootScope.loading--;
-            data.status = status;
-            deferred.reject(data);
-        });
-        return deferred.promise;
-    }
-
+bridge.service('trackerService', ['$http', '$q', '$rootScope', 'loadingService', function($http, $q, $rootScope, loadingService) {
     var service = {
         getAll: function() {
-            return call($http.get('/api/trackers'));
+            return loadingService.call($http.get('/api/trackers'));
         },
         getSchema: function(trackerId) {
-            return call($http.get('/api/trackers/schema/'+trackerId));
+            return loadingService.call($http.get('/api/trackers/schema/'+trackerId));
         }
     };
     return service;
