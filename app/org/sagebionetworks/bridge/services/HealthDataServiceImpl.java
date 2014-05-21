@@ -69,12 +69,14 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         return client;
     }
     
+    /*
     private static final Comparator<HealthDataRecord> START_DATE_COMPARATOR = new Comparator<HealthDataRecord>() {
         @Override
         public int compare(HealthDataRecord record1, HealthDataRecord record2) {
             return (int)(record1.getStartDate() - record2.getStartDate());
         }
     };
+    */
     
     private String healthDataKeyToAnonimizedKeyString(HealthDataKey key) throws BridgeServiceException, SynapseException {
         if (key == null) {
@@ -105,7 +107,8 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         for (DynamoRecord r : records) {
             entries.add(r.toHealthDataRecord());
         }
-        Collections.sort(entries, START_DATE_COMPARATOR);
+        // Not necessary, results are always sorted by the range key in ascending order
+        // Collections.sort(entries, START_DATE_COMPARATOR);
         return entries;
     }
     
