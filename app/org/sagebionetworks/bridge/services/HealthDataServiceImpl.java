@@ -227,7 +227,11 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         try {
             DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(healthDataKeyToAnonimizedKeyString(key));
             dynamoRecord.setRecordId(recordId);
-            return updateMapper.load(dynamoRecord).toHealthDataRecord();
+            dynamoRecord = updateMapper.load(dynamoRecord);
+            if (dynamoRecord == null) {
+                throw new BridgeServiceException("Health data record cannot be found", HttpStatus.SC_NOT_FOUND);
+            }
+            return dynamoRecord.toHealthDataRecord();
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
