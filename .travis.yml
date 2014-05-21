@@ -3,6 +3,8 @@ scala:
   - 2.10.4
 jdk:
   - openjdk7
+env:
+  - bridge.user=travis
 before_install:
   - npm install -g bower
   - npm install -g grunt-cli
