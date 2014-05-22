@@ -49,6 +49,6 @@ public class BridgeConfigTest {
     @Test
     public void testUser() {
         BridgeConfig config = new BridgeConfig();
-        assertEquals("unit.test", config.getProperty("bridge.user"));
+        assertEquals("unit.test", config.getUser());
     }
 }
