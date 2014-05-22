@@ -207,8 +207,11 @@ public class BridgeConfig {
 
     /**
      * Collapses the properties into new properties relevant to the current environment.
-     * Start with default properties. Overwrite with properties for the current environment
-     * and properties read from the environment and the command-line.
+     * 1) Default properties from the source code (conf/bridge.conf).
+     * 2) Overwrite with properties read from the user's home directory (~/.sbt/bridge.conf).
+     * 3) Merge the properties to the current environment.
+     * 4) Overwrite with properties read from the environment variables.
+     * 5) Overwrite with properties read from the command-line arguments.
      */
     private Properties collapse(final Properties properties, final String envName) {
         Properties collapsed = new Properties();
@@ -230,9 +233,9 @@ public class BridgeConfig {
         // Overwrite with command line arguments and environment variables
         for (Object key : collapsed.keySet()) {
             final String name = key.toString();
-            String value = argsReader.read(name);
+            String value = envReader.read(name);
             if (value == null) {
-                value = envReader.read(name);
+                value = argsReader.read(name);
             }
             if (value != null) {
                 collapsed.setProperty(name, value);
