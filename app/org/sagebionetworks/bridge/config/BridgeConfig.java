@@ -44,6 +44,8 @@ public class BridgeConfig {
         @Override
         public String read(String name) {
             try {
+                // Make a valid environment variable name
+                name = name.toUpperCase().replace('.', '_');
                 return System.getenv(name);
             } catch(SecurityException e) {
                 logger.error("Cannot read environment variable " + name
