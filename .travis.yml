@@ -7,8 +7,8 @@ env:
   global:
   - BRIDGE_USER=travis
   - BRIDGE_ENV=stub
-  - secure: PRt192hfpOJEcs2GBwCiMH3k4szfhWW5KTwd7HNF6hRg25lJUwdi5fCAMMCiGHsMgTIRoISl6Xi/v+wExzYFyQJJPoGifqW5YVmu6T3VFiNCJPzTjSfeQlHxv9NCNu6D8ZtJGs+8ANAKd2XZZn1DkPZ89bW3zAdISnYh3oTuuW4=
-  - secure: IHcZoOpnlNET7GvmCYf+Xudfy7XgXKYv7C5w4xR8nvuo5iiHgcGuPJYJbDB6PeUFR3yS2RQCUXfvxNWxDvM/ZGsijBcuMvVa5IWreYPytK0macDPdb9nQFwYMUIb3wqk+oKD00HE8ZfNudwHcU+vbYwOKrteGq1nO5p4+ox6jRw=
+  - secure: Y56vwBuVI0boZHdJCCGdpEOLGb1Dsa/ZyEuWFedFftEID2qh1WwYPd1YApOUKU/Mzwf8KCGWFue6W5DupkdfBOqPR6bu5PgABg5QObn3yn8stG/wlTU726OfgQNBVHIbkz8VJ8u1W8CxS7mY+VY0mRLir/uotx57Yecugr3cRY8=
+  - secure: XN8uT1mdvbNRtEZLU6znAenxkWuC8nQGn0u1ajUW4CkCIrMw39sEsH8TVytdzKoWQ5GGnD6dHwYID7QGzy+n8N6zfAOuJw1kef3MxcbS6nQ1+Vtu9WbIcTAhcXq3VcnVp1IvciPYbB3/JKF97QfpuTDXFRgLCVj316oqPq6GouE=
 before_install:
 - npm install -g bower
 - npm install -g grunt-cli
