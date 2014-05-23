@@ -6,7 +6,7 @@ jdk:
 env:
   global:
   - BRIDGE_USER=travis
-  - BRIDGE_ENV=dev
+  - BRIDGE_ENV=stub
   - secure: PRt192hfpOJEcs2GBwCiMH3k4szfhWW5KTwd7HNF6hRg25lJUwdi5fCAMMCiGHsMgTIRoISl6Xi/v+wExzYFyQJJPoGifqW5YVmu6T3VFiNCJPzTjSfeQlHxv9NCNu6D8ZtJGs+8ANAKd2XZZn1DkPZ89bW3zAdISnYh3oTuuW4=
   - secure: IHcZoOpnlNET7GvmCYf+Xudfy7XgXKYv7C5w4xR8nvuo5iiHgcGuPJYJbDB6PeUFR3yS2RQCUXfvxNWxDvM/ZGsijBcuMvVa5IWreYPytK0macDPdb9nQFwYMUIb3wqk+oKD00HE8ZfNudwHcU+vbYwOKrteGq1nO5p4+ox6jRw=
 before_install:
