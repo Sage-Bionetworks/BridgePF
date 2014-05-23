@@ -91,6 +91,23 @@ function($scope, healthDataService, dashboardService, $q, $modal) {
         */
     };
     $scope.create = function() {
+        $scope.recordToEdit = null;
+        openModalEditor();
+    };
+    $scope.editRecord = function(record) {
+        $scope.recordToEdit = record;
+        openModalEditor();
+    };
+    $scope.removeRecord = function(record) {
+        var index = $scope.records.indexOf(record);
+        $scope.records.splice(index,1);
+        healthDataService.remove($scope.tracker.id, record.recordId)['finally'](function() {
+            dashboardService.refreshChartFromServer($scope);
+        });
+    };
+    
+    
+    function openModalEditor() {
         var name = $scope.tracker.type.toLowerCase();
         $scope.modalInstance = $modal.open({
             scope: $scope,
@@ -99,16 +116,10 @@ function($scope, healthDataService, dashboardService, $q, $modal) {
             size: 'sm', // doesn't work though, using .sm .modal-dialog CSS rules instead
             windowClass: 'sm'
         });
-    };
-    $scope.editRecord = function(record) {
-        console.log(record);
-    };
-    $scope.removeRecord = function(record) {
-        var index = $scope.records.indexOf(record);
-        $scope.records.splice(index,1);
-        healthDataService.remove($scope.tracker.id, record.recordId)['finally'](self.load);
-    };
+    }
     
+    // Move to healthService since you use this to update the chart everywhere you add or remove a data point
+    /*
     this.load = function() {
         var deferred = $q.defer();
         var start = dashboardService.dateWindow[0];
@@ -125,5 +136,5 @@ function($scope, healthDataService, dashboardService, $q, $modal) {
         });
         return deferred.promise;
     };
-
+*/
 }]);

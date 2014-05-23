@@ -1,5 +1,8 @@
 bridge.directive('bgChart', ['dashboardService', '$timeout', function(dashboardService, $timeout) {
     
+    // This data is all specific to a time series chart, so bg-chart.js is not the right place for it.
+    // Need to consolidate this down.
+    
     function showChartIsEmpty(element) {
         element.innerHTML = '<div class="noChart">No data available for this tracker.</div>';
         // @style is put there by Dygraphs and can look funny when you delete the last data point
@@ -9,14 +12,6 @@ bridge.directive('bgChart', ['dashboardService', '$timeout', function(dashboardS
         return function() {
             return scope.dataset.array;
         };
-    }
-    function findPos(obj) {
-        var curleft = 0, curtop = 0;
-        for (var o = obj; o !== null; o = o.offsetParent) {
-            curleft += o.offsetLeft;
-            curtop += o.offsetTop;
-        }
-        return [curleft,curtop];
     }
     function createTimeSeriesChart(scope, element) {
         var originalData = scope.dataset.originalData;
@@ -48,17 +43,12 @@ bridge.directive('bgChart', ['dashboardService', '$timeout', function(dashboardS
                 scope.records = array;
             });
             
-            // The width of the popup effects where it should be on the X axis.
-            var xy = findPos(event.target);
-
             var popover = element.parentNode.parentNode.querySelector(".popover");
-            
             var style = window.getComputedStyle(popover);
             var width = parseFloat(style.width);
-            
             popover.style.display = 'block';
-            popover.style.left = Math.round((xy[0] - 34) + maxX) - width + "px";
-            popover.style.top = Math.round(xy[1] + maxY + 10) + "px";
+            popover.style.left = maxX - (width/2) + "px";
+            popover.style.top = (maxY + 15) + "px";
             
             if (!popover.__processed) {
                 popover.__processed = true;
@@ -110,7 +100,7 @@ bridge.directive('bgChart', ['dashboardService', '$timeout', function(dashboardS
                 return scope.dataset.hasChanged();
             }, updateChart);
             
-            controller.load().then(updateChart, function(data) {
+            dashboardService.refreshChartFromServer(scope).then(updateChart, function(data) {
                 showChartIsEmpty(root);
             });
         }
