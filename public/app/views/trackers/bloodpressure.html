@@ -17,12 +17,10 @@
         <div class="form-group">
             <label for="date">Date of Reading</label>
 	        <p class="input-group">
-	            <input type="text" class="form-control" datepicker-popup="{{format}}" 
-	               ng-model="date" name="date" is-open="opened" datepicker-options="dateOptions" show-weeks="false" 
-	               date-disabled="disabled(date, mode)" required="true" close-text="Close" />
-	            <span class="input-group-btn">
-	                <button type="button" class="btn btn-default" 
-                        ng-click="open($event)"><i class="glyphicon glyphicon-calendar"></i></button>
+                <input type="text" class="form-control" datepicker-popup="{{format}}" ng-model="date" name="date" 
+                    id="datePicker" is-open="opened" show-weeks="false" date-disabled="disabled(date, mode)" />
+                <span class="input-group-btn">
+	                <button type="button" class="btn btn-default" ng-click="open($event)"><i class="glyphicon glyphicon-calendar"></i></button>
 	            </span>
 	        </p>
         </div>

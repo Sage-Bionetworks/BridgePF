@@ -50,6 +50,17 @@ bridge.service('dashboardService', ['$filter', function($filter) {
                 }
             }
             return target;
+        },
+        createPayload: function(form, dateFields, fields) {
+            var payload = {
+                startDate: form[dateFields[0]].$modelValue.getTime(),
+                endDate: form[dateFields[1]].$modelValue.getTime(),
+                data: {}
+            };
+            fields.forEach(function(field) {
+                payload.data[field] = form[field].$modelValue;
+            });
+            return payload;
         }
     };
     return new DashboardService();
