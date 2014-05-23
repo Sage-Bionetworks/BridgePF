@@ -14,7 +14,7 @@ module.exports = function(grunt) {
             release: ['node_modules', 'app/bower_components']
         },
         jshint: {
-            options: { node: true, globals: { "angular": false } },
+            options: { node: true, loopfunc: true, globals: { "angular": false } },
             js: ['app/scripts/**/*.js']
         },
         sass: {
