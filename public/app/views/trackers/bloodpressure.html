@@ -27,7 +27,8 @@
 	</div>
 	<div class="modal-footer">
 		<button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
-		<button type="button" class="btn btn-primary" ng-disabled="!canSave()" ng-click="save()">Save</button>
+		<button type="button" class="btn btn-primary" ng-show="!recordToEdit" ng-disabled="!canSave()" ng-click="save()">Save</button>
+		<button type="button" class="btn btn-primary" ng-show="recordToEdit" ng-disabled="!canUpdate()" ng-click="update()">Update</button>
 	</div>
     {{setFormReference(bpForm)}}
 </form>

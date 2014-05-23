@@ -2,7 +2,7 @@
  * Represents all the shared state that creates a dashboard and interaction
  * between the individual charts.
  */
-bridge.service('dashboardService', ['$filter', function($filter) {
+bridge.service('dashboardService', ['$filter', '$q', 'healthDataService', function($filter, $q, healthDataService) {
 
     function redrawAll(me, initial) {
         if (this.blockRedraw || initial) return;
@@ -61,6 +61,31 @@ bridge.service('dashboardService', ['$filter', function($filter) {
                 payload.data[field] = form[field].$modelValue;
             });
             return payload;
+        },
+        updateRecord: function(record, form, dateFields, fields) {
+            record.startDate = form[dateFields[0]].$modelValue.getTime();
+            record.endDate = form[dateFields[1]].$modelValue.getTime();
+            fields.forEach(function(field) {
+                record.data[field] = form[field].$modelValue;
+            });
+            delete record.$$hashKey; // oh Angular
+            return record;
+        },
+        refreshChartFromServer: function(chartScope) {
+            var deferred = $q.defer();
+            var start = this.dateWindow[0];
+            var end = this.dateWindow[1];
+            // We want more data than the window. We want it to be possible for the user to scroll
+            // back in time. Grab 2x the period and make that the date range for the data, but not the UI.
+            start = start - ((end-start)*2);
+
+            healthDataService.getByDateRange(chartScope.tracker.id, start, end).then(function(data, status) {
+                chartScope.dataset.convert(data.payload);
+                deferred.resolve(chartScope.dataset);
+            }, function(data, status) {
+                deferred.reject(data);
+            });
+            return deferred.promise;
         }
     };
     return new DashboardService();
