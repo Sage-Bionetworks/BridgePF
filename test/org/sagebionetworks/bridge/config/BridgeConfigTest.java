@@ -2,14 +2,10 @@ package org.sagebionetworks.bridge.config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Properties;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.test.util.ReflectionTestUtils;
 
 public class BridgeConfigTest {
 
@@ -29,16 +25,14 @@ public class BridgeConfigTest {
     }
 
     @Test
-    public void testDefault() {
+    public void testNonExisting() {
         BridgeConfig config = new BridgeConfig();
-        Properties props = (Properties)ReflectionTestUtils.getField(config, "properties");
-        props.remove("bridge.env");
-        assertTrue(config.isStub());
         assertNull(config.getProperty("someFakePropertyThatDoesNotExist"));
     }
 
     @Test
     public void testEncryption() {
+        System.setProperty("bridge.env", "stub");
         BridgeConfig config = new BridgeConfig();
         assertEquals("example.value", config.getProperty("example.property"));
         assertEquals("example.value.encrypted", config.getProperty("example.property.encrypted"));
