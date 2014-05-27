@@ -1,19 +1,25 @@
 language: scala
 scala:
-  - 2.10.4
+- 2.10.4
 jdk:
-  - openjdk7
+- openjdk7
+env:
+  global:
+  - BRIDGE_USER=travis
+  - BRIDGE_ENV=stub
+  - secure: SsM07kjCSWjGTFDhkCtTuZdM5WrChFXgRmeMMRJr4JlbtJoaaVUXcXDofZ+4NrESiOvW7CiRXK6Oz3I9eL7vn8RCwlN5jf2OlmD4vKIiiINlvuuEe6hEu738RO7nUGN8SFh2k4ryzJ6XldghjBiBvBEqzVhwXteLhF3AVCsRB1s=
+  - secure: kByWq5ygVVnXuBcHKhe6BdcGhUugS1Ux4nbrR/MY23KI7FC1vJ3LCx6N5TIVbOhjwCPwnWNfkydPlfO48hco6gpz8mJ6Sz7OdjyAWb1Ofx/XO5mI+8AIW0P1gXN9jbThSLEaTGUZlrDNfkcfkFUaLJHmmWOQ5CWCPzo5sw2cEDg=
 before_install:
-  - npm install -g bower
-  - npm install -g grunt-cli
-  - gem install sass
+- npm install -g bower
+- npm install -g grunt-cli
+- gem install sass
 script:
-  - cd public
-  - npm install
-  - bower install
-  - grunt release
-  - cd ..
-  - sbt test
+- cd public
+- npm install
+- bower install
+- grunt release
+- cd ..
+- sbt test
 deploy:
   provider: heroku
   api_key:
