@@ -22,7 +22,8 @@ bridge.service('dashboardService', ['$filter', '$q', 'healthDataService', functi
         this.trackers = [];
         this.blockRedraw = false;
         this.xAxisOffset = 40;
-        this.dateWindow = [new Date().getTime() - (14*24*60*60*1000), new Date().getTime()];
+        var d = new Date().getTime();
+        this.dateWindow = [d - (14*24*60*60*1000), d];
         this.dateFormatter = function(number, granularity, opts, dygraph) {
             return $filter('date')(new Date(number), 'M/d');
         };
@@ -54,24 +55,26 @@ bridge.service('dashboardService', ['$filter', '$q', 'healthDataService', functi
         createPayload: function(form, dateFields, fields, toMidnight) {
             toMidnight = (typeof toMidnight === "boolean") ? toMidnight : false;
             var startDate = form[dateFields[0]].$modelValue;
-            if (toMidnight) {
-                startDate.setHours(0,0,0,0);
-                startDate = startDate.getTime();
-            }
             var endDate = form[dateFields[0]].$modelValue;
             if (toMidnight) {
-                endDate.setHours(0,0,0,0);
-                endDate = endDate.getTime();
+                startDate.setUTCHours(0,0,0,0);
+                endDate.setUTCHours(0,0,0,0);
             }
-            var payload = { startDate: startDate, endDate: endDate, data: {} };
+            var payload = { startDate: startDate.getTime(), endDate: endDate.getTime(), data: {} };
             fields.forEach(function(field) {
                 payload.data[field] = form[field].$modelValue;
             });
             return payload;
         },
         updateRecord: function(record, form, dateFields, fields) {
-            record.startDate = form[dateFields[0]].$modelValue.getTime();
-            record.endDate = form[dateFields[1]].$modelValue.getTime();
+            var startDate = form[dateFields[0]].$modelValue;
+            var endDate = form[dateFields[0]].$modelValue;
+            if (toMidnight) {
+                startDate.setUTCHours(0,0,0,0);
+                endDate.setUTCHours(0,0,0,0);
+            }
+            record.startDate = startDate.getTime();
+            record.endDate = endDate.getTime();
             fields.forEach(function(field) {
                 record.data[field] = form[field].$modelValue;
             });
