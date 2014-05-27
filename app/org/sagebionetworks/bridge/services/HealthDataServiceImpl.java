@@ -97,7 +97,7 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         for (DynamoHealthDataRecord r : records) {
             entries.add(r.toHealthDataRecord());
         }
-        // Not necessary, results are always sorted by the range key in ascending order
+        // Not necessary? Results are always sorted by the range key in ascending order
         // Collections.sort(entries, START_DATE_COMPARATOR);
         return entries;
     }
