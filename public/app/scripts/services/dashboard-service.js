@@ -1,9 +1,9 @@
 /**
  * Represents all the shared state that creates a dashboard and interaction
- * between the individual charts.
+ * between the individual charts, as well as creating the Dygraphs. 
  */
 bridge.service('dashboardService', ['$filter', '$q', 'healthDataService', function($filter, $q, healthDataService) {
-
+    
     function redrawAll(me, initial) {
         if (this.blockRedraw || initial) return;
         this.blockRedraw = true;
@@ -93,6 +93,22 @@ bridge.service('dashboardService', ['$filter', '$q', 'healthDataService', functi
                 deferred.reject(data);
             });
             return deferred.promise;
+        },
+        getDateWindowData: function() {
+            return [ [this.dateWindow[0], 0], [this.dateWindow[1], 0] ];
+        },
+        makeDateControlWindow: function(element) {
+            this.dateWindowGraph = new Dygraph(element, angular.bind(this, this.getDateWindowData), this.options({
+                showRangeSelector: true,
+                rangeSelectorHeight: 30,
+                height: 53,
+                labels: ['',''], // shut up warnings
+                dateWindow: this.dateWindow,
+                axes: { 
+                    y: { drawAxis: false, drawGrid: false },
+                    x: { drawAxis: true, axisLabelFormatter: this.dateFormatter }
+                }
+            }));
         }
     };
     return new DashboardService();
