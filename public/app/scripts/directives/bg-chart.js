@@ -90,16 +90,6 @@ bridge.directive('bgChart', ['dashboardService', '$timeout', function(dashboardS
             var root = element[0].querySelector(".gph div");
             
             function updateChart() {
-                // TODO: The array has some spurious junk in it:
-                //                0: Array[3]
-                //            0: "1400828400000"
-                //            1: NaN
-                //            2: NaN
-                //            length: 3
-                //            __proto__: Array[0]
-                //            length: 1
-                //            __proto__: Array[0]
-             
                 if (scope.dataset.array.length === 0) {
                     showChartIsEmpty(root);
                 } else {
@@ -110,9 +100,7 @@ bridge.directive('bgChart', ['dashboardService', '$timeout', function(dashboardS
                 return scope.dataset.hasChanged();
             }, updateChart);
             
-            dashboardService.refreshChartFromServer(scope).then(updateChart, function(data) {
-                showChartIsEmpty(root);
-            });
+            dashboardService.refreshChartFromServer(scope).then(updateChart);
         }
     };
 }]);

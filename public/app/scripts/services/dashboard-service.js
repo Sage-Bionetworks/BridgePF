@@ -90,6 +90,7 @@ bridge.service('dashboardService', ['$filter', '$q', 'healthDataService', functi
                 chartScope.dataset.convert(data.payload);
                 deferred.resolve(chartScope.dataset);
             }, function(data, status) {
+                chartScope.dataset.clear();
                 deferred.reject(data);
             });
             return deferred.promise;
