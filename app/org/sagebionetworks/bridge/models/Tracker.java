@@ -6,7 +6,6 @@ public class Tracker {
 
     private String name;
     private String type;
-    private String chartType;
     private Long id;
     private Resource schemaFile;
     
@@ -33,11 +32,5 @@ public class Tracker {
     }
     public void setSchemaFile(Resource schemaFile) {
         this.schemaFile = schemaFile;
-    }
-    public String getChartType() {
-        return chartType;
-    }
-    public void setChartType(String chartType) {
-        this.chartType = chartType;
     }
 }
