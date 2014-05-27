@@ -51,12 +51,19 @@ bridge.service('dashboardService', ['$filter', '$q', 'healthDataService', functi
             }
             return target;
         },
-        createPayload: function(form, dateFields, fields) {
-            var payload = {
-                startDate: form[dateFields[0]].$modelValue.getTime(),
-                endDate: form[dateFields[1]].$modelValue.getTime(),
-                data: {}
-            };
+        createPayload: function(form, dateFields, fields, toMidnight) {
+            toMidnight = (typeof toMidnight === "boolean") ? toMidnight : false;
+            var startDate = form[dateFields[0]].$modelValue;
+            if (toMidnight) {
+                startDate.setHours(0,0,0,0);
+                startDate = startDate.getTime();
+            }
+            var endDate = form[dateFields[0]].$modelValue;
+            if (toMidnight) {
+                endDate.setHours(0,0,0,0);
+                endDate = endDate.getTime();
+            }
+            var payload = { startDate: startDate, endDate: endDate, data: {} };
             fields.forEach(function(field) {
                 payload.data[field] = form[field].$modelValue;
             });
