@@ -1,5 +1,5 @@
-bridge.controller('BloodPressureController', ['$scope', 'healthDataService', 'dashboardService', '$humane', 
-function($scope, healthDataService, dashboardService, $humane) {
+bridge.controller('BloodPressureController', ['$scope', 'healthDataService', '$humane', 'dashboardService',   
+function($scope, healthDataService, $humane, dashboardService) {
     
     if ($scope.recordToEdit) {
         $scope.systolic = $scope.recordToEdit.data.systolic;
@@ -20,7 +20,7 @@ function($scope, healthDataService, dashboardService, $humane) {
     $scope.format = 'MM/dd/yyyy';
 
     $scope.today = function() {
-        $scope.bpForm.date.$setModelValue(new Date());
+        $scope.bpForm.date.$setModelValue(new Date().getTime());
     };
     $scope.clear = function () {
         $scope.bpForm.date.$setModelValue(null);
@@ -51,9 +51,7 @@ function($scope, healthDataService, dashboardService, $humane) {
         healthDataService.create(chartScope.tracker.id, payload).then(function(data) {
             payload.recordId = data.payload.ids[0];
             chartScope.dataset.convertOne(payload);
-        }, function(data) {
-            $humane.error(data.payload);
-        });
+        }, $humane.status);
         $scope.cancel();
     };
     $scope.update = function() {
@@ -62,9 +60,7 @@ function($scope, healthDataService, dashboardService, $humane) {
         var chartScope = $scope.$parent;
         chartScope.dataset.update(payload);
         healthDataService.update(chartScope.tracker.id, payload).then(function(data) {
-        }, function(data) {
-            $humane.error(data.payload);
-        });
+        }, $humane.status);
         $scope.cancel();
     };
     $scope.cancel = function () {
