@@ -1,12 +1,6 @@
 bridge.controller('ChartController', ['$scope', 'healthDataService', 'dashboardService', '$q', '$modal', 
 function($scope, healthDataService, dashboardService, $q, $modal) {
 
-    var self = this;
-    
-    // TODO: This is a row in the dashboard, and it creates a controller for the editor that can appear for this item,
-    // if appropriate. Some changes in naming might make this more apparent, e.g. DashboardRowController and 
-    // BloodPressureEditorController.
-    
     function TimeSeries() {
         this.array = [];
         this.labels = [];
@@ -109,16 +103,11 @@ function($scope, healthDataService, dashboardService, $q, $modal) {
     
     $scope.dataset = new TimeSeries();
     
-    $scope.options = function() {
-        // Don't think this should be a modal dialog...
-        /*
-        modalInstance = $modal.open({
-            templateUrl: 'views/dialogs/options.html',
-            controller: ModalInstanceController
-        });
-        */
+    $scope.options = function(event, tracker) {
+        event.target.parentNode.blur();
+        alert("Not implemented");
     };
-    $scope.create = function() {
+    $scope.createRecord = function() {
         $scope.recordToEdit = null;
         openModalEditor();
     };
@@ -128,13 +117,8 @@ function($scope, healthDataService, dashboardService, $q, $modal) {
     };
     $scope.removeRecord = function(record) {
         $scope.dataset.remove(record); 
-        healthDataService.remove($scope.tracker.id, record.recordId).then(function() {
-            // ... and now somehow in the background we reload the tracker because there
-            // may be a gap. Only if this succeeds. 
-            
-        }, function() {});
+        healthDataService.remove($scope.tracker.id, record.recordId);
     };
-    
     
     function openModalEditor() {
         var name = $scope.tracker.type.toLowerCase();

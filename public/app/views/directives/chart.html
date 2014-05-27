@@ -4,12 +4,12 @@
             <span class="glyphicon glyphicon-align-justify"></span> {{tracker.name}}
         </h4>
         <div>
-            <button class="cog btn btn-link" ng-click="options(tracker)">
+            <a class="cog btn btn-link" ng-click="options($event, tracker)">
                 <span class="glyphicon glyphicon-cog"></span>
-            </button>
-            <button class="plus btn btn-link" ng-click="create(tracker)">
+            </a>
+            <a class="plus btn btn-link" ng-click="createRecord(tracker)">
                 <span class="glyphicon glyphicon-plus"></span>
-            </button>
+            </a>
         </div>
     </div>
     <div class="gph rightcell">

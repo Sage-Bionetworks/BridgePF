@@ -1,20 +1,15 @@
 bridge.controller('BloodPressureController', ['$scope', 'healthDataService', 'dashboardService', '$humane', 
 function($scope, healthDataService, dashboardService, $humane) {
-
-    function midnight() {
-        var date = new Date();
-        date.setHours(0,0,0,0);
-        return date;
-    }
     
     if ($scope.recordToEdit) {
         $scope.systolic = $scope.recordToEdit.data.systolic;
         $scope.diastolic = $scope.recordToEdit.data.diastolic;
         $scope.date = new Date($scope.recordToEdit.startDate);
     } else {
-        $scope.date = midnight();    
+        // This is changed to midnight in createPayload() below
+        $scope.date = new Date();
     }
-    
+
     // Ugly workaround for the fact that the form isn't available on the scope.
     // This is the simplest workaround I have found.
     $scope.setFormReference = function(bpForm) { $scope.bpForm = bpForm; };
@@ -25,7 +20,7 @@ function($scope, healthDataService, dashboardService, $humane) {
     $scope.format = 'MM/dd/yyyy';
 
     $scope.today = function() {
-        $scope.bpForm.date.$setModelValue(midnight());
+        $scope.bpForm.date.$setModelValue(new Date());
     };
     $scope.clear = function () {
         $scope.bpForm.date.$setModelValue(null);
@@ -62,7 +57,8 @@ function($scope, healthDataService, dashboardService, $humane) {
         $scope.cancel();
     };
     $scope.update = function() {
-        var payload = dashboardService.updateRecord($scope.recordToEdit, $scope.bpForm, ['date', 'date'], ['systolic', 'diastolic']);
+        var payload = dashboardService.updateRecord($scope.recordToEdit, 
+                $scope.bpForm, ['date', 'date'], ['systolic', 'diastolic']);
         var chartScope = $scope.$parent;
         chartScope.dataset.update(payload);
         healthDataService.update(chartScope.tracker.id, payload).then(function(data) {
