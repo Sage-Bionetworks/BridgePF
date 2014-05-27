@@ -74,8 +74,8 @@ bridge.directive('bgChart', ['dashboardService', '$timeout', function(dashboardS
             }
         });
         
-        var g = new Dygraph(element, makeDataCallback(scope), opts);  
-        dashboardService.trackers.push({graph: g}); // why is graph called out here...
+        var graph = new Dygraph(element, makeDataCallback(scope), opts);
+        dashboardService.trackers.push({graph: graph}); // why is graph called out here...
     }
     
     return {
@@ -90,10 +90,20 @@ bridge.directive('bgChart', ['dashboardService', '$timeout', function(dashboardS
             var root = element[0].querySelector(".gph div");
             
             function updateChart() {
+                // TODO: The array has some spurious junk in it:
+                //                0: Array[3]
+                //            0: "1400828400000"
+                //            1: NaN
+                //            2: NaN
+                //            length: 3
+                //            __proto__: Array[0]
+                //            length: 1
+                //            __proto__: Array[0]
+             
                 if (scope.dataset.array.length === 0) {
                     showChartIsEmpty(root);
                 } else {
-                    createTimeSeriesChart(scope, root);    
+                    createTimeSeriesChart(scope, root);
                 }
             }
             scope.$watch(function() {

@@ -6,7 +6,9 @@
 .rightcell { width: 80%; -webkit-box-flex: 7; -moz-box-flex: 7;
     -webkit-flex: 7; -ms-flex: 7; flex: 7; }
 
-.chart { margin:0; padding:0; }
+.chart, .chart_bottom_controls { margin:0; padding:0; }
+.chart_bottom_controls .rightcell {
+    margin-left: 68px; z-index: 0; }
 
 .chart > li { border-bottom: 1px solid #aaa; border-left: 1px solid #aaa;
     border-right: 1px solid #aaa;   

@@ -72,6 +72,34 @@ function($scope, healthDataService, dashboardService, $q, $modal) {
                 return a[0] - b[0];
             });
         },
+        remove: function(record) {
+            for (var time in this.originalData) {
+                var series = this.originalData[time];
+                for (var i=0; i < series.length; i++) {
+                    var r = series[i];
+                    if (r.recordId === record.recordId) {
+                        series.splice(i, 1);
+                        this.recompute();
+                        this.changed = true;
+                        return;
+                    }
+                }
+            }
+        },
+        update: function(record) {
+            for (var time in this.originalData) {
+                var series = this.originalData[time];
+                for (var i=0; i < series.length; i++) {
+                    var r = series[i];
+                    if (r.recordId === record.recordId) {
+                        series[i] = record;
+                        this.recompute();
+                        this.changed = true;
+                        return;
+                    }
+                }
+            }
+        },
         hasChanged: function() {
             var c = this.changed;
             this.changed = false;
@@ -99,11 +127,12 @@ function($scope, healthDataService, dashboardService, $q, $modal) {
         openModalEditor();
     };
     $scope.removeRecord = function(record) {
-        var index = $scope.records.indexOf(record);
-        $scope.records.splice(index,1);
-        healthDataService.remove($scope.tracker.id, record.recordId)['finally'](function() {
-            dashboardService.refreshChartFromServer($scope);
-        });
+        $scope.dataset.remove(record); 
+        healthDataService.remove($scope.tracker.id, record.recordId).then(function() {
+            // ... and now somehow in the background we reload the tracker because there
+            // may be a gap. Only if this succeeds. 
+            
+        }, function() {});
     };
     
     
@@ -117,24 +146,4 @@ function($scope, healthDataService, dashboardService, $q, $modal) {
             windowClass: 'sm'
         });
     }
-    
-    // Move to healthService since you use this to update the chart everywhere you add or remove a data point
-    /*
-    this.load = function() {
-        var deferred = $q.defer();
-        var start = dashboardService.dateWindow[0];
-        var end = dashboardService.dateWindow[1];
-        // We want more data than the window. We want it to be possible for the user to scroll
-        // back in time. Grab 2x the period and make that the date range for the data, but not the UI.
-        start = start - ((end-start)*2);
-
-        healthDataService.getByDateRange($scope.tracker.id, start, end).then(function(data, status) {
-            $scope.dataset.convert(data.payload);
-            deferred.resolve($scope.dataset);
-        }, function(data, status) {
-            deferred.reject(data);
-        });
-        return deferred.promise;
-    };
-*/
 }]);
