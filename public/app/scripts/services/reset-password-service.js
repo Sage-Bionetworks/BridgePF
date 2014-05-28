@@ -32,7 +32,9 @@ bridge.service('requestResetPasswordService', ['$modal', function($modal) {
         open: function() {
             modalInstance = $modal.open({
                 templateUrl: 'views/dialogs/requestResetPassword.html',
-                controller: ModalInstanceController
+                controller: ModalInstanceController,
+                size: 'sm',
+                windowClass: 'sm'
             });
         },
         close: function() {

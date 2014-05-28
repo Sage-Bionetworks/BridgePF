@@ -42,47 +42,22 @@ describe("ApplicationController authentication support", function() {
         expect(authService.sessionToken).toEqual("");
     }
     
-    it('calls the sign in service on a sign in', function() {
-        $httpBackend.expectPOST('/api/auth/signIn').respond({
-            "type":"org.sagebionetworks.repo.model.auth.Session",
-            "payload":{sessionToken: "someToken", username: "test2", authenticated: true}
-        });
-        $rootScope.credentials = { "username": "test2", "password": "password" };
+    // This just tests the presence of a dialog, tests of the functionality go to the tests for 
+    // the signInService which now includes a modal dialog.
+    it('shows the sign in form', function() {
+        $httpBackend.expectGET('views/dialogs/signIn.html').respond(200);
         $rootScope.signIn();
         $httpBackend.flush();
-        
-        expect(authService.authenticated).toEqual(true);
-        expect(authService.username).toEqual("test2");
-        expect(authService.sessionToken).toEqual("someToken");
     });
-    it("does not authenticate user with bad credentials", function() {
-        $httpBackend.expectPOST('/api/auth/signIn').respond(404, {payload: "Wrong user name or password."});
-        $rootScope.credentials = { "username": "asdf", "password": "asdf" };
-        $rootScope.signIn();
+    it('shows the reset password form', function() {
+        $httpBackend.expectGET('views/dialogs/requestResetPassword.html').respond(500);
+        $rootScope.resetPassword();
         $httpBackend.flush();
-        expect($humane.error).toHaveBeenCalledWith("Wrong user name or password.");
-        expectNotLoggedIn();
-    });
-    it("redirects to the consent page when TOS hasn't been signed", function() {
-        $httpBackend.expectPOST('/api/auth/signIn').respond(412, {sessionToken: "abc"});
-        $rootScope.credentials = { "username": "asdf", "password": "asdf" };
-        $rootScope.signIn();
-        $httpBackend.flush();
-        expect($location.path).toHaveBeenCalledWith("/consent/abc");
-        expectNotLoggedIn();
     });
     it('calls the sign out service on a sign out', function() {
         $httpBackend.expectGET('/api/auth/signOut').respond({type: "StatusMessage", message: "Signed Out"});
         $rootScope.signOut();
         $httpBackend.flush();
         expect($window.location.replace).toHaveBeenCalledWith('/');
-    });
-    it("clears the password in credentials after sign-in", function() {
-        $httpBackend.expectPOST('/api/auth/signIn').respond(404, {});
-        $rootScope.credentials = { "username": "asdf", "password": "asdf" };
-        $rootScope.signIn();
-        $httpBackend.flush();
-        expect($rootScope.credentials.password).toEqual("");
-        expectNotLoggedIn();
     });
 });

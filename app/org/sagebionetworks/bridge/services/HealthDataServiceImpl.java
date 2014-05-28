@@ -59,12 +59,14 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         return client;
     }
     
+    /*
     private static final Comparator<HealthDataRecord> START_DATE_COMPARATOR = new Comparator<HealthDataRecord>() {
         @Override
         public int compare(HealthDataRecord record1, HealthDataRecord record2) {
             return (int)(record1.getStartDate() - record2.getStartDate());
         }
     };
+    */
     
     private String healthDataKeyToAnonimizedKeyString(HealthDataKey key) throws BridgeServiceException, SynapseException {
         if (key == null) {
@@ -95,7 +97,8 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         for (DynamoHealthDataRecord r : records) {
             entries.add(r.toHealthDataRecord());
         }
-        Collections.sort(entries, START_DATE_COMPARATOR);
+        // Not necessary? Results are always sorted by the range key in ascending order
+        // Collections.sort(entries, START_DATE_COMPARATOR);
         return entries;
     }
     
@@ -167,7 +170,7 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
         }
         try {
             /* Works for sure, very inefficient. Code below this at least queries out records that start after 
-             * the query window.
+             * the query window. 
             return FluentIterable.from(getAllHealthData(key)).filter(new Predicate<HealthDataRecord>() {
                 public boolean apply(HealthDataRecord record) {
                     if ((record.getEndDate() != 0 && record.getEndDate() < startDate.getTime())
@@ -178,7 +181,6 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
                 }
             }).toList();
             */
-            
             // Find records whose start date is before the window end date, and whose end date is after the window start date (or zero)
             DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(healthDataKeyToAnonimizedKeyString(key));
 
@@ -213,7 +215,6 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
                     return !(record.getEndDate() != 0 && record.getEndDate() < startDate.getTime());
                 }
             }).toList());
-            
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }

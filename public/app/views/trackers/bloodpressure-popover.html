@@ -1,0 +1,22 @@
+<div class="popover bottom" style="width: 200px">
+    <div class="arrow"></div>
+    <h3 class="popover-title">
+        {{xDate | date}}<span ng-show="records.length > 1"> ({{records.length}} readings)</span>
+    </h3>
+    <div class="popover-content">
+        <table>
+            <tr ng-repeat="record in records">
+                <td class="mainRow">
+                    {{record.data.systolic}}/{{record.data.diastolic}}
+                </td>
+                <td class="actionRow">
+                    <a ng-click="editRecord(record)"><span class="glyphicon glyphicon-edit"></span></a>
+                </td>
+                <td>
+                    <a ng-click="removeRecord(record)"><span class="text-danger glyphicon glyphicon-remove"></span></a>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+

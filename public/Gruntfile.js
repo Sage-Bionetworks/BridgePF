@@ -14,7 +14,7 @@ module.exports = function(grunt) {
             release: ['node_modules', 'app/bower_components']
         },
         jshint: {
-            options: { node: true, globals: { "angular": false } },
+            options: { node: true, loopfunc: true, globals: { "angular": false } },
             js: ['app/scripts/**/*.js']
         },
         sass: {
@@ -26,12 +26,13 @@ module.exports = function(grunt) {
             js: {
                 src: [
                     'app/bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
+                    'app/bower_components/dygraphs/dygraph.dev.js',
                     'app/scripts/humane-modified.js',
                     'app/scripts/app.js',
                     'app/scripts/services/*.js',
                     'app/scripts/directives/*.js',
                     'app/scripts/controllers/*.js',
-                    'app/scripts/controllers/trackers/*.js'
+                    'app/scripts/controllers/directives/*.js'
                 ],
                 dest: '<%= output %>/bridge.js',
                 nonull: true
