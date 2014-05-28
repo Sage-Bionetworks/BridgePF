@@ -98,8 +98,6 @@ describe("ApplicationController authentication support", function() {
         expect($window.location.replace).toHaveBeenCalledWith('/');
     });
     it("clears the password in credentials after sign-in", function() {
-        // Getting the dialog
-        //$httpBackend.expectGET('views/dialogs/signIn.html').respond(200, {});
         $httpBackend.expectPOST('/api/auth/signIn').respond(404, {});
         $rootScope.credentials = { "username": "asdf", "password": "asdf" };
         $rootScope.signIn();
