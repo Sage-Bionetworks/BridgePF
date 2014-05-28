@@ -6,6 +6,24 @@ function($scope, healthDataService, dashboardService, $q, $modal) {
         "Medication": EmptyDataSet
     };
     
+    this.refreshChartFromServer = function() {
+        var deferred = $q.defer();
+        var start = dashboardService.dateWindow[0];
+        var end = dashboardService.dateWindow[1];
+        // We want more data than the window. We want it to be possible for the user to scroll
+        // back in time. Grab 2x the period and make that the date range for the data, but not the UI.
+        start = start - ((end-start)*2);
+
+        healthDataService.getByDateRange($scope.tracker.id, start, end).then(function(data, status) {
+            $scope.dataset.convert(data.payload);
+            deferred.resolve($scope.dataset);
+        }, function(data, status) {
+            $scope.dataset.clear();
+            deferred.reject(data);
+        });
+        return deferred.promise;
+    };
+    
     $scope.dataset = new trackerDataTypes[$scope.tracker.type]();
     
     $scope.options = function(event, tracker) {
