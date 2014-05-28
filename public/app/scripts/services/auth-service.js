@@ -1,5 +1,5 @@
-bridge.service('authService', ['$http', '$rootScope', '$location', '$window', '$humane', '$q',    
-function($http, $rootScope, $location, $window, $humane, $q) {
+bridge.service('authService', ['$http', '$rootScope', '$location', '$window', '$humane', '$q', 'loadingService',     
+function($http, $rootScope, $location, $window, $humane, $q, loadingService) {
     var service = {
         sessionToken: '',
         username: '',
@@ -22,33 +22,12 @@ function($http, $rootScope, $location, $window, $humane, $q) {
             }
             credentials = angular.extend({}, credentials);
             
-            var deferred = $q.defer();
-            $rootScope.loading++;
-            $http.post('/api/auth/signIn', credentials).success(function(data, status) {
-                $rootScope.loading--;
+            return loadingService.call($http.post('/api/auth/signIn', credentials)).then(function(data) {
                 service.init(data.payload);
-                data.status = status;
-                deferred.resolve(data);
-            }).error(function(data, status) {
-                $rootScope.loading--;
-                data.status = status;
-                deferred.reject(data);
             });
-            return deferred.promise;
         },
         signOut: function() {
-            var deferred = $q.defer();
-            $rootScope.loading++;
-            $http.get('/api/auth/signOut').success(function(data, status) {
-                $rootScope.loading--;
-                data.status = status;
-                deferred.resolve(data);
-            }).error(function(data) {
-                $rootScope.loading--;
-                data.status = status;
-                deferred.reject(data);
-            });
-            return deferred.promise;
+            return loadingService.call($http.get('/api/auth/signOut'));
         }
     };
 
