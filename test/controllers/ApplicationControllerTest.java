@@ -12,16 +12,6 @@ import static play.test.Helpers.*;
 import static org.sagebionetworks.bridge.TestConstants.*;
 
 public class ApplicationControllerTest {
-    
-    @Test
-    public void test() {
-        running(testServer(3333, fakeApplication(inMemoryDatabase())), HTMLUNIT, new Callback<TestBrowser>() {
-            public void invoke(TestBrowser browser) {
-                browser.goTo(TEST_URL);
-                assertThat(browser.pageSource()).contains("Bridge: Patients");
-            }
-        });
-    }
 
     @Test
     public void indexRedirectsToApp() {
