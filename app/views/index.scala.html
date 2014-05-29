@@ -18,9 +18,9 @@
                 <div class="bridge-header" ng-cloak>
                     <div class="loadingclock" ng-show="loading"></div>
                     <div ng-hide="session.authenticated">
-                        <div style="line-height: 1.6">
+                        <div style="line-height: 1.8">
 	                        <a id="signInLink" style="font-size: larger" ng-click="signIn()">Sign In</a><br>
-	                        <a id="resetPasswordLink" style="font-size: smaller" ng-click="resetPassword()">I Forgot My Password</a>
+	                        <a id="resetPasswordLink" style="font-size: smaller" ng-click="resetPassword()">Forgot your password?</a>
                         </div>
                     </div>
                     <div ng-hide="!session.authenticated">
@@ -39,7 +39,7 @@
             <div id="content-pane" ng-view></div>
         </div>
         <div class="footer-break">
-            <p>&copy; 2014 <a href="http://www.sagebase.org">Sage Bionetworks</a> &mdash; @request().host()</p>
+            <p>&copy; 2014 <a href="http://www.sagebase.org">Sage Bionetworks</a><!-- &mdash; @request().host() --></p>
         </div>
     </div>
 
