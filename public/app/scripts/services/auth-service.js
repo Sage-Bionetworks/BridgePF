@@ -22,9 +22,14 @@ function($http, $rootScope, $location, $window, $humane, $q, loadingService) {
             }
             credentials = angular.extend({}, credentials);
             
-            return loadingService.call($http.post('/api/auth/signIn', credentials)).then(function(data) {
+            var deferred = $q.defer();
+            loadingService.call($http.post('/api/auth/signIn', credentials)).then(function(data) {
                 service.init(data.payload);
+                deferred.resolve(data);
+            }, function(data) {
+                deferred.reject(data);
             });
+            return deferred.promise;
         },
         signOut: function() {
             return loadingService.call($http.get('/api/auth/signOut'));

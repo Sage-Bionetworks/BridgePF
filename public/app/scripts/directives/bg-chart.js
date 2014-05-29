@@ -99,8 +99,8 @@ bridge.directive('bgChart', ['dashboardService', '$timeout', function(dashboardS
             scope.$watch(function() {
                 return scope.dataset.hasChanged();
             }, updateChart);
-            
-            dashboardService.refreshChartFromServer(scope).then(updateChart);
+
+            controller.refreshChartFromServer().then(updateChart);
         }
     };
 }]);

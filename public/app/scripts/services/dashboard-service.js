@@ -52,52 +52,6 @@ bridge.service('dashboardService', ['$filter', '$q', 'healthDataService', functi
             }
             return target;
         },
-        createPayload: function(form, dateFields, fields, toMidnight) {
-            toMidnight = (typeof toMidnight === "boolean") ? toMidnight : false;
-            var startDate = form[dateFields[0]].$modelValue;
-            var endDate = form[dateFields[0]].$modelValue;
-            if (toMidnight) {
-                startDate.setUTCHours(0,0,0,0);
-                endDate.setUTCHours(0,0,0,0);
-            }
-            var payload = { startDate: startDate.getTime(), endDate: endDate.getTime(), data: {} };
-            fields.forEach(function(field) {
-                payload.data[field] = form[field].$modelValue;
-            });
-            return payload;
-        },
-        updateRecord: function(record, form, dateFields, fields) {
-            var startDate = form[dateFields[0]].$modelValue;
-            var endDate = form[dateFields[0]].$modelValue;
-            if (toMidnight) {
-                startDate.setUTCHours(0,0,0,0);
-                endDate.setUTCHours(0,0,0,0);
-            }
-            record.startDate = startDate.getTime();
-            record.endDate = endDate.getTime();
-            fields.forEach(function(field) {
-                record.data[field] = form[field].$modelValue;
-            });
-            delete record.$$hashKey; // oh Angular
-            return record;
-        },
-        refreshChartFromServer: function(chartScope) {
-            var deferred = $q.defer();
-            var start = this.dateWindow[0];
-            var end = this.dateWindow[1];
-            // We want more data than the window. We want it to be possible for the user to scroll
-            // back in time. Grab 2x the period and make that the date range for the data, but not the UI.
-            start = start - ((end-start)*2);
-
-            healthDataService.getByDateRange(chartScope.tracker.id, start, end).then(function(data, status) {
-                chartScope.dataset.convert(data.payload);
-                deferred.resolve(chartScope.dataset);
-            }, function(data, status) {
-                chartScope.dataset.clear();
-                deferred.reject(data);
-            });
-            return deferred.promise;
-        },
         getDateWindowData: function() {
             return [ [this.dateWindow[0], 0], [this.dateWindow[1], 0] ];
         },

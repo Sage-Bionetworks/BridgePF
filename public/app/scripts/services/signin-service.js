@@ -26,11 +26,11 @@ bridge.service('signInService', ['$modal', function($modal) {
                     modalInstance.dismiss('cancel');
                     $location.path("/consent/" + data.sessionToken);
                 } else if (data.status === 404 || data.status === 401) {
-                    $messageType = "error";
-                    $message = "Wrong user name or password.";
+                    $scope.messageType = "error";
+                    $scope.message = "Wrong user name or password.";
                 } else {
-                    $messageType = "error";
-                    $message = "There has been an error.";
+                    $scope.messageType = "error";
+                    $scope.message = "There has been an error.";
                 }
             });
             $scope.credentials.password = '';            
