@@ -51,10 +51,10 @@ describe("ResetPasswordController", function() {
         $rootScope.resetPasswordForm = {$valid: true};
         $rootScope.password = "asb";
 
-        setupPOST().respond(401, {"payload":"The session token (abc) is invalid."});
+        setupPOST().respond(500, {"payload":"Invalid session token (abc)"});
         $rootScope.change();
         $httpBackend.flush();
-        expect($humane.error).toHaveBeenCalledWith('The session token (abc) is invalid.');
+        expect($humane.error).toHaveBeenCalledWith('Invalid session token (abc)');
     });
     it("submitting correctly shows a confirmation message", function() {
         ResetPasswordController = createController();

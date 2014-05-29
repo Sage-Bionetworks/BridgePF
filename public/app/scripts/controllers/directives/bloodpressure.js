@@ -46,7 +46,7 @@ function($scope, healthDataService, $humane, dashboardService) {
         return ($scope.bpForm && $scope.bpForm.$valid);
     };
     $scope.save = function() {
-        var payload = dashboardService.createPayload($scope.bpForm, ['date', 'date'], ['systolic', 'diastolic'], true);
+        var payload = healthDataService.createPayload($scope.bpForm, ['date', 'date'], ['systolic', 'diastolic'], true);
         var chartScope = $scope.$parent;
         healthDataService.create(chartScope.tracker.id, payload).then(function(data) {
             payload.recordId = data.payload.ids[0];
@@ -55,7 +55,7 @@ function($scope, healthDataService, $humane, dashboardService) {
         $scope.cancel();
     };
     $scope.update = function() {
-        var payload = dashboardService.updateRecord($scope.recordToEdit, 
+        var payload = healthDataService.updateRecord($scope.recordToEdit, 
                 $scope.bpForm, ['date', 'date'], ['systolic', 'diastolic']);
         var chartScope = $scope.$parent;
         chartScope.dataset.update(payload);

@@ -19,13 +19,13 @@
                     <div class="loadingclock" ng-show="loading"></div>
                     <div ng-hide="session.authenticated">
                         <div style="line-height: 1.6">
-	                        <a style="font-size: larger" ng-click="signIn()">Sign In</a><br>
-	                        <a style="font-size: smaller" ng-click="resetPassword()">I Forgot My Password</a>
+	                        <a id="signInLink" style="font-size: larger" ng-click="signIn()">Sign In</a><br>
+	                        <a id="resetPasswordLink" style="font-size: smaller" ng-click="resetPassword()">I Forgot My Password</a>
                         </div>
                     </div>
                     <div ng-hide="!session.authenticated">
                         <span ng-bind="session.username"></span>
-                        <button class="btn btn-default" ng-show="session.sessionToken" ng-click="signOut()">Sign Out</button>
+                        <button id="signOutLink" class="btn btn-default" ng-show="session.sessionToken" ng-click="signOut()">Sign Out</button>
                     </div>
                 </div>
             </div>
