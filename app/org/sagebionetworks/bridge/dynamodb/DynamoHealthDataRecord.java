@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  *
  */
 @DynamoDBTable(tableName = "HealthDataRecord")
-public class DynamoHealthDataRecord implements HealthDataRecord, DynamoDbRecord {
+public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
 
     private String key;
     private String recordId;
