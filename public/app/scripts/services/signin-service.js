@@ -12,8 +12,9 @@ bridge.service('signInService', ['$modal', function($modal) {
         $scope.signIn = function () {
             authService.signIn($scope.credentials).then(function() {
                 modalInstance.dismiss('cancel');
+                modalInstance = null;
                 if (lastRequest) {
-                    console.log("Resubmitting last request:", config);
+                    console.log("Resubmitting last request:", lastRequest);
                     var config = lastRequest;
                     lastRequest = null;
                     // This is all we can do at this point. We don't know the context to 
@@ -24,6 +25,7 @@ bridge.service('signInService', ['$modal', function($modal) {
             }, function(data) {
                 if (data.status === 412) {
                     modalInstance.dismiss('cancel');
+                    modalInstance = null;
                     $location.path("/consent/" + data.sessionToken);
                 } else if (data.status === 404 || data.status === 401) {
                     $scope.messageType = "error";
@@ -40,6 +42,7 @@ bridge.service('signInService', ['$modal', function($modal) {
         };
         $scope.cancel = function () {
             modalInstance.dismiss('cancel');
+            modalInstance = null;
         };
     }];
     
@@ -56,6 +59,7 @@ bridge.service('signInService', ['$modal', function($modal) {
         close: function() {
             if (modalInstance) {
                 modalInstance.dismiss('cancel');
+                modalInstance = null;
             }
         }
     };
