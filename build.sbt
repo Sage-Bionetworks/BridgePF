@@ -20,7 +20,8 @@ libraryDependencies ++= Seq(
   "org.mockito" % "mockito-all" % "1.9.5",
   "org.jasypt" % "jasypt" % "1.9.2",
   "com.github.fge" % "json-schema-validator" % "2.2.3",
-  "commons-httpclient" % "commons-httpclient" % "3.1"
+  "commons-httpclient" % "commons-httpclient" % "3.1",
+  "com.github.detro.ghostdriver" % "phantomjsdriver" % "1.1.0" % "test"
 )
 
 play.Project.playJavaSettings
