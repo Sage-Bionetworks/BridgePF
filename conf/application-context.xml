@@ -86,7 +86,7 @@
                     <property name="trackers">
                         <list>
                             <ref bean="pb-tracker"/>
-                            <!-- <ref bean="med-tracker"/> -->
+                            <ref bean="med-tracker"/>
                         </list>
                     </property>
                 </bean>
