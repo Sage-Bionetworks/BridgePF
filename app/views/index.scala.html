@@ -18,19 +18,14 @@
                 <div class="bridge-header" ng-cloak>
                     <div class="loadingclock" ng-show="loading"></div>
                     <div ng-hide="session.authenticated">
-                        <form name="signInForm" class="form-inline">
-                            <input class="form-control input-sm" required placeholder="Username" 
-                                type="text" name="username" ng-model="credentials.username"/>
-                            <input class="form-control input-sm" required placeholder="Password" 
-                                type="password" name="password" ng-model="credentials.password"/>
-                            <button class="btn btn-default btn-sm" ng-hide="session.sessionToken" 
-                                ng-disabled="!canSubmit()" ng-click="signIn()">Sign In</button>
-                            <a class="btn" ng-click="resetPassword()">Forgot Password</a>
-                        </form>
+                        <div style="line-height: 1.8">
+	                        <a id="signInLink" style="font-size: larger" ng-click="signIn()">Sign In</a><br>
+	                        <a id="resetPasswordLink" style="font-size: smaller" ng-click="resetPassword()">Forgot your password?</a>
+                        </div>
                     </div>
                     <div ng-hide="!session.authenticated">
                         <span ng-bind="session.username"></span>
-                        <button class="btn btn-default" ng-show="session.sessionToken" ng-click="signOut()">Sign Out</button>
+                        <button id="signOutLink" class="btn btn-default" ng-show="session.sessionToken" ng-click="signOut()">Sign Out</button>
                     </div>
                 </div>
             </div>
@@ -44,7 +39,7 @@
             <div id="content-pane" ng-view></div>
         </div>
         <div class="footer-break">
-            <p>&copy; 2014 <a href="http://www.sagebase.org">Sage Bionetworks</a> &mdash; @request().host()</p>
+            <p>&copy; 2014 <a href="http://www.sagebase.org">Sage Bionetworks</a><!-- &mdash; @request().host() --></p>
         </div>
     </div>
 

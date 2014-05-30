@@ -22,7 +22,8 @@ bridge.service('dashboardService', ['$filter', '$q', 'healthDataService', functi
         this.trackers = [];
         this.blockRedraw = false;
         this.xAxisOffset = 40;
-        this.dateWindow = [new Date().getTime() - (14*24*60*60*1000), new Date().getTime()];
+        var d = new Date().getTime();
+        this.dateWindow = [d - (14*24*60*60*1000), d];
         this.dateFormatter = function(number, granularity, opts, dygraph) {
             return $filter('date')(new Date(number), 'M/d');
         };
