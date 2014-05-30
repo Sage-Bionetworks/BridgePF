@@ -1,7 +1,6 @@
 package webdriver.pages;
 
 import static org.fest.assertions.Assertions.assertThat;
-
 import static org.sagebionetworks.bridge.TestConstants.*;
 
 import org.fluentlenium.core.domain.FluentWebElement;
@@ -16,7 +15,9 @@ public class AppPage {
         this.browser = browser;
         browser.goTo(TEST_URL);
         assertThat(browser.pageSource()).contains("Bridge: Patients");
-        waitForSignInLinks();
+        if (browser.findFirst(SIGN_OUT_LINK).isDisplayed()) {
+            signOut();
+        }
     }
     
     public SignInDialog openSignInDialog() {
@@ -31,9 +32,6 @@ public class AppPage {
     }
     public void signOut() {
         signOutLink().click();
-        waitForSignInLinks();
-    }
-    private void waitForSignInLinks() {
         browser.await().until(SIGN_IN_LINK).isPresent();
         browser.await().until(RESET_PASSWORD_LINK).isPresent();
     }
@@ -65,7 +63,6 @@ public class AppPage {
             signInAction().click();
             browser.await().until(USERNAME_LABEL).isPresent();
             assertThat(userLabel().getText()).isEqualTo(username);
-            close();
         }
         public void close() {
             browser.click(".close");
@@ -114,7 +111,6 @@ public class AppPage {
             sendEmailButton().click();
             browser.await().until(RESET_PASSWORD_DIALOG).isNotPresent();
             assertThat(messagePopup().getText()).contains("Please look for further instructions in your email inbox.");
-            close();
         }
         public void close() {
             browser.click(".close");
