@@ -80,5 +80,4 @@ public class AuthenticationTest extends BaseIntegrationTest {
             }
         });
     }
-
 }
