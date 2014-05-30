@@ -7,7 +7,6 @@ import models.UserSession;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.client.exceptions.SynapseUnauthorizedException;
 
 import play.libs.Json;
 import play.mvc.Controller;
