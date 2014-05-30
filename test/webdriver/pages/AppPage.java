@@ -38,13 +38,21 @@ public class AppPage {
         browser.await().until(RESET_PASSWORD_LINK).isPresent();
     }
     private FluentWebElement resetPasswordLink() {
-        return browser.findFirst(RESET_PASSWORD_LINK);
+        // Test fail in Firefox
+        // TODO: These may not be correct, is this better?
+        browser.await().until(RESET_PASSWORD_LINK).isPresent();
+        return browser.$(RESET_PASSWORD_LINK).first();
+        //return browser.findFirst(RESET_PASSWORD_LINK);
     }
     private FluentWebElement signInLink() {
-        return browser.findFirst(SIGN_IN_LINK);
+        browser.await().until(SIGN_IN_LINK).isPresent();
+        return browser.$(SIGN_IN_LINK).first();
+        //return browser.findFirst(SIGN_IN_LINK);
     }
     private FluentWebElement signOutLink() {
-        return browser.findFirst(SIGN_OUT_LINK);
+        browser.await().until(SIGN_OUT_LINK).isPresent();
+        return browser.$(SIGN_OUT_LINK).first();
+        //return browser.findFirst(SIGN_OUT_LINK);
     }
     
     public class SignInDialog {
@@ -79,13 +87,19 @@ public class AppPage {
             assertThat(signInAction().isEnabled()).isTrue();
         }
         private FluentWebElement signInMessage() {
-            return browser.findFirst(SIGN_IN_MESSAGE);
+            browser.await().until(SIGN_IN_MESSAGE).isPresent();
+            return browser.$(SIGN_IN_MESSAGE).first();
+            //return browser.findFirst(SIGN_IN_MESSAGE);
         }
         private FluentWebElement signInAction() {
-            return browser.findFirst(SIGN_IN_ACT);
+            browser.await().until(SIGN_IN_ACT).isPresent();
+            return browser.$(SIGN_IN_ACT).first();
+            //return browser.findFirst(SIGN_IN_ACT);
         }
         private FluentWebElement userLabel() {
-            return browser.findFirst(USERNAME_LABEL);
+            browser.await().until(USERNAME_LABEL).isPresent();
+            return browser.$(USERNAME_LABEL).first();
+            //return browser.findFirst(USERNAME_LABEL);
         }
     }
     
@@ -121,13 +135,19 @@ public class AppPage {
             browser.await().until(SIGN_IN_DIALOG).isNotPresent();
         }
         private FluentWebElement messagePopup() {
-            return browser.findFirst(".humane");
+            browser.await().until(".humane").isPresent();
+            return browser.$(".humane").first();
+            // return browser.findFirst(".humane");
         }
         private FluentWebElement sendEmailButton() {
-            return browser.findFirst(SEND_ACTION);
+            browser.await().until(SEND_ACTION).isPresent();
+            return browser.$(SEND_ACTION).first();
+            //return browser.findFirst(SEND_ACTION);
         }
         private FluentWebElement cancelButton() {
-            return browser.findFirst(CANCEL_ACTION);
+            browser.await().until(CANCEL_ACTION).isPresent();
+            return browser.$(CANCEL_ACTION).first();
+            //return browser.findFirst(CANCEL_ACTION);
         }
     }
 
