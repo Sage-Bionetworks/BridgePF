@@ -13,7 +13,7 @@ import play.test.TestBrowser;
 public class BaseIntegrationTest {
 
     protected void call(Callback<TestBrowser> callback) {
-        running(testServer(3333, fakeApplication(inMemoryDatabase())), TestConstants.FIREFOX_DRIVER, callback);
+        running(testServer(3333, fakeApplication(inMemoryDatabase())), TestConstants.PHANTOMJS_DRIVER, callback);
     }
 
 }
