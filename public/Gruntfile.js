@@ -53,6 +53,9 @@ module.exports = function(grunt) {
             js: {
                 src: '<%= output %>/bridge.js',
                 dest: '<%= output %>/bridge.min.js'
+            },
+            options: {
+                sourceMap: true
             }
         },
         // Run jasmine tests through ghostdriver on the command line
@@ -80,5 +83,6 @@ module.exports = function(grunt) {
 
     grunt.registerTask('test', ['build', 'jasmine']);
     grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify']);
+    grunt.registerTask('default', ['jshint', 'clean:build', 'concat', 'sass', 'uglify']);
     grunt.registerTask('release', ['test', 'clean:release']);
 };
