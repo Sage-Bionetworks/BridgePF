@@ -23,11 +23,14 @@ import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
-import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndexDescription;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
+import com.amazonaws.services.dynamodbv2.model.LocalSecondaryIndex;
 import com.amazonaws.services.dynamodbv2.model.LocalSecondaryIndexDescription;
+import com.amazonaws.services.dynamodbv2.model.Projection;
+import com.amazonaws.services.dynamodbv2.model.ProjectionType;
+import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputDescription;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
@@ -56,9 +59,10 @@ public class DynamoInitializer {
             if (clazz.isAnnotationPresent(DynamoDBTable.class)) {
                 final List<KeySchemaElement> keySchema = new ArrayList<KeySchemaElement>();
                 final List<AttributeDefinition> attributes = new ArrayList<AttributeDefinition>();
-                final List<GlobalSecondaryIndexDescription> globalIndices = new ArrayList<GlobalSecondaryIndexDescription>();
+                // TODO: List<GlobalSecondaryIndexDescription> globalIndices = new ArrayList<GlobalSecondaryIndexDescription>();
                 final List<LocalSecondaryIndexDescription> localIndices = new ArrayList<LocalSecondaryIndexDescription>();
                 Method[] methods = clazz.getDeclaredMethods();
+                KeySchemaElement hashKey = null;
                 for (Method method : methods) {
                     if (method.isAnnotationPresent(DynamoDBHashKey.class)) {
                         DynamoDBHashKey hashKeyAttr = method.getAnnotation(DynamoDBHashKey.class);
@@ -66,7 +70,7 @@ public class DynamoInitializer {
                         if (attrName == null || attrName.isEmpty()) {
                             attrName = getAttributeName(method);
                         }
-                        KeySchemaElement hashKey = new KeySchemaElement(attrName, KeyType.HASH);
+                        hashKey = new KeySchemaElement(attrName, KeyType.HASH);
                         keySchema.add(hashKey);
                     } else if (method.isAnnotationPresent(DynamoDBRangeKey.class)) {
                         DynamoDBRangeKey rangeKeyAttr = method.getAnnotation(DynamoDBRangeKey.class);
@@ -76,15 +80,6 @@ public class DynamoInitializer {
                         }
                         KeySchemaElement rangeKey = new KeySchemaElement(attrName, KeyType.RANGE);
                         keySchema.add(rangeKey);
-                    } else if (method.isAnnotationPresent(DynamoDBIndexRangeKey.class)) {
-                        DynamoDBIndexRangeKey indexKey = method.getAnnotation(DynamoDBIndexRangeKey.class);
-                        String attrName = indexKey.attributeName();
-                        if (attrName == null || attrName.isEmpty()) {
-                            attrName = getAttributeName(method);
-                        }
-                        // TODO
-                        indexKey.localSecondaryIndexName();
-                        indexKey.globalSecondaryIndexName();
                     } else if (method.isAnnotationPresent(DynamoDBAttribute.class)) {
                         DynamoDBAttribute attr = method.getAnnotation(DynamoDBAttribute.class);
                         String attrName = attr.attributeName();
@@ -96,6 +91,22 @@ public class DynamoInitializer {
                         attributes.add(attribute);
                     }
                 }
+                // Local secondary indices
+                for (Method method : methods) {
+                    if (method.isAnnotationPresent(DynamoDBIndexRangeKey.class)) {
+                        DynamoDBIndexRangeKey indexKey = method.getAnnotation(DynamoDBIndexRangeKey.class);
+                        String attrName = indexKey.attributeName();
+                        if (attrName == null || attrName.isEmpty()) {
+                            attrName = getAttributeName(method);
+                        }
+                        String indexName = indexKey.localSecondaryIndexName();
+                        LocalSecondaryIndexDescription localIndex = new LocalSecondaryIndexDescription()
+                                .withIndexName(indexName)
+                                .withKeySchema(hashKey, new KeySchemaElement(attrName, KeyType.RANGE))
+                                .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
+                        localIndices.add(localIndex);
+                    }
+                }
                 final BridgeConfig config = BridgeConfigFactory.getConfig();
                 final String tableName = config.getEnvironment() + "-" + config.getUser() + "-" +
                         clazz.getAnnotation(DynamoDBTable.class).tableName();
@@ -103,7 +114,6 @@ public class DynamoInitializer {
                         .withTableName(tableName)
                         .withKeySchema(keySchema)
                         .withAttributeDefinitions(attributes)
-                        .withGlobalSecondaryIndexes(globalIndices)
                         .withLocalSecondaryIndexes(localIndices)
                         .withProvisionedThroughput((new ProvisionedThroughputDescription())
                                 .withReadCapacityUnits(READ_CAPACITY)
@@ -174,21 +184,44 @@ public class DynamoInitializer {
             }
             existingTables.put(tableName, table);
             List<LocalSecondaryIndexDescription> indices = table.getLocalSecondaryIndexes();
-            for (LocalSecondaryIndexDescription index : indices) {
-                System.out.println(index.getIndexName());
-                System.out.println(index.getProjection());
-                System.out.println(index.getKeySchema());
+            if (indices != null) {
+                for (LocalSecondaryIndexDescription index : indices) {
+                    System.out.println(index.getIndexName());
+                    System.out.println(index.getProjection());
+                    System.out.println(index.getKeySchema());
+                }
             }
         }
         return existingTables;
     }
 
     static CreateTableRequest getCreateTableRequest(TableDescription table) {
-        // TODO
-        return null;
+        CreateTableRequest request = new CreateTableRequest()
+                .withTableName(table.getTableName())
+                .withKeySchema(table.getKeySchema())
+                .withAttributeDefinitions(table.getAttributeDefinitions());
+        // ProvisionedThroughputDescription -> ProvisionedThroughput
+        ProvisionedThroughput throughput = new ProvisionedThroughput(
+                table.getProvisionedThroughput().getReadCapacityUnits(),
+                table.getProvisionedThroughput().getWriteCapacityUnits());
+        request.setProvisionedThroughput(throughput);
+        // LocalSecondaryIndexDescription -> LocalSecondaryIndex
+        List<LocalSecondaryIndex> localIndices = new ArrayList<LocalSecondaryIndex>();
+        List<LocalSecondaryIndexDescription> localIndexDescs = table.getLocalSecondaryIndexes();
+        for (LocalSecondaryIndexDescription localIndexDesc : localIndexDescs) {
+            LocalSecondaryIndex localIndex = new LocalSecondaryIndex()
+                    .withIndexName(localIndexDesc.getIndexName())
+                    .withKeySchema(localIndexDesc.getKeySchema())
+                    .withProjection(localIndexDesc.getProjection());
+            localIndices.add(localIndex);
+        }
+        request.setLocalSecondaryIndexes(localIndices);
+        return request;
     }
 
     static void checkSchema(TableDescription table1, TableDescription table2) {
-        // TODO
+        if (table1.getTableName().equals(table2.getTableName())) {
+            // TODO
+        }
     }
 }
