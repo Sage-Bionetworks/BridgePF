@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,13 +10,13 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.config.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
@@ -23,6 +25,7 @@ import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
+import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndexDescription;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
@@ -35,6 +38,10 @@ import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputDescription;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.amazonaws.services.dynamodbv2.model.TableStatus;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.ClassPath;
+import com.google.common.reflect.ClassPath.ClassInfo;
 
 public class DynamoInitializer {
 
@@ -46,84 +53,127 @@ public class DynamoInitializer {
 
     /**
      * Creates DynamoDB tables, if they do not exist yet, from the annotated types.
-     * Throws an error if the table exists but the schema does not match.
+     * in the package "org.sagebionetworks.bridge.dynamodb". Throws an error
+     * if the table exists but the schema (hash key, range key, and secondary indices)
+     * does not match.
      */
     public static void init() {
-        List<TableDescription> tables = parseTables();
+        List<TableDescription> tables = getAnnotatedTables();
         initTables(tables);
     }
 
-    static List<TableDescription> parseTables() {
-        final List<TableDescription> tables = new ArrayList<TableDescription>();
-        for (Class<?> clazz : DynamoTable.class.getClasses()) {
-            if (clazz.isAnnotationPresent(DynamoDBTable.class)) {
-                final List<KeySchemaElement> keySchema = new ArrayList<KeySchemaElement>();
-                final List<AttributeDefinition> attributes = new ArrayList<AttributeDefinition>();
-                // TODO: List<GlobalSecondaryIndexDescription> globalIndices = new ArrayList<GlobalSecondaryIndexDescription>();
-                final List<LocalSecondaryIndexDescription> localIndices = new ArrayList<LocalSecondaryIndexDescription>();
-                Method[] methods = clazz.getDeclaredMethods();
-                KeySchemaElement hashKey = null;
-                for (Method method : methods) {
-                    if (method.isAnnotationPresent(DynamoDBHashKey.class)) {
-                        DynamoDBHashKey hashKeyAttr = method.getAnnotation(DynamoDBHashKey.class);
-                        String attrName = hashKeyAttr.attributeName();
-                        if (attrName == null || attrName.isEmpty()) {
-                            attrName = getAttributeName(method);
-                        }
-                        hashKey = new KeySchemaElement(attrName, KeyType.HASH);
-                        keySchema.add(hashKey);
-                    } else if (method.isAnnotationPresent(DynamoDBRangeKey.class)) {
-                        DynamoDBRangeKey rangeKeyAttr = method.getAnnotation(DynamoDBRangeKey.class);
-                        String attrName = rangeKeyAttr.attributeName();
-                        if (attrName == null || attrName.isEmpty()) {
-                            attrName = getAttributeName(method);
-                        }
-                        KeySchemaElement rangeKey = new KeySchemaElement(attrName, KeyType.RANGE);
-                        keySchema.add(rangeKey);
-                    } else if (method.isAnnotationPresent(DynamoDBAttribute.class)) {
-                        DynamoDBAttribute attr = method.getAnnotation(DynamoDBAttribute.class);
-                        String attrName = attr.attributeName();
-                        if (attrName == null || attrName.isEmpty()) {
-                            attrName = getAttributeName(method);
-                        }
-                        ScalarAttributeType attrType = getAttributeType(method);
-                        AttributeDefinition attribute = new AttributeDefinition(attrName, attrType);
-                        attributes.add(attribute);
+    /**
+     * Converts the annotated DynamoDBTable types to a list of TableDescription.
+     */
+    static List<TableDescription> getAnnotatedTables() {
+        List<TableDescription> tables = new ArrayList<TableDescription>();
+        List<Class<?>> classes = loadDynamoTableClasses();
+        for (Class<?> clazz : classes) {
+            final List<KeySchemaElement> keySchema = new ArrayList<KeySchemaElement>();
+            final List<AttributeDefinition> attributes = new ArrayList<AttributeDefinition>();
+            final List<GlobalSecondaryIndexDescription> globalIndices = new ArrayList<GlobalSecondaryIndexDescription>();
+            final List<LocalSecondaryIndexDescription> localIndices = new ArrayList<LocalSecondaryIndexDescription>();
+            Method[] methods = clazz.getDeclaredMethods();
+            KeySchemaElement hashKey = null;
+            for (Method method : methods) {
+                if (method.isAnnotationPresent(DynamoDBHashKey.class)) {
+                    // Hash key
+                    DynamoDBHashKey hashKeyAttr = method.getAnnotation(DynamoDBHashKey.class);
+                    String attrName = hashKeyAttr.attributeName();
+                    if (attrName == null || attrName.isEmpty()) {
+                        attrName = getAttributeName(method);
                     }
-                }
-                // Local secondary indices
-                for (Method method : methods) {
-                    if (method.isAnnotationPresent(DynamoDBIndexRangeKey.class)) {
-                        DynamoDBIndexRangeKey indexKey = method.getAnnotation(DynamoDBIndexRangeKey.class);
-                        String attrName = indexKey.attributeName();
-                        if (attrName == null || attrName.isEmpty()) {
-                            attrName = getAttributeName(method);
-                        }
-                        String indexName = indexKey.localSecondaryIndexName();
-                        LocalSecondaryIndexDescription localIndex = new LocalSecondaryIndexDescription()
-                                .withIndexName(indexName)
-                                .withKeySchema(hashKey, new KeySchemaElement(attrName, KeyType.RANGE))
-                                .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
-                        localIndices.add(localIndex);
+                    hashKey = new KeySchemaElement(attrName, KeyType.HASH);
+                    keySchema.add(hashKey);
+                    ScalarAttributeType attrType = getAttributeType(method);
+                    AttributeDefinition attribute = new AttributeDefinition(attrName, attrType);
+                    attributes.add(attribute);
+                } else if (method.isAnnotationPresent(DynamoDBRangeKey.class)) {
+                    // Range key
+                    DynamoDBRangeKey rangeKeyAttr = method.getAnnotation(DynamoDBRangeKey.class);
+                    String attrName = rangeKeyAttr.attributeName();
+                    if (attrName == null || attrName.isEmpty()) {
+                        attrName = getAttributeName(method);
                     }
+                    KeySchemaElement rangeKey = new KeySchemaElement(attrName, KeyType.RANGE);
+                    keySchema.add(rangeKey);
+                    ScalarAttributeType attrType = getAttributeType(method);
+                    AttributeDefinition attribute = new AttributeDefinition(attrName, attrType);
+                    attributes.add(attribute);
                 }
-                final BridgeConfig config = BridgeConfigFactory.getConfig();
-                final String tableName = config.getEnvironment() + "-" + config.getUser() + "-" +
-                        clazz.getAnnotation(DynamoDBTable.class).tableName();
-                final TableDescription table = (new TableDescription())
-                        .withTableName(tableName)
-                        .withKeySchema(keySchema)
-                        .withAttributeDefinitions(attributes)
-                        .withLocalSecondaryIndexes(localIndices)
-                        .withProvisionedThroughput((new ProvisionedThroughputDescription())
-                                .withReadCapacityUnits(READ_CAPACITY)
-                                .withWriteCapacityUnits(WRITE_CAPACITY));
-                tables.add(table);
             }
+            if (hashKey == null) {
+                throw new RuntimeException("Missing hash key for DynamoDBTable " + clazz);
+            }
+            // TODO: Global secondary indices
+            // Local secondary indices
+            for (Method method : methods) {
+                if (method.isAnnotationPresent(DynamoDBIndexRangeKey.class)) {
+                    DynamoDBIndexRangeKey indexKey = method.getAnnotation(DynamoDBIndexRangeKey.class);
+                    String attrName = indexKey.attributeName();
+                    if (attrName == null || attrName.isEmpty()) {
+                        attrName = getAttributeName(method);
+                    }
+                    ScalarAttributeType attrType = getAttributeType(method);
+                    AttributeDefinition attribute = new AttributeDefinition(attrName, attrType);
+                    attributes.add(attribute);
+                    String indexName = indexKey.localSecondaryIndexName();
+                    LocalSecondaryIndexDescription localIndex = new LocalSecondaryIndexDescription()
+                            .withIndexName(indexName)
+                            .withKeySchema(hashKey, new KeySchemaElement(attrName, KeyType.RANGE))
+                            .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
+                    localIndices.add(localIndex);
+                }
+            }
+            // Prefix the table name with 'env-' and 'user-'
+            final BridgeConfig config = BridgeConfigFactory.getConfig();
+            Environment env = config.getEnvironment();
+            if (Environment.STUB.equals(env)) {
+                env = Environment.LOCAL;
+            }
+            final String tableName = env.getEnvName() + "-" + config.getUser() + "-" +
+                    clazz.getAnnotation(DynamoDBTable.class).tableName();
+            // Create the table description
+            final TableDescription table = (new TableDescription())
+                    .withTableName(tableName)
+                    .withKeySchema(keySchema)
+                    .withAttributeDefinitions(attributes)
+                    .withGlobalSecondaryIndexes(globalIndices)
+                    .withLocalSecondaryIndexes(localIndices)
+                    .withProvisionedThroughput((new ProvisionedThroughputDescription())
+                            .withReadCapacityUnits(READ_CAPACITY)
+                            .withWriteCapacityUnits(WRITE_CAPACITY));
+            tables.add(table);            
         }
         return tables;
     }
 
+    /**
+     * Uses reflection to get all the annotated DynamoDBTable.
+     */
+    static List<Class<?>> loadDynamoTableClasses() {
+        List<Class<?>> classes = new ArrayList<Class<?>>();
+        try {
+            ImmutableSet<ClassInfo> classSet = ClassPath
+                    .from(DynamoTable.class.getClassLoader())
+                    .getTopLevelClasses("org.sagebionetworks.bridge.dynamodb");
+            for (ClassInfo classInfo : classSet) {
+                Class<?> clazz = classInfo.load();
+                if (clazz.isAnnotationPresent(DynamoDBTable.class)) {
+                    classes.add(clazz);
+                }
+            }
+            return classes;
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Gets attribute name from the method.
+     */
     static String getAttributeName(Method method) {
         String attrName = method.getName();
         if (attrName.startsWith("get")) {
@@ -142,14 +192,20 @@ public class DynamoInitializer {
         Class<?> clazz = method.getReturnType();
         if (String.class.equals(clazz)) {
             return ScalarAttributeType.S;
+        } else if (JsonNode.class.equals(clazz)) {
+            return ScalarAttributeType.S;
         } else if (Long.class.equals(clazz)) {
             return ScalarAttributeType.N;
+        } else if (long.class.equals(clazz)) {
+            return ScalarAttributeType.N;
         } else if (Integer.class.equals(clazz)) {
+            return ScalarAttributeType.N;
+        } else if (int.class.equals(clazz)) {
             return ScalarAttributeType.N;
         } else if (Boolean.class.equals(clazz)) {
             return ScalarAttributeType.B;
         }
-        throw new RuntimeException("Unsupported return type of method " + method.getName());
+        throw new RuntimeException("Unsupported return type " + clazz + " of method " + method.getName());
     }
 
     static void initTables(final List<TableDescription> tables) {
@@ -164,11 +220,10 @@ public class DynamoInitializer {
                 logger.info("Creating table " + table.getTableName());
                 dynamo.createTable(createTableRequest);
             } else {
-                checkSchema(table, existingTables.get(table.getTableName()));
+                compareSchema(table, existingTables.get(table.getTableName()));
             }
+            waitForActive(table, dynamo);
         }
-        // Wait for tables to be ready (status is ACTIVE)
-        existingTables = getExistingTables(dynamo);
         logger.info("All DynamoDB tables are ready.");
     }
 
@@ -178,19 +233,7 @@ public class DynamoInitializer {
         for (String tableName : listResult.getTableNames()) {
             DescribeTableResult describeResult = dynamo.describeTable(new DescribeTableRequest(tableName));
             TableDescription table = describeResult.getTable();
-            while (!TableStatus.ACTIVE.name().equalsIgnoreCase(table.getTableStatus())) {
-                describeResult = dynamo.describeTable(new DescribeTableRequest(tableName));
-                table = describeResult.getTable();
-            }
             existingTables.put(tableName, table);
-            List<LocalSecondaryIndexDescription> indices = table.getLocalSecondaryIndexes();
-            if (indices != null) {
-                for (LocalSecondaryIndexDescription index : indices) {
-                    System.out.println(index.getIndexName());
-                    System.out.println(index.getProjection());
-                    System.out.println(index.getKeySchema());
-                }
-            }
         }
         return existingTables;
     }
@@ -205,6 +248,7 @@ public class DynamoInitializer {
                 table.getProvisionedThroughput().getReadCapacityUnits(),
                 table.getProvisionedThroughput().getWriteCapacityUnits());
         request.setProvisionedThroughput(throughput);
+        // TODO: GlobalSecondaryIndexDescription -> GlobalSecondaryIndex
         // LocalSecondaryIndexDescription -> LocalSecondaryIndex
         List<LocalSecondaryIndex> localIndices = new ArrayList<LocalSecondaryIndex>();
         List<LocalSecondaryIndexDescription> localIndexDescs = table.getLocalSecondaryIndexes();
@@ -219,9 +263,79 @@ public class DynamoInitializer {
         return request;
     }
 
-    static void checkSchema(TableDescription table1, TableDescription table2) {
+    /**
+     * Compares hash key, range key, secondary indices of the two tables. Throws an exception
+     * if there is difference.
+     */
+    static void compareSchema(TableDescription table1, TableDescription table2) {
         if (table1.getTableName().equals(table2.getTableName())) {
-            // TODO
+            compareKeySchema(table1, table2);
+            compareLocalIndices(table1, table2);
+        }
+    }
+
+    static void compareKeySchema(TableDescription table1, TableDescription table2) {
+        List<KeySchemaElement> keySchema1 = table1.getKeySchema();
+        List<KeySchemaElement> keySchema2 = table1.getKeySchema();
+        if (keySchema1.size() != keySchema2.size()) {
+            throw new RuntimeException("Table " + table1.getTableName() +
+                    " is changing the number of key elements.");
+        }
+        Map<String, KeySchemaElement> keySchemaMap1 = new HashMap<String, KeySchemaElement>();
+        for (KeySchemaElement ele1 : keySchema1) {
+            keySchemaMap1.put(ele1.getAttributeName(), ele1);
+        }
+        for (KeySchemaElement ele2 : keySchema2) {
+            KeySchemaElement ele1 = keySchemaMap1.get(ele2.getAttributeName());
+            if (ele1 == null) {
+                throw new RuntimeException("Table " + table1.getTableName() +
+                        " is changing the key schema.");
+            }
+            if (!ele1.equals(ele2)) {
+                throw new RuntimeException("Table " + table1.getTableName() +
+                        " is changing the key schema.");
+            }
+        }
+    }
+
+    static void compareGlobalIndices(TableDescription table1, TableDescription table2) {
+        // TODO
+    }
+
+    static void compareLocalIndices(TableDescription table1, TableDescription table2) {
+        List<LocalSecondaryIndexDescription> indices1 = table1.getLocalSecondaryIndexes();
+        List<LocalSecondaryIndexDescription> indices2 = table1.getLocalSecondaryIndexes();
+        if (indices1.size() != indices2.size()) {
+            throw new RuntimeException("Table " + table1.getTableName() +
+                    " is changing the number of local indices.");
+        }
+        Map<String, LocalSecondaryIndexDescription> indexMap1 = new HashMap<String, LocalSecondaryIndexDescription>();
+        for (LocalSecondaryIndexDescription index1 : indices1) {
+            indexMap1.put(index1.getIndexName(), index1);
+        }
+        for (LocalSecondaryIndexDescription index2 : indices2) {
+            LocalSecondaryIndexDescription index1 = indexMap1.get(index2.getIndexName());
+            if (index1 == null) {
+                throw new RuntimeException("Table " + table1.getTableName() +
+                        " is changing the local indices.");
+            }
+            if (!index1.equals(index2)) {
+                throw new RuntimeException("Table " + table1.getTableName() +
+                        " is changing the local indices.");
+            }
+        }
+    }
+
+    static void waitForActive(TableDescription table, final AmazonDynamoDB dynamo) {
+        while (!TableStatus.ACTIVE.name().equalsIgnoreCase(table.getTableStatus())) {
+            try {
+                Thread.sleep(20L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Shouldn't be interrupted.", e);
+            }
+            DescribeTableResult describeResult = dynamo.describeTable(
+                    new DescribeTableRequest(table.getTableName()));
+            table = describeResult.getTable();
         }
     }
 }
