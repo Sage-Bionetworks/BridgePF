@@ -1,6 +1,6 @@
 bridge.controller('ApplicationController', 
-['$scope', '$http', '$location', '$modal', '$humane', '$window', 'authService', 'requestResetPasswordService', 
-function($scope, $http, $location, $modal, $humane, $window, authService, requestResetPasswordService) {
+['$scope', '$location', '$humane', '$window', 'authService', 'requestResetPasswordService', 'signInService',  
+function($scope, $location, $humane, $window, authService, requestResetPasswordService, signInService) {
 
 	var DEFAULT_PATHS = ["","/","index.html","/index.html"];
 	
@@ -25,16 +25,7 @@ function($scope, $http, $location, $modal, $humane, $window, authService, reques
 	};
 
 	$scope.signIn = function() {
-	    authService.signIn($scope.credentials).then(function() {}, function(data) {
-            if (data.status === 412) {
-                $location.path("/consent/" + data.sessionToken);
-            } else if (data.status === 404 || data.status === 401) {
-                $humane.error("Wrong user name or password.");
-            } else {
-                $humane.error("There has been an error.");
-            }
-	    });
-		$scope.credentials.password = '';
+	    signInService.open();
 	};
 	$scope.signOut = function() {
 	    authService.signOut().then(function() {
@@ -45,8 +36,5 @@ function($scope, $http, $location, $modal, $humane, $window, authService, reques
 	};
     $scope.resetPassword = function() {
         requestResetPasswordService.open();
-    };
-    $scope.canSubmit = function() {
-        return $scope.credentials.username && $scope.credentials.password;
     };
 }]);

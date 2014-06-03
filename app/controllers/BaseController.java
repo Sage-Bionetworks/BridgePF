@@ -5,8 +5,8 @@ import models.StatusMessage;
 import models.UserSession;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.client.exceptions.SynapseUnauthorizedException;
 
 import play.libs.Json;
 import play.mvc.Controller;
@@ -35,7 +35,7 @@ public class BaseController extends Controller {
 		String[] session = request().headers().get(BridgeConstants.SESSION_TOKEN_HEADER);
 		if (session == null || session.length == 0) {
 			if (throwException) {
-				throw new SynapseUnauthorizedException();	
+			    throw new BridgeServiceException("Not signed in", 401);
 			} else {
 				return null;
 			}

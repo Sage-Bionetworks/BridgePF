@@ -1,0 +1,20 @@
+<form>
+    <div class="modal-header">
+        <button type="button" class="close" ng-click="cancel()">&times;</button>
+        <h4 id="signInDialog" class="modal-title">Sign In</h4>
+    </div>
+    <div class="modal-body" style="padding-top:0">
+        <div class="form-group">
+            <label>User Name</label>
+            <input type="text" ng-model="credentials.username" class="form-control" />
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" ng-model="credentials.password" class="form-control" />
+            <div id="signInMessage" ng-show="message" class="text-danger alert-{{messageType}}">{{message}}</div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button id="signInAct" class="btn btn-primary" ng-disabled="!canSubmit()" ng-click="signIn()">Sign In</button>
+    </div>
+</form>
