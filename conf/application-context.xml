@@ -20,11 +20,6 @@
 
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
 
-    <bean id="synapseClient" class="org.sagebionetworks.bridge.synapse.SynapseClientFactory" 
-        factory-method="createSynapseClient" scope="prototype">
-        <constructor-arg index="0" ref="bridgeConfig"/>
-    </bean>
-    
     <!-- Stormpath identity service -->
     
     <bean id="stormpathClient" class="org.sagebionetworks.bridge.stormpath.StormpathFactory" 

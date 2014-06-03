@@ -1,4 +1,4 @@
-var bridge = angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
+var bridge = angular.module('bridge', ['ngRoute', 'ngCookies', 'ui.bootstrap'])
 .run(['$rootScope', function($rootScope) {
     $rootScope.loading = 0;
 }])

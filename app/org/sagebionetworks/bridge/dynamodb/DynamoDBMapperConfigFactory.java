@@ -31,9 +31,6 @@ public class DynamoDBMapperConfigFactory {
     private static TableNameOverride getTableNameOverride(Class<DynamoDbRecord> clazz) {
         BridgeConfig config = BridgeConfigFactory.getConfig();
         Environment env = config.getEnvironment();
-        if (Environment.STUB.equals(env)) {
-            env = Environment.LOCAL; // There is no stubbed DynamoDB
-        }
         String tableName = clazz.getAnnotation(DynamoDBTable.class).tableName();
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("Missing DynamoDBTable table name for " + clazz.getName());

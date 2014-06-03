@@ -13,8 +13,6 @@ import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
-import org.sagebionetworks.repo.model.UserProfile;
-import org.sagebionetworks.repo.model.UserSessionData;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -55,11 +53,6 @@ public class HealthDataServiceImplTest {
         updateMapper = mock(DynamoDBMapper.class);
         service.setCreateMapper(createMapper);
         service.setUpdateMapper(updateMapper);
-
-        UserSessionData data = new UserSessionData();
-        UserProfile profile = new UserProfile();
-        profile.setOwnerId("1");
-        data.setProfile(profile);
     }
 
     private HealthDataRecord createHealthDataRecord() {

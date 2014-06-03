@@ -32,7 +32,7 @@ public class BridgeConfigTest {
 
     @Test
     public void testEncryption() {
-        System.setProperty("bridge.env", "stub");
+        System.setProperty("bridge.env", "local");
         BridgeConfig config = new BridgeConfig();
         assertEquals("example.value", config.getProperty("example.property"));
         assertEquals("example.value.encrypted", config.getProperty("example.property.encrypted"));
