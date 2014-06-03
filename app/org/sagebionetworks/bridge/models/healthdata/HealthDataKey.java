@@ -1,19 +1,38 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.Tracker;
+
 public final class HealthDataKey {
 
-    private final long studyId;
+    private final String studyKey;
     private final long trackerId;
     private final String sessionToken;
     
-    public HealthDataKey(long studyId, long trackerId, String sessionToken) {
-        this.studyId = studyId;
-        this.trackerId = trackerId;
+    public HealthDataKey(Study study, Tracker tracker, String sessionToken) {
+        if (study == null) {
+            throw new BridgeServiceException("HealthDataKey study must not be null", HttpStatus.SC_BAD_REQUEST);
+        } else if (StringUtils.isBlank(study.getKey())) {
+            throw new BridgeServiceException("HealthDataKey study must have a valid key", HttpStatus.SC_BAD_REQUEST);
+        } else if (tracker == null) {
+            throw new BridgeServiceException("HealthDataKey tracker must not be null", HttpStatus.SC_BAD_REQUEST);
+        } else if (tracker.getId() == null || tracker.getId().equals(0L)) {
+            throw new BridgeServiceException("HealthDataKey tracker must have a valid ID", HttpStatus.SC_BAD_REQUEST);
+        } else if (sessionToken == null) {
+            throw new BridgeServiceException("HealthDataKey session token must not be null", HttpStatus.SC_BAD_REQUEST);
+        } else if (StringUtils.isBlank(sessionToken)) {
+            throw new BridgeServiceException("HealthDataKey session token is not valid", HttpStatus.SC_BAD_REQUEST);
+        }
+        this.studyKey = study.getKey();
+        this.trackerId = tracker.getId();
         this.sessionToken = sessionToken;
     }
 
-    public long getStudyId() {
-        return studyId;
+    public String getStudyKey() {
+        return studyKey;
     }
     public long getTrackerId() {
         return trackerId;
@@ -27,7 +46,7 @@ public final class HealthDataKey {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((sessionToken == null) ? 0 : sessionToken.hashCode());
-        result = prime * result + (int) (studyId ^ (studyId >>> 32));
+        result = prime * result + ((studyKey == null) ? 0 : studyKey.hashCode());
         result = prime * result + (int) (trackerId ^ (trackerId >>> 32));
         return result;
     }
@@ -46,7 +65,10 @@ public final class HealthDataKey {
                 return false;
         } else if (!sessionToken.equals(other.sessionToken))
             return false;
-        if (studyId != other.studyId)
+        if (studyKey == null) {
+            if (other.studyKey != null)
+                return false;
+        } else if (!studyKey.equals(other.studyKey))
             return false;
         if (trackerId != other.trackerId)
             return false;

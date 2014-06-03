@@ -20,6 +20,10 @@ public class BridgeConfig {
     private static final String SYNAPSE_AUTH_ENDPOINT =  "synapse.auth.endpoint";
     private static final String SYNAPSE_FILE_ENDPOINT =  "synapse.file.endpoint";
     
+    private static final String STORMPATH_ID =  "stormpath.id";
+    private static final String STORMPATH_SECRET =  "stormpath.secret";
+    private static final String STORMPATH_APPLICATION_HREF =  "stormpath.application.href";
+    
     private static final String CONFIG_FILE = "bridge.conf";
     private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
@@ -150,7 +154,27 @@ public class BridgeConfig {
     public String getSynapseFileEndpoint() {
         return getProperty(SYNAPSE_FILE_ENDPOINT);
     }
+    
+    public String getStormpathId() {
+        return getProperty(STORMPATH_ID);
+    }
 
+    public String getStormpathSecret() {
+        return getProperty(STORMPATH_SECRET);
+    }
+    
+    public String getStormpathApplicationHref() {
+        return getProperty(STORMPATH_APPLICATION_HREF);
+    }
+    
+    public String getPassword() {
+        return getProperty(PASSWORD);
+    }
+
+    public String getSalt() {
+        return getProperty(SALT);
+    }
+    
     ///////////////////////////
 
     private void loadProperties(final InputStream inputStream, final Properties properties) {

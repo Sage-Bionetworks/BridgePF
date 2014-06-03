@@ -7,7 +7,7 @@ import play.test.TestBrowser;
 import webdriver.pages.AppPage;
 import webdriver.pages.AppPage.RequestResetPasswordDialog;
 
-public class AuthenticationTest extends BaseIntTest {
+public class AuthenticationTest extends BaseIntegrationTest {
     
     @Test
     public void signIn() {

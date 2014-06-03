@@ -7,7 +7,8 @@ import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 public class Study {
 
     private List<String> hostnames;
-    private Long id;
+    private String name;
+    private String key; 
     private List<Tracker> trackers;
     
     public List<String> getHostnames() {
@@ -16,11 +17,17 @@ public class Study {
     public void setHostnames(List<String> hostnames) {
         this.hostnames = hostnames;
     }
-    public Long getId() {
-        return id;
+    public String getName() {
+        return name;
     }
-    public void setId(Long id) {
-        this.id = id;
+    public void setName(String name) {
+        this.name = name;
+    }
+    public String getKey() {
+        return key;
+    }
+    public void setKey(String key) {
+        this.key = key;
     }
     public List<Tracker> getTrackers() {
         return trackers;
@@ -34,6 +41,6 @@ public class Study {
                 return tracker;
             }
         }
-        throw new BridgeNotFoundException(String.format("Tracker %s not available for study '%s'", id.toString(), this.id.toString()));
+        throw new BridgeNotFoundException(String.format("Tracker %s not available for study '%s'", id.toString(), key));
     }
 }
