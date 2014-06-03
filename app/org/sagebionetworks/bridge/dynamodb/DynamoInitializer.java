@@ -57,17 +57,17 @@ public class DynamoInitializer {
      * if the table exists but the schema (hash key, range key, and secondary indices)
      * does not match.
      */
-    public static void init() {
-        List<TableDescription> tables = getAnnotatedTables();
+    public static void init(String dynamoPackage) {
+        List<TableDescription> tables = getAnnotatedTables(dynamoPackage);
         initTables(tables);
     }
 
     /**
      * Converts the annotated DynamoDBTable types to a list of TableDescription.
      */
-    static List<TableDescription> getAnnotatedTables() {
+    static List<TableDescription> getAnnotatedTables(final String dynamoPackage) {
         List<TableDescription> tables = new ArrayList<TableDescription>();
-        List<Class<?>> classes = loadDynamoTableClasses();
+        List<Class<?>> classes = loadDynamoTableClasses(dynamoPackage);
         for (Class<?> clazz : classes) {
             final List<KeySchemaElement> keySchema = new ArrayList<KeySchemaElement>();
             final List<AttributeDefinition> attributes = new ArrayList<AttributeDefinition>();
@@ -151,12 +151,12 @@ public class DynamoInitializer {
     /**
      * Uses reflection to get all the annotated DynamoDBTable.
      */
-    static List<Class<?>> loadDynamoTableClasses() {
+    static List<Class<?>> loadDynamoTableClasses(final String dynamoPackage) {
         List<Class<?>> classes = new ArrayList<Class<?>>();
         try {
             ImmutableSet<ClassInfo> classSet = ClassPath
                     .from(DynamoTable.class.getClassLoader())
-                    .getTopLevelClasses("org.sagebionetworks.bridge.dynamodb");
+                    .getTopLevelClasses(dynamoPackage);
             for (ClassInfo classInfo : classSet) {
                 Class<?> clazz = classInfo.load();
                 if (clazz.isAnnotationPresent(DynamoDBTable.class)) {
@@ -276,10 +276,13 @@ public class DynamoInitializer {
 
     static void compareKeySchema(TableDescription table1, TableDescription table2) {
         List<KeySchemaElement> keySchema1 = table1.getKeySchema();
-        List<KeySchemaElement> keySchema2 = table1.getKeySchema();
+        List<KeySchemaElement> keySchema2 = table2.getKeySchema();
+        compareKeySchema(keySchema1, keySchema2);
+    }
+
+    private static void compareKeySchema(List<KeySchemaElement> keySchema1, List<KeySchemaElement> keySchema2) {
         if (keySchema1.size() != keySchema2.size()) {
-            throw new RuntimeException("Table " + table1.getTableName() +
-                    " is changing the number of key elements.");
+            throw new RuntimeException("Key schemas have different number of key elements.");
         }
         Map<String, KeySchemaElement> keySchemaMap1 = new HashMap<String, KeySchemaElement>();
         for (KeySchemaElement ele1 : keySchema1) {
@@ -288,12 +291,10 @@ public class DynamoInitializer {
         for (KeySchemaElement ele2 : keySchema2) {
             KeySchemaElement ele1 = keySchemaMap1.get(ele2.getAttributeName());
             if (ele1 == null) {
-                throw new RuntimeException("Table " + table1.getTableName() +
-                        " is changing the key schema.");
+                throw new RuntimeException("Missing key " + ele2.getAttributeName() + " in schema 1.");
             }
             if (!ele1.equals(ele2)) {
-                throw new RuntimeException("Table " + table1.getTableName() +
-                        " is changing the key schema.");
+                throw new RuntimeException("Different key schema for key " + ele2.getAttributeName());
             }
         }
     }
@@ -304,7 +305,7 @@ public class DynamoInitializer {
 
     static void compareLocalIndices(TableDescription table1, TableDescription table2) {
         List<LocalSecondaryIndexDescription> indices1 = table1.getLocalSecondaryIndexes();
-        List<LocalSecondaryIndexDescription> indices2 = table1.getLocalSecondaryIndexes();
+        List<LocalSecondaryIndexDescription> indices2 = table2.getLocalSecondaryIndexes();
         if (indices1.size() != indices2.size()) {
             throw new RuntimeException("Table " + table1.getTableName() +
                     " is changing the number of local indices.");
@@ -319,9 +320,10 @@ public class DynamoInitializer {
                 throw new RuntimeException("Table " + table1.getTableName() +
                         " is changing the local indices.");
             }
-            if (!index1.equals(index2)) {
+            compareKeySchema(index1.getKeySchema(), index2.getKeySchema());
+            if (!index1.getProjection().equals(index2.getProjection())) {
                 throw new RuntimeException("Table " + table1.getTableName() +
-                        " is changing the local indices.");
+                        " local index " + index2.getIndexName() + " is changing the projection.");
             }
         }
     }

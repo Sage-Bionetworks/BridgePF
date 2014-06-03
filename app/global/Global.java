@@ -25,7 +25,7 @@ public class Global extends GlobalSettings {
         String env = BridgeConfigFactory.getConfig().getEnvironment().getEnvName();
         Logger.info("Environment: " + env);
         applicationContext = new ClassPathXmlApplicationContext("application-context.xml");
-        DynamoInitializer.init();
+        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
     }
 
     /* Don't work because the /* route handles all misses

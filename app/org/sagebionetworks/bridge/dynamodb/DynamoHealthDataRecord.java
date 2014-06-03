@@ -147,6 +147,4 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
             return false;
         return true;
     }
-
-
 }
