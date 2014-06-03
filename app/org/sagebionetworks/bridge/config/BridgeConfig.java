@@ -16,10 +16,6 @@ public class BridgeConfig {
 
     private final Logger logger = LoggerFactory.getLogger(BridgeConfig.class);
 
-    private static final String SYNAPSE_REPO_ENDPOINT =  "synapse.repo.endpoint";
-    private static final String SYNAPSE_AUTH_ENDPOINT =  "synapse.auth.endpoint";
-    private static final String SYNAPSE_FILE_ENDPOINT =  "synapse.file.endpoint";
-    
     private static final String STORMPATH_ID =  "stormpath.id";
     private static final String STORMPATH_SECRET =  "stormpath.secret";
     private static final String STORMPATH_APPLICATION_HREF =  "stormpath.application.href";
@@ -123,10 +119,6 @@ public class BridgeConfig {
         return environment;
     }
 
-    public boolean isStub() {
-        return Environment.STUB.equals(environment);
-    }
-
     public boolean isLocal() {
         return Environment.LOCAL.equals(environment);
     }
@@ -141,18 +133,6 @@ public class BridgeConfig {
 
     public String getProperty(String name) {
         return properties.getProperty(name);
-    }
-    
-    public String getSynapseRepoEndpoint() {
-        return getProperty(SYNAPSE_REPO_ENDPOINT);
-    }
-
-    public String getSynapseAuthEndpoint() {
-        return getProperty(SYNAPSE_AUTH_ENDPOINT);
-    }
-
-    public String getSynapseFileEndpoint() {
-        return getProperty(SYNAPSE_FILE_ENDPOINT);
     }
     
     public String getStormpathId() {
@@ -204,8 +184,8 @@ public class BridgeConfig {
     private Environment readEnvironment(final Properties properties) {
         final String envName = read(ENVIRONMENT, properties);
         if (envName == null) {
-            logger.info("Environment not set. Is this the stub development?");
-            return Environment.STUB;
+            logger.info("Environment not set. Is this local development?");
+            return Environment.LOCAL;
         }
         for (Environment env : Environment.values()) {
             if (env.getEnvName().equals(envName)) {

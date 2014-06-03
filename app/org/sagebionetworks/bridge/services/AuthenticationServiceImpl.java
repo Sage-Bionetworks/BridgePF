@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.services;
 import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.lang.StringUtils;
 import org.jasypt.encryption.pbe.PBEStringEncryptor;
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
