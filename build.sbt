@@ -22,7 +22,7 @@ libraryDependencies ++= Seq(
   "com.github.fge" % "json-schema-validator" % "2.2.3",
   "commons-httpclient" % "commons-httpclient" % "3.1",
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.beta",
-  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.beta"
+  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.beta",
   "com.github.detro.ghostdriver" % "phantomjsdriver" % "1.1.0" % "test"
 )
 
