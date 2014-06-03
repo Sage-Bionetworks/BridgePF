@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
 
 public class TestConstants {
@@ -35,5 +36,6 @@ public class TestConstants {
     public static final String SEND_ACTION = "#sendAct";
     public static final String CANCEL_ACTION = "#cancelAct";
 
-    public static final Class<PhantomJSDriver> PHANTOMJS = org.openqa.selenium.phantomjs.PhantomJSDriver.class;
+    public static final Class<PhantomJSDriver> PHANTOMJS_DRIVER = org.openqa.selenium.phantomjs.PhantomJSDriver.class;
+    public static final Class<FirefoxDriver> FIREFOX_DRIVER = FirefoxDriver.class;
 }
