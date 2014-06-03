@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,15 +16,22 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.dynamodb.test.HealthDataRecordTest;
 
+import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
+import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
+import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
+import com.amazonaws.services.dynamodbv2.model.LocalSecondaryIndex;
+import com.amazonaws.services.dynamodbv2.model.LocalSecondaryIndexDescription;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 
 public class DynamoInitializerTest {
 
+    private static final String PACKAGE = "org.sagebionetworks.bridge.dynamodb.test";
     @Test
     public void testGetAnnotatedTables() {
-        List<TableDescription> tables = DynamoInitializer.getAnnotatedTables();
+        List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(PACKAGE);
         assertNotNull(tables);
         assertEquals(1, tables.size());
         Map<String, TableDescription> tableMap = new HashMap<String, TableDescription>();
@@ -48,44 +56,128 @@ public class DynamoInitializerTest {
 
     @Test
     public void testLoadDynamoTableClasses() {
-        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses();
+        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         assertNotNull(classes);
         assertEquals(1, classes.size());
         Set<String> classSet = new HashSet<String>();
         for (Class<?> clazz : classes) {
             classSet.add(clazz.getName());
         }
-        assertTrue(classSet.contains("org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord"));
+        assertTrue(classSet.contains("org.sagebionetworks.bridge.dynamodb.test.HealthDataRecordTest"));
     }
 
     @Test
     public void testGetAttributeName() throws Exception {
-        Method method = DynamoHealthDataRecord.class.getMethod("getStartDate");
+        Method method = HealthDataRecordTest.class.getMethod("getStartDate");
         assertEquals("startDate", DynamoInitializer.getAttributeName(method));
-        method = DynamoHealthDataRecord.class.getMethod("hashCode");
+        method = HealthDataRecordTest.class.getMethod("hashCode");
         assertEquals("hashCode", DynamoInitializer.getAttributeName(method));
     }
 
     @Test
     public void testGetAttributeType() throws Exception {
-        Method method = DynamoHealthDataRecord.class.getMethod("getStartDate");
+        Method method = HealthDataRecordTest.class.getMethod("getStartDate");
         assertEquals(ScalarAttributeType.N, DynamoInitializer.getAttributeType(method));
-        method = DynamoHealthDataRecord.class.getMethod("getData");
+        method = HealthDataRecordTest.class.getMethod("getData");
         assertEquals(ScalarAttributeType.S, DynamoInitializer.getAttributeType(method));
     }
 
     @Test
     public void testGetCreateTableRequest() {
-        
+        List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(PACKAGE);
+        TableDescription table = tables.get(0);
+        CreateTableRequest request = DynamoInitializer.getCreateTableRequest(table);
+        assertNotNull(request);
+        // KeySchema
+        List<KeySchemaElement> keySchema = request.getKeySchema();
+        assertNotNull(keySchema);
+        assertEquals(2, keySchema.size());
+        Map<String, KeySchemaElement> keyElements = new HashMap<String, KeySchemaElement>();
+        for (KeySchemaElement ele : keySchema) {
+            keyElements.put(ele.getAttributeName(), ele);
+        }
+        assertEquals("HASH", keyElements.get("key").getKeyType());
+        assertEquals("RANGE", keyElements.get("recordId").getKeyType());
+        // Local indices
+        List<LocalSecondaryIndex> localIndices = request.getLocalSecondaryIndexes();
+        assertNotNull(localIndices);
+        assertEquals(2, localIndices.size());
+        Map<String, LocalSecondaryIndex> localIndexMap = new HashMap<String, LocalSecondaryIndex>();
+        for (LocalSecondaryIndex idx : localIndices) {
+            localIndexMap.put(idx.getIndexName(), idx);
+        }
+        assertNotNull(localIndexMap.get("startDate-index"));
+        assertNotNull(localIndexMap.get("endDate-index"));
+        // Attributes
+        List<AttributeDefinition> attributes = request.getAttributeDefinitions();
+        assertNotNull(attributes);
+        assertEquals(4, attributes.size());
+        // Throughput
+        assertEquals(10L, request.getProvisionedThroughput().getReadCapacityUnits().longValue());
+        assertEquals(5L, request.getProvisionedThroughput().getWriteCapacityUnits().longValue());
     }
 
     @Test
     public void testCompareKeySchema() {
-        
+        List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(PACKAGE);
+        TableDescription table1 = tables.get(0);
+        TableDescription table2 = new TableDescription();
+        table2.setTableName(table1.getTableName());
+        table2.setKeySchema(new ArrayList<KeySchemaElement>());
+        for (KeySchemaElement ele : table1.getKeySchema()) {
+            table2.getKeySchema().add(new KeySchemaElement(
+                    ele.getAttributeName(), ele.getKeyType()));
+        }
+        // No exception
+        DynamoInitializer.compareKeySchema(table1, table2);
+    }
+
+    @Test(expected=RuntimeException.class)
+    public void testCompareKeySchemaWithException() {
+        List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(PACKAGE);
+        TableDescription table1 = tables.get(0);
+        TableDescription table2 = new TableDescription();
+        table2.setTableName(table1.getTableName());
+        table2.setKeySchema(new ArrayList<KeySchemaElement>());
+        for (KeySchemaElement ele : table1.getKeySchema()) {
+            table2.getKeySchema().add(new KeySchemaElement(
+                    ele.getAttributeName(), ele.getKeyType()));
+        }
+        table2.getKeySchema().get(0).setAttributeName("some fake attr name");
+        DynamoInitializer.compareKeySchema(table1, table2);
     }
 
     @Test
     public void testCompareLocalIndices() {
-        
+        List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(PACKAGE);
+        TableDescription table1 = tables.get(0);
+        TableDescription table2 = new TableDescription();
+        table2.setTableName(table1.getTableName());
+        table2.setLocalSecondaryIndexes(new ArrayList<LocalSecondaryIndexDescription>());
+        for (LocalSecondaryIndexDescription index : table1.getLocalSecondaryIndexes()) {
+            table2.getLocalSecondaryIndexes().add(new LocalSecondaryIndexDescription()
+            .withIndexName(index.getIndexName())
+            .withKeySchema(index.getKeySchema())
+            .withProjection(index.getProjection()));
+        }
+        // No exception
+        DynamoInitializer.compareLocalIndices(table1, table2);
+    }
+
+    @Test(expected=RuntimeException.class)
+    public void testCompareLocalIndicesWithException() {
+        List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(PACKAGE);
+        TableDescription table1 = tables.get(0);
+        TableDescription table2 = new TableDescription();
+        table2.setTableName(table1.getTableName());
+        table2.setLocalSecondaryIndexes(new ArrayList<LocalSecondaryIndexDescription>());
+        for (LocalSecondaryIndexDescription index : table1.getLocalSecondaryIndexes()) {
+            table2.getLocalSecondaryIndexes().add(new LocalSecondaryIndexDescription()
+                    .withIndexName(index.getIndexName())
+                    .withKeySchema(index.getKeySchema())
+                    .withProjection(index.getProjection()));
+        }
+        table2.getLocalSecondaryIndexes().get(1).setIndexName("some fake index name");
+        DynamoInitializer.compareLocalIndices(table1, table2);
     }
 }
