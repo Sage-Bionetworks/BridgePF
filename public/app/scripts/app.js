@@ -2,21 +2,6 @@ var bridge = angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
 .run(['$rootScope', function($rootScope) {
     $rootScope.loading = 0;
 }])
-.config(['$provide', '$httpProvider', function($provide, $httpProvider) {
-    $provide.factory('intercept401', ['$q', '$window', function($q, $window) {
-        return {
-            'responseError': function(rejection) {
-                // TODO: But better would be if we stopped, showed a dialog, 
-                // and allowed the user to log in again.
-                if (rejection.status === 401) {
-                    $window.location.replace("/");                    
-                }
-                return $q.reject(rejection, rejection.status);
-            }
-        };
-    }]);
-    $httpProvider.interceptors.push('intercept401');
-}])
 .config(['$routeProvider', function($routeProvider) {
 	$routeProvider.when('/health/tracker/BloodPressure', {
 	    templateUrl: '/views/trackers/bloodpressure.html',

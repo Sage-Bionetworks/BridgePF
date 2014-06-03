@@ -10,7 +10,9 @@ import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.client.SynapseClient;
+import org.sagebionetworks.client.exceptions.SynapseForbiddenException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
+import org.sagebionetworks.client.exceptions.SynapseUnauthorizedException;
 import org.sagebionetworks.repo.model.DomainType;
 import org.sagebionetworks.repo.model.UserSessionData;
 import org.sagebionetworks.repo.model.auth.Session;
@@ -58,7 +60,7 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	}
 	
 	@Override
-	public UserSession getSession(String sessionToken) {
+	public UserSession getSession(String sessionToken) throws BridgeServiceException {
 		try {
 			UserSessionData data = getSynapseClient(sessionToken).getUserSessionData();
 			// Does the user ever *not* have a username?
@@ -72,8 +74,11 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 			userSession.setAuthenticated(true);
 	        userSession.setEnvironment(BridgeConfigFactory.getConfig().getEnvironment().getEnvName());
 			return userSession;
+		} catch(SynapseUnauthorizedException | SynapseForbiddenException e) {
+		    throw new BridgeServiceException(e, 401);
 		} catch(Throwable throwable) {
-			return new UserSession();
+		    logger.error(throwable.getMessage());
+			return new UserSession(); // why do we do this?
 		}
 	}
 
