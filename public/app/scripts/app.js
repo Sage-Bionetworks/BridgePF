@@ -28,7 +28,7 @@ var bridge = angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
 		controller: 'JournalController',
 		access: {allowAnonymous: false}
 	})
-	.when('/resetPassword/:sessionToken', {
+	.when('/resetPassword', {
         templateUrl: '/views/resetPassword.html',
         controller: 'ResetPasswordController',
         access: {allowAnonymous: true}
