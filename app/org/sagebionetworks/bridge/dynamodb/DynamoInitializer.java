@@ -128,9 +128,6 @@ public class DynamoInitializer {
             // Prefix the table name with 'env-' and 'user-'
             final BridgeConfig config = BridgeConfigFactory.getConfig();
             Environment env = config.getEnvironment();
-            if (Environment.STUB.equals(env)) {
-                env = Environment.LOCAL;
-            }
             final String tableName = env.getEnvName() + "-" + config.getUser() + "-" +
                     clazz.getAnnotation(DynamoDBTable.class).tableName();
             // Create the table description
