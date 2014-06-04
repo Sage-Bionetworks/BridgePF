@@ -41,7 +41,6 @@ public class AuthenticationServiceImplTest {
     public void signInCorrectCredentials() throws Exception {
         UserSession session = service.signIn(TEST_STUDY, TEST2.USERNAME, TEST2.PASSWORD);
         assertThat(session.getUsername()).isEqualTo(TEST2.USERNAME);
-        assertThat(session.getEnvironment()).isEqualTo("local");
         assertThat(session.getSessionToken()).isNotEmpty();
     }
     
@@ -72,7 +71,6 @@ public class AuthenticationServiceImplTest {
         UserSession session = service.signIn(TEST_STUDY, TEST2.USERNAME, TEST2.PASSWORD);
         session = service.getSession(session.getSessionToken());
         assertThat(session.getUsername()).isEqualTo(TEST2.USERNAME);
-        assertThat(session.getEnvironment()).isEqualTo("local");
         assertThat(session.getSessionToken()).isNotEmpty();
     }
     
@@ -92,9 +90,7 @@ public class AuthenticationServiceImplTest {
     public void canResetPassword() throws Exception {
         service.signIn(TEST_STUDY, TEST3.USERNAME, TEST3.PASSWORD);
         service.resetPassword("asdf", "newpassword");
-        
         service.signIn(TEST_STUDY, TEST3.USERNAME, "newpassword");
-        
         service.resetPassword("asdf", TEST2.PASSWORD);
     }
     

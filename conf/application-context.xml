@@ -147,8 +147,8 @@
         <property name="cacheProvider" ref="cacheProvider"/>
         <property name="encryptor">
             <bean class="org.sagebionetworks.bridge.config.EncryptorUtil" factory-method="getEncryptor">
-	            <constructor-arg index="0" value="#{bridgeConfig.getPassword()}"/>
-	            <constructor-arg index="1" value="#{bridgeConfig.getSalt()}"/>
+	            <constructor-arg index="0" value="#{bridgeConfig.getHealthCodePassword()}"/>
+	            <constructor-arg index="1" value="#{bridgeConfig.getHealthCodeSalt()}"/>
             </bean>
         </property>
     </bean>
