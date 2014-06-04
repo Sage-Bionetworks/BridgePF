@@ -20,6 +20,8 @@ public class BridgeConfig {
     private static final String STORMPATH_SECRET =  "stormpath.secret";
     private static final String STORMPATH_APPLICATION_HREF =  "stormpath.application.href";
     
+    
+    
     private static final String CONFIG_FILE = "bridge.conf";
     private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
@@ -35,6 +37,9 @@ public class BridgeConfig {
     // Property name for the encryption salt
     private static final String SALT = "bridge.salt";
 
+    private static final String HEALTHCODE_PASSWORD = "bridge.healthcode.pwd";
+    private static final String HEALTHCODE_SALT = "bridge.healthcode.salt";
+    
     private final String user;
     private final Environment environment;
     private final Properties properties;
@@ -153,6 +158,14 @@ public class BridgeConfig {
 
     public String getSalt() {
         return getProperty(SALT);
+    }
+    
+    public String getHealthCodePassword() {
+        return getProperty(HEALTHCODE_PASSWORD);
+    }
+    
+    public String getHealthCodeSalt() {
+        return getProperty(HEALTHCODE_SALT);
     }
     
     ///////////////////////////

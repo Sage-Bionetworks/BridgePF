@@ -12,6 +12,8 @@ env:
   - secure: LTyL6LDsIQ8uulWUZzd6rltIWI9L4YssjW6Xr+SnhQNotj6JGNm4ED5DLPZJCJpVws1f8KEOz5yWDCFclvNlgT9r2wapCh9yestT90mWRJEzR0j9h2CmFSyL0cwuHPLhqlNeeWxYLStApVfQJjq1A0ZBN+lxUonkniGYLVwirUY=
   - secure: c9p71a9b+J+KC+f//r6hhTl8mdUSGXij4Y2RW+wTzUNwTMxWP/4rOhKAlEHLAZGMrTb4yaqysSMW1MimzvPeN53DMvIJFK7Byq+IPgyef+L24ejbLu4Vk+oykQPYK7p+KaeS9lFTcfNnHFmdn9QkG57Y7WJve8XwzR++yixBk68=
   - secure: d3HurQaFQA9GRUrKRD4WdTDjqBW/YbCFtR9vvV3qTygUu7C7OCxJwP6Rg3UpSdtzG6R/uVEJIQ20CgGfBhKebmLPVo7NMKp96e45bn1PyLL20J3t5832vVxjHr1s+SU3Tc3apOQNjs+KGTYChx3HFEt5tEQH7BYWJEsdoac4i7Q=
+  - secure: lWvJbnnV9Ll5hiOnTzZDPgJgHhnAjCddsLOxNBiVhSALuZDlALqFveOeyNLwsXDRBZDfafx6T5Ro0cDoDIdkAE6m2iBYHWeetxyGkF+1LIJm+bvW+F28LfJzcUfuhAD/72k4IGlez2pss+9cpm7PqUZSxtkzDyhSytb+PmNQNsc=
+  - secure: b2XfsdkHdrc2EhciIskhaCSlEX8zubYD3Pi8swagy6tKGAErfNR/9Q1UKAOgFiFTpG4zVuUGaWY68tUQ1xrDHQV7qMSBfuN0tWpDzScRK6Vs9MTHrfjTfvO7X69M9uVQlib6RGlc8Br9vOKJvjgpNscdJvDIYcuCJIpYOVodifc=
 before_install:
 - npm install -g bower
 - npm install -g grunt-cli
