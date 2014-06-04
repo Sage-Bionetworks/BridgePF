@@ -30,8 +30,8 @@ public class TestUtils {
 
     public static String signIn() throws Exception {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put(USERNAME, TEST_USER);
-        node.put(PASSWORD, PASSWORD);
+        node.put(USERNAME, TEST2.USERNAME);
+        node.put(PASSWORD, TEST2.PASSWORD);
 
         Response response = WS.url(TEST_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
         

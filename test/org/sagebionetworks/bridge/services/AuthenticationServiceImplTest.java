@@ -1,16 +1,17 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.fest.assertions.Assertions.*;
+import static org.sagebionetworks.bridge.TestConstants.*;
 
 import javax.annotation.Resource;
 
-import models.UserSession;
-
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -23,33 +24,33 @@ public class AuthenticationServiceImplTest {
     
     @Test(expected=BridgeServiceException.class)
     public void signInNoUsername() throws Exception {
-        service.signIn(null, "bar");
+        service.signIn(TEST_STUDY, null, "bar");
     }
     
     @Test(expected=BridgeServiceException.class)
     public void signInNoPassword() throws Exception {
-        service.signIn("foo", null);
+        service.signIn(TEST_STUDY, "foo", null);
     }
     
     @Test(expected=BridgeNotFoundException.class)
     public void signInInvalidCredentials() throws Exception {
-        service.signIn("foo", "bar");
+        service.signIn(TEST_STUDY, "foo", "bar");
     }
     
     @Test
     public void signInCorrectCredentials() throws Exception {
-        UserSession session = service.signIn("test2", "password");
-        assertThat(session.getUsername()).isEqualTo("test2");
-        assertThat(session.getEnvironment()).isEqualTo("stub");
+        UserSession session = service.signIn(TEST_STUDY, TEST2.USERNAME, TEST2.PASSWORD);
+        assertThat(session.getUsername()).isEqualTo(TEST2.USERNAME);
+        assertThat(session.getEnvironment()).isEqualTo("local");
         assertThat(session.getSessionToken()).isNotEmpty();
     }
     
     @Test
     public void signInWhenSignedIn() throws Exception {
-        service.signIn("test2", "password");
+        service.signIn(TEST_STUDY, TEST2.USERNAME, TEST2.PASSWORD);
         
-        UserSession session = service.signIn("test2", "password");
-        assertThat(session.getUsername()).isEqualTo("test2");
+        UserSession session = service.signIn(TEST_STUDY, TEST2.USERNAME, TEST2.PASSWORD);
+        assertThat(session.getUsername()).isEqualTo(TEST2.USERNAME);
     }
 
     @Test
@@ -68,10 +69,10 @@ public class AuthenticationServiceImplTest {
     
     @Test
     public void getSessionWhenAuthenticated() throws Exception {
-        UserSession session = service.signIn("test2", "password");
+        UserSession session = service.signIn(TEST_STUDY, TEST2.USERNAME, TEST2.PASSWORD);
         session = service.getSession(session.getSessionToken());
-        assertThat(session.getUsername()).isEqualTo("test2");
-        assertThat(session.getEnvironment()).isEqualTo("stub");
+        assertThat(session.getUsername()).isEqualTo(TEST2.USERNAME);
+        assertThat(session.getEnvironment()).isEqualTo("local");
         assertThat(session.getSessionToken()).isNotEmpty();
     }
     
@@ -85,24 +86,26 @@ public class AuthenticationServiceImplTest {
         service.requestResetPassword("");
     }
     
+    @Ignore
     @Test
+    // This no longer works since we've moved to Storm Path
     public void canResetPassword() throws Exception {
-        service.signIn("test3", "password");
+        service.signIn(TEST_STUDY, TEST3.USERNAME, TEST3.PASSWORD);
         service.resetPassword("asdf", "newpassword");
         
-        service.signIn("test3", "newpassword");
+        service.signIn(TEST_STUDY, TEST3.USERNAME, "newpassword");
         
-        service.resetPassword("asdf", "password");
+        service.resetPassword("asdf", TEST2.PASSWORD);
     }
     
     @Test(expected=BridgeServiceException.class)
     public void resetPasswordWithBadTokenFails() throws Exception {
-        service.signIn("test2", "password");
+        service.signIn(TEST_STUDY, TEST2.USERNAME, TEST2.PASSWORD);
         service.resetPassword("foo", "newpassword");
     }
     
     @Test(expected=ConsentRequiredException.class)
     public void unconsentedUserMustSignTOU() throws Exception {
-        service.signIn("test4", "password");
+        service.signIn(TEST_STUDY, TEST4.USERNAME, TEST4.PASSWORD);
     }
 }

@@ -6,12 +6,16 @@ bridge.service('signInService', ['$modal', function($modal) {
        function($scope, $location, $http, $route, authService) {
         
         $scope.credentials = {username: '', password: ''};
+        $scope.sending = false;
 
         $messageType = "error";
         $message = "Wrong user name or password.";
         $scope.signIn = function () {
+            $scope.sending = true;
             authService.signIn($scope.credentials).then(function() {
                 modalInstance.dismiss('cancel');
+                $scope.credentials.password = '';
+                $scope.sending = false;
                 modalInstance = null;
                 if (lastRequest) {
                     console.log("Resubmitting last request:", lastRequest);
@@ -23,6 +27,8 @@ bridge.service('signInService', ['$modal', function($modal) {
                     $http(config).then($route.reload);
                 }
             }, function(data) {
+                $scope.credentials.password = '';
+                $scope.sending = false;
                 if (data.status === 412) {
                     modalInstance.dismiss('cancel');
                     modalInstance = null;
@@ -35,10 +41,9 @@ bridge.service('signInService', ['$modal', function($modal) {
                     $scope.message = "There has been an error.";
                 }
             });
-            $scope.credentials.password = '';            
         };
         $scope.canSubmit = function() {
-            return $scope.credentials.username && $scope.credentials.password;
+            return !$scope.sending && $scope.credentials.username && $scope.credentials.password;
         };
         $scope.cancel = function () {
             modalInstance.dismiss('cancel');

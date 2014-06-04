@@ -8,10 +8,10 @@ import java.util.List;
 
 import models.IdHolder;
 import models.JsonPayload;
-import models.UserSession;
 
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
@@ -66,7 +66,7 @@ public class HealthDataController extends BaseController {
             records.add(HealthDataRecordImpl.fromJson(child));
         }
         
-        HealthDataKey key = new HealthDataKey(study.getId(), trackerId, session.getSessionToken());
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
         
         List<String> ids = healthDataService.appendHealthData(key, records);
         return jsonResult(new JsonPayload<IdHolder>(new IdHolder(ids)));
@@ -77,7 +77,7 @@ public class HealthDataController extends BaseController {
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
         
-        HealthDataKey key = new HealthDataKey(study.getId(), trackerId, session.getSessionToken());
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
         
         List<HealthDataRecord> entries = healthDataService.getAllHealthData(key);
         return jsonResult(new JsonPayload<List<HealthDataRecord>>(tracker.getType() + "[]", entries));
@@ -87,7 +87,7 @@ public class HealthDataController extends BaseController {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
-        HealthDataKey key = new HealthDataKey(study.getId(), trackerId, session.getSessionToken());
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
         
         List<HealthDataRecord> entries = healthDataService.getHealthDataByDateRange(key, new Date(date), new Date(date));
         return jsonResult(new JsonPayload<List<HealthDataRecord>>(tracker.getType(), entries));
@@ -97,7 +97,7 @@ public class HealthDataController extends BaseController {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
-        HealthDataKey key = new HealthDataKey(study.getId(), trackerId, session.getSessionToken());
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
         
         List<HealthDataRecord> entries = healthDataService.getHealthDataByDateRange(key, new Date(startDate), new Date(endDate));
         return jsonResult(new JsonPayload<List<HealthDataRecord>>(tracker.getType(), entries));
@@ -107,7 +107,7 @@ public class HealthDataController extends BaseController {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
-        HealthDataKey key = new HealthDataKey(study.getId(), trackerId, session.getSessionToken());
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
         
         HealthDataRecord record = healthDataService.getHealthDataRecord(key, recordId);
         return jsonResult(new JsonPayload<HealthDataRecord>(tracker.getType(), record));
@@ -117,7 +117,7 @@ public class HealthDataController extends BaseController {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
-        HealthDataKey key = new HealthDataKey(study.getId(), trackerId, session.getSessionToken());
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
         
         JsonNode node = requestToJSON(request());
 
@@ -131,7 +131,8 @@ public class HealthDataController extends BaseController {
     public Result deleteHealthDataRecord(Long trackerId, String recordId) throws Exception {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
-        HealthDataKey key = new HealthDataKey(study.getId(), trackerId, session.getSessionToken());
+        Tracker tracker = study.getTrackerById(trackerId);
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
 
         healthDataService.deleteHealthDataRecord(key, recordId);
         return jsonResult("Record deleted.");
