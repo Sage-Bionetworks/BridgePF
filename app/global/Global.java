@@ -4,6 +4,7 @@ import static play.mvc.Results.badRequest;
 import models.StatusMessage;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -24,6 +25,7 @@ public class Global extends GlobalSettings {
         String env = BridgeConfigFactory.getConfig().getEnvironment().getEnvName();
         Logger.info("Environment: " + env);
         applicationContext = new ClassPathXmlApplicationContext("application-context.xml");
+        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
     }
 
     /* Don't work because the /* route handles all misses
