@@ -8,7 +8,6 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
-import org.sagebionetworks.client.exceptions.SynapseServerException;
 
 import play.Logger;
 import play.libs.Json;
@@ -28,9 +27,7 @@ public class ExceptionInterceptor implements MethodInterceptor {
 			Logger.error(throwable.getMessage(), throwable);
 
 			int status = 500;
-			if (throwable instanceof SynapseServerException) {
-				status = ((SynapseServerException)throwable).getStatusCode();
-			} else if (throwable instanceof BridgeServiceException) {
+			if (throwable instanceof BridgeServiceException) {
 			    status = ((BridgeServiceException)throwable).getStatusCode();
 			}
 			String message = throwable.getMessage();

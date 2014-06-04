@@ -1,4 +1,4 @@
-var bridge = angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
+var bridge = angular.module('bridge', ['ngRoute', 'ngCookies', 'ui.bootstrap'])
 .run(['$rootScope', function($rootScope) {
     $rootScope.loading = 0;
 }])
@@ -28,7 +28,7 @@ var bridge = angular.module('bridge', ['ngRoute', 'ui.bootstrap'])
 		controller: 'JournalController',
 		access: {allowAnonymous: false}
 	})
-	.when('/resetPassword/:sessionToken', {
+	.when('/resetPassword', {
         templateUrl: '/views/resetPassword.html',
         controller: 'ResetPasswordController',
         access: {allowAnonymous: true}

@@ -1,8 +1,8 @@
 package controllers;
 
-import models.UserSession;
-
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 
 import play.libs.Json;
@@ -30,6 +30,8 @@ public class ApplicationController extends BaseController {
         String sessionToken = getSessionToken(false);
         UserSession session = authenticationService.getSession(sessionToken);
         session.setEnvironment(bridgeConfig.getEnvironment().getEnvName());
-        return ok(views.html.index.render(Json.toJson(session).toString()));
+        UserSessionInfo info = new UserSessionInfo(session);
+        
+        return ok(views.html.index.render(Json.toJson(info).toString()));
     }
 }

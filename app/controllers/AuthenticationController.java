@@ -1,19 +1,31 @@
 package controllers;
 
 import models.JsonPayload;
+import models.PasswordReset;
 import models.SignIn;
 import models.SignUp;
-import models.UserSession;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.UserSession;
 
 import play.mvc.*;
 
 public class AuthenticationController extends BaseController {
 
+    private StudyControllerService studyControllerService;
+    
+    public void setStudyControllerService(StudyControllerService scs) {
+        this.studyControllerService = scs;
+    }
+    
 	public Result signIn() throws Exception {
+        String sessionToken = getSessionToken(false);
+        authenticationService.signOut(sessionToken);
+
+	    Study study = studyControllerService.getStudyByHostname(request());
 		SignIn signIn = SignIn.fromJson(request().body().asJson());
-		UserSession session = authenticationService.signIn(signIn.getUsername(), signIn.getPassword());
+		UserSession session = authenticationService.signIn(study, signIn.getUsername(), signIn.getPassword());
 		response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken());
 		return jsonResult(new JsonPayload<UserSession>(session));
 	}
@@ -32,9 +44,8 @@ public class AuthenticationController extends BaseController {
 	}
 	
 	public Result resetPassword() throws Exception {
-		String sessionToken = getSessionToken(true);
-		SignIn signIn = SignIn.fromJson(request().body().asJson());
-		authenticationService.resetPassword(sessionToken, signIn.getPassword());
+	    PasswordReset passwordReset = PasswordReset.fromJson(request().body().asJson());
+		authenticationService.resetPassword(passwordReset.getPassword(), passwordReset.getSptoken());
 		return jsonResult("Password has been changed.");
 	}
 	

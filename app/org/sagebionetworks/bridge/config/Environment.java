@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.config;
 
 public enum Environment {
 
-    STUB("stub"),
     LOCAL("local"),
     DEV("dev"),
     PROD("prod");

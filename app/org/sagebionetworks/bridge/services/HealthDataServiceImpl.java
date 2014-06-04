@@ -7,19 +7,15 @@ import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.BridgeConstants;
+import org.jasypt.encryption.pbe.PBEStringEncryptor;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.client.SynapseClient;
-import org.sagebionetworks.client.exceptions.SynapseException;
-import org.sagebionetworks.repo.model.UserSessionData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.BeanFactoryAware;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -30,13 +26,14 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
 
-public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAware {
+public class HealthDataServiceImpl implements HealthDataService {
 
     final static Logger logger = LoggerFactory.getLogger(HealthDataServiceImpl.class);
 
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
-    private BeanFactory beanFactory;
+    private PBEStringEncryptor encryptor;
+    private CacheProvider cache;
 
     public void setCreateMapper(DynamoDBMapper createMapper) {
         this.createMapper = createMapper;
@@ -45,16 +42,13 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
     public void setUpdateMapper(DynamoDBMapper updateMapper) {
         this.updateMapper = updateMapper;
     }
-
-    public void setBeanFactory(BeanFactory factory) {
-        this.beanFactory = factory;
+    
+    public void setCacheProvider(CacheProvider cacheProvider) {
+        this.cache = cacheProvider;
     }
-
-    private SynapseClient getSynapseClient(String sessionToken) {
-        SynapseClient client = beanFactory.getBean("synapseClient", SynapseClient.class);
-        client.setSessionToken(sessionToken);
-        client.appendUserAgent(BridgeConstants.USER_AGENT);
-        return client;
+    
+    public void setEncryptor(PBEStringEncryptor encryptor) {
+        this.encryptor = encryptor;
     }
     
     /*
@@ -66,24 +60,16 @@ public class HealthDataServiceImpl implements HealthDataService, BeanFactoryAwar
     };
     */
     
-    private String healthDataKeyToAnonimizedKeyString(HealthDataKey key) throws BridgeServiceException, SynapseException {
+    private String healthDataKeyToAnonimizedKeyString(HealthDataKey key) throws BridgeServiceException {
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey cannot be null", HttpStatus.SC_BAD_REQUEST);
-        } else if (key.getStudyId() == 0) {
-            throw new BridgeServiceException("HealthDataKey does not have a study ID", HttpStatus.SC_BAD_REQUEST);
-        } else if (key.getTrackerId() == 0) {
-            throw new BridgeServiceException("HealthDataKey does not have a tracker ID", HttpStatus.SC_BAD_REQUEST);
-        } else if (key.getSessionToken() == null) {
-            throw new BridgeServiceException("HealthDataKey does not have a session token", HttpStatus.SC_BAD_REQUEST);
         }
         
-        UserSessionData data = getSynapseClient(key.getSessionToken()).getUserSessionData();
-        String ownerId = data.getProfile().getOwnerId();
+        UserSession session = (UserSession)cache.get(key.getSessionToken());
+        String healthDataCode = session.getHealthDataCode();
+        healthDataCode = encryptor.decrypt(healthDataCode);
         
-        if (StringUtils.isBlank(ownerId)) {
-            throw new BridgeServiceException("Cannot find ID for user", HttpStatus.SC_NOT_FOUND);
-        }
-        return String.format("%s:%s:%s", key.getStudyId(), key.getTrackerId(), ownerId);
+        return String.format("%s:%s:%s", key.getStudyKey(), key.getTrackerId(), healthDataCode);
     }
     
     private String generateId() {
