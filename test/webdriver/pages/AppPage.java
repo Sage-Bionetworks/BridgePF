@@ -24,18 +24,18 @@ public class AppPage {
     
     public SignInDialog openSignInDialog() {
         signInLink().click();
-        browser.await().until(SIGN_IN_DIALOG);
+        browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_DIALOG);
         return new SignInDialog(browser);
     }
     public RequestResetPasswordDialog openResetPasswordDialog() {
         resetPasswordLink().click();
-        browser.await().until(RESET_PASSWORD_DIALOG).isPresent();
+        browser.await().atMost(20, TimeUnit.SECONDS).until(RESET_PASSWORD_DIALOG).isPresent();
         return new RequestResetPasswordDialog(browser);
     }
     public void signOut() {
         signOutLink().click();
-        browser.await().until(SIGN_IN_LINK).isPresent();
-        browser.await().until(RESET_PASSWORD_LINK).isPresent();
+        browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_LINK).isPresent();
+        browser.await().atMost(20, TimeUnit.SECONDS).until(RESET_PASSWORD_LINK).isPresent();
     }
     private FluentWebElement resetPasswordLink() {
         return browser.findFirst(RESET_PASSWORD_LINK);
@@ -68,7 +68,7 @@ public class AppPage {
         }
         public void close() {
             browser.click(".close");
-            browser.await().until(SIGN_IN_DIALOG).isNotPresent();
+            browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_DIALOG).isNotPresent();
         }
         private void enterCredentials(String username, String password) {
             assertThat(signInMessage().isDisplayed()).isFalse();
@@ -95,9 +95,9 @@ public class AppPage {
             this.browser = browser;
         }
         public void canCancel() {
-            browser.await().until(RESET_PASSWORD_DIALOG).isPresent();
+            browser.await().atMost(20, TimeUnit.SECONDS).until(RESET_PASSWORD_DIALOG).isPresent();
             cancelButton().click();
-            browser.await().until(RESET_PASSWORD_DIALOG).isNotPresent();
+            browser.await().atMost(20, TimeUnit.SECONDS).until(RESET_PASSWORD_DIALOG).isNotPresent();
             close();
         }
         public void submitInvalidEmailAddress(String email) {
@@ -111,12 +111,12 @@ public class AppPage {
             browser.fill(EMAIL_INPUT).with(email);
             assertThat(sendEmailButton().isEnabled()).isTrue();
             sendEmailButton().click();
-            browser.await().until(RESET_PASSWORD_DIALOG).isNotPresent();
+            browser.await().atMost(20, TimeUnit.SECONDS).until(RESET_PASSWORD_DIALOG).isNotPresent();
             assertThat(messagePopup().getText()).contains("Please look for further instructions in your email inbox.");
         }
         public void close() {
             browser.click(".close");
-            browser.await().until(SIGN_IN_DIALOG).isNotPresent();
+            browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_DIALOG).isNotPresent();
         }
         private FluentWebElement messagePopup() {
             return browser.findFirst(".humane");
