@@ -138,7 +138,11 @@ public class BridgeConfig {
     public String getProperty(String name) {
         return properties.getProperty(name);
     }
-    
+
+    public int getPropertyAsInt(String name) {
+        return Integer.parseInt(properties.getProperty(name));
+    }
+
     public String getSynapseRepoEndpoint() {
         return getProperty(SYNAPSE_REPO_ENDPOINT);
     }

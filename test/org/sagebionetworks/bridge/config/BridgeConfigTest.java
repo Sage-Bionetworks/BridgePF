@@ -50,4 +50,10 @@ public class BridgeConfigTest {
         BridgeConfig config = new BridgeConfig();
         assertEquals("unit.test", config.getUser());
     }
+
+    @Test
+    public void testNumber() {
+        BridgeConfig config = new BridgeConfig();
+        assertEquals(2000, config.getPropertyAsInt("example.timeout"));
+    }
 }
