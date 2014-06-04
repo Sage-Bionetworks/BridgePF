@@ -1,4 +1,4 @@
-Bridge (Play Framework, Spring, AngularJS)
+Bridge (Sage Bionetworks)
 =========================================
 
 [![Build Status](https://travis-ci.org/Sage-Bionetworks/BridgePF.svg?branch=develop)](https://travis-ci.org/Sage-Bionetworks/BridgePF)
@@ -19,27 +19,18 @@ following:
     npm install
     bower install
 
-Run 'grunt githooks' from the public folder, to create a hook that will run the 
-grunt build before a commit, ensuring the files are up-to-date after 
-JS/SCSS/CSS are merged.
-
-Thereafter while working you can run `grunt` or even better, `grunt watch`, and 
-the JS/SASS/CSS files will be pre-processed while you work (the "built" versions 
-are the versions linked to in the code, so you must do this build to see your 
-changes). This pre-processing happens faster than Play can typically update on a 
-refresh.
-
-Development
------------
-
-Bridge uses Synapse as a back end service. Setting up Synapse in development to 
-support Bridge can be slow, so a stub version of the Java SynapseClient exists. 
-Unless we find the moral equivalent of Maven profiles in the Play Framework, you'll
-have to swap the implementation in the application-context.xml file in order to 
-use it.
+Thereafter while working you can run `grunt` or even better, `grunt watch` from 
+the public directory, and the JS/SASS/CSS files will be pre-processed while 
+you work (the "built" versions are the versions linked to in the code, so you 
+must do this build to see your changes). This pre-processing happens faster than 
+Play can typically update on a refresh.
 
 Tests
 -----
+
+For Play tests (including integration tests using PhantomJS and Selenium), run
+
+    play test
 
 For AngularJS tests:
 
@@ -51,3 +42,5 @@ from the command line, using PhantomJS. At the moment, Play does not need to be
 running in order to run the tests (they are true unit tests with mocks). 
 
 This file will be packaged with your application, when using `play dist`.
+
+1
