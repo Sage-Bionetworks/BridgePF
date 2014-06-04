@@ -26,11 +26,6 @@
         factory-method="createStormpathClient" scope="singleton">
     </bean>
     
-    <bean id="stormpathApplication" class="org.sagebionetworks.bridge.stormpath.StormpathFactory" 
-        factory-method="createStormpathApplication" scope="singleton">
-        <constructor-arg ref="stormpathClient"/>
-    </bean>
-    
     <!-- Caching abstraction -->
     
     <bean id="cacheProvider" class="org.sagebionetworks.bridge.cache.CacheProvider"/>
@@ -124,7 +119,6 @@
 
     <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl">
         <property name="stormpathClient" ref="stormpathClient"/>
-        <property name="stormpathApplication" ref="stormpathApplication"/>
         <property name="cacheProvider" ref="cacheProvider"/>
         <property name="bridgeConfig" ref="bridgeConfig"/>
     </bean>
