@@ -1,96 +1,122 @@
 package org.sagebionetworks.bridge.services;
 
-import models.UserSession;
+import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.lang.StringUtils;
+import org.jasypt.encryption.pbe.PBEStringEncryptor;
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.EncryptorUtil;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
-import org.sagebionetworks.client.SynapseClient;
-import org.sagebionetworks.client.exceptions.SynapseForbiddenException;
-import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
-import org.sagebionetworks.client.exceptions.SynapseUnauthorizedException;
-import org.sagebionetworks.repo.model.DomainType;
-import org.sagebionetworks.repo.model.UserSessionData;
-import org.sagebionetworks.repo.model.auth.Session;
+import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.BeanFactoryAware;
 
-public class AuthenticationServiceImpl implements AuthenticationService, BeanFactoryAware {
+import com.stormpath.sdk.account.Account;
+import com.stormpath.sdk.application.Application;
+import com.stormpath.sdk.authc.AuthenticationRequest;
+import com.stormpath.sdk.authc.UsernamePasswordRequest;
+import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.directory.CustomData;
+import com.stormpath.sdk.resource.ResourceException;
+
+public class AuthenticationServiceImpl implements AuthenticationService {
 	
 	final static Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 	
-	private BeanFactory beanFactory;
+	private Client stormpathClient;
+	private CacheProvider cache;
+	private BridgeConfig config;
 	
-	public void setBeanFactory(BeanFactory factory) {
-		this.beanFactory = factory;
-	}
+    public void setStormpathClient(Client client) {
+        this.stormpathClient = client;
+    }
 	
-	private SynapseClient getSynapseClient(String sessionToken) {
-		SynapseClient client = beanFactory.getBean("synapseClient", SynapseClient.class);
-		client.setSessionToken(sessionToken);
-		client.appendUserAgent(BridgeConstants.USER_AGENT);
-		return client;
-	}
-	
+    public void setCacheProvider(CacheProvider cache) {
+        this.cache = cache;
+    }
+    
+    public void setBridgeConfig(BridgeConfig config) {
+        this.config = config;
+    }
+    
 	@Override
-    public UserSession signIn(String usernameOrEmail, String password) throws ConsentRequiredException,
+    public UserSession signIn(Study study, String usernameOrEmail, String password) throws ConsentRequiredException,
             BridgeNotFoundException, BridgeServiceException {
 	    if (StringUtils.isBlank(usernameOrEmail) || StringUtils.isBlank(password)) {
             throw new BridgeServiceException("Invalid credentials, supply username/email and password",
                     HttpStatus.SC_BAD_REQUEST);
 	    }
-	    Session session = null;
-	    try {
-	        session = getSynapseClient(null).login(usernameOrEmail, password);
-	    } catch(SynapseNotFoundException e) { // NOTE: Do we need this now?
-	        throw new BridgeNotFoundException(e);
-	    } catch(Throwable e) {
-	        throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
+	    if (study == null) {
+            throw new BridgeServiceException("Study is required", HttpStatus.SC_BAD_REQUEST);
 	    }
-        if (!session.getAcceptsTermsOfUse()) {
-            throw new ConsentRequiredException(session.getSessionToken());
-        }
-        return getSession(session.getSessionToken());
+	    AuthenticationRequest<?, ?> request = null;
+	    UserSession session = null;
+	    try {
+	        
+	        Application application = StormpathFactory.createStormpathApplication(stormpathClient); 
+	        request = new UsernamePasswordRequest(usernameOrEmail, password);
+	        Account account = application.authenticateAccount(request).getAccount();
+	        
+	        session = createSessionFromAccount(study, account);
+	        cache.set(session.getSessionToken(), session);
+
+	        if (!session.doesConsent()) {
+	            throw new ConsentRequiredException(session.getSessionToken());
+	        }
+	        
+	    } catch (ResourceException re) {
+	        throw new BridgeNotFoundException(re.getDeveloperMessage());
+	    } finally {
+	        request.clear();
+	    }
+	    return session;
 	}
-	
+
+    private UserSession createSessionFromAccount(Study study, Account account) {
+        UserSession session;
+        session = new UserSession();
+        session.setAuthenticated(true);
+        session.setStormpathHref(account.getHref());
+        session.setEnvironment(config.getEnvironment().getEnvName());
+        session.setSessionToken(UUID.randomUUID().toString());
+        session.setStudyKey(study.getKey());
+        session.setUsername(account.getUsername());
+        
+        CustomData data = account.getCustomData();
+        String consentKey = study.getKey()+BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
+        String hdcKey = study.getKey()+BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+        session.setConsent( "true".equals(data.get(consentKey)) );
+        session.setHealthDataCode( (String)data.get(hdcKey) );
+        
+        return session;
+    }
+
 	@Override
 	public UserSession getSession(String sessionToken) throws BridgeServiceException {
-		try {
-			UserSessionData data = getSynapseClient(sessionToken).getUserSessionData();
-			// Does the user ever *not* have a username?
-			String username = data.getProfile().getUserName();
-			if (username == null) {
-				username = data.getProfile().getEmail();
-			}
-			UserSession userSession = new UserSession();
-			userSession.setSessionToken(data.getSession().getSessionToken());
-			userSession.setUsername(username);
-			userSession.setAuthenticated(true);
-	        userSession.setEnvironment(BridgeConfigFactory.getConfig().getEnvironment().getEnvName());
-			return userSession;
-		} catch(SynapseUnauthorizedException | SynapseForbiddenException e) {
-		    throw new BridgeServiceException(e, 401);
-		} catch(Throwable throwable) {
-		    logger.error(throwable.getMessage());
-			return new UserSession(); // why do we do this?
-		}
+        if (sessionToken == null) {
+            return new UserSession(); // why do we do this?
+        }
+	    UserSession session = (UserSession)cache.get(sessionToken);
+	    if (session == null) {
+	        return new UserSession();
+	    } else if (!session.doesConsent()) {
+            throw new ConsentRequiredException(session.getSessionToken());
+	    }
+		return session;
 	}
 
 	@Override
 	public void signOut(String sessionToken) {
-		// Synapse requires a session token, but it's not an error if it's missing
-		// (e.g. user has deleted the cookie).
-		try {
-			getSynapseClient(sessionToken).logout();	
-		} catch(Throwable e) {
-			logger.warn(e.getMessage(), e);
-		}
+	    if (sessionToken != null) {
+	        cache.remove(sessionToken);    
+	    }
 	}
 
 	@Override
@@ -99,25 +125,53 @@ public class AuthenticationServiceImpl implements AuthenticationService, BeanFac
 	        throw new BridgeServiceException("Email is required", HttpStatus.SC_BAD_REQUEST);
 	    }
 	    try {
-	        getSynapseClient(null).sendPasswordResetEmail(email);    
-	    } catch(Exception e) {
-	        throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
+	        Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+	        application.sendPasswordResetEmail(email);
+	    } catch(ResourceException re) {
+	        throw new BridgeServiceException(re.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
 	    }
 	}
 	
 	@Override
-	public void resetPassword(String sessionToken, String password) throws BridgeServiceException {
+	public void resetPassword(String password, String passwordResetToken) throws BridgeServiceException {
+	    if (StringUtils.isBlank(passwordResetToken)) {
+	        throw new BridgeServiceException("Password reset token is required", HttpStatus.SC_BAD_REQUEST);
+	    }
+	    if (StringUtils.isBlank(password)) {
+	        throw new BridgeServiceException("Password is required", HttpStatus.SC_BAD_REQUEST);
+	    }
 	    try {
-	        getSynapseClient(null).changePassword(sessionToken, password);    
-	    } catch(Exception e) {
-	        throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
+	        Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+	        Account account = application.verifyPasswordResetToken(passwordResetToken);
+	        account.setPassword(password);
+	        account.save();
+	    } catch(ResourceException e) {
+	        throw new BridgeServiceException(e.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
 	    }
 	}
 	
 	@Override
 	public void consentToResearch(String sessionToken) throws BridgeServiceException {
         try {
-            getSynapseClient(sessionToken).signTermsOfUse(sessionToken, DomainType.BRIDGE, true);
+            UserSession session = (UserSession)cache.get(sessionToken);
+            if (session == null) {
+                throw new BridgeServiceException("No session", 500);
+            }
+            Account account = stormpathClient.getResource(session.getStormpathHref(), Account.class);
+            String key = session.getStudyKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
+            CustomData data = account.getCustomData();
+            data.put(key, "true");
+            
+            key = session.getStudyKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+            
+            String healthDataCode = UUID.randomUUID().toString();
+            PBEStringEncryptor encryptor = EncryptorUtil.getEncryptor(config.getPassword(), config.getSalt());
+            healthDataCode = encryptor.encrypt(healthDataCode);
+            
+            data.put(key, healthDataCode);
+            data.save();
+
+            session.setHealthDataCode(healthDataCode);
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
