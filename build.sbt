@@ -13,17 +13,17 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk" % "1.7.7",
   "org.springframework" % "spring-context" % "4.0.3.RELEASE",
   "org.springframework" % "spring-test" % "4.0.3.RELEASE",
-  "org.sagebionetworks" % "synapseJavaClient" % "2014-04-23-1152-e52b875",
   "cglib" % "cglib" % "2.2.2",
+  "org.apache.commons" % "commons-lang3" % "3.3.2",
   "org.codehaus.jackson" % "jackson-mapper-asl" % "1.9.13",
   "com.google.guava" % "guava" % "17.0",
   "org.mockito" % "mockito-all" % "1.9.5",
   "org.jasypt" % "jasypt" % "1.9.2",
   "com.github.fge" % "json-schema-validator" % "2.2.3",
   "commons-httpclient" % "commons-httpclient" % "3.1",
+  "com.github.detro.ghostdriver" % "phantomjsdriver" % "1.1.0" % "test",
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.beta",
-  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.beta",
-  "com.github.detro.ghostdriver" % "phantomjsdriver" % "1.1.0" % "test"
+  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.beta"
 )
 
 play.Project.playJavaSettings

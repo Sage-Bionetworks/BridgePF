@@ -16,9 +16,9 @@ public class BridgeConfig {
 
     private final Logger logger = LoggerFactory.getLogger(BridgeConfig.class);
 
-    private static final String SYNAPSE_REPO_ENDPOINT =  "synapse.repo.endpoint";
-    private static final String SYNAPSE_AUTH_ENDPOINT =  "synapse.auth.endpoint";
-    private static final String SYNAPSE_FILE_ENDPOINT =  "synapse.file.endpoint";
+    private static final String STORMPATH_ID =  "stormpath.id";
+    private static final String STORMPATH_SECRET =  "stormpath.secret";
+    private static final String STORMPATH_APPLICATION_HREF =  "stormpath.application.href";
     
     private static final String CONFIG_FILE = "bridge.conf";
     private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
@@ -119,10 +119,6 @@ public class BridgeConfig {
         return environment;
     }
 
-    public boolean isStub() {
-        return Environment.STUB.equals(environment);
-    }
-
     public boolean isLocal() {
         return Environment.LOCAL.equals(environment);
     }
@@ -139,18 +135,26 @@ public class BridgeConfig {
         return properties.getProperty(name);
     }
     
-    public String getSynapseRepoEndpoint() {
-        return getProperty(SYNAPSE_REPO_ENDPOINT);
+    public String getStormpathId() {
+        return getProperty(STORMPATH_ID);
     }
 
-    public String getSynapseAuthEndpoint() {
-        return getProperty(SYNAPSE_AUTH_ENDPOINT);
+    public String getStormpathSecret() {
+        return getProperty(STORMPATH_SECRET);
+    }
+    
+    public String getStormpathApplicationHref() {
+        return getProperty(STORMPATH_APPLICATION_HREF);
+    }
+    
+    public String getPassword() {
+        return getProperty(PASSWORD);
     }
 
-    public String getSynapseFileEndpoint() {
-        return getProperty(SYNAPSE_FILE_ENDPOINT);
+    public String getSalt() {
+        return getProperty(SALT);
     }
-
+    
     ///////////////////////////
 
     private void loadProperties(final InputStream inputStream, final Properties properties) {
@@ -180,8 +184,8 @@ public class BridgeConfig {
     private Environment readEnvironment(final Properties properties) {
         final String envName = read(ENVIRONMENT, properties);
         if (envName == null) {
-            logger.info("Environment not set. Is this the stub development?");
-            return Environment.STUB;
+            logger.info("Environment not set. Is this local development?");
+            return Environment.LOCAL;
         }
         for (Environment env : Environment.values()) {
             if (env.getEnvName().equals(envName)) {

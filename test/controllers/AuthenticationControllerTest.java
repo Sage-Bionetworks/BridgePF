@@ -23,7 +23,7 @@ public class AuthenticationControllerTest {
     	running(testServer(3333), new Runnable() {
 			public void run() {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                Response response = WS.url(TEST_URL + SIGN_IN_URL).post(node).get(REQUEST_TIMEOUT);
+                Response response = WS.url(TEST_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
                 assertThat(response.getStatus()).isEqualTo(BAD_REQUEST);
 			}
 		});
@@ -33,7 +33,7 @@ public class AuthenticationControllerTest {
     	running(testServer(3333), new Runnable() {
 			public void run() {
                 Response response = WS.url(TEST_URL + SIGN_IN_URL).post("username=bob&password=foo")
-                        .get(REQUEST_TIMEOUT);
+                        .get(TIMEOUT);
 				assertThat(response.getStatus()).isEqualTo(BAD_REQUEST);
 			}
 		});
@@ -53,11 +53,10 @@ public class AuthenticationControllerTest {
     	running(testServer(3333), new TestUtils.FailableRunnable() {
 			public void testCode() throws Exception {
 				ObjectNode node = JsonNodeFactory.instance.objectNode();
-				node.put(USERNAME, "test2");
-				node.put(PASSWORD, PASSWORD);
+				node.put(USERNAME, TEST2.USERNAME);
+				node.put(PASSWORD, TEST2.PASSWORD);
 
-                Response response = WS.url(TEST_URL + SIGN_IN_URL).post(node)
-                        .get(REQUEST_TIMEOUT);
+                Response response = WS.url(TEST_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode responseNode = mapper.readTree(response.getBody());
 				
@@ -65,7 +64,7 @@ public class AuthenticationControllerTest {
                 String sessionToken = responseNode.get(PAYLOAD).get(SESSION_TOKEN).asText();
 				assertThat(sessionToken).isNotNull();
 				String username = responseNode.get(PAYLOAD).get(USERNAME).asText();
-				assertThat(username).isEqualTo("test2");
+				assertThat(username).isEqualTo(TEST2.USERNAME);
 			}
 		});
 	}
@@ -74,14 +73,14 @@ public class AuthenticationControllerTest {
 	    running(testServer(3333), new TestUtils.FailableRunnable() {
 	        public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put(USERNAME, "test3");
-                node.put(PASSWORD, PASSWORD);
+                node.put(USERNAME, TEST3.USERNAME);
+                node.put(PASSWORD, TEST3.PASSWORD);
                 Response response = WS.url(TEST_URL+SIGN_IN_URL).post(node).get(TIMEOUT);
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
                 assertThat(cookie.getValue()).isNotEmpty();
                 
-                response = WS.url(TEST_URL + SIGN_OUT_URL).setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue())
-                        .get().get(TIMEOUT);
+                response = WS.url(TEST_URL + SIGN_OUT_URL)
+                        .setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue()).get().get(TIMEOUT);
                 
                 cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
                 assertThat(cookie.getValue()).isEqualTo("");

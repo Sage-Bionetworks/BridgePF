@@ -5,7 +5,7 @@ describe("ResetPasswordController", function() {
     beforeEach(function() {
         module('bridge');
 
-        var $route = {current:{params:{sessionToken: "abc"}}};
+        var $route = {current:{params:{sptoken: "abc"}}};
         
         $humane = {
             confirm: jasmine.createSpy(),
@@ -34,9 +34,7 @@ describe("ResetPasswordController", function() {
     function setupPOST() {
         // verify that the password is posted along with the session token in the header, 
         // as was extracted from the routing service.
-        return $httpBackend.expectPOST('/api/auth/resetPassword', {password: "asb"}, function(headers) {
-            return headers['Bridge-Session'] === "abc";
-        });
+        return $httpBackend.expectPOST('/api/auth/resetPassword', {password: "asb", sptoken: "abc"});
     }
 
     it("only submits the password when form is valid", function() {

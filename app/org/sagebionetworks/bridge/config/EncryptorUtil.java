@@ -31,7 +31,7 @@ public class EncryptorUtil {
     /**
      * Gets a password-based string encryptor.
      */
-    static PBEStringEncryptor getEncryptor(final String password, final String salt) {
+    public static PBEStringEncryptor getEncryptor(final String password, final String salt) {
         StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
         encryptor.setPassword(password);
         encryptor.setSaltGenerator(new StringFixedSaltGenerator(salt));
