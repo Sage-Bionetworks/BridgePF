@@ -8,13 +8,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.EncryptorUtil;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,17 +31,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	final static Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 	
 	private Client stormpathClient;
-	private Application stormpathApplication;
 	private CacheProvider cache;
 	private BridgeConfig config;
 	
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
     }
-	
-	public void setStormpathApplication(Application application) {
-	    this.stormpathApplication = application;
-	}
 	
     public void setCacheProvider(CacheProvider cache) {
         this.cache = cache;
@@ -50,7 +45,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public void setBridgeConfig(BridgeConfig config) {
         this.config = config;
     }
-	
+    
 	@Override
     public UserSession signIn(Study study, String usernameOrEmail, String password) throws ConsentRequiredException,
             BridgeNotFoundException, BridgeServiceException {
@@ -67,8 +62,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	    UserSession session = null;
 	    try {
 	        
+	        Application application = StormpathFactory.createStormpathApplication(stormpathClient); 
 	        request = new UsernamePasswordRequest(usernameOrEmail, password);
-	        Account account = stormpathApplication.authenticateAccount(request).getAccount();
+	        Account account = application.authenticateAccount(request).getAccount();
 	        
 	        session = createSessionFromAccount(study, account);
 	        cache.set(session.getSessionToken(), session);
@@ -90,7 +86,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         session = new UserSession();
         session.setAuthenticated(true);
         session.setStormpathHref(account.getHref());
-        session.setEnvironment(BridgeConfigFactory.getConfig().getEnvironment().getEnvName());
+        session.setEnvironment(config.getEnvironment().getEnvName());
         session.setSessionToken(UUID.randomUUID().toString());
         session.setStudyKey(study.getKey());
         session.setUsername(account.getUsername());
@@ -131,7 +127,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	        throw new BridgeServiceException("Email is required", HttpStatus.SC_BAD_REQUEST);
 	    }
 	    try {
-	        stormpathApplication.sendPasswordResetEmail(email);
+	        Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+	        application.sendPasswordResetEmail(email);
 	    } catch(ResourceException re) {
 	        throw new BridgeServiceException(re.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
 	    }
@@ -146,7 +143,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	        throw new BridgeServiceException("Password is required", HttpStatus.SC_BAD_REQUEST);
 	    }
 	    try {
-	        Account account = stormpathApplication.verifyPasswordResetToken(passwordResetToken);
+	        Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+	        Account account = application.verifyPasswordResetToken(passwordResetToken);
 	        account.setPassword(password);
 	        account.save();
 	    } catch(ResourceException e) {
