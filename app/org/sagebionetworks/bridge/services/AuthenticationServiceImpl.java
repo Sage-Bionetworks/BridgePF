@@ -56,9 +56,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	    if (study == null) {
             throw new BridgeServiceException("Study is required", HttpStatus.SC_BAD_REQUEST);
 	    }
-	    // TODO: If the user is already logged in, we should skip all of this and return his/her session.
-	    // TODO: Clean this up.
-	    AuthenticationRequest request = null;
+	    AuthenticationRequest<?, ?> request = null;
 	    UserSession session = null;
 	    try {
 	        

@@ -14,21 +14,21 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
  */
 public class DynamoDBMapperConfigFactory {
 
-    public static DynamoDBMapperConfig getCreateMapper(Class<DynamoDbRecord> clazz) {
+    public static DynamoDBMapperConfig getCreateMapper(Class<DynamoTable> clazz) {
         return new DynamoDBMapperConfig(
                 DynamoDBMapperConfig.SaveBehavior.CLOBBER,
                 DynamoDBMapperConfig.DEFAULT.getConsistentReads(),
                 getTableNameOverride(clazz));
     }
 
-    public static DynamoDBMapperConfig getUpdateMapper(Class<DynamoDbRecord> clazz) {
+    public static DynamoDBMapperConfig getUpdateMapper(Class<DynamoTable> clazz) {
         return new DynamoDBMapperConfig(
                 DynamoDBMapperConfig.SaveBehavior.UPDATE,
                 DynamoDBMapperConfig.DEFAULT.getConsistentReads(),
                 getTableNameOverride(clazz));
     }
 
-    private static TableNameOverride getTableNameOverride(Class<DynamoDbRecord> clazz) {
+    private static TableNameOverride getTableNameOverride(Class<DynamoTable> clazz) {
         BridgeConfig config = BridgeConfigFactory.getConfig();
         Environment env = config.getEnvironment();
         String tableName = clazz.getAnnotation(DynamoDBTable.class).tableName();
