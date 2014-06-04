@@ -7,6 +7,8 @@ import play.test.TestBrowser;
 import webdriver.pages.AppPage;
 import webdriver.pages.AppPage.RequestResetPasswordDialog;
 
+import static org.sagebionetworks.bridge.TestConstants.*;
+
 public class AuthenticationTest extends BaseIntegrationTest {
     
     @Test
@@ -16,7 +18,7 @@ public class AuthenticationTest extends BaseIntegrationTest {
                 AppPage page = new AppPage(browser);
                 AppPage.SignInDialog signInDialog = page.openSignInDialog();
 
-                signInDialog.signIn("test2", "password");
+                signInDialog.signIn(TEST2.USERNAME, TEST2.PASSWORD);
                 page.signOut();
             }
         });
@@ -76,7 +78,7 @@ public class AuthenticationTest extends BaseIntegrationTest {
                 AppPage page = new AppPage(browser);
                 RequestResetPasswordDialog dialog = page.openResetPasswordDialog();
                 
-                dialog.submitEmailAddress("test2@sagebase.org");
+                dialog.submitEmailAddress(TEST2.EMAIL);
             }
         });
     }

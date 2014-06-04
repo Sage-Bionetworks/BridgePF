@@ -64,6 +64,7 @@ module.exports = function(grunt) {
                 'app/bower_components/angular/angular.js',
                 'app/bower_components/angular-mocks/angular-mocks.js',
                 'app/bower_components/angular-route/angular-route.js',
+                'app/bower_components/angular-cookies/angular-cookies.js',
                 '<%= output %>/bridge.min.js'
             ],
             options: {

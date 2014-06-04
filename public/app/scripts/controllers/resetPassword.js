@@ -2,11 +2,10 @@ bridge.controller('ResetPasswordController', ['$scope', '$rootScope', '$route', 
 function($scope, $rootScope, $route, $http, $humane, $location, authService) {
     
     // Why doesn't routeParams work here?
-    var sptoken = (document.location.search+"").split("sptoken=")[1];
-    
-    // TODO: The URL from Synapse should be:
-    // https://bridge.synapse.org/#/resetPassword/ + sessionToken
-    // Change this at: ./services/repository-managers/src/main/java/org/sagebionetworks/repo/manager/MessageManagerImpl.java : 666
+    $scope.sptoken = $route.current.params.sptoken;
+    if (!$scope.sptoken) {
+        $scope.sptoken = (document.location.search+"").split("sptoken=")[1];    
+    }
     
     authService.clear();
 
@@ -22,7 +21,9 @@ function($scope, $rootScope, $route, $http, $humane, $location, authService) {
     };
     $scope.change = function() {
         if ($scope.resetPasswordForm.$valid) {
-            $http.post('/api/auth/resetPassword', {password: $scope.password, sptoken: sptoken})
+            $http.post('/api/auth/resetPassword', {password: $scope.password, sptoken: $scope.sptoken}, {
+                headers: {'Bridge-Session': $scope.sessionToken}
+            })
             .success(function(data, status) {
                 $location.path("/");
                 $humane.confirm("Your password has been changed.");
