@@ -72,6 +72,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	        
 	        session = createSessionFromAccount(study, account);
 	        cache.set(session.getSessionToken(), session);
+
 	        if (!session.doesConsent()) {
 	            throw new ConsentRequiredException(session.getSessionToken());
 	        }
@@ -93,11 +94,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         session.setSessionToken(UUID.randomUUID().toString());
         session.setStudyKey(study.getKey());
         session.setUsername(account.getUsername());
+        
+        CustomData data = account.getCustomData();
         String consentKey = study.getKey()+BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
         String hdcKey = study.getKey()+BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-        CustomData data = account.getCustomData();
         session.setConsent( "true".equals(data.get(consentKey)) );
         session.setHealthDataCode( (String)data.get(hdcKey) );
+        
         return session;
     }
 
@@ -117,7 +120,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
 	@Override
 	public void signOut(String sessionToken) {
-	    cache.remove(sessionToken);
+	    if (sessionToken != null) {
+	        cache.remove(sessionToken);    
+	    }
 	}
 
 	@Override
@@ -158,7 +163,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             }
             Account account = stormpathClient.getResource(session.getStormpathHref(), Account.class);
             String key = session.getStudyKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
-            account.getCustomData().put(key, "true");
+            CustomData data = account.getCustomData();
+            data.put(key, "true");
             
             key = session.getStudyKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
             
@@ -166,8 +172,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             PBEStringEncryptor encryptor = EncryptorUtil.getEncryptor(config.getPassword(), config.getSalt());
             healthDataCode = encryptor.encrypt(healthDataCode);
             
-            account.getCustomData().put(key, healthDataCode);
-            account.save();
+            data.put(key, healthDataCode);
+            data.save();
+
             session.setHealthDataCode(healthDataCode);
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);

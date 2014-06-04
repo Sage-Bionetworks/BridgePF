@@ -9,8 +9,6 @@ import java.util.UUID;
 import org.apache.commons.httpclient.HttpStatus;
 import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.EncryptorUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -34,7 +32,7 @@ public class HealthDataServiceImpl implements HealthDataService {
 
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
-    private BridgeConfig config;
+    private PBEStringEncryptor encryptor;
     private CacheProvider cache;
 
     public void setCreateMapper(DynamoDBMapper createMapper) {
@@ -49,8 +47,8 @@ public class HealthDataServiceImpl implements HealthDataService {
         this.cache = cacheProvider;
     }
     
-    public void setBridgeConfig(BridgeConfig bridgeConfig) {
-        this.config = bridgeConfig;
+    public void setEncryptor(PBEStringEncryptor encryptor) {
+        this.encryptor = encryptor;
     }
     
     /*
@@ -66,11 +64,9 @@ public class HealthDataServiceImpl implements HealthDataService {
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey cannot be null", HttpStatus.SC_BAD_REQUEST);
         }
-        UserSession session = (UserSession)cache.get(key.getSessionToken());
         
-        // This should exist, if it doesn't that's an error. It should also be encrypted.
+        UserSession session = (UserSession)cache.get(key.getSessionToken());
         String healthDataCode = session.getHealthDataCode();
-        PBEStringEncryptor encryptor = EncryptorUtil.getEncryptor(config.getPassword(), config.getSalt());
         healthDataCode = encryptor.decrypt(healthDataCode);
         
         return String.format("%s:%s:%s", key.getStudyKey(), key.getTrackerId(), healthDataCode);

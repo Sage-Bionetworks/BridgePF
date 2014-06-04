@@ -20,13 +20,10 @@ public class UserSessionInfo {
     public boolean isAuthenticated() {
         return authenticated;
     }
-
     public String getSessionToken() {
         return sessionToken;
     }
-
     public String getUsername() {
         return username;
     }
-
 }

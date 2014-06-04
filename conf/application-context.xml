@@ -87,20 +87,20 @@
         <property name="studies">
             <list>
                 <bean class="org.sagebionetworks.bridge.models.Study">
-                    <property name="name" value="Parkinson's Disease"/>
-                    <property name="key" value="neurod"/>
-                    <property name="hostnames">
+                    <constructor-arg index="0" value="Parkinson's Disease"/>
+                    <constructor-arg index="1" value="neurod"/>
+                    <constructor-arg index="2">
                         <list>
                             <value>localhost</value>
                             <value>bridge-development.herokuapp.com</value>
                         </list>
-                    </property>
-                    <property name="trackers">
+                    </constructor-arg>
+                    <constructor-arg index="3">
                         <list>
                             <ref bean="pb-tracker"/>
                             <ref bean="med-tracker"/>
                         </list>
-                    </property>
+                    </constructor-arg>                    
                 </bean>
             </list>
         </property>
@@ -151,7 +151,12 @@
             </bean>
         </property>
         <property name="cacheProvider" ref="cacheProvider"/>
-        <property name="bridgeConfig" ref="bridgeConfig"/>
+        <property name="encryptor">
+            <bean class="org.sagebionetworks.bridge.config.EncryptorUtil" factory-method="getEncryptor">
+	            <constructor-arg index="0" value="#{bridgeConfig.getPassword()}"/>
+	            <constructor-arg index="1" value="#{bridgeConfig.getSalt()}"/>
+            </bean>
+        </property>
     </bean>
     
     <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" scope="prototype">

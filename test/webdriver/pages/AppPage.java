@@ -3,6 +3,8 @@ package webdriver.pages;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.sagebionetworks.bridge.TestConstants.*;
 
+import java.util.concurrent.TimeUnit;
+
 import org.fluentlenium.core.domain.FluentWebElement;
 
 import play.test.TestBrowser;
@@ -27,7 +29,7 @@ public class AppPage {
     }
     public RequestResetPasswordDialog openResetPasswordDialog() {
         resetPasswordLink().click();
-        browser.await().until(RESET_PASSWORD_DIALOG);
+        browser.await().until(RESET_PASSWORD_DIALOG).isPresent();
         return new RequestResetPasswordDialog(browser);
     }
     public void signOut() {
@@ -55,13 +57,13 @@ public class AppPage {
         public void signInWrong(String username, String password) {
             enterCredentials(username, password);
             signInAction().click();
-            assertThat(signInMessage().isDisplayed()).isTrue();
+            browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_MESSAGE).areDisplayed();
             close();
         }
         public void signIn(String username, String password) {
             enterCredentials(username, password);
             signInAction().click();
-            browser.await().until(USERNAME_LABEL).isPresent();
+            browser.await().atMost(20, TimeUnit.SECONDS).until(USERNAME_LABEL).areDisplayed();
             assertThat(userLabel().getText()).isEqualTo(username);
         }
         public void close() {
