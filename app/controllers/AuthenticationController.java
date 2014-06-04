@@ -20,6 +20,9 @@ public class AuthenticationController extends BaseController {
     }
     
 	public Result signIn() throws Exception {
+        String sessionToken = getSessionToken(false);
+        authenticationService.signOut(sessionToken);
+
 	    Study study = studyControllerService.getStudyByHostname(request());
 		SignIn signIn = SignIn.fromJson(request().body().asJson());
 		UserSession session = authenticationService.signIn(study, signIn.getUsername(), signIn.getPassword());

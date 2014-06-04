@@ -1,5 +1,7 @@
-package org.sagebionetworks.bridge.dynamodb;
+package org.sagebionetworks.bridge.dynamodb.test;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoTable;
+import org.sagebionetworks.bridge.dynamodb.JsonNodeMarshaller;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 
@@ -11,21 +13,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.databind.JsonNode;
 
-/**
- * Used by the services to join a HealthDataKey to a HealthDataRecord, into a complete 
- * DynamoDB record. Not exposed to consumers.
- *
- * Table structure:
- *  Hash Key: String key
- *  Range Key: String recordId
- *  
- * Indexes (local secondary indexes):
- *  endDate-index (key String + endDate Number)
- *  startDate-index (key String + startDate Number)
- *
- */
 @DynamoDBTable(tableName = "HealthDataRecord")
-public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
+public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
 
     private String key;
     private String recordId;
@@ -33,14 +22,14 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     private long endDate;
     private JsonNode data;
 
-    public DynamoHealthDataRecord() {
+    public HealthDataRecordTest() {
     }
     
-    public DynamoHealthDataRecord(String key) {
+    public HealthDataRecordTest(String key) {
         this.key = key;
     }
     
-    public DynamoHealthDataRecord(String key, HealthDataRecord record) {
+    public HealthDataRecordTest(String key, HealthDataRecord record) {
         this.key = key;
         this.recordId = record.getRecordId();
         this.startDate = record.getStartDate();
@@ -48,7 +37,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
         this.data = record.getData();
     }
     
-    public DynamoHealthDataRecord(String key, String recordId, HealthDataRecord record) {
+    public HealthDataRecordTest(String key, String recordId, HealthDataRecord record) {
         this.key = key;
         this.recordId = recordId;
         this.startDate = record.getStartDate();
@@ -130,7 +119,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        DynamoHealthDataRecord other = (DynamoHealthDataRecord) obj;
+        HealthDataRecordTest other = (HealthDataRecordTest)obj;
         if (endDate != other.endDate)
             return false;
         if (recordId == null) {
@@ -147,4 +136,6 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
             return false;
         return true;
     }
+
+
 }
