@@ -84,7 +84,7 @@ public class DynamoInitializer {
                         attrName = getAttributeName(method);
                     }
                     hashKey = new KeySchemaElement(attrName, KeyType.HASH);
-                    keySchema.add(hashKey);
+                    keySchema.add(0, hashKey);
                     ScalarAttributeType attrType = getAttributeType(method);
                     AttributeDefinition attribute = new AttributeDefinition(attrName, attrType);
                     attributes.add(attribute);
