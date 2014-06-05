@@ -1,5 +1,6 @@
 package controllers;
 
+import models.EmailVerification;
 import models.JsonPayload;
 import models.PasswordReset;
 import models.SignIn;
@@ -37,6 +38,18 @@ public class AuthenticationController extends BaseController {
 		return jsonResult("Signed out.");
 	}
 
+	public Result signUp() throws Exception {
+        SignUp signUp = SignUp.fromJson(request().body().asJson());
+        authenticationService.signUp(signUp.getUsername(), signUp.getEmail(), signUp.getPassword());
+	    return jsonResult("Signed up.");
+	}
+	
+	public Result verifyEmail() throws Exception {
+	    EmailVerification ev = EmailVerification.fromJson(request().body().asJson());
+	    authenticationService.verifyEmail(ev.getSptoken());
+	    return jsonResult("Email verified.");
+	}
+	
 	public Result requestResetPassword() throws Exception {
 		SignUp signUp = SignUp.fromJson(request().body().asJson());
 		authenticationService.requestResetPassword(signUp.getEmail());

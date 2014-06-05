@@ -31,8 +31,14 @@ function($http, $rootScope, $location, $window, $humane, $q, loadingService) {
             });
             return deferred.promise;
         },
+        signUp: function(credentials) {
+            return loadingService.call($http.post('/api/auth/signUp', credentials));
+        },
         signOut: function() {
             return loadingService.call($http.get('/api/auth/signOut'));
+        },
+        verifyEmail: function(payload) {
+            return loadingService.call($http.post('/api/auth/verifyEmail', payload));
         }
     };
 
