@@ -95,6 +95,7 @@ public class DynamoInitializerTest {
         }
         assertEquals("HASH", keyElements.get("key").getKeyType());
         assertEquals("RANGE", keyElements.get("recordId").getKeyType());
+        assertEquals("HASH", keySchema.get(0).getKeyType()); // The first key must be the hash key
         // Local indices
         List<LocalSecondaryIndex> localIndices = request.getLocalSecondaryIndexes();
         assertNotNull(localIndices);
