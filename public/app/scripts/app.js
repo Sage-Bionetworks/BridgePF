@@ -33,6 +33,11 @@ var bridge = angular.module('bridge', ['ngRoute', 'ngCookies', 'ui.bootstrap'])
         controller: 'ResetPasswordController',
         access: {allowAnonymous: true}
 	})
+    .when('/verifyEmail', {
+        templateUrl: '/views/verifyEmail.html',
+        controller: 'VerifyEmailController',
+        access: {allowAnonymous: true}
+    })
     .when('/consent/:sessionToken', {
         templateUrl: '/views/consent.html',
         controller: 'ConsentController',

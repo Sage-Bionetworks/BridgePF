@@ -19,3 +19,7 @@ h1, h2, h3, h4 {
     font-weight: bold;
     color: rgb(169, 68, 66);
 }
+
+a[ng-click] {
+    cursor: pointer;
+}

@@ -10,6 +10,8 @@ GET    /api/auth/signOut                @controllers.AuthenticationController.si
 POST   /api/auth/resetPassword          @controllers.AuthenticationController.resetPassword
 POST   /api/auth/requestResetPassword   @controllers.AuthenticationController.requestResetPassword
 POST   /api/auth/consentToResearch      @controllers.AuthenticationController.consentToResearch
+POST   /api/auth/signUp                 @controllers.AuthenticationController.signUp
+POST   /api/auth/verifyEmail            @controllers.AuthenticationController.verifyEmail
 
 # API - Individual health data record
 GET    /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(trackerId: Long, recordId: String)
