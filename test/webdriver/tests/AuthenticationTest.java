@@ -6,7 +6,8 @@ import play.libs.F.Callback;
 import play.test.TestBrowser;
 import webdriver.pages.AppPage;
 import webdriver.pages.AppPage.RequestResetPasswordDialog;
-
+import webdriver.pages.AppPage.SignUpDialog;
+import static org.fest.assertions.Assertions.assertThat;
 import static org.sagebionetworks.bridge.TestConstants.*;
 
 public class AuthenticationTest extends BaseIntegrationTest {
@@ -82,4 +83,90 @@ public class AuthenticationTest extends BaseIntegrationTest {
             }
         });
     }
+    
+    @Test
+    public void validSignUp() {
+        call(new Callback<TestBrowser>() {
+            public void invoke(TestBrowser browser) {
+                AppPage page = new AppPage(browser);
+                SignUpDialog dialog = page.openSignUpDialog();
+                
+                dialog.enterValidData();
+                dialog.close();
+            }
+        });
+    }
+    
+    @Test
+    public void signUpRejectsInvalidEmail() {
+        call(new Callback<TestBrowser>() {
+            public void invoke(TestBrowser browser) {
+                AppPage page = new AppPage(browser);
+                SignUpDialog dialog = page.openSignUpDialog();
+                dialog.enterInvalidData("bridge", "bridgeit", "P4ssword", "P4ssword");
+                dialog.close();
+            }
+        });
+    }
+    
+    @Test
+    public void signUpRejectsMismatchedPasswords() {
+        call(new Callback<TestBrowser>() {
+            public void invoke(TestBrowser browser) {
+                AppPage page = new AppPage(browser);
+                SignUpDialog dialog = page.openSignUpDialog();
+                dialog.enterInvalidData("bridge", "bridgeit@sagebase.org", "P4ssword", "P4ssword2");
+                dialog.close();
+            }
+        });
+    }
+    
+    @Test
+    public void signUpRejectsMissingUsername() {
+        call(new Callback<TestBrowser>() {
+            public void invoke(TestBrowser browser) {
+                AppPage page = new AppPage(browser);
+                SignUpDialog dialog = page.openSignUpDialog();
+                dialog.enterInvalidData("", "bridgeit@sagebase.org", "P4ssword", "P4ssword");
+                dialog.close();
+            }
+        });
+    }
+    
+    @Test
+    public void signUpRejectsMissingEmail() {
+        call(new Callback<TestBrowser>() {
+            public void invoke(TestBrowser browser) {
+                AppPage page = new AppPage(browser);
+                SignUpDialog dialog = page.openSignUpDialog();
+                dialog.enterInvalidData("bridge", "", "P4ssword", "P4ssword");
+                dialog.close();
+            }
+        });
+    }
+    
+    @Test
+    public void signUpRejectsMissingPassword() {
+        call(new Callback<TestBrowser>() {
+            public void invoke(TestBrowser browser) {
+                AppPage page = new AppPage(browser);
+                SignUpDialog dialog = page.openSignUpDialog();
+                dialog.enterInvalidData("bridge", "bridgeit@sagebase.org", "", "P4ssword");
+                dialog.close();
+            }
+        });
+    }
+    
+    @Test
+    public void signUpRejectsMissingPasswordConfirmation() {
+        call(new Callback<TestBrowser>() {
+            public void invoke(TestBrowser browser) {
+                AppPage page = new AppPage(browser);
+                SignUpDialog dialog = page.openSignUpDialog();
+                dialog.enterInvalidData("bridge", "bridgeit@sagebase.org", "P4ssword", "");
+                dialog.close();
+            }
+        });
+    }
+    
 }

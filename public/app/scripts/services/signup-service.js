@@ -1,7 +1,7 @@
 bridge.service('signUpService', ['$modal', function($modal) {
     
     var modalInstance;
-    
+
     var ModalInstanceController = ['$scope', '$humane', 'authService', 'formService', 
     function($scope, $humane, authService, formService) {
 
