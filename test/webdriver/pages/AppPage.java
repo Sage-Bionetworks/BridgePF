@@ -24,7 +24,7 @@ public class AppPage {
     
     public SignInDialog openSignInDialog() {
         signInLink().click();
-        browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_DIALOG);
+        browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_DIALOG).isPresent();
         return new SignInDialog(browser);
     }
     public RequestResetPasswordDialog openResetPasswordDialog() {
@@ -32,6 +32,12 @@ public class AppPage {
         browser.await().atMost(20, TimeUnit.SECONDS).until(RESET_PASSWORD_DIALOG).isPresent();
         return new RequestResetPasswordDialog(browser);
     }
+    public SignUpDialog openSignUpDialog() {
+        signUpLink().click();
+        browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_UP_DIALOG).isPresent();
+        return new SignUpDialog(browser);
+    }
+
     public void signOut() {
         signOutLink().click();
         browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_LINK).isPresent();
@@ -45,6 +51,9 @@ public class AppPage {
     }
     private FluentWebElement signOutLink() {
         return browser.findFirst(SIGN_OUT_LINK);
+    }
+    private FluentWebElement signUpLink() {
+        return browser.findFirst(SIGN_UP_LINK);
     }
     
     public class SignInDialog {
@@ -67,7 +76,7 @@ public class AppPage {
             assertThat(userLabel().getText()).isEqualTo(username);
         }
         public void close() {
-            browser.click(".close");
+            browser.click(CLOSE_ACTION);
             browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_DIALOG).isNotPresent();
         }
         private void enterCredentials(String username, String password) {
@@ -115,7 +124,7 @@ public class AppPage {
             assertThat(messagePopup().getText()).contains("Please look for further instructions in your email inbox.");
         }
         public void close() {
-            browser.click(".close");
+            browser.click(CLOSE_ACTION);
             browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_DIALOG).isNotPresent();
         }
         private FluentWebElement messagePopup() {
@@ -127,6 +136,38 @@ public class AppPage {
         private FluentWebElement cancelButton() {
             return browser.findFirst(CANCEL_ACTION);
         }
+    }
+    
+    public class SignUpDialog {
+        private TestBrowser browser;
+        
+        public SignUpDialog(TestBrowser browser) {
+            this.browser = browser;
+        }
+        public void enterValidData() {
+            assertThat(submitButton().isEnabled()).isFalse();
+            enterFields("bridge", "bridgeit@sagebase.org", "P4ssword", "P4ssword");
+            assertThat(submitButton().isEnabled()).isTrue();
+        }
+        public void enterInvalidData(String username, String email, String password, String confirmPassword) {
+            assertThat(submitButton().isEnabled()).isFalse();
+            enterFields(username, email, password, confirmPassword);
+            assertThat(submitButton().isEnabled()).isFalse();
+        }
+        public void close() {
+            browser.click(CLOSE_ACTION);
+            browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_UP_DIALOG).isNotPresent();
+        }
+        private void enterFields(String username, String email, String password, String confirmPassword) {
+            browser.fill(USERNAME_INPUT).with(username);   
+            browser.fill(EMAIL_INPUT).with(email);
+            browser.fill(PASSWORD_INPUT).with(password);
+            browser.fill(CONFIRM_PASSWORD_INPUT).with(confirmPassword);
+        }
+        private FluentWebElement submitButton() {
+            return browser.findFirst(SIGN_UP_ACT);
+        }
+        
     }
 
 }
