@@ -328,7 +328,7 @@ public class DynamoInitializer {
     static void waitForActive(TableDescription table, final AmazonDynamoDB dynamo) {
         while (!TableStatus.ACTIVE.name().equalsIgnoreCase(table.getTableStatus())) {
             try {
-                Thread.sleep(20L);
+                Thread.sleep(200L);
             } catch (InterruptedException e) {
                 throw new RuntimeException("Shouldn't be interrupted.", e);
             }
