@@ -9,8 +9,9 @@ bridge.service('signUpService', ['$modal', function($modal) {
         
         $scope.signUp = function () {
             if ($scope.signUpForm.$valid) {
-                var form = $scope.signUpForm;
                 var credentials = formService.formToJSON($scope.signUpForm, ['username', 'email', 'password']);
+                // TODO: This is related to loading, it's more like we need loading listeners
+                // than these flags
                 $scope.sending = true;
                 $scope.message = '';
                 authService.signUp(credentials).then(function() {

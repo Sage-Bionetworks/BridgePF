@@ -17,11 +17,6 @@ function($http, $rootScope, $location, $window, $humane, $q, loadingService) {
             this.authenticated = false;
         },
         signIn: function(credentials) {
-            if (!credentials.username && !credentials.password) {
-                return;
-            }
-            credentials = angular.extend({}, credentials);
-            
             var deferred = $q.defer();
             loadingService.call($http.post('/api/auth/signIn', credentials)).then(function(data) {
                 service.init(data.payload);

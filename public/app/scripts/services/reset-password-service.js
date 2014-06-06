@@ -2,29 +2,22 @@ bridge.service('requestResetPasswordService', ['$modal', function($modal) {
     
     var modalInstance;
     
-    var ModalInstanceController = ['$scope', '$http', '$humane', function($scope, $http, $humane) {
-        $scope.messageType = "info";
-        $scope.message = "";
-        $scope.state = 'pre';
-        $scope.credentials = {'email': ''};
+    var ModalInstanceController = ['$scope', '$http', '$humane', 'formService', 
+        function($scope, $http, $humane, formService) {
+        
+        formService.initScope($scope, 'requestResetPasswordForm');
         
         $scope.send = function () {
-            $http.post('/api/auth/requestResetPassword', {
-                'email': $scope.credentials.email
-            }).success(function(data) {
+            $scope.sending = true;
+            var json = formService.formToJSON($scope.requestResetPasswordForm, ['email']);
+            $http.post('/api/auth/requestResetPassword', json).success(function(data) {
+                $scope.sending = false;
                 modalInstance.dismiss('cancel');
                 $humane.confirm("Please look for further instructions in your email inbox.");
-                $scope.state = 'post';
             }).error(function(data) {
-                $scope.messageType = "danger";
-                $scope.message = data.payload;
+                $scope.sending = false;
+                $scope.setMessage(data.payload, 'danger');
             });
-        };
-        $scope.canSubmit = function() {
-            // TODO: This is not the Angular way, but forms in $modals do not show up in the scope,
-            // this is something I need to sort out.
-            return $scope.credentials.email && 
-                  (/^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$/).test($scope.credentials.email);
         };
         $scope.cancel = function () {
             modalInstance.dismiss('cancel');
