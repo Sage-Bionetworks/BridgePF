@@ -137,7 +137,11 @@ public class BridgeConfig {
     public String getProperty(String name) {
         return properties.getProperty(name);
     }
-    
+
+    public int getPropertyAsInt(String name) {
+        return Integer.parseInt(properties.getProperty(name));
+    }
+
     public String getStormpathId() {
         return getProperty(STORMPATH_ID);
     }
