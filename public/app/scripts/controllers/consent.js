@@ -5,7 +5,7 @@ function($scope, $http, $location, $route, $humane, $cookies) {
     // Currently it does not.
     $scope.sessionToken = $route.current.params.sessionToken;
     $cookies['Bridge-Session'] = $scope.sessionToken;
-    
+
     $scope.agree = function() {
         $http.post('/api/auth/consentToResearch', {}, {
             headers: {'Bridge-Session': $scope.sessionToken}

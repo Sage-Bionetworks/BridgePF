@@ -1,7 +1,8 @@
-bridge.controller('VerifyEmailController', ['$scope', '$route', 'authService', function($scope, $route, authService) {
+bridge.controller('VerifyEmailController', ['$scope', '$route', 'authService', 'formService',  
+function($scope, $route, authService, formService) {
     
-    $scope.message = "Verifying...";
-    $scope.messageType = "info";
+    formService.initScope($scope);
+    $scope.setMessage("Verifying...");
     
     // route.params don't work here given the way stormpath structures the URL
     $scope.sptoken = $route.current.params.sptoken;
@@ -10,14 +11,9 @@ bridge.controller('VerifyEmailController', ['$scope', '$route', 'authService', f
     }
     
     authService.verifyEmail({sptoken: $scope.sptoken}).then(function() {
-        // TODO: I feel it would be better at this point to go straight into the consent process.
-        // It's odd to be told you can sign in, then you can't sign in, you have to consent, then
-        // you can sign in.
-        $scope.messageType = "info";
-        $scope.message = "Your email address has been verified. You can now sign in to Bridge and begin using the application.";
+        $scope.setMessage("Your email address has been verified. You can now sign in to Bridge and begin using the application.");
     }, function(data) {
-        $scope.messageType = "danger";
-        $scope.message = data.payload;
+        $scope.setMessage(data.payload, "danger");
     });
     
 }]);
