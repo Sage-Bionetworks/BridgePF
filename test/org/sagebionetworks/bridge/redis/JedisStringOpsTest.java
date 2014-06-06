@@ -7,7 +7,7 @@ import org.junit.Test;
 
 public class JedisStringOpsTest {
     @Test
-    public void test() throws Exception {
+    public void setsAndReadsValueFromRedis() throws Exception {
         StringOps strOps = new JedisStringOps();
         assertEquals("OK", strOps.setex("testKey", 2, "testValue").execute());
         assertEquals("testValue", strOps.get("testKey").execute());

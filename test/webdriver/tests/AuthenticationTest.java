@@ -7,7 +7,6 @@ import play.test.TestBrowser;
 import webdriver.pages.AppPage;
 import webdriver.pages.AppPage.RequestResetPasswordDialog;
 import webdriver.pages.AppPage.SignUpDialog;
-import static org.fest.assertions.Assertions.assertThat;
 import static org.sagebionetworks.bridge.TestConstants.*;
 
 public class AuthenticationTest extends BaseIntegrationTest {
@@ -92,7 +91,6 @@ public class AuthenticationTest extends BaseIntegrationTest {
                 SignUpDialog dialog = page.openSignUpDialog();
                 
                 dialog.enterValidData();
-                dialog.close();
             }
         });
     }
@@ -104,7 +102,20 @@ public class AuthenticationTest extends BaseIntegrationTest {
                 AppPage page = new AppPage(browser);
                 SignUpDialog dialog = page.openSignUpDialog();
                 dialog.enterInvalidData("bridge", "bridgeit", "P4ssword", "P4ssword");
-                dialog.close();
+                dialog.assertEmailEmailError();
+            }
+        });
+    }
+    
+    @Test
+    public void signUpRequiresEmail() {
+        call(new Callback<TestBrowser>() {
+            public void invoke(TestBrowser browser) {
+                AppPage page = new AppPage(browser);
+                SignUpDialog dialog = page.openSignUpDialog();
+                dialog.enterValidData();
+                dialog.enterInvalidDataAfterValidData("bridge", "", "P4ssword", "P4ssword");
+                dialog.assertEmailRequiredError();
             }
         });
     }
@@ -116,7 +127,19 @@ public class AuthenticationTest extends BaseIntegrationTest {
                 AppPage page = new AppPage(browser);
                 SignUpDialog dialog = page.openSignUpDialog();
                 dialog.enterInvalidData("bridge", "bridgeit@sagebase.org", "P4ssword", "P4ssword2");
-                dialog.close();
+                dialog.assertPasswordConfirmEqualError();
+            }
+        });
+    }
+    
+    @Test
+    public void signUpRejectsInvalidPassword() {
+        call(new Callback<TestBrowser>() {
+            public void invoke(TestBrowser browser) {
+                AppPage page = new AppPage(browser);
+                SignUpDialog dialog = page.openSignUpDialog();
+                dialog.enterInvalidData("bridge", "bridgeit@sagebase.org", "asdf", "");
+                dialog.assertPasswordPatternError();
             }
         });
     }
@@ -128,7 +151,6 @@ public class AuthenticationTest extends BaseIntegrationTest {
                 AppPage page = new AppPage(browser);
                 SignUpDialog dialog = page.openSignUpDialog();
                 dialog.enterInvalidData("", "bridgeit@sagebase.org", "P4ssword", "P4ssword");
-                dialog.close();
             }
         });
     }
@@ -140,19 +162,16 @@ public class AuthenticationTest extends BaseIntegrationTest {
                 AppPage page = new AppPage(browser);
                 SignUpDialog dialog = page.openSignUpDialog();
                 dialog.enterInvalidData("bridge", "", "P4ssword", "P4ssword");
-                dialog.close();
             }
         });
     }
     
-    @Test
     public void signUpRejectsMissingPassword() {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
                 SignUpDialog dialog = page.openSignUpDialog();
                 dialog.enterInvalidData("bridge", "bridgeit@sagebase.org", "", "P4ssword");
-                dialog.close();
             }
         });
     }
@@ -164,7 +183,6 @@ public class AuthenticationTest extends BaseIntegrationTest {
                 AppPage page = new AppPage(browser);
                 SignUpDialog dialog = page.openSignUpDialog();
                 dialog.enterInvalidData("bridge", "bridgeit@sagebase.org", "P4ssword", "");
-                dialog.close();
             }
         });
     }

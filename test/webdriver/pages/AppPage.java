@@ -154,6 +154,22 @@ public class AppPage {
             enterFields(username, email, password, confirmPassword);
             assertThat(submitButton().isEnabled()).isFalse();
         }
+        public void enterInvalidDataAfterValidData(String username, String email, String password, String confirmPassword) {
+            enterFields(username, email, password, confirmPassword);
+            assertThat(submitButton().isEnabled()).isFalse();
+        }
+        public void assertEmailEmailError() {
+            assertThat(browser.findFirst("#emailEmailError").isDisplayed()).isTrue();
+        }
+        public void assertEmailRequiredError() {
+            assertThat(browser.findFirst("#emailRequiredError").isDisplayed()).isTrue();
+        }
+        public void assertPasswordPatternError() {
+            assertThat(browser.findFirst("#passwordPatternError").isDisplayed()).isTrue();
+        }
+        public void assertPasswordConfirmEqualError() {
+            assertThat(browser.findFirst("#passwordConfirmEqualError").isDisplayed()).isTrue();
+        }
         public void close() {
             browser.click(CLOSE_ACTION);
             browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_UP_DIALOG).isNotPresent();
