@@ -54,12 +54,6 @@ bridge.service('signInService', ['$modal', function($modal) {
                 size: 'sm',
                 windowClass: 'sm'
             });
-        },
-        close: function() {
-            if (modalInstance) {
-                modalInstance.dismiss('cancel');
-                modalInstance = null;
-            }
         }
     };
     return signInService;
