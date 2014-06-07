@@ -60,7 +60,7 @@ public class HealthDataServiceImplTest {
         userSession.setHealthDataCode("1");
         
         cache = mock(CacheProvider.class);
-        when(cache.get(anyString())).thenReturn(userSession);
+        when(cache.getUserSession(anyString())).thenReturn(userSession);
         
         encryptor = mock(PBEStringEncryptor.class);
         when(encryptor.decrypt(anyString())).thenReturn("1");

@@ -1,4 +1,4 @@
-package models;
+package org.sagebionetworks.bridge.models;
 
 import org.apache.commons.lang3.StringUtils;
 

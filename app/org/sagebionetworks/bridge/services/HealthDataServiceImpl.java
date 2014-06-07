@@ -65,7 +65,7 @@ public class HealthDataServiceImpl implements HealthDataService {
             throw new BridgeServiceException("HealthDataKey cannot be null", HttpStatus.SC_BAD_REQUEST);
         }
         
-        UserSession session = (UserSession)cache.get(key.getSessionToken());
+        UserSession session = cache.getUserSession(key.getSessionToken());
         String healthDataCode = session.getHealthDataCode();
         healthDataCode = encryptor.decrypt(healthDataCode);
         
