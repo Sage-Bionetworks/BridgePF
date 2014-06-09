@@ -9,12 +9,10 @@ bridge.service('signInService', ['$modal', function($modal) {
 
         $scope.signIn = function () {
             var credentials = formService.formToJSON($scope.signInForm, ['username', 'password']);
-            $scope.sending = true;
             $scope.signInForm.password.$setViewValue(null);
             $scope.signInForm.password.$render(); // why oh why
 
             authService.signIn(credentials).then(function() {
-                $scope.sending = false;
                 modalInstance.dismiss('cancel');
                 modalInstance = null;
                 if (lastRequest) {
@@ -26,13 +24,12 @@ bridge.service('signInService', ['$modal', function($modal) {
                     // and you will see the updated.
                     $http(config).then($route.reload);
                 }
-            }, function(data) {
-                $scope.sending = false;
-                if (data.status === 412) {
+            }, function(response) {
+                if (response.status === 412) {
                     modalInstance.dismiss('cancel');
                     modalInstance = null;
-                    $location.path("/consent/" + data.sessionToken);
-                } else if (data.status === 404 || data.status === 401) {
+                    $location.path("/consent/" + response.data.sessionToken);
+                } else if (response.status === 404 || response.status === 401) {
                     $scope.setMessage("Wrong user name or password.", "danger");
                 } else {
                     $scope.setMessage("There has been an error.", "danger");
@@ -65,7 +62,7 @@ bridge.factory('intercept401', ['$q', '$injector', function($q, $injector) {
                 var signInService = $injector.get('signInService');
                 signInService.open(rejection.config);
             }
-            return $q.reject(rejection, rejection.status);
+            return $q.reject(rejection);
         }
     };
 }]);

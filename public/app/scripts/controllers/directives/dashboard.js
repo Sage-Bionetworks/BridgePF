@@ -1,10 +1,8 @@
-bridge.controller('DashboardController', ['$scope', 'trackerService', '$humane', function($scope, trackerService, $humane) {
+bridge.controller('DashboardController', ['$scope', '$humane', 'trackerService', function($scope, $humane, trackerService) {
     
-    trackerService.getAll().then(function(data) {
-        $scope.trackers = data.payload;
-    }, function(data) {
-        $humane.error(data.payload);
-    });
+    trackerService.getAll().then(function(response) {
+        $scope.trackers = response.data.payload;
+    }, $humane.status);
     
     $scope.editTrackerList = function() {
         alert('Not implemented');

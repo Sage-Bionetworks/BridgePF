@@ -1,10 +1,10 @@
-bridge.service('trackerService', ['$http', '$q', '$rootScope', 'loadingService', function($http, $q, $rootScope, loadingService) {
+bridge.service('trackerService', ['$http', '$q', '$rootScope', function($http, $q, $rootScope) {
     var service = {
         getAll: function() {
-            return loadingService.call($http.get('/api/trackers'));
+            return $http.get('/api/trackers');
         },
         getSchema: function(trackerId) {
-            return loadingService.call($http.get('/api/trackers/schema/'+trackerId));
+            return $http.get('/api/trackers/schema/'+trackerId);
         }
     };
     return service;

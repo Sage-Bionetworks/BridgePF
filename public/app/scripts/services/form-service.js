@@ -1,5 +1,13 @@
 bridge.service('formService', [function() {
     return {
+        retrieveSpToken: function($route) {
+            // route.params don't work here given the way stormpath structures the URL
+            var sptoken = $route.current.params.sptoken;
+            if (!sptoken) {
+                sptoken = (document.location.search+"").split("sptoken=")[1];    
+            }
+            return sptoken;
+        },
         formToJSON: function(form, fields) {
             var object = {};
             for (var i=0; i < fields.length; i++) {
@@ -18,7 +26,15 @@ bridge.service('formService', [function() {
             if (!formName) {
                 throw new Error("You must supply formName to formService.initScope()");
             }
-            scope.sending = false;
+            
+            scope.sending = 0;
+            scope.$on('loadStart', function() {
+                scope.sending++;
+            });
+            scope.$on('loadEnd', function() {
+                scope.sending--;
+            });
+            
             scope.message = "";
             scope.messageType = "info";
             
@@ -33,7 +49,7 @@ bridge.service('formService', [function() {
                 return model.$dirty && model.$error[type];
             };
             scope.canSubmit = function() {
-                return !scope.sending && scope[formName].$dirty && scope[formName].$valid;
+                return scope.sending === 0 && scope[formName].$dirty && scope[formName].$valid;
             };
         }
     };

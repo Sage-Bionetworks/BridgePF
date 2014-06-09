@@ -14,12 +14,13 @@ function($scope, healthDataService, dashboardService, $q, $modal) {
         // back in time. Grab 2x the period and make that the date range for the data, but not the UI.
         start = start - ((end-start)*2);
 
-        healthDataService.getByDateRange($scope.tracker.id, start, end).then(function(data, status) {
-            $scope.dataset.convert(data.payload);
-            deferred.resolve($scope.dataset);
-        }, function(data, status) {
+        healthDataService.getByDateRange($scope.tracker.id, start, end).then(function(response) {
+            $scope.dataset.convert(response.data.payload);
+            response.data = $scope.dataset;
+            deferred.resolve(response);
+        }, function(response) {
             $scope.dataset.clear();
-            deferred.reject(data);
+            deferred.reject(response);
         });
         return deferred.promise;
     };

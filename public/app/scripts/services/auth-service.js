@@ -1,10 +1,11 @@
-bridge.service('authService', ['$http', '$rootScope', '$location', '$window', '$humane', '$q', 'loadingService',     
-function($http, $rootScope, $location, $window, $humane, $q, loadingService) {
+bridge.service('authService', ['$http', '$rootScope', '$location', '$window', '$humane', '$q',      
+function($http, $rootScope, $location, $window, $humane, $q) {
     var service = {
         sessionToken: '',
         username: '',
         authenticated: false,
         init: function(data) {
+            console.log(data);
             $http.defaults.headers.common['Bridge-Session'] = data.sessionToken;
             this.sessionToken = data.sessionToken;
             this.username = data.username;
@@ -17,23 +18,28 @@ function($http, $rootScope, $location, $window, $humane, $q, loadingService) {
             this.authenticated = false;
         },
         signIn: function(credentials) {
+            // It's very annoying that a promise expects then() but http returns a promise that
+            // has success() and error();
             var deferred = $q.defer();
-            loadingService.call($http.post('/api/auth/signIn', credentials)).then(function(data) {
-                service.init(data.payload);
-                deferred.resolve(data);
-            }, function(data) {
-                deferred.reject(data);
+            $http.post('/api/auth/signIn', credentials).then(function(response) {
+                service.init(response.data.payload);
+                deferred.resolve(response);
+            }, function(response) {
+                deferred.reject(response);
             });
             return deferred.promise;
         },
         signUp: function(credentials) {
-            return loadingService.call($http.post('/api/auth/signUp', credentials));
+            return $http.post('/api/auth/signUp', credentials);
         },
         signOut: function() {
-            return loadingService.call($http.get('/api/auth/signOut'));
+            return $http.get('/api/auth/signOut');
+        },
+        resetPassword: function(password, sptoken) {
+            return $http.post('/api/auth/resetPassword', {password: password, sptoken: sptoken});
         },
         verifyEmail: function(payload) {
-            return loadingService.call($http.post('/api/auth/verifyEmail', payload));
+            return $http.post('/api/auth/verifyEmail', payload);
         }
     };
 
