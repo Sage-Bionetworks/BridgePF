@@ -1,4 +1,4 @@
-package models;
+package org.sagebionetworks.bridge.models;
 
 import com.fasterxml.jackson.databind.JsonNode;
 

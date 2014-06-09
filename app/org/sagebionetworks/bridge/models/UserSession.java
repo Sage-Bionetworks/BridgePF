@@ -50,6 +50,10 @@ public class UserSession {
     public boolean doesConsent() {
         return consent;
     }
+    // Jackson serialization needs this method, even though linguistically, it makes no sense.
+    public boolean isConsent() {
+        return consent;
+    }
     public void setConsent(boolean consent) {
         this.consent = consent;
     }

@@ -13,6 +13,11 @@ import org.sagebionetworks.bridge.config.EncryptorUtil;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.models.Email;
+import org.sagebionetworks.bridge.models.EmailVerification;
+import org.sagebionetworks.bridge.models.PasswordReset;
+import org.sagebionetworks.bridge.models.SignIn;
+import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
@@ -51,13 +56,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
     
 	@Override
-    public UserSession signIn(Study study, String usernameOrEmail, String password) throws ConsentRequiredException,
+    public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException,
             BridgeNotFoundException, BridgeServiceException {
-	    if (StringUtils.isBlank(usernameOrEmail) || StringUtils.isBlank(password)) {
-            throw new BridgeServiceException("Invalid credentials, supply username/email and password",
-                    HttpStatus.SC_BAD_REQUEST);
-	    }
-	    if (study == null) {
+	    if (signIn == null) {
+            throw new BridgeServiceException("SignIn object is required", HttpStatus.SC_BAD_REQUEST);
+	    } else if (StringUtils.isBlank(signIn.getUsername())) {
+            throw new BridgeServiceException("Username/email must not be null", HttpStatus.SC_BAD_REQUEST);
+	    } else if (StringUtils.isBlank(signIn.getPassword())) {
+	        throw new BridgeServiceException("Password must not be null", HttpStatus.SC_BAD_REQUEST);
+	    } else if (study == null) {
             throw new BridgeServiceException("Study is required", HttpStatus.SC_BAD_REQUEST);
 	    }
 	    AuthenticationRequest<?, ?> request = null;
@@ -65,11 +72,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	    try {
 	        
 	        Application application = StormpathFactory.createStormpathApplication(stormpathClient); 
-	        request = new UsernamePasswordRequest(usernameOrEmail, password);
+	        request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword());
 	        Account account = application.authenticateAccount(request).getAccount();
 	        
 	        session = createSessionFromAccount(study, account);
-	        cache.set(session.getSessionToken(), session);
+	        cache.setUserSession(session.getSessionToken(), session);
 
 	        if (!session.doesConsent()) {
 	            throw new ConsentRequiredException(session.getSessionToken());
@@ -88,12 +95,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (sessionToken == null) {
             return new UserSession(); // why do we do this?
         }
-	    UserSession session = (UserSession)cache.get(sessionToken);
+	    UserSession session = cache.getUserSession(sessionToken);
 	    if (session == null || !session.doesConsent()) {
 	        return new UserSession();
-	    }/* else if (!session.doesConsent()) {
-            throw new ConsentRequiredException(session.getSessionToken());
-	    }*/
+	    }
 		return session;
 	}
 
@@ -105,12 +110,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	}
 
     @Override
-    public void signUp(String username, String email, String password) throws BridgeServiceException {
-        if (StringUtils.isBlank(email)) {
+    public void signUp(SignUp signUp) throws BridgeServiceException {
+        if (signUp == null) {
+            throw new BridgeServiceException("SignUp object is required", HttpStatus.SC_BAD_REQUEST);
+        } else if (StringUtils.isBlank(signUp.getEmail())) {
             throw new BridgeServiceException("Email is required", HttpStatus.SC_BAD_REQUEST);
-        } else if (StringUtils.isBlank(password)) {
+        } else if (StringUtils.isBlank(signUp.getPassword())) {
             throw new BridgeServiceException("Password is required", HttpStatus.SC_BAD_REQUEST);
-        } else if (!emailValidator.isValid(email)) {
+        } else if (!emailValidator.isValid(signUp.getEmail())) {
             throw new BridgeServiceException("Email address does not appear to be valid", HttpStatus.SC_BAD_REQUEST);
         }
         try {
@@ -122,9 +129,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             Account account = stormpathClient.instantiate(Account.class);
             account.setGivenName("<EMPTY>");
             account.setSurname("<EMPTY>");
-            account.setEmail(email);
-            account.setUsername(username);
-            account.setPassword(password);
+            account.setEmail(signUp.getEmail());
+            account.setUsername(signUp.getUsername());
+            account.setPassword(signUp.getPassword());
             directory.createAccount(account);
         } catch(ResourceException re) {
             throw new BridgeServiceException(re.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
@@ -132,42 +139,48 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
     
     @Override
-    public void verifyEmail(String verificationToken) throws BridgeServiceException {
-        if (verificationToken == null) {
+    public void verifyEmail(EmailVerification verification) throws BridgeServiceException {
+        if (verification == null) {
+            throw new BridgeServiceException("Verification object is required", HttpStatus.SC_BAD_REQUEST);
+        } else if (verification.getSptoken() == null) {
             throw new BridgeServiceException("Email verification token is required", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            stormpathClient.getCurrentTenant().verifyAccountEmail(verificationToken);    
+            stormpathClient.getCurrentTenant().verifyAccountEmail(verification.getSptoken());    
         } catch(ResourceException re) {
             throw new BridgeServiceException(re.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
         }
     }
 
 	@Override
-	public void requestResetPassword(String email) throws BridgeServiceException {
-	    if (StringUtils.isBlank(email)) {
+	public void requestResetPassword(Email email) throws BridgeServiceException {
+	    if (email == null) {
+	        throw new BridgeServiceException("Email object is required", HttpStatus.SC_BAD_REQUEST);
+	    }
+	    if (StringUtils.isBlank(email.getEmail())) {
 	        throw new BridgeServiceException("Email is required", HttpStatus.SC_BAD_REQUEST);
 	    }
 	    try {
 	        Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-	        application.sendPasswordResetEmail(email);
+	        application.sendPasswordResetEmail(email.getEmail());
 	    } catch(ResourceException re) {
 	        throw new BridgeServiceException(re.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
 	    }
 	}
 	
 	@Override
-	public void resetPassword(String password, String passwordResetToken) throws BridgeServiceException {
-	    if (StringUtils.isBlank(passwordResetToken)) {
+	public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException {
+	    if (passwordReset == null) {
+	        throw new BridgeServiceException("Password reset object is required", HttpStatus.SC_BAD_REQUEST);
+	    } else if (StringUtils.isBlank(passwordReset.getSptoken())) {
 	        throw new BridgeServiceException("Password reset token is required", HttpStatus.SC_BAD_REQUEST);
-	    }
-	    if (StringUtils.isBlank(password)) {
+	    } else if (StringUtils.isBlank(passwordReset.getPassword())) {
 	        throw new BridgeServiceException("Password is required", HttpStatus.SC_BAD_REQUEST);
 	    }
 	    try {
 	        Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-	        Account account = application.verifyPasswordResetToken(passwordResetToken);
-	        account.setPassword(password);
+	        Account account = application.verifyPasswordResetToken(passwordReset.getSptoken());
+	        account.setPassword(passwordReset.getPassword());
 	        account.save();
 	    } catch(ResourceException e) {
 	        throw new BridgeServiceException(e.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
@@ -177,7 +190,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	@Override
 	public void consentToResearch(String sessionToken) throws BridgeServiceException {
         try {
-            UserSession session = (UserSession)cache.get(sessionToken);
+            UserSession session = cache.getUserSession(sessionToken);
             if (session == null) {
                 throw new BridgeServiceException("No session", 500);
             }

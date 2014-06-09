@@ -23,4 +23,15 @@ public class JedisStringOps implements StringOps {
             }
         };
     }
+    
+    @Override
+    public RedisOp<String> delete(final String key) {
+        return new AbstractJedisTemplate<String>() {
+            @Override
+            String execute(Jedis jedis) {
+                Long keysRemoved = jedis.del(key);
+                return (keysRemoved > 0L) ? "OK" : null;
+            }
+        };
+    }
 }
