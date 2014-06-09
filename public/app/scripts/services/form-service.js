@@ -49,7 +49,7 @@ bridge.service('formService', [function() {
                 return model.$dirty && model.$error[type];
             };
             scope.canSubmit = function() {
-                return scope.sending === 0 && scope[formName].$dirty && scope[formName].$valid;
+                return scope.sending <= 0 && scope[formName].$dirty && scope[formName].$valid;
             };
         }
     };
