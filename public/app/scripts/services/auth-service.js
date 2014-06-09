@@ -5,7 +5,6 @@ function($http, $rootScope, $location, $window, $humane, $q) {
         username: '',
         authenticated: false,
         init: function(data) {
-            console.log(data);
             $http.defaults.headers.common['Bridge-Session'] = data.sessionToken;
             this.sessionToken = data.sessionToken;
             this.username = data.username;
@@ -18,8 +17,6 @@ function($http, $rootScope, $location, $window, $humane, $q) {
             this.authenticated = false;
         },
         signIn: function(credentials) {
-            // It's very annoying that a promise expects then() but http returns a promise that
-            // has success() and error();
             var deferred = $q.defer();
             $http.post('/api/auth/signIn', credentials).then(function(response) {
                 service.init(response.data.payload);
