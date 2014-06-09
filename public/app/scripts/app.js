@@ -1,7 +1,4 @@
 var bridge = angular.module('bridge', ['ngRoute', 'ngCookies', 'ui.bootstrap'])
-.run(['$rootScope', function($rootScope) {
-    $rootScope.loading = 0;
-}])
 .config(['$routeProvider', function($routeProvider) {
 	$routeProvider.when('/health/tracker/BloodPressure', {
 	    templateUrl: '/views/trackers/bloodpressure.html',
@@ -29,7 +26,7 @@ var bridge = angular.module('bridge', ['ngRoute', 'ngCookies', 'ui.bootstrap'])
 		access: {allowAnonymous: false}
 	})
 	.when('/resetPassword', {
-        templateUrl: '/views/resetPassword.html',
+        templateUrl: '/views/reset-password.html',
         controller: 'ResetPasswordController',
         access: {allowAnonymous: true}
 	})
@@ -48,4 +45,27 @@ var bridge = angular.module('bridge', ['ngRoute', 'ngCookies', 'ui.bootstrap'])
 		controller: 'ResearchController',
 		access: {allowAnonymous: true}
 	});
+}]);
+bridge.factory('loadingInterceptor', ['$q', '$injector', '$rootScope', function($q, $injector, $rootScope) {
+    return {
+        'request': function(config) {
+            $rootScope.$broadcast('loadStart');
+            return config;
+        },
+        'requestError': function(rejection) {
+            $rootScope.$broadcast('loadEnd');
+            return $q.reject(rejection);
+        },
+        'response': function(response) {
+            $rootScope.$broadcast('loadEnd');
+            return response;
+        },
+        'responseError': function(rejection) {
+            $rootScope.$broadcast('loadEnd');
+            return $q.reject(rejection);
+        }
+    };
+}]);
+bridge.config(['$httpProvider', function($httpProvider) {
+    $httpProvider.interceptors.push('loadingInterceptor');
 }]);
