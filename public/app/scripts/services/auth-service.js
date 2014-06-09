@@ -17,11 +17,6 @@ function($http, $rootScope, $location, $window, $humane, $q, loadingService) {
             this.authenticated = false;
         },
         signIn: function(credentials) {
-            if (!credentials.username && !credentials.password) {
-                return;
-            }
-            credentials = angular.extend({}, credentials);
-            
             var deferred = $q.defer();
             loadingService.call($http.post('/api/auth/signIn', credentials)).then(function(data) {
                 service.init(data.payload);
@@ -31,8 +26,14 @@ function($http, $rootScope, $location, $window, $humane, $q, loadingService) {
             });
             return deferred.promise;
         },
+        signUp: function(credentials) {
+            return loadingService.call($http.post('/api/auth/signUp', credentials));
+        },
         signOut: function() {
             return loadingService.call($http.get('/api/auth/signOut'));
+        },
+        verifyEmail: function(payload) {
+            return loadingService.call($http.post('/api/auth/verifyEmail', payload));
         }
     };
 

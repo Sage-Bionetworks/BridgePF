@@ -1,6 +1,6 @@
 bridge.controller('ApplicationController', 
-['$scope', '$location', '$humane', '$window', 'authService', 'requestResetPasswordService', 'signInService',  
-function($scope, $location, $humane, $window, authService, requestResetPasswordService, signInService) {
+['$scope', '$location', '$humane', '$window', 'authService', 'requestResetPasswordService', 'signInService', 'signUpService',  
+function($scope, $location, $humane, $window, authService, requestResetPasswordService, signInService, signUpService) {
 
 	var DEFAULT_PATHS = ["","/","index.html","/index.html"];
 	
@@ -26,6 +26,9 @@ function($scope, $location, $humane, $window, authService, requestResetPasswordS
 
 	$scope.signIn = function() {
 	    signInService.open();
+	};
+	$scope.signUp = function() {
+	    signUpService.open();
 	};
 	$scope.signOut = function() {
 	    authService.signOut().then(function() {

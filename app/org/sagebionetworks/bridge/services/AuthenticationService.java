@@ -15,6 +15,10 @@ public interface AuthenticationService {
 	
 	public void signOut(String sessionToken);
 	
+	public void signUp(String username, String email, String password) throws BridgeServiceException;
+	
+	public void verifyEmail(String verificationToken) throws BridgeServiceException;
+	
 	public void requestResetPassword(String email) throws BridgeServiceException;
 	
 	public void resetPassword(String password, String passwordResetToken) throws BridgeServiceException;

@@ -17,8 +17,12 @@ abstract class AbstractJedisTemplate<T> implements RedisOp<T> {
         String host = config.getProperty("redis.host");
         int port = config.getPropertyAsInt("redis.port");
         int timeout = config.getPropertyAsInt("redis.timeout");
-        String password = config.getProperty("redis.password");
-        JEDIS_POOL = new JedisPool(poolConfig, host, port, timeout, password);
+        if (config.isLocal()) { // No password locally.
+            JEDIS_POOL = new JedisPool(poolConfig, host, port, timeout);
+        } else {
+            String password = config.getProperty("redis.password");
+            JEDIS_POOL = new JedisPool(poolConfig, host, port, timeout, password);
+        }
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {

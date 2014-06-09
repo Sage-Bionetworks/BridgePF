@@ -2,20 +2,20 @@ bridge.service('signInService', ['$modal', function($modal) {
 
     var modalInstance, lastRequest;
 
-    var ModalInstanceController = ['$scope', '$location', '$http', '$route', 'authService', 
-       function($scope, $location, $http, $route, authService) {
+    var ModalInstanceController = ['$scope', '$location', '$http', '$route', 'authService', 'formService',  
+       function($scope, $location, $http, $route, authService, formService) {
         
-        $scope.credentials = {username: '', password: ''};
-        $scope.sending = false;
+        formService.initScope($scope, 'signInForm');
 
-        $messageType = "error";
-        $message = "Wrong user name or password.";
         $scope.signIn = function () {
+            var credentials = formService.formToJSON($scope.signInForm, ['username', 'password']);
             $scope.sending = true;
-            authService.signIn($scope.credentials).then(function() {
-                modalInstance.dismiss('cancel');
-                $scope.credentials.password = '';
+            $scope.signInForm.password.$setViewValue(null);
+            $scope.signInForm.password.$render(); // why oh why
+
+            authService.signIn(credentials).then(function() {
                 $scope.sending = false;
+                modalInstance.dismiss('cancel');
                 modalInstance = null;
                 if (lastRequest) {
                     console.log("Resubmitting last request:", lastRequest);
@@ -27,23 +27,17 @@ bridge.service('signInService', ['$modal', function($modal) {
                     $http(config).then($route.reload);
                 }
             }, function(data) {
-                $scope.credentials.password = '';
                 $scope.sending = false;
                 if (data.status === 412) {
                     modalInstance.dismiss('cancel');
                     modalInstance = null;
                     $location.path("/consent/" + data.sessionToken);
                 } else if (data.status === 404 || data.status === 401) {
-                    $scope.messageType = "error";
-                    $scope.message = "Wrong user name or password.";
+                    $scope.setMessage("Wrong user name or password.", "danger");
                 } else {
-                    $scope.messageType = "error";
-                    $scope.message = "There has been an error.";
+                    $scope.setMessage("There has been an error.", "danger");
                 }
             });
-        };
-        $scope.canSubmit = function() {
-            return !$scope.sending && $scope.credentials.username && $scope.credentials.password;
         };
         $scope.cancel = function () {
             modalInstance.dismiss('cancel');
