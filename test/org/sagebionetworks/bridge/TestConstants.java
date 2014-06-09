@@ -53,12 +53,20 @@ public class TestConstants {
     public static final String SIGN_IN_ACT = "#signInAct";
     public static final String SIGN_IN_MESSAGE = "#signInMessage";
     public static final String USERNAME_LABEL = "span[ng-bind='session.username']";
-    public static final String PASSWORD_INPUT = "input[ng-model='credentials.password']";
-    public static final String USERNAME_INPUT = "input[ng-model='credentials.username']";
-    public static final String EMAIL_INPUT = "input[ng-model='credentials.email']";
-
+    
+    public static final String SIGN_UP_LINK = "#signUpLink";
+    public static final String SIGN_UP_DIALOG = "#signUpDialog";
+    public static final String SIGN_UP_MESSAGE = "#signUpMessage";
+    public static final String SIGN_UP_ACT = "#signUpAct";
+    
+    public static final String PASSWORD_INPUT = "input[name='password']";
+    public static final String CONFIRM_PASSWORD_INPUT = "input[name='passwordConfirm']";
+    public static final String USERNAME_INPUT = "input[name='username']";
+    public static final String EMAIL_INPUT = "input[name='email']";
+    
     public static final String SEND_ACTION = "#sendAct";
     public static final String CANCEL_ACTION = "#cancelAct";
+    public static final String CLOSE_ACTION = ".close";
 
     public static final Class<PhantomJSDriver> PHANTOMJS_DRIVER = org.openqa.selenium.phantomjs.PhantomJSDriver.class;
     public static final Class<FirefoxDriver> FIREFOX_DRIVER = FirefoxDriver.class;

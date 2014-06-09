@@ -14,6 +14,7 @@ libraryDependencies ++= Seq(
   "org.springframework" % "spring-context" % "4.0.5.RELEASE",
   "org.springframework" % "spring-test" % "4.0.5.RELEASE",
   "org.apache.commons" % "commons-lang3" % "3.3.2",
+  "commons-validator" % "commons-validator" % "1.4.0",
   "org.codehaus.jackson" % "jackson-mapper-asl" % "1.9.13",
   "com.google.guava" % "guava" % "17.0",
   "org.mockito" % "mockito-all" % "1.9.5",

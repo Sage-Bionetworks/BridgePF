@@ -40,7 +40,7 @@ describe("ResetPasswordController", function() {
     it("only submits the password when form is valid", function() {
        ResetPasswordController = createController();
        $rootScope.resetPasswordForm = {$valid: false};
-       $rootScope.change();
+       $rootScope.submit();
        expect($humane.confirm).not.toHaveBeenCalled();
        expect($humane.error).not.toHaveBeenCalled();
     });
@@ -50,7 +50,7 @@ describe("ResetPasswordController", function() {
         $rootScope.password = "asb";
 
         setupPOST().respond(500, {"payload":"Invalid session token (abc)"});
-        $rootScope.change();
+        $rootScope.submit();
         $httpBackend.flush();
         expect($humane.error).toHaveBeenCalledWith('Invalid session token (abc)');
     });
@@ -60,7 +60,7 @@ describe("ResetPasswordController", function() {
         $rootScope.password = "asb";
 
         setupPOST().respond(200, {});
-        $rootScope.change();
+        $rootScope.submit();
         $httpBackend.flush();
         expect($humane.confirm).toHaveBeenCalledWith('Your password has been changed.');
     });
