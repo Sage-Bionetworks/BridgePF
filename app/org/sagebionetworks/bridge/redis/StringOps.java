@@ -14,4 +14,11 @@ public interface StringOps {
      * Gets the value of the specified key. If the key does not exist null is returned.
      */
     RedisOp<String> get(String key);
+    
+    /**
+     * Deletes the value of the specified key. 
+     * @param key
+     * @return OK" if at least one key is deleted, or null if the key does not exist.
+     */
+    RedisOp<String> delete(String key);
 }

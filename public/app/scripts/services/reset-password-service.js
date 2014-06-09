@@ -32,11 +32,6 @@ bridge.service('requestResetPasswordService', ['$modal', function($modal) {
                 size: 'sm',
                 windowClass: 'sm'
             });
-        },
-        close: function() {
-            if (modalInstance) {
-                modalInstance.dismiss('cancel');
-            }
         }
     };
 

@@ -34,7 +34,8 @@ public class BaseIntegrationTest {
     }
     
     protected void call(Callback<TestBrowser> callback) {
-        running(testServer(3333, fakeApplication(inMemoryDatabase())), TestConstants.FIREFOX_DRIVER, wrapAndConfigureDriver(callback));
+        running(testServer(3333, fakeApplication(inMemoryDatabase())), TestConstants.PHANTOMJS_DRIVER,
+                wrapAndConfigureDriver(callback));
     }
 
 }
