@@ -43,4 +43,3 @@ running in order to run the tests (they are true unit tests with mocks).
 
 This file will be packaged with your application, when using `play dist`.
 
-3
