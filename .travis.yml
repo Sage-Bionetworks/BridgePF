@@ -35,3 +35,6 @@ deploy:
   skip_cleanup: true
   app:
     develop: bridge-development
+    prod: bridge-prod
+      on:
+        condition: "$TRAVIS_TAG = release*"
