@@ -8,15 +8,12 @@ bridge.service('requestResetPasswordService', ['$modal', function($modal) {
         formService.initScope($scope, 'requestResetPasswordForm');
         
         $scope.send = function () {
-            $scope.sending = true;
             var json = formService.formToJSON($scope.requestResetPasswordForm, ['email']);
-            $http.post('/api/auth/requestResetPassword', json).success(function(data) {
-                $scope.sending = false;
+            $http.post('/api/auth/requestResetPassword', json).then(function() {
                 modalInstance.dismiss('cancel');
                 $humane.confirm("Please look for further instructions in your email inbox.");
-            }).error(function(data) {
-                $scope.sending = false;
-                $scope.setMessage(data.payload, 'danger');
+            }, function(response) {
+                $scope.setMessage(response.data.payload, 'danger');
             });
         };
         $scope.cancel = function () {

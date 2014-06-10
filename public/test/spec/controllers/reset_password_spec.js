@@ -34,20 +34,14 @@ describe("ResetPasswordController", function() {
     function setupPOST() {
         // verify that the password is posted along with the session token in the header, 
         // as was extracted from the routing service.
-        return $httpBackend.expectPOST('/api/auth/resetPassword', {password: "asb", sptoken: "abc"});
+        return $httpBackend.expectPOST('/api/auth/resetPassword', {password: "P4ssword", sptoken: "abc"});
     }
 
-    it("only submits the password when form is valid", function() {
-       ResetPasswordController = createController();
-       $rootScope.resetPasswordForm = {$valid: false};
-       $rootScope.submit();
-       expect($humane.confirm).not.toHaveBeenCalled();
-       expect($humane.error).not.toHaveBeenCalled();
-    });
     it("submitting wrong session token shows an error", function() {
         ResetPasswordController = createController();
         $rootScope.resetPasswordForm = {$valid: true};
-        $rootScope.password = "asb";
+        $rootScope.sptoken = "abc";
+        $rootScope.password = "P4ssword";
 
         setupPOST().respond(500, {"payload":"Invalid session token (abc)"});
         $rootScope.submit();
@@ -57,7 +51,7 @@ describe("ResetPasswordController", function() {
     it("submitting correctly shows a confirmation message", function() {
         ResetPasswordController = createController();
         $rootScope.resetPasswordForm = {$valid: true};
-        $rootScope.password = "asb";
+        $rootScope.password = "P4ssword";
 
         setupPOST().respond(200, {});
         $rootScope.submit();
