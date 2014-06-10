@@ -29,7 +29,6 @@ public class ApplicationController extends BaseController {
     public Result loadApp() throws Exception {
         String sessionToken = getSessionToken(false);
         UserSession session = authenticationService.getSession(sessionToken);
-        session.setEnvironment(bridgeConfig.getEnvironment().getEnvName());
         UserSessionInfo info = new UserSessionInfo(session);
         
         return ok(views.html.index.render(Json.toJson(info).toString()));

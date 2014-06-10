@@ -35,10 +35,10 @@ var bridge = angular.module('bridge', ['ngRoute', 'ngCookies', 'ui.bootstrap'])
         controller: 'VerifyEmailController',
         access: {allowAnonymous: true}
     })
-    .when('/consent/:sessionToken', {
+    .when('/consent', {
         templateUrl: '/views/consent.html',
         controller: 'ConsentController',
-        access: {allowAnonymous: true}
+        access: {allowAnonymous: false}
     })
 	.otherwise({ // the landing page, which is the research information page.
 		templateUrl: '/views/research.html',

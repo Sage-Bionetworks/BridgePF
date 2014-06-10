@@ -133,18 +133,6 @@ public class AuthenticationTest extends BaseIntegrationTest {
     }
     
     @Test
-    public void signUpRejectsInvalidPassword() {
-        call(new Callback<TestBrowser>() {
-            public void invoke(TestBrowser browser) {
-                AppPage page = new AppPage(browser);
-                SignUpDialog dialog = page.openSignUpDialog();
-                dialog.enterInvalidData("bridge", "bridgeit@sagebase.org", "asdf", "");
-                dialog.assertPasswordPatternError();
-            }
-        });
-    }
-    
-    @Test
     public void signUpRejectsMissingUsername() {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
