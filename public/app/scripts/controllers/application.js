@@ -1,10 +1,17 @@
 bridge.controller('ApplicationController', 
-['$scope', '$location', '$humane', '$window', 'authService', 'requestResetPasswordService', 'signInService', 'signUpService',  
-function($scope, $location, $humane, $window, authService, requestResetPasswordService, signInService, signUpService) {
-
+['$scope', '$rootScope', '$location', '$humane', '$window', 'authService', 'requestResetPasswordService', 'signInService', 'signUpService',  
+function($scope, $rootScope, $location, $humane, $window, authService, requestResetPasswordService, signInService, signUpService) {
+    
+    $rootScope.loading = 0;
+    $rootScope.$on("loadStart", function() {
+        $rootScope.loading++;
+    });
+    $rootScope.$on("loadEnd", function() {
+        $rootScope.loading--;
+    });
+    
 	var DEFAULT_PATHS = ["","/","index.html","/index.html"];
 	
-	$scope.credentials = {};
 	$scope.session = authService;
 
 	$scope.tabs = [
@@ -33,8 +40,8 @@ function($scope, $location, $humane, $window, authService, requestResetPasswordS
 	$scope.signOut = function() {
 	    authService.signOut().then(function() {
 	        $window.location.replace("/");  
-	    }, function(data) {
-	        $humane.error(data.payload); 
+	    }, function(response) {
+	        $humane.error(response.data.payload); 
 	    });
 	};
     $scope.resetPassword = function() {

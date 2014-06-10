@@ -87,7 +87,12 @@
                     <constructor-arg index="2">
                         <list>
                             <value>localhost</value>
-                            <value>bridge-development.herokuapp.com</value>
+                            <value>bridge-develop.herokuapp.com</value>
+                            <!-- In production however, we'd expect to have DNS
+                                entries like neurod.bridgesage.org, that we 
+                                would use instead.
+                             -->
+                            <value>bridge-prod.herokuapp.com</value>
                         </list>
                     </constructor-arg>
                     <constructor-arg index="3">
