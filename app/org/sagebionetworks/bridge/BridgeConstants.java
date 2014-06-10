@@ -9,4 +9,6 @@ public class BridgeConstants {
 	public static final String CUSTOM_DATA_HEALTH_CODE_SUFFIX = "_code";
 	
 	public static final int BRIDGE_SESSION_EXPIRE_IN_SECONDS = 20*60;
+	
+	public static final String CONSENT_REQUIRED_MESSAGE = "Before you may continue, we require you to consent to participate in this study.";
 }

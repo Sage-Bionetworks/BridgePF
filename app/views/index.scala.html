@@ -31,7 +31,7 @@
             </div>
         </div>
         <div class="row main-pane">
-            <ul class="nav nav-tabs" ng-show="session.authenticated" ng-cloak>
+            <ul class="nav nav-tabs" ng-show="session.authenticated && session.consented" ng-cloak>
                 <li ng-class="{active: tabClass(tab)}" ng-repeat="tab in tabs">
                     <a href="{{tab.link}}">{{tab.label}}</a>
                 </li>

@@ -164,9 +164,6 @@ public class AppPage {
         public void assertEmailRequiredError() {
             assertThat(browser.findFirst("#emailRequiredError").isDisplayed()).isTrue();
         }
-        public void assertPasswordPatternError() {
-            assertThat(browser.findFirst("#passwordPatternError").isDisplayed()).isTrue();
-        }
         public void assertPasswordConfirmEqualError() {
             assertThat(browser.findFirst("#passwordConfirmEqualError").isDisplayed()).isTrue();
         }

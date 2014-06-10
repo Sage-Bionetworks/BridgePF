@@ -10,11 +10,11 @@ bridge.service('signInService', ['$modal', function($modal) {
         $scope.signIn = function () {
             var credentials = formService.formToJSON($scope.signInForm, ['username', 'password']);
             $scope.signInForm.password.$setViewValue(null);
-            $scope.signInForm.password.$render(); // why oh why
+            $scope.signInForm.password.$render();
 
-            authService.signIn(credentials).then(function() {
-                modalInstance.dismiss('cancel');
-                modalInstance = null;
+            authService.signIn(credentials).then(function(response) {
+                authService.init(response.data.payload);
+                $scope.cancel();
                 if (lastRequest) {
                     console.log("Resubmitting last request:", lastRequest);
                     var config = lastRequest;
@@ -26,9 +26,8 @@ bridge.service('signInService', ['$modal', function($modal) {
                 }
             }, function(response) {
                 if (response.status === 412) {
-                    modalInstance.dismiss('cancel');
-                    modalInstance = null;
-                    $location.path("/consent/" + response.data.sessionToken);
+                    $scope.cancel();
+                    authService.handleConsent(response.data.payload);
                 } else if (response.status === 404 || response.status === 401) {
                     $scope.setMessage("Wrong user name or password.", "danger");
                 } else {

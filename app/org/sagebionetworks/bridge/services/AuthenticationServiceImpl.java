@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	
 	final static Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 	
+	public static final UserSession ANONYMOUS_USER = new UserSession();
 	private Client stormpathClient;
 	private CacheProvider cache;
 	private BridgeConfig config;
@@ -53,6 +55,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     
     public void setBridgeConfig(BridgeConfig config) {
         this.config = config;
+    }
+
+    @Override
+    public UserSession getSession(String sessionToken) {
+        if (sessionToken == null) {
+            return ANONYMOUS_USER;
+        }
+        UserSession session = cache.getUserSession(sessionToken);
+        if (session == null) {
+            return ANONYMOUS_USER;
+        }
+        return session;
     }
     
 	@Override
@@ -79,7 +93,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	        cache.setUserSession(session.getSessionToken(), session);
 
 	        if (!session.doesConsent()) {
-	            throw new ConsentRequiredException(session.getSessionToken());
+	            throw new ConsentRequiredException(new UserSessionInfo(session));
 	        }
 	        
 	    } catch (ResourceException re) {
@@ -88,18 +102,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	        request.clear();
 	    }
 	    return session;
-	}
-
-	@Override
-	public UserSession getSession(String sessionToken) throws BridgeServiceException {
-        if (sessionToken == null) {
-            return new UserSession(); // why do we do this?
-        }
-	    UserSession session = cache.getUserSession(sessionToken);
-	    if (session == null || !session.doesConsent()) {
-	        return new UserSession();
-	    }
-		return session;
 	}
 
 	@Override
@@ -139,14 +141,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
     
     @Override
-    public void verifyEmail(EmailVerification verification) throws BridgeServiceException {
+    public UserSession verifyEmail(Study study, EmailVerification verification) throws BridgeServiceException, ConsentRequiredException {
         if (verification == null) {
             throw new BridgeServiceException("Verification object is required", HttpStatus.SC_BAD_REQUEST);
         } else if (verification.getSptoken() == null) {
             throw new BridgeServiceException("Email verification token is required", HttpStatus.SC_BAD_REQUEST);
         }
+        UserSession session = null;
         try {
-            stormpathClient.getCurrentTenant().verifyAccountEmail(verification.getSptoken());    
+            Account account = stormpathClient.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
+
+            session = createSessionFromAccount(study, account);
+            cache.setUserSession(session.getSessionToken(), session);
+            if (!session.doesConsent()) {
+                throw new ConsentRequiredException(new UserSessionInfo(session));
+            }
+            return session;
         } catch(ResourceException re) {
             throw new BridgeServiceException(re.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
         }
@@ -209,6 +219,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             data.save();
 
             session.setHealthDataCode(healthDataCode);
+            session.setConsent(true);
+            cache.setUserSession(sessionToken, session);
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
@@ -232,4 +244,5 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         return session;
     }
+
 }
