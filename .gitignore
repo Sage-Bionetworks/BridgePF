@@ -2,6 +2,7 @@
 .project
 .settings
 .history
+TODO.txt
 target
 application.log
 node_modules
