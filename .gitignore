@@ -3,6 +3,7 @@
 .settings
 .history
 TODO.txt
+phantomjsdriver.log
 target
 application.log
 node_modules

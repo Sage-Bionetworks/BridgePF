@@ -11,14 +11,14 @@ function($scope, $rootScope, $location, $humane, $window, authService, requestRe
     });
     
 	var DEFAULT_PATHS = ["","/","index.html","/index.html"];
-	
-	$scope.session = authService;
+
+    $scope.session = authService;
 
 	$scope.tabs = [
-        {link: '/#/health', label: "My Health"},
-        {link: '/#/questions', label: "Questions"},
-        {link: '/#/journal', label: "Journal"},
-        {link: '/#/research', label: "Researcher's Journal"}
+        {link: '#/health', label: "My Health"},
+        {link: '#/questions', label: "Questions"},
+        {link: '#/journal', label: "Journal"},
+        {link: '#/research', label: "Researcher's Journal"}
     ]; 
 	$scope.tabClass = function(tab) {
 		var path = $location.path();
