@@ -1,19 +1,20 @@
 package org.sagebionetworks.bridge.exceptions;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.sagebionetworks.bridge.models.UserSessionInfo;
 
 public class ConsentRequiredException extends BridgeServiceException {
 	private static final long serialVersionUID = 3057825897435345541L;
 	
-	private final String sessionToken;
+	private final UserSessionInfo userSession;
 	
-	public ConsentRequiredException(String sessionToken) {
+	public ConsentRequiredException(UserSessionInfo userSession) {
 		super("Consent is required before signing in", HttpStatus.SC_PRECONDITION_FAILED);
-		this.sessionToken = sessionToken;
+		this.userSession = userSession;
 	}
 
-	public String getSessionToken() {
-		return sessionToken;
+	public UserSessionInfo getUserSession() {
+		return userSession;
 	}
 	
 }

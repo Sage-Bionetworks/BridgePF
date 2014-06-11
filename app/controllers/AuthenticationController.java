@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.UserSessionInfo;
 
 import play.mvc.*;
 
@@ -29,7 +30,7 @@ public class AuthenticationController extends BaseController {
 		SignIn signIn = SignIn.fromJson(request().body().asJson());
 		UserSession session = authenticationService.signIn(study, signIn);
 		response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken());
-		return jsonResult(new JsonPayload<UserSession>(session));
+		return jsonResult(new JsonPayload<UserSessionInfo>(new UserSessionInfo(session)));
 	}
 
 	public Result signOut() throws Exception {
@@ -46,9 +47,13 @@ public class AuthenticationController extends BaseController {
 	}
 	
 	public Result verifyEmail() throws Exception {
+	    Study study = studyControllerService.getStudyByHostname(request());
 	    EmailVerification ev = EmailVerification.fromJson(request().body().asJson());
-	    authenticationService.verifyEmail(ev);
-	    return jsonResult("Email verified.");
+	    // In normal course of events (verify email, consent to research), 
+	    // an exception is thrown. This code will probably never execute.
+	    UserSession session = authenticationService.verifyEmail(study, ev);
+        response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken());
+        return jsonResult(new JsonPayload<UserSessionInfo>(new UserSessionInfo(session)));
 	}
 	
 	public Result requestResetPassword() throws Exception {

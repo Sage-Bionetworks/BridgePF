@@ -4,10 +4,19 @@ function($http, $rootScope, $location, $window, $humane, $q) {
         sessionToken: '',
         username: '',
         authenticated: false,
+        consented: false,
+        
+        handleConsent: function(payload) {
+            if (payload) {
+                this.init(payload);    
+            }
+            $location.path("/consent");
+        },
         init: function(data) {
             $http.defaults.headers.common['Bridge-Session'] = data.sessionToken;
             this.sessionToken = data.sessionToken;
             this.username = data.username;
+            this.consented = data.consented;
             this.authenticated = true;
         },
         clear: function() {
@@ -15,6 +24,7 @@ function($http, $rootScope, $location, $window, $humane, $q) {
             this.sessionToken = '';
             this.username = '';
             this.authenticated = false;
+            this.consented = false;
         },
         signIn: function(credentials) {
             var deferred = $q.defer();
