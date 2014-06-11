@@ -36,5 +36,3 @@ deploy:
   app:
     develop: bridge-develop
     prod: bridge-prod
-      on:
-        condition: "$TRAVIS_TAG = release*"
