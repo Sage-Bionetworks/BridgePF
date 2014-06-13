@@ -1,47 +1,47 @@
 var bridge = angular.module('bridge', ['ngRoute', 'ngCookies', 'ui.bootstrap'])
 .config(['$routeProvider', function($routeProvider) {
 	$routeProvider.when('/health/tracker/BloodPressure', {
-	    templateUrl: '/views/trackers/bloodpressure.html',
+	    templateUrl: 'views/trackers/bloodpressure.html',
 	    controller: 'BloodPressureController',
 	    access: {allowAnonymous: false}
 	})
     .when('/health/tracker/Medication', {
-        templateUrl: '/views/trackers/medication.html',
+        templateUrl: 'views/trackers/medication.html',
         controller: 'MedicationController',
         access: {allowAnonymous: false}
     })
     .when('/health', {
-        templateUrl: '/views/health.html',
+        templateUrl: 'views/health.html',
         controller: 'HealthController',
         access: {allowAnonymous: false}
     })
 	.when('/questions', {
-		templateUrl: '/views/questions.html',
+		templateUrl: 'views/questions.html',
 		controller: 'QuestionsController',
 		access: {allowAnonymous: false}
 	})
 	.when('/journal', {
-		templateUrl: '/views/journal.html',
+		templateUrl: 'views/journal.html',
 		controller: 'JournalController',
 		access: {allowAnonymous: false}
 	})
 	.when('/resetPassword', {
-        templateUrl: '/views/reset-password.html',
+        templateUrl: 'views/reset-password.html',
         controller: 'ResetPasswordController',
         access: {allowAnonymous: true}
 	})
     .when('/verifyEmail', {
-        templateUrl: '/views/verifyEmail.html',
+        templateUrl: 'views/verifyEmail.html',
         controller: 'VerifyEmailController',
         access: {allowAnonymous: true}
     })
     .when('/consent', {
-        templateUrl: '/views/consent.html',
+        templateUrl: 'views/consent.html',
         controller: 'ConsentController',
         access: {allowAnonymous: false}
     })
 	.otherwise({ // the landing page, which is the research information page.
-		templateUrl: '/views/research.html',
+		templateUrl: 'views/research.html',
 		controller: 'ResearchController',
 		access: {allowAnonymous: true}
 	});

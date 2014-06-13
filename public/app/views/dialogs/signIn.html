@@ -3,14 +3,14 @@
         <button type="button" class="close" ng-click="cancel()">&times;</button>
         <h4 id="signInDialog" class="modal-title">Sign In</h4>
     </div>
-    <div class="modal-body" style="padding-top:0">
+    <div class="modal-body">
         <div class="form-group">
             <label>Email or username</label>
             <input type="text" name="username" ng-model="username" required class="form-control" />
         </div>
         <div class="form-group">
             <label>Password</label>
-            <input type="password" name="password" ng-model="password" class="form-control" />
+            <input type="password" name="password" required ng-model="password" class="form-control" />
             <p id="signInMessage" ng-show="message" class="text-{{messageType}}">{{message}}</p>
         </div>
     </div>

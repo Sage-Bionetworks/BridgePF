@@ -43,7 +43,7 @@
         <property name="target">
             <bean class="controllers.ApplicationController">
                 <property name="authenticationService" ref="authenticationService" />
-                <property name="bridgeConfig" ref="bridgeConfig" />
+                <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
     </bean>

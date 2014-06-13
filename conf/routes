@@ -1,8 +1,10 @@
 # Redirect to application
 
 # These routes won't support an URL that maps to an internal AngularJS state (those would all be routed to /public/app")
-GET    /                         @controllers.ApplicationController.loadApp
-GET    /index.html               @controllers.ApplicationController.redirectToApp
+GET    /app/                         @controllers.ApplicationController.loadApp
+GET    /app/index.html               @controllers.ApplicationController.redirectToApp
+GET    /                             @controllers.ApplicationController.loadPublicApp
+GET    /index.html                   @controllers.ApplicationController.redirectToPublicApp
 
 # API - Authentication
 POST   /api/auth/signIn                 @controllers.AuthenticationController.signIn
@@ -28,5 +30,5 @@ GET    /api/trackers                   @controllers.TrackerController.getTracker
 GET    /api/trackers/schema/:trackerId @controllers.TrackerController.getTrackerSchema(trackerId: Long)
 
 # AngularJS application
-GET     /*file                  controllers.Assets.at(path="/public/app", file)
-HEAD    /*file                  controllers.Assets.at(path="/public/app", file)
+GET     /*file                  controllers.Assets.at(path="/public", file)
+HEAD    /*file                  controllers.Assets.at(path="/public", file)
