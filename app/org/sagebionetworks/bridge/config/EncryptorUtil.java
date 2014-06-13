@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.config;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jasypt.encryption.StringEncryptor;
 import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
@@ -33,12 +34,10 @@ public class EncryptorUtil {
      */
     public static PBEStringEncryptor getEncryptor(final String password, final String salt) {
         StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+        encryptor.setProvider(new BouncyCastleProvider());
+        encryptor.setAlgorithm("PBEWITHSHAAND256BITAES-CBC-BC");
         encryptor.setPassword(password);
         encryptor.setSaltGenerator(new StringFixedSaltGenerator(salt));
-        // TODO: Better encryption
-        // encryptor.setAlgorithm("PBEWithMD5AndTripleDES");
-        // encryptor.setKeyObtentionIterations(2000);
-        // encryptor.setSaltGenerator(new RandomSaltGenerator());
         return encryptor;
     }
 }
