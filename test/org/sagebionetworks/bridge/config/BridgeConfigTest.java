@@ -14,6 +14,7 @@ public class BridgeConfigTest {
         System.setProperty("bridge.pwd", "when.the.password.is.not.a.password");
         System.setProperty("bridge.salt", "when.the.salt.is.some.random.sea.salt");
         System.setProperty("bridge.user", "unit.test");
+        System.setProperty("bridge.env", "local");
     }
 
     @After
@@ -32,7 +33,6 @@ public class BridgeConfigTest {
 
     @Test
     public void testEncryption() {
-        System.setProperty("bridge.env", "local");
         BridgeConfig config = new BridgeConfig();
         assertEquals("example.value", config.getProperty("example.property"));
         assertEquals("example.value.encrypted", config.getProperty("example.property.encrypted"));
