@@ -1,0 +1,36 @@
+.carousel_container {
+    padding: 1rem 0;
+    
+    .left_control, .right_control, .panel {
+        display: table-cell;
+        vertical-align: middle;
+    }
+    .left_control, .right_control {
+        font-size: 7rem;
+        padding: 1.5rem;
+    }
+    .panel {
+        overflow: hidden;
+    }
+    .slide_element {
+    }
+    ul {
+        position: relative;
+        padding: 0;
+        margin: 0;
+        list-style-type: none;
+    }
+    li {
+        position: relative;
+        display: inline-block;
+        img {
+            max-width: 30rem;
+        }
+        div {
+            display: table-cell;
+            padding: 2rem;
+            vertical-align: top;
+        }
+    }
+    
+}

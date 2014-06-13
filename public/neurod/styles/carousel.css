@@ -1,0 +1,24 @@
+.carousel_container {
+  padding: 1rem 0; }
+  .carousel_container .left_control, .carousel_container .right_control, .carousel_container .panel {
+    display: table-cell;
+    vertical-align: middle; }
+  .carousel_container .left_control, .carousel_container .right_control {
+    font-size: 7rem;
+    padding: 1.5rem; }
+  .carousel_container .panel {
+    overflow: hidden; }
+  .carousel_container ul {
+    position: relative;
+    padding: 0;
+    margin: 0;
+    list-style-type: none; }
+  .carousel_container li {
+    position: relative;
+    display: inline-block; }
+    .carousel_container li img {
+      max-width: 30rem; }
+    .carousel_container li div {
+      display: table-cell;
+      padding: 2rem;
+      vertical-align: top; }
