@@ -82,10 +82,12 @@
         <property name="studies">
             <list>
                 <bean class="org.sagebionetworks.bridge.models.Study">
-                    <constructor-arg index="0" value="Parkinson's Disease"/>
+                    <constructor-arg index="0" value="Bridge Parkinson’s Research Program"/>
                     <constructor-arg index="1" value="neurod"/>
                     <constructor-arg index="2">
                         <list>
+                            <!-- IE VirtualBox Machine, local development -->
+                            <value>10.0.2.2</value>
                             <value>localhost</value>
                             <value>bridge-develop.herokuapp.com</value>
                             <!-- In production however, we'd expect to have DNS

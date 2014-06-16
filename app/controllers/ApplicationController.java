@@ -45,7 +45,7 @@ public class ApplicationController extends BaseController {
         
         // There's probably a non-crappy way of doing this in Play, but I couldn't find it.
         Study study = studyControllerService.getStudyByHostname(request());
-        if ("neurod".equals(study.getKey())) {
+        if (study == null || "neurod".equals(study.getKey())) {
             return ok(views.html.neurod.render(Json.toJson(info).toString()));    
         }
         // For now, go to neurod that's all we have. Create an error page.

@@ -1,10 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.fest.assertions.Assertions.*;
 import static org.sagebionetworks.bridge.TestConstants.*;
+import static org.junit.Assert.*;
 
 import javax.annotation.Resource;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,8 +44,9 @@ public class AuthenticationServiceImplTest {
     @Test
     public void signInCorrectCredentials() throws Exception {
         UserSession session = service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
-        assertThat(session.getUsername()).isEqualTo(TEST2.USERNAME);
-        assertThat(session.getSessionToken()).isNotEmpty();
+        
+        assertEquals("Username is for test2 user", TEST2.USERNAME, session.getUsername());
+        assertTrue("Session token has been assigned", StringUtils.isNotBlank(session.getSessionToken()));
     }
     
     @Test
@@ -52,29 +54,31 @@ public class AuthenticationServiceImplTest {
         service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
         
         UserSession session = service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
-        assertThat(session.getUsername()).isEqualTo(TEST2.USERNAME);
+        assertEquals("Username is for test2 user", TEST2.USERNAME, session.getUsername());
     }
 
     @Test
     public void getSessionWhenNotAuthenticated() throws Exception {
         service.signOut(null); // This also tests sign out.
         UserSession session = service.getSession("foo");
-        assertThat(session.getUsername()).isNull();
-        assertThat(session.getSessionToken()).isNull();
-        assertThat(session.getEnvironment()).isNull();
+        
+        assertNull("Username is null", session.getUsername());
+        assertNull("Session token is null", session.getSessionToken());
+        assertNull("Environment is null", session.getEnvironment());
         
         session = service.getSession(null);
-        assertThat(session.getUsername()).isNull();
-        assertThat(session.getSessionToken()).isNull();
-        assertThat(session.getEnvironment()).isNull();
+        assertNull("Username is null", session.getUsername());
+        assertNull("Session token is null", session.getSessionToken());
+        assertNull("Environment is null", session.getEnvironment());
     }
     
     @Test
     public void getSessionWhenAuthenticated() throws Exception {
         UserSession session = service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
         session = service.getSession(session.getSessionToken());
-        assertThat(session.getUsername()).isEqualTo(TEST2.USERNAME);
-        assertThat(session.getSessionToken()).isNotEmpty();
+        
+        assertEquals("Username is for test2 user", TEST2.USERNAME, session.getUsername());
+        assertTrue("Session token has been assigned", StringUtils.isNotBlank(session.getSessionToken()));
     }
     
     @Test(expected=BridgeServiceException.class)

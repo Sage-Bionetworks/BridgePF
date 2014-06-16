@@ -417,7 +417,8 @@ section.join .btn {
   background-image: -o-linear-gradient(top, #a6def1, #81d2ef);
   /* Opera 11.10+ */
   background-image: linear-gradient(top, #a6def1, #81d2ef);
-  filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,StartColorStr='#a6def1', EndColorStr='#81d2ef'); }
+  filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,StartColorStr='#a6def1', EndColorStr='#81d2ef');
+  font-size: 1.4rem; }
 
 section.joined {
   padding-left: 8rem;
