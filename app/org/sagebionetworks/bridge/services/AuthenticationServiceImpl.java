@@ -212,7 +212,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             key = session.getStudyKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
             
             String healthDataCode = UUID.randomUUID().toString();
-            PBEStringEncryptor encryptor = EncryptorUtil.getEncryptor(config.getHealthCodePassword(), config.getHealthCodeSalt());
+            PBEStringEncryptor encryptor = EncryptorUtil.getEncryptorOld(config.getHealthCodePassword(), config.getHealthCodeSalt());
             healthDataCode = encryptor.encrypt(healthDataCode);
             
             data.put(key, healthDataCode);
