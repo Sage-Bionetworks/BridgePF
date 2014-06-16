@@ -3,7 +3,7 @@ function($scope, $location, formService, authService) {
 
     formService.initScope($scope, 'signUpForm');
     
-    $scope.signUp = function() {
+    $scope.join = function() {
         if ($scope.signUpForm.$valid) {
             var credentials = formService.formToJSON($scope.signUpForm, ['username', 'email', 'password']);
             $scope.message = '';

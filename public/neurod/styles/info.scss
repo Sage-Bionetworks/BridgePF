@@ -451,7 +451,7 @@ section.about {
 section.join {
     .btn {
         @include joinButton;
-        
+        font-size: 1.4rem;
     }
 }
 section.joined {

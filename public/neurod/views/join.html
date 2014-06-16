@@ -5,7 +5,7 @@
 </nav>
 <!-- Why does this work? I don't even know. -->
 <div class="splash" style="height:.1px; margin-bottom: 13rem"></div>
-<section class="join">
+<section class="join" id="joinPage">
     <div class="row">
         <div class="col-sm-7" style="padding: 2rem 2rem 2rem 8rem">
             <form name="signUpForm" bg-compare="password,passwordConfirm" novalidate>
@@ -37,8 +37,8 @@
 	                   placeholder="Re-enter your password"/>
 	                <p id="passwordConfirmEqualError" class="field-error" ng-show="hasFieldError(signUpForm, 'equal')">Passwords do not match.</p>
 		        </div>
-		        <p ng-show="message" class="text-danger">{{message}}</p>
-		        <p><a id="signUpAct" class="btn" ng-disabled="!canSubmit()" ng-click="signUp()">JOIN</a></p>
+		        <p id="joinMessage" ng-show="message" class="text-danger">{{message}}</p>
+		        <p><button id="joinAct" class="btn" ng-disabled="!canSubmit()" ng-click="join()">JOIN</button></p>
             </form>
         </div>
         <div class="col-sm-5" style="padding: 2rem 4rem 2rem 2rem">

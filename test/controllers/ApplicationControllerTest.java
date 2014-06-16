@@ -2,12 +2,13 @@ package controllers;
 
 import org.junit.*;
 
+
 import play.libs.WS;
 import play.libs.WS.Response;
 import play.libs.WS.WSRequestHolder;
-import static org.fest.assertions.Assertions.*;
 import static play.test.Helpers.*;
 import static org.sagebionetworks.bridge.TestConstants.*;
+import static org.junit.Assert.*;
 
 public class ApplicationControllerTest {
 
@@ -17,8 +18,8 @@ public class ApplicationControllerTest {
 			public void run() {
 				WSRequestHolder holder = WS.url(TEST_URL+"/index.html").setFollowRedirects(false);
 				Response response = holder.get().get(TIMEOUT);
-				assertThat(response.getStatus()).isEqualTo(SEE_OTHER);
-				assertThat(response.getHeader(LOCATION)).isEqualTo("/");
+				assertEquals("HTTP status is SEE OTHER", SEE_OTHER, response.getStatus());
+				assertEquals("Location header redirects to /", "/", response.getHeader(LOCATION));
 			}
 		});
     }
@@ -28,8 +29,9 @@ public class ApplicationControllerTest {
 			public void run() {
 				WSRequestHolder holder = WS.url(TEST_URL);
 				Response response = holder.get().get(TIMEOUT);
-				assertThat(response.getStatus()).isEqualTo(OK);
-				assertThat(response.getBody()).contains("Bridge: Patients &amp; Researchers in Partnership - Sage Bionetworks");
+				assertEquals("HTTP status is OK (200)", OK, response.getStatus());
+                assertTrue("Page title includes expected Bridge text",
+                        response.getBody().contains("Bridge: Patients &amp; Researchers"));
 			}
 		});
     }

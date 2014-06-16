@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.junit.Assert.*;
+
 import java.util.Date;
 import java.util.List;
 
@@ -33,7 +35,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.fest.assertions.Assertions.*;
 import static org.sagebionetworks.bridge.TestConstants.*;
 
 public class HealthDataServiceImplTest {
@@ -146,7 +147,8 @@ public class HealthDataServiceImplTest {
         List<String> identifiers = service.appendHealthData(key, Lists.newArrayList(record));
 
         verify(createMapper).batchSave(any(List.class));
-        assertThat(record.getRecordId()).isEqualTo(identifiers.get(0));
+        
+        assertEquals("Returns the assigned ID for health data record", identifiers.get(0), record.getRecordId());
         
         verifyNoMoreInteractions(createMapper);
     }
@@ -185,9 +187,10 @@ public class HealthDataServiceImplTest {
         doReturn(records).when(updateMapper).query((Class<DynamoHealthDataRecord>)any(), (DynamoDBQueryExpression<DynamoHealthDataRecord>)any());
         
         List<HealthDataRecord> entries = service.getAllHealthData(key);
-        assertThat(entries.size()).isEqualTo(6);
-        assertThat(entries.get(0)).isInstanceOf(HealthDataRecord.class);
-        assertThat(entries.get(0).getData()).isNotNull();
+        
+        assertEquals("Returns 6 records", 6, entries.size());
+        assertTrue("Returns HealthDataRecord objects", entries.get(0) instanceof HealthDataRecord);
+        assertNotNull("Data for first record is not null", entries.get(0).getData());
     }
     
     @Test(expected=BridgeServiceException.class)
@@ -228,9 +231,9 @@ public class HealthDataServiceImplTest {
         
         HealthDataRecord result = service.getHealthDataRecord(key, "foo");
         
-        assertThat(result.getRecordId()).isEqualTo(record.getRecordId());
-        assertThat(result.getStartDate()).isEqualTo(record.getStartDate());
-        assertThat(result.getEndDate()).isEqualTo(record.getEndDate());
+        assertEquals("Returns correct record ID", record.getRecordId(), result.getRecordId());
+        assertEquals("Returns correct start date", record.getStartDate(), result.getStartDate());
+        assertEquals("Returns correct end date", record.getEndDate(), result.getEndDate());
     }
     
     @Test(expected=BridgeServiceException.class)
