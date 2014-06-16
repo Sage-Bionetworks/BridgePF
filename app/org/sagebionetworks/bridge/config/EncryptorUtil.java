@@ -32,6 +32,17 @@ public class EncryptorUtil {
     /**
      * Gets a password-based string encryptor.
      */
+    @Deprecated
+    public static PBEStringEncryptor getEncryptorOld(final String password, final String salt) {
+        StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+        encryptor.setPassword(password);
+        encryptor.setSaltGenerator(new StringFixedSaltGenerator(salt));
+        return encryptor;
+    }
+
+    /**
+     * Gets a password-based string encryptor.
+     */
     public static PBEStringEncryptor getEncryptor(final String password, final String salt) {
         StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
         encryptor.setProvider(new BouncyCastleProvider());
