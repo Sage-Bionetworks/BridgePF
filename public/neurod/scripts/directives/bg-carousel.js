@@ -1,4 +1,4 @@
-module.controller('BgCarouselController', ['$scope', function($scope) {
+neurod.controller('BgCarouselController', ['$scope', function($scope) {
     var self = this;
     self.index = 0;
     
@@ -32,7 +32,7 @@ module.controller('BgCarouselController', ['$scope', function($scope) {
                 this.parentNode.removeChild(this);
             }
         });
-    }
+    };
     $(window).resize(sizeCarousel);
     
     function sizeCarousel() {
@@ -74,5 +74,5 @@ module.controller('BgCarouselController', ['$scope', function($scope) {
         link: function(scope, element, attrs, controller) {
             controller.init(element);
         }
-    }
+    };
 });

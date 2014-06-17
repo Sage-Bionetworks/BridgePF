@@ -10,9 +10,9 @@ if ( !window.requestAnimationFrame ) {
     } )();
 }
 
-var module = angular.module('neurod', ['ngRoute', 'ui.bootstrap']);
+var neurod = angular.module('neurod', ['ngRoute', 'ui.bootstrap']);
 
-module.config(['$routeProvider', function($routeProvider) {
+neurod.config(['$routeProvider', function($routeProvider) {
     $routeProvider.when('/about', {
         templateUrl: '/neurod/views/about.html'
     })
@@ -29,7 +29,7 @@ module.config(['$routeProvider', function($routeProvider) {
     });
 }]);
 
-module.controller('NeurodController', ['$scope', 'signInService', 'requestResetPasswordService', 
+neurod.controller('NeurodController', ['$scope', 'signInService', 'requestResetPasswordService', 
 function($scope, signInService, requestResetPasswordService) {
     $scope.signIn = function() {
         signInService.open();
@@ -39,7 +39,7 @@ function($scope, signInService, requestResetPasswordService) {
     };
 }]);
 
-module.factory('loadingInterceptor', ['$q', '$injector', '$rootScope', function($q, $injector, $rootScope) {
+neurod.factory('loadingInterceptor', ['$q', '$injector', '$rootScope', function($q, $injector, $rootScope) {
     return {
         'request': function(config) {
             $rootScope.$broadcast('loadStart');
@@ -59,6 +59,6 @@ module.factory('loadingInterceptor', ['$q', '$injector', '$rootScope', function(
         }
     };
 }]);
-module.config(['$httpProvider', function($httpProvider) {
+neurod.config(['$httpProvider', function($httpProvider) {
     $httpProvider.interceptors.push('loadingInterceptor');
 }]);

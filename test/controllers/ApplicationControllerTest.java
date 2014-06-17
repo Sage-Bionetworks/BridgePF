@@ -31,7 +31,7 @@ public class ApplicationControllerTest {
 				Response response = holder.get().get(TIMEOUT);
 				assertEquals("HTTP status is OK (200)", OK, response.getStatus());
                 assertTrue("Page title includes expected Bridge text",
-                        response.getBody().contains("Bridge: Patients &amp; Researchers"));
+                        response.getBody().contains("Sage Bionetworks"));
 			}
 		});
     }

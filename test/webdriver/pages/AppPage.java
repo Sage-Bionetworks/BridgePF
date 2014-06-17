@@ -12,7 +12,7 @@ public class AppPage extends BasePage {
     public AppPage(TestBrowser browser) {
         super(browser);
         browser.goTo(TEST_URL);
-        assertTrue("Title includes phrase 'Bridge: Patients'", browser.pageSource().contains("Bridge: Patients"));
+        assertTrue("Title includes phrase 'Sage Bionetworks'", browser.pageSource().contains("Sage Bionetworks"));
     }
     
     public JoinPage getJoinPage() {

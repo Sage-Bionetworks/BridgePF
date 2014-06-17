@@ -1,4 +1,4 @@
-module.controller('JoinController', ['$scope', '$location', 'formService', 'authService', 
+neurod.controller('JoinController', ['$scope', '$location', 'formService', 'authService', 
 function($scope, $location, formService, authService) {
 
     formService.initScope($scope, 'signUpForm');

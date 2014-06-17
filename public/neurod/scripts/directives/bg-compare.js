@@ -1,4 +1,4 @@
-module.directive('bgCompare', function() {
+neurod.directive('bgCompare', function() {
     function compareFunc(controller, field1, field2) {
         return function(e) {
             if (field1.$dirty && field2.$dirty) {

@@ -1,4 +1,4 @@
-module.service('requestResetPasswordService', ['$modal', function($modal) {
+neurod.service('requestResetPasswordService', ['$modal', function($modal) {
     
     var modalInstance;
     

@@ -2,6 +2,7 @@
 .project
 .settings
 .history
+.grunt
 TODO.txt
 phantomjsdriver.log
 target
@@ -10,7 +11,7 @@ node_modules
 bower_components
 project/project/target
 project/target
-public/app/build
+build
 .sass-cache
 .target
 /bin

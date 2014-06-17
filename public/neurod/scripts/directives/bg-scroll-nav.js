@@ -1,16 +1,4 @@
-if ( !window.requestAnimationFrame ) {
-    window.requestAnimationFrame = ( function() {
-        return window.webkitRequestAnimationFrame ||
-        window.mozRequestAnimationFrame ||
-        window.oRequestAnimationFrame ||
-        window.msRequestAnimationFrame ||
-        function( /* function FrameRequestCallback */ callback, /* DOMElement Element */ element ) {
-            window.setTimeout( callback, 1000 / 60 );
-        };
-    } )();
-}
-
-module.controller('ScrollController', ['$scope', function($scope) {
+neurod.controller('ScrollController', ['$scope', function($scope) {
     var self = this;
     self.scrolled = false;
     
@@ -41,8 +29,8 @@ module.controller('ScrollController', ['$scope', function($scope) {
         var elemTop = $(elem).offset().top;
         var elemBottom = elemTop + $(elem).height();
         
-        return ((elemBottom >= docViewTop) && (elemTop <= docViewBottom)
-                && (elemBottom <= docViewBottom) &&  (elemTop >= docViewTop) );
+        return ((elemBottom >= docViewTop) && (elemTop <= docViewBottom) && 
+                (elemBottom <= docViewBottom) &&  (elemTop >= docViewTop) );
     }
     
     self.init = function(element) {
@@ -57,7 +45,7 @@ module.controller('ScrollController', ['$scope', function($scope) {
     };
     
 }]);
-module.directive('bgScrollNav', ['$rootScope', function($rootScope) {
+neurod.directive('bgScrollNav', ['$rootScope', function($rootScope) {
     
     $rootScope.$on('$routeChangeStart', function(e, next, current) {
         $("html,body").animate({scrollTop: 0}, "slow");
