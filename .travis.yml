@@ -22,9 +22,14 @@ before_install:
 - npm install -g grunt-cli
 - gem install sass
 script:
-- cd public
+- cd public/app
 - npm install
 - bower install
+- cd ../neurod
+- npm install
+- bower install
+- ../
+- npm install
 - grunt release
 - cd ..
 - sbt test

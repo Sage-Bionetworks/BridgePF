@@ -1,4 +1,4 @@
-module.service('signInService', ['$modal', function($modal) {
+neurod.service('signInService', ['$modal', function($modal) {
 
     var modalInstance;
 

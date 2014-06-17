@@ -1,4 +1,4 @@
-module.service('authService', ['$http', '$rootScope', '$location', '$window', '$humane', '$q',      
+neurod.service('authService', ['$http', '$rootScope', '$location', '$window', '$humane', '$q',      
 function($http, $rootScope, $location, $window, $humane, $q) {
     var service = {
         sessionToken: '',
