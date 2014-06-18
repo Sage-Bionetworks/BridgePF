@@ -1,13 +1,11 @@
 package org.sagebionetworks.bridge.cache;
 
-import java.io.IOException;
-
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -27,7 +25,10 @@ public class CacheProvider {
             if (!"OK".equals(result)) {
                 throw new BridgeServiceException("Session storage error", 500);
             }
-        } catch (JsonProcessingException e) {
+        } catch (Throwable e) {
+            if (BridgeConfigFactory.getConfig().isLocal()) {
+                throw new BridgeServiceException("Cannot find cache service, have you started a Redis server?", 500);
+            }
             throw new BridgeServiceException(e, 500);
         }
     }
@@ -38,14 +39,24 @@ public class CacheProvider {
             if (ser != null) {
                 return mapper.readValue(ser, UserSession.class);  
             }
-        } catch (IOException e) {
+        } catch (Throwable e) {
+            if (BridgeConfigFactory.getConfig().isLocal()) {
+                throw new BridgeServiceException("Cannot find cache service, have you started a Redis server?", 500);
+            }
             throw new BridgeServiceException(e, 500);
         }
         return null;
     }
     
     public void remove(String key) {
-        stringOps.delete(key).execute();
+        try {
+            stringOps.delete(key).execute();
+        } catch(Throwable e) {
+            if (BridgeConfigFactory.getConfig().isLocal()) {
+                throw new BridgeServiceException("Cannot find cache service, have you started a Redis server?", 500);
+            }
+            throw new BridgeServiceException(e, 500);
+        }
     }
 
 }

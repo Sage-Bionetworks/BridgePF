@@ -6,7 +6,7 @@ import play.libs.F.Callback;
 import play.test.TestBrowser;
 import webdriver.pages.AppPage;
 import webdriver.pages.AppPage.RequestResetPasswordDialog;
-import webdriver.pages.AppPage.SignUpDialog;
+import webdriver.pages.JoinPage;
 import static org.sagebionetworks.bridge.TestConstants.*;
 
 public class AuthenticationTest extends BaseIntegrationTest {
@@ -88,9 +88,9 @@ public class AuthenticationTest extends BaseIntegrationTest {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
-                SignUpDialog dialog = page.openSignUpDialog();
+                JoinPage join = page.getJoinPage();
                 
-                dialog.enterValidData();
+                join.enterValidData();
             }
         });
     }
@@ -100,9 +100,9 @@ public class AuthenticationTest extends BaseIntegrationTest {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
-                SignUpDialog dialog = page.openSignUpDialog();
-                dialog.enterInvalidData("bridge", "bridgeit", "P4ssword", "P4ssword");
-                dialog.assertEmailEmailError();
+                JoinPage join = page.getJoinPage();
+                join.enterInvalidData("bridge", "bridgeit", "P4ssword", "P4ssword");
+                join.assertEmailEmailError();
             }
         });
     }
@@ -112,10 +112,10 @@ public class AuthenticationTest extends BaseIntegrationTest {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
-                SignUpDialog dialog = page.openSignUpDialog();
-                dialog.enterValidData();
-                dialog.enterInvalidDataAfterValidData("bridge", "", "P4ssword", "P4ssword");
-                dialog.assertEmailRequiredError();
+                JoinPage join = page.getJoinPage();
+                join.enterValidData();
+                join.enterInvalidDataAfterValidData("bridge", "", "P4ssword", "P4ssword");
+                join.assertEmailRequiredError();
             }
         });
     }
@@ -125,9 +125,9 @@ public class AuthenticationTest extends BaseIntegrationTest {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
-                SignUpDialog dialog = page.openSignUpDialog();
-                dialog.enterInvalidData("bridge", "bridgeit@sagebase.org", "P4ssword", "P4ssword2");
-                dialog.assertPasswordConfirmEqualError();
+                JoinPage join = page.getJoinPage();
+                join.enterInvalidData("bridge", "bridgeit@sagebase.org", "P4ssword", "P4ssword2");
+                join.assertPasswordConfirmEqualError();
             }
         });
     }
@@ -137,8 +137,8 @@ public class AuthenticationTest extends BaseIntegrationTest {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
-                SignUpDialog dialog = page.openSignUpDialog();
-                dialog.enterInvalidData("", "bridgeit@sagebase.org", "P4ssword", "P4ssword");
+                JoinPage join = page.getJoinPage();
+                join.enterInvalidData("", "bridgeit@sagebase.org", "P4ssword", "P4ssword");
             }
         });
     }
@@ -148,8 +148,8 @@ public class AuthenticationTest extends BaseIntegrationTest {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
-                SignUpDialog dialog = page.openSignUpDialog();
-                dialog.enterInvalidData("bridge", "", "P4ssword", "P4ssword");
+                JoinPage join = page.getJoinPage();
+                join.enterInvalidData("bridge", "", "P4ssword", "P4ssword");
             }
         });
     }
@@ -158,8 +158,8 @@ public class AuthenticationTest extends BaseIntegrationTest {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
-                SignUpDialog dialog = page.openSignUpDialog();
-                dialog.enterInvalidData("bridge", "bridgeit@sagebase.org", "", "P4ssword");
+                JoinPage join = page.getJoinPage();
+                join.enterInvalidData("bridge", "bridgeit@sagebase.org", "", "P4ssword");
             }
         });
     }
@@ -169,8 +169,8 @@ public class AuthenticationTest extends BaseIntegrationTest {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
-                SignUpDialog dialog = page.openSignUpDialog();
-                dialog.enterInvalidData("bridge", "bridgeit@sagebase.org", "P4ssword", "");
+                JoinPage join = page.getJoinPage();
+                join.enterInvalidData("bridge", "bridgeit@sagebase.org", "P4ssword", "");
             }
         });
     }

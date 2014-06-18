@@ -37,7 +37,7 @@ import com.stormpath.sdk.resource.ResourceException;
 
 public class AuthenticationServiceImpl implements AuthenticationService {
 	
-	final static Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
+	private static Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 	
 	public static final UserSession ANONYMOUS_USER = new UserSession();
 	private Client stormpathClient;

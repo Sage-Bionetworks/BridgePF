@@ -1,186 +1,150 @@
 package webdriver.pages;
 
-import static org.fest.assertions.Assertions.assertThat;
 import static org.sagebionetworks.bridge.TestConstants.*;
-
-import java.util.concurrent.TimeUnit;
+import static org.junit.Assert.*;
 
 import org.fluentlenium.core.domain.FluentWebElement;
 
 import play.test.TestBrowser;
 
-public class AppPage {
+public class AppPage extends BasePage {
 
-    private TestBrowser browser;
-    
     public AppPage(TestBrowser browser) {
-        this.browser = browser;
+        super(browser);
         browser.goTo(TEST_URL);
-        assertThat(browser.pageSource()).contains("Bridge: Patients");
-        if (browser.findFirst(SIGN_OUT_LINK).isDisplayed()) {
-            signOut();
-        }
+        assertTrue("Title includes phrase 'Sage Bionetworks'", browser.pageSource().contains("Sage Bionetworks"));
     }
     
+    public JoinPage getJoinPage() {
+        signUpLink().click();
+        waitUntilPresent(JOIN_PAGE);
+        return new JoinPage(browser);
+    }
     public SignInDialog openSignInDialog() {
         signInLink().click();
-        browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_DIALOG).isPresent();
+        waitUntilPresent(SIGN_IN_DIALOG);
         return new SignInDialog(browser);
     }
     public RequestResetPasswordDialog openResetPasswordDialog() {
         resetPasswordLink().click();
-        browser.await().atMost(20, TimeUnit.SECONDS).until(RESET_PASSWORD_DIALOG).isPresent();
+        waitUntilPresent(RESET_PASSWORD_DIALOG);
         return new RequestResetPasswordDialog(browser);
     }
-    public SignUpDialog openSignUpDialog() {
-        signUpLink().click();
-        browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_UP_DIALOG).isPresent();
-        return new SignUpDialog(browser);
-    }
-
     public void signOut() {
         signOutLink().click();
-        browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_LINK).isPresent();
-        browser.await().atMost(20, TimeUnit.SECONDS).until(RESET_PASSWORD_LINK).isPresent();
+        waitUntilPresent(SIGN_IN_LINK);
+        waitUntilPresent(RESET_PASSWORD_LINK);
     }
+    
     private FluentWebElement resetPasswordLink() {
+        waitUntilPresent(RESET_PASSWORD_LINK);
         return browser.findFirst(RESET_PASSWORD_LINK);
     }
     private FluentWebElement signInLink() {
+        waitUntilPresent(SIGN_IN_LINK);
         return browser.findFirst(SIGN_IN_LINK);
     }
     private FluentWebElement signOutLink() {
+        waitUntilPresent(SIGN_OUT_LINK);
         return browser.findFirst(SIGN_OUT_LINK);
     }
     private FluentWebElement signUpLink() {
-        return browser.findFirst(SIGN_UP_LINK);
+        waitUntilPresent(JOIN_LINK);
+        return browser.findFirst(JOIN_LINK);
     }
     
-    public class SignInDialog {
+    
+    public class SignInDialog extends BasePage {
        
-        private TestBrowser browser;
-        
         public SignInDialog(TestBrowser browser) {
-            this.browser = browser;
+            super(browser);
         }
         public void signInWrong(String username, String password) {
             enterCredentials(username, password);
             signInAction().click();
-            browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_MESSAGE).areDisplayed();
+            waitUntilDisplayed(SIGN_IN_MESSAGE);
             close();
         }
         public void signIn(String username, String password) {
             enterCredentials(username, password);
             signInAction().click();
-            browser.await().atMost(20, TimeUnit.SECONDS).until(USERNAME_LABEL).areDisplayed();
-            assertThat(userLabel().getText()).isEqualTo(username);
+            waitUntilDisplayed(USERNAME_LABEL);
+            assertTrue("User label includes user's name", userLabel().getText().equals(username));
         }
         public void close() {
-            browser.click(CLOSE_ACTION);
-            browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_DIALOG).isNotPresent();
+            closeButton().click();
+            waitUntilNotPresent(SIGN_IN_DIALOG);
         }
         private void enterCredentials(String username, String password) {
-            assertThat(signInMessage().isDisplayed()).isFalse();
-            assertThat(signInAction().isEnabled()).isFalse();
+            assertFalse("Sign in message is hidden", signInMessage().isDisplayed());
+            assertFalse("Sign in action is disabled", signInAction().isEnabled());
             browser.fill(USERNAME_INPUT).with(username);
             browser.fill(PASSWORD_INPUT).with(password);
-            assertThat(signInAction().isEnabled()).isTrue();
+            assertTrue("Sign in action is enabled", signInAction().isEnabled());
+        }
+        private FluentWebElement closeButton() {
+            waitUntilPresent(CLOSE_ACTION);
+            return browser.findFirst(CLOSE_ACTION);
         }
         private FluentWebElement signInMessage() {
+            waitUntilPresent(SIGN_IN_MESSAGE);
             return browser.findFirst(SIGN_IN_MESSAGE);
         }
         private FluentWebElement signInAction() {
+            waitUntilPresent(SIGN_IN_ACT);
             return browser.findFirst(SIGN_IN_ACT);
         }
         private FluentWebElement userLabel() {
+            waitUntilPresent(USERNAME_LABEL);
             return browser.findFirst(USERNAME_LABEL);
         }
     }
     
-    public class RequestResetPasswordDialog {
-        private TestBrowser browser;
+    public class RequestResetPasswordDialog extends BasePage {
         
         public RequestResetPasswordDialog(TestBrowser browser) {
-            this.browser = browser;
+            super(browser);
         }
+        
         public void canCancel() {
-            browser.await().atMost(20, TimeUnit.SECONDS).until(RESET_PASSWORD_DIALOG).isPresent();
+            waitUntilPresent(RESET_PASSWORD_DIALOG);
             cancelButton().click();
-            browser.await().atMost(20, TimeUnit.SECONDS).until(RESET_PASSWORD_DIALOG).isNotPresent();
-            close();
+            waitUntilNotPresent(RESET_PASSWORD_DIALOG);
         }
         public void submitInvalidEmailAddress(String email) {
-            assertThat(sendEmailButton().isEnabled()).isFalse();
+            assertFalse("Email button is not enabled", sendEmailButton().isEnabled());
             browser.fill(EMAIL_INPUT).with(email);
-            assertThat(sendEmailButton().isEnabled()).isFalse();
+            assertFalse("Email button is enabled", sendEmailButton().isEnabled());
             close();
         }
         public void submitEmailAddress(String email) {
-            assertThat(sendEmailButton().isEnabled()).isFalse();
+            assertFalse("Email button is not enabled", sendEmailButton().isEnabled());
             browser.fill(EMAIL_INPUT).with(email);
-            assertThat(sendEmailButton().isEnabled()).isTrue();
+            assertTrue("Email button is enabled", sendEmailButton().isEnabled());
             sendEmailButton().click();
-            browser.await().atMost(20, TimeUnit.SECONDS).until(RESET_PASSWORD_DIALOG).isNotPresent();
-            assertThat(messagePopup().getText()).contains("Please look for further instructions in your email inbox.");
+            waitUntilNotPresent(RESET_PASSWORD_DIALOG);
+            assertTrue("Message popup confirms an email was sent",
+                    messagePopup().getText().contains("Please look for further instructions in your email inbox."));
         }
         public void close() {
-            browser.click(CLOSE_ACTION);
-            browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_IN_DIALOG).isNotPresent();
+            closeButton().click();
+            waitUntilNotPresent(SIGN_IN_DIALOG);
+        }
+        private FluentWebElement closeButton() {
+            waitUntilPresent(CLOSE_ACTION);
+            return browser.findFirst(CLOSE_ACTION);
         }
         private FluentWebElement messagePopup() {
-            return browser.findFirst(".humane");
+            waitUntilPresent(TOAST_DIALOG);
+            return browser.findFirst(TOAST_DIALOG);
         }
         private FluentWebElement sendEmailButton() {
+            waitUntilPresent(SEND_ACTION);
             return browser.findFirst(SEND_ACTION);
         }
         private FluentWebElement cancelButton() {
+            waitUntilPresent(CANCEL_ACTION);
             return browser.findFirst(CANCEL_ACTION);
         }
     }
-    
-    public class SignUpDialog {
-        private TestBrowser browser;
-        
-        public SignUpDialog(TestBrowser browser) {
-            this.browser = browser;
-        }
-        public void enterValidData() {
-            assertThat(submitButton().isEnabled()).isFalse();
-            enterFields("bridge", "bridgeit@sagebase.org", "P4ssword", "P4ssword");
-            assertThat(submitButton().isEnabled()).isTrue();
-        }
-        public void enterInvalidData(String username, String email, String password, String confirmPassword) {
-            assertThat(submitButton().isEnabled()).isFalse();
-            enterFields(username, email, password, confirmPassword);
-            assertThat(submitButton().isEnabled()).isFalse();
-        }
-        public void enterInvalidDataAfterValidData(String username, String email, String password, String confirmPassword) {
-            enterFields(username, email, password, confirmPassword);
-            assertThat(submitButton().isEnabled()).isFalse();
-        }
-        public void assertEmailEmailError() {
-            assertThat(browser.findFirst("#emailEmailError").isDisplayed()).isTrue();
-        }
-        public void assertEmailRequiredError() {
-            assertThat(browser.findFirst("#emailRequiredError").isDisplayed()).isTrue();
-        }
-        public void assertPasswordConfirmEqualError() {
-            assertThat(browser.findFirst("#passwordConfirmEqualError").isDisplayed()).isTrue();
-        }
-        public void close() {
-            browser.click(CLOSE_ACTION);
-            browser.await().atMost(20, TimeUnit.SECONDS).until(SIGN_UP_DIALOG).isNotPresent();
-        }
-        private void enterFields(String username, String email, String password, String confirmPassword) {
-            browser.fill(USERNAME_INPUT).with(username);   
-            browser.fill(EMAIL_INPUT).with(email);
-            browser.fill(PASSWORD_INPUT).with(password);
-            browser.fill(CONFIRM_PASSWORD_INPUT).with(confirmPassword);
-        }
-        private FluentWebElement submitButton() {
-            return browser.findFirst(SIGN_UP_ACT);
-        }
-        
-    }
-
 }
