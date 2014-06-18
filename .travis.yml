@@ -28,10 +28,10 @@ script:
 - cd ../neurod
 - npm install
 - bower install
-- ../../
+- ../
 - npm install
 - grunt release
-- cd ..
+- cd ../
 - sbt test
 deploy:
   provider: heroku
