@@ -28,7 +28,7 @@ script:
 - cd ../neurod
 - npm install
 - bower install
-- ../
+- ../../
 - npm install
 - grunt release
 - cd ..
