@@ -11,7 +11,7 @@ public class JedisStringOpsTest {
         StringOps strOps = new JedisStringOps();
         assertEquals("OK", strOps.setex("testKey", 2, "testValue").execute());
         assertEquals("testValue", strOps.get("testKey").execute());
-        Thread.sleep(2000);
+        Thread.sleep(3000);
         assertNull(strOps.get("testKey").execute());
     }
 }

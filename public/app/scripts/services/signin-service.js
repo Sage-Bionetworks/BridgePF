@@ -31,6 +31,7 @@ bridge.service('signInService', ['$modal', function($modal) {
                 } else if (response.status === 404 || response.status === 401) {
                     $scope.setMessage("Wrong user name or password.", "danger");
                 } else {
+                    console.error(response.data.payload);
                     $scope.setMessage("There has been an error.", "danger");
                 }
             });

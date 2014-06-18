@@ -1,6 +1,5 @@
 package global;
 
-import static org.fest.assertions.Assertions.*;
 import static org.junit.Assert.*;
 import global.JsonSchemaValidator;
 
@@ -31,8 +30,11 @@ public class JsonSchemaValidatorTest {
             fail();
         } catch(BridgeServiceException e) {
             String message = e.getMessage();
-            assertThat(message).contains("object instance has properties which are not allowed by the schema: [\"k1\"]");
-            assertThat(message).contains("object has missing required properties ([\"data\",\"endDate\",\"startDate\"]).");
+            
+            assertTrue("Message shows properties not allowed by schema",
+                    message.contains("object instance has properties which are not allowed by the schema: [\"k1\"]"));
+            assertTrue("Message shows properties that are required and missing",
+                    message.contains("object has missing required properties ([\"data\",\"endDate\",\"startDate\"])."));
         }
     }
 

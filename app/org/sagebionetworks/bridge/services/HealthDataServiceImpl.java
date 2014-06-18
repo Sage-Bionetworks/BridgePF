@@ -28,7 +28,7 @@ import com.google.common.collect.Lists;
 
 public class HealthDataServiceImpl implements HealthDataService {
 
-    final static Logger logger = LoggerFactory.getLogger(HealthDataServiceImpl.class);
+    private static Logger logger = LoggerFactory.getLogger(HealthDataServiceImpl.class);
 
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
@@ -51,15 +51,6 @@ public class HealthDataServiceImpl implements HealthDataService {
         this.encryptor = encryptor;
     }
     
-    /*
-    private static final Comparator<HealthDataRecord> START_DATE_COMPARATOR = new Comparator<HealthDataRecord>() {
-        @Override
-        public int compare(HealthDataRecord record1, HealthDataRecord record2) {
-            return (int)(record1.getStartDate() - record2.getStartDate());
-        }
-    };
-    */
-    
     private String healthDataKeyToAnonimizedKeyString(HealthDataKey key) throws BridgeServiceException {
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey cannot be null", HttpStatus.SC_BAD_REQUEST);
@@ -68,7 +59,6 @@ public class HealthDataServiceImpl implements HealthDataService {
         UserSession session = cache.getUserSession(key.getSessionToken());
         String healthDataCode = session.getHealthDataCode();
         healthDataCode = encryptor.decrypt(healthDataCode);
-        
         return String.format("%s:%s:%s", key.getStudyKey(), key.getTrackerId(), healthDataCode);
     }
     
@@ -81,8 +71,6 @@ public class HealthDataServiceImpl implements HealthDataService {
         for (DynamoHealthDataRecord r : records) {
             entries.add(r.toHealthDataRecord());
         }
-        // Not necessary? Results are always sorted by the range key in ascending order
-        // Collections.sort(entries, START_DATE_COMPARATOR);
         return entries;
     }
     

@@ -1,0 +1,40 @@
+@(auth: String)<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>The Bridge Parkinson's Research Program - Sage Bionetworks</title>
+    <meta name="viewport" content="width=device-width" />
+    <base href="/"/>
+    <script>window.bridgeAuth = @Html(auth);</script>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="neurod/build/neurod.css" />
+</head>
+<body ng-app="neurod" ng-controller="NeurodController">
+
+<div class="border">
+    <div class="header">
+        <div class="logo">
+            <h1>Bridge Parkinson&rsquo;s Research Program</h1>
+        </div>
+        <div class="auth">
+            Already have an account? <button id="signInLink" class="btn btn-default" ng-click="signIn()">Sign In</button>
+            <br><a id="resetPasswordLink" style="font-size: smaller" ng-click="resetPassword()">Forgot Password?</a>
+        </div>
+    </div>
+    <div class="main_content" ng-view></div>
+    <footer>
+        <div class="sage_logo"></div>
+        <div class="center"></div>
+        <div class="rwjf_logo"></div>
+    </footer>
+</div>
+
+<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-route.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.10.0/ui-bootstrap-tpls.min.js"></script>
+<script src="neurod/build/neurod.min.js"></script>
+
+</body>
+</html>
+
