@@ -25,7 +25,6 @@ module.exports = function(grunt) {
         concat: {
             js: {
                 src: [
-                    'bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
                     'bower_components/dygraphs/dygraph.dev.js',
                     'scripts/app.js',
                     'scripts/services/*.js',
