@@ -15,14 +15,14 @@ public class StormpathFactory {
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
         ApiKey apiKey = ApiKeys.builder()
-            .setId(config.getStormpathId())
-            .setSecret(config.getStormpathSecret()).build();
+            .setId(config.getStormpathId().trim())
+            .setSecret(config.getStormpathSecret().trim()).build();
         return Clients.builder().setApiKey(apiKey).build();
     }
 
     public static Application createStormpathApplication(Client client) {
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
-        return client.getResource(config.getStormpathApplicationHref(), Application.class);
+        return client.getResource(config.getStormpathApplicationHref().trim(), Application.class);
     }
 }
