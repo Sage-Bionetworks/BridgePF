@@ -10,7 +10,7 @@ module.exports = function(grunt) {
     grunt.initConfig({
         hub: {
             all: {
-                src: ['app/Gruntfile.js', 'neurod/Gruntfile.js'],
+                src: ['shared/Gruntfile.js', 'app/Gruntfile.js', 'neurod/Gruntfile.js'],
                 tasks: ['test','build','default','release','watch']
             },
         },

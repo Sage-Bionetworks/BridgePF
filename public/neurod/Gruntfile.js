@@ -5,12 +5,11 @@ module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     
     var jsFiles = [
-        "../app/scripts/humane-modified.js",
+        '../app/scripts/humane-modified.js',
         "scripts/controllers/neurod.js",
         "scripts/controllers/join.js",
         "scripts/controllers/joined.js",
-        "scripts/directives/*.js",
-        "scripts/services/*.js",
+        "scripts/directives/*.js"
     ];
 
     grunt.initConfig({

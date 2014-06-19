@@ -1,5 +1,5 @@
-bridge.controller('ResetPasswordController', ['$scope', '$rootScope', '$route', '$http', '$humane', '$location', 'authService', 'formService',  
-function($scope, $rootScope, $route, $http, $humane, $location, authService, formService) {
+bridge.controller('ResetPasswordController', ['$scope', '$route', '$humane', '$window', 'authService', 'formService',  
+function($scope, $route, $humane, $window, authService, formService) {
     
     authService.clear();
     
@@ -8,8 +8,7 @@ function($scope, $rootScope, $route, $http, $humane, $location, authService, for
     
     $scope.submit = function() {
         authService.resetPassword($scope.password, $scope.sptoken).then(function() {
-            $location.path("/");
-            $humane.confirm("Your password has been changed.");
+            $window.location.replace("/#/?msg=passwordChanged");
         }, function(response) {
             $humane.error(response.data.payload);
         });
