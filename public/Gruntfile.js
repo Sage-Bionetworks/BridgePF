@@ -11,7 +11,7 @@ module.exports = function(grunt) {
         hub: {
             all: {
                 src: ['shared/Gruntfile.js', 'app/Gruntfile.js', 'neurod/Gruntfile.js'],
-                tasks: ['test','build','default','release','watch']
+                tasks: ['test','build','default','release','watch','clean']
             },
         },
     });
@@ -22,4 +22,5 @@ module.exports = function(grunt) {
     grunt.registerTask('default', ['hub:all:default']);
     grunt.registerTask('release', ['hub:all:release']);
     grunt.registerTask('watch', ['hub:all:watch']);
+    grunt.registerTask('clean', ['hub:all:clean']);
 };

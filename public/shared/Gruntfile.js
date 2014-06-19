@@ -17,7 +17,7 @@ module.exports = function(grunt) {
     ];
 
     grunt.initConfig({
-        token: "bridge-auth",
+        token: "bridge-shared",
         output: "build",
         
         clean: {
