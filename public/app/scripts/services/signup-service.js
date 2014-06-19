@@ -11,6 +11,7 @@ bridge.service('signUpService', ['$modal', function($modal) {
             if ($scope.signUpForm.$valid) {
                 var credentials = formService.formToJSON($scope.signUpForm, ['username', 'email', 'password']);
                 $scope.message = '';
+                $humane.confirm("Please check your email for a message to verify your email address.");
                 authService.signUp(credentials).then(function() {
                     modalInstance.dismiss('cancel');
                     $humane.confirm("Please check your email for a message to verify your email address.");

@@ -61,15 +61,10 @@ public class AuthenticationServiceImplTest {
     public void getSessionWhenNotAuthenticated() throws Exception {
         service.signOut(null); // This also tests sign out.
         UserSession session = service.getSession("foo");
-        
-        assertNull("Username is null", session.getUsername());
-        assertNull("Session token is null", session.getSessionToken());
-        assertNull("Environment is null", session.getEnvironment());
+        assertNull("Session is null", session);
         
         session = service.getSession(null);
-        assertNull("Username is null", session.getUsername());
-        assertNull("Session token is null", session.getSessionToken());
-        assertNull("Environment is null", session.getEnvironment());
+        assertNull("Session is null", session);
     }
     
     @Test

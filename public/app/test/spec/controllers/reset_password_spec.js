@@ -1,19 +1,16 @@
 describe("ResetPasswordController", function() {
    
-    var ResetPasswordController, $rootScope, $httpBackend, $humane;
+    var ResetPasswordController, $rootScope, $httpBackend, $window, $humane;
 
     beforeEach(function() {
         module('bridge');
 
-        var $route = {current:{params:{sptoken: "abc"}}};
-        
-        $humane = {
-            confirm: jasmine.createSpy(),
-            error: jasmine.createSpy()
-        };
+        $humane = {confirm: jasmine.createSpy(), error: jasmine.createSpy()};
+        $window = {_session: {sessionToken: 'foo'}, location: {replace: jasmine.createSpy()}};
         module(function($provide) {
-            $provide.value('$route', $route);
+            $provide.value('$route', {current:{params:{sptoken: "abc"}}});
             $provide.value('$humane', $humane);
+            $provide.value('$window', $window);
         });
     });
     
@@ -56,7 +53,8 @@ describe("ResetPasswordController", function() {
         setupPOST().respond(200, {});
         $rootScope.submit();
         $httpBackend.flush();
-        expect($humane.confirm).toHaveBeenCalledWith('Your password has been changed.');
+        
+        expect($window.location.replace).toHaveBeenCalledWith("/#/?msg=passwordChanged");
     });
 
 });

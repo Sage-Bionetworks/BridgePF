@@ -27,7 +27,6 @@ module.exports = function(grunt) {
                 src: [
                     'bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
                     'bower_components/dygraphs/dygraph.dev.js',
-                    'scripts/humane-modified.js',
                     'scripts/app.js',
                     'scripts/services/*.js',
                     'scripts/directives/*.js',
@@ -41,7 +40,6 @@ module.exports = function(grunt) {
                 src: [
                     'bower_components/bootstrap/dist/css/bootstrap.css',
                     'bower_components/bootstrap/dist/css/bootstrap-theme.css',
-                    'styles/humane-modified.css', // to work with bootstrap
                     'styles/*.css',
                     'styles/*.scss'
                 ],
@@ -63,7 +61,7 @@ module.exports = function(grunt) {
                 'bower_components/angular/angular.js',
                 'bower_components/angular-mocks/angular-mocks.js',
                 'bower_components/angular-route/angular-route.js',
-                'bower_components/angular-cookies/angular-cookies.js',
+                '../shared/build/bridge-auth.js',
                 '<%= output %>/<%= token %>.min.js'
             ],
             options: {

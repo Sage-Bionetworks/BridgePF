@@ -5,8 +5,9 @@
     <title>Bridge: Patients &amp; Researchers in Partnership - Sage Bionetworks</title>
     <meta name="viewport" content="width=device-width" />
     <base href="/app/"/>
+    <link rel="stylesheet" href="../shared/styles/humane-modified.css" />
     <link rel="stylesheet" href="build/bridge.css" />
-    <script>window.bridgeAuth = @Html(auth);</script>
+    <script>window._session = @Html(auth);</script>
 </head>
 <body ng-app="bridge" ng-controller="ApplicationController">
     <div class="container">
@@ -17,13 +18,6 @@
             <div class="col-sm-8">
                 <div class="bridge-header" ng-cloak>
                     <div class="loadingclock" ng-show="loading"></div>
-                    <div ng-hide="session.authenticated">
-                        <div style="line-height: 1.8">
-	                        <a id="signInLink" style="font-size: larger" ng-click="signIn()">Sign In</a><br>
-	                        <a id="signUpLink" style="font-size: smaller" ng-click="signUp()">Sign Up</a> &bull; 
-	                        <a id="resetPasswordLink" style="font-size: smaller" ng-click="resetPassword()">Forgot Password?</a>
-                        </div>
-                    </div>
                     <div ng-hide="!session.authenticated">
                         <span ng-bind="session.username"></span>
                         <button id="signOutLink" class="btn btn-default" ng-show="session.sessionToken" ng-click="signOut()">Sign Out</button>
@@ -47,7 +41,8 @@
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-route.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular-cookies.js"></script>
-    <script src="build/bridge.min.js"></script>
+    <script src="../shared/build/bridge-auth.js"></script>
+    <script src="build/bridge.js"></script>
     
     <script>
     var _gaq = _gaq || [];
