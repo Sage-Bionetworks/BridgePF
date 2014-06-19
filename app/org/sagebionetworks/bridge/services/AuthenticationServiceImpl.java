@@ -94,7 +94,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	    } catch (ResourceException re) {
 	        throw new BridgeNotFoundException(re.getDeveloperMessage());
 	    } finally {
-	        request.clear();
+	        if (request != null) {
+	            request.clear();    
+	        }
 	    }
 	    return session;
 	}
