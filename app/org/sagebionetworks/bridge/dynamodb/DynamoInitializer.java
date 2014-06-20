@@ -256,7 +256,9 @@ public class DynamoInitializer {
                     .withProjection(localIndexDesc.getProjection());
             localIndices.add(localIndex);
         }
-        request.setLocalSecondaryIndexes(localIndices);
+        if (localIndices.size() > 0) {
+            request.setLocalSecondaryIndexes(localIndices);
+        }
         return request;
     }
 
@@ -303,10 +305,30 @@ public class DynamoInitializer {
     static void compareLocalIndices(TableDescription table1, TableDescription table2) {
         List<LocalSecondaryIndexDescription> indices1 = table1.getLocalSecondaryIndexes();
         List<LocalSecondaryIndexDescription> indices2 = table2.getLocalSecondaryIndexes();
+        // Check for size first
+        if (indices1 == null || indices1.size() == 0) {
+            if (indices2 != null && indices2.size() > 0) {
+                throw new RuntimeException("Table " + table1.getTableName() +
+                        " is changing the number of local indices.");
+            }
+            if (indices2 == null) {
+                return;
+            }
+        }
+        if (indices2 == null || indices2.size() == 0) {
+            if (indices1 != null && indices1.size() > 0) {
+                throw new RuntimeException("Table " + table1.getTableName() +
+                        " is changing the number of local indices.");
+            }
+            if (indices1 == null) {
+                return;
+            }
+        }
         if (indices1.size() != indices2.size()) {
             throw new RuntimeException("Table " + table1.getTableName() +
                     " is changing the number of local indices.");
         }
+        // Check one by one
         Map<String, LocalSecondaryIndexDescription> indexMap1 = new HashMap<String, LocalSecondaryIndexDescription>();
         for (LocalSecondaryIndexDescription index1 : indices1) {
             indexMap1.put(index1.getIndexName(), index1);
