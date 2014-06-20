@@ -16,7 +16,6 @@ public class BridgeConfigTest {
     @Before
     public void before() {
         System.setProperty("bridge.pwd", "when.the.password.is.not.a.password");
-        System.setProperty("bridge.salt", "when.the.salt.is.some.random.sea.salt");
         System.setProperty("bridge.user", "unit.test");
         System.setProperty("bridge.env", "local");
     }
