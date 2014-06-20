@@ -39,7 +39,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	
 	private static Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 	
-	public static final UserSession ANONYMOUS_USER = new UserSession();
 	private Client stormpathClient;
 	private CacheProvider cache;
 	private BridgeConfig config;
@@ -60,13 +59,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public UserSession getSession(String sessionToken) {
         if (sessionToken == null) {
-            return ANONYMOUS_USER;
+            return null;
         }
-        UserSession session = cache.getUserSession(sessionToken);
-        if (session == null) {
-            return ANONYMOUS_USER;
-        }
-        return session;
+        return cache.getUserSession(sessionToken);
     }
     
 	@Override

@@ -1,5 +1,5 @@
-bridge.controller('ConsentController', ['$scope', '$http', '$location', '$humane', 'authService',   
-function($scope, $http, $location, $humane, authService) {
+bridge.controller('ConsentController', ['$scope', '$http', '$window', '$location', '$humane', 'authService',   
+function($scope, $http, $window, $location, $humane, authService) {
 
     $scope.agree = function() {
         $http.post('/api/auth/consentToResearch').then(function(response) {
@@ -11,7 +11,7 @@ function($scope, $http, $location, $humane, authService) {
     };
     
     $scope.decline = function() {
-        $location.path("/");
+        $window.location.replace("/");
     };
     
 }]);

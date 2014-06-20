@@ -1,23 +1,18 @@
-bridge.service('authService', ['$http', '$rootScope', '$location', '$window', '$humane', '$q',      
-function($http, $rootScope, $location, $window, $humane, $q) {
+bridgeAuth.service('authService', ['$http', '$window', '$q', '$location', '$humane',        
+function($http, $window, $q, $location, $humane) {
     var service = {
         sessionToken: '',
         username: '',
         authenticated: false,
         consented: false,
         
-        handleConsent: function(payload) {
-            if (payload) {
-                this.init(payload);    
-            }
-            $location.path("/consent");
-        },
-        init: function(data) {
-            $http.defaults.headers.common['Bridge-Session'] = data.sessionToken;
-            this.sessionToken = data.sessionToken;
-            this.username = data.username;
-            this.consented = data.consented;
-            this.authenticated = true;
+        initSession: function(session) {
+            $http.defaults.headers.common['Bridge-Session'] = session.sessionToken;
+            
+            this.sessionToken = session.sessionToken;
+            this.username = session.username;
+            this.consented = session.consented;
+            this.authenticated = session.authenticated;
         },
         clear: function() {
             delete $http.defaults.headers.common['Bridge-Session'];
@@ -29,7 +24,7 @@ function($http, $rootScope, $location, $window, $humane, $q) {
         signIn: function(credentials) {
             var deferred = $q.defer();
             $http.post('/api/auth/signIn', credentials).then(function(response) {
-                service.init(response.data.payload);
+                service.initSession(response.data.payload);
                 deferred.resolve(response);
             }, function(response) {
                 deferred.reject(response);
@@ -50,17 +45,8 @@ function($http, $rootScope, $location, $window, $humane, $q) {
         }
     };
 
-    angular.extend(service, window.bridgeAuth);
-    delete window.bridgeAuth;
-
-    // Anonymous users can't access user routes.
-    $rootScope.$on('$routeChangeStart', function(e, next, current) {
-        if (!next.access.allowAnonymous && !service.authenticated) {
-            console.warn("Page requires authentication, redirecting");
-            e.preventDefault();
-            $location.path("/");
-        }
-    });
+    service.initSession($window._session);
+    delete $window._session;
     
     return service;
     
