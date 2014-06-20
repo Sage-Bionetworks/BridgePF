@@ -1,4 +1,4 @@
-bridgeAuth.factory('interceptAuth', ['$q', '$injector', '$location', function($q, $injector, $location) {
+bridgeShared.factory('interceptAuth', ['$q', '$injector', '$location', function($q, $injector, $location) {
     return {
         'responseError': function(rejection) {
             if (rejection.status === 401) {
@@ -11,6 +11,6 @@ bridgeAuth.factory('interceptAuth', ['$q', '$injector', '$location', function($q
         }
     };
 }]);
-bridgeAuth.config(['$httpProvider', function($httpProvider) {
+bridgeShared.config(['$httpProvider', function($httpProvider) {
     $httpProvider.interceptors.push('interceptAuth');
 }]);

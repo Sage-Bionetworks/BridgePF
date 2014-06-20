@@ -1,4 +1,4 @@
-bridgeAuth.service('signInService', ['$modal', function($modal) {
+bridgeShared.service('signInService', ['$modal', function($modal) {
 
     var modalInstance = null, pendingRequests = [];
 
