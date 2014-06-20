@@ -9,7 +9,10 @@
     "humane-js": "~3.2.0"
   },
   "devDependencies": {
+    "angular": "1.2.16",
+    "angular-route": "1.2.16",
     "angular-mocks": "1.2.16",
+    "angular-bootstrap": "~0.10.0",
     "angular-scenario": "1.2.16",
     "jasmine": "~2.0.0"
   }
