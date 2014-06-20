@@ -18,16 +18,16 @@ package org.sagebionetworks.bridge.redis;
 public interface RedisKey {
 
     /** For internal locking. */
-    public static final SimpleKey LOCK = new SimpleKey("lock");
+    public static final RedisKey LOCK = new SimpleKey("lock");
 
     /** User sessions. */
-    public static final SimpleKey SESSION = new SimpleKey("session");
+    public static final RedisKey SESSION = new SimpleKey("session");
 
     /** User health code. */
-    public static final SimpleKey HEALTH_CODE = new SimpleKey("health-code");
+    public static final RedisKey HEALTH_CODE = new SimpleKey("health-code");
 
     /** Health code lock. */
-    public static final RedisKey HEALTH_CODE_LOCK = new CompoundKey(HEALTH_CODE, LOCK);
+    public static final RedisKey HEALTH_CODE_LOCK = new CompoundKey((SimpleKey)HEALTH_CODE, (SimpleKey)LOCK);
 
     static final String SEPARATOR = ":";
 
