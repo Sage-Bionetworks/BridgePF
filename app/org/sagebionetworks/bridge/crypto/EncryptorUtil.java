@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.config;
+package org.sagebionetworks.bridge.crypto;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jasypt.encryption.StringEncryptor;

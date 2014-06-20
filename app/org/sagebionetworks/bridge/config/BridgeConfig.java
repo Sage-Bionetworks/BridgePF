@@ -9,6 +9,7 @@ import java.util.Properties;
 
 import org.jasypt.encryption.StringEncryptor;
 import org.jasypt.properties.EncryptableProperties;
+import org.sagebionetworks.bridge.crypto.EncryptorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
