@@ -1,4 +1,4 @@
-bridgeAuth.service('requestResetPasswordService', ['$modal', function($modal) {
+bridgeShared.service('requestResetPasswordService', ['$modal', function($modal) {
     
     var modalInstance;
     

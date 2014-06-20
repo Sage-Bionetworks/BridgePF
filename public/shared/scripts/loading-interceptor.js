@@ -1,4 +1,4 @@
-bridgeAuth.factory('loadingInterceptor', ['$q', '$injector', '$rootScope', function($q, $injector, $rootScope) {
+bridgeShared.factory('loadingInterceptor', ['$q', '$injector', '$rootScope', function($q, $injector, $rootScope) {
     return {
         'request': function(config) {
             $rootScope.$broadcast('loadStart');
@@ -18,6 +18,6 @@ bridgeAuth.factory('loadingInterceptor', ['$q', '$injector', '$rootScope', funct
         }
     };
 }]);
-bridgeAuth.config(['$httpProvider', function($httpProvider) {
+bridgeShared.config(['$httpProvider', function($httpProvider) {
     $httpProvider.interceptors.push('loadingInterceptor');
 }]);

@@ -6,9 +6,8 @@ module.exports = function(grunt) {
     
     var jsFiles = [
         '../app/scripts/humane-modified.js',
-        "scripts/controllers/neurod.js",
-        "scripts/controllers/join.js",
-        "scripts/controllers/joined.js",
+        "scripts/neurod.js",
+        "scripts/controllers/*.js",
         "scripts/directives/*.js"
     ];
 
