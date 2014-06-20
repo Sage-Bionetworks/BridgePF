@@ -5,6 +5,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
+import org.sagebionetworks.bridge.redis.RedisKey;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -21,7 +22,8 @@ public class CacheProvider {
     public void setUserSession(String key, UserSession session) {
         try {
             String ser = mapper.writeValueAsString(session);
-            String result = stringOps.setex(key, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser).execute();
+            String redisKey = RedisKey.SESSION.getRedisKey(key);
+            String result = stringOps.setex(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser).execute();
             if (!"OK".equals(result)) {
                 throw new BridgeServiceException("Session storage error", 500);
             }
@@ -33,7 +35,8 @@ public class CacheProvider {
     
     public UserSession getUserSession(String key) {
         try {
-            String ser = stringOps.get(key).execute();
+            String redisKey = RedisKey.SESSION.getRedisKey(key);
+            String ser = stringOps.get(redisKey).execute();
             if (ser != null) {
                 return mapper.readValue(ser, UserSession.class);  
             }
@@ -46,7 +49,8 @@ public class CacheProvider {
     
     public void remove(String key) {
         try {
-            stringOps.delete(key).execute();
+            String redisKey = RedisKey.SESSION.getRedisKey(key);
+            stringOps.delete(redisKey).execute();
         } catch(Throwable e) {
             promptToStartRedisIfLocalEnv(e);
             throw new BridgeServiceException(e, 500);
