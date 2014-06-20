@@ -33,8 +33,6 @@ public class BridgeConfig {
 
     // Property name for the encryption password
     private static final String PASSWORD = "bridge.pwd";
-    // Property name for the encryption salt
-    private static final String SALT = "bridge.salt";
 
     private static final String HEALTHCODE_PASSWORD = "bridge.healthcode.pwd";
     private static final String HEALTHCODE_SALT = "bridge.healthcode.salt";
@@ -108,8 +106,7 @@ public class BridgeConfig {
         Properties collapsed = collapse(properties, environment.getEnvName());
 
         final String pwd = read(PASSWORD, properties);
-        final String salt = read(SALT, properties);
-        final StringEncryptor encryptor = EncryptorUtil.getEncryptor(pwd, salt);
+        final StringEncryptor encryptor = EncryptorUtil.getEncryptor(pwd);
 
         // Decryptable properties
         this.properties = new EncryptableProperties(collapsed, encryptor);
@@ -150,27 +147,23 @@ public class BridgeConfig {
     public String getStormpathSecret() {
         return getProperty(STORMPATH_SECRET);
     }
-    
+
     public String getStormpathApplicationHref() {
         return getProperty(STORMPATH_APPLICATION_HREF);
     }
-    
+
     public String getPassword() {
         return getProperty(PASSWORD);
     }
 
-    public String getSalt() {
-        return getProperty(SALT);
-    }
-    
     public String getHealthCodePassword() {
         return getProperty(HEALTHCODE_PASSWORD);
     }
-    
+
     public String getHealthCodeSalt() {
         return getProperty(HEALTHCODE_SALT);
     }
-    
+
     ///////////////////////////
 
     private void loadProperties(final InputStream inputStream, final Properties properties) {
