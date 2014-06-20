@@ -27,6 +27,7 @@ public class StudyControllerService {
     }
     
     private String getHostname(Request request) {
+        // InetAddress.getLocalHost().getHostName() ?
         String host = request.host();
         if (host.indexOf(":") > -1) {
             host = host.split(":")[0];

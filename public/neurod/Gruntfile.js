@@ -5,10 +5,8 @@ module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     
     var jsFiles = [
-        '../app/scripts/humane-modified.js',
-        "scripts/controllers/neurod.js",
-        "scripts/controllers/join.js",
-        "scripts/controllers/joined.js",
+        "scripts/neurod.js",
+        "scripts/controllers/*.js",
         "scripts/directives/*.js"
     ];
 
@@ -37,7 +35,6 @@ module.exports = function(grunt) {
             },
             sass: {
                 src: [
-                    "../app/styles/humane-modified.css",
                     "styles/info.scss",
                     "styles/carousel.scss"
                 ],

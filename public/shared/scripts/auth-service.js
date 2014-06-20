@@ -1,4 +1,4 @@
-bridgeAuth.service('authService', ['$http', '$window', '$q', '$location', '$humane',        
+bridgeShared.service('authService', ['$http', '$window', '$q', '$location', '$humane',        
 function($http, $window, $q, $location, $humane) {
     var service = {
         sessionToken: '',

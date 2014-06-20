@@ -1,4 +1,4 @@
-bridgeAuth.service('formService', [function() {
+bridgeShared.service('formService', [function() {
     return {
         retrieveSpToken: function($route) {
             // route.params don't work here given the way stormpath structures the URL
