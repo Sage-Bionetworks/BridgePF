@@ -5,15 +5,19 @@ module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     
     var jsFiles = [
-        '../app/scripts/humane-modified.js',
-        "scripts/controllers/neurod.js",
-        "scripts/controllers/join.js",
-        "scripts/controllers/joined.js",
-        "scripts/directives/*.js"
+        "scripts/humane-modified.js",
+        "scripts/shared.js",
+        "scripts/form-service.js",
+        "scripts/humane.js",
+        "scripts/auth-service.js",
+        "scripts/signin-service.js",
+        "scripts/reset-password-service.js",
+        "scripts/auth-interceptor.js",
+        "scripts/loading-interceptor.js"
     ];
 
     grunt.initConfig({
-        token: "neurod",
+        token: "bridge-shared",
         output: "build",
         
         clean: {
@@ -34,15 +38,6 @@ module.exports = function(grunt) {
                 src: jsFiles,
                 dest: '<%= output %>/<%= token %>.js',
                 nonull: true
-            },
-            sass: {
-                src: [
-                    "../app/styles/humane-modified.css",
-                    "styles/info.scss",
-                    "styles/carousel.scss"
-                ],
-                dest: '<%= output %>/<%= token %>.scss',
-                nonull: true
             }
         },
         uglify: {
@@ -56,7 +51,7 @@ module.exports = function(grunt) {
         },
         watch: {
             all: {
-                files: ['Gruntfile.js', 'scripts/**/*.js', 'styles/**/*.scss', 'styles/**/*.css'],
+                files: ['Gruntfile.js', 'scripts/*.js'],
                 tasks: 'build',
                 spawn: false
             }
@@ -64,7 +59,7 @@ module.exports = function(grunt) {
     });
 
     grunt.registerTask('test', ['build']);
-    grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify']);
-    grunt.registerTask('default', ['jshint', 'clean:build', 'concat', 'sass', 'uglify']);
+    grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'uglify']);
+    grunt.registerTask('default', ['jshint', 'clean:build', 'concat', 'uglify']);
     grunt.registerTask('release', ['test', 'clean:release']);
 };

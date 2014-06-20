@@ -74,6 +74,7 @@
                     <bean class="global.JsonSchemaValidator"/>
                 </property>
                 <property name="studyControllerService" ref="studyControllerService"/>
+                <property name="authenticationService" ref="authenticationService"/>
             </bean>
         </property>
     </bean>

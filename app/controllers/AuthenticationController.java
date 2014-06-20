@@ -3,6 +3,7 @@ package controllers;
 import models.JsonPayload;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
@@ -23,19 +24,23 @@ public class AuthenticationController extends BaseController {
     }
     
 	public Result signIn() throws Exception {
-        String sessionToken = getSessionToken(false);
-        authenticationService.signOut(sessionToken);
-
+	    UserSession session = checkForSession();
+	    if (session != null) {
+	        setSessionToken(session.getSessionToken());
+	        return jsonResult(new JsonPayload<UserSessionInfo>(new UserSessionInfo(session)));
+	    }
 	    Study study = studyControllerService.getStudyByHostname(request());
 		SignIn signIn = SignIn.fromJson(request().body().asJson());
-		UserSession session = authenticationService.signIn(study, signIn);
-		response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken());
+		session = authenticationService.signIn(study, signIn);
+		setSessionToken(session.getSessionToken());
 		return jsonResult(new JsonPayload<UserSessionInfo>(new UserSessionInfo(session)));
 	}
 
 	public Result signOut() throws Exception {
-		String sessionToken = getSessionToken(false);
-		authenticationService.signOut(sessionToken);
+	    UserSession session = checkForSession();
+	    if (session != null) {
+	        authenticationService.signOut(session.getSessionToken());    
+	    }
 		response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 		return jsonResult("Signed out.");
 	}
@@ -52,7 +57,7 @@ public class AuthenticationController extends BaseController {
 	    // In normal course of events (verify email, consent to research), 
 	    // an exception is thrown. This code will probably never execute.
 	    UserSession session = authenticationService.verifyEmail(study, ev);
-        response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken());
+        setSessionToken(session.getSessionToken());
         return jsonResult(new JsonPayload<UserSessionInfo>(new UserSessionInfo(session)));
 	}
 	
@@ -69,8 +74,11 @@ public class AuthenticationController extends BaseController {
 	}
 	
 	public Result consentToResearch() throws Exception {
-		String sessionToken = getSessionToken(true);
-		authenticationService.consentToResearch(sessionToken);
+	    UserSession session = checkForSession();
+	    if (session == null) {
+	        throw new BridgeServiceException("Not signed in.", 401);
+	    }
+		authenticationService.consentToResearch(session.getSessionToken());
 		return jsonResult("Consent to research has been recorded.");
 	}
 	

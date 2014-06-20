@@ -8,7 +8,7 @@ function($scope, $location, formService, authService) {
             var credentials = formService.formToJSON($scope.signUpForm, ['username', 'email', 'password']);
             $scope.message = '';
             authService.signUp(credentials).then(function() {
-                $location.path('/joined?email='+credentials.email);
+                $location.path('/joined/'+credentials.email);
             }, function(response) {
                 $scope.message = response.data.payload;
             });

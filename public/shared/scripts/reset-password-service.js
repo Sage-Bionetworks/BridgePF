@@ -1,4 +1,4 @@
-neurod.service('requestResetPasswordService', ['$modal', function($modal) {
+bridgeAuth.service('requestResetPasswordService', ['$modal', function($modal) {
     
     var modalInstance;
     
@@ -24,7 +24,7 @@ neurod.service('requestResetPasswordService', ['$modal', function($modal) {
     return {
         open: function() {
             modalInstance = $modal.open({
-                templateUrl: 'app/views/dialogs/requestResetPassword.html',
+                templateUrl: 'shared/views/requestResetPassword.html',
                 controller: ModalInstanceController,
                 size: 'sm',
                 windowClass: 'sm'

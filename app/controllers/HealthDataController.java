@@ -9,11 +9,9 @@ import java.util.List;
 import models.IdHolder;
 import models.JsonPayload;
 
-import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
@@ -38,15 +36,6 @@ public class HealthDataController extends BaseController {
     
     public void setStudyControllerService(StudyControllerService scs) {
         this.studyControllerService = scs;
-    }
-    
-    @Override
-    protected UserSession getSession() throws Exception {
-        UserSession session = super.getSession();
-        if (!session.doesConsent()) {
-            throw new ConsentRequiredException(new UserSessionInfo(session));
-        }
-        return session;
     }
     
     // This is needed or tests fail. It appears to be a bug in Play Framework, that the asJson()
