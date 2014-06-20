@@ -1,6 +1,6 @@
-var bridgeAuth = angular.module('bridge.auth', []);
+var bridgeShared = angular.module('bridge.shared', []);
 
-bridgeAuth.run(['$location', '$humane', function($location, $humane) {
+bridgeShared.run(['$location', '$humane', function($location, $humane) {
     var search = $location.search();
     switch(search.msg) {
     case 'passwordChanged':

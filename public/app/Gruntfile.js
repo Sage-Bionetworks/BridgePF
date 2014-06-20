@@ -39,7 +39,6 @@ module.exports = function(grunt) {
                 src: [
                     'bower_components/bootstrap/dist/css/bootstrap.css',
                     'bower_components/bootstrap/dist/css/bootstrap-theme.css',
-                    'styles/*.css',
                     'styles/*.scss'
                 ],
                 dest: '<%= output %>/<%= token %>.scss',
@@ -71,7 +70,7 @@ module.exports = function(grunt) {
         // run 'grunt watch' to have files processed any time they are changed while you work.
         watch: {
             all: {
-                files: ['Gruntfile.js', 'scripts/**/*.js', 'styles/**/*.scss', 'styles/**/*.css'],
+                files: ['Gruntfile.js', 'scripts/**/*.js', 'styles/**/*.scss'],
                 tasks: 'build',
                 spawn: false
             }
