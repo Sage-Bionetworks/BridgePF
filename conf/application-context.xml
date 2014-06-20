@@ -154,7 +154,7 @@
         </property>
         <property name="cacheProvider" ref="cacheProvider"/>
         <property name="encryptor">
-            <bean class="org.sagebionetworks.bridge.config.EncryptorUtil" factory-method="getEncryptorOld">
+            <bean class="org.sagebionetworks.bridge.crypto.EncryptorUtil" factory-method="getEncryptorOld">
 	            <constructor-arg index="0" value="#{bridgeConfig.getHealthCodePassword()}"/>
 	            <constructor-arg index="1" value="#{bridgeConfig.getHealthCodeSalt()}"/>
             </bean>
