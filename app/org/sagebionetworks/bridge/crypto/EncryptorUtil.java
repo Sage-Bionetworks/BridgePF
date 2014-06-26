@@ -1,10 +1,8 @@
 package org.sagebionetworks.bridge.crypto;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jasypt.encryption.StringEncryptor;
 import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
-import org.jasypt.salt.RandomSaltGenerator;
 import org.jasypt.salt.StringFixedSaltGenerator;
 
 public class EncryptorUtil {
@@ -20,7 +18,7 @@ public class EncryptorUtil {
                     + "password, target, decrypt (optional, when missing, encrypt)");
         }
         final String password = args[0];
-        final StringEncryptor encryptor = getEncryptor(password);
+        final StringEncryptor encryptor = new BridgeEncryptor(password);
         if (args.length == 2 || "encrypt".equalsIgnoreCase(args[2])) {
             System.out.println("Encrypted: " + encryptor.encrypt(args[1]));
         } else {
@@ -36,18 +34,6 @@ public class EncryptorUtil {
         StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
         encryptor.setPassword(password);
         encryptor.setSaltGenerator(new StringFixedSaltGenerator(salt));
-        return encryptor;
-    }
-
-    /**
-     * Gets a password-based string encryptor.
-     */
-    public static PBEStringEncryptor getEncryptor(final String password) {
-        StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
-        encryptor.setProvider(new BouncyCastleProvider());
-        encryptor.setAlgorithm("PBEWITHSHAAND256BITAES-CBC-BC");
-        encryptor.setPassword(password);
-        encryptor.setSaltGenerator(new RandomSaltGenerator());
         return encryptor;
     }
 }
