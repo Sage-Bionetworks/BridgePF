@@ -30,6 +30,10 @@
         </constructor-arg>
     </bean>
 
+    <bean id="healthCodeDao" class="org.sagebionetworks.bridge.dynamodb.DynamoHealthCodeDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
 
     <!-- Stormpath identity service -->

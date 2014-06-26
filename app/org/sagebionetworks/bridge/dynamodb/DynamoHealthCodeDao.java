@@ -1,21 +1,31 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 
 public class DynamoHealthCodeDao {
 
     private DynamoDBMapper mapper;
 
+    public void setDynamoDbClient(AmazonDynamoDB client) {
+        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
+                SaveBehavior.UPDATE,
+                ConsistentReads.CONSISTENT,
+                TableNameOverrideFactory.getTableNameOverride(DynamoHealthCode.class));
+        mapper = new DynamoDBMapper(client, mapperConfig);
+    }
+
     public boolean setIfNotExist(String code) {
-        DynamoHealthCode toSave = new DynamoHealthCode(code);
-        AttributeValue expected = new AttributeValue().withS(code);
-        DynamoDBSaveExpression saveExpr = new DynamoDBSaveExpression()
-                .withExpectedEntry("code", new ExpectedAttributeValue()
-                        .withExists(false).withValue(expected));
-        mapper.save(toSave, saveExpr);
-        return false;
+        try {
+            DynamoHealthCode toSave = new DynamoHealthCode(code);
+            mapper.save(toSave);
+            return true;
+        } catch(ConditionalCheckFailedException e) {
+            return false;
+        }
     }
 }
