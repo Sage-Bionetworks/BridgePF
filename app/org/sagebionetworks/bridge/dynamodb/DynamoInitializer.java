@@ -83,6 +83,14 @@ public class DynamoInitializer {
     static void deleteTable(String table) {
         table = getTableName(table);
         try {
+            DescribeTableResult tableResult = DYNAMO.describeTable(table);
+            TableDescription tableDscr = tableResult.getTable();
+            String status = tableDscr.getTableStatus();
+            if (TableStatus.DELETING.toString().equalsIgnoreCase(status)) {
+                return;
+            } else if (!TableStatus.ACTIVE.toString().equalsIgnoreCase(status)) {
+                waitForActive(tableDscr);
+            }
             logger.info("Deleting table " + table);
             DYNAMO.deleteTable(table);
             logger.info("Table " + table + " deleted.");
