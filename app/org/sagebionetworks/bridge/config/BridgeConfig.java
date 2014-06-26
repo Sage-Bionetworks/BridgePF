@@ -7,9 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import org.jasypt.encryption.StringEncryptor;
 import org.jasypt.properties.EncryptableProperties;
-import org.sagebionetworks.bridge.crypto.EncryptorUtil;
+import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +105,7 @@ public class BridgeConfig {
         Properties collapsed = collapse(properties, environment.getEnvName());
 
         final String pwd = read(PASSWORD, properties);
-        final StringEncryptor encryptor = EncryptorUtil.getEncryptor(pwd);
+        final BridgeEncryptor encryptor = new BridgeEncryptor(pwd);
 
         // Decryptable properties
         this.properties = new EncryptableProperties(collapsed, encryptor);

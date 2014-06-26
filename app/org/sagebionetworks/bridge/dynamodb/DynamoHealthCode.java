@@ -1,12 +1,19 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import org.sagebionetworks.bridge.models.HealthCode;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 
-public class DynamoHealthCode implements HealthCode, DynamoTable {
+/**
+ * Used internally (i.e. no interface outside the dynamodb package) to
+ * avoid collisions of health code. We do not trust that the underlying RNG
+ * is always a solid one.
+ */
+@DynamoDBTable(tableName = "HealthCode")
+public class DynamoHealthCode implements DynamoTable {
 
     private String code;
+    private Long version;
 
     public DynamoHealthCode(String code) {
         if (code == null || code.isEmpty()) {
@@ -26,33 +33,11 @@ public class DynamoHealthCode implements HealthCode, DynamoTable {
         this.code = code;
     }
 
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((code == null) ? 0 : code.hashCode());
-        return result;
+    @DynamoDBVersionAttribute
+    public Long getVersion() {
+        return version;
     }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        DynamoHealthCode other = (DynamoHealthCode) obj;
-        if (code == null) {
-            if (other.code != null) {
-                return false;
-            }
-        } else if (!code.equals(other.code)) {
-            return false;
-        }
-        return true;
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

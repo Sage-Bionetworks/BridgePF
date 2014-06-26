@@ -13,23 +13,43 @@
     <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfigFactory"
             factory-method="getConfig" />
 
+    <bean id="healthCodeEncryptor" class="org.sagebionetworks.bridge.crypto.BridgeEncryptor">
+        <constructor-arg value="#{bridgeConfig.healthCodePassword}"/>
+    </bean>
+
     <bean id="awsCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
         <constructor-arg index="0" value="#{bridgeConfig.getProperty('aws.key')}"/>
         <constructor-arg index="1" value="#{bridgeConfig.getProperty('aws.secret.key')}"/>
     </bean>
 
+    <!-- DynamoDB -->
+
+    <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient">
+        <constructor-arg index="0">
+            <ref bean="awsCredentials" />
+        </constructor-arg>
+    </bean>
+
+    <bean id="healthCodeDao" class="org.sagebionetworks.bridge.dynamodb.DynamoHealthCodeDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+
+    <bean id="healthIdDao" class="org.sagebionetworks.bridge.dynamodb.DynamoHealthIdDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
 
     <!-- Stormpath identity service -->
-    
+
     <bean id="stormpathClient" class="org.sagebionetworks.bridge.stormpath.StormpathFactory" 
         factory-method="createStormpathClient" scope="singleton">
     </bean>
-    
+
     <!-- Caching abstraction -->
-    
+
     <bean id="cacheProvider" class="org.sagebionetworks.bridge.cache.CacheProvider"/>
-    
+
     <!-- Play controllers. -->
 
     <bean id="proxiedController" class="org.springframework.aop.framework.ProxyFactoryBean">
@@ -47,7 +67,7 @@
             </bean>
         </property>
     </bean>
-    
+
     <bean id="controllers.AuthenticationController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.AuthenticationController">
@@ -56,7 +76,7 @@
             </bean>
         </property>
     </bean>
-    
+ 
     <bean id="controllers.HealthDataController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.HealthDataController">
@@ -66,7 +86,7 @@
             </bean>
         </property>
     </bean>
-    
+
     <bean id="controllers.TrackerController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.TrackerController">
@@ -78,7 +98,7 @@
             </bean>
         </property>
     </bean>
-    
+
     <bean id="studyControllerService" class="controllers.StudyControllerService">
         <property name="studies">
             <list>
@@ -108,7 +128,7 @@
             </list>
         </property>
     </bean>
-    
+
     <bean id="pb-tracker" class="org.sagebionetworks.bridge.models.Tracker">
         <property name="name" value="Blood Pressure Reading"/>
         <property name="type" value="BloodPressure"/>
@@ -122,7 +142,7 @@
         <property name="id" value="2"/>
         <property name="schemaFile" value="file:conf/schemas/medication.json"/>
     </bean>
-    
+
     <!-- Services -->
 
     <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl">
@@ -130,7 +150,7 @@
         <property name="cacheProvider" ref="cacheProvider"/>
         <property name="bridgeConfig" ref="bridgeConfig"/>
     </bean>
-    
+
     <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">
         <property name="updateMapper">
             <bean class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
@@ -160,11 +180,9 @@
             </bean>
         </property>
     </bean>
-    
-    <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" scope="prototype">
-        <constructor-arg index="0">
-            <ref bean="awsCredentials" />
-        </constructor-arg>
-    </bean>    
-    
+
+    <bean id="healthCodeService" class="org.sagebionetworks.bridge.services.HealthCodeServiceImpl">
+        <property name="healthIdDao" ref="healthIdDao" />
+        <property name="healthCodeDao" ref="healthCodeDao" />
+    </bean>
 </beans>
