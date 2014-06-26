@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 import javax.annotation.Resource;
@@ -35,10 +36,13 @@ public class HealthCodeServiceImplTest {
 
     @Test
     public void test() {
-        HealthId healthId = healthCodeService.create();
-        assertNotNull(healthId);
-        assertEquals(healthId.getCode(),
-                healthCodeService.getHealthCode(healthId.getId()));
+        HealthId healthId1 = healthCodeService.create();
+        assertNotNull(healthId1);
+        assertEquals(healthId1.getCode(),
+                healthCodeService.getHealthCode(healthId1.getId()));
+        HealthId healthId2 = healthCodeService.create();
+        assertFalse(healthId1.getId().equals(healthId2.getId()));
+        assertFalse(healthId1.getCode().equals(healthId2.getCode()));
     }
 
     private void clearDynamo() {
