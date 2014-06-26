@@ -180,4 +180,9 @@
             </bean>
         </property>
     </bean>
+
+    <bean id="healthCodeService" class="org.sagebionetworks.bridge.services.HealthCodeServiceImpl">
+        <property name="healthIdDao" ref="healthIdDao" />
+        <property name="healthCodeDao" ref="healthCodeDao" />
+    </bean>
 </beans>
