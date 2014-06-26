@@ -34,6 +34,10 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
 
+    <bean id="healthIdDao" class="org.sagebionetworks.bridge.dynamodb.DynamoHealthIdDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
 
     <!-- Stormpath identity service -->

@@ -5,19 +5,20 @@ import org.sagebionetworks.bridge.models.HealthId;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 
 @DynamoDBTable(tableName = "HealthId")
 public class DynamoHealthId implements HealthId, DynamoTable {
 
     private String id;
     private String code;
+    private Long version;
+
+    public DynamoHealthId() {}
 
     public DynamoHealthId(String id, String code) {
         if (id == null || id.isEmpty()) {
             throw new IllegalArgumentException("id cannot be null or empty.");
-        }
-        if (code == null || code.isEmpty()) {
-            throw new IllegalArgumentException("code cannot be null or empty.");
         }
         this.id = id;
         this.code = code;
@@ -45,41 +46,11 @@ public class DynamoHealthId implements HealthId, DynamoTable {
         this.code = code;
     }
 
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((code == null) ? 0 : code.hashCode());
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
-        return result;
+    @DynamoDBVersionAttribute
+    public Long getVersion() {
+        return version;
     }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        DynamoHealthId other = (DynamoHealthId) obj;
-        if (code == null) {
-            if (other.code != null) {
-                return false;
-            }
-        } else if (!code.equals(other.code)) {
-            return false;
-        }
-        if (id == null) {
-            if (other.id != null) {
-                return false;
-            }
-        } else if (!id.equals(other.id)) {
-            return false;
-        }
-        return true;
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }
