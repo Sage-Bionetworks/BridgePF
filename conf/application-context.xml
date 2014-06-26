@@ -13,6 +13,10 @@
     <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfigFactory"
             factory-method="getConfig" />
 
+    <bean id="healthCodeEncryptor" class="org.sagebionetworks.bridge.crypto.BridgeEncryptor">
+        <constructor-arg value="#{bridgeConfig.healthCodePassword}"/>
+    </bean>
+
     <bean id="awsCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
         <constructor-arg index="0" value="#{bridgeConfig.getProperty('aws.key')}"/>
         <constructor-arg index="1" value="#{bridgeConfig.getProperty('aws.secret.key')}"/>

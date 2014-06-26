@@ -9,6 +9,7 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.EncryptorUtil;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -42,6 +43,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	private Client stormpathClient;
 	private CacheProvider cache;
 	private BridgeConfig config;
+	private BridgeEncryptor healthCodeEncryptor;
 	private EmailValidator emailValidator = EmailValidator.getInstance();
 	
     public void setStormpathClient(Client client) {
@@ -54,6 +56,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     
     public void setBridgeConfig(BridgeConfig config) {
         this.config = config;
+    }
+    
+    public void setHealthCodeEncryptor(BridgeEncryptor encryptor) {
+        
     }
 
     @Override
