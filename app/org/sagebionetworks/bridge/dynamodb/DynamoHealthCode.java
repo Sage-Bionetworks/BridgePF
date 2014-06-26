@@ -1,10 +1,15 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import org.sagebionetworks.bridge.models.HealthCode;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
-public class DynamoHealthCode implements HealthCode, DynamoTable {
+/**
+ * Used internally (i.e. no interface outside the dynamodb package) to
+ * avoid collisions of health code. We do not trust that the underlying RNG
+ * is always a solid one.
+ */
+@DynamoDBTable(tableName = "HealthCode")
+public class DynamoHealthCode implements DynamoTable {
 
     private String code;
 
