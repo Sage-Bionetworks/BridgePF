@@ -35,6 +35,7 @@ import com.amazonaws.services.dynamodbv2.model.Projection;
 import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputDescription;
+import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.amazonaws.services.dynamodbv2.model.TableStatus;
@@ -51,6 +52,15 @@ public class DynamoInitializer {
     private static final Long READ_CAPACITY = Long.valueOf(10);
     private static final Long WRITE_CAPACITY = Long.valueOf(5);
 
+    private static final BridgeConfig CONFIG = BridgeConfigFactory.getConfig();
+
+    private static final AmazonDynamoDB DYNAMO;
+    static {
+        String awsKey = CONFIG.getProperty("aws.key");
+        String secretKey = CONFIG.getProperty("aws.secret.key");
+        DYNAMO = new AmazonDynamoDBClient(new BasicAWSCredentials(awsKey, secretKey));
+    }
+
     /**
      * Creates DynamoDB tables, if they do not exist yet, from the annotated types.
      * in the package "org.sagebionetworks.bridge.dynamodb". Throws an error
@@ -58,8 +68,35 @@ public class DynamoInitializer {
      * does not match.
      */
     public static void init(String dynamoPackage) {
+        beforeInit();
         List<TableDescription> tables = getAnnotatedTables(dynamoPackage);
         initTables(tables);
+    }
+
+    /**
+     * For phasing out obsolete schemas.
+     */
+    static void beforeInit() {
+        deleteTable("HealthCodeSalt");
+    }
+
+    static void deleteTable(String table) {
+        table = getTableName(table);
+        try {
+            logger.info("Deleting table " + table);
+            DYNAMO.deleteTable(table);
+            logger.info("Table " + table + " deleted.");
+        } catch(ResourceNotFoundException e) {
+            logger.warn("Table " + table + " does not exist.");
+        }
+    }
+
+    /**
+     * Prefix the table name with '{env}-' and '{user}-'.
+     */
+    static String getTableName(String table) {
+        Environment env = CONFIG.getEnvironment();
+        return env.getEnvName() + "-" + CONFIG.getUser() + "-" + table;
     }
 
     /**
@@ -125,11 +162,8 @@ public class DynamoInitializer {
                     localIndices.add(localIndex);
                 }
             }
-            // Prefix the table name with 'env-' and 'user-'
-            final BridgeConfig config = BridgeConfigFactory.getConfig();
-            Environment env = config.getEnvironment();
-            final String tableName = env.getEnvName() + "-" + config.getUser() + "-" +
-                    clazz.getAnnotation(DynamoDBTable.class).tableName();
+            final String tableName = getTableName(
+                    clazz.getAnnotation(DynamoDBTable.class).tableName());
             // Create the table description
             final TableDescription table = (new TableDescription())
                     .withTableName(tableName)
@@ -206,29 +240,26 @@ public class DynamoInitializer {
     }
 
     static void initTables(final List<TableDescription> tables) {
-        BridgeConfig config = BridgeConfigFactory.getConfig();
-        String awsKey = config.getProperty("aws.key");
-        String secretKey = config.getProperty("aws.secret.key");
-        AmazonDynamoDB dynamo = new AmazonDynamoDBClient(new BasicAWSCredentials(awsKey, secretKey));
-        Map<String, TableDescription> existingTables = getExistingTables(dynamo);
+
+        Map<String, TableDescription> existingTables = getExistingTables();
         for (TableDescription table : tables) {
             if (!existingTables.containsKey(table.getTableName())) {
                 CreateTableRequest createTableRequest = getCreateTableRequest(table);
                 logger.info("Creating table " + table.getTableName());
-                dynamo.createTable(createTableRequest);
+                DYNAMO.createTable(createTableRequest);
             } else {
                 compareSchema(table, existingTables.get(table.getTableName()));
             }
-            waitForActive(table, dynamo);
+            waitForActive(table);
         }
         logger.info("All DynamoDB tables are ready.");
     }
 
-    static Map<String, TableDescription> getExistingTables(AmazonDynamoDB dynamo) {
+    static Map<String, TableDescription> getExistingTables() {
         Map<String, TableDescription> existingTables = new HashMap<String, TableDescription>();
-        ListTablesResult listResult = dynamo.listTables();
+        ListTablesResult listResult = DYNAMO.listTables();
         for (String tableName : listResult.getTableNames()) {
-            DescribeTableResult describeResult = dynamo.describeTable(new DescribeTableRequest(tableName));
+            DescribeTableResult describeResult = DYNAMO.describeTable(new DescribeTableRequest(tableName));
             TableDescription table = describeResult.getTable();
             existingTables.put(tableName, table);
         }
@@ -347,14 +378,14 @@ public class DynamoInitializer {
         }
     }
 
-    static void waitForActive(TableDescription table, final AmazonDynamoDB dynamo) {
+    static void waitForActive(TableDescription table) {
         while (!TableStatus.ACTIVE.name().equalsIgnoreCase(table.getTableStatus())) {
             try {
                 Thread.sleep(200L);
             } catch (InterruptedException e) {
                 throw new RuntimeException("Shouldn't be interrupted.", e);
             }
-            DescribeTableResult describeResult = dynamo.describeTable(
+            DescribeTableResult describeResult = DYNAMO.describeTable(
                     new DescribeTableRequest(table.getTableName()));
             table = describeResult.getTable();
         }
