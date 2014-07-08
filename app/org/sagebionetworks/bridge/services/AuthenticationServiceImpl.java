@@ -88,6 +88,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	    } else if (study == null) {
             throw new BridgeServiceException("Study is required", HttpStatus.SC_BAD_REQUEST);
 	    }
+	    logger.debug("Sign in user " + signIn.getUsername());
 	    AuthenticationRequest<?, ?> request = null;
 	    UserSession session = null;
 	    try {
