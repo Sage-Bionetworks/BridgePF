@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
+import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
@@ -37,15 +38,16 @@ import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.resource.ResourceException;
 
 public class AuthenticationServiceImpl implements AuthenticationService {
-	
+
 	private static Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
-	
+
 	private Client stormpathClient;
 	private CacheProvider cache;
 	private BridgeConfig config;
 	private BridgeEncryptor healthCodeEncryptor;
+	private HealthCodeService healthCodeService;
 	private EmailValidator emailValidator = EmailValidator.getInstance();
-	
+
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
     }
@@ -59,7 +61,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
     
     public void setHealthCodeEncryptor(BridgeEncryptor encryptor) {
-        
+        this.healthCodeEncryptor = encryptor;
+    }
+
+    public void setHealthCodeService(HealthCodeService healthCodeService) {
+        this.healthCodeService = healthCodeService;
     }
 
     @Override
@@ -211,17 +217,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             String key = session.getStudyKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
             CustomData data = account.getCustomData();
             data.put(key, "true");
-            
+
             key = session.getStudyKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            
-            String healthDataCode = UUID.randomUUID().toString();
-            PBEStringEncryptor encryptor = EncryptorUtil.getEncryptorOld(config.getHealthCodePassword(), config.getHealthCodeSalt());
-            healthDataCode = encryptor.encrypt(healthDataCode);
-            
-            data.put(key, healthDataCode);
+
+            HealthId healthId = healthCodeService.create();
+            String encryptedId = healthCodeEncryptor.encrypt(healthId.getId());
+
+            data.put(key, encryptedId);
+            data.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
             data.save();
 
-            session.setHealthDataCode(healthDataCode);
+            session.setHealthDataCode(healthId.getCode());
             session.setConsent(true);
             cache.setUserSession(sessionToken, session);
         } catch(Exception e) {
@@ -238,13 +244,23 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         session.setSessionToken(UUID.randomUUID().toString());
         session.setStudyKey(study.getKey());
         session.setUsername(account.getUsername());
-        
+
         CustomData data = account.getCustomData();
         String consentKey = study.getKey()+BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
-        String hdcKey = study.getKey()+BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
         session.setConsent( "true".equals(data.get(consentKey)) );
-        session.setHealthDataCode( (String)data.get(hdcKey) );
-        
+        final String hdcKey = study.getKey()+BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+        final String encryptedId = (String)data.get(hdcKey);
+        Object version = data.get(BridgeConstants.CUSTOM_DATA_VERSION);
+        if (version == null) {
+            PBEStringEncryptor encryptor = EncryptorUtil.getEncryptorOld(
+                    config.getHealthCodePassword(), config.getHealthCodeSalt());
+            session.setHealthDataCode(encryptor.decrypt(encryptedId));
+        } else {
+            String healthId = healthCodeEncryptor.decrypt(encryptedId);
+            String healthCode = healthCodeService.getHealthCode(healthId);
+            session.setHealthDataCode(healthCode);
+        }
+
         return session;
     }
 
