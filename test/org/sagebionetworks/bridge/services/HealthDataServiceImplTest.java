@@ -1,11 +1,21 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.Date;
 import java.util.List;
 
-import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
@@ -27,24 +37,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.sagebionetworks.bridge.TestConstants.*;
-
 public class HealthDataServiceImplTest {
     
     private HealthDataServiceImpl service;
     private CacheProvider cache;
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
-    private PBEStringEncryptor encryptor;
-    
+
     private Tracker tracker;
 
     @Before
@@ -62,13 +61,9 @@ public class HealthDataServiceImplTest {
         
         cache = mock(CacheProvider.class);
         when(cache.getUserSession(anyString())).thenReturn(userSession);
-        
-        encryptor = mock(PBEStringEncryptor.class);
-        when(encryptor.decrypt(anyString())).thenReturn("1");
-        
+
         service = new HealthDataServiceImpl();
         service.setCacheProvider(cache);
-        service.setEncryptor(encryptor);
         service.setCreateMapper(createMapper);
         service.setUpdateMapper(updateMapper);
     }

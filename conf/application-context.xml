@@ -145,10 +145,17 @@
 
     <!-- Services -->
 
+    <bean id="healthCodeService" class="org.sagebionetworks.bridge.services.HealthCodeServiceImpl">
+        <property name="healthIdDao" ref="healthIdDao" />
+        <property name="healthCodeDao" ref="healthCodeDao" />
+    </bean>
+
     <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl">
         <property name="stormpathClient" ref="stormpathClient"/>
         <property name="cacheProvider" ref="cacheProvider"/>
         <property name="bridgeConfig" ref="bridgeConfig"/>
+        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
+        <property name="healthCodeService" ref="healthCodeService" />
     </bean>
 
     <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">
@@ -173,16 +180,6 @@
             </bean>
         </property>
         <property name="cacheProvider" ref="cacheProvider"/>
-        <property name="encryptor">
-            <bean class="org.sagebionetworks.bridge.crypto.EncryptorUtil" factory-method="getEncryptorOld">
-	            <constructor-arg index="0" value="#{bridgeConfig.getHealthCodePassword()}"/>
-	            <constructor-arg index="1" value="#{bridgeConfig.getHealthCodeSalt()}"/>
-            </bean>
-        </property>
     </bean>
 
-    <bean id="healthCodeService" class="org.sagebionetworks.bridge.services.HealthCodeServiceImpl">
-        <property name="healthIdDao" ref="healthIdDao" />
-        <property name="healthCodeDao" ref="healthCodeDao" />
-    </bean>
 </beans>
