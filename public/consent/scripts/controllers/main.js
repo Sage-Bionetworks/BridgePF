@@ -1,28 +1,43 @@
 consent.controller('MainController', ['$scope', '$humane', '$window', '$http', 'formService',  
 function($scope, $humane, $window, $http, formService) {
     
-    $scope.setStep = function(num) {
-        $scope.step = num;
-        if ($scope.step === 3) {
-            startMonitor();
-        } else if ($scope.step === 4) {
-            startAnimation("#step4");
-        } else if ($scope.step === 5) {
-            startAnimation("#step5");
-        } else if ($scope.step === 7) {
-            startAnimation("#step7");
+    var steps = ["welcome", "tasks", "sensors", "deidentification", 
+                 "aggregation", "impact", "risk", "withdrawal", "consent", "thankyou"];
+    
+    var stepFunctions = {
+        "welcome": angular.identity,
+        "tasks": angular.identity,
+        "sensors": startMonitor,
+        "deidentification": startAnimation,
+        "aggregation": startAnimation,
+        "impact": angular.identity,
+        "risk": startAnimation,
+        "withdrawal": angular.identity,
+        "consent": angular.identity,
+        "thankyou": angular.identity
+    };
+    
+    $scope.setStep = function(stepName) {
+        $scope.step = stepName;
+        stepFunctions[stepName](stepName);
+        _gaq.push(['_trackPageview', '/consent/'+stepName]);
+    };
+    
+    $scope.nextStep = function() {
+        var index = steps.indexOf($scope.step);
+        if (index < (steps.length-2)) {
+            $scope.step = steps[index+1];
+            $scope.setStep($scope.step);
         }
     };
-    $scope.setStep(1);
 
-    /* STEP 1 */
-    /* -------------------------------------------------------------------- */
+    $scope.setStep("welcome");
     
-    /* STEP 2 */
+    /* TASKS */
     /* -------------------------------------------------------------------- */
 
-    var step2buttons = [false, false, false, false],
-        buttons = document.querySelectorAll("#step2 .image img");
+    var tasksButtons = [false, false, false, false],
+        buttons = document.querySelectorAll("#tasks .image img");
     
     for (var i=0; i < buttons.length; i++) {
         var btn = buttons[i];
@@ -35,50 +50,52 @@ function($scope, $humane, $window, $http, formService) {
         new Image().src = btn.src.replace("_rest", "_press");
     }
     function press(event) {
-        event.target.src = event.target.src.replace("_rest", "_press");
+        swapImage(event.target, "_rest", "_press");
     }
     function release(event) {
-        event.target.src = event.target.src.replace("_press", "_rest");
+        swapImage(event.target, "_press", "_rest");
+    }
+    function swapImage(element, from, to) {
+        element.src = element.src.replace(from, to);
     }
     
-    $scope.step2Assess = function(event, buttonNumber) {
-        step2buttons[buttonNumber-1] = true;
-        event.target.src = event.target.src.replace("_rest", "_selected");
-        event.target.src = event.target.src.replace("_press", "_selected");
+    $scope.assessTask = function(event, buttonNumber) {
+        tasksButtons[buttonNumber-1] = true;
+        swapImage(event.target, "_rest", "_selected");
+        swapImage(event.target, "_press", "_selected");
         
-        if (step2buttons.every(function(s) { return s === true; })) {
-            step2buttons = [false, false, false, false];
+        if (tasksButtons.every(function(s) { return s === true; })) {
+            tasksButtons = [false, false, false, false];
             setTimeout(function() {
-                $scope.setStep(3);
+                $scope.nextStep();
                 $scope.$apply();
             }, 500);
         }
     };
 
-    /* STEP 3 */
+    /* SENSORS */
     /* -------------------------------------------------------------------- */
     
     var monitorstate = 0,
-        step3image = angular.element(document.querySelectorAll("#step3 .image > img")),
-        step3footer = angular.element(document.querySelector("#step3 footer p"));
+        sensorsImage = angular.element(document.querySelectorAll("#sensors .image > img")),
+        sensorsFooter = angular.element(document.querySelector("#sensors footer p"));
     
     function startMonitor() {
         window.addEventListener('deviceorientation', monitor, false);    
     }
     function flipOverOnMonitor() {
         monitorstate = 1;
-        step3footer.addClass("flipped");
-        step3footer.text("Turn your phone right side up to continue.");
-        step3image.addClass("flipped");
+        sensorsFooter.addClass("flipped");
+        sensorsFooter.text("Turn your phone right side up to continue.");
+        sensorsImage.addClass("flipped");
     }
     function endMonitor() {
         monitorstate = 0;
         window.removeEventListener('deviceorientation', monitor);
-        $scope.setStep(4);
+        $scope.nextStep();
         $scope.$apply();
     }
     function monitor(event) {
-        $scope.$apply();
         if (event.beta < -70) {
             flipOverOnMonitor();
         } else if (monitorstate === 1 && event.beta > 70) {
@@ -86,7 +103,7 @@ function($scope, $humane, $window, $http, formService) {
         }
     }
 
-    /* STEPS 4, 5, 7 (ANIMATION) */
+    /* DE-IDENTIFICATION, AGGREGATION, RISK ANIMATION */
     /* -------------------------------------------------------------------- */
 
     var animation_delay = 2000;
@@ -99,7 +116,8 @@ function($scope, $humane, $window, $http, formService) {
 
         function addToElements() {
             for (var i=0; i < arguments.length; i++) {
-                var nl = document.body.querySelectorAll(stepSelector + " " + arguments[i] + ".animcell > *"),
+                var selector = "#"+stepSelector+" "+arguments[i]+".animcell > *",
+                    nl = document.body.querySelectorAll(selector),
                     array = [];
                 for (var j=0; j < nl.length; j++) {
                     var element = nl[j],
@@ -114,12 +132,6 @@ function($scope, $humane, $window, $http, formService) {
                 }
             }
         }
-        function numFrames(element) {
-            if (element.getAttribute('data-frames')) {
-                return parseInt(element.getAttribute('data-frames'), 10);
-            }
-            return 1;
-        }
         function animate() {
             elements.forEach(function(nl) {
                 nl[animStep].style.opacity = 0;
@@ -132,6 +144,12 @@ function($scope, $humane, $window, $http, formService) {
                 setTimeout(animate, animation_delay);
             }
         }
+    }
+    function numFrames(element) {
+        if (element.getAttribute('data-frames')) {
+            return parseInt(element.getAttribute('data-frames'), 10);
+        }
+        return 1;
     }
     
     /* STEP 6 */
@@ -148,7 +166,7 @@ function($scope, $humane, $window, $http, formService) {
     
     $scope.submit = function() {
         $http.post('/api/auth/consentToResearch').then(function(response) {
-            $scope.setStep(10);
+            $scope.nextStep();
         }, $humane.status);
     };
     

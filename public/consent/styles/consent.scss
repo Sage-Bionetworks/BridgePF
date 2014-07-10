@@ -93,15 +93,17 @@ header {
         }
     }
 }
-#step1 .wiz div:nth-child(1) ~ div span,
-#step2 .wiz div:nth-child(2) ~ div span,
-#step3 .wiz div:nth-child(3) ~ div span,
-#step4 .wiz div:nth-child(4) ~ div span,
-#step5 .wiz div:nth-child(5) ~ div span,
-#step6 .wiz div:nth-child(6) ~ div span,
-#step7 .wiz div:nth-child(7) ~ div span,
-#step8 .wiz div:nth-child(8) ~ div span,
-#step9 .wiz div:nth-child(9) ~ div span {
+
+#welcome .wiz div:nth-child(1) ~ div span,
+#tasks .wiz div:nth-child(2) ~ div span,
+#sensors .wiz div:nth-child(3) ~ div span,
+#deidentification .wiz div:nth-child(4) ~ div span,
+#aggregation .wiz div:nth-child(5) ~ div span,
+#impact .wiz div:nth-child(6) ~ div span,
+#risk .wiz div:nth-child(7) ~ div span,
+#withdrawal .wiz div:nth-child(8) ~ div span,
+#consent .wiz div:nth-child(9) ~ div span, 
+#thankyou .wiz div:nth-child(9) ~ div span {
     @include circle;
 }
 
@@ -162,7 +164,7 @@ article {
         }
     }
 }
-#step2 {
+#tasks {
     .image {
         table {
             max-width: 32rem;
@@ -178,10 +180,10 @@ article {
         }
     }
 }
-#step1 .info {
+#welcome .info {
     height: 12rem;
 }
-#step9 {
+#consent {
     .info {
         line-height: 1.1;
     }
