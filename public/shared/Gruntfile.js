@@ -16,7 +16,8 @@ module.exports = function(grunt) {
         "scripts/signin-service.js",
         "scripts/reset-password-service.js",
         "scripts/auth-interceptor.js",
-        "scripts/loading-interceptor.js"
+        "scripts/loading-interceptor.js",
+        "scripts/ga.js"
     ];
     var cssFiles = [
         'bower_components/bootstrap/dist/css/bootstrap.css',

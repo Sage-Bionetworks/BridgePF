@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Consent to Participate in Bridge - Sage Bionetworks</title>
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, user-scalable=no" />
     <base href="/"/>
     <script>window._session = @Html(auth);</script>
     <link rel="stylesheet" href="../shared/build/bridge-shared.css" />
@@ -11,7 +11,7 @@
 </head>
 <body ng-app="consent" ng-controller="MainController" ng-cloak>
 
-<div id="step1" ng-show="step == 1">
+<div id="welcome" ng-show="step == 'welcome'">
     <header>
         <div class="hdr"><div>Welcome</div></div>
         <div class="ng-include" src="'/consent/views/wiz.html'"></div>
@@ -26,13 +26,13 @@
 	        </p>
         </div>
         <div class="more_info">
-	        <a ng-click="setStep(2)" class="gs button">Get started</a>
+	        <a ng-click="nextStep()" class="gs button">Get started</a>
         </div>
     </article>
     <footer><div><!-- blank --></div></footer>
 </div>
 
-<div id="step2" ng-show="step == 2">
+<div id="tasks" ng-show="step == 'tasks'">
     <header>
         <div class="hdr"><div>What&#8217;s involved?<br>Tasks and surveys</div></div>
         <div class="ng-include" src="'/consent/views/wiz.html'"></div>
@@ -44,26 +44,24 @@
 	        </p>
         </div>
         <div class="more_info">
-	        <a class="lm button">
-	            Learn more
-	        </a>        
+	        <a class="lm button">Learn more</a>
         </div>
         <div class="image">
             <table>
                 <tr>
                     <td>
-                        <img ng-click="step2Assess($event, 1)" src="consent/images/timed_rest.svg"/>
+                        <img ng-click="assessTask($event, 1)" src="consent/images/timed_rest.svg"/>
                     </td>
                     <td>
-                        <img ng-click="step2Assess($event, 2)" src="consent/images/talking_rest.svg"/>
+                        <img ng-click="assessTask($event, 2)" src="consent/images/talking_rest.svg"/>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <img ng-click="step2Assess($event, 3)" src="consent/images/tapping_rest.svg"/>
+                        <img ng-click="assessTask($event, 3)" src="consent/images/tapping_rest.svg"/>
                     </td>
                     <td>
-                        <img ng-click="step2Assess($event, 4)" src="consent/images/walking_rest.svg"/>
+                        <img ng-click="assessTask($event, 4)" src="consent/images/walking_rest.svg"/>
                     </td>                
                 </tr>
             </table>
@@ -74,7 +72,7 @@
     </footer>
 </div>
 
-<div id="step3" ng-show="step == 3">
+<div id="sensors" ng-show="step == 'sensors'">
     <header>
         <div class="hdr"><div>What&#8217;s involved? Sensor data</div></div>
         <div class="ng-include" src="'/consent/views/wiz.html'"></div>
@@ -86,11 +84,9 @@
 	        </p>
         </div>
         <div class="more_info">
-            <a class="lm button">
-                Learn more
-            </a>
+            <a class="lm button">Learn more</a>
         </div>
-        <div class="image">
+        <div class="image" ng-click="nextStep()">
             <img src="consent/images/phonesensordata.svg"/>
         </div>
     </article>
@@ -101,7 +97,7 @@
     </footer>
 </div>
 
-<div id="step4" ng-show="step == 4">
+<div id="deidentification" ng-show="step == 'deidentification'">
     <header>
         <div class="hdr"><div>De-identification</div></div>
         <div class="ng-include" src="'/consent/views/wiz.html'"></div>
@@ -112,11 +108,9 @@
 	        <p class="bold" data-frames="4">&hellip;where it will be separated from your personal identity.</p>
         </div>
         <div class="more_info">
-            <a class="lm button">
-                Learn more
-            </a>        
+            <a class="lm button">Learn more</a>
         </div>
-        <div class="image animcell" ng-click="setStep(5)">
+        <div class="image animcell" ng-click="nextStep()">
             <div>1</div>
             <div>2</div>
             <div>3</div>
@@ -137,7 +131,7 @@
     </footer>
 </div>
 
-<div id="step5" ng-show="step == 5">
+<div id="aggregation" ng-show="step == 'aggregation'">
     <header>
         <div class="hdr"><div>Combining data</div></div>
         <div class="ng-include" src="'/consent/views/wiz.html'"></div>
@@ -149,11 +143,9 @@
             <p class="bold" data-frames="3">And all that data will be used and reused for new research.</p>
         </div>
         <div class="more_info">
-            <a class="lm button">
-                Learn more
-            </a>        
+            <a class="lm button">Learn more</a>
         </div>
-        <div class="image animcell" ng-click="setStep(6)">
+        <div class="image animcell" ng-click="nextStep()">
             <div>1</div>
             <div>2</div>
             <div>3</div>
@@ -174,7 +166,7 @@
     </footer>
 </div>
 
-<div id="step6" ng-show="step == 6">
+<div id="impact" ng-show="step == 'impact'">
     <header>
         <div class="hdr"><div>Impact on your life</div></div>
         <div class="ng-include" src="'/consent/views/wiz.html'"></div>
@@ -184,11 +176,9 @@
             <p class="bold">This study will take about 20 minutes per week.</p>
         </div>
         <div class="more_info">
-            <a class="lm button">
-                Learn more
-            </a>        
+            <a class="lm button">Learn more</a>
         </div>
-        <div class="image" ng-click="setStep(7)">
+        <div class="image" ng-click="nextStep()">
             [Image here]
         </div>        
     </article>
@@ -197,7 +187,7 @@
     </footer>
 </div>
 
-<div id="step7" ng-show="step == 7">
+<div id="risk" ng-show="step == 'risk'">
     <header>
         <div class="hdr"><div>Potential Risk</div></div>
         <div class="ng-include" src="'/consent/views/wiz.html'"></div>
@@ -208,11 +198,9 @@
             <p class="bold" data-frames="3">&hellip;so connect to wifi and charge regularly.</p>
         </div>
         <div class="more_info">
-            <a class="lm button">
-                Learn more
-            </a>        
+            <a class="lm button">Learn more</a>
         </div>
-        <div class="image animcell" ng-click="setStep(8)">
+        <div class="image animcell" ng-click="nextStep()">
             <div>1</div>
             <div>2</div>
             <div>3</div>
@@ -233,7 +221,7 @@
     </footer>
 </div>
 
-<div id="step8" ng-show="step == 8">
+<div id="withdrawal" ng-show="step == 'withdrawal'">
     <header>
         <div class="hdr"><div>Withdrawal</div></div>
         <div class="ng-include" src="'/consent/views/wiz.html'"></div>
@@ -242,12 +230,11 @@
         <div class="info">
             <p class="bold">You may withdraw your consent and discontinue participation at any time.</p>
         </div>
-        <div class="image" ng-click="setStep(9)">
+        <div class="image" ng-click="nextStep()">
             [image]
         </div>
-        <div>
+        <div class="info">
             <p>Email pdbridge@@sagebase.org to withdraw.</p>
-            <p><em>TODO: You do not need to email us to withdraw. We can automate this through the web app and provide an API for the mobile client to do the same. --Alx</em></p>
         </div>
     </article>
     <footer>
@@ -255,7 +242,7 @@
     </footer>
 </div>
 
-<div id="step9" ng-show="step == 9">
+<div id="consent" ng-show="step == 'consent'">
     <header>
         <div class="hdr"><div>Consent</div></div>
         <div class="ng-include" src="'/consent/views/wiz.html'"></div>
@@ -289,7 +276,7 @@
     </footer>
 </div>
 
-<div id="step10" ng-show="step == 10">
+<div id="thankyou" ng-show="step == 'thankyou'">
     <header>
         <div class="hdr"><div><!-- blank --></div></div>
         <div class="ng-include" src="'/consent/views/wiz.html'"></div>
@@ -309,7 +296,7 @@
 </div>
 
 <script src="shared/build/bridge-shared.min.js"></script>
-<script src="consent/build/consent.min.js"></script>
+<script src="consent/build/consent.js"></script>
 
 </body>
 </html>
