@@ -6,7 +6,7 @@ package org.sagebionetworks.bridge.models;
 public interface HealthId {
 
     /**
-     * The health ID which is encrypted and then published to StormPath.
+     * The unencrypted health ID which should be encrypted and then published to StormPath.
      */
     String getId();
 
