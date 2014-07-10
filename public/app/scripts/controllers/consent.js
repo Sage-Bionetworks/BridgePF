@@ -5,13 +5,15 @@ function($scope, $http, $window, $location, $humane, authService) {
         $http.post('/api/auth/consentToResearch').then(function(response) {
             authService.consented = true;
             $location.path("/");
-        }, function(response) {
-            $humane.error(response.data.payload);
-        });
+        }, $humane.status);
     };
     
     $scope.decline = function() {
         $window.location.replace("/");
+    };
+    
+    $scope.begin = function() {
+        $window.location.replace("/app/");
     };
     
 }]);

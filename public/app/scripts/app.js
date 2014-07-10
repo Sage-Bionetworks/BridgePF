@@ -1,4 +1,4 @@
-var bridge = angular.module('bridge', ['bridge.shared', 'ngRoute', 'ui.bootstrap'])
+var bridge = angular.module('bridge', ['bridge.shared'])
 .config(['$routeProvider', function($routeProvider) {
 	$routeProvider.when('/health/tracker/BloodPressure', {
 	    templateUrl: 'views/trackers/bloodpressure.html',
