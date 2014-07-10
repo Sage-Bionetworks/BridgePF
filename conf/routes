@@ -5,6 +5,8 @@ GET    /app/                         @controllers.ApplicationController.loadApp
 GET    /app/index.html               @controllers.ApplicationController.redirectToApp
 GET    /                             @controllers.ApplicationController.loadPublicApp
 GET    /index.html                   @controllers.ApplicationController.redirectToPublicApp
+GET    /consent/                     @controllers.ApplicationController.loadConsent
+GET    /consent/index.html           @controllers.ApplicationController.redirectToConsent
 
 # API - Authentication
 POST   /api/auth/signIn                 @controllers.AuthenticationController.signIn
