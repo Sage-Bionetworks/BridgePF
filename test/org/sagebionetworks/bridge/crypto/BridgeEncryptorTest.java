@@ -10,6 +10,7 @@ public class BridgeEncryptorTest {
         final String password = "this is a test password";
         BridgeEncryptor encryptor = new BridgeEncryptor(password);
         BridgeEncryptor decryptor = new BridgeEncryptor(password);
-        assertEquals("test something", decryptor.decrypt(encryptor.encrypt("test something")));
+        assertEquals("test something",
+                decryptor.decrypt(encryptor.encrypt("test something")));
     }
 }
