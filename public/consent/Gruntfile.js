@@ -5,8 +5,7 @@ module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     
     var jsFiles = [
-        "scripts/consent.js",
-        "scripts/controllers/*.js"
+        "scripts/consent.js"
     ];
 
     grunt.initConfig({

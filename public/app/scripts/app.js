@@ -28,10 +28,6 @@ var bridge = angular.module('bridge', ['bridge.shared'])
         templateUrl: 'views/verifyEmail.html',
         controller: 'VerifyEmailController'
     })
-    .when('/consent', {
-        templateUrl: 'views/consent.html',
-        controller: 'ConsentController'
-    })
 	.otherwise({
 		templateUrl: 'views/research.html',
 		controller: 'ResearchController'
