@@ -58,15 +58,15 @@ public class BaseController extends Controller {
         return session[0];
     }
     
-	protected Result jsonResult(String message) {
-		return ok(Json.toJson(new StatusMessage(message)));
-	}
+    protected Result jsonResult(String message) {
+        return ok(Json.toJson(new StatusMessage(message)));
+    }
 
-	protected Result jsonResult(JsonPayload<?> payload) {
-		return ok(Json.toJson(payload));
-	}
+    protected Result jsonResult(JsonPayload<?> payload) {
+        return ok(Json.toJson(payload));
+    }
 
-	protected Result jsonError(String message) {
-		return internalServerError(Json.toJson(new StatusMessage(message)));
-	}
+    protected Result jsonError(String message) {
+        return internalServerError(Json.toJson(new StatusMessage(message)));
+    }
 }

@@ -21,10 +21,12 @@ public class DynamoTestUtil {
         BridgeConfig config = BridgeConfigFactory.getConfig();
         String awsKey = config.getProperty("aws.key");
         String secretKey = config.getProperty("aws.secret.key");
-        DYNAMO = new AmazonDynamoDBClient(new BasicAWSCredentials(awsKey, secretKey));
+        DYNAMO = new AmazonDynamoDBClient(new BasicAWSCredentials(awsKey,
+                secretKey));
     }
 
-    public static void clearTable(Class<? extends DynamoTable> clazz, String... nonKeyAttrs) {
+    public static void clearTable(Class<? extends DynamoTable> clazz,
+            String... nonKeyAttrs) {
         String tableName = clazz.getAnnotation(DynamoDBTable.class).tableName();
         tableName = DynamoInitializer.getTableName(tableName);
         ScanResult result = DYNAMO.scan(new ScanRequest(tableName));
