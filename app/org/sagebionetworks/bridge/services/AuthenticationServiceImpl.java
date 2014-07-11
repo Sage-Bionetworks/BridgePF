@@ -39,27 +39,27 @@ import com.stormpath.sdk.resource.ResourceException;
 
 public class AuthenticationServiceImpl implements AuthenticationService {
 
-	private static Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
+    private static Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 
-	private Client stormpathClient;
-	private CacheProvider cache;
-	private BridgeConfig config;
-	private BridgeEncryptor healthCodeEncryptor;
-	private HealthCodeService healthCodeService;
-	private EmailValidator emailValidator = EmailValidator.getInstance();
+    private Client stormpathClient;
+    private CacheProvider cache;
+    private BridgeConfig config;
+    private BridgeEncryptor healthCodeEncryptor;
+    private HealthCodeService healthCodeService;
+    private EmailValidator emailValidator = EmailValidator.getInstance();
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
     }
-	
+
     public void setCacheProvider(CacheProvider cache) {
         this.cache = cache;
     }
-    
+
     public void setBridgeConfig(BridgeConfig config) {
         this.config = config;
     }
-    
+
     public void setHealthCodeEncryptor(BridgeEncryptor encryptor) {
         this.healthCodeEncryptor = encryptor;
     }
@@ -75,20 +75,21 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
         return cache.getUserSession(sessionToken);
     }
-    
-	@Override
+
+    @Override
     public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException,
             BridgeNotFoundException, BridgeServiceException {
-	    if (signIn == null) {
+
+        if (signIn == null) {
             throw new BridgeServiceException("SignIn object is required", HttpStatus.SC_BAD_REQUEST);
-	    } else if (StringUtils.isBlank(signIn.getUsername())) {
+        } else if (StringUtils.isBlank(signIn.getUsername())) {
             throw new BridgeServiceException("Username/email must not be null", HttpStatus.SC_BAD_REQUEST);
-	    } else if (StringUtils.isBlank(signIn.getPassword())) {
-	        throw new BridgeServiceException("Password must not be null", HttpStatus.SC_BAD_REQUEST);
-	    } else if (study == null) {
+        } else if (StringUtils.isBlank(signIn.getPassword())) {
+            throw new BridgeServiceException("Password must not be null", HttpStatus.SC_BAD_REQUEST);
+        } else if (study == null) {
             throw new BridgeServiceException("Study is required", HttpStatus.SC_BAD_REQUEST);
-	    }
-	    logger.debug("Sign in user " + signIn.getUsername());
+        }
+
 	    AuthenticationRequest<?, ?> request = null;
 	    UserSession session = null;
 	    try {
