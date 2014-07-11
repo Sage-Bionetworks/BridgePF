@@ -123,13 +123,15 @@ article {
     }
     .more_info {
         text-align: center;
-        margin-bottom: 2rem;
     }
     .help {
         text-align: center;
     }
     .image {
         text-align: center;
+        img {
+            width: 100%;
+        }
     }
     
     .bold {
@@ -230,9 +232,9 @@ footer {
 
 /* ANIMATION */
 
-.animcell > * {
+.info.animcell > *, footer .animcell > * {
     transition-property: opacity;
-    transition-duration: .5s;
+    transition-duration: 1.5s;
     -webkit-transition-property: opacity;
-    -webkit-transition-duration: .5s;
+    -webkit-transition-duration: 1.5s;
 }
