@@ -143,18 +143,17 @@ public class HealthDataControllerTest {
             public void testCode() throws Exception {
                 String sessionToken = TestUtils.signIn();
 
-                // Time ranges used in this test, and where they overlap with
-                // the 3 test windows or not.
-                // 1 1...<2
-                // 2 1............3
-                // 3 4............6
-                // 4 3...........................4
-                // 5 >5.....6
-                // 6 3............................................
+                // Time ranges used in this test, and where they overlap with the 3 test windows or not.
+                //       1        1...<2
+                //       2        1............3
+                //       3                                                 4............6
+                //       4                     3...........................4
+                //       5                                                       >5.....6
+                //       6                     3............................................
                 //
-                // 2__________________________________________5
-                // 1____________3
-                // 4_____5
+                //                    2__________________________________________5
+                //                1____________3
+                //                                                         4_____5
 
                 long threeDays = (1000L * 60L * 60L * 24L * 3L);
 
