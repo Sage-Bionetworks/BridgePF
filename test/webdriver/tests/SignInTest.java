@@ -8,7 +8,7 @@ import webdriver.pages.AppPage;
 import static org.sagebionetworks.bridge.TestConstants.*;
 
 public class SignInTest extends BaseIntegrationTest {
-    
+
     @Test
     public void signIn() {
         call(new Callback<TestBrowser>() {
@@ -21,7 +21,7 @@ public class SignInTest extends BaseIntegrationTest {
             }
         });
     }
-    
+
     @Test
     public void signInDialogDoesClose() {
         call(new Callback<TestBrowser>() {
@@ -32,17 +32,17 @@ public class SignInTest extends BaseIntegrationTest {
             }
         });
     }
-    
+
     @Test
     public void failToSignIn() {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
                 AppPage.SignInDialog signInDialog = page.openSignInDialog();
-                
+
                 signInDialog.signInWrong("test43000", "notMyPassword");
             }
         });
     }
-    
+
 }

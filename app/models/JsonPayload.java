@@ -9,25 +9,25 @@ package models;
  */
 public class JsonPayload<T> {
 
-	protected String type;
-	protected T payload;
-	
-	public JsonPayload(T payload) {
-	    this.type = payload.getClass().getSimpleName();
-		this.payload = payload;
-	}
-	
+    protected String type;
+    protected T payload;
+    
+    public JsonPayload(T payload) {
+        this.type = payload.getClass().getSimpleName();
+        this.payload = payload;
+    }
+    
     public JsonPayload(String type, T payload) {
         this.type = type;
         this.payload = payload;
     }
     
-	public String getType() {
-		return type;
-	}
-	
-	public T getPayload() {
-		return payload;
-	}
+    public String getType() {
+        return type;
+    }
+    
+    public T getPayload() {
+        return payload;
+    }
 
 }
