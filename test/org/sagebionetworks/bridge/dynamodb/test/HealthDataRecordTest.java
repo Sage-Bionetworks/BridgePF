@@ -24,11 +24,11 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
 
     public HealthDataRecordTest() {
     }
-    
+
     public HealthDataRecordTest(String key) {
         this.key = key;
     }
-    
+
     public HealthDataRecordTest(String key, HealthDataRecord record) {
         this.key = key;
         this.recordId = record.getRecordId();
@@ -36,68 +36,74 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
         this.endDate = record.getEndDate();
         this.data = record.getData();
     }
-    
-    public HealthDataRecordTest(String key, String recordId, HealthDataRecord record) {
+
+    public HealthDataRecordTest(String key, String recordId,
+            HealthDataRecord record) {
         this.key = key;
         this.recordId = recordId;
         this.startDate = record.getStartDate();
         this.endDate = record.getEndDate();
         this.data = record.getData();
     }
-    
+
     public HealthDataRecord toHealthDataRecord() {
         return new HealthDataRecordImpl(recordId, startDate, endDate, data);
     }
-    
+
     @DynamoDBHashKey
-    public String getKey() { 
-        return key; 
+    public String getKey() {
+        return key;
     }
-    public void setKey(String key) { 
-        this.key = key; 
+
+    public void setKey(String key) {
+        this.key = key;
     }
-    
-    @Override 
-    @DynamoDBRangeKey
-    public String getRecordId() { 
-        return recordId; 
-    }
+
     @Override
-    public void setRecordId(String recordId) { 
+    @DynamoDBRangeKey
+    public String getRecordId() {
+        return recordId;
+    }
+
+    @Override
+    public void setRecordId(String recordId) {
         this.recordId = recordId;
     }
-    
-    @Override 
-    @DynamoDBAttribute
-    @DynamoDBIndexRangeKey(attributeName="startDate", localSecondaryIndexName="startDate-index")
-    public long getStartDate() { 
-        return startDate; 
-    }
+
     @Override
-    public void setStartDate(long startDate) { 
-        this.startDate = startDate; 
-    }
-    
-    @Override 
     @DynamoDBAttribute
-    @DynamoDBIndexRangeKey(attributeName="endDate", localSecondaryIndexName="endDate-index")
-    public long getEndDate() { 
-        return endDate; 
+    @DynamoDBIndexRangeKey(attributeName = "startDate", localSecondaryIndexName = "startDate-index")
+    public long getStartDate() {
+        return startDate;
     }
+
     @Override
-    public void setEndDate(long endDate) { 
-        this.endDate = endDate; 
+    public void setStartDate(long startDate) {
+        this.startDate = startDate;
     }
-    
-    @Override 
+
+    @Override
+    @DynamoDBAttribute
+    @DynamoDBIndexRangeKey(attributeName = "endDate", localSecondaryIndexName = "endDate-index")
+    public long getEndDate() {
+        return endDate;
+    }
+
+    @Override
+    public void setEndDate(long endDate) {
+        this.endDate = endDate;
+    }
+
+    @Override
     @DynamoDBAttribute
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
-    public JsonNode getData() { 
-        return data; 
+    public JsonNode getData() {
+        return data;
     }
+
     @Override
-    public void setData(JsonNode payload) { 
-        this.data = payload; 
+    public void setData(JsonNode payload) {
+        this.data = payload;
     }
 
     @Override
@@ -105,7 +111,8 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
         final int prime = 31;
         int result = 1;
         result = prime * result + (int) (endDate ^ (endDate >>> 32));
-        result = prime * result + ((recordId == null) ? 0 : recordId.hashCode());
+        result = prime * result
+                + ((recordId == null) ? 0 : recordId.hashCode());
         result = prime * result + ((key == null) ? 0 : key.hashCode());
         result = prime * result + (int) (startDate ^ (startDate >>> 32));
         return result;
@@ -119,7 +126,7 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        HealthDataRecordTest other = (HealthDataRecordTest)obj;
+        HealthDataRecordTest other = (HealthDataRecordTest) obj;
         if (endDate != other.endDate)
             return false;
         if (recordId == null) {
@@ -136,6 +143,5 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
             return false;
         return true;
     }
-
 
 }

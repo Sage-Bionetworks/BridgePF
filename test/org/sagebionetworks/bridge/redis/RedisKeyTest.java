@@ -16,11 +16,14 @@ public class RedisKeyTest {
     @Test
     public void testCompoundKey() {
         assertEquals("lock:health-code", RedisKey.HEALTH_CODE_LOCK.getSuffix());
-        assertEquals("123:lock:health-code", RedisKey.HEALTH_CODE_LOCK.getRedisKey("123"));
-        assertEquals("123", RedisKey.HEALTH_CODE_LOCK.getOriginalKey("123:lock:health-code"));
+        assertEquals("123:lock:health-code",
+                RedisKey.HEALTH_CODE_LOCK.getRedisKey("123"));
+        assertEquals("123",
+                RedisKey.HEALTH_CODE_LOCK
+                        .getOriginalKey("123:lock:health-code"));
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testValidate() {
         assertEquals("123:lock", RedisKey.LOCK.getRedisKey("1:2:3"));
     }
