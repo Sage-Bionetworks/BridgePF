@@ -45,8 +45,15 @@ public class ApplicationController extends BaseController {
         return ok(views.html.index.render(Json.toJson(info).toString()));
     }
 
-    public Result loadConsent() throws Exception {
-        UserSessionInfo info = new UserSessionInfo(new UserSession());
+    public Result loadConsent(String sessionToken) throws Exception {
+        if (sessionToken != null) {
+            setSessionToken(sessionToken);    
+        }
+        UserSession session = checkForSession();
+        if (session == null) {
+            session = new UserSession();
+        }
+        UserSessionInfo info = new UserSessionInfo(session);
         return ok(views.html.consent.render(Json.toJson(info).toString()));
     }
     
