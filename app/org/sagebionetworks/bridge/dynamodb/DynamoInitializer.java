@@ -77,7 +77,6 @@ public class DynamoInitializer {
      * For phasing out obsolete schemas.
      */
     static void beforeInit() {
-        deleteTable("HealthCodeSalt");
     }
 
     static void deleteTable(String table) {

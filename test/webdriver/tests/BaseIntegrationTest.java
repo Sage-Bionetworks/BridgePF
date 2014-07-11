@@ -19,22 +19,24 @@ public class BaseIntegrationTest {
 
     private TestBrowser configureDriver(TestBrowser browser) {
         Window window = browser.manage().window();
-        window.setSize(new Dimension(1024,1400));
+        window.setSize(new Dimension(1024, 1400));
         browser.manage().deleteAllCookies();
         browser.manage().timeouts().pageLoadTimeout(300, TimeUnit.SECONDS);
         return browser;
     }
-    
-    private Callback<TestBrowser> wrapAndConfigureDriver(final Callback<TestBrowser> callback) {
+
+    private Callback<TestBrowser> wrapAndConfigureDriver(
+            final Callback<TestBrowser> callback) {
         return new Callback<TestBrowser>() {
-            public void invoke(TestBrowser browser) throws Throwable{
+            public void invoke(TestBrowser browser) throws Throwable {
                 callback.invoke(configureDriver(browser));
             }
         };
     }
-    
+
     protected void call(Callback<TestBrowser> callback) {
-        running(testServer(3333, fakeApplication(inMemoryDatabase())), TestConstants.PHANTOMJS_DRIVER,
+        running(testServer(3333, fakeApplication(inMemoryDatabase())),
+                TestConstants.PHANTOMJS_DRIVER,
                 wrapAndConfigureDriver(callback));
     }
 

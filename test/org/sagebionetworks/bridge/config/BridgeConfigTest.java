@@ -38,14 +38,16 @@ public class BridgeConfigTest {
     public void testEncryption() {
         BridgeConfig config = new BridgeConfig(CONF_FILE);
         assertEquals("example.value", config.getProperty("example.property"));
-        assertEquals("example.value.encrypted", config.getProperty("example.property.encrypted"));
+        assertEquals("example.value.encrypted",
+                config.getProperty("example.property.encrypted"));
     }
 
     @Test
     public void testEnvironment() {
         System.setProperty("bridge.env", "dev");
         BridgeConfig config = new BridgeConfig(CONF_FILE);
-        assertEquals("example.value.for.dev", config.getProperty("example.property"));
+        assertEquals("example.value.for.dev",
+                config.getProperty("example.property"));
     }
 
     @Test
