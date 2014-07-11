@@ -131,6 +131,7 @@ article {
         text-align: center;
         img {
             width: 100%;
+            max-height: 28rem;
         }
     }
     
@@ -237,4 +238,18 @@ footer {
     transition-duration: 1.5s;
     -webkit-transition-property: opacity;
     -webkit-transition-duration: 1.5s;
+}
+
+/* And, the device adjustments. */
+
+/* Older, shorter iPhones, shorten things so page doesn't scroll. */
+@media screen and (max-height: 480) {
+    #tasks .image image {
+        width: 9.5rem;
+        height: 9.5rem;
+        margin: .5rem;
+    }
+    article .image img {
+        max-height: 18rem;
+    }
 }

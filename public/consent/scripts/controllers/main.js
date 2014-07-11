@@ -31,8 +31,7 @@ function($scope, $humane, $window, $http, formService) {
         }
     };
 
-    //$scope.setStep("welcome");
-    $scope.setStep("deidentification");
+    $scope.setStep("welcome");
     
     /* TASKS */
     /* -------------------------------------------------------------------- */
@@ -107,7 +106,7 @@ function($scope, $humane, $window, $http, formService) {
     /* DE-IDENTIFICATION, AGGREGATION, RISK ANIMATION */
     /* -------------------------------------------------------------------- */
 
-    var animation_delay = 750;
+    var animation_delay = 300;
     
     function startAnimation(stepSelector) {
         var animStep = 0, elements = [], length = 0;
