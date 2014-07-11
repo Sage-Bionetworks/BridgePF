@@ -1,8 +1,8 @@
-consent.controller('MainController', ['$scope', '$humane', '$window', '$http', 'formService',  
+consent.controller('MainController', ['$scope', '$humane', '$window', '$http', 'formService',     
 function($scope, $humane, $window, $http, formService) {
     
-    var steps = ["welcome", "tasks", "sensors", "deidentification", 
-                 "aggregation", "impact", "risk", "withdrawal", "consent", "thankyou"];
+    var steps = ["welcome", "tasks", "sensors", "deidentification", "aggregation", 
+                 "impact", "risk", "withdrawal", "consent", "thankyou"];
     
     var stepFunctions = {
         "welcome": angular.identity,
@@ -24,9 +24,9 @@ function($scope, $humane, $window, $http, formService) {
     };
     
     $scope.nextStep = function() {
-        var index = steps.indexOf($scope.step);
-        if (index < (steps.length-2)) {
-            $scope.step = steps[index+1];
+        var index = steps.indexOf($scope.step) + 1;
+        if (steps[index]) {
+            $scope.step = steps[index];
             $scope.setStep($scope.step);
         }
     };
