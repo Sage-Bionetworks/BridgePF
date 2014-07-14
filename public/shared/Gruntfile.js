@@ -17,9 +17,15 @@ module.exports = function(grunt) {
         "scripts/reset-password-service.js",
         "scripts/auth-interceptor.js",
         "scripts/loading-interceptor.js",
+        "scripts/ga.js",
         "scripts/bg-focus.js"
     ];
-
+    var cssFiles = [
+        'bower_components/bootstrap/dist/css/bootstrap.css',
+        'bower_components/bootstrap/dist/css/bootstrap-theme.css',
+        'styles/*.scss'
+    ];
+    
     grunt.initConfig({
         token: "bridge-shared",
         output: "build",
