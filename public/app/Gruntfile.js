@@ -37,8 +37,6 @@ module.exports = function(grunt) {
             },
             sass: {
                 src: [
-                    'bower_components/bootstrap/dist/css/bootstrap.css',
-                    'bower_components/bootstrap/dist/css/bootstrap-theme.css',
                     'styles/*.scss'
                 ],
                 dest: '<%= output %>/<%= token %>.scss',

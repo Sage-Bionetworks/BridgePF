@@ -1,16 +1,13 @@
-/**
- * Example Grunt Hub
- *
- * Edit the hub.all.src to point to your Gruntfile locations.
- * Then run `grunt`.
- */
 module.exports = function(grunt) {
     'use strict';
 
     grunt.initConfig({
         hub: {
+            options: {
+                concurrent: 4 // as many as there are projects.
+            },
             all: {
-                src: ['shared/Gruntfile.js', 'app/Gruntfile.js', 'neurod/Gruntfile.js'],
+                src: ['shared/Gruntfile.js', 'app/Gruntfile.js', 'neurod/Gruntfile.js', 'consent/Gruntfile.js'],
                 tasks: ['test','build','default','release','watch','clean']
             },
         },
