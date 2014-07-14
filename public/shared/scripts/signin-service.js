@@ -1,4 +1,4 @@
-bridgeShared.service('signInService', ['$modal', function($modal) {
+bridgeShared.service('signInService', ['$modal', 'requestResetPasswordService', function($modal, requestResetPasswordService) {
 
     var modalInstance = null, pendingRequests = [];
 
@@ -44,6 +44,10 @@ bridgeShared.service('signInService', ['$modal', function($modal) {
         $scope.cancel = function () {
             modalInstance.dismiss('cancel');
             modalInstance = null;
+        };
+        $scope.resetPassword = function() {
+            $scope.cancel();
+            requestResetPasswordService.open();
         };
     }];
     

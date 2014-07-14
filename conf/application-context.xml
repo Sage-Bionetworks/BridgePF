@@ -103,7 +103,7 @@
         <property name="studies">
             <list>
                 <bean class="org.sagebionetworks.bridge.models.Study">
-                    <constructor-arg index="0" value="Bridge Parkinson’s Research Program"/>
+                    <constructor-arg index="0" value="Parkinson’s Disease Mobile Study"/>
                     <constructor-arg index="1" value="neurod"/>
                     <constructor-arg index="2">
                         <list>

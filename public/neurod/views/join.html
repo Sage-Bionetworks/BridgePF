@@ -7,10 +7,10 @@
 <div class="splash" style="height:.1px; margin-bottom: 13rem"></div>
 <section class="join" id="joinPage">
     <div class="row">
-        <div class="col-sm-7" style="padding: 2rem 2rem 2rem 8rem">
+        <div class="col-sm-7" style="padding: 2rem 2rem 2rem 10rem">
             <form name="signUpForm" bg-compare="password,passwordConfirm" novalidate>
 		        <p>Are you eligible? You must:<br>
-		        1. Be diagnosed with Parkinson's disease by a physician<br>
+		        1. Be over 17 years old<br>
 		        2. Have an iPhone or Android phone with a data plan<br>
 		        3. Be willing to participate in tasks and surveys for 20 minutes per week</p>
 		        
@@ -19,7 +19,7 @@
 		        <div class="form-group">
 		            <label>Username <span class="help-text">(This will be public)</span></label>
 		            <input type="text" name="username" required ng-model="username" class="form-control" 
-		               placeholder="Enter a username"/>
+		               placeholder="Enter a username" bg-focus="true"/>
 	               <p id="usernameRequiredError" class="field-error" ng-show="hasFieldError(signUpForm['username'], 'required')">Username is required.</p>
 		        </div>
 		        <div class="form-group">
@@ -44,16 +44,18 @@
         <div class="col-sm-5" style="padding: 2rem 4rem 2rem 2rem">
             <div class="well">
                 <p>How it works:</p>
-                <ol>
-                    <li>Sign up using the form on the left</li>
-                    <li>Download the mobile app</li>
-                    <li>Fill out surveys and perform simple tasks</li>
-                    <li>Track your health with your Health Dashboard</li>
-                    <li>Scientific researchers make discoveries</li>
-                    <li>You have a dialogue with researchers about their results.</li>
-                </ol>
+                
+                <table>
+                    <tr><td><span class="bullet">1</span></td><td>Sign up using the form on the left</td></tr>
+                    <tr><td><span class="bullet">2</span></td><td>Download the mobile app</td></tr>
+                    <tr><td><span class="bullet">3</span></td><td>Fill out surveys and perform simple tasks</td></tr>
+                    <tr><td><span class="bullet">4</span></td><td>Track your health with your Health Dashboard</td></tr>
+                    <tr><td><span class="bullet">5</span></td><td>Scientific researchers make discoveries</td></tr>
+                    <tr><td><span class="bullet">6</span></td><td>You are informed of the study results.</td></tr>
+                </table>
+                
                 <p><a href="#/">Learn more</a></p>
-                <p>Questions? Email:<br><a href="mailto:pd-bridge@sagebase.org">pd-bridge@sagebase.org</a></p>
+                <p>Questions? Email:<br><a href="mailto:PDstudy@sagebase.org">PDstudy@sagebase.org</a></p>
             </div>
         </div>
     </div>

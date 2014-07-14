@@ -35,7 +35,7 @@
     color: white;
     font-size: 1.8rem;
     letter-spacing: .4rem;
-    text-shadow: 0 2px rgba(0,0,0,.3);
+    text-shadow: 0 2px rgba(0,0,0,.1);
     @include linear-gradient($buttonGradientTop, $buttonGradientBottom);
 }
 
@@ -55,7 +55,7 @@ $black: #000000; /* text shadow */
 $panelBorderColor: #D1D2D4;
 
 $navBackgroundColor: #F1F1F2;
-$navBorderColor: #BBBDC0;
+$navBorderColor: #D1D2D4;
 
 $textColor: #58585B;
 $promptTextColor: #A7A9AB;
@@ -85,9 +85,11 @@ html {
 }
 @media (max-width: 1023px) {
   html { font-size: 8px; }
+  .bullet { font-size: 12px; }
 }
 @media (min-width: 1240px) {
   html { font-size: 12px; }
+  .bullet { font-size: 16px; }
 }
 .border {
     color: $textColor;
@@ -123,6 +125,8 @@ form[name='signInForm'] {
     max-width: $width;
     position: fixed;
     z-index: 11;
+    background: white url(/neurod/images/bridge_logo.svg) left center no-repeat;
+    background-size: 9rem;
     
     > * {
         display: table-cell;
@@ -141,7 +145,7 @@ form[name='signInForm'] {
         text-align: right;
         padding-right: 1.2rem;
         color: $promptTextColor;
-        font-size: 1.3rem;
+        font-size: 1.1rem;
         letter-spacing: 1px;
         
         button {
@@ -213,7 +217,7 @@ nav {
             letter-spacing: .3rem;
         }
         a:hover {
-            text-decoration: underline;
+            text-decoration: none;
         }
     }
     > div:nth-child(5) {
@@ -453,6 +457,28 @@ section.join {
         @include joinButton;
         font-size: 1.4rem;
     }
+    background: transparent url(../images/eligible_checkmark.svg) 0% 0% no-repeat;
+    background-size: 10rem;
+    
+    table {
+        margin-bottom: 2rem;
+    }
+    table td {
+        vertical-align: top;
+    }
+    table td:first-child {
+        padding-right: 1rem;
+        padding-bottom: .75rem;
+    }
+    .bullet {
+        display: inline-block; 
+        width: 2rem; 
+        height: 2rem;
+        text-align: center; 
+        border-radius: 50%; 
+        background-color: $green; 
+        color: white;
+    }
 }
 section.joined {
     padding-left: 8rem;
@@ -465,9 +491,13 @@ section.joined {
         .icon {
             float: left;
             width: 7rem;
-            span {
-                font-size: 5rem;
-            }
+            height: 7rem;
+        }
+        .icon.email {
+            background: transparent url(../images/email_icon.svg) center no-repeat;
+        }
+        .icon.phone {
+            background: transparent url(../images/phone_icon.svg) center no-repeat;
         }
         .small {
             margin-left: 7rem; 
@@ -487,7 +517,7 @@ footer {
     .sage_logo {
         width: 23.1rem;
         height: 6rem;
-        background: white url(../images/clipart/Sage_Bionetworks_logo.jpg) center left no-repeat;
+        background: white url(../images/sage_logo.svg) center left no-repeat;
         background-size: contain;
         @include flex_1;
     }
@@ -497,7 +527,7 @@ footer {
     .rwjf_logo {
         width: 23.1rem;
         height: 6rem;
-        background: white url(../images/clipart/rwjf.jpeg) center right no-repeat;
+        background: white url(../images/rwjf_logo.svg) center right no-repeat;
         background-size: contain;
         @include flex_1;
     }

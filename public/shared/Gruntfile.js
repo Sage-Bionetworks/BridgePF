@@ -13,7 +13,8 @@ module.exports = function(grunt) {
         "scripts/signin-service.js",
         "scripts/reset-password-service.js",
         "scripts/auth-interceptor.js",
-        "scripts/loading-interceptor.js"
+        "scripts/loading-interceptor.js",
+        "scripts/bg-focus.js"
     ];
 
     grunt.initConfig({
