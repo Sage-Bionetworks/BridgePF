@@ -16,7 +16,7 @@ public class ResetPasswordTest extends BaseIntegrationTest {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
-                RequestResetPasswordDialog dialog = page.openResetPasswordDialog();
+                RequestResetPasswordDialog dialog = page.openSignInDialog().openResetPasswordDialog();
                 
                 dialog.canCancel();
             }
@@ -28,7 +28,7 @@ public class ResetPasswordTest extends BaseIntegrationTest {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
-                RequestResetPasswordDialog dialog = page.openResetPasswordDialog();
+                RequestResetPasswordDialog dialog = page.openSignInDialog().openResetPasswordDialog();
                 
                 dialog.submitInvalidEmailAddress("fooboo");
             }
@@ -40,7 +40,7 @@ public class ResetPasswordTest extends BaseIntegrationTest {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
-                RequestResetPasswordDialog dialog = page.openResetPasswordDialog();
+                RequestResetPasswordDialog dialog = page.openSignInDialog().openResetPasswordDialog();
                 
                 dialog.submitEmailAddress(TEST2.EMAIL);
             }
