@@ -24,6 +24,7 @@ public class HealthCodeServiceImpl implements HealthCodeService {
 
     @Override
     public HealthId create() {
+        logger.debug("Creating a new health ID.");
         final String healthCode = generateHealthCode();
         final String healthId = generateHealthId(healthCode);
         return new HealthId() {

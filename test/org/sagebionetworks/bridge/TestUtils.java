@@ -18,13 +18,14 @@ public class TestUtils {
 
     public abstract static class FailableRunnable implements Runnable {
         public abstract void testCode() throws Exception;
+
         @Override
         public void run() {
             try {
                 testCode();
-            } catch(Exception e) {
+            } catch (Exception e) {
                 fail(e.getMessage());
-            }       
+            }
         }
     }
 
@@ -33,17 +34,19 @@ public class TestUtils {
         node.put(USERNAME, TEST2.USERNAME);
         node.put(PASSWORD, TEST2.PASSWORD);
 
-        Response response = WS.url(TEST_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
-        
+        Response response = WS.url(TEST_URL + SIGN_IN_URL).post(node)
+                .get(TIMEOUT);
+
         ObjectMapper mapper = new ObjectMapper();
         JsonNode responseNode = mapper.readTree(response.getBody());
         return responseNode.get(PAYLOAD).get("sessionToken").asText();
     }
 
     public static WSRequestHolder getURL(String sessionToken, String path) {
-        return WS.url(TEST_URL + path).setHeader(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken);
+        return WS.url(TEST_URL + path).setHeader(
+                BridgeConstants.SESSION_TOKEN_HEADER, sessionToken);
     }
-    
+
     public static void signOut() {
         WS.url(TEST_URL + SIGN_OUT_URL).get().get(TIMEOUT);
     }
@@ -52,23 +55,25 @@ public class TestUtils {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 String sessionToken = signIn();
-                
-                Response response = getURL(sessionToken, TRACKER_URL).get().get(TIMEOUT);
-                
+
+                Response response = getURL(sessionToken, TRACKER_URL).get()
+                        .get(TIMEOUT);
+
                 JsonNode body = response.asJson();
-                ArrayNode array = (ArrayNode)body.get(PAYLOAD);
+                ArrayNode array = (ArrayNode) body.get(PAYLOAD);
                 if (array.isArray()) {
-                    for (int i=0; i < array.size(); i++) {
+                    for (int i = 0; i < array.size(); i++) {
                         JsonNode child = array.get(i);
                         String recordId = child.get(RECORD_ID).asText();
-                        response = getURL(sessionToken, RECORD_URL + recordId).delete().get(TIMEOUT);
+                        response = getURL(sessionToken, RECORD_URL + recordId)
+                                .delete().get(TIMEOUT);
                     }
                 }
-                
+
                 response = getURL(sessionToken, TRACKER_URL).get().get(TIMEOUT);
                 body = response.asJson();
-                array = (ArrayNode)body.get(PAYLOAD);
-                
+                array = (ArrayNode) body.get(PAYLOAD);
+
                 signOut();
             }
         });

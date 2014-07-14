@@ -12,23 +12,22 @@ import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 
 public interface AuthenticationService {
-	
+
     public UserSession getSession(String sessionToken);
-    
+
     public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, BridgeNotFoundException,
             BridgeServiceException;
-	
-	public void signOut(String sessionToken);
-	
-	public void signUp(SignUp signUp) throws BridgeServiceException;
-	
+
+    public void signOut(String sessionToken);
+
+    public void signUp(SignUp signUp) throws BridgeServiceException;
+
     public UserSession verifyEmail(Study study, EmailVerification verification) throws ConsentRequiredException,
             BridgeServiceException;
-	
-	public void requestResetPassword(Email email) throws BridgeServiceException;
-	
-	public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException;
-	
-	public void consentToResearch(String sessionToken) throws BridgeServiceException;
-	
+
+    public void requestResetPassword(Email email) throws BridgeServiceException;
+
+    public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException;
+
+    public void consentToResearch(String sessionToken) throws BridgeServiceException;
 }
