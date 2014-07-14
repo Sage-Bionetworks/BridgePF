@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
-import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -32,7 +31,6 @@ public class HealthDataServiceImpl implements HealthDataService {
 
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
-    private PBEStringEncryptor encryptor;
     private CacheProvider cache;
 
     public void setCreateMapper(DynamoDBMapper createMapper) {
@@ -46,11 +44,7 @@ public class HealthDataServiceImpl implements HealthDataService {
     public void setCacheProvider(CacheProvider cacheProvider) {
         this.cache = cacheProvider;
     }
-    
-    public void setEncryptor(PBEStringEncryptor encryptor) {
-        this.encryptor = encryptor;
-    }
-    
+
     private String healthDataKeyToAnonimizedKeyString(HealthDataKey key) throws BridgeServiceException {
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey cannot be null", HttpStatus.SC_BAD_REQUEST);
@@ -58,7 +52,6 @@ public class HealthDataServiceImpl implements HealthDataService {
         
         UserSession session = cache.getUserSession(key.getSessionToken());
         String healthDataCode = session.getHealthDataCode();
-        healthDataCode = encryptor.decrypt(healthDataCode);
         return String.format("%s:%s:%s", key.getStudyKey(), key.getTrackerId(), healthDataCode);
     }
     

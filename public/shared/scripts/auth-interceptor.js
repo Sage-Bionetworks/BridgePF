@@ -1,11 +1,11 @@
-bridgeShared.factory('interceptAuth', ['$q', '$injector', '$location', function($q, $injector, $location) {
+bridgeShared.factory('interceptAuth', ['$q', '$injector', '$window', function($q, $injector, $window) {
     return {
         'responseError': function(rejection) {
             if (rejection.status === 401) {
                 var signInService = $injector.get('signInService');
                 signInService.open(rejection.config);
             } else if (rejection.status === 412) {
-                $location.path("/consent");
+                $window.location.replace("/consent/"+rejection.data.payload.sessionToken);
             }
             return $q.reject(rejection);
         }

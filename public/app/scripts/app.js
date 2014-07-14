@@ -1,4 +1,4 @@
-var bridge = angular.module('bridge', ['bridge.shared', 'ngRoute', 'ui.bootstrap'])
+var bridge = angular.module('bridge', ['bridge.shared'])
 .config(['$routeProvider', function($routeProvider) {
 	$routeProvider.when('/health/tracker/BloodPressure', {
 	    templateUrl: 'views/trackers/bloodpressure.html',
@@ -27,10 +27,6 @@ var bridge = angular.module('bridge', ['bridge.shared', 'ngRoute', 'ui.bootstrap
     .when('/verifyEmail', {
         templateUrl: 'views/verifyEmail.html',
         controller: 'VerifyEmailController'
-    })
-    .when('/consent', {
-        templateUrl: 'views/consent.html',
-        controller: 'ConsentController'
     })
 	.otherwise({
 		templateUrl: 'views/research.html',

@@ -2,39 +2,39 @@ package org.sagebionetworks.bridge.models;
 
 public class UserSession {
 
-	private boolean authenticated;
+    private boolean authenticated;
     private boolean consent;
     private String environment;
     private String healthDataCode;
     private String sessionToken;
-	private String stormpathHref;
-	private String studyKey;
-	private String username;
+    private String stormpathHref;
+    private String studyKey;
+    private String username;
 
-	public String getSessionToken() {
-		return sessionToken;
-	}
-	public void setSessionToken(String sessionToken) {
-		this.sessionToken = sessionToken;
-	}
-	public String getUsername() {
-		return username;
-	}
-	public void setUsername(String username) {
-		this.username = username;
-	}
-	public boolean isAuthenticated() {
-		return authenticated;
-	}
-	public void setAuthenticated(boolean authenticated) {
-		this.authenticated = authenticated;
-	}
-	public String getEnvironment() {
-		return environment;
-	}
-	public void setEnvironment(String environment) {
-		this.environment = environment;
-	}
+    public String getSessionToken() {
+        return sessionToken;
+    }
+    public void setSessionToken(String sessionToken) {
+        this.sessionToken = sessionToken;
+    }
+    public String getUsername() {
+        return username;
+    }
+    public void setUsername(String username) {
+        this.username = username;
+    }
+    public boolean isAuthenticated() {
+        return authenticated;
+    }
+    public void setAuthenticated(boolean authenticated) {
+        this.authenticated = authenticated;
+    }
+    public String getEnvironment() {
+        return environment;
+    }
+    public void setEnvironment(String environment) {
+        this.environment = environment;
+    }
     public String getStormpathHref() {
         return stormpathHref;
     }

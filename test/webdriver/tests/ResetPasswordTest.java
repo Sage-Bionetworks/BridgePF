@@ -22,7 +22,7 @@ public class ResetPasswordTest extends BaseIntegrationTest {
             }
         });
     }
-    
+
     @Test
     public void resetPasswordPreventsInvalidEmailSubmission() {
         call(new Callback<TestBrowser>() {
