@@ -27,17 +27,10 @@ public class AppPage extends BasePage {
         waitUntilPresent(SIGN_IN_DIALOG);
         return new SignInDialog(browser);
     }
-
-    public RequestResetPasswordDialog openResetPasswordDialog() {
-        resetPasswordLink().click();
-        waitUntilPresent(RESET_PASSWORD_DIALOG);
-        return new RequestResetPasswordDialog(browser);
-    }
-
+    
     public void signOut() {
         signOutLink().click();
         waitUntilPresent(SIGN_IN_LINK);
-        waitUntilPresent(RESET_PASSWORD_LINK);
     }
 
     private FluentWebElement resetPasswordLink() {
@@ -65,7 +58,11 @@ public class AppPage extends BasePage {
         public SignInDialog(TestBrowser browser) {
             super(browser);
         }
-
+        public RequestResetPasswordDialog openResetPasswordDialog() {
+            resetPasswordLink().click();
+            waitUntilPresent(RESET_PASSWORD_DIALOG);
+            return new RequestResetPasswordDialog(browser);
+        }
         public void signInWrong(String username, String password) {
             enterCredentials(username, password);
             signInAction().click();

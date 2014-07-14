@@ -9,6 +9,19 @@
         font-size: 7rem;
         padding: 1.5rem;
     }
+    .left_control div {
+        width: 5rem;
+        height: 5rem;
+        background: transparent url(../images/meettheresearchers_arrow.svg) center no-repeat;
+        -webkit-transform: rotate(180deg);
+        -moz-transform: rotate(180deg);
+        transform: rotate(180deg);
+    }
+    .right_control div {
+        width: 7rem;
+        height: 7rem;
+        background: transparent url(../images/meettheresearchers_arrow.svg) center no-repeat;
+    }
     .panel {
         overflow: hidden;
     }

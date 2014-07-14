@@ -1,9 +1,5 @@
-neurod.controller('MainController', ['$scope', 'signInService', 'requestResetPasswordService', 
-function($scope, signInService, requestResetPasswordService) {
+neurod.controller('MainController', ['$scope', 'signInService', function($scope, signInService) {
     $scope.signIn = function() {
         signInService.open();
-    };
-    $scope.resetPassword = function() {
-        requestResetPasswordService.open();
     };
 }]);
