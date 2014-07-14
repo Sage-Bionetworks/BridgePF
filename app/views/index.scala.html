@@ -12,16 +12,14 @@
 <body ng-app="bridge" ng-controller="ApplicationController">
     <div class="container">
         <div class="row header">
-            <div class="col-sm-4">
-                <a href="/" class="partner-header"></a>
+            <div class="col-sm-6">
+                <a href="/" class="partner-header">Bridge Parkinson's Research Study</a>
             </div>
-            <div class="col-sm-8">
-                <div class="bridge-header" ng-cloak>
-                    <div class="loadingclock" ng-show="loading"></div>
-                    <div ng-hide="!session.authenticated">
-                        <span ng-bind="session.username"></span>
-                        <button id="signOutLink" class="btn btn-default" ng-show="session.sessionToken" ng-click="signOut()">Sign Out</button>
-                    </div>
+            <div class="col-sm-6 bridge-header" ng-cloak>
+                <div class="loadingclock" ng-show="loading"></div>
+                <div ng-hide="!session.authenticated">
+                    <span ng-bind="session.username"></span>
+                    <button id="signOutLink" class="btn btn-default" ng-show="session.sessionToken" ng-click="signOut()">Sign Out</button>
                 </div>
             </div>
         </div>

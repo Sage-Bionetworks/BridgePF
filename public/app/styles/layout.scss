@@ -9,12 +9,19 @@
     }
 }
 .header {
-    background-color: rgb(118,172,105);
-    font-family: 'Archivo Narrow', sans-serif;
-    color: white;
+    font-family: 'Helvetica Neue', sans-serif;
+    background: white url(/neurod/images/bridge_logo.svg) left center no-repeat;
+    background-size: 9rem;
 
+    > * {
+        height: 7rem;
+        vertical-align: middle;
+    }
     a, a:visited, a:active {
-        color: white;
+        color: #58585B;
+        padding-left: 8.7rem;
+        padding-top: 0.4rem;
+        text-decoration: none;
     }
 
     .partner-header {
@@ -23,7 +30,6 @@
         font-size: 2.2rem;
         line-height: 6rem;
         margin-left: -15px; 
-        background: transparent url('http://placehold.it/350x60&text=Partner+Logo') left center no-repeat;
     }
     .bridge-header {
         line-height: 6rem;
