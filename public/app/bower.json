@@ -4,9 +4,7 @@
   "dependencies": {
     "dygraphs": "alxdarksage/dygraphs#4c0f2a3fa5814c93c36cb6d10e47cfc6e4ba161f",
     "json3": "~3.2.6",
-    "es5-shim": "~2.1.0",
-    "bootstrap": "~3.1.1",
-    "humane-js": "~3.2.0"
+    "es5-shim": "~2.1.0"
   },
   "devDependencies": {
     "angular": "1.2.16",

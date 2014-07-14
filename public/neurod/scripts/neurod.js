@@ -10,7 +10,7 @@ if ( !window.requestAnimationFrame ) {
     } )();
 }
 
-var neurod = angular.module('neurod', ['bridge.shared', 'ngRoute', 'ui.bootstrap']);
+var neurod = angular.module('neurod', ['bridge.shared']);
 
 neurod.config(['$routeProvider', function($routeProvider) {
     $routeProvider.when('/about', {
