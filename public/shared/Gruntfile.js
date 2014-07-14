@@ -17,12 +17,7 @@ module.exports = function(grunt) {
         "scripts/reset-password-service.js",
         "scripts/auth-interceptor.js",
         "scripts/loading-interceptor.js",
-        "scripts/ga.js"
-    ];
-    var cssFiles = [
-        'bower_components/bootstrap/dist/css/bootstrap.css',
-        'bower_components/bootstrap/dist/css/bootstrap-theme.css',
-        'styles/*.scss'
+        "scripts/bg-focus.js"
     ];
 
     grunt.initConfig({
