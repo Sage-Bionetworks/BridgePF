@@ -31,7 +31,7 @@ angular.module('consent', ['bridge.shared']).controller('ConsentController',
         }
     };
 
-    $scope.setStep("thankyou");
+    $scope.setStep("welcome");
     
     /* TASKS */
     /* -------------------------------------------------------------------- */
