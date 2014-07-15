@@ -18,7 +18,8 @@ module.exports = function(grunt) {
         "scripts/auth-interceptor.js",
         "scripts/loading-interceptor.js",
         "scripts/ga.js",
-        "scripts/bg-focus.js"
+        "scripts/bg-focus.js",
+        "scripts/bg-pressable.js"
     ];
     var cssFiles = [
         'bower_components/bootstrap/dist/css/bootstrap.css',

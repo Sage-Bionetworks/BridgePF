@@ -5,7 +5,8 @@ module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     
     var jsFiles = [
-        "scripts/consent.js"
+        "scripts/consent.js",
+        "scripts/learn-more-service.js"
     ];
 
     grunt.initConfig({
@@ -33,7 +34,8 @@ module.exports = function(grunt) {
             },
             sass: {
                 src: [
-                    "styles/consent.scss"
+                    "styles/consent.scss",
+                    "styles/learn-more.scss"
                 ],
                 dest: '<%= output %>/<%= token %>.scss',
                 nonull: true
