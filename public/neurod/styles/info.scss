@@ -219,6 +219,9 @@ nav {
         a:hover {
             text-decoration: none;
         }
+        a.pressed, a:active {
+            @include linear-gradient($buttonGradientBottom, $buttonGradientTop);
+        }
     }
     > div:nth-child(5) {
         background: $white url(../images/researchersjournal_icon.svg) 1rem center no-repeat;
@@ -441,6 +444,10 @@ section.about {
             text-shadow: 0 2px rgba(0,0,0,.3);
             @include linear-gradient($buttonGradientTop, $buttonGradientBottom);
         }
+        .btn.pressed, .btn:active {
+            @include linear-gradient($buttonGradientBottom, $buttonGradientTop);
+        }
+        
         h2 {
             margin: 0; padding: 0;
             margin-top: 1rem;
@@ -456,6 +463,9 @@ section.join {
     .btn {
         @include joinButton;
         font-size: 1.4rem;
+    }
+    .btn.pressed {
+        @include linear-gradient($buttonGradientTop, $buttonGradientBottom);
     }
     background: transparent url(../images/eligible_checkmark.svg) 0% 0% no-repeat;
     background-size: 10rem;

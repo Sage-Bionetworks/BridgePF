@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.*;
 import static org.junit.Assert.*;
 
 import org.fluentlenium.core.domain.FluentWebElement;
+import org.sagebionetworks.bridge.TestConstants;
 
 import play.test.TestBrowser;
 
@@ -19,6 +20,7 @@ public class AppPage extends BasePage {
     public JoinPage getJoinPage() {
         signUpLink().click();
         waitUntilPresent(JOIN_PAGE);
+        waitUntilScriptHasFocused(TestConstants.USERNAME_INPUT);
         return new JoinPage(browser);
     }
 
@@ -84,10 +86,8 @@ public class AppPage extends BasePage {
         }
 
         private void enterCredentials(String username, String password) {
-            assertFalse("Sign in message is hidden", signInMessage()
-                    .isDisplayed());
-            assertFalse("Sign in action is disabled", signInAction()
-                    .isEnabled());
+            assertFalse("Sign in message is hidden", signInMessage().isDisplayed());
+            assertFalse("Sign in action is disabled", signInAction().isEnabled());
             browser.fill(USERNAME_INPUT).with(username);
             browser.fill(PASSWORD_INPUT).with(password);
             assertTrue("Sign in action is enabled", signInAction().isEnabled());
@@ -127,27 +127,20 @@ public class AppPage extends BasePage {
         }
 
         public void submitInvalidEmailAddress(String email) {
-            assertFalse("Email button is not enabled", sendEmailButton()
-                    .isEnabled());
+            assertFalse("Email button is not enabled", sendEmailButton().isEnabled());
             browser.fill(EMAIL_INPUT).with(email);
-            assertFalse("Email button is enabled", sendEmailButton()
-                    .isEnabled());
+            assertFalse("Email button is enabled", sendEmailButton().isEnabled());
             close();
         }
 
         public void submitEmailAddress(String email) {
-            assertFalse("Email button is not enabled", sendEmailButton()
-                    .isEnabled());
+            assertFalse("Email button is not enabled", sendEmailButton().isEnabled());
             browser.fill(EMAIL_INPUT).with(email);
             assertTrue("Email button is enabled", sendEmailButton().isEnabled());
             sendEmailButton().click();
             waitUntilNotPresent(RESET_PASSWORD_DIALOG);
-            assertTrue(
-                    "Message popup confirms an email was sent",
-                    messagePopup()
-                            .getText()
-                            .contains(
-                                    "Please look for further instructions in your email inbox."));
+            assertTrue("Message popup confirms an email was sent",
+                    messagePopup().getText().contains("Please look for further instructions in your email inbox."));
         }
 
         public void close() {

@@ -161,7 +161,6 @@ article {
     .image {
         text-align: center;
         img {
-            width: 100%;
             max-height: 28rem;
         }
     }
@@ -171,7 +170,7 @@ article {
     }
     .button {
         border-radius: 1.5rem;
-        padding: .25rem 3rem;
+        padding: .35rem 3rem;
         margin: 1.5rem 0;
         display: inline-block;
         letter-spacing: 1px;
@@ -185,10 +184,12 @@ article {
         color: $white;
         font-size: 2rem;
     }
-    .gs-pressed, .lm-pressed {
-        background-color: red;
+    .gs-pressed {
+        background-color: #D68927;
     }
-    
+    .lm-pressed {
+        background-color: #2D628E;
+    }
     .animcell {
         position: relative;
         
@@ -213,10 +214,6 @@ article {
         }
     }
     img {
-    /*
-        width: 11rem;
-        height: 11rem;
-        */
         width: 10.2rem;
         height: 10.2rem;
         margin: 1rem;
