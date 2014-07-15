@@ -31,6 +31,9 @@ script:
 - cd ../shared
 - npm install
 - bower install
+- cd ../consent
+- npm install
+- bower install
 - cd ../
 - npm install
 - grunt release
