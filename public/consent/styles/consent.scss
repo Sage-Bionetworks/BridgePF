@@ -93,6 +93,37 @@ header {
         }
     }
 }
+.header {
+    display: none;
+    width: 100%;
+    background: white url(/neurod/images/bridge_logo.svg) left center no-repeat;
+    background-size: 9rem;
+    
+    > * {
+        display: table-cell;
+        height: 7rem;
+        vertical-align: middle;
+    }
+    h1 {
+        margin: 0;
+        padding: 0;
+        font-size: 2.1rem;
+        letter-spacing: .1rem;
+        padding-left: 8rem;
+        font-family: 'Helvetica Neue', sans-serif;
+    }
+    .auth {
+        text-align: right;
+        padding-right: 1.2rem;
+        color: silver;
+        font-size: 1.1rem;
+        letter-spacing: 1px;
+        
+        button {
+            margin-left: 1rem;
+        }
+    }
+}
 
 #welcome .wiz div:nth-child(1) ~ div span,
 #tasks .wiz div:nth-child(2) ~ div span,
@@ -152,6 +183,10 @@ article {
     .gs {
         background-color: $orange;
         color: $white;
+        font-size: 2rem;
+    }
+    .gs-pressed, .lm-pressed {
+        background-color: red;
     }
     
     .animcell {
@@ -176,11 +211,15 @@ article {
         td {
             width: 50%;      
         }
-        img {
-            width: 11rem;
-            height: 11rem;
-            margin: 1rem;
-        }
+    }
+    img {
+    /*
+        width: 11rem;
+        height: 11rem;
+        */
+        width: 10.2rem;
+        height: 10.2rem;
+        margin: 1rem;
     }
 }
 #welcome .info {
@@ -257,8 +296,12 @@ footer {
 
 /* And, the device adjustments. */
 
+.desktop .action:after { content: "Click"; }
+.mobile .action:after { content: "Tap"; }
+
+
 /* Older, shorter iPhones, shorten things so page doesn't scroll. */
-@media screen and (max-height: 480) {
+@media screen and (max-height: 480px) {
     #tasks .image image {
         width: 9.5rem;
         height: 9.5rem;
@@ -267,4 +310,11 @@ footer {
     article .image img {
         max-height: 18rem;
     }
+}
+
+@media screen and (min-width: 1025px) { /* Desktop */
+    /*html { font-size: 14px; }*/
+    .header { display: table; }
+    header { height: 15rem; }
+    article { top: 15rem; }
 }

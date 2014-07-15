@@ -157,7 +157,7 @@ form[name='signInForm'] {
 nav {
     background-color: $navBackgroundColor;
     border-top: 2px solid $navBorderColor;
-    padding: .6rem 1rem;
+    padding: 0 1rem;
     position: fixed;
     width: 100%;
     max-width: $width;
@@ -403,15 +403,15 @@ section.main {
     border-bottom: 2px solid $navBorderColor;
     
     > * {
-        font-size: 2rem;
+        font-size: 1.5rem;
         color: #95C0C9;
     }
 }
 .final_subnav {
     background-color: $green;
     color: $white;
-    font-size: 2.1rem;
-    padding: 1.6rem 8rem;
+    font-size: 2rem;
+    padding: 1rem 8rem;
 }
 section.about {
     @include flexbox;
@@ -532,5 +532,6 @@ footer {
         @include flex_1;
     }
 }
+
 /* required ui-bootstrap tweak of bootstrap */
 .nav, .pagination, .carousel, .panel-title a { cursor: pointer; }

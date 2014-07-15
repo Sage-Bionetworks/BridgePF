@@ -1,13 +1,18 @@
 angular.module('consent', ['bridge.shared']).controller('ConsentController', 
-['$scope', '$humane', '$window', '$http', 'formService', function($scope, $humane, $window, $http, formService) {
+['$scope', '$humane', '$window', '$http', 'formService', 'learnMoreService', 
+function($scope, $humane, $window, $http, formService, learnMoreService) {
     
-    var steps = ["welcome", "tasks", "sensors", "deidentification", "aggregation", 
-                 "impact", "risk", "withdrawal", "consent", "thankyou"];
+    var mobileSteps = ["welcome", "tasks", "sensors", "deidentification", "aggregation", 
+        "impact", "risk", "withdrawal", "consent", "thankyou"];
+    
+    var desktopSteps = ["welcome", "tasks", "sensorsDesktop", "deidentification", "aggregation", 
+        "impact", "risk", "withdrawal", "consent", "thankyou"];
     
     var stepFunctions = {
         "welcome": angular.identity,
         "tasks": angular.identity,
         "sensors": startMonitor,
+        "sensorsDesktop": angular.identity,
         "deidentification": startAnimation,
         "aggregation": startAnimation,
         "impact": angular.identity,
@@ -24,6 +29,10 @@ angular.module('consent', ['bridge.shared']).controller('ConsentController',
     };
     
     $scope.nextStep = function() {
+        var wiw = window.innerWidth;
+        var steps = (wiw > 1024) ? desktopSteps : mobileSteps;
+        document.body.className = (wiw > 1024) ? "desktop" : "mobile";
+        
         var index = steps.indexOf($scope.step) + 1;
         if (steps[index]) {
             $scope.step = steps[index];
@@ -36,30 +45,12 @@ angular.module('consent', ['bridge.shared']).controller('ConsentController',
     /* TASKS */
     /* -------------------------------------------------------------------- */
 
-    var tasksButtons = [false, false, false, false],
-        buttons = document.querySelectorAll("#tasks .image img");
-    
-    for (var i=0; i < buttons.length; i++) {
-        var btn = buttons[i];
-        btn.addEventListener("mousedown", press);
-        btn.addEventListener("mouseout", release);
-        if ('ontouchstart' in window) {
-            btn.addEventListener("touchstart", press);
-            btn.addEventListener("touchcancel", release);
-        }
-        // may or may not preload
-        new Image().src = btn.src.replace("_rest", "_press");
-    }
-    function press(event) {
-        swapImage(event.target, "_rest", "_press");
-    }
-    function release(event) {
-        swapImage(event.target, "_press", "_rest");
-    }
+    var tasksButtons = [false, false, false, false];
+
     function swapImage(element, from, to) {
         element.src = element.src.replace(from, to);
     }
-    
+
     $scope.assessTask = function(event, buttonNumber) {
         tasksButtons[buttonNumber-1] = true;
         swapImage(event.target, "_rest", "_selected");
@@ -182,4 +173,11 @@ angular.module('consent', ['bridge.shared']).controller('ConsentController',
         $window.location.replace("/app/");
     };
     
+    /* LEARN MORE*/
+    /* -------------------------------------------------------------------- */
+    
+    $scope.learnMore = function(tag) {
+        learnMoreService.open(tag);
+    };
+
 }]);
