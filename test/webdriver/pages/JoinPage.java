@@ -14,16 +14,14 @@ public class JoinPage extends BasePage {
     }
 
     public void enterValidData() {
-        assertFalse("Submit button is initially disabled", joinButton()
-                .isEnabled());
+        assertFalse("Submit button is initially disabled", joinButton().isEnabled());
         enterFields("bridge", "bridgeit@sagebase.org", "P4ssword", "P4ssword");
         assertTrue("Submit button is enabled", joinButton().isEnabled());
     }
 
     public void enterInvalidData(String username, String email,
             String password, String confirmPassword) {
-        assertFalse("submit button is initially disabled", joinButton()
-                .isEnabled());
+        assertFalse("submit button is initially disabled", joinButton().isEnabled());
         enterFields(username, email, password, confirmPassword);
         assertFalse("submit button stays disabled", joinButton().isEnabled());
     }
