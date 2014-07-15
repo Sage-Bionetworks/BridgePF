@@ -19,8 +19,8 @@ angular.module('consent').service('learnMoreService', ['$modal', function($modal
             modalInstance = $modal.open({
                 templateUrl: url,
                 controller: ModalInstanceController,
-                size: size,
-                windowClass: size
+                size: 'adaptable',
+                windowClass: 'adaptable'
             });
         }
     };
