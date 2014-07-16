@@ -161,7 +161,8 @@ article {
     .image {
         text-align: center;
         img {
-            max-height: 28rem;
+            width: 100%;
+            max-width: 320px;
         }
     }
     
@@ -303,9 +304,6 @@ footer {
         width: 9.5rem;
         height: 9.5rem;
         margin: .5rem;
-    }
-    article .image img {
-        max-height: 18rem;
     }
 }
 
