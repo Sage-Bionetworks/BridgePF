@@ -203,6 +203,10 @@ function($scope, $humane, $window, $http, formService, learnMoreService) {
         }, $humane.status);
     };
     
+    $scope.decline = function() {
+        $humane.error("You must give consent to participate in this study.");
+    };
+    
     /* THANK YOU */
     /* -------------------------------------------------------------------- */
     
