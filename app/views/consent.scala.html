@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Consent to Participate in Bridge - Sage Bionetworks</title>
-    <meta name="viewport" content="width=device-width, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimal-ui" />
     <base href="/"/>
     <script>window._session = @Html(auth);</script>
     <link rel="stylesheet" href="../shared/build/bridge-shared.css" />
@@ -61,7 +61,7 @@
             <table>
                 <tr>
                     <td>
-                        <img draggable="false" ng-click="assessTask($event, 1)" bg-pressable src="consent/images/timed_rest.svg"/>
+                        <img draggable="false" ng-click="assessTask($event, 1)" bg-pressable src="consent/images/takesurveys_rest.svg"/>
                     </td>
                     <td>
                         <img draggable="false" ng-click="assessTask($event, 2)" bg-pressable src="consent/images/talking_rest.svg"/>
@@ -101,8 +101,8 @@
         <div class="more_info">
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('sensors')">Learn more</a>
         </div>
-        <div class="image" ng-click="nextStep()">
-            <img draggable="false" style="margin-top: 1rem; margin-right: -5rem" src="consent/images/phonesensordata.svg"/>
+        <div class="image" ng-click="nextStepIfDesktop()">
+            <img draggable="false" style="height: 28rem" src="consent/images/phonesensordata.svg"/>
         </div>
     </article>
     <footer>
