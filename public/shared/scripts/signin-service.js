@@ -9,6 +9,7 @@ bridgeShared.service('signInService', ['$modal', 'requestResetPasswordService', 
 
         $scope.signIn = function () {
             var credentials = formService.formToJSON($scope.signInForm, ['username', 'password']);
+            $scope.setMessage("");
             $scope.signInForm.password.$setViewValue(null);
             $scope.signInForm.password.$render();
 
