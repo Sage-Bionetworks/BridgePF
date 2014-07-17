@@ -11,7 +11,11 @@
 </head>
 <body ng-app="consent" ng-controller="ConsentController">
 
-<div id="welcome" ng-show="step == 'welcome'" ng-cloak>
+<table id="loading" width="100%" height="100%"><tr><td style="text-align:center;vertical-align:middle">Loading&hellip;<td></td></table>
+
+<div id="content">
+
+<div id="welcome" ng-show="step == 'welcome'">
     <header>
         <div class="header">
             <div class="logo"><h1>Parkinson&rsquo;s Disease Mobile Study</h1></div>
@@ -39,7 +43,7 @@
     <footer><div><!-- blank --></div></footer>
 </div>
 
-<div id="tasks" ng-show="step == 'tasks'" ng-cloak>
+<div id="tasks" ng-show="step == 'tasks'">
     <header>
         <div class="header">
             <div class="logo"><h1>Parkinson&rsquo;s Disease Mobile Study</h1></div>
@@ -83,7 +87,7 @@
     </footer>
 </div>
 
-<div id="sensors" ng-show="step == 'sensors'" ng-cloak>
+<div id="sensors" ng-show="step == 'sensors'">
     <header>
         <div class="header">
             <div class="logo"><h1>Parkinson&rsquo;s Disease Mobile Study</h1></div>
@@ -112,7 +116,7 @@
     </footer>
 </div>
 
-<div id="sensorsDesktop" ng-show="step == 'sensorsDesktop'" ng-cloak>
+<div id="sensorsDesktop" ng-show="step == 'sensorsDesktop'">
     <header>
         <div class="header">
             <div class="logo"><h1>Parkinson&rsquo;s Disease Mobile Study</h1></div>
@@ -142,7 +146,7 @@
 </div>
 
 
-<div id="deidentification" ng-show="step == 'deidentification'" ng-cloak>
+<div id="deidentification" ng-show="step == 'deidentification'">
     <header>
         <div class="header">
             <div class="logo"><h1>Parkinson&rsquo;s Disease Mobile Study</h1></div>
@@ -186,7 +190,7 @@
     </footer>
 </div>
 
-<div id="aggregation" ng-show="step == 'aggregation'" ng-cloak>
+<div id="aggregation" ng-show="step == 'aggregation'">
     <header>
         <div class="header">
             <div class="logo"><h1>Parkinson&rsquo;s Disease Mobile Study</h1></div>
@@ -225,7 +229,7 @@
     </footer>
 </div>
 
-<div id="impact" ng-show="step == 'impact'" ng-cloak>
+<div id="impact" ng-show="step == 'impact'">
     <header>
         <div class="header">
             <div class="logo"><h1>Parkinson&rsquo;s Disease Mobile Study</h1></div>
@@ -250,7 +254,7 @@
     </footer>
 </div>
 
-<div id="risk" ng-show="step == 'risk'" ng-cloak>
+<div id="risk" ng-show="step == 'risk'">
     <header>
         <div class="header">
             <div class="logo"><h1>Parkinson&rsquo;s Disease Mobile Study</h1></div>
@@ -288,7 +292,7 @@
     </footer>
 </div>
 
-<div id="withdrawal" ng-show="step == 'withdrawal'" ng-cloak>
+<div id="withdrawal" ng-show="step == 'withdrawal'">
     <header>
         <div class="header">
             <div class="logo"><h1>Parkinson&rsquo;s Disease Mobile Study</h1></div>
@@ -313,7 +317,7 @@
     </footer>
 </div>
 
-<div id="consent" ng-show="step == 'consent'" ng-cloak>
+<div id="consent" ng-show="step == 'consent'">
     <header>
         <div class="header">
             <div class="logo"><h1>Parkinson&rsquo;s Disease Mobile Study</h1></div>
@@ -329,13 +333,26 @@
         <div class="help">
             <p><a ng-click="learnMore('consent')">Read the full consent document</a></p>
         </div>
-        <div>
+        <div align="center">
             <form name="consentForm" novalidate>
 			    <div class="form-group">
-			        <input class="form-control" placeholder="Enter your first and last names" name="name" required ng-model="name"/>
+			        <input class="form-control" placeholder="Enter your first and last names" name="name" 
+                        required ng-model="name"/>
 			    </div>
 			    <div class="form-group">
-	                <input type="text" class="form-control" required ng-model="date" name="birthdate" placeholder="Enter your birthdate" />
+                    <p class="input-group">
+                        <input type="text" class="form-control" datepicker-popup="MM/dd/yyyy" is-open="opened" 
+                            name="birthdate" ng-model="birthdate" datepicker-options="dateOptions" 
+                            date-disabled="disabled(date, mode)" placeholder="Enter your birth date"
+                            max-date="maxDate" show-button-bar="false" show-weeks="false" 
+                            close-text="Close" ng-required="true" />
+                        <span class="input-group-btn">
+                            <button type="button" class="btn btn-default" ng-click="open($event)">
+                                <i class="glyphicon glyphicon-calendar"></i>
+                            </button>
+                        </span>
+                        <p class="help-block">You must be at least 17 years of age</p>
+                    </p>
 			    </div>
 			</form>
         </div>
@@ -351,7 +368,7 @@
     </footer>
 </div>
 
-<div id="thankyou" ng-show="step == 'thankyou'" ng-cloak>
+<div id="thankyou" ng-show="step == 'thankyou'">
     <header>
         <div class="header">
             <div class="logo"><h1>Parkinson&rsquo;s Disease Mobile Study</h1></div>
@@ -372,6 +389,8 @@
     <footer ng-click="begin()">
         <div><p><span class="action"></span> here to begin.</p></div>
     </footer>
+</div>
+
 </div>
 
 <script src="shared/build/bridge-shared.js"></script>
