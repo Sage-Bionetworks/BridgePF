@@ -30,36 +30,35 @@
     flex: 2;                  /* NEW, Spec - Opera 12.1, Firefox 20+ */
 }
 @mixin joinButton {
-    border: 1px solid $buttonBorderColor;
-    border-radius: .8rem;
     color: white;
     font-size: 1.8rem;
     letter-spacing: .4rem;
-    text-shadow: 0 2px rgba(0,0,0,.1);
     @include linear-gradient($buttonGradientTop, $buttonGradientBottom);
 }
 
-$width: 102.4rem;
+/*$width: 102.4rem;*/
+$width: 70rem;
 $green: #A9D385;
-$orange: #EFC785;
-$pink: #E086B7;
-$blue: #95C0C9;
-$buttonGradientTop: #A6DEF1;
-$buttonGradientBottom: #81D2EF;
-$buttonBorderColor: #808284;
-$boxBorderColor: #D1D2D4;
-$darkGrayBorderColor: #AAAAAA;
-$white: #FFFFFF; /* May be off-white eventually; */
-$linkTextColor: #666666; 
-$black: #000000; /* text shadow */
-$panelBorderColor: #D1D2D4;
+$orange: #FAAB2B;
+$pink: #EF8188;
+$lightBlue: #81D2EF;
+$blue: #4688C7;
+$darkBlue: #1E429B;
+$black: #231F20;
+$white: #FFFFFF;
+$boxBorderColor: #A7A9AB;
 
-$navBackgroundColor: #F1F1F2;
+$buttonGradientTop: #6696CF;
+$buttonGradientBottom: #4588c8;
+
+$linkColor: $green;
+$linkActiveColor: $lightBlue;
+$linkHoverColor: $orange;
+$linkVisitedColor: $green;
+
+/* Older colors, often ones I had to make up */
 $navBorderColor: #D1D2D4;
-
-$textColor: #58585B;
-$promptTextColor: #A7A9AB;
-$linkColor: #83B786;
+$panelBorderColor: #D1D2D4;
 
 /* Fixes the boostrap CSS in the Angular version of Bootstrap. */
 .nav, .pagination, .carousel, .panel-title a { 
@@ -78,8 +77,27 @@ $linkColor: #83B786;
 .lg .modal-dialog {
     width: 600px;
 }
-
-
+.btn {
+    color: $black;
+    background-color: #f4f4f4;
+    border-radius: 0px;
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+}
+.panel, .well {
+    border-radius: 0px;
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+    box-shadow: none;
+    -webkit-box-shadow: none;
+    -moz-box-shadow: none;
+    @include linear-gradient($white, #F4F4F4);
+}
+input {
+    border-radius: 0px !important;
+    -webkit-border-radius: 0px !important;
+    -moz-border-radius: 0px !important;
+}
 html {
     font-size: 10px;
 }
@@ -91,17 +109,26 @@ html {
   html { font-size: 12px; }
   .bullet { font-size: 16px; }
 }
-.border {
-    color: $textColor;
-    max-width: $width;
-    margin: 0 auto;
-    position: relative;
-    margin-bottom: 30rem;
-}
-a, a:hover {
-    color: $linkColor;
+a, a:hover, a:active, a:visited {
     cursor: pointer;
 }
+a { 
+    color: $linkColor; 
+}
+a.dark {
+    color: $darkBlue;
+    font-weight: bold;
+}
+a:hover {
+    color: $linkHoverColor;
+}
+a:active {
+    color: $linkActiveColor;
+}
+a:visited {
+    color: $linkVisitedColor;
+}
+
 .caps {
     font-variant: small-caps;
 }
@@ -112,7 +139,6 @@ a, a:hover {
     border: red;
     background-color: #B22222;
     color: $white;
-    
     a, a:visited {
         color: lightblue;
     }
@@ -131,131 +157,133 @@ form[name='signInForm'] {
     }
 }
 .header {
-    display: table;
-    width: 100%;
-    background-color: $white;
-    max-width: $width;
+    background-color: $green;
+    height: 7rem;
     position: fixed;
     z-index: 11;
-    background: white url(/neurod/images/bridge_logo.svg) left center no-repeat;
-    background-size: 9rem;
+    left: 0;
+    right: 0;
     
-    > * {
-        display: table-cell;
+    .box {
         height: 7rem;
-        vertical-align: middle;
+        max-width: $width;
+        margin: 0 auto;
     }
-    h1 {
-        margin: 0;
-        padding: 0;
-        font-size: 2.1rem;
-        letter-spacing: .1rem;
-        padding-left: 8rem;
-        font-family: 'Helvetica Neue', sans-serif;
-    }
-    .auth {
-        text-align: right;
-        padding-right: 1.2rem;
-        color: $promptTextColor;
-        font-size: 1.1rem;
-        letter-spacing: 1px;
+    .inner-box {
+        display: table;
+        width: 100%;
+        background: transparent url(/neurod/images/bridge_logo.svg) left center no-repeat;
+        background-size: 9rem;
         
-        button {
-            margin-left: 1rem;
+        > * {
+            display: table-cell;
+            height: 7rem;
+            vertical-align: middle;
+        }
+        h1 {
+            margin: 0;
+            padding: 0;
+            color: $white;
+            font-size: 1.9rem;
+            letter-spacing: .1rem;
+            padding-left: 8rem;
+            font-family: 'Helvetica Neue', sans-serif;
+        }
+        .auth {
+            text-align: right;
+            padding-right: 1.2rem;
+            color: $white;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            
+            button {
+                margin-left: 1rem;
+            }
         }
     }
 }
 	
 nav {
-    background-color: $navBackgroundColor;
-    border-top: 2px solid $navBorderColor;
-    padding: 0 1rem;
+    background-color: $darkBlue;
+    color: $white;
     position: fixed;
-    width: 100%;
-    max-width: $width;
     top: 7rem;
     z-index: 12;
-    @include flexbox;
-	
-	> div {
-        position: relative;
-        display: inline-block;
-        border: 1px solid $darkGrayBorderColor;
-        border-right: none;
-        background-color: white;
-        padding: .5rem;
-        padding-left: 6rem;
+    display: block;
+    width: 100%;
+    height: 5rem;
+    
+    .box {
         height: 5rem;
-        line-height: 1.9rem;
-        @include flex_1;        
-	}
-	> div:nth-child(1) {
-        background: $white url(../images/aboutthestudy_icon.svg) 1rem center no-repeat;
-        background-size: 5rem;
+        max-width: $width;
+        margin: 0 auto;
+    }
+    
+    .inner-box {
+        @include flexbox;
         
-        -webkit-border-top-left-radius: .4rem;
-        -moz-border-radius-topleft: .4rem;
-        border-top-left-radius: .4rem;
-        -webkit-border-bottom-left-radius: .4rem;
-        -moz-border-radius-bottomleft: .4rem;
-        border-bottom-left-radius: .4rem;
-	}
-    > div:nth-child(2) {
-        background: $white url(../images/participantstories_icon.svg) 1rem center no-repeat;
-        background-size: 4.5rem;
-    }
-    > div:nth-child(4) {
-        background: $white url(../images/meettheresearchers_icon.svg) 1rem center no-repeat;
-        background-size: 5rem;
-        border-left: none ! important;
-    }
-    > div:nth-child(3) { /* JOIN */
-        padding: 0 2rem;
-        text-align: center;
-        border: none;
-       
-        a, a:hover {
-            @include joinButton;
-            position: absolute;
-            z-index: 10;
-            height: 7.8rem;
-            line-height: 7.8rem;
-            top: -1.5rem;
-            left: 0;
+        > div {
+            position: relative;
+            display: inline-block;
+            padding: .5rem;
+            padding-left: 6rem;
+            height: 5rem;
+            line-height: 1.9rem;
+            @include flex_1;        
+        }
+        > div:nth-child(1) {
+            background: transparent url(../images/aboutthestudy_icon_white.svg) 1rem center no-repeat;
+            background-size: 5rem;
+        }
+        > div:nth-child(2) {
+            background: transparent url(../images/participantstories_icon_white.svg) 1rem center no-repeat;
+            background-size: 4.5rem;
+        }
+        > div:nth-child(4) {
+            background: transparent url(../images/meettheresearchers_icon_white.svg) 1rem center no-repeat;
+            background-size: 5rem;
+        }
+        > div:nth-child(3) { /* JOIN */
+            padding: 0 2rem;
+            text-align: center;
+           
+            a, a:hover {
+                @include joinButton;
+                position: absolute;
+                z-index: 10;
+                height: 6rem;
+                line-height: 6rem;
+                top: -.4rem;
+                left: 0rem;
+                display: block;
+                width: 100%;
+                font-size: 2.2rem;
+                letter-spacing: .3rem;
+            }
+            a:hover {
+                text-decoration: none;
+            }
+            a.pressed, a:active {
+                @include linear-gradient($buttonGradientBottom, $buttonGradientTop);
+            }
+        }
+        > div:nth-child(5) {
+            background: transparent url(../images/researchersjournal_icon_white.svg) 1rem center no-repeat;
+            background-size: 4.5rem;
+        }
+        > div.selected {
+           background-color: $lightBlue;
+        }
+        > div > a, > div > a:hover, > div > a:visited {
+            color: $white;
+            font-size: 1.6rem;
             display: block;
-            width: 100%;
-            font-size: 2.2rem;
-            font-weight: bold;
-            letter-spacing: .3rem;
-        }
-        a:hover {
-            text-decoration: none;
-        }
-        a.pressed, a:active {
-            @include linear-gradient($buttonGradientBottom, $buttonGradientTop);
+            overflow: hidden;
         }
     }
-    > div:nth-child(5) {
-        background: $white url(../images/researchersjournal_icon.svg) 1rem center no-repeat;
-        background-size: 4.5rem;
-        border-right: 1px solid $darkGrayBorderColor;
-        
-        -webkit-border-top-right-radius: .4rem;
-        -moz-border-radius-topright: .4rem;
-        border-top-right-radius: .4rem;
-        -webkit-border-bottom-right-radius: .4rem;
-        -moz-border-radius-bottomright: .4rem;
-        border-bottom-right-radius: .4rem;
-    }
-    > div.selected {
-       background-color: $promptTextColor;
-    }
-    > div > a, > div > a:hover {
-        color: $linkTextColor;
-        display: block;
-        font-weight: bold;
-        overflow: hidden;
-    }
+
+    /*width: 100%;*/
+    
 }
 .splash {
     background-color: peru;
@@ -263,163 +291,194 @@ nav {
     position: relative;
     top: 12rem;
     
-    > div {
-        position: absolute;
+    .box {
+        margin: 0 auto;
         height: 30rem;
-        width: 25.5rem;
-        left: 4rem;
-        top: 5.8rem;
-        color: white;
-        
-        div:first-child {
-            font-size: 4.5rem;
-            line-height: 1.1;
+        max-width: $width;
+    }
+    .inner-box {
+        position: relative;
+        > div {
+            position: absolute;
+            height: 30rem;
+            width: 25.5rem;
+            left: 4rem;
+            top: 5.8rem;
+            color: white;
             
-            b {
-                font-size:4.9rem;
+            div:first-child {
+                font-size: 4.5rem;
+                line-height: 1.1;
+                
+                b {
+                    font-size:4.9rem;
+                }
             }
-        }
-        div:last-child {
-            font-size: 1.7rem;
+            div:last-child {
+                font-size: 1.7rem;
+            }
         }
     }
 }
 section.main {
-    background-color: $navBackgroundColor;
-    
     &.about_the_study {
         h2 {
-            background: $green url(../images/aboutthestudy_icon_white.svg) 1rem center no-repeat;
-            background-size: 5.5rem;
+            background-color: $lightBlue;
+            div {
+                background: transparent url(../images/aboutthestudy_icon_white.svg) 1rem center no-repeat;
+                background-size: 5.5rem;
+            }
         }
     }
     &.participant_stories {
         h2 {
-            background: $pink url(../images/participantstories_icon_white.svg) 1.8rem center no-repeat;
-            background-size: 5.5rem;
+            background-color: $orange;
+            div {
+                background: transparent url(../images/participantstories_icon_white.svg) 1.8rem center no-repeat;
+                background-size: 5.5rem;
+            }
         }
     }
     &.meet_the_researchers {
         h2 {
-            background: $orange url(../images/meettheresearchers_icon_white.svg) 1.8rem center no-repeat;
-            background-size: 5.5rem;
+            background-color: $blue;
+            div {
+                background: transparent url(../images/meettheresearchers_icon_white.svg) 1.8rem center no-repeat;
+                background-size: 5.5rem;
+            }
         }
     }
     &.researchers_journal {
         padding-bottom: 2rem;
     
         h2 {
-            background: $blue url(../images/researchersjournal_icon_white.svg) 2rem center no-repeat;
-            background-size: 4.5rem;
+            background-color: $pink;
+            div {
+                background: transparent url(../images/researchersjournal_icon_white.svg) 2rem center no-repeat;
+                background-size: 4.5rem;
+            }
+        }
+        .panel {
+            margin: 1.5rem 8rem 0 1.5rem;
+            margin-left: 8rem;
+            font-size: 1.6rem;
+            
+            > div {
+                display: table-row;
+                > * {
+                    padding: 1.5rem;
+                    display: table-cell;
+                    vertical-align: top;
+                }
+            }
         }
     }
+
     h2 {
         margin: 0;
-        color: white;
-        font-size: 2.2rem;
-        padding: 1.6rem;
-        padding-left: 8rem;
-        text-shadow: .1rem .1rem .2rem rgba(0,0,0,.2);
-        letter-spacing: 1px;
+                
+        div {
+            padding: 1.6rem;
+            padding-left: 8rem;
+            max-width: $width;
+            margin: 0 auto;
+            color: white;
+            font-size: 2.2rem;
+            letter-spacing: 1px;
+        }
     }
-    > p {
-        font-size: 1.6rem;
-        margin: 1.5rem 3rem;
-        margin-left: 8rem;
-    }
-    > h3 {
-        margin-top: 3rem ! important;
-        font-size: 1.8rem;
-        margin: 1.5rem 3rem;
-        margin-left: 8rem;
-    }
-    > .panels {
-        margin: 1.5rem 3rem 0 1.5rem;
-        margin-left: 8rem;
-        padding-bottom: 2rem;
-        @include flexbox;
 
-        h4 {
-            font-size: 1.4rem;
-            padding: 0 .5rem;
-        }      
-
-        .panel {
-            border-color: $panelBorderColor;
-            margin: 0 .5rem;
-            @include flex_1;
-            
-            h4 {
-                font-weight: normal;
-                padding-top: 9rem;
-                height: 13rem;
-                margin: 0 .2rem;
-                text-align: center;
-                font-size: 1.6rem;
-                letter-spacing: 1px;
-            }
-            &:nth-child(1) h4 {
-                background: white url(../images/howitworks_1.svg) center top no-repeat;
-                background-size: 10rem;
-            }
-            &:nth-child(2) h4 {
-                background: white url(../images/howitworks_2.svg) center top no-repeat;
-                background-size: 10rem;
-            }
-            &:nth-child(3) h4 {
-                background: white url(../images/howitworks_3.svg) center top no-repeat;
-                background-size: 10rem;
-            }
-            &:nth-child(4) h4 {
-                background: white url(../images/howitworks_4.svg) center top no-repeat;
-                background-size: 10rem;
-            }
-            &:nth-child(5) h4 {
-                background: white url(../images/howitworks_5.svg) center top no-repeat;
-                background-size: 10rem;
-            }
-            p {
-                margin: 1rem 1rem .7rem 1rem;
-                font-size: 1.4rem;
-                line-height: 1.3;
-                letter-spacing: 1px;
-            }
-        }
-        .panel:first-child {
-            margin-left: 0;
-        }
-        .panel:last-child {
-            margin-right: 0;
-        }
-    }
-    &.researchers_journal .panel { /* Researchers' Journal */
-        margin: 1.5rem 8rem 0 1.5rem;
-        margin-left: 8rem;
-        font-size: 1.6rem;
+    .box {
+        max-width: $width;
+        margin: 0 auto;
         
-        > div {
-            display: table-row;
-            > * {
-                padding: 1.5rem;
-                display: table-cell;
-                vertical-align: top;
+        > p {
+            font-size: 1.6rem;
+            margin: 1.5rem 3rem;
+            margin-left: 8rem;
+        }
+        > h3 {
+            margin-top: 3rem ! important;
+            font-size: 1.8rem;
+            margin: 1.5rem 3rem;
+            margin-left: 8rem;
+        }
+        > .panels {
+            margin: 1.5rem 3rem 0 1.5rem;
+            margin-left: 8rem;
+            padding-bottom: 2rem;
+            @include flexbox;
+    
+            h4 {
+                font-size: 1.4rem;
+                padding: 0 .5rem;
+            }      
+    
+            .panel {
+                border-color: $panelBorderColor;
+                margin: 0 .5rem;
+                @include flex_1;
+                
+                h4 {
+                    font-weight: normal;
+                    padding-top: 9rem;
+                    height: 13rem;
+                    margin: 0 .2rem;
+                    text-align: center;
+                    font-size: 1.6rem;
+                    letter-spacing: 1px;
+                }
+                &:nth-child(1) h4 {
+                    background: transparent url(../images/howitworks_1.svg) center top no-repeat;
+                    background-size: 10rem;
+                }
+                &:nth-child(2) h4 {
+                    background: transparent url(../images/howitworks_2.svg) center top no-repeat;
+                    background-size: 10rem;
+                }
+                &:nth-child(3) h4 {
+                    background: transparent url(../images/howitworks_3.svg) center top no-repeat;
+                    background-size: 10rem;
+                }
+                &:nth-child(4) h4 {
+                    background: transparent url(../images/howitworks_4.svg) center top no-repeat;
+                    background-size: 10rem;
+                }
+                &:nth-child(5) h4 {
+                    background: transparent url(../images/howitworks_5.svg) center top no-repeat;
+                    background-size: 10rem;
+                }
+                p {
+                    margin: 1rem 1rem .7rem 1rem;
+                    font-size: 1.4rem;
+                    line-height: 1.3;
+                    letter-spacing: 1px;
+                }
+            }
+            .panel:first-child {
+                margin-left: 0;
+            }
+            .panel:last-child {
+                margin-right: 0;
             }
         }
-    }
-    .comments {
-        color: $blue;
-    }
-    .more_entries {
-        padding-right: 8rem;
-        text-align: right;
+        .more_entries {
+            padding-right: 8rem;
+            text-align: right;
+        }
     }
 }
 .subnav {
     border-bottom: 2px solid $navBorderColor;
-    
-    > * {
+    background-color: $white;
+
+    a, span {
+        display: inline-block;
+        color: $darkBlue;
+        height: 5rem;
+        line-height: 5rem;
+        padding: 0 1rem;
         font-size: 1.5rem;
-        color: #95C0C9;
     }
 }
 .final_subnav {
@@ -429,49 +488,100 @@ section.main {
     padding: 1rem 8rem;
 }
 section.about {
-    @include flexbox;
-    
-    &:nth-child(even) {
-        background-color: $navBackgroundColor;
-        border-top: 2px solid $navBorderColor;
-        border-bottom: 2px solid $navBorderColor;
-    }
-    
-    > div {
-        @include flex_1;
-        padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+    h2 {
+        margin: 0;
                 
-        img {
-            display: block;
-        }
-        p {
-            font-size: 1.8rem;
-        }
-        .btn {
-            border: 1px solid $buttonBorderColor;
-            border-radius: .8rem;
+        div {
+            padding: 1.6rem;
+            max-width: $width;
+            margin: 0 auto;
             color: white;
-            font-size: 1.8rem;
-            letter-spacing: .4rem;
-            text-shadow: 0 2px rgba(0,0,0,.3);
-            @include linear-gradient($buttonGradientTop, $buttonGradientBottom);
+            font-size: 2.2rem;
+            letter-spacing: 1px;
         }
-        .btn.pressed, .btn:active {
-            @include linear-gradient($buttonGradientBottom, $buttonGradientTop);
-        }
-        
+    }
+    &.new_way {
         h2 {
-            margin: 0; padding: 0;
-            margin-top: 1rem;
+            background-color: $lightBlue;
         }
-        h3 {
-            margin: 0;
-            margin-bottom: 1.5rem;
-            font-size: 2.4rem;
+    }
+    &.empowering_you {
+        h2 {
+            background-color: $orange;
+        }
+    }
+    &.bridging_the_gap {
+        h2 {
+            background-color: $blue;
+        }
+    }
+
+    .box {
+        max-width: $width;
+        margin: 0 auto;
+        @include flexbox;
+        
+        > div {
+            @include flex_1;
+            padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+                    
+            img {
+                display: block;
+            }
+            p {
+                font-size: 1.8rem;
+            }
+            .btn {
+                color: white;
+                font-size: 1.8rem;
+                letter-spacing: .4rem;
+                @include linear-gradient($buttonGradientTop, $buttonGradientBottom);
+            }
+            .btn.pressed, .btn:active {
+                @include linear-gradient($buttonGradientBottom, $buttonGradientTop);
+            }
         }
     }
 }
 section.join {
+    h2 {
+        margin: 0;
+        background-color: $lightBlue;
+        div {
+            padding: 1.6rem;
+            max-width: $width;
+            margin: 0 auto;
+            color: white;
+            font-size: 2.2rem;
+            letter-spacing: 1px;
+        }
+    }
+    .box {
+        background: transparent url(../images/eligible_checkmark.svg) 0% 0% no-repeat;
+        background-size: 10rem;
+        max-width: $width;
+        margin: 0 auto;
+        
+        table {
+            margin-bottom: 2rem;
+        }
+        table td {
+            vertical-align: top;
+        }
+        table td:first-child {
+            padding-right: 1rem;
+            padding-bottom: .75rem;
+        }
+        .bullet {
+            display: inline-block; 
+            width: 2rem; 
+            height: 2rem;
+            text-align: center; 
+            border-radius: 50%; 
+            background-color: $orange; 
+            color: $white;
+        }
+    }
     .btn {
         @include joinButton;
         font-size: 1.4rem;
@@ -479,36 +589,29 @@ section.join {
     .btn.pressed {
         @include linear-gradient($buttonGradientTop, $buttonGradientBottom);
     }
-    background: transparent url(../images/eligible_checkmark.svg) 0% 0% no-repeat;
-    background-size: 10rem;
-    
-    table {
-        margin-bottom: 2rem;
-    }
-    table td {
-        vertical-align: top;
-    }
-    table td:first-child {
-        padding-right: 1rem;
-        padding-bottom: .75rem;
-    }
-    .bullet {
-        display: inline-block; 
-        width: 2rem; 
-        height: 2rem;
-        text-align: center; 
-        border-radius: 50%; 
-        background-color: $green; 
-        color: white;
-    }
 }
 section.joined {
-    padding-left: 8rem;
-    font-size: 1.8rem;
-    
+    h2 {
+        margin: 0;
+        background-color: $lightBlue;
+        div {
+            padding: 1.6rem 0;
+            max-width: $width;
+            margin: 0 auto;
+            color: white;
+            font-size: 2.2rem;
+            letter-spacing: 1px;
+        }
+    }
+    .box {
+        max-width: $width;
+        margin: 1.5rem auto 0 auto;
+    }
     .well {
+        padding: 0 2rem;
+        font-size: 1.4rem;
         h4 {
-            font-size: 2rem;
+            font-size: 1.8rem;
         }
         .icon {
             float: left;
@@ -523,35 +626,50 @@ section.joined {
         }
         .small {
             margin-left: 7rem; 
-            font-size: 1.4rem;
+            font-size: 1rem;
         }
-        a.btn {
-            margin: 0; padding: 0;
-            margin-right: 1rem;
-        }
+    }
+    .appstore {
+        @include joinButton;
+        font-size: 1.4rem;
+        display: inline-block;
+        margin-right: 2rem;
+        text-align: left;
+        letter-spacing: 0px;
+        line-height: 1;
+        padding: .5rem 1.5rem .5rem 4rem;
+        margin-bottom: 2rem;
+    }
+    .appstore:active {
+        @include linear-gradient($buttonGradientTop, $buttonGradientBottom);
     }
 }
 footer {
-    @include flexbox;
     border-top: 1px solid $boxBorderColor;
-    padding: 1rem 0;
-     
-    .sage_logo {
-        width: 23.1rem;
-        height: 6rem;
-        background: white url(../images/sage_logo.svg) center left no-repeat;
-        background-size: contain;
-        @include flex_1;
-    }
-    .center {
-        @include flex_2;
-    }
-    .rwjf_logo {
-        width: 23.1rem;
-        height: 6rem;
-        background: white url(../images/rwjf_logo.svg) center right no-repeat;
-        background-size: contain;
-        @include flex_1;
+    padding: 1rem 0 20rem 0;
+    background-color: $green;
+    
+    .box {
+        max-width: $width;
+        margin: 0 auto;
+        @include flexbox;
+        .sage_logo {
+            width: 23.1rem;
+            height: 6rem;
+            background: transparent url(../images/sage_logo.svg) center left no-repeat;
+            background-size: contain;
+            @include flex_1;
+        }
+        .center {
+            @include flex_2;
+        }
+        .rwjf_logo {
+            width: 23.1rem;
+            height: 6rem;
+            background: transparent url(../images/rwjf_logo.svg) center right no-repeat;
+            background-size: contain;
+            @include flex_1;
+        }
     }
 }
 
