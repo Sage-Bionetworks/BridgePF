@@ -29,6 +29,8 @@ neurod.controller('ScrollController', ['$scope', function($scope) {
         var elemTop = $(elem).offset().top;
         var elemBottom = elemTop + $(elem).height();
         
+        console.log(docViewTop, docViewBottom, elemTop, elemBottom);
+        
         return ((elemBottom >= docViewTop) && (elemTop <= docViewBottom) && 
                 (elemBottom <= docViewBottom) &&  (elemTop >= docViewTop) );
     }
