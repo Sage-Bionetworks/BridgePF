@@ -146,3 +146,11 @@ section.main {
         }
     }
 }
+.participant_stories {
+    .left_control div {
+        background: transparent url(../images/participantstories_arrow.svg) center no-repeat;
+    }
+    .right_control div {
+        background: transparent url(../images/participantstories_arrow.svg) center no-repeat;
+    }
+}

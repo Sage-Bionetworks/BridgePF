@@ -37,12 +37,12 @@ module.exports = function(grunt) {
                 src: [
                     "styles/neurod.scss",
                     "styles/bootstrap-tweaks.scss",
+                    "styles/carousel.scss",
                     "styles/section-main.scss",
                     "styles/section-about.scss",
                     "styles/section-join.scss",
                     "styles/section-joined.scss",
-                    "styles/navigation.scss",
-                    "styles/carousel.scss"
+                    "styles/navigation.scss"
                 ],
                 dest: '<%= output %>/<%= token %>.scss',
                 nonull: true
