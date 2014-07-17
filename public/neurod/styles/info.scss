@@ -105,6 +105,18 @@ a, a:hover {
 .caps {
     font-variant: small-caps;
 }
+.oldIE {
+    font-size: 2rem;
+    margin: 1rem;
+    padding: 1rem;
+    border: red;
+    background-color: #B22222;
+    color: $white;
+    
+    a, a:visited {
+        color: lightblue;
+    }
+}
 .help-text {
     color: $boxBorderColor;
     font-weight: normal;
