@@ -1,0 +1,54 @@
+section.joined {
+    h2 {
+        margin: 0;
+        background-color: $lightBlue;
+        div {
+            padding: 1.6rem 0;
+            max-width: $width;
+            margin: 0 auto;
+            color: white;
+            font-size: 2.2rem;
+            letter-spacing: 1px;
+        }
+    }
+    .box {
+        max-width: $width;
+        margin: 1.5rem auto 0 auto;
+    }
+    .well {
+        padding: 0 2rem;
+        font-size: 1.4rem;
+        h4 {
+            font-size: 1.8rem;
+        }
+        .icon {
+            float: left;
+            width: 7rem;
+            height: 7rem;
+        }
+        .icon.email {
+            background: transparent url(../images/email_icon.svg) center no-repeat;
+        }
+        .icon.phone {
+            background: transparent url(../images/phone_icon.svg) center no-repeat;
+        }
+        .small {
+            margin-left: 7rem; 
+            font-size: 1rem;
+        }
+    }
+    .appstore {
+        @include joinButton;
+        font-size: 1.4rem;
+        display: inline-block;
+        margin-right: 2rem;
+        text-align: left;
+        letter-spacing: 0px;
+        line-height: 1;
+        padding: .5rem 1.5rem .5rem 4rem;
+        margin-bottom: 2rem;
+    }
+    .appstore:active {
+        @include linear-gradient($buttonGradientTop, $buttonGradientBottom);
+    }
+}
