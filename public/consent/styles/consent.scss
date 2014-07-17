@@ -57,7 +57,7 @@ header {
     right: 0;
     height: $headerHeight;
     overflow: hidden;
-    background-color: $green;
+    background-color: $lightblue;
     
     .hdr {
         color: $white;
@@ -104,7 +104,8 @@ header {
 .header {
     display: none;
     width: 100%;
-    background: white url(/neurod/images/bridge_logo.svg) left center no-repeat;
+    color: $white;
+    background: $green url(/neurod/images/bridge_logo.svg) left center no-repeat;
     background-size: 9rem;
     
     > * {
