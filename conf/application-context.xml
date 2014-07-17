@@ -182,4 +182,11 @@
         <property name="cacheProvider" ref="cacheProvider"/>
     </bean>
 
+    <!-- Backfill -->
+    <bean id="healthCodeBackfill" class="org.sagebionetworks.bridge.backfill">
+        <property name="stormpathClient" ref="stormpathClient"/>
+        <property name="studyControllerService" ref="studyControllerService" />
+        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
+        <property name="healthCodeService" ref="healthCodeService" />
+    </bean>
 </beans>
