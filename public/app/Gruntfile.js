@@ -67,7 +67,7 @@ module.exports = function(grunt) {
             src: [
                 '../shared/build/bridge-shared.js',
                 'bower_components/angular-mocks/angular-mocks.js',
-                '<%= output %>/<%= token %>.min.js'
+                '<%= output %>/<%= token %>.js'
             ],
             options: {
                 version: '2.0.0',
