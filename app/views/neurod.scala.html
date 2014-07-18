@@ -10,23 +10,27 @@
     <link rel="stylesheet" href="neurod/build/neurod.css" />
 </head>
 <body ng-app="neurod" ng-controller="MainController">
-
-<div class="border">
-    <div class="header">
-        <div class="logo">
-            <h1>Parkinson&rsquo;s Disease Mobile Study</h1>
-        </div>
-        <div class="auth">
-            Already have an account? <button id="signInLink" class="btn btn-default" ng-click="signIn()">Sign In</button>
+  
+<div class="header">
+    <div class="box">
+        <div class="inner-box">
+            <div class="logo">
+                <h1>Parkinson&rsquo;s Disease Mobile Study</h1>
+            </div>
+            <div class="auth">
+                Already have an account? <button id="signInLink" class="btn" ng-click="signIn()">Sign In</button>
+            </div>
         </div>
     </div>
-    <div class="main_content" ng-view></div>
-    <footer>
+</div>
+<div class="main_content" ng-view></div>
+<footer>
+    <div class="box">
         <div class="sage_logo"></div>
         <div class="center"></div>
         <div class="rwjf_logo"></div>
-    </footer>
-</div>
+    </div>
+</footer>
 
 <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
 <script src="shared/build/bridge-shared.min.js"></script>
