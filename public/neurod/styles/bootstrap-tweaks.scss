@@ -15,12 +15,14 @@
 .lg .modal-dialog {
     width: 600px;
 }
-.btn {
-    color: $black;
-    background-color: #f4f4f4;
-    border-radius: 0px;
-    -webkit-border-radius: 0px;
-    -moz-border-radius: 0px;
+section, .header {
+    .btn {
+        color: $black;
+        background-color: #f4f4f4;
+        border-radius: 0px;
+        -webkit-border-radius: 0px;
+        -moz-border-radius: 0px;
+    }
 }
 .panel, .well {
     border-radius: 0px;
