@@ -41,7 +41,7 @@ module.exports = function(grunt) {
         },
         sass: {
             all: {
-                files: { '<%= output %>/<%= token %>.css' : '<%= output %>/<%= token %>.scss' }
+                files: { '<%= output %>/<%= token %>.min.css' : '<%= output %>/<%= token %>.scss' }
             }
         },
         concat: {
@@ -75,6 +75,17 @@ module.exports = function(grunt) {
                 ]
             }
         },
+        hashres: {
+            options: {
+                encoding: 'utf8',
+                fileNameFormat: '${name}.${hash}.${ext}',
+                renameFile: true
+            },
+            execute: {
+                src: ['<%= output %>/*.min.js', '<%= output %>/*.min.css'],
+                dest: ['../../app/views/*.scala.html']
+            }
+        },
         watch: {
             all: {
                 files: ['Gruntfile.js', 'scripts/*.js', 'styles/**/*.scss'],
@@ -85,7 +96,7 @@ module.exports = function(grunt) {
     });
 
     grunt.registerTask('test', ['build']);
-    grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify', 'copy']);
-    grunt.registerTask('default', ['jshint', 'clean:build', 'concat', 'sass', 'uglify', 'copy']);
+    grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify', 'copy', 'hashres']);
+    grunt.registerTask('default', ['jshint', 'clean:build', 'concat', 'sass', 'uglify', 'copy', 'hashres']);
     grunt.registerTask('release', ['test', 'clean:release']);
 };
