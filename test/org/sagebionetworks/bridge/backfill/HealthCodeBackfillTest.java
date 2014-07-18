@@ -49,7 +49,7 @@ public class HealthCodeBackfillTest {
 
     @Test
     public void test() {
-        healthCodeBackfill.regerateHealthId();
+        healthCodeBackfill.resetHealthId();
         verify();
     }
 
