@@ -19,7 +19,7 @@ module.exports = function(grunt) {
         },
         sass: {
             all: {
-                files: { '<%= output %>/<%= token %>.css' : '<%= output %>/<%= token %>.scss' }
+                files: { '<%= output %>/<%= token %>.min.css' : '<%= output %>/<%= token %>.scss' }
             }
         },
         concat: {
@@ -52,6 +52,17 @@ module.exports = function(grunt) {
                 sourceMap: true
             }
         },
+        hashres: {
+            options: {
+                encoding: 'utf8',
+                fileNameFormat: '${name}.${hash}.${ext}',
+                renameFile: true
+            },
+            execute: {
+                src: ['<%= output %>/*.min.js', '<%= output %>/*.min.css'],
+                dest: ['../../app/views/index.scala.html']
+            }
+        },
         jasmine: {
             src: [
                 '../shared/build/bridge-shared.js',
@@ -74,7 +85,7 @@ module.exports = function(grunt) {
     });
 
     grunt.registerTask('test', ['build', 'jasmine']);
-    grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify']);
-    grunt.registerTask('default', ['jshint', 'clean:build', 'concat', 'sass', 'uglify']);
+    grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify', 'hashres']);
+    grunt.registerTask('default', ['jshint', 'clean:build', 'concat', 'sass', 'uglify', 'hashres']);
     grunt.registerTask('release', ['test', 'clean:release']);
 };
