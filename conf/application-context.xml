@@ -184,6 +184,7 @@
 
     <!-- Backfill -->
     <bean id="healthCodeBackfill" class="org.sagebionetworks.bridge.backfill.HealthCodeBackfill">
+        <property name="bridgeConfig" ref="bridgeConfig" />
         <property name="stormpathClient" ref="stormpathClient"/>
         <property name="studyControllerService" ref="studyControllerService" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
