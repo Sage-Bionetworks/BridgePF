@@ -1,0 +1,56 @@
+section.about {
+    h2 {
+        margin: 0;
+                
+        div {
+            padding: 1.6rem;
+            max-width: $width;
+            margin: 0 auto;
+            color: white;
+            font-size: 2.2rem;
+            letter-spacing: 1px;
+        }
+    }
+    &.new_way {
+        h2 {
+            background-color: $lightBlue;
+        }
+    }
+    &.empowering_you {
+        h2 {
+            background-color: $orange;
+        }
+    }
+    &.bridging_the_gap {
+        h2 {
+            background-color: $blue;
+        }
+    }
+
+    .box {
+        max-width: $width;
+        margin: 0 auto;
+        @include flexbox;
+        
+        > div {
+            @include flex_1;
+            padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+                    
+            img {
+                display: block;
+            }
+            p {
+                font-size: 1.8rem;
+            }
+            .btn {
+                color: white;
+                font-size: 1.8rem;
+                letter-spacing: .4rem;
+                @include linear-gradient($buttonGradientTop, $buttonGradientBottom);
+            }
+            .btn.pressed, .btn:active {
+                @include linear-gradient($buttonGradientBottom, $buttonGradientTop);
+            }
+        }
+    }
+}

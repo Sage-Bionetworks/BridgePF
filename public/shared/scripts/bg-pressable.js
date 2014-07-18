@@ -12,23 +12,25 @@ bridgeShared.directive('bgPressable', [function() {
         swapImage(event.target, "_press", "_rest");
     }
     function swapImage(element, from, to) {
-        /*
-        var newImage = new Image();
-        newImage.onload = function() {
-            element.parentNode.replaceChild(newImage, element);
-        };
-        console.log( element.src.replace(from, to) );
-        */
         element.src = element.src.replace(from, to);
+    }
+    function findPressable(element) {
+        for (var n = element; n !== null; n = n.parentNode) {
+            console.log(n);
+            if (n.hasAttribute('bg-pressable')) {
+                return n;
+            }
+        }
+        return n;
     }
     function pressCss(to) {
         return function(event) {
-            angular.element(event.target).addClass(to);
+            angular.element(findPressable(event.target)).addClass(to);
         };
     }
     function releaseCss(to) {
         return function(event) {
-            angular.element(event.target).removeClass(to);
+            angular.element(findPressable(event.target)).removeClass(to);
         };
     }
     
