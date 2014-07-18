@@ -30,6 +30,9 @@ GET    /api/healthdata/:trackerId                       @controllers.HealthDataC
 GET    /api/trackers                   @controllers.TrackerController.getTrackers
 GET    /api/trackers/schema/:trackerId @controllers.TrackerController.getTrackerSchema(trackerId: Long)
 
+# Backfill
+GET    /api/backfill/healthId          @controllers.BackfillController.resetHealthId
+
 # AngularJS application
 GET     /*file                  controllers.Assets.at(path="/public", file)
 HEAD    /*file                  controllers.Assets.at(path="/public", file)

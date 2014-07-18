@@ -49,17 +49,20 @@ public class HealthCodeBackfill {
      * For health-ID to health-code mapping, regenerates the health IDs
      * encrypts them, and publishes the new health IDs to Stormpath.
      */
-    public void regerateHealthId() {
+    public int resetHealthId() {
+        int total = 0;
         for (Study study : studyControllerService.getStudies()) {
-            regerateHealthId(study);
+            total = total + resetHealthId(study);
         }
+        return total;
     }
 
     /**
      * For health-ID to health-code mapping, regenerates the health IDs
      * encrypts them, and publishes the new health IDs to Stormpath.
      */
-    public void regerateHealthId(Study study) {
+    public int resetHealthId(Study study) {
+        int count = 0;
         Application application = StormpathFactory.createStormpathApplication(stormpathClient);
         AccountList accounts = application.getAccounts();
         for (Account account : accounts) {
@@ -68,17 +71,17 @@ public class HealthCodeBackfill {
             final String hcEncrypted = (String)customData.get(key);
             final Object version = customData.get(BridgeConstants.CUSTOM_DATA_VERSION);
             if (version == null && hcEncrypted != null) {
-                System.out.println(hcEncrypted);
                 PBEStringEncryptor encryptor = EncryptorUtil.getEncryptorOld(
                         config.getHealthCodePassword(), config.getHealthCodeSalt());
                 final String healthCode = encryptor.decrypt(hcEncrypted);
-                System.out.println(healthCode);
                 final String healthId = healthCodeService.resetHealthId(healthCode);
                 final String hiEncrypted = healthCodeEncryptor.encrypt(healthId);
                 customData.put(key, hiEncrypted);
                 customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
                 customData.save();
+                count++;
             }
         }
+        return count;
     }
 }
