@@ -83,11 +83,7 @@ module.exports = function(grunt) {
             },
             execute: {
                 src: ['<%= output %>/*.min.js', '<%= output %>/*.min.css'],
-                dest: [
-                    '../../app/views/index.scala.html',
-                    '../../app/views/consent.scala.html',
-                    '../../app/views/neurod.scala.html'
-                ]
+                dest: ['../../app/views/*.scala.html']
             }
         },
         watch: {
