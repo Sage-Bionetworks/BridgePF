@@ -27,7 +27,7 @@ public class BackfillController extends BaseController {
         UserSession session = getSession();
         Account account = stormpathClient.getResource(session.getStormpathHref(), Account.class);
         if (!account.isMemberOfGroup("backfill")) {
-            throw new BridgeServiceException(account.getUsername() + "Not allowed to perform backfill.", 403);
+            throw new BridgeServiceException(account.getUsername() + " not allowed to perform backfill.", 403);
         }
         int total = healthCodeBackfill.resetHealthId();
         return jsonResult("Done. " + total + " accounts backfilled.");

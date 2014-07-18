@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthId;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
@@ -49,8 +50,10 @@ public class HealthCodeBackfillTest {
 
     @Test
     public void test() {
-        healthCodeBackfill.resetHealthId();
-        verify();
+        if (BridgeConfigFactory.getConfig().isLocal()) {
+            healthCodeBackfill.resetHealthId();
+            verify();
+        }
     }
 
     private void verify() {
