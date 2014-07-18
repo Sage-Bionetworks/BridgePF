@@ -31,7 +31,7 @@ GET    /api/trackers                   @controllers.TrackerController.getTracker
 GET    /api/trackers/schema/:trackerId @controllers.TrackerController.getTrackerSchema(trackerId: Long)
 
 # Backfill
-GET    /api/backfill/healthId          @controllers.BackfillController.resetHealthId
+GET    /admin/backfill/healthId        @controllers.BackfillController.resetHealthId
 
 # AngularJS application
 GET     /*file                  controllers.Assets.at(path="/public", file)
