@@ -32,15 +32,23 @@ html {
     color: $black;
     font-family: sans-serif;
     overflow: hidden;
+    height: 100%;
 }
 body {
     font-size: 1.4rem;
+    height: 100%;
+}
+#content {
+    opacity: 0;
 }
 
 a, a:active, a:hover {
     text-decoration: none;
     -webkit-tap-highlight-color: rgba(0,0,0,0);
     -webkit-touch-callout: none;
+}
+a[ng-click] {
+    cursor: pointer;
 }
 header {
     position: absolute;
@@ -49,7 +57,7 @@ header {
     right: 0;
     height: $headerHeight;
     overflow: hidden;
-    background-color: $green;
+    background-color: $lightblue;
     
     .hdr {
         color: $white;
@@ -96,7 +104,8 @@ header {
 .header {
     display: none;
     width: 100%;
-    background: white url(/neurod/images/bridge_logo.svg) left center no-repeat;
+    color: $white;
+    background: $green url(/neurod/images/bridge_logo.svg) left center no-repeat;
     background-size: 9rem;
     
     > * {
@@ -230,6 +239,9 @@ article {
     .help {
         font-size: 1.8rem;
     }
+    .form-group {
+        max-width: 32rem;
+    }
 }
 #thankyou {
     h3 {
@@ -285,7 +297,7 @@ footer {
 
 /* ANIMATION */
 
-.info.animcell > *, footer .animcell > * {
+.info.animcell > *, footer .animcell > *, #content {
     transition-property: opacity;
     transition-duration: 1.5s;
     -webkit-transition-property: opacity;

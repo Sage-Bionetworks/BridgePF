@@ -4,11 +4,12 @@ bridgeShared.service('signInService', ['$modal', 'requestResetPasswordService', 
 
     var ModalInstanceController = ['$scope', '$window', '$http', '$route', '$q', 'authService', 'formService',  
        function($scope, $window, $http, $route, $q, authService, formService) {
-        
+
         formService.initScope($scope, 'signInForm');
 
         $scope.signIn = function () {
             var credentials = formService.formToJSON($scope.signInForm, ['username', 'password']);
+            $scope.setMessage("");
             $scope.signInForm.password.$setViewValue(null);
             $scope.signInForm.password.$render();
 
