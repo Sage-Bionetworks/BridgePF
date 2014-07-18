@@ -7,4 +7,6 @@ public interface HealthCodeService {
     HealthId create();
 
     String getHealthCode(String id);
+
+    String resetHealthId(String healthCode);
 }
