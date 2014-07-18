@@ -92,6 +92,13 @@ a:visited {
 .caps {
     font-variant: small-caps;
 }
+.inert { /* also include draggable=false on the element itself */
+    -moz-user-select: -moz-none;
+   -khtml-user-select: none;
+   -webkit-user-select: none;
+   -ms-user-select: none;
+   user-select: none;
+}
 .oldIE {
     font-size: 2rem;
     margin: 1rem;
