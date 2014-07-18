@@ -1,7 +1,10 @@
 package org.sagebionetworks.bridge.backfill;
 
+import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
+import org.sagebionetworks.bridge.crypto.EncryptorUtil;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
@@ -16,10 +19,15 @@ import controllers.StudyControllerService;
 
 public class HealthCodeBackfill {
 
+    private BridgeConfig config;
     private Client stormpathClient;
     private StudyControllerService studyControllerService;
     private BridgeEncryptor healthCodeEncryptor;
     private HealthCodeService healthCodeService;
+
+    public void setBridgeConfig(BridgeConfig config) {
+        this.config = config;
+    }
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
@@ -56,13 +64,21 @@ public class HealthCodeBackfill {
         AccountList accounts = application.getAccounts();
         for (Account account : accounts) {
             CustomData customData = account.getCustomData();
-            String key = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            // TODO:
-            // HealthId healthId = healthCodeService.resetHealthId();
-            // String encryptedId = healthCodeEncryptor.encrypt(healthId.getId());
-            // data.put(key, encryptedId);
-            // data.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
-            // customData.save();
+            final String key = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+            final String hcEncrypted = (String)customData.get(key);
+            final Object version = customData.get(BridgeConstants.CUSTOM_DATA_VERSION);
+            if (version == null && hcEncrypted != null) {
+                System.out.println(hcEncrypted);
+                PBEStringEncryptor encryptor = EncryptorUtil.getEncryptorOld(
+                        config.getHealthCodePassword(), config.getHealthCodeSalt());
+                final String healthCode = encryptor.decrypt(hcEncrypted);
+                System.out.println(healthCode);
+                final String healthId = healthCodeService.resetHealthId(healthCode);
+                final String hiEncrypted = healthCodeEncryptor.encrypt(healthId);
+                customData.put(key, hiEncrypted);
+                customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
+                customData.save();
+            }
         }
     }
 }
