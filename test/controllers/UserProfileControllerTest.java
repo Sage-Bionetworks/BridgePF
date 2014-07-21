@@ -123,13 +123,6 @@ public class UserProfileControllerTest {
                 Response response2 = TestUtils.getURL(sessionToken, PROFILE_URL).get().get(TIMEOUT);
                 JsonNode updatedUser = response2.asJson().get("payload");
                 
-//                Iterator<Entry<String, JsonNode>> fields = updatedUser.fields();
-//                while (fields.hasNext()) {
-//                    Entry<String, JsonNode> field = fields.next();
-//                    Logger.info(field.getKey() + " " + field.getValue().asText());
-//                }
-                
-                
                 assertTrue("updateUserProfile successfully updates profile.", areUsersEqual(user, updatedUser));
 
                 TestUtils.signOut();

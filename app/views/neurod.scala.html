@@ -6,31 +6,37 @@
     <meta name="viewport" content="width=device-width" />
     <base href="/"/>
     <script>window._session = @Html(auth);</script>
-    <link rel="stylesheet" href="../shared/build/bridge-shared.css" />
-    <link rel="stylesheet" href="neurod/build/neurod.css" />
+    <!-- These file names are updated by the grunt build; do not modify directly. -->
+    <link rel="stylesheet" href="../shared/build/bridge-shared.min.aabcc93c.css" />
+    <link rel="stylesheet" href="neurod/build/neurod.min.2d9448e8.css" />
 </head>
 <body ng-app="neurod" ng-controller="MainController">
-
-<div class="border">
-    <div class="header">
-        <div class="logo">
-            <h1>Parkinson&rsquo;s Disease Mobile Study</h1>
-        </div>
-        <div class="auth">
-            Already have an account? <button id="signInLink" class="btn btn-default" ng-click="signIn()">Sign In</button>
+  
+<div class="header">
+    <div class="box">
+        <div class="inner-box">
+            <div class="logo">
+                <h1>Parkinson&rsquo;s Disease Mobile Study</h1>
+            </div>
+            <div class="auth">
+                Already have an account? <button id="signInLink" class="btn" ng-click="signIn()">Sign In</button>
+            </div>
         </div>
     </div>
-    <div class="main_content" ng-view></div>
-    <footer>
+</div>
+<div class="main_content" ng-view></div>
+<footer>
+    <div class="box">
         <div class="sage_logo"></div>
         <div class="center"></div>
         <div class="rwjf_logo"></div>
-    </footer>
-</div>
+    </div>
+</footer>
 
 <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
-<script src="shared/build/bridge-shared.min.js"></script>
-<script src="neurod/build/neurod.min.js"></script>
+<!-- These file names are updated by the grunt build; do not modify directly. -->
+<script src="shared/build/bridge-shared.min.fa1202f6.js"></script>
+<script src="neurod/build/neurod.min.f5c417d8.js"></script>
 
 </body>
 </html>

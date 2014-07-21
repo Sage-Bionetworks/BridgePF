@@ -34,6 +34,9 @@ GET    /api/trackers/schema/:trackerId @controllers.TrackerController.getTracker
 GET    /api/users/profile           @controllers.UserProfileController.getUserProfile()
 PUT    /api/users/update_profile    @controllers.UserProfileController.updateUserProfile()
 
+# Backfill
+GET    /admin/backfill/healthId        @controllers.BackfillController.resetHealthId
+
 # AngularJS application
 GET     /*file                  controllers.Assets.at(path="/public", file)
 HEAD    /*file                  controllers.Assets.at(path="/public", file)
