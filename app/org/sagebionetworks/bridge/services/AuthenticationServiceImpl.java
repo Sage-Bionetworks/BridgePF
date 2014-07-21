@@ -262,19 +262,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         CustomData data = account.getCustomData();
         String consentKey = study.getKey()+BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
         session.setConsent( "true".equals(data.get(consentKey)) );
-        final String hdcKey = study.getKey()+BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-        final String encryptedId = (String)data.get(hdcKey);
-        Object version = data.get(BridgeConstants.CUSTOM_DATA_VERSION);
-        if (version == null) {
-            PBEStringEncryptor encryptor = EncryptorUtil.getEncryptorOld(
-                    config.getHealthCodePassword(), config.getHealthCodeSalt());
-            session.setHealthDataCode(encryptor.decrypt(encryptedId));
-        } else {
-            String healthId = healthCodeEncryptor.decrypt(encryptedId);
-            String healthCode = healthCodeService.getHealthCode(healthId);
-            session.setHealthDataCode(healthCode);
+        
+        // New users will not yet have consented and generated a health ID, so skip this if it doesn't exist.
+        if (session.isConsent()) {
+            final String hdcKey = study.getKey()+BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+            final String encryptedId = (String)data.get(hdcKey);
+            Object version = data.get(BridgeConstants.CUSTOM_DATA_VERSION);
+            if (version == null) {
+                PBEStringEncryptor encryptor = EncryptorUtil.getEncryptorOld(config.getHealthCodePassword(),
+                        config.getHealthCodeSalt());
+                session.setHealthDataCode(encryptor.decrypt(encryptedId));
+            } else {
+                String healthId = healthCodeEncryptor.decrypt(encryptedId);
+                String healthCode = healthCodeService.getHealthCode(healthId);
+                session.setHealthDataCode(healthCode);
+            }
         }
-
         return session;
     }
 }
