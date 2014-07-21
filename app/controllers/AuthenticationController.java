@@ -47,7 +47,8 @@ public class AuthenticationController extends BaseController {
 
     public Result signUp() throws Exception {
         SignUp signUp = SignUp.fromJson(request().body().asJson());
-        authenticationService.signUp(signUp);
+        Study study = studyControllerService.getStudyByHostname(request());
+        authenticationService.signUp(signUp, study);
         return jsonResult("Signed up.");
     }
     
@@ -55,7 +56,7 @@ public class AuthenticationController extends BaseController {
         Study study = studyControllerService.getStudyByHostname(request());
         EmailVerification ev = EmailVerification.fromJson(request().body().asJson());
         // In normal course of events (verify email, consent to research), 
-        // an exception is thrown. This code will probably never execute.
+        // an exception is thrown. Code after this line will rarely execute
         UserSession session = authenticationService.verifyEmail(study, ev);
         setSessionToken(session.getSessionToken());
         return jsonResult(new JsonPayload<UserSessionInfo>(new UserSessionInfo(session)));
