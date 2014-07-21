@@ -19,7 +19,7 @@ module.exports = function(grunt) {
         },
         sass: {
             all: {
-                files: { '<%= output %>/<%= token %>.css' : '<%= output %>/<%= token %>.scss' }
+                files: { '<%= output %>/<%= token %>.min.css' : '<%= output %>/<%= token %>.scss' }
             }
         },
         concat: {
@@ -52,14 +52,22 @@ module.exports = function(grunt) {
                 sourceMap: true
             }
         },
+        hashres: {
+            options: {
+                encoding: 'utf8',
+                fileNameFormat: '${name}.${hash}.${ext}',
+                renameFile: true
+            },
+            execute: {
+                src: ['<%= output %>/*.min.js', '<%= output %>/*.min.css'],
+                dest: ['../../app/views/index.scala.html']
+            }
+        },
         jasmine: {
             src: [
-                'bower_components/angular/angular.js',
-                'bower_components/angular-mocks/angular-mocks.js',
-                'bower_components/angular-route/angular-route.js',
-                'bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
                 '../shared/build/bridge-shared.js',
-                '<%= output %>/<%= token %>.min.js'
+                'bower_components/angular-mocks/angular-mocks.js',
+                '<%= output %>/<%= token %>.js'
             ],
             options: {
                 version: '2.0.0',
@@ -77,7 +85,7 @@ module.exports = function(grunt) {
     });
 
     grunt.registerTask('test', ['build', 'jasmine']);
-    grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify']);
-    grunt.registerTask('default', ['jshint', 'clean:build', 'concat', 'sass', 'uglify']);
+    grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify', 'hashres']);
+    grunt.registerTask('default', ['jshint', 'clean:build', 'concat', 'sass', 'uglify', 'hashres']);
     grunt.registerTask('release', ['test', 'clean:release']);
 };

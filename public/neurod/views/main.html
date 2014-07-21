@@ -1,20 +1,33 @@
-    <nav role="navigation" bg-scroll-nav>
-        <div><a ng-click="scroll($event)" data-for="splash">About<br>the study</a></div>
-        <div><a ng-click="scroll($event)" data-for="participant_stories">Participant<br>Stories</a></div>
-        <div class="join"><a id="joinLink" href="#/join">JOIN NOW</a></div>
-        <div><a ng-click="scroll($event)" data-for="meet_the_researchers">Meet the<br>researchers</a></div>
-        <div><a ng-click="scroll($event)" data-for="researchers_journal">Researchers&rsquo;<br>Journal</a></div>
-    </nav>
-    <div class="splash">
-        <div>
-            <div>BECOME A RESEARCH <b>PARTNER</b>.</div>
-            <div>You can help make a difference.</div>
+<nav role="navigation">
+    <div class="box">
+        <div class="inner-box" bg-scroll-nav>
+            <div><a ng-click="scroll($event)" class="inert" data-for="splash">About<br>the study</a></div>
+            <div><a ng-click="scroll($event)" class="inert" data-for="participant_stories">Participant<br>Stories</a></div>
+            <div class="join"><a id="joinLink" class="inert" href="#/join">JOIN NOW</a></div>
+            <div><a ng-click="scroll($event)" class="inert" data-for="meet_the_researchers">Meet the<br>researchers</a></div>
+            <div><a ng-click="scroll($event)" class="inert" data-for="researchers_journal">Researchers&rsquo;<br>Journal</a></div>
         </div>
     </div>
-    <section class="main about_the_study">
-        <h2>About the study</h2>
+</nav>
+<div class="splash">
+    <div class="box">
+        <div class="inner-box">
+            <div>
+                <div>BECOME A RESEARCH <b>PARTNER</b>.</div>
+                <div>You can help make a difference.</div>
+            </div>
+        </div>
+    </div>
+</div>
+<section class="main about_the_study" style="margin-top: 12rem">
+    <h2><div>About the study</div></h2>
+    <div class="box">
+        <!--[if IE]>
+        <p class="oldIE">We designed this web site for modern browsers like Internet Explorer 10 or above. 
+        <a href="http://windows.microsoft.com/en-us/internet-explorer/ie-10-worldwide-languages" target="_blank">Please upgrade.</a> </p>
+        <![endif]-->
         
-        <p>Become a research partner! We believe in empowering patients like you with the voice and the tools you need to 
+        <p><b>Become a research partner!</b> We believe in empowering patients like you with the voice and the tools you need to 
         manage your health, understand your disease, and contribute to research.</p>
         
         <p>The Bridge Parkinson&rsquo;s Research Program provides online tools that allow you to provide data and insights as 
@@ -49,10 +62,12 @@
                 <p>You&rsquo;ll have the opportunity for an open dialogue with the scientists about their research results.</p>
             </div>
         </div>
-    </section>
-    
-    <section class="main participant_stories">
-        <h2>Participant Stories</h2>
+    </div>
+</section>
+
+<section class="main participant_stories">
+    <h2><div>Participant Stories</div></h2>
+    <div class="box">
         <bg-carousel>
             <ul>
                 <li>
@@ -78,6 +93,25 @@
 	                    <p>When I was diagnosed with Parkinson’s I didn’t know much about the disease or how it would affect me. Bridge’s HealthTracker helped me learn more about my illness by allowing me to see correlations in between my activity, my medications, and how I was feeling. </p>
 	                    <p class="cite">&mdash; Dave S, Idaho</p>
 	                </div>
+                </li>
+            </ul>
+        </bg-carousel>
+    </div>
+ </section>
+
+<section class="main meet_the_researchers">
+    <h2><div>Meet the researchers</div></h2>
+    <div class="box">
+        <bg-carousel>
+            <ul>
+                <li>
+                    <div><img src="neurod/images/clipart/ArnoKlein.jpg"/></div>
+                    <div>
+                        <h4>Arno Klein</h4>
+                        <p>Arno is excited about image processing and analysis, information visualization, 3-D display such 
+                        as holography, and collaborative, open science. An example project he is actively leading is the 
+                        Mindboggle software for brain image labeling, feature extraction, and shape analysis.</p>
+                    </div>
                 </li>
                 <li>
                     <div><img src="neurod/images/clipart/ArnoKlein.jpg"/></div>
@@ -90,38 +124,12 @@
                 </li>
             </ul>
         </bg-carousel>
-     </section>
-    
-    <section class="main meet_the_researchers">
-        <h2>Meet the researchers</h2>
-        
-        <bg-carousel>
-            <ul>
-                <li>
-	                <div><img src="neurod/images/clipart/ArnoKlein.jpg"/></div>
-	                <div>
-	                    <h4>Arno Klein</h4>
-	                    <p>Arno is excited about image processing and analysis, information visualization, 3-D display such 
-	                    as holography, and collaborative, open science. An example project he is actively leading is the 
-	                    Mindboggle software for brain image labeling, feature extraction, and shape analysis.</p>
-	                </div>
-                </li>
-                <li>
-	                <div><img src="neurod/images/clipart/ArnoKlein.jpg"/></div>
-	                <div>
-	                    <h4>Arno Klein</h4>
-	                    <p>Arno is excited about image processing and analysis, information visualization, 3-D display such 
-	                    as holography, and collaborative, open science. An example project he is actively leading is the 
-	                    Mindboggle software for brain image labeling, feature extraction, and shape analysis.</p>
-	                </div>
-                </li>
-            </ul>
-        </bg-carousel>
-    </section>
-    
-    <section class="main researchers_journal">
-        <h2>Researchers&rsquo; Journal</h2>
-        
+    </div>
+</section>
+
+<section class="main researchers_journal">
+    <h2><div>Researchers&rsquo; Journal</div></h2>
+    <div class="box">
         <div class="panel panel-default">
             <div>
                 <img src="neurod/images/clipart/MaxLittle.jpg" style="width: 22.6rem; height: 28.2rem"/>
@@ -129,10 +137,9 @@
                     <h4><b>Latest Post</b> by Max Little</h4>
                     <p>Thank you for performing the speech tasks! We used the data collected from you to research speech changes in people with Parkinson&rsquo;s. Some 90 percent of people with Parkinson&rsquo;s experience changes in their speech. They tend to speak softly, even though to them it feels as if they are speaking at a normal volume. Additionally, people with Parkinson&rsquo;s often speak in a monotone, and their voices can get hoarse. As the disease progresses, they may articulate words less precisely or develop a tremor in the voice.</p>
                     <p>This data will help us determine non-pharmacological and non-surgical intervention to hopefully improve oral and other communications in individuals with PD.</p>
-                    <p class="comments"><b>14 comments</b> (you must be logged in to view and post comments)</p>
+                    <p class="more_entries"><a>View all entries &rarr;</a></p>
                 </div>
             </div>
         </div>
-        
-        <p class="more_entries"><a>View all entries &rarr;</a></p>
-    </section>
+    </div>
+</section>

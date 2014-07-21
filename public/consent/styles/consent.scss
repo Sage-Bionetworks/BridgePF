@@ -32,15 +32,23 @@ html {
     color: $black;
     font-family: sans-serif;
     overflow: hidden;
+    height: 100%;
 }
 body {
     font-size: 1.4rem;
+    height: 100%;
+}
+#content {
+    opacity: 0;
 }
 
 a, a:active, a:hover {
     text-decoration: none;
     -webkit-tap-highlight-color: rgba(0,0,0,0);
     -webkit-touch-callout: none;
+}
+a[ng-click] {
+    cursor: pointer;
 }
 header {
     position: absolute;
@@ -49,7 +57,7 @@ header {
     right: 0;
     height: $headerHeight;
     overflow: hidden;
-    background-color: $green;
+    background-color: $lightblue;
     
     .hdr {
         color: $white;
@@ -93,6 +101,38 @@ header {
         }
     }
 }
+.header {
+    display: none;
+    width: 100%;
+    color: $white;
+    background: $green url(/neurod/images/bridge_logo.svg) left center no-repeat;
+    background-size: 9rem;
+    
+    > * {
+        display: table-cell;
+        height: 7rem;
+        vertical-align: middle;
+    }
+    h1 {
+        margin: 0;
+        padding: 0;
+        font-size: 2.1rem;
+        letter-spacing: .1rem;
+        padding-left: 8rem;
+        font-family: 'Helvetica Neue', sans-serif;
+    }
+    .auth {
+        text-align: right;
+        padding-right: 1.2rem;
+        color: silver;
+        font-size: 1.1rem;
+        letter-spacing: 1px;
+        
+        button {
+            margin-left: 1rem;
+        }
+    }
+}
 
 #welcome .wiz div:nth-child(1) ~ div span,
 #tasks .wiz div:nth-child(2) ~ div span,
@@ -131,7 +171,7 @@ article {
         text-align: center;
         img {
             width: 100%;
-            max-height: 28rem;
+            max-width: 320px;
         }
     }
     
@@ -140,7 +180,7 @@ article {
     }
     .button {
         border-radius: 1.5rem;
-        padding: .25rem 3rem;
+        padding: .35rem 3rem;
         margin: 1.5rem 0;
         display: inline-block;
         letter-spacing: 1px;
@@ -152,8 +192,14 @@ article {
     .gs {
         background-color: $orange;
         color: $white;
+        font-size: 2rem;
     }
-    
+    .gs-pressed {
+        background-color: #D68927;
+    }
+    .lm-pressed {
+        background-color: #2D628E;
+    }
     .animcell {
         position: relative;
         
@@ -176,11 +222,11 @@ article {
         td {
             width: 50%;      
         }
-        img {
-            width: 11rem;
-            height: 11rem;
-            margin: 1rem;
-        }
+    }
+    img {
+        width: 10.2rem;
+        height: 10.2rem;
+        margin: 1rem;
     }
 }
 #welcome .info {
@@ -192,6 +238,9 @@ article {
     }
     .help {
         font-size: 1.8rem;
+    }
+    .form-group {
+        max-width: 32rem;
     }
 }
 #thankyou {
@@ -248,7 +297,7 @@ footer {
 
 /* ANIMATION */
 
-.info.animcell > *, footer .animcell > * {
+.info.animcell > *, footer .animcell > *, #content {
     transition-property: opacity;
     transition-duration: 1.5s;
     -webkit-transition-property: opacity;
@@ -257,14 +306,22 @@ footer {
 
 /* And, the device adjustments. */
 
+.desktop .action:after { content: "Click"; }
+.mobile .action:after { content: "Tap"; }
+
+
 /* Older, shorter iPhones, shorten things so page doesn't scroll. */
-@media screen and (max-height: 480) {
+@media screen and (max-height: 480px) {
     #tasks .image image {
         width: 9.5rem;
         height: 9.5rem;
         margin: .5rem;
     }
-    article .image img {
-        max-height: 18rem;
-    }
+}
+
+@media screen and (min-width: 1025px) { /* Desktop */
+    /*html { font-size: 14px; }*/
+    .header { display: table; }
+    header { height: 15rem; }
+    article { top: 15rem; }
 }

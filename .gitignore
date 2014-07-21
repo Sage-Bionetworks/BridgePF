@@ -12,6 +12,7 @@ bower_components
 project/project/target
 project/target
 build
+setup.sh
 .sass-cache
 .target
 /bin
