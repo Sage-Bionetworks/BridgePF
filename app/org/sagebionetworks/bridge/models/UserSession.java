@@ -7,21 +7,18 @@ public class UserSession {
     private String environment;
     private String healthDataCode;
     private String sessionToken;
-    private String stormpathHref;
     private String studyKey;
-    private String username;
+    private User user;
+    
+    public UserSession() {
+        this.user = new User();
+    }
 
     public String getSessionToken() {
         return sessionToken;
     }
     public void setSessionToken(String sessionToken) {
         this.sessionToken = sessionToken;
-    }
-    public String getUsername() {
-        return username;
-    }
-    public void setUsername(String username) {
-        this.username = username;
     }
     public boolean isAuthenticated() {
         return authenticated;
@@ -34,12 +31,6 @@ public class UserSession {
     }
     public void setEnvironment(String environment) {
         this.environment = environment;
-    }
-    public String getStormpathHref() {
-        return stormpathHref;
-    }
-    public void setStormpathHref(String stormpathHref) {
-        this.stormpathHref = stormpathHref;
     }
     public String getStudyKey() {
         return studyKey;
@@ -63,4 +54,32 @@ public class UserSession {
     public void setHealthDataCode(String healthDataCode) {
         this.healthDataCode = healthDataCode;
     }
+    
+    /*
+     * User Object
+     */
+    public User getUser() {
+        return user;
+    }
+    public void setUser(User user) {
+        this.user.setEmail(user.getEmail()); // Deep copy? I'm not sure if this matters here.
+        this.user.setUsername(user.getUsername());
+        this.user.setStormpathHref(user.getStormpathHref());
+        this.user.setFirstName(user.getFirstName());
+        this.user.setLastName(user.getLastName());
+    }
+    public String getUsername() {
+        return user.getUsername();
+    }
+    public void setUsername(String username) {
+        user.setUsername(username);
+    }
+    public String getStormpathHref() {
+        return user.getStormpathHref();
+    }
+    public void setStormpathHref(String stormpathHref) {
+        user.setStormpathHref(stormpathHref);
+    }
+    
+   
 }

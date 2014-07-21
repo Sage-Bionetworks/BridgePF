@@ -1,5 +1,7 @@
 package controllers;
 
+import java.io.IOException;
+
 import models.JsonPayload;
 import models.StatusMessage;
 
@@ -8,9 +10,15 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import play.Logger;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http.Cookie;
+import play.mvc.Http.Request;
 import play.mvc.Result;
 
 @org.springframework.stereotype.Controller
@@ -27,6 +35,7 @@ public class BaseController extends Controller {
         if (sessionToken == null) {
             throw new BridgeServiceException("Not signed in.", 401);
         }
+        if (authenticationService == null) Logger.info("Authentication service in BaseController null");
         UserSession session = authenticationService.getSession(sessionToken);
         if (session == null || !session.isAuthenticated()) {
             throw new BridgeServiceException("Not signed in.", 401);
@@ -68,5 +77,18 @@ public class BaseController extends Controller {
 
     protected Result jsonError(String message) {
         return internalServerError(Json.toJson(new StatusMessage(message)));
+    }
+    
+    // This is needed or tests fail. It appears to be a bug in Play Framework, that the asJson()
+    // method doesn't return a node in that context, possibly because the root object in the JSON 
+    // is an array (which is legal). OTOH, if asJson() works, you will get an error if you call 
+    // asText(), as Play seems to only allow processing the body content one time in a request.
+    protected JsonNode requestToJSON(Request request) throws JsonProcessingException, IOException {
+        JsonNode node = request().body().asJson();
+        if (node == null) {
+            ObjectMapper mapper = new ObjectMapper();
+            node = mapper.readTree(request().body().asText());
+        }
+        return node;
     }
 }
