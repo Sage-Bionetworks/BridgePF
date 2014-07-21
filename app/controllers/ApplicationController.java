@@ -26,13 +26,14 @@ public class ApplicationController extends BaseController {
             session = new UserSession();
         }
         UserSessionInfo info = new UserSessionInfo(session);
-        return ok(views.html.index.render(Json.toJson(info).toString()));
+        Study study = studyControllerService.getStudyByHostname(request());
+        return ok(views.html.index.render(Json.toJson(info).toString(), study.getName()));
     }
     
     public Result redirectToPublicApp() {
         return redirect("/");
     }
-    
+
     public Result loadPublicApp() throws Exception {
         UserSessionInfo info = new UserSessionInfo(new UserSession());
 
@@ -42,7 +43,7 @@ public class ApplicationController extends BaseController {
             return ok(views.html.neurod.render(Json.toJson(info).toString()));    
         } 
         // For now, go to neurod that's all we have. Create an error page.
-        return ok(views.html.index.render(Json.toJson(info).toString()));
+        return ok(views.html.index.render(Json.toJson(info).toString(), study.getName()));
     }
 
     public Result loadConsent(String sessionToken) throws Exception {

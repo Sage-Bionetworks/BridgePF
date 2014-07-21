@@ -115,18 +115,14 @@ public class HealthDataControllerTest {
             public void testCode() throws Exception {
                 String sessionToken = TestUtils.signIn();
 
-                TestUtils.getURL(sessionToken, TRACKER_URL)
-                        .post(mapper.writeValueAsString(getTestRecords()))
+                TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(getTestRecords()))
                         .get(TIMEOUT);
-                TestUtils.getURL(sessionToken, TRACKER_URL)
-                        .post(mapper.writeValueAsString(getTestRecords()))
+                TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(getTestRecords()))
                         .get(TIMEOUT);
-                TestUtils.getURL(sessionToken, TRACKER_URL)
-                        .post(mapper.writeValueAsString(getTestRecords()))
+                TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(getTestRecords()))
                         .get(TIMEOUT);
 
-                Response response = TestUtils.getURL(sessionToken, TRACKER_URL)
-                        .get().get(TIMEOUT);
+                Response response = TestUtils.getURL(sessionToken, TRACKER_URL).get().get(TIMEOUT);
 
                 JsonNode body = response.asJson();
                 ArrayNode array = (ArrayNode) body.get("payload");
