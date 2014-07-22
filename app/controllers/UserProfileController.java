@@ -18,6 +18,7 @@ public class UserProfileController extends BaseController {
 	public Result getUserProfile() throws Exception {
 		UserSession session = getSession();
 		User user = userProfileService.getUser(session);
+		
 		return jsonResult(new JsonPayload<User>(user));
 	}
 	

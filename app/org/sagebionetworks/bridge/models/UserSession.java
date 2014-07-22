@@ -62,11 +62,7 @@ public class UserSession {
         return user;
     }
     public void setUser(User user) {
-        this.user.setEmail(user.getEmail()); // Deep copy? I'm not sure if this matters here.
-        this.user.setUsername(user.getUsername());
-        this.user.setStormpathHref(user.getStormpathHref());
-        this.user.setFirstName(user.getFirstName());
-        this.user.setLastName(user.getLastName());
+        this.user = user;
     }
     public String getUsername() {
         return user.getUsername();

@@ -1,9 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
-import java.util.List;
-
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
@@ -22,7 +19,20 @@ public class UserProfileServiceImpl implements UserProfileService {
 	public void setStormpathClient(Client stormpathClient) {
 	    this.stormpathClient = stormpathClient;
 	}
-
+	
+    @Override
+    public User createUserFromAccount(Account account) {
+        User user;
+        user = new User();
+        user.setEmail(         account.getEmail() );
+        user.setFirstName(     account.getGivenName() );
+        user.setLastName(      account.getSurname() );
+        user.setUsername(      account.getUsername() );
+        user.setStormpathHref( account.getHref() );
+        
+        return user;
+    }
+	
     @Override
     public User getUser(UserSession session) {
         if (session == null) throw new BridgeServiceException("No active user session.", 401);
@@ -31,24 +41,14 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     @Override
-    public List<User> getUsersFromStudy(Study study) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public void updateUser(User updatedUser, UserSession session) {
-        if (session == null)           throw new BridgeServiceException(401);
+        if (session == null)                throw new BridgeServiceException(401);
         if (!User.isValidUser(updatedUser)) throw new BridgeServiceException(400);
         
-        User currentUser = session.getUser();
-        Application app = StormpathFactory.createStormpathApplication(stormpathClient);
-        AccountCriteria criteria = Accounts
-                .where(Accounts.email()  .eqIgnoreCase(currentUser.getEmail()))
-                .and(Accounts.givenName().eqIgnoreCase(currentUser.getFirstName()))
-                .and(Accounts.surname()  .eqIgnoreCase(currentUser.getLastName()))
-                .and(Accounts.username() .eqIgnoreCase(currentUser.getUsername()));
-        AccountList accounts = app.getAccounts(criteria);
+        User currentUser         = session.getUser();
+        Application app          = StormpathFactory.createStormpathApplication(stormpathClient);
+        AccountCriteria criteria = Accounts.where(Accounts.email().eqIgnoreCase(currentUser.getEmail()));
+        AccountList accounts     = app.getAccounts(criteria);
         
         int count = 0;
         for (Account account : accounts) count++;
@@ -56,28 +56,15 @@ public class UserProfileServiceImpl implements UserProfileService {
         if (count >  1) throw new BridgeServiceException("Updated user matches more than one possible user.", 500);
         
         for (Account account : accounts) {
-            account.setEmail(updatedUser.getEmail());
-            account.setGivenName(updatedUser.getFirstName());
-            account.setSurname(updatedUser.getLastName());
-            account.setUsername(updatedUser.getUsername());
+            account.setEmail(     updatedUser.getEmail());
+            account.setGivenName( updatedUser.getFirstName());
+            account.setSurname(   updatedUser.getLastName());
+            account.setUsername(  updatedUser.getUsername());
         }
         
         if (!accountUpdated(accounts, updatedUser)) throw new BridgeServiceException("Stormpath did not update.", 500);
         
         session.setUser(updatedUser);
-    }
-
-    @Override
-    public User createUserFromAccount(Account account) {
-        User user;
-        user = new User();
-        user.setEmail(account.getEmail());
-        user.setFirstName(account.getGivenName());
-        user.setLastName(account.getSurname());
-        user.setUsername(account.getUsername());
-        user.setStormpathHref(account.getHref());
-        
-        return user;
     }
     
     /*
@@ -88,10 +75,10 @@ public class UserProfileServiceImpl implements UserProfileService {
      */
     private boolean accountUpdated(AccountList accounts, User updatedUser) {
         for (Account account : accounts)
-            if (   account.getEmail().equalsIgnoreCase(updatedUser.getEmail())
+            if (   account.getEmail()    .equalsIgnoreCase(updatedUser.getEmail())
                 && account.getGivenName().equalsIgnoreCase(updatedUser.getFirstName())
-                && account.getSurname().equalsIgnoreCase(updatedUser.getLastName()) 
-                && account.getUsername().equalsIgnoreCase(updatedUser.getUsername()) )
+                && account.getSurname()  .equalsIgnoreCase(updatedUser.getLastName()) 
+                && account.getUsername() .equalsIgnoreCase(updatedUser.getUsername()) )
                 return true;
         
         return false;

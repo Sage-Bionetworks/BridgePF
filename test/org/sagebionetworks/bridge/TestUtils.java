@@ -4,6 +4,9 @@ import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.*;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
+
+import org.sagebionetworks.bridge.models.User;
+
 import play.libs.WS;
 import play.libs.WS.Response;
 import play.libs.WS.WSRequestHolder;
@@ -77,5 +80,16 @@ public class TestUtils {
                 signOut();
             }
         });
+    }
+    
+    public static User constructTestUser(UserCredentials cred) {
+        User user = new User();
+        user.setEmail(cred.EMAIL);
+        user.setUsername(cred.USERNAME);
+        user.setFirstName(cred.FIRSTNAME);
+        user.setLastName(cred.LASTNAME);
+        user.setStormpathHref("<EMPTY>");
+        
+        return user;
     }
 }
