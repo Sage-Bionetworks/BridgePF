@@ -27,6 +27,7 @@ public class AppPage extends BasePage {
     public SignInDialog openSignInDialog() {
         signInLink().click();
         waitUntilPresent(SIGN_IN_DIALOG);
+        waitUntilScriptHasFocused(USERNAME_INPUT);
         return new SignInDialog(browser);
     }
     
