@@ -60,8 +60,8 @@ public class User {
         
         User user = new User();
         if (node.get(FIRSTNAME) != null) user.setFirstName( node.get(FIRSTNAME).asText() );
-        if (node.get(LASTNAME)  != null) user.setLastName(  node.get(LASTNAME).asText() );
-        if (node.get(EMAIL)     != null) user.setEmail(     node.get(EMAIL).asText() );
+        if (node.get(LASTNAME)  != null) user.setLastName(  node.get(LASTNAME) .asText() );
+        if (node.get(EMAIL)     != null) user.setEmail(     node.get(EMAIL)    .asText() );
         
         user.setUsername(      session.getUsername() );
         user.setStormpathHref( session.getStormpathHref() );
