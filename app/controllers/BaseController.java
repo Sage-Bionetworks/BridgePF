@@ -14,7 +14,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import play.Logger;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http.Cookie;
@@ -35,7 +34,7 @@ public class BaseController extends Controller {
         if (sessionToken == null) {
             throw new BridgeServiceException("Not signed in.", 401);
         }
-        if (authenticationService == null) Logger.info("Authentication service in BaseController null");
+        
         UserSession session = authenticationService.getSession(sessionToken);
         if (session == null || !session.isAuthenticated()) {
             throw new BridgeServiceException("Not signed in.", 401);
