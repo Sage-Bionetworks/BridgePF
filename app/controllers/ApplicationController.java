@@ -11,7 +11,7 @@ import play.mvc.*;
 public class ApplicationController extends BaseController {
 
     private StudyControllerService studyControllerService;
-
+    
     public void setStudyControllerService(StudyControllerService studyControllerService) {
         this.studyControllerService = studyControllerService;
     }
@@ -33,7 +33,7 @@ public class ApplicationController extends BaseController {
     public Result redirectToPublicApp() {
         return redirect("/");
     }
-    
+
     public Result loadPublicApp() throws Exception {
         UserSessionInfo info = new UserSessionInfo(new UserSession());
 

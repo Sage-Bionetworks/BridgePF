@@ -24,6 +24,8 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 
+import play.mvc.Http;
+
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
@@ -41,6 +43,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private BridgeEncryptor healthCodeEncryptor;
     private HealthCodeService healthCodeService;
     private EmailValidator emailValidator = EmailValidator.getInstance();
+    private UserProfileService userProfileService;
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
@@ -62,6 +65,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         this.healthCodeService = healthCodeService;
     }
 
+    public void setUserProfileService(UserProfileService userProfileService) {
+        this.userProfileService = userProfileService;
+    }
+
     @Override
     public UserSession getSession(String sessionToken) {
         if (sessionToken == null) {
@@ -71,15 +78,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException,
-            BridgeNotFoundException, BridgeServiceException {
+    public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, BridgeNotFoundException,
+            BridgeServiceException {
 
         if (signIn == null) {
-            throw new BridgeServiceException("SignIn object is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BridgeServiceException("SignIn object is required", Http.Status.NOT_FOUND);
         } else if (StringUtils.isBlank(signIn.getUsername())) {
-            throw new BridgeServiceException("Username/email must not be null", HttpStatus.SC_BAD_REQUEST);
+            throw new BridgeServiceException("Username/email must not be null", Http.Status.NOT_FOUND);
         } else if (StringUtils.isBlank(signIn.getPassword())) {
-            throw new BridgeServiceException("Password must not be null", HttpStatus.SC_BAD_REQUEST);
+            throw new BridgeServiceException("Password must not be null", Http.Status.NOT_FOUND);
         } else if (study == null) {
             throw new BridgeServiceException("Study is required", HttpStatus.SC_BAD_REQUEST);
         }
@@ -87,23 +94,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         AuthenticationRequest<?, ?> request = null;
         UserSession session = null;
         try {
-            
             Application application = StormpathFactory.createStormpathApplication(stormpathClient);
             request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword());
             Account account = application.authenticateAccount(request).getAccount();
-            
+
             session = createSessionFromAccount(study, account);
             cache.setUserSession(session.getSessionToken(), session);
 
             if (!session.doesConsent()) {
                 throw new ConsentRequiredException(new UserSessionInfo(session));
             }
-            
+
         } catch (ResourceException re) {
             throw new BridgeNotFoundException(re.getDeveloperMessage());
         } finally {
             if (request != null) {
-                request.clear();    
+                request.clear();
             }
         }
         return session;
@@ -112,7 +118,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public void signOut(String sessionToken) {
         if (sessionToken != null) {
-            cache.remove(sessionToken);    
+            cache.remove(sessionToken);
         }
     }
 
@@ -133,6 +139,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
         try {
             Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
+            
             Account account = stormpathClient.instantiate(Account.class);
             account.setGivenName("<EMPTY>");
             account.setSurname("<EMPTY>");
@@ -140,13 +147,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             account.setUsername(signUp.getUsername());
             account.setPassword(signUp.getPassword());
             directory.createAccount(account);
-        } catch(ResourceException re) {
+        } catch (ResourceException re) {
             throw new BridgeServiceException(re.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
         }
     }
-    
+
     @Override
-    public UserSession verifyEmail(Study study, EmailVerification verification) throws BridgeServiceException, ConsentRequiredException {
+    public UserSession verifyEmail(Study study, EmailVerification verification) throws BridgeServiceException,
+            ConsentRequiredException {
         if (verification == null) {
             throw new BridgeServiceException("Verification object is required", HttpStatus.SC_BAD_REQUEST);
         } else if (verification.getSptoken() == null) {
@@ -162,7 +170,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 throw new ConsentRequiredException(new UserSessionInfo(session));
             }
             return session;
-        } catch(ResourceException re) {
+        } catch (ResourceException re) {
             throw new BridgeServiceException(re.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
         }
     }
@@ -178,11 +186,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         try {
             Application application = StormpathFactory.createStormpathApplication(stormpathClient);
             application.sendPasswordResetEmail(email.getEmail());
-        } catch(ResourceException re) {
+        } catch (ResourceException re) {
             throw new BridgeServiceException(re.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
         }
     }
-    
+
     @Override
     public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException {
         if (passwordReset == null) {
@@ -197,11 +205,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             Account account = application.verifyPasswordResetToken(passwordReset.getSptoken());
             account.setPassword(passwordReset.getPassword());
             account.save();
-        } catch(ResourceException e) {
+        } catch (ResourceException e) {
             throw new BridgeServiceException(e.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
         }
     }
-    
+
     @Override
     public void consentToResearch(String sessionToken) throws BridgeServiceException {
         try {
@@ -209,7 +217,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             if (session == null) {
                 throw new BridgeServiceException("No session", 500);
             }
-            Account account = stormpathClient.getResource(session.getStormpathHref(), Account.class);
+            Account account = stormpathClient.getResource(session.getUser().getStormpathHref(), Account.class);
             String key = session.getStudyKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
             CustomData data = account.getCustomData();
             data.put(key, "true");
@@ -226,7 +234,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             session.setHealthDataCode(healthId.getCode());
             session.setConsent(true);
             cache.setUserSession(sessionToken, session);
-        } catch(Exception e) {
+        } catch (Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
     }
@@ -236,11 +244,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         UserSession session;
         session = new UserSession();
         session.setAuthenticated(true);
-        session.setStormpathHref(account.getHref());
         session.setEnvironment(config.getEnvironment().getEnvName());
         session.setSessionToken(UUID.randomUUID().toString());
         session.setStudyKey(study.getKey());
-        session.setUsername(account.getUsername());
+        session.setUser(userProfileService.createUserFromAccount(account));
 
         CustomData data = account.getCustomData();
         String consentKey = study.getKey()+BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
