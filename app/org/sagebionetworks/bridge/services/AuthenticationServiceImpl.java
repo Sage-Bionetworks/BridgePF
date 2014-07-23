@@ -29,7 +29,6 @@ import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.AccountStore;
 import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.resource.ResourceException;
@@ -133,18 +132,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BridgeServiceException("Email address does not appear to be valid", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            // In any environment other than production, there is only one directory backing that 
-            // environment. In production, each study has its own user directory so each study can 
-            // send email with different URLs back to the application (different host names). If you 
-            // access bridge-prod.herokuapp.com, we use the Parkinson's Disease Mobile Study.
-            Directory directory = null;
-            if (config.isProduction()) {
-                directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
-            } else {
-                Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-                AccountStore store = application.getDefaultAccountStore();
-                directory = stormpathClient.getResource(store.getHref(), Directory.class);
-            }
+            Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
             Account account = stormpathClient.instantiate(Account.class);
             account.setGivenName("<EMPTY>");
             account.setSurname("<EMPTY>");
