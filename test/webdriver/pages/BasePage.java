@@ -1,7 +1,10 @@
 package webdriver.pages;
 
+import static org.sagebionetworks.bridge.TestConstants.TOAST_DIALOG;
+
 import java.util.concurrent.TimeUnit;
 
+import org.fluentlenium.core.domain.FluentWebElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -36,6 +39,11 @@ public class BasePage {
     
     protected void waitUntilEnabled(String cssSelector) {
         browser.await().atMost(10, TimeUnit.SECONDS).until(cssSelector).areEnabled();
+    }
+    
+    protected FluentWebElement messagePopup() {
+        waitUntilPresent(TOAST_DIALOG);
+        return browser.findFirst(TOAST_DIALOG);
     }
 
     /**
