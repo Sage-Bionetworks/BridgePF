@@ -1,10 +1,8 @@
 package org.sagebionetworks.bridge.backfill;
 
-import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
-import org.sagebionetworks.bridge.crypto.EncryptorUtil;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
@@ -71,15 +69,6 @@ public class HealthCodeBackfill {
             final String hcEncrypted = (String)customData.get(key);
             final Object version = customData.get(BridgeConstants.CUSTOM_DATA_VERSION);
             if (version == null && hcEncrypted != null) {
-                PBEStringEncryptor encryptor = EncryptorUtil.getEncryptorOld(
-                        config.getHealthCodePassword(), config.getHealthCodeSalt());
-                final String healthCode = encryptor.decrypt(hcEncrypted);
-                final String healthId = healthCodeService.resetHealthId(healthCode);
-                final String hiEncrypted = healthCodeEncryptor.encrypt(healthId);
-                customData.put(key, hiEncrypted);
-                customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
-                customData.save();
-                count++;
             }
         }
         return count;
