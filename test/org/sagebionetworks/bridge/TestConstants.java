@@ -43,14 +43,14 @@ public class TestConstants {
             "Neuro-Degenerative Diseases Study", "neurod", null, null);
 
     public static final int TIMEOUT = 10000;
-    public static final String TEST_URL     = "http://localhost:3333";
+    public static final String TEST_URL = "http://localhost:3333";
     public static final String SIGN_OUT_URL = "/api/auth/signOut";
-    public static final String SIGN_IN_URL  = "/api/auth/signIn";
+    public static final String SIGN_IN_URL = "/api/auth/signIn";
 
-    public static final String TRACKER_URL  = "/api/healthdata/2";
-    public static final String RECORD_URL   = "/api/healthdata/2/record/";
+    public static final String TRACKER_URL = "/api/healthdata/2";
+    public static final String RECORD_URL = "/api/healthdata/2/record/";
 
-    public static final String PROFILE_URL  = "/api/users/profile";
+    public static final String PROFILE_URL = "/api/users/profile";
     
     public static final String APPLICATION_JSON = "application/json";
     public static final String USERNAME = "username";
