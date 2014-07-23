@@ -8,13 +8,20 @@ import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 public class Study {
 
     private String name;
-    private String key; 
+    private String key;
+    /**
+     * There is a separate StormPath directory for each study (all associated to
+     * the production application). This allows us to tailor the email for each
+     * study, linking back to the correct host name for that study.
+     */
+    private String stormpathDirectoryHref;
     private List<String> hostnames = Collections.emptyList();
     private List<Tracker> trackers = Collections.emptyList();
     
-    public Study(String name, String key, List<String> hostnames, List<Tracker> trackers) {
+    public Study(String name, String key, String stormpathDirectoryHref, List<String> hostnames, List<Tracker> trackers) {
         this.name = name;
         this.key = key; 
+        this.stormpathDirectoryHref = stormpathDirectoryHref;
         if (hostnames != null) {
             this.hostnames = Collections.unmodifiableList(hostnames);
         }
@@ -24,7 +31,8 @@ public class Study {
     }
     
     public Study(Study study) {
-        this(study.getName(), study.getKey(), study.getHostnames(), study.getTrackers());
+        this(study.getName(), study.getKey(), study.getStormpathDirectoryHref(), study.getHostnames(), study
+                .getTrackers());
     }
     
     public List<String> getHostnames() {
@@ -35,6 +43,9 @@ public class Study {
     }
     public String getKey() {
         return key;
+    }
+    public String getStormpathDirectoryHref() {
+        return stormpathDirectoryHref;
     }
     public List<Tracker> getTrackers() {
         return trackers;
