@@ -27,7 +27,7 @@ public class AuthenticationControllerTest {
                 Response response = WS.url(TEST_URL + SIGN_IN_URL)
                         .post(node)
                         .get(TIMEOUT);
-                assertEquals("HTTP response indicates bad request", BAD_REQUEST, response.getStatus());
+                assertEquals("HTTP response indicates bad request", NOT_FOUND, response.getStatus());
             }
         });
     }
@@ -39,7 +39,7 @@ public class AuthenticationControllerTest {
                 Response response = WS.url(TEST_URL + SIGN_IN_URL)
                         .post("username=bob&password=foo")
                         .get(TIMEOUT);
-                assertEquals("HTTP response indicates bad request", BAD_REQUEST, response.getStatus());
+                assertEquals("HTTP response indicates bad request", NOT_FOUND, response.getStatus());
             }
         });
     }
