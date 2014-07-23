@@ -27,6 +27,8 @@ import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import play.mvc.Http;
+
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
@@ -86,11 +88,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             BridgeServiceException {
 
         if (signIn == null) {
-            throw new BridgeServiceException("SignIn object is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BridgeServiceException("SignIn object is required", Http.Status.NOT_FOUND);
         } else if (StringUtils.isBlank(signIn.getUsername())) {
-            throw new BridgeServiceException("Username/email must not be null", HttpStatus.SC_BAD_REQUEST);
+            throw new BridgeServiceException("Username/email must not be null", Http.Status.NOT_FOUND);
         } else if (StringUtils.isBlank(signIn.getPassword())) {
-            throw new BridgeServiceException("Password must not be null", HttpStatus.SC_BAD_REQUEST);
+            throw new BridgeServiceException("Password must not be null", Http.Status.NOT_FOUND);
         } else if (study == null) {
             throw new BridgeServiceException("Study is required", HttpStatus.SC_BAD_REQUEST);
         }

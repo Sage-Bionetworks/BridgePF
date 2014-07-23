@@ -55,9 +55,9 @@ public class UserProfile {
         this.stormpathHref = stormpathHref;
     }
 
-    // Get first name, last name, and email from JsonNode, and
-    // username/stormpathHref from sessionUser.
-    public static UserProfile fromJson(JsonNode node, UserProfile sessionUser) {
+    // Get first name/last name from JsonNode, and
+    // username, stormpathHref, and email from sessionUser.
+    public static UserProfile fromJson(JsonNode node, UserProfile currentUser) {
         if (node == null)
             throw new BridgeServiceException("User JSON is null", 500);
 
@@ -68,12 +68,10 @@ public class UserProfile {
         if (node.get(LASTNAME) != null) {
             user.setLastName(node.get(LASTNAME).asText());
         }
-        if (node.get(EMAIL) != null) {
-            user.setEmail(node.get(EMAIL).asText());
-        }
 
-        user.setUsername(sessionUser.getUsername());
-        user.setStormpathHref(sessionUser.getStormpathHref());
+        user.setUsername(currentUser.getUsername());
+        user.setStormpathHref(currentUser.getStormpathHref());
+        user.setEmail(currentUser.getEmail());
 
         return user;
     }
