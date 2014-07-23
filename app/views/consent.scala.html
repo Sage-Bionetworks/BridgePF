@@ -66,18 +66,18 @@
             <table>
                 <tr>
                     <td>
-                        <img draggable="false" ng-click="assessTask($event, 1)" bg-pressable src="consent/images/takesurveys_rest.svg"/>
+                        <img id="surveyImg" draggable="false" ng-click="assessTask($event, 1)" bg-pressable src="consent/images/takesurveys_rest.svg"/>
                     </td>
                     <td>
-                        <img draggable="false" ng-click="assessTask($event, 2)" bg-pressable src="consent/images/talking_rest.svg"/>
+                        <img id="talkingImg" draggable="false" ng-click="assessTask($event, 2)" bg-pressable src="consent/images/talking_rest.svg"/>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <img draggable="false" ng-click="assessTask($event, 3)" bg-pressable src="consent/images/tapping_rest.svg"/>
+                        <img id="tappingImg" draggable="false" ng-click="assessTask($event, 3)" bg-pressable src="consent/images/tapping_rest.svg"/>
                     </td>
                     <td>
-                        <img draggable="false" ng-click="assessTask($event, 4)" bg-pressable src="consent/images/walking_rest.svg"/>
+                        <img id="walkingImg" draggable="false" ng-click="assessTask($event, 4)" bg-pressable src="consent/images/walking_rest.svg"/>
                     </td>                
                 </tr>
             </table>
@@ -178,7 +178,7 @@
             <div><img draggable="false" src="consent/images/deidentification/step4_11.svg"/></div>
             <div><img draggable="false" src="consent/images/deidentification/step4_12.svg"/></div>
             <div><img draggable="false" src="consent/images/deidentification/step4_13.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_14.svg"/></div>
+            <div class=""><img draggable="false" src="consent/images/deidentification/step4_14.svg"/></div>
         </div>
     </article>
     <footer>
@@ -403,7 +403,7 @@
                     <p class="input-group">
                         <input type="text" class="form-control" datepicker-popup="MM/dd/yyyy" is-open="opened" 
                             name="birthdate" ng-model="birthdate" datepicker-options="dateOptions" 
-                            date-disabled="disabled(date, mode)" placeholder="Enter your birth date"
+                            date-disabled="disabled(date, mode)" placeholder="Enter your birth date MM/DD/YYYY"
                             max-date="maxDate" show-button-bar="false" show-weeks="false" 
                             close-text="Close" ng-required="true" />
                         <span class="input-group-btn">
@@ -455,7 +455,7 @@
 
 <!-- These file names are updated by the grunt build; do not modify directly. -->
 <script src="shared/build/bridge-shared.min.fa1202f6.js"></script>
-<script src="consent/build/consent.min.78f38054.js"></script>
+<script src="consent/build/consent.min.1a5aa1af.js"></script>
 
 </body>
 </html>

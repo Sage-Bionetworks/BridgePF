@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.sagebionetworks.bridge.TestConstants.*;
 import static org.junit.Assert.*;
 
-import java.util.Iterator;
-
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
@@ -12,7 +10,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
@@ -150,7 +147,7 @@ public class AuthenticationServiceImplTest {
         Study defaultStudy = studyControllerService.getStudies().iterator().next();
         SignUp signUp = new SignUp("secondStudyUser", "secondStudyUser@sagebase.org", "P4ssword");
 
-        // Must be in production.
+        // Must be in production. 
         BridgeConfig config = new BridgeConfig(Environment.PROD, bridgeConfig.getUser(), null);
         service.setBridgeConfig(config);
         
