@@ -115,7 +115,7 @@
                 <bean class="org.sagebionetworks.bridge.models.Study">
                     <constructor-arg index="0" value="Parkinson’s Disease Mobile Study"/>
                     <constructor-arg index="1" value="neurod"/>
-                    <constructor-arg index="2" value="https://api.stormpath.com/v1/directories/ojPkm9y0sxo8lH8PuZrId"/>
+                    <constructor-arg index="2" value="#{bridgeConfig.getProperty('stormpath.neurod.directory.href')}"/>
                     <constructor-arg index="3">
                         <list>
                             <!-- IE VirtualBox Machine, local development -->

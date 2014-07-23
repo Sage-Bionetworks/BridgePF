@@ -10,6 +10,7 @@ import webdriver.pages.ConsentPage;
 public class ConsentWizardTest extends BaseIntegrationTest {
 
     @Test
+    @Ignore
     public void canProgressThroughWizard() {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {

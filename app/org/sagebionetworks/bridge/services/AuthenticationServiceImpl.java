@@ -3,14 +3,12 @@ package org.sagebionetworks.bridge.services;
 import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
-import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
-import org.sagebionetworks.bridge.crypto.EncryptorUtil;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -24,22 +22,17 @@ import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.AccountStore;
 import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.resource.ResourceException;
 
 public class AuthenticationServiceImpl implements AuthenticationService {
-
-    private static Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 
     private Client stormpathClient;
     private CacheProvider cache;
@@ -94,7 +87,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         UserSession session = null;
         try {
             
-            Application application = StormpathFactory.createStormpathApplication(stormpathClient); 
+            Application application = StormpathFactory.createStormpathApplication(stormpathClient);
             request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword());
             Account account = application.authenticateAccount(request).getAccount();
             
@@ -138,18 +131,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BridgeServiceException("Email address does not appear to be valid", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            // In any environment other than production, there is only one directory backing that 
-            // environment. In production, each study has its own user directory so each study can 
-            // send email with different URLs back to the application (different host names). If you 
-            // access bridge-prod.herokuapp.com, we use the Parkinson's Disease Mobile Study.
-            Directory directory = null;
-            if (config.isProduction()) {
-                directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
-            } else {
-                Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-                AccountStore store = application.getDefaultAccountStore();
-                directory = stormpathClient.getResource(store.getHref(), Directory.class);
-            }
+            Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
             Account account = stormpathClient.instantiate(Account.class);
             account.setGivenName("<EMPTY>");
             account.setSurname("<EMPTY>");
@@ -249,6 +231,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     private UserSession createSessionFromAccount(Study study, Account account) {
+
         UserSession session;
         session = new UserSession();
         session.setAuthenticated(true);
@@ -266,16 +249,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (session.isConsent()) {
             final String hdcKey = study.getKey()+BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
             final String encryptedId = (String)data.get(hdcKey);
-            Object version = data.get(BridgeConstants.CUSTOM_DATA_VERSION);
-            if (version == null) {
-                PBEStringEncryptor encryptor = EncryptorUtil.getEncryptorOld(config.getHealthCodePassword(),
-                        config.getHealthCodeSalt());
-                session.setHealthDataCode(encryptor.decrypt(encryptedId));
-            } else {
-                String healthId = healthCodeEncryptor.decrypt(encryptedId);
-                String healthCode = healthCodeService.getHealthCode(healthId);
-                session.setHealthDataCode(healthCode);
-            }
+            String healthId = healthCodeEncryptor.decrypt(encryptedId);
+            String healthCode = healthCodeService.getHealthCode(healthId);
+            session.setHealthDataCode(healthCode);
         }
         return session;
     }
