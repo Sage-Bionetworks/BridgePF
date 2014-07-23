@@ -144,7 +144,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             // send email with different URLs back to the application (different host names). If you 
             // access bridge-prod.herokuapp.com, we use the Parkinson's Disease Mobile Study.
             Directory directory = null;
-            if (BridgeConfigFactory.getConfig().isProduction()) {
+            if (config.isProduction()) {
                 directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
             } else {
                 Application application = StormpathFactory.createStormpathApplication(stormpathClient);
