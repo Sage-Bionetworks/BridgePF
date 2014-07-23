@@ -82,7 +82,7 @@ public class UserProfileServiceImplTest {
     }
 
     @Test(expected = BridgeServiceException.class)
-    public void createUserFromAccountWithInvalidAccountFails500() {
+    public void createUserFromAccountWithInvalidAccountFails() {
         Account account = null;
         service.createUserFromAccount(account);
     }
