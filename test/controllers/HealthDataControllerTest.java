@@ -44,8 +44,7 @@ public class HealthDataControllerTest {
     // The test record used here is a medication record, which can have
     // duration (no end date), which makes it important for the date-based
     // query methods of the service.
-    private List<HealthDataRecord> getTestRecords(long startDate, long endDate)
-            throws Exception {
+    private List<HealthDataRecord> getTestRecords(long startDate, long endDate) throws Exception {
         HealthDataRecord record = new HealthDataRecordImpl();
         record.setStartDate(startDate);
         if (endDate > 0) {
@@ -98,8 +97,7 @@ public class HealthDataControllerTest {
 
                 Response response = TestUtils.getURL(sessionToken, TRACKER_URL)
                         .post(mapper.writeValueAsString(records)).get(TIMEOUT);
-                assertEquals("HTTP response indicates response OK", OK,
-                        response.getStatus());
+                assertEquals("HTTP response indicates response OK", OK, response.getStatus());
 
                 String id = retrieveNewId(response);
                 assertTrue("ID is not empty", StringUtils.isNotBlank(id));
@@ -139,22 +137,22 @@ public class HealthDataControllerTest {
             public void testCode() throws Exception {
                 String sessionToken = TestUtils.signIn();
 
-                // Time ranges used in this test, and where they overlap with the 3 test windows or not.
-                //       1        1...<2
-                //       2        1............3
-                //       3                                                 4............6
-                //       4                     3...........................4
-                //       5                                                       >5.....6
-                //       6                     3............................................
+                // Time ranges used in this test, and where they overlap with
+                // the 3 test windows or not.
+                // 1 1...<2
+                // 2 1............3
+                // 3 4............6
+                // 4 3...........................4
+                // 5 >5.....6
+                // 6 3............................................
                 //
-                //                    2__________________________________________5
-                //                1____________3
-                //                                                         4_____5
+                // 2__________________________________________5
+                // 1____________3
+                // 4_____5
 
                 long threeDays = (1000L * 60L * 60L * 24L * 3L);
 
-                long thousandDaysAgo = new Date().getTime()
-                        - (1000 * 60 * 60 * 24 * 1000);
+                long thousandDaysAgo = new Date().getTime() - (1000 * 60 * 60 * 24 * 1000);
                 long time1 = thousandDaysAgo + threeDays;
                 long time2 = thousandDaysAgo + threeDays * 2;
                 long time3 = thousandDaysAgo + threeDays * 3;
@@ -162,69 +160,53 @@ public class HealthDataControllerTest {
                 long time5 = thousandDaysAgo + threeDays * 5;
                 long time6 = thousandDaysAgo + threeDays * 6;
 
-                List<HealthDataRecord> records = getTestRecords(time1,
-                        time2 - 1);
+                List<HealthDataRecord> records = getTestRecords(time1, time2 - 1);
                 Response response = TestUtils.getURL(sessionToken, TRACKER_URL)
                         .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id1 = retrieveNewId(response);
 
                 records = getTestRecords(time1, time3);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records))
+                        .get(TIMEOUT);
                 String id2 = retrieveNewId(response);
 
                 records = getTestRecords(time4, time6);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records))
+                        .get(TIMEOUT);
                 String id3 = retrieveNewId(response);
 
                 records = getTestRecords(time3, time4);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records))
+                        .get(TIMEOUT);
                 String id4 = retrieveNewId(response);
 
                 records = getTestRecords(time5 + 1, time6);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records))
+                        .get(TIMEOUT);
                 String id5 = retrieveNewId(response);
 
                 records = getTestRecords(time3, 0);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records))
+                        .get(TIMEOUT);
                 String id6 = retrieveNewId(response);
 
-                String queryPath = String.format("/%s/%s",
-                        Long.toString(time2), Long.toString(time5));
-                response = TestUtils
-                        .getURL(sessionToken, TRACKER_URL + queryPath).get()
-                        .get(TIMEOUT);
+                String queryPath = String.format("/%s/%s", Long.toString(time2), Long.toString(time5));
+                response = TestUtils.getURL(sessionToken, TRACKER_URL + queryPath).get().get(TIMEOUT);
                 List<String> ids = getIds(response);
-                assertTrue("Returns records 2, 3, 4, and 6",
-                        ids.containsAll(Lists.newArrayList(id2, id3, id4, id6)));
-                assertFalse("Does not contain records 1 or 5",
-                        ids.containsAll(Lists.newArrayList(id1, id5)));
+                assertTrue("Returns records 2, 3, 4, and 6", ids.containsAll(Lists.newArrayList(id2, id3, id4, id6)));
+                assertFalse("Does not contain records 1 or 5", ids.containsAll(Lists.newArrayList(id1, id5)));
 
-                queryPath = String.format("/%s/%s", Long.toString(time1),
-                        Long.toString(time3));
-                response = TestUtils
-                        .getURL(sessionToken, TRACKER_URL + queryPath).get()
-                        .get(TIMEOUT);
+                queryPath = String.format("/%s/%s", Long.toString(time1), Long.toString(time3));
+                response = TestUtils.getURL(sessionToken, TRACKER_URL + queryPath).get().get(TIMEOUT);
                 ids = getIds(response);
-                assertTrue("Returns records 1, 2, 4, and 6",
-                        ids.containsAll(Lists.newArrayList(id1, id2, id4, id6)));
-                assertFalse("Does not contain records 3 or 5",
-                        ids.containsAll(Lists.newArrayList(id3, id5)));
+                assertTrue("Returns records 1, 2, 4, and 6", ids.containsAll(Lists.newArrayList(id1, id2, id4, id6)));
+                assertFalse("Does not contain records 3 or 5", ids.containsAll(Lists.newArrayList(id3, id5)));
 
-                queryPath = String.format("/%s/%s", Long.toString(time4),
-                        Long.toString(time5));
-                response = TestUtils
-                        .getURL(sessionToken, TRACKER_URL + queryPath).get()
-                        .get(TIMEOUT);
+                queryPath = String.format("/%s/%s", Long.toString(time4), Long.toString(time5));
+                response = TestUtils.getURL(sessionToken, TRACKER_URL + queryPath).get().get(TIMEOUT);
                 ids = getIds(response);
-                assertTrue("Returns records 3, 4, and 6",
-                        ids.containsAll(Lists.newArrayList(id3, id4, id6)));
-                assertFalse("Does not contain records 1, 2 or 5",
-                        ids.containsAll(Lists.newArrayList(id1, id2, id5)));
+                assertTrue("Returns records 3, 4, and 6", ids.containsAll(Lists.newArrayList(id3, id4, id6)));
+                assertFalse("Does not contain records 1, 2 or 5", ids.containsAll(Lists.newArrayList(id1, id2, id5)));
 
                 TestUtils.signOut();
             }
@@ -241,8 +223,7 @@ public class HealthDataControllerTest {
 
                 Response response = TestUtils.getURL(sessionToken, TRACKER_URL)
                         .post(mapper.writeValueAsString(records)).get(TIMEOUT);
-                assertEquals("Response status indicates OK response", OK,
-                        response.getStatus());
+                assertEquals("Response status indicates OK response", OK, response.getStatus());
 
                 // Get the id and set it on the object
                 String id = retrieveNewId(response);
@@ -254,14 +235,11 @@ public class HealthDataControllerTest {
 
                 // Save it (update)
                 response = TestUtils.getURL(sessionToken, RECORD_URL + id)
-                        .post(mapper.writeValueAsString(records.get(0)))
-                        .get(TIMEOUT);
-                assertEquals("Response status indicates OK response", OK,
-                        response.getStatus());
+                        .post(mapper.writeValueAsString(records.get(0))).get(TIMEOUT);
+                assertEquals("Response status indicates OK response", OK, response.getStatus());
 
                 // Get it and verify that it was persisted.
-                response = TestUtils.getURL(sessionToken, RECORD_URL + id)
-                        .get().get(TIMEOUT);
+                response = TestUtils.getURL(sessionToken, RECORD_URL + id).get().get(TIMEOUT);
                 JsonNode body = response.asJson();
                 JsonNode payload = body.get("payload");
                 long valueSaved = payload.get("data").get("systolic").asLong();
@@ -285,16 +263,12 @@ public class HealthDataControllerTest {
                         .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id = retrieveNewId(response);
 
-                response = TestUtils.getURL(sessionToken, RECORD_URL + id)
-                        .delete().get(TIMEOUT);
-                assertEquals("Response status indicates OK response", OK,
-                        response.getStatus());
+                response = TestUtils.getURL(sessionToken, RECORD_URL + id).delete().get(TIMEOUT);
+                assertEquals("Response status indicates OK response", OK, response.getStatus());
 
                 // Now this should generate a not found
-                response = TestUtils.getURL(sessionToken, RECORD_URL + id)
-                        .get().get(TIMEOUT);
-                assertEquals("Response status indicates data not found",
-                        NOT_FOUND, response.getStatus());
+                response = TestUtils.getURL(sessionToken, RECORD_URL + id).get().get(TIMEOUT);
+                assertEquals("Response status indicates data not found", NOT_FOUND, response.getStatus());
 
                 TestUtils.signOut();
             }

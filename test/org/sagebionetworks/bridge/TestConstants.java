@@ -51,7 +51,6 @@ public class TestConstants {
     public static final String RECORD_URL   = "/api/healthdata/2/record/";
 
     public static final String PROFILE_URL  = "/api/users/profile";
-    public static final String UPDATE_URL   = "/api/users/update_profile";
     
     public static final String APPLICATION_JSON = "application/json";
     public static final String USERNAME = "username";

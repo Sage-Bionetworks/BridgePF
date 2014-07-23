@@ -31,8 +31,8 @@ GET    /api/trackers                   @controllers.TrackerController.getTracker
 GET    /api/trackers/schema/:trackerId @controllers.TrackerController.getTrackerSchema(trackerId: Long)
 
 # API - users
-GET    /api/users/profile           @controllers.UserProfileController.getUserProfile()
-PUT    /api/users/update_profile    @controllers.UserProfileController.updateUserProfile()
+GET    /api/users/profile       @controllers.UserProfileController.getUserProfile()
+POST   /api/users/profile       @controllers.UserProfileController.updateUserProfile()
 
 # Backfill
 GET    /admin/backfill/healthId        @controllers.BackfillController.resetHealthId

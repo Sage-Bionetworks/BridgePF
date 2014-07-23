@@ -17,8 +17,8 @@ public class UserSessionInfo {
     public UserSessionInfo(UserSession session) {
         this.authenticated = session.isAuthenticated();
         this.sessionToken = session.getSessionToken();
-        this.username = session.getUsername();
         this.consented = session.doesConsent();
+        this.username = session.getUser().getUsername();
     }
 
     public boolean isAuthenticated() {
