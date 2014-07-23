@@ -10,7 +10,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -30,7 +29,6 @@ import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.AccountStore;
 import com.stormpath.sdk.directory.Directory;
 
 import controllers.StudyControllerService;
@@ -147,10 +145,6 @@ public class AuthenticationServiceImplTest {
         Study defaultStudy = studyControllerService.getStudies().iterator().next();
         SignUp signUp = new SignUp("secondStudyUser", "secondStudyUser@sagebase.org", "P4ssword");
 
-        // Must be in production. 
-        BridgeConfig config = new BridgeConfig(Environment.PROD, bridgeConfig.getUser(), null);
-        service.setBridgeConfig(config);
-        
         deleteAccount(signUp);
         service.signUp(signUp, study);
 
