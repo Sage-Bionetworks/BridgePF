@@ -7,21 +7,18 @@ public class UserSession {
     private String environment;
     private String healthDataCode;
     private String sessionToken;
-    private String stormpathHref;
     private String studyKey;
-    private String username;
+    private UserProfile user;
+    
+    public UserSession() {
+        this.user = new UserProfile();
+    }
 
     public String getSessionToken() {
         return sessionToken;
     }
     public void setSessionToken(String sessionToken) {
         this.sessionToken = sessionToken;
-    }
-    public String getUsername() {
-        return username;
-    }
-    public void setUsername(String username) {
-        this.username = username;
     }
     public boolean isAuthenticated() {
         return authenticated;
@@ -34,12 +31,6 @@ public class UserSession {
     }
     public void setEnvironment(String environment) {
         this.environment = environment;
-    }
-    public String getStormpathHref() {
-        return stormpathHref;
-    }
-    public void setStormpathHref(String stormpathHref) {
-        this.stormpathHref = stormpathHref;
     }
     public String getStudyKey() {
         return studyKey;
@@ -62,5 +53,11 @@ public class UserSession {
     }
     public void setHealthDataCode(String healthDataCode) {
         this.healthDataCode = healthDataCode;
+    }
+    public UserProfile getUser() {
+        return user;
+    }
+    public void setUser(UserProfile user) {
+        this.user = user;
     }
 }

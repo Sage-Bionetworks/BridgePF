@@ -68,23 +68,18 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void signInCorrectCredentials() throws Exception {
-        UserSession session = service.signIn(TEST_STUDY, new SignIn(
-                TEST2.USERNAME, TEST2.PASSWORD));
+        UserSession session = service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
 
-        assertEquals("Username is for test2 user", TEST2.USERNAME,
-                session.getUsername());
-        assertTrue("Session token has been assigned",
-                StringUtils.isNotBlank(session.getSessionToken()));
+        assertEquals("Username is for test2 user", TEST2.USERNAME, session.getUser().getUsername());
+        assertTrue("Session token has been assigned", StringUtils.isNotBlank(session.getSessionToken()));
     }
 
     @Test
     public void signInWhenSignedIn() throws Exception {
         service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
 
-        UserSession session = service.signIn(TEST_STUDY, new SignIn(
-                TEST2.USERNAME, TEST2.PASSWORD));
-        assertEquals("Username is for test2 user", TEST2.USERNAME,
-                session.getUsername());
+        UserSession session = service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
+        assertEquals("Username is for test2 user", TEST2.USERNAME, session.getUser().getUsername());
     }
 
     @Test
@@ -99,14 +94,11 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void getSessionWhenAuthenticated() throws Exception {
-        UserSession session = service.signIn(TEST_STUDY, new SignIn(
-                TEST2.USERNAME, TEST2.PASSWORD));
+        UserSession session = service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
         session = service.getSession(session.getSessionToken());
 
-        assertEquals("Username is for test2 user", TEST2.USERNAME,
-                session.getUsername());
-        assertTrue("Session token has been assigned",
-                StringUtils.isNotBlank(session.getSessionToken()));
+        assertEquals("Username is for test2 user", TEST2.USERNAME, session.getUser().getUsername());
+        assertTrue("Session token has been assigned", StringUtils.isNotBlank(session.getSessionToken()));
     }
 
     @Test(expected = BridgeServiceException.class)

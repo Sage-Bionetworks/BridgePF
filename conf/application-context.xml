@@ -99,6 +99,16 @@
         </property>
     </bean>
 
+    <bean id="controllers.UserProfileController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.UserProfileController">
+                <property name="authenticationService" ref="authenticationService"/>
+                <property name="cacheProvider" ref="cacheProvider"/>
+                <property name="userProfileService" ref="userProfileService"/>
+            </bean>
+        </property>
+    </bean>
+    
     <bean id="controllers.BackfillController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.BackfillController">
@@ -167,6 +177,7 @@
         <property name="bridgeConfig" ref="bridgeConfig"/>
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
+        <property name="userProfileService" ref="userProfileService" />
     </bean>
 
     <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">
@@ -191,6 +202,10 @@
             </bean>
         </property>
         <property name="cacheProvider" ref="cacheProvider"/>
+    </bean>
+    
+    <bean id="userProfileService" class="org.sagebionetworks.bridge.services.UserProfileServiceImpl">
+        <property name="stormpathClient" ref="stormpathClient" />
     </bean>
 
     <!-- Backfill -->
