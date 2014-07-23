@@ -137,19 +137,18 @@ public class HealthDataControllerTest {
             public void testCode() throws Exception {
                 String sessionToken = TestUtils.signIn();
 
-                // Time ranges used in this test, and where they overlap with
-                // the 3 test windows or not.
-                // 1 1...<2
-                // 2 1............3
-                // 3 4............6
-                // 4 3...........................4
-                // 5 >5.....6
-                // 6 3............................................
+                // Time ranges used in this test, and where they overlap with the 3 test windows or not.
+                //       1        1...<2
+                //       2        1............3
+                //       3                                                 4............6
+                //       4                     3...........................4
+                //       5                                                       >5.....6
+                //       6                     3............................................
                 //
-                // 2__________________________________________5
-                // 1____________3
-                // 4_____5
-
+                //                     2__________________________________________5
+                //                1____________3
+                //                                                         4______5
+                
                 long threeDays = (1000L * 60L * 60L * 24L * 3L);
 
                 long thousandDaysAgo = new Date().getTime() - (1000 * 60 * 60 * 24 * 1000);
@@ -162,32 +161,38 @@ public class HealthDataControllerTest {
 
                 List<HealthDataRecord> records = getTestRecords(time1, time2 - 1);
                 Response response = TestUtils.getURL(sessionToken, TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                                        .post(mapper.writeValueAsString(records))
+                                        .get(TIMEOUT);
                 String id1 = retrieveNewId(response);
 
                 records = getTestRecords(time1, time3);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records))
-                        .get(TIMEOUT);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL)
+                            .post(mapper.writeValueAsString(records))
+                            .get(TIMEOUT);
                 String id2 = retrieveNewId(response);
 
                 records = getTestRecords(time4, time6);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records))
-                        .get(TIMEOUT);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL)
+                            .post(mapper.writeValueAsString(records))
+                            .get(TIMEOUT);
                 String id3 = retrieveNewId(response);
 
                 records = getTestRecords(time3, time4);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records))
-                        .get(TIMEOUT);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL)
+                            .post(mapper.writeValueAsString(records))
+                            .get(TIMEOUT);
                 String id4 = retrieveNewId(response);
 
                 records = getTestRecords(time5 + 1, time6);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records))
-                        .get(TIMEOUT);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL)
+                            .post(mapper.writeValueAsString(records))
+                            .get(TIMEOUT);
                 String id5 = retrieveNewId(response);
 
                 records = getTestRecords(time3, 0);
-                response = TestUtils.getURL(sessionToken, TRACKER_URL).post(mapper.writeValueAsString(records))
-                        .get(TIMEOUT);
+                response = TestUtils.getURL(sessionToken, TRACKER_URL)
+                            .post(mapper.writeValueAsString(records))
+                            .get(TIMEOUT);
                 String id6 = retrieveNewId(response);
 
                 String queryPath = String.format("/%s/%s", Long.toString(time2), Long.toString(time5));
@@ -222,7 +227,8 @@ public class HealthDataControllerTest {
                 List<HealthDataRecord> records = getTestRecords();
 
                 Response response = TestUtils.getURL(sessionToken, TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                                        .post(mapper.writeValueAsString(records))
+                                        .get(TIMEOUT);
                 assertEquals("Response status indicates OK response", OK, response.getStatus());
 
                 // Get the id and set it on the object
@@ -235,7 +241,8 @@ public class HealthDataControllerTest {
 
                 // Save it (update)
                 response = TestUtils.getURL(sessionToken, RECORD_URL + id)
-                        .post(mapper.writeValueAsString(records.get(0))).get(TIMEOUT);
+                            .post(mapper.writeValueAsString(records.get(0)))
+                            .get(TIMEOUT);
                 assertEquals("Response status indicates OK response", OK, response.getStatus());
 
                 // Get it and verify that it was persisted.
