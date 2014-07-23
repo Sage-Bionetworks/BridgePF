@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 
 import org.jasypt.properties.EncryptableProperties;
@@ -69,7 +71,7 @@ public class BridgeConfig {
             }
         }
     };
-
+    
     BridgeConfig() {
         this(new File(DEFAULT_CONFIG_FILE));
     }
@@ -109,6 +111,18 @@ public class BridgeConfig {
 
         // Decryptable properties
         this.properties = new EncryptableProperties(collapsed, encryptor);
+    }
+    
+    // Creating configuration for tests
+    public BridgeConfig(Environment environment, String user, Map<String,String> map) {
+        this.environment = environment;
+        this.user = user;
+        this.properties = new Properties();
+        if (map != null) {
+            for (Map.Entry<String,String> entry : map.entrySet()) {
+                properties.put(entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     public String getUser() {

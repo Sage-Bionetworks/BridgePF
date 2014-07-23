@@ -33,6 +33,10 @@ public class BasePage {
     protected void waitUntilDisplayed(String cssSelector) {
         browser.await().atMost(10, TimeUnit.SECONDS).until(cssSelector).areDisplayed();
     }
+    
+    protected void waitUntilEnabled(String cssSelector) {
+        browser.await().atMost(10, TimeUnit.SECONDS).until(cssSelector).areEnabled();
+    }
 
     /**
      * If you force the focus to shift to the first element of a form, this can interfere
