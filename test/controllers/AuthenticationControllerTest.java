@@ -20,26 +20,26 @@ import static org.junit.Assert.*;
 public class AuthenticationControllerTest {
 
     @Test
-    public void signInNoCredentialsFailsWith400() {
+    public void signInNoCredentialsFailsWith404() {
         running(testServer(3333), new Runnable() {
             public void run() {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 Response response = WS.url(TEST_URL + SIGN_IN_URL)
                         .post(node)
                         .get(TIMEOUT);
-                assertEquals("HTTP response indicates bad request", NOT_FOUND, response.getStatus());
+                assertEquals("HTTP response indicates user not found", NOT_FOUND, response.getStatus());
             }
         });
     }
 
     @Test
-    public void signInGarbageCredentialsFailsWith400() {
+    public void signInGarbageCredentialsFailsWith404() {
         running(testServer(3333), new Runnable() {
             public void run() {
                 Response response = WS.url(TEST_URL + SIGN_IN_URL)
                         .post("username=bob&password=foo")
                         .get(TIMEOUT);
-                assertEquals("HTTP response indicates bad request", NOT_FOUND, response.getStatus());
+                assertEquals("HTTP response indicates user not found", NOT_FOUND, response.getStatus());
             }
         });
     }
