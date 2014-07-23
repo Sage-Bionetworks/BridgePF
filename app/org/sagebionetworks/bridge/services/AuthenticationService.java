@@ -20,7 +20,7 @@ public interface AuthenticationService {
 
     public void signOut(String sessionToken);
 
-    public void signUp(SignUp signUp) throws BridgeServiceException;
+    public void signUp(SignUp signUp, Study study) throws BridgeServiceException;
 
     public UserSession verifyEmail(Study study, EmailVerification verification) throws ConsentRequiredException,
             BridgeServiceException;

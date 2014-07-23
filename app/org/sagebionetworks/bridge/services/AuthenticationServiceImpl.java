@@ -28,7 +28,6 @@ import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.AccountStore;
 import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.resource.ResourceException;
@@ -117,7 +116,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void signUp(SignUp signUp) throws BridgeServiceException {
+    public void signUp(SignUp signUp, Study study) throws BridgeServiceException {
         if (signUp == null) {
             throw new BridgeServiceException("SignUp object is required", HttpStatus.SC_BAD_REQUEST);
         } else if (StringUtils.isBlank(signUp.getEmail())) {
@@ -128,11 +127,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BridgeServiceException("Email address does not appear to be valid", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            // Is it necessary to do two requests like this? Is it two requests?
-            Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-            AccountStore store = application.getDefaultAccountStore();
-            Directory directory = stormpathClient.getResource(store.getHref(), Directory.class);
-            
+            Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
             Account account = stormpathClient.instantiate(Account.class);
             account.setGivenName("<EMPTY>");
             account.setSurname("<EMPTY>");
