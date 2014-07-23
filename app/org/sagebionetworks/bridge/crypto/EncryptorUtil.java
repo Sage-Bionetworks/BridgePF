@@ -1,9 +1,6 @@
 package org.sagebionetworks.bridge.crypto;
 
 import org.jasypt.encryption.StringEncryptor;
-import org.jasypt.encryption.pbe.PBEStringEncryptor;
-import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
-import org.jasypt.salt.StringFixedSaltGenerator;
 
 public class EncryptorUtil {
 
@@ -24,16 +21,5 @@ public class EncryptorUtil {
         } else {
             System.out.println("Decrypted: " + encryptor.decrypt(args[1]));
         }
-    }
-
-    /**
-     * Gets a password-based string encryptor.
-     */
-    @Deprecated
-    public static PBEStringEncryptor getEncryptorOld(final String password, final String salt) {
-        StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
-        encryptor.setPassword(password);
-        encryptor.setSaltGenerator(new StringFixedSaltGenerator(salt));
-        return encryptor;
     }
 }

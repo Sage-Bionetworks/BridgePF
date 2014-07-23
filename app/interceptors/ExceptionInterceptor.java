@@ -34,7 +34,10 @@ public class ExceptionInterceptor implements MethodInterceptor {
                         Json.toJson(new JsonPayload<UserSessionInfo>(cre.getUserSession())));
             }
 
-            Logger.error(throwable.getMessage(), throwable);
+            // Don't log errors here. Log at the source with a level of detail that's useful for 
+            // developers, at the correct level of severity.
+            Logger.debug(throwable.getMessage(), throwable);
+            
             int status = 500;
             if (throwable instanceof BridgeServiceException) {
                 status = ((BridgeServiceException)throwable).getStatusCode();
