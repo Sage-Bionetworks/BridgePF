@@ -11,7 +11,7 @@ import play.mvc.*;
 public class ApplicationController extends BaseController {
 
     private StudyControllerService studyControllerService;
-
+    
     public void setStudyControllerService(StudyControllerService studyControllerService) {
         this.studyControllerService = studyControllerService;
     }

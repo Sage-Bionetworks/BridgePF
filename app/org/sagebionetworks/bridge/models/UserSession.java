@@ -8,10 +8,10 @@ public class UserSession {
     private String healthDataCode;
     private String sessionToken;
     private String studyKey;
-    private User user;
+    private UserProfile user;
     
     public UserSession() {
-        this.user = new User();
+        this.user = new UserProfile();
     }
 
     public String getSessionToken() {
@@ -54,28 +54,10 @@ public class UserSession {
     public void setHealthDataCode(String healthDataCode) {
         this.healthDataCode = healthDataCode;
     }
-    
-    /*
-     * User Object
-     */
-    public User getUser() {
+    public UserProfile getUser() {
         return user;
     }
-    public void setUser(User user) {
+    public void setUser(UserProfile user) {
         this.user = user;
     }
-    public String getUsername() {
-        return user.getUsername();
-    }
-    public void setUsername(String username) {
-        user.setUsername(username);
-    }
-    public String getStormpathHref() {
-        return user.getStormpathHref();
-    }
-    public void setStormpathHref(String stormpathHref) {
-        user.setStormpathHref(stormpathHref);
-    }
-    
-   
 }

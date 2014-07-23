@@ -5,7 +5,10 @@ import static org.sagebionetworks.bridge.TestConstants.*;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
-import org.sagebionetworks.bridge.models.User;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.sagebionetworks.bridge.models.UserProfile;
 
 import play.libs.WS;
 import play.libs.WS.Response;
@@ -82,8 +85,8 @@ public class TestUtils {
         });
     }
     
-    public static User constructTestUser(UserCredentials cred) {
-        User user = new User();
+    public static UserProfile constructTestUser(UserCredentials cred) {
+        UserProfile user = new UserProfile();
         user.setEmail(cred.EMAIL);
         user.setUsername(cred.USERNAME);
         user.setFirstName(cred.FIRSTNAME);
@@ -91,5 +94,16 @@ public class TestUtils {
         user.setStormpathHref("<EMPTY>");
         
         return user;
+    }
+    
+    public static List<String> getUserProfileFieldNames() {
+        List<String> fieldNames = new ArrayList<String>();
+        fieldNames.add("firstName");
+        fieldNames.add("lastName");
+        fieldNames.add("username");
+        fieldNames.add("email");
+        fieldNames.add("stormpathHref");
+        
+        return fieldNames;
     }
 }

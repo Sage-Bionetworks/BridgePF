@@ -103,6 +103,7 @@
         <property name="target">
             <bean class="controllers.UserProfileController">
                 <property name="authenticationService" ref="authenticationService"/>
+                <property name="cacheProvider" ref="cacheProvider"/>
                 <property name="userProfileService" ref="userProfileService"/>
             </bean>
         </property>
