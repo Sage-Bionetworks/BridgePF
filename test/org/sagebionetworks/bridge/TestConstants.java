@@ -44,6 +44,7 @@ public class TestConstants {
 
     public static final int TIMEOUT = 10000;
     public static final String TEST_URL = "http://localhost:3333";
+    public static final String CONSENT_TEST_URL = "http://localhost:3333/consent/asdf";
     public static final String SIGN_OUT_URL = "/api/auth/signOut";
     public static final String SIGN_IN_URL = "/api/auth/signIn";
 
