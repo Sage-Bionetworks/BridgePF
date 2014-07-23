@@ -8,6 +8,7 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -117,8 +118,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void signUp(SignUp signUp) throws BridgeServiceException {
-        if (signUp == null) {
+    public void signUp(SignUp signUp, Study study) throws BridgeServiceException {
+        if (study == null) {
+            throw new BridgeServiceException("Study object is required", HttpStatus.SC_BAD_REQUEST);
+        } else if (StringUtils.isBlank(study.getStormpathDirectoryHref())) {
+            throw new BridgeServiceException("Study's StormPath directory HREF is required", HttpStatus.SC_BAD_REQUEST);
+        } else if (signUp == null) {
             throw new BridgeServiceException("SignUp object is required", HttpStatus.SC_BAD_REQUEST);
         } else if (StringUtils.isBlank(signUp.getEmail())) {
             throw new BridgeServiceException("Email is required", HttpStatus.SC_BAD_REQUEST);
@@ -128,11 +133,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BridgeServiceException("Email address does not appear to be valid", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            // Is it necessary to do two requests like this? Is it two requests?
-            Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-            AccountStore store = application.getDefaultAccountStore();
-            Directory directory = stormpathClient.getResource(store.getHref(), Directory.class);
-            
+            // In any environment other than production, there is only one directory backing that 
+            // environment. In production, each study has its own user directory so each study can 
+            // send email with different URLs back to the application (different host names). If you 
+            // access bridge-prod.herokuapp.com, we use the Parkinson's Disease Mobile Study.
+            Directory directory = null;
+            if (config.isProduction()) {
+                directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
+            } else {
+                Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+                AccountStore store = application.getDefaultAccountStore();
+                directory = stormpathClient.getResource(store.getHref(), Directory.class);
+            }
             Account account = stormpathClient.instantiate(Account.class);
             account.setGivenName("<EMPTY>");
             account.setSurname("<EMPTY>");
@@ -244,17 +256,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         CustomData data = account.getCustomData();
         String consentKey = study.getKey()+BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
-        final boolean consented = "true".equals(data.get(consentKey));
-        session.setConsent(consented);
+        session.setConsent( "true".equals(data.get(consentKey)) );
         
-        if (consented) {
+        // New users will not yet have consented and generated a health ID, so skip this if it doesn't exist.
+        if (session.isConsent()) {
             final String hdcKey = study.getKey()+BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
             final String encryptedId = (String)data.get(hdcKey);
             String healthId = healthCodeEncryptor.decrypt(encryptedId);
             String healthCode = healthCodeService.getHealthCode(healthId);
             session.setHealthDataCode(healthCode);
         }
-
         return session;
     }
 }

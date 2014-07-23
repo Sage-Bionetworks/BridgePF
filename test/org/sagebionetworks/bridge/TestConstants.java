@@ -36,7 +36,7 @@ public class TestConstants {
     public static final UserCredentials TEST4 = new UserCredentials("test4",
             "P4ssword", "test4@sagebase.org");
     public static final Study TEST_STUDY = new Study(
-            "Neuro-Degenerative Diseases Study", "neurod", null, null);
+            "Neuro-Degenerative Diseases Study", "neurod", null, null, null);
 
     public static final int TIMEOUT = 10000;
     public static final String TEST_URL = "http://localhost:3333";
