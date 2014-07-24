@@ -132,6 +132,7 @@ function($scope, $humane, $window, $http, formService, learnMoreService) {
         var animStep = 0, elements = [], length = 0;
         addToElements(".info", ".image", "footer ");
         
+        animating = true;
         setTimeout(animate, animation_delay);
 
         function addToElements() {
@@ -153,7 +154,6 @@ function($scope, $humane, $window, $http, formService, learnMoreService) {
             }
         }
         function animate() {
-            animating = true;
             elements.forEach(function(nl) {
                 nl[animStep].style.opacity = 0;
             });
