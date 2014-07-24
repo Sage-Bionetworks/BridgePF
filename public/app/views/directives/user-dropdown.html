@@ -1,0 +1,19 @@
+<section class="dropdown btn-group" ng-show="session.authenticated">
+    <button class="btn btn-default">
+        <span ng-bind="session.username"></span>
+    </button>
+    <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" ng-show="session.sessionToken">
+        <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-right">
+        <li tabIndex="-1" ng-repeat="link in menuLinks">
+            <img src="{{ link.imgHref }}"></img>
+            <a href="{{ link.href }}">{{ link.name }}</a>
+        </li>
+    </ul>
+</section>
+
+        <!-- <li tabIndex="-1">
+            <img></img>
+            <a id="signOutLink" ng-click="signOut()">Log Out</a>
+        </li> -->

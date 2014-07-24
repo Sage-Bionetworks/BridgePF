@@ -1,3 +1,7 @@
+$white: #FFFFFF;
+$green: #A9D385;
+$dark_blue: #1E429B;
+
 .main-pane {
     padding: 2rem;
     background-color: white;
@@ -10,7 +14,8 @@
 }
 .header {
     font-family: 'Helvetica Neue', sans-serif;
-    background: white url(/neurod/images/bridge_logo.svg) left center no-repeat;
+    font-weight: 700;
+    background: $green url(/neurod/images/bridge_logo.svg) left center no-repeat;
     background-size: 9rem;
 
     > * {
@@ -18,7 +23,7 @@
         vertical-align: middle;
     }
     a, a:visited, a:active {
-        color: #58585B;
+        color: $white;
         padding-left: 8.7rem;
         padding-top: 0.4rem;
         text-decoration: none;
@@ -34,13 +39,22 @@
     .bridge-header {
         line-height: 6rem;
         text-align: right;
-        span {
-            padding-right: 2rem;
-        } 
         form {
             margin-right: -15px; /* Squish login form to far right of box, no additional padding */
         }
+ 
+        section {
+           button:first-child {
+                color: $dark_blue;
+                font-weight: 700;
+            }
+            ul > li > a {
+                font-weight: 700;
+                text-align: left;
+            }
+        } 
     }
+
 }
 
 /* Login */
