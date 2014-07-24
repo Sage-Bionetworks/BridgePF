@@ -4,6 +4,12 @@ import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.*;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.sagebionetworks.bridge.models.UserProfile;
+
 import play.libs.WS;
 import play.libs.WS.Response;
 import play.libs.WS.WSRequestHolder;
@@ -77,5 +83,27 @@ public class TestUtils {
                 signOut();
             }
         });
+    }
+    
+    public static UserProfile constructTestUser(UserCredentials cred) {
+        UserProfile user = new UserProfile();
+        user.setEmail(cred.EMAIL);
+        user.setUsername(cred.USERNAME);
+        user.setFirstName(cred.FIRSTNAME);
+        user.setLastName(cred.LASTNAME);
+        user.setStormpathHref("<EMPTY>");
+        
+        return user;
+    }
+    
+    public static List<String> getUserProfileFieldNames() {
+        List<String> fieldNames = new ArrayList<String>();
+        fieldNames.add("firstName");
+        fieldNames.add("lastName");
+        fieldNames.add("username");
+        fieldNames.add("email");
+        fieldNames.add("stormpathHref");
+        
+        return fieldNames;
     }
 }
