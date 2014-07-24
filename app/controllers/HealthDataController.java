@@ -38,19 +38,6 @@ public class HealthDataController extends BaseController {
         this.studyControllerService = scs;
     }
     
-    // This is needed or tests fail. It appears to be a bug in Play Framework, that the asJson()
-    // method doesn't return a node in that context, possibly because the root object in the JSON 
-    // is an array (which is legal). OTOH, if asJson() works, you will get an error if you call 
-    // asText(), as Play seems to only allow processing the body content one time in a request.
-    private JsonNode requestToJSON(Request request) throws JsonProcessingException, IOException {
-        JsonNode node = request().body().asJson();
-        if (node == null) {
-            ObjectMapper mapper = new ObjectMapper();
-            node = mapper.readTree(request().body().asText());
-        }
-        return node;
-    }
-    
     public Result appendHealthData(Long trackerId) throws Exception {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());

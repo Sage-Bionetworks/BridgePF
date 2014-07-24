@@ -16,10 +16,10 @@ function($scope, $humane, $window, $http, formService, learnMoreService) {
     var YEARS_17 = (new Date().getTime() - (17 * 365 * 24 * 60 * 60 * 1000));
     
     var mobileSteps = ["welcome", "tasks", "sensors", "deidentification", "aggregation", 
-        "impact", "risk", "withdrawal", "consent", "thankyou"];
+        "impact", "risk", "risk2", "withdrawal", "consent", "thankyou"];
     
     var desktopSteps = ["welcome", "tasks", "sensorsDesktop", "deidentification", "aggregation", 
-        "impact", "risk", "withdrawal", "consent", "thankyou"];
+        "impact", "risk", "risk2", "withdrawal", "consent", "thankyou"];
     
     var stepFunctions = {
         "welcome": angular.identity,
@@ -30,6 +30,7 @@ function($scope, $humane, $window, $http, formService, learnMoreService) {
         "aggregation": startAnimation,
         "impact": angular.identity,
         "risk": startAnimation,
+        "risk2": startAnimation,
         "withdrawal": angular.identity,
         "consent": focusName,
         "thankyou": angular.identity
@@ -54,6 +55,12 @@ function($scope, $humane, $window, $http, formService, learnMoreService) {
     
     $scope.nextStepIfDesktop = function() {
         if (!window.mobile) {
+            $scope.nextStep();
+        }
+    };
+    
+    $scope.nextStepIfAnimDone = function() {
+        if (!animating) {
             $scope.nextStep();
         }
     };
@@ -119,12 +126,13 @@ function($scope, $humane, $window, $http, formService, learnMoreService) {
     /* DE-IDENTIFICATION, AGGREGATION, RISK ANIMATION */
     /* -------------------------------------------------------------------- */
 
-    var animation_delay = 300;
+    var animation_delay = 400, animating = false;
     
     function startAnimation(stepSelector) {
         var animStep = 0, elements = [], length = 0;
         addToElements(".info", ".image", "footer ");
         
+        animating = true;
         setTimeout(animate, animation_delay);
 
         function addToElements() {
@@ -155,6 +163,8 @@ function($scope, $humane, $window, $http, formService, learnMoreService) {
             });
             if (animStep < (length-1)) {
                 setTimeout(animate, animation_delay);
+            } else {
+                animating = false;
             }
         }
     }

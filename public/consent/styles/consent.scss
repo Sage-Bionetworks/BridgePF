@@ -25,6 +25,57 @@ $footerHeight: 4rem;
     background-color: $lightblue; 
 }
 
+@mixin flexbox {
+    display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
+    display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
+    display: -ms-flexbox;      /* TWEENER - IE 10 */
+    display: -webkit-flex;     /* NEW - Chrome */
+    display: flex;
+    
+    -webkit-flex-direction: column;
+    -moz-box-orient: vertical;
+    box-orient: vertical;
+    flex-direction: column;
+    -webkit-box-orient: vertical;
+    
+    -webkit-align-items: center;
+    -moz-align-items: center;
+    -ms-align-items: center;
+    align-items: center;
+        
+    -webkit-justify-content: center;
+    -moz-justify-content: center;
+    -ms-justify-content: center;
+    justify-content: center;
+    
+    -webkit-align-content: center;
+    -moz-align-content: center;
+    -ms-align-content: center;
+    align-content: center;
+    
+    -moz-box-pack:center;
+    -moz-box-align:center;
+    -webkit-box-pack:center;
+    -webkit-box-align:center;
+    box-pack:center;
+    box-align:center; 
+}
+@mixin flex_1 {
+    -webkit-box-flex: 1;      /* OLD - iOS 6-, Safari 3.1-6 */
+    -moz-box-flex: 1;         /* OLD - Firefox 19- */
+    -webkit-flex: 1;          /* Chrome */
+    -ms-flex: 1;              /* IE 10 */
+    flex: 1;                  /* NEW, Spec - Opera 12.1, Firefox 20+ */
+}
+@mixin flex_2 {
+    -webkit-box-flex: 3;      /* OLD - iOS 6-, Safari 3.1-6 */
+    -moz-box-flex: 3;         /* OLD - Firefox 19- */
+    -webkit-flex: 3;          /* Chrome */
+    -ms-flex: 3;              /* IE 10 */
+    flex: 3;                  /* NEW, Spec - Opera 12.1, Firefox 20+ */
+}
+
+
 html {
     margin: 0; 
     padding: 0;
@@ -141,6 +192,7 @@ header {
 #aggregation .wiz div:nth-child(5) ~ div span,
 #impact .wiz div:nth-child(6) ~ div span,
 #risk .wiz div:nth-child(7) ~ div span,
+#risk2 .wiz div:nth-child(7) ~ div span,
 #withdrawal .wiz div:nth-child(8) ~ div span,
 #consent .wiz div:nth-child(9) ~ div span, 
 #thankyou .wiz div:nth-child(9) ~ div span {
@@ -156,23 +208,59 @@ article {
     overflow: auto;
     padding: 2rem 3rem;
     
+    @include flexbox;
+    
     .info {
+        @include flex_1;
+        @include flexbox;
         text-align: center;
-        /* Height is also adjusted below for specific cards. */
-        height: 5rem;
+        
+        &.animcell {
+            & > * {
+                opacity: 0;
+            }
+            & > *:first-child {
+                opacity: 1;
+            }            
+        }
     }
     .more_info {
-        text-align: center;
+        @include flex_1;
+        @include flexbox;
     }
     .help {
-        text-align: center;
+        @include flex_1;
+        @include flexbox;
     }
     .image {
+        @include flex_2;
+        @include flexbox;
+        width: 32rem;
+        max-width: 32rem;
+        position: relative;
         text-align: center;
-        img {
-            width: 100%;
-            max-width: 320px;
+        &.animcell {
+            & > * {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                text-align: center;
+                opacity: 0;
+                
+                img {
+                    display: inline-block;
+                    height: 100%;
+                    max-width: 100%;
+                }
+                
+            }
+            & > *:first-child {
+                opacity: 1;
+            }
         }
+        
     }
     
     .bold {
@@ -181,8 +269,6 @@ article {
     .button {
         border-radius: 1.5rem;
         padding: .35rem 3rem;
-        margin: 1.5rem 0;
-        display: inline-block;
         letter-spacing: 1px;
     }
     .lm {
@@ -200,18 +286,6 @@ article {
     .lm-pressed {
         background-color: #2D628E;
     }
-    .animcell {
-        position: relative;
-        
-        & > * {
-            position: absolute;
-            width: 100%;
-            opacity: 0;
-        }
-        & > *:first-child {
-            opacity: 1;
-        }
-    }
 }
 #tasks {
     .image {
@@ -224,18 +298,12 @@ article {
         }
     }
     img {
-        width: 10.2rem;
-        height: 10.2rem;
-        margin: 1rem;
+        width: 10rem;
+        height: 10rem;
+        margin: .8rem;
     }
-}
-#welcome .info {
-    height: 12rem;
 }
 #consent {
-    .info {
-        line-height: 1.1;
-    }
     .help {
         font-size: 1.8rem;
     }
@@ -250,11 +318,8 @@ article {
     .info {
         font-size: 1.8rem;
         font-weight: bold;
-        padding: 0 5rem;
     }
     .sub_info {
-        margin-top: 10rem;
-        text-align: center;
         font-size: 1.8rem;
     }
 }
@@ -309,7 +374,6 @@ footer {
 .desktop .action:after { content: "Click"; }
 .mobile .action:after { content: "Tap"; }
 
-
 /* Older, shorter iPhones, shorten things so page doesn't scroll. */
 @media screen and (max-height: 480px) {
     #tasks .image image {
@@ -320,7 +384,6 @@ footer {
 }
 
 @media screen and (min-width: 1025px) { /* Desktop */
-    /*html { font-size: 14px; }*/
     .header { display: table; }
     header { height: 15rem; }
     article { top: 15rem; }

@@ -13,8 +13,7 @@ public class AppPage extends BasePage {
     public AppPage(TestBrowser browser) {
         super(browser);
         browser.goTo(TEST_URL);
-        assertTrue("Title includes phrase 'Sage Bionetworks'", browser
-                .pageSource().contains("Sage Bionetworks"));
+        assertTrue("Title includes phrase 'Sage Bionetworks'", browser.pageSource().contains("Sage Bionetworks"));
     }
 
     public JoinPage getJoinPage() {
@@ -27,6 +26,7 @@ public class AppPage extends BasePage {
     public SignInDialog openSignInDialog() {
         signInLink().click();
         waitUntilPresent(SIGN_IN_DIALOG);
+        waitUntilScriptHasFocused(USERNAME_INPUT);
         return new SignInDialog(browser);
     }
     
@@ -76,8 +76,7 @@ public class AppPage extends BasePage {
             enterCredentials(username, password);
             signInAction().click();
             waitUntilDisplayed(USERNAME_LABEL);
-            assertTrue("User label includes user's name", userLabel().getText()
-                    .equals(username));
+            assertTrue("User label includes user's name", userLabel().getText().equals(username));
         }
 
         public void close() {
@@ -151,11 +150,6 @@ public class AppPage extends BasePage {
         private FluentWebElement closeButton() {
             waitUntilPresent(CLOSE_ACTION);
             return browser.findFirst(CLOSE_ACTION);
-        }
-
-        private FluentWebElement messagePopup() {
-            waitUntilPresent(TOAST_DIALOG);
-            return browser.findFirst(TOAST_DIALOG);
         }
 
         private FluentWebElement sendEmailButton() {

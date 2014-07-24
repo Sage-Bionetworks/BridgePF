@@ -6,7 +6,7 @@ public class TrackerInfo {
     private String type;
     private Long id;
     private String schemaUrl;
-    
+
     public TrackerInfo(Tracker tracker) {
         name = tracker.getName();
         type = tracker.getType();
@@ -17,7 +17,7 @@ public class TrackerInfo {
     public String getName() {
         return name;
     }
-    
+
     public String getType() {
         return type;
     }
