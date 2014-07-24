@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.sagebionetworks.bridge.TestConstants.*;
 import static org.junit.Assert.*;
 
-import java.util.Iterator;
-
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
