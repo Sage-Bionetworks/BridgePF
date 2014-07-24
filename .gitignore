@@ -17,3 +17,5 @@ setup.sh
 .target
 /bin
 .cache
+.vagrant
+
