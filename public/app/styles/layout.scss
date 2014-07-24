@@ -1,6 +1,7 @@
 $white: #FFFFFF;
 $green: #A9D385;
 $dark_blue: #1E429B;
+$black: #000000;
 
 .main-pane {
     padding: 2rem;
@@ -48,9 +49,21 @@ $dark_blue: #1E429B;
                 color: $dark_blue;
                 font-weight: 700;
             }
-            ul > li > a {
+            button {
+                border-radius: 0;
+                background: $white;
+            }
+            img {
+                display: inline;
+                max-width: 4rem;
+            }
+            ul {
+                border-radius: 0;
+                li > a {
+                color: $black;
                 font-weight: 700;
                 text-align: left;
+            }
             }
         } 
     }
