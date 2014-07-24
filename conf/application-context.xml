@@ -134,7 +134,7 @@
                             <ref bean="pb-tracker"/>
                             <ref bean="med-tracker"/>
                         </list>
-                    </constructor-arg>
+                    </constructor-arg>                    
                 </bean>
             </list>
         </property>
