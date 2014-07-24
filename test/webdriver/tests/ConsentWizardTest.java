@@ -40,7 +40,7 @@ public class ConsentWizardTest extends BaseIntegrationTest {
                 consentScreen.viewCompleteAgreement();
                 consentScreen.disagreeToConsent();
                 
-                ConsentPage.ThankYouScreen thankYouScreen = consentScreen.getThankYouScreen();
+                /*ConsentPage.ThankYouScreen thankYouScreen = */ consentScreen.getThankYouScreen();
             }
         });
     }
@@ -50,7 +50,7 @@ public class ConsentWizardTest extends BaseIntegrationTest {
     public void allLearnMoreButtonsWork() {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
-                ConsentPage page = new ConsentPage(browser);
+                //ConsentPage page = new ConsentPage(browser);
             }
         });
     }

@@ -32,10 +32,11 @@ $footerHeight: 4rem;
     display: -webkit-flex;     /* NEW - Chrome */
     display: flex;
     
-    -webkit-box-orient: column;
     -webkit-flex-direction: column;
     -moz-box-orient: vertical;
+    box-orient: vertical;
     flex-direction: column;
+    -webkit-box-orient: vertical;
     
     -webkit-align-items: center;
     -moz-align-items: center;

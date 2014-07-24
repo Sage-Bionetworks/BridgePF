@@ -1,9 +1,12 @@
 package webdriver.pages;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.sagebionetworks.bridge.TestConstants.CONSENT_TEST_URL;
 
 import org.fluentlenium.core.domain.FluentWebElement;
+
 import play.test.TestBrowser;
 
 public class ConsentPage extends BasePage {
@@ -19,12 +22,11 @@ public class ConsentPage extends BasePage {
         return new WelcomeScreen(browser); 
     }
     
-    private class BaseScreen {
+    private class BaseScreen extends BasePage {
         protected String id;
-        protected TestBrowser browser;
         protected BaseScreen(String id, TestBrowser browser) {
+            super(browser);
             this.id = id;
-            this.browser = browser;
         }
         protected FluentWebElement getLearnMoreButton() {
             String selector = id+" a[ng-click*='learnMore']";
@@ -37,17 +39,13 @@ public class ConsentPage extends BasePage {
         protected FluentWebElement getNextLinkIfDesktop() {
             return get("nextStepIfDesktop");
         }
-        protected FluentWebElement getNextLinkIfAnimDone() {
-            waitUntilDisplayed(id+" .action"); // wait until this is present
+        protected FluentWebElement getNextLinkWhenAnimationDone() {
+            waitUntilDisplayed(id + " .action");
             return get("nextStepIfAnimDone");
         }
         private FluentWebElement get(String name) {
             waitUntilPresent(id+" *[ng-click='"+name+"()']");
             return browser.findFirst(id+" *[ng-click='"+name+"()']");
-        }
-        protected void click(String cssSelector) {
-            waitUntilPresent(cssSelector);
-            browser.findFirst(cssSelector).click();
         }
     }
     
@@ -92,7 +90,7 @@ public class ConsentPage extends BasePage {
             super("#deidentification", browser);
         }
         public AggregationScreen getAggregationScreen() {
-            getNextLinkIfAnimDone().click();
+            getNextLinkWhenAnimationDone().click();
             waitUntilDisplayed("#aggregation");
             return new AggregationScreen(browser);
         }
@@ -103,7 +101,7 @@ public class ConsentPage extends BasePage {
             super("#aggregation", browser);
         }
         public ImpactScreen getImpactScreen() {
-            getNextLinkIfAnimDone().click();
+            getNextLinkWhenAnimationDone().click();
             waitUntilDisplayed("#impact");
             return new ImpactScreen(browser);
         }
@@ -125,7 +123,7 @@ public class ConsentPage extends BasePage {
             super("#risk", browser);
         }
         public Risk2Screen getRisk2Screen() {
-            getNextLinkIfAnimDone().click();
+            getNextLinkWhenAnimationDone().click();
             waitUntilDisplayed("#risk2");
             return new Risk2Screen(browser);
         }
@@ -136,7 +134,7 @@ public class ConsentPage extends BasePage {
             super("#risk2", browser);
         }
         public WithdrawalScreen getWithdrawalScreen() {
-            getNextLinkIfAnimDone().click();
+            getNextLinkWhenAnimationDone().click();
             waitUntilDisplayed("#withdrawal");
             return new WithdrawalScreen(browser);
         }
@@ -159,11 +157,14 @@ public class ConsentPage extends BasePage {
         }
         public void viewCompleteAgreement() {
             getLearnMoreButton().click();
+            waitUntilDisplayed("#consentDialog");
+            waitUntilDisplayed(".close");
+            click(".close");
         }
         public void disagreeToConsent() {
             getDeclineLink().click();
-            assertTrue("Message popup notes you must consent",
-                    messagePopup().getText().contains("You must give consent to participate in this study."));
+            String msg = messagePopup().getText();
+            assertEquals("Message notes you must consent","You must give consent to participate in this study.",msg);
         }
         public void enterEmptyConsent() {
             

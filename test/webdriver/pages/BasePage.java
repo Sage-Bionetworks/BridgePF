@@ -20,6 +20,11 @@ public class BasePage {
     protected BasePage(TestBrowser browser) {
         this.browser = browser;
     }
+    
+    protected void click(String cssSelector) {
+        waitUntilPresent(cssSelector);
+        browser.findFirst(cssSelector).click();
+    }
 
     protected void screenshot(String name) {
         browser.takeScreenShot("screenshots/" + name + ".png");
