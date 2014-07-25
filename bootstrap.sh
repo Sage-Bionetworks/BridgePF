@@ -29,32 +29,15 @@ npm install -g grunt-cli
 apt-get -q -y install ruby
 gem install sass
 
-# Build JavaScript
-pushd .
-cd /vagrant/public/app
-npm install
-bower --allow-root install
-cd ../neurod
-npm install
-bower --allow-root install
-cd ../shared
-npm install
-bower --allow-root install
-cd ../consent
-npm install
-bower --allow-root install
-cd ../
-npm install
-grunt release
-popd
-
 # Java
 apt-get -q -y install openjdk-7-jdk
 
 # Play
-wget http://downloads.typesafe.com/play/2.2.4/play-2.2.4.zip
-unzip play-2.2.4.zip
+su -c "wget http://downloads.typesafe.com/play/2.2.4/play-2.2.4.zip" - vagrant
+su -c "unzip play-2.2.4.zip" - vagrant
+su
 rm play-2.2.4.zip
+echo 'export PATH=$PATH:/home/vagrant/play-2.2.4' >> /home/vagrant/.profile
 
 # Redis
 apt-get -q -y install redis-server
