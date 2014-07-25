@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 
+export DEBIAN_FRONTEND=noninteractive
+
 # All the commands will run as the root by vagrant provisioning
 # unless the user is explicitly set.
 # Add '/usr/local/bin' to root's $PATH variable.
 export PATH=$PATH:/usr/local/bin
 
 # Update
+apt-get -q -y autoclean
+apt-get -q -y autoremove
 apt-get -q -y update
 apt-get -q -y upgrade
 
@@ -21,7 +25,7 @@ apt-get -q -y install npm
 npm install -g bower
 npm install -g grunt-cli
 
-# Ruby
+# Sass
 apt-get -q -y install ruby
 gem install sass
 
@@ -29,16 +33,16 @@ gem install sass
 pushd .
 cd /vagrant/public/app
 npm install
-bower install
+bower --allow-root install
 cd ../neurod
 npm install
-bower install
+bower --allow-root install
 cd ../shared
 npm install
-bower install
+bower --allow-root install
 cd ../consent
 npm install
-bower install
+bower --allow-root install
 cd ../
 npm install
 grunt release
