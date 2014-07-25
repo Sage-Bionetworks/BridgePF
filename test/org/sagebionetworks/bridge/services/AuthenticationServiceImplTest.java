@@ -133,7 +133,7 @@ public class AuthenticationServiceImplTest {
     
     @Test
     public void createUserInNonDefaultAccountStore() {
-        Study study = new Study("Second Study", "secondstudy", "https://api.stormpath.com/v1/directories/5RfWcEwOK0l7goGe4ZX9cz", null, null);
+        Study study = new Study("Second Study", "secondstudy", "https://api.stormpath.com/v1/directories/5RfWcEwOK0l7goGe4ZX9cz", null, null, null);
         Study defaultStudy = studyControllerService.getStudies().iterator().next();
         SignUp signUp = new SignUp("secondStudyUser", "secondStudyUser@sagebase.org", "P4ssword");
 

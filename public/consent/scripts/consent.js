@@ -211,7 +211,10 @@ function($scope, $humane, $window, $http, formService, learnMoreService) {
     $scope.maxDate = YEARS_17;
 
     $scope.submit = function() {
-        $http.post('/api/auth/consentToResearch').then(function(response) {
+        var consent = formService.formToJSON($scope.consentForm, ['name', 'birthdate']);
+        consent.birthdate = consent.birthdate.toISOString().split('T')[0];
+
+        $http.post('/api/auth/consentToResearch', consent).then(function(response) {
             $scope.nextStep();
         }, $humane.status);
     };
