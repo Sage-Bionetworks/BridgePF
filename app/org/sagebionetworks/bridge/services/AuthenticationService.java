@@ -6,6 +6,7 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
+import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
@@ -29,5 +30,6 @@ public interface AuthenticationService {
 
     public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException;
 
-    public void consentToResearch(String sessionToken) throws BridgeServiceException;
+    public void consentToResearch(String sessionToken, ResearchConsent consent, Study study)
+            throws BridgeServiceException;
 }

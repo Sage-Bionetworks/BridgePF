@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
+import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
@@ -75,11 +76,15 @@ public class AuthenticationController extends BaseController {
     }
     
     public Result consentToResearch() throws Exception {
+        // Don't call getSession(), it'll throw an exception due to lack of consent, we 
+        // know this person has not consented, that's what they're trying to do.
         UserSession session = checkForSession();
         if (session == null) {
             throw new BridgeServiceException("Not signed in.", 401);
         }
-        authenticationService.consentToResearch(session.getSessionToken());
+        ResearchConsent consent = ResearchConsent.fromJson(request().body().asJson());
+        Study study = studyControllerService.getStudyByHostname(request());
+        authenticationService.consentToResearch(session.getSessionToken(), consent, study);
         return jsonResult("Consent to research has been recorded.");
     }
     
