@@ -27,12 +27,12 @@ public class StudyControllerService {
         String hostname = getHostname(request);
         return studies.get(hostname);
     }
-
+    
     public Collection<Study> getStudies() {
         return Collections.unmodifiableCollection(studies.values());
     }
 
-    private String getHostname(Request request) {
+    public String getHostname(Request request) {
         // InetAddress.getLocalHost().getHostName() ?
         String host = request.host();
         if (host.indexOf(":") > -1) {
