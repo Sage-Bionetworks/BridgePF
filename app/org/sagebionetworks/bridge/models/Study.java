@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
+import org.springframework.core.io.Resource;
 
 public class Study {
 
@@ -15,13 +16,16 @@ public class Study {
      * study, linking back to the correct host name for that study.
      */
     private String stormpathDirectoryHref;
+    private Resource consentAgreement;
     private List<String> hostnames = Collections.emptyList();
     private List<Tracker> trackers = Collections.emptyList();
     
-    public Study(String name, String key, String stormpathDirectoryHref, List<String> hostnames, List<Tracker> trackers) {
+    public Study(String name, String key, String stormpathDirectoryHref, List<String> hostnames,
+            List<Tracker> trackers, Resource consentAgreement) {
         this.name = name;
         this.key = key; 
         this.stormpathDirectoryHref = stormpathDirectoryHref;
+        this.consentAgreement = consentAgreement;
         if (hostnames != null) {
             this.hostnames = Collections.unmodifiableList(hostnames);
         }
@@ -31,8 +35,8 @@ public class Study {
     }
     
     public Study(Study study) {
-        this(study.getName(), study.getKey(), study.getStormpathDirectoryHref(), study.getHostnames(), study
-                .getTrackers());
+        this(study.getName(), study.getKey(), study.getStormpathDirectoryHref(), study.getHostnames(), 
+            study.getTrackers(), study.getConsentAgreement());
     }
     
     public List<String> getHostnames() {
@@ -49,6 +53,9 @@ public class Study {
     }
     public List<Tracker> getTrackers() {
         return trackers;
+    }
+    public Resource getConsentAgreement() {
+        return consentAgreement;
     }
     public Tracker getTrackerById(Long id) {
         for (Tracker tracker : trackers) {
