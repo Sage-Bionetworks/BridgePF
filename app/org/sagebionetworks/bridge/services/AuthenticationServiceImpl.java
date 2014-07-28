@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.PasswordReset;
+import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
@@ -43,6 +44,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private HealthCodeService healthCodeService;
     private EmailValidator emailValidator = EmailValidator.getInstance();
     private UserProfileService userProfileService;
+    private SendMailService sendMailService;
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
@@ -66,6 +68,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     public void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
+    }
+    
+    public void setSendMailService(SendMailService sendMailService) {
+        this.sendMailService = sendMailService;
     }
 
     @Override
@@ -210,7 +216,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void consentToResearch(String sessionToken) throws BridgeServiceException {
+    public void consentToResearch(String sessionToken, ResearchConsent consent, Study study) throws BridgeServiceException {
         try {
             UserSession session = cache.getUserSession(sessionToken);
             if (session == null) {
@@ -229,6 +235,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             data.put(key, encryptedId);
             data.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
             data.save();
+            
+            // send consent agreement
+            sendMailService.sendConsentAgreement(session.getUser().getEmail(), consent, study);
 
             session.setHealthDataCode(healthId.getCode());
             session.setConsent(true);

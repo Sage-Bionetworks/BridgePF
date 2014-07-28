@@ -2,7 +2,6 @@ package controllers;
 
 import global.JsonSchemaValidator;
 
-import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 
@@ -17,12 +16,9 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
-import play.mvc.Http.Request;
 import play.mvc.Result;
 
 public class HealthDataController extends BaseController {
