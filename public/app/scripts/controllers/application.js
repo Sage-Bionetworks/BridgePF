@@ -1,6 +1,6 @@
 bridge.controller('ApplicationController', 
-['$scope', '$rootScope', '$location', '$humane', '$window', 'authService', 'requestResetPasswordService', 'signInService', 'signUpService',  
-function($scope, $rootScope, $location, $humane, $window, authService, requestResetPasswordService, signInService, signUpService) {
+['$scope', '$rootScope', '$location', '$humane', '$window', '$http', 'authService', 'requestResetPasswordService', 'signInService', 'signUpService',  
+function($scope, $rootScope, $location, $humane, $window, $http, authService, requestResetPasswordService, signInService, signUpService) {
     
     $rootScope.loading = 0;
     $rootScope.$on("loadStart", function() {
@@ -9,7 +9,7 @@ function($scope, $rootScope, $location, $humane, $window, authService, requestRe
     $rootScope.$on("loadEnd", function() {
         $rootScope.loading--;
     });
-    
+
 	var DEFAULT_PATHS = ["","/","index.html","/index.html"];
 
     $scope.session = authService;
@@ -37,13 +37,13 @@ function($scope, $rootScope, $location, $humane, $window, authService, requestRe
 	$scope.signUp = function() {
 	    signUpService.open();
 	};
-	$scope.signOut = function() {
-	    authService.signOut().then(function() {
-	        $window.location.replace("/");  
-	    }, function(response) {
-	        $humane.error(response.data.payload); 
-	    });
-	};
+	// $scope.signOut = function() {
+	//     authService.signOut().then(function() {
+	//         $window.location.replace("/");  
+	//     }, function(response) {
+	//         $humane.error(response.data.payload); 
+	//     });
+	// };
     $scope.resetPassword = function() {
         requestResetPasswordService.open();
     };

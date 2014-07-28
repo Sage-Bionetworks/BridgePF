@@ -47,7 +47,6 @@ $black: #000000;
         section {
            button:first-child {
                 color: $dark_blue;
-                font-weight: 700;
             }
             button {
                 border-radius: 0;
@@ -59,11 +58,35 @@ $black: #000000;
             }
             ul {
                 border-radius: 0;
-                li > a {
-                color: $black;
-                font-weight: 700;
-                text-align: left;
-            }
+                li {
+                    a {
+                        color: $black;
+                        font-weight: 700;
+                        padding-left: 3rem;
+                        margin-left: 0.5rem;
+                        text-align: left;
+                    }
+                    #menu_settings {
+                        background: url('/app/images/menu_settings_rest.svg') left center no-repeat;
+                    }
+                    #menu_settings:active {
+                        background: url('/app/images/menu_settings_press.svg') left center no-repeat;
+                    }
+                    #menu_help {
+                        background: url('/app/images/menu_help_rest.svg') left center no-repeat;
+                        margin-top: 1.5rem;
+                        margin-bottom: 1.5rem;
+                    }
+                    #menu_help:active {
+                        background: url('/app/images/menu_help_press.svg') left center no-repeat;
+                    }
+                    #menu_logout {
+                        background: url('/app/images/menu_logout_rest.svg') left center no-repeat;
+                    }
+                    #menu_logout:active {
+                        background: url('/app/images/menu_logout_press.svg') left center no-repeat;
+                    }
+                }
             }
         } 
     }
