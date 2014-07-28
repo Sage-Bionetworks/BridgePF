@@ -13,7 +13,6 @@ public class UserProfile {
 
     private static final String FIRSTNAME = "firstName";
     private static final String LASTNAME = "lastName";
-    private static final String EMAIL = "email";
 
     public String getFirstName() {
         return this.firstName;

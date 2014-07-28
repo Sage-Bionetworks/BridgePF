@@ -1,5 +1,6 @@
 package controllers;
 
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
@@ -41,9 +42,8 @@ public class ApplicationController extends BaseController {
         Study study = studyControllerService.getStudyByHostname(request());
         if (study == null || "neurod".equals(study.getKey())) {
             return ok(views.html.neurod.render(Json.toJson(info).toString()));    
-        } 
-        // For now, go to neurod that's all we have. Create an error page.
-        return ok(views.html.index.render(Json.toJson(info).toString(), study.getName()));
+        }
+        throw new BridgeServiceException("Cannot determine your study from the host name: " + studyControllerService.getHostname(request()), 400);
     }
 
     public Result loadConsent(String sessionToken) throws Exception {
