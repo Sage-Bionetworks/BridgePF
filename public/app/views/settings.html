@@ -1,0 +1,68 @@
+<div class="modal-header">
+    <h2 style="display:inline">Settings</h2>
+    <button ng-click="cancel()" type="button" class="close">&times;</button>
+</div>
+
+<form class="form-horizontal modal-body">
+
+<!-- Do not yet support profile avatars on backend, so will be ignoring this for now.
+    <div class="form-group">
+        <label>Profile Avatar Selection</label>
+        <input ng-model="formData.image" type="file" class="form-control">
+    </div>
+ -->
+    <div class="form-group">
+        <label class="col-sm-2 control-label">First Name</label>
+        <div class="col-sm-10">
+            <input ng-model="formData.firstName" type="text" class="form-control" placeholder="{{profile.firstName}}">
+        </div>
+    </div>
+    
+    <div class="form-group">
+        <label class="col-sm-2 control-label">Last Name</label>
+        <div class="col-sm-10">
+            <input ng-model="formData.lastName" type="text" class="form-control" placeholder="{{profile.lastName}}">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">Username</label>
+        <div class="col-sm-10">
+            <input ng-model="formData.username" type="text" class="form-control" placeholder="{{profile.username}}">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">Email</label>
+        <div class="col-sm-10">
+            <input ng-model="formData.email" type="email" class="form-control" placeholder="{{profile.email}}">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">Birthdate</label>
+        <div class="col-sm-10">
+            <input ng-model="formData.birthdate" type="date" class="form-control" placeholder="{{profile.birthdate}}">
+        </div>
+    </div>
+
+    <div class="checkbox">
+        <label>
+            I would like to be contacted with questions about this study.
+            <input ng-model="formData.questions" ng-checked="{{profile.questions}}" type="checkbox">
+        </label>
+    </div>
+    <div class="checkbox">
+        <label>
+            I would like to be contacted about future studies that may be of interest to me.
+            <input ng-model="formData.futureStudies" ng-checked="{{profile.futureStudies}}" type="checkbox">
+        </label>
+    </div>
+</form>
+
+<div class="modal-footer">
+    <div class="col-sm-offset-2 col-sm-10">
+        <button ng-click="cancel()" class="btn btn-default">Cancel</button>
+        <button ng-click="submit()" class="btn btn-primary">Update Settings</button>
+    </div>
+</div>

@@ -6,14 +6,10 @@
         <span class="caret"></span>
     </button>
     <ul class="dropdown-menu dropdown-menu-right">
-        <li tabIndex="-1" ng-repeat="link in menuLinks">
-            <img src="{{ link.imgHref }}">
-            <a href="{{ link.href }}">{{ link.name }}</a>
+        <li tabIndex="-1" ng-repeat="link in menu.links">
+            <a ng-click="link.method()" id="{{link.id}}">
+                {{ link.name }}
+            </a>
         </li>
     </ul>
 </section>
-
-        <!-- <li tabIndex="-1">
-            <img></img>
-            <a id="signOutLink" ng-click="signOut()">Log Out</a>
-        </li> -->
