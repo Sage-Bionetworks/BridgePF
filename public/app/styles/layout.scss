@@ -93,6 +93,16 @@ $black: #000000;
 
 }
 
+#password {
+    padding-top: 7px;
+}
+
+form[name='settings'] {
+    a, .well > h4 {
+        color: $dark_blue;
+    }
+}
+
 /* Login */
 form[name='signInForm'] {
     input[name='username'], input[name='password'] {

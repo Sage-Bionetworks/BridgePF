@@ -1,12 +1,17 @@
+$white: #FFFFFF;
+$green: #A9D385;
+
+
 /* Fixes the boostrap CSS in the Angular version of Bootstrap. */
 .nav, .pagination, .carousel, .panel-title a { 
     cursor: pointer; 
 }
 
 /* This should vary by dialog.*/
+.modal-header { color: $white; background-color: $green; }
 .modal-footer { padding: 15px; margin: 0; }
 .modal-body {
-    .form-group { margin: 0; }
+    .form-group { margin: 0; margin-bottom: 10px; }
     .alert { margin: 0; }
 }
 
@@ -23,4 +28,9 @@
 }
 .lg .modal-dialog {
     width: 600px;
+}
+
+.well {
+    margin-bottom: 0;
+    margin-top: 20px;
 }
