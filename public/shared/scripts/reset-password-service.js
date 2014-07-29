@@ -24,7 +24,7 @@ bridgeShared.service('requestResetPasswordService', ['$modal', function($modal) 
     return {
         open: function() {
             modalInstance = $modal.open({
-                templateUrl: 'shared/views/requestResetPassword.html',
+                templateUrl: '/shared/views/requestResetPassword.html',
                 controller: ModalInstanceController,
                 size: 'sm',
                 windowClass: 'sm'

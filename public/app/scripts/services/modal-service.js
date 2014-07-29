@@ -3,7 +3,7 @@ bridge.service('modalService', ['$log', '$http', '$modal', function($log, $http,
     var profile = null;
     var modal = null;
 
-    var ModalController = ['$scope', function($scope) {
+    var ModalController = ['$scope', 'requestResetPasswordService', function($scope, requestResetPasswordService) {
         $scope.formData = {
             image: "",
             firstName: profile.firstName,
@@ -17,6 +17,9 @@ bridge.service('modalService', ['$log', '$http', '$modal', function($log, $http,
 
         $scope.profile = profile;
 
+        $scope.submissionFailure = false;
+        $scope.submissionSuccess = false;
+
         $scope.cancel = function() {
             // modal must be open to be closed.
             if (modal !== null) {
@@ -27,12 +30,29 @@ bridge.service('modalService', ['$log', '$http', '$modal', function($log, $http,
         $scope.submit = function() {
             // modal must be open to submit.
             if (modal !== null) {
-                
+                // Only two items possible to update currently are first name and last name.
+                var update = {
+                    firstName: $scope.formData.firstName,
+                    lastName: $scope.formData.lastName
+                };
+                $http.post('/api/users/profile', update)
+                    .success(function(data, status, headers, config) {
+                        $scope.submissionSuccess = true;
+                        $log.info(data);
+                    })
+                    .error(function(data, status, headers, config) {
+                        $scope.submissionFailure = true;
+                        $log.info(data);
+                    });
             }
+        };
+
+        $scope.changePassword = function() {
+            requestResetPasswordService.open();
         };
     }];
             
-    var service = {
+    return {
         openModal: function(url) {
             if (typeof url !== 'string') {
                 $log.error('Type of arg for modalService.openModal(arg) must be string.');
@@ -52,6 +72,4 @@ bridge.service('modalService', ['$log', '$http', '$modal', function($log, $http,
                 });
         }
     };
-
-    return service;
 }]);
