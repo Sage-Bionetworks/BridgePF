@@ -37,7 +37,7 @@ POST    /api/users/profile      @controllers.UserProfileController.updateUserPro
 # API - consent
 POST    /api/consent/signUp        @controllers.ConsentController.signUp
 POST    /api/consent/withdraw      @controllers.ConsentController.withdraw
-POST    /api/consent/send          @controllers.ConsentController.send
+POST    /api/consent/sendCopy      @controllers.ConsentController.sendCopy
 
 # Backfill
 GET     /admin/backfill/healthId    @controllers.BackfillController.resetHealthId
