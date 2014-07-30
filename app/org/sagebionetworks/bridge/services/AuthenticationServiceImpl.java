@@ -23,6 +23,8 @@ import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import play.mvc.Http;
 
@@ -36,6 +38,8 @@ import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.resource.ResourceException;
 
 public class AuthenticationServiceImpl implements AuthenticationService {
+
+    private final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 
     private Client stormpathClient;
     private CacheProvider cache;
@@ -86,6 +90,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, BridgeNotFoundException,
             BridgeServiceException {
 
+        final long start = System.nanoTime();
+
         if (signIn == null) {
             throw new BridgeServiceException("SignIn object is required", Http.Status.NOT_FOUND);
         } else if (StringUtils.isBlank(signIn.getUsername())) {
@@ -100,12 +106,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         UserSession session = null;
         try {
             Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+            logger.info("sign in create app " + (System.nanoTime() - start) );
             request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword());
             Account account = application.authenticateAccount(request).getAccount();
-
+            logger.info("sign in authenticate " + (System.nanoTime() - start));
             session = createSessionFromAccount(study, account);
             cache.setUserSession(session.getSessionToken(), session);
-
             if (!session.doesConsent()) {
                 throw new ConsentRequiredException(new UserSessionInfo(session));
             }
@@ -117,6 +123,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 request.clear();
             }
         }
+
+        final long end = System.nanoTime();
+        logger.info("sign in service " + (end - start));
+
         return session;
     }
 
