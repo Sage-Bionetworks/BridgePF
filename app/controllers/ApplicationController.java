@@ -12,7 +12,7 @@ import play.mvc.*;
 public class ApplicationController extends BaseController {
 
     private StudyControllerService studyControllerService;
-    
+
     public void setStudyControllerService(StudyControllerService studyControllerService) {
         this.studyControllerService = studyControllerService;
     }
@@ -30,7 +30,7 @@ public class ApplicationController extends BaseController {
         Study study = studyControllerService.getStudyByHostname(request());
         return ok(views.html.index.render(Json.toJson(info).toString(), study.getName()));
     }
-    
+
     public Result redirectToPublicApp() {
         return redirect("/");
     }
@@ -57,9 +57,8 @@ public class ApplicationController extends BaseController {
         UserSessionInfo info = new UserSessionInfo(session);
         return ok(views.html.consent.render(Json.toJson(info).toString()));
     }
-    
+
     public Result redirectToConsent() {
         return redirect("/consent/");
     }
-    
 }
