@@ -6,6 +6,7 @@
 <form class="form-horizontal modal-body" name="settings">
 
 <alert ng-show="submissionFailure" type="danger">Woops! Something went wrong with the profile update. Sorry, try again.</alert>
+<alert ng-show="getProfileFailure" type="danger">Woops! Something went wrong with the settings page. Close this window and try again!</alert>
 <alert ng-show="submissionSuccess" type="success">Well done! Your profile has been updated.</alert>
 
 <!-- Do not yet support profile avatars on backend, so will be ignoring this for now.

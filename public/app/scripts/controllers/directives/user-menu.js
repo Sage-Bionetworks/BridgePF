@@ -1,5 +1,5 @@
-bridge.controller('UserMenuController', ['$window', '$humane', 'authService', 'modalService', 
-    function($window, $humane, authService, modalService) {
+bridge.controller('UserMenuController', ['$humane', '$window', 'authService', 'modalService',
+    function($humane, $window, authService, modalService) {
     
     this.links = [
         {
@@ -7,7 +7,7 @@ bridge.controller('UserMenuController', ['$window', '$humane', 'authService', 'm
             id: "menu_settings",
             imageUrl: "/images/menu_settings_rest.svg",
             method: function() {
-                modalService.openModal('views/settings.html');
+                modalService.openModal('views/settings.html', 'SettingsModalController');
             }
         },
         {

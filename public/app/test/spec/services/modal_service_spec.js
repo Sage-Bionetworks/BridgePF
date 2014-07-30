@@ -1,47 +1,36 @@
 describe('ModalService', function() {
 
-    var modalService, log;
+    var $log, modalService;
 
     beforeEach(module('bridge'));
 
     beforeEach(inject(function($injector) {
-        modalService = $injector.get('modalService');
         $log = $injector.get('$log');
-        $httpBackend = $injector.get('$httpBackend');
-
-        $httpBackend.when('GET', '/api/users/profile').respond({
-            payload: {
-                firstName: 'first name',
-                lastName: 'last name',
-                username: 'fl',
-                email: 'fl@email.com',
-                stormpathHref: 'http://api.stormpath.com/aadfafdasglsadf345354kf'
-            }
-        });
-
-        $httpBackend.expectGET('/api/users/profile');
+        modalService = $injector.get('modalService');
     }));
 
-    afterEach(function() {
-        $httpBackend.flush();
-        $httpBackend.verifyNoOutstandingExpectation();
-        $httpBackend.verifyNoOutstandingRequest();
-    })
-
     it('should log error message if url for modal template is not a string.', function() {
-        $httpBackend.when('GET', 4).respond('garbage asdl;fkjsadklfjsaf');
-        $httpBackend.expectGET(4);
-
         var url = 4;
+        var controller = 'SomeController';
         modalService.openModal(url);
-        expect($log.error.logs).toContain(['Type of arg for modalService.openModal(arg) must be string.']);
+
+        expect($log.error.logs).toContain(['Type of arguments for modalService.openModal(url, controller) must be strings.']);
     });
 
-    it('should retrieve profile data and open modal.', function() {
-        var url = 'views/settings.html';
-        $httpBackend.when('GET', url).respond('<html><body><p>Hello there!</p></body></html>');
-        $httpBackend.expectGET(url);
-        modalService.openModal(url);
+    it('should log error message if controller name is not a string.', function() {
+        var url = '/path/to/temp.html';
+        var controller = 4;
+        modalService.openModal(url, controller);
+
+        expect($log.error.logs).toContain(['Type of arguments for modalService.openModal(url, controller) must be strings.']);
     });
+
+    it('should create a modal instance.', function() {
+        var url = 'path/to/temp.html';
+        var controller = 'SomeController';
+        var instance = modalService.openModal(url, controller);
+
+        expect(instance).toBeDefined();
+    })
 
 });
