@@ -43,5 +43,5 @@ POST    /api/consent/send          @controllers.ConsentController.send
 GET     /admin/backfill/healthId    @controllers.BackfillController.resetHealthId
 
 # AngularJS application
-GET     /*file      @controllers.Assets.at(path="/public", file)
-HEAD    /*file      @controllers.Assets.at(path="/public", file)
+GET     /*file      controllers.Assets.at(path="/public", file)
+HEAD    /*file      controllers.Assets.at(path="/public", file)
