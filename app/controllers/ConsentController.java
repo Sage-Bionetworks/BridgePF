@@ -18,7 +18,7 @@ public class ConsentController extends BaseController {
         return ok(Boolean.toString(session.isConsent()));
     }
 
-    public Result send() throws Exception {
+    public Result sendCopy() throws Exception {
         // TODO: Implement with ConsentService
         UserSession session = getSession();
         return ok(Boolean.toString(session.isConsent()));
