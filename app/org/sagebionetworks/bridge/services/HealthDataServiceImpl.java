@@ -13,8 +13,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -26,8 +24,6 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
 
 public class HealthDataServiceImpl implements HealthDataService {
-
-    private static Logger logger = LoggerFactory.getLogger(HealthDataServiceImpl.class);
 
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
