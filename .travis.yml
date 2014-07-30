@@ -22,6 +22,7 @@ before_install:
 - npm install -g grunt-cli
 - gem install sass
 script:
+- phantomjs --version
 - cd public/app
 - npm install
 - bower install

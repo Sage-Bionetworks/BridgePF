@@ -1,42 +1,47 @@
 # Redirect to application
 
 # These routes won't support an URL that maps to an internal AngularJS state (those would all be routed to /public/app")
-GET    /app/                         @controllers.ApplicationController.loadApp
-GET    /app/index.html               @controllers.ApplicationController.redirectToApp
-GET    /                             @controllers.ApplicationController.loadPublicApp
-GET    /index.html                   @controllers.ApplicationController.redirectToPublicApp
-GET    /consent/:sessionToken        @controllers.ApplicationController.loadConsent(sessionToken: String)
+GET     /app/                       @controllers.ApplicationController.loadApp
+GET     /app/index.html             @controllers.ApplicationController.redirectToApp
+GET     /                           @controllers.ApplicationController.loadPublicApp
+GET     /index.html                 @controllers.ApplicationController.redirectToPublicApp
+GET     /consent/:sessionToken      @controllers.ApplicationController.loadConsent(sessionToken: String)
 
 # API - Authentication
-POST   /api/auth/signIn                 @controllers.AuthenticationController.signIn
-GET    /api/auth/signOut                @controllers.AuthenticationController.signOut
-POST   /api/auth/resetPassword          @controllers.AuthenticationController.resetPassword
-POST   /api/auth/requestResetPassword   @controllers.AuthenticationController.requestResetPassword
-POST   /api/auth/consentToResearch      @controllers.AuthenticationController.consentToResearch
-POST   /api/auth/signUp                 @controllers.AuthenticationController.signUp
-POST   /api/auth/verifyEmail            @controllers.AuthenticationController.verifyEmail
+POST    /api/auth/signIn                @controllers.AuthenticationController.signIn
+GET     /api/auth/signOut               @controllers.AuthenticationController.signOut
+POST    /api/auth/resetPassword         @controllers.AuthenticationController.resetPassword
+POST    /api/auth/requestResetPassword  @controllers.AuthenticationController.requestResetPassword
+POST    /api/auth/consentToResearch     @controllers.AuthenticationController.consentToResearch
+POST    /api/auth/signUp                @controllers.AuthenticationController.signUp
+POST    /api/auth/verifyEmail           @controllers.AuthenticationController.verifyEmail
 
 # API - Individual health data record
-GET    /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(trackerId: Long, recordId: String)
-POST   /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.updateHealthDataRecord(trackerId: Long, recordId: String)
-DELETE /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(trackerId: Long, recordId: String)
+GET     /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(trackerId: Long, recordId: String)
+POST    /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.updateHealthDataRecord(trackerId: Long, recordId: String)
+DELETE  /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(trackerId: Long, recordId: String)
 
 # API - Health Data
-POST   /api/healthdata/:trackerId                       @controllers.HealthDataController.appendHealthData(trackerId: Long)
-GET    /api/healthdata/:trackerId/:startDate/:endDate   @controllers.HealthDataController.getHealthDataByDateRange(trackerId: Long, startDate: Long, endDate: Long)
-GET    /api/healthdata/:trackerId                       @controllers.HealthDataController.getAllHealthData(trackerId: Long)
+POST    /api/healthdata/:trackerId                      @controllers.HealthDataController.appendHealthData(trackerId: Long)
+GET     /api/healthdata/:trackerId/:startDate/:endDate  @controllers.HealthDataController.getHealthDataByDateRange(trackerId: Long, startDate: Long, endDate: Long)
+GET     /api/healthdata/:trackerId                      @controllers.HealthDataController.getAllHealthData(trackerId: Long)
 
 # API - trackers
-GET    /api/trackers                   @controllers.TrackerController.getTrackers
-GET    /api/trackers/schema/:trackerId @controllers.TrackerController.getTrackerSchema(trackerId: Long)
+GET     /api/trackers                       @controllers.TrackerController.getTrackers
+GET     /api/trackers/schema/:trackerId     @controllers.TrackerController.getTrackerSchema(trackerId: Long)
 
 # API - users
-GET    /api/users/profile       @controllers.UserProfileController.getUserProfile()
-POST   /api/users/profile       @controllers.UserProfileController.updateUserProfile()
+GET     /api/users/profile      @controllers.UserProfileController.getUserProfile
+POST    /api/users/profile      @controllers.UserProfileController.updateUserProfile
+
+# API - consent
+POST    /api/consent/signUp        @controllers.ConsentController.signUp
+POST    /api/consent/withdraw      @controllers.ConsentController.withdraw
+POST    /api/consent/send          @controllers.ConsentController.send
 
 # Backfill
-GET    /admin/backfill/healthId        @controllers.BackfillController.resetHealthId
+GET     /admin/backfill/healthId    @controllers.BackfillController.resetHealthId
 
 # AngularJS application
-GET     /*file                  controllers.Assets.at(path="/public", file)
-HEAD    /*file                  controllers.Assets.at(path="/public", file)
+GET     /*file      controllers.Assets.at(path="/public", file)
+HEAD    /*file      controllers.Assets.at(path="/public", file)
