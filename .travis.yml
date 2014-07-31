@@ -23,6 +23,7 @@ before_install:
 script:
 - cd public
 - bash update-js.sh
+- grunt release
 - cd ..
 - sbt test
 deploy:
