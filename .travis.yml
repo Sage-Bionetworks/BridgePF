@@ -10,7 +10,6 @@ env:
   - secure: SsM07kjCSWjGTFDhkCtTuZdM5WrChFXgRmeMMRJr4JlbtJoaaVUXcXDofZ+4NrESiOvW7CiRXK6Oz3I9eL7vn8RCwlN5jf2OlmD4vKIiiINlvuuEe6hEu738RO7nUGN8SFh2k4ryzJ6XldghjBiBvBEqzVhwXteLhF3AVCsRB1s=
   - secure: kByWq5ygVVnXuBcHKhe6BdcGhUugS1Ux4nbrR/MY23KI7FC1vJ3LCx6N5TIVbOhjwCPwnWNfkydPlfO48hco6gpz8mJ6Sz7OdjyAWb1Ofx/XO5mI+8AIW0P1gXN9jbThSLEaTGUZlrDNfkcfkFUaLJHmmWOQ5CWCPzo5sw2cEDg=
   - secure: GvT2YRaPvkEEDfIQ249BLQmXr+l2WwXwaG7JWBCtY7gS0B6e1jHqDCOfAh83cw+37YmJqLl26fPwZnpVL8L2iFC2nXk03MPepU4X1w2cicAboVKpF9TPV2A9T5gUuXKkXMKJFtH7r5K6haagNqsUXsNgsD4MWiUj2px0U3uHJ3c=
-  - secure: og1MVcJbEMji2IZ933caBoYAw1ba+RXpVHQp3G0TpnJY/0fVcJbI7oRQQTnOvMJjuy39SYJP0RapJkFK06mrWlw924ixC+h+ZrRXSFEtBA3S7Qraep2PqfbhsZyvpyEbHmS3iYzmUzzC3w/vKmi2JiJOgT0r9HCkHBUzDrDO2TA=
   - secure: Z9NMpRqgtAhaNQLBeSh0iJTgKeNpB3uY4xoYGPNNhDH+rhFe+Urh6RZxfrkF1stAuZXKS1GJe2Kln2GAm2F21DMGagiopcZZIDM456kTDni7A78v/CQR5Sa+PHWk5fITOWTAJSee/pzHaEo7+AIWxhP5DxZah/jJdS3FYM26v/s=
   - secure: aSwn+AOcO2iGFEWcDYJebjglcbADKmlNs1W8NtUjGEFOmuT6nIxyQPva7FAlU4GojnazGQvEwVolFh6D7NPgHVENStflGhUcRLRqeiJV1gBgTV+ot00HRZjEJSacljFFBwQbRW4NfUDzOrE/FClkyCCJnRbKWg3dKONe2dVNEZg=
   - secure: VSoOGViuAi98dBrveHw61gHz0zersdtn8raolu/uzpNQEI1csMdVr09SokygjtiSEt5uIVNma1zkuABRAEgfncT3rYqPq0mdeM+hxPEz2igxEMUXYHx3H9Osbo5oOrTZXnRg18kmzyupUQ98L5Y6/8lg67sgJkPBJEx9dwNKhMY=
@@ -22,22 +21,10 @@ before_install:
 - npm install -g grunt-cli
 - gem install sass
 script:
-- cd public/app
-- npm install
-- bower install
-- cd ../neurod
-- npm install
-- bower install
-- cd ../shared
-- npm install
-- bower install
-- cd ../consent
-- npm install
-- bower install
-- cd ../
-- npm install
+- cd public
+- bash update-js.sh
 - grunt release
-- cd ../
+- cd ..
 - sbt test
 deploy:
   provider: heroku

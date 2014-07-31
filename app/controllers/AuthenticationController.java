@@ -13,18 +13,23 @@ import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import play.mvc.*;
 
 public class AuthenticationController extends BaseController {
 
+    private final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
+
     private StudyControllerService studyControllerService;
-    
+
     public void setStudyControllerService(StudyControllerService scs) {
         this.studyControllerService = scs;
     }
-    
+
     public Result signIn() throws Exception {
+        final long start = System.nanoTime();
         UserSession session = checkForSession();
         if (session != null) {
             setSessionToken(session.getSessionToken());
@@ -34,7 +39,10 @@ public class AuthenticationController extends BaseController {
         SignIn signIn = SignIn.fromJson(request().body().asJson());
         session = authenticationService.signIn(study, signIn);
         setSessionToken(session.getSessionToken());
-        return jsonResult(new JsonPayload<UserSessionInfo>(new UserSessionInfo(session)));
+        Result result = jsonResult(new JsonPayload<UserSessionInfo>(new UserSessionInfo(session)));
+        final long end = System.nanoTime();
+        logger.info("sign in controller " + (end - start));
+        return result;
     }
 
     public Result signOut() throws Exception {
@@ -52,7 +60,7 @@ public class AuthenticationController extends BaseController {
         authenticationService.signUp(signUp, study);
         return jsonResult("Signed up.");
     }
-    
+
     public Result verifyEmail() throws Exception {
         Study study = studyControllerService.getStudyByHostname(request());
         EmailVerification ev = EmailVerification.fromJson(request().body().asJson());
@@ -62,19 +70,19 @@ public class AuthenticationController extends BaseController {
         setSessionToken(session.getSessionToken());
         return jsonResult(new JsonPayload<UserSessionInfo>(new UserSessionInfo(session)));
     }
-    
+
     public Result requestResetPassword() throws Exception {
         Email email = Email.fromJson(request().body().asJson());
         authenticationService.requestResetPassword(email);
         return jsonResult("An email has been sent allowing you to set a new password.");
     }
-    
+
     public Result resetPassword() throws Exception {
         PasswordReset passwordReset = PasswordReset.fromJson(request().body().asJson());
         authenticationService.resetPassword(passwordReset);
         return jsonResult("Password has been changed.");
     }
-    
+
     public Result consentToResearch() throws Exception {
         // Don't call getSession(), it'll throw an exception due to lack of consent, we 
         // know this person has not consented, that's what they're trying to do.
@@ -87,5 +95,4 @@ public class AuthenticationController extends BaseController {
         authenticationService.consentToResearch(session.getSessionToken(), consent, study);
         return jsonResult("Consent to research has been recorded.");
     }
-    
 }
