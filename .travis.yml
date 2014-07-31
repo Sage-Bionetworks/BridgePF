@@ -21,22 +21,9 @@ before_install:
 - npm install -g grunt-cli
 - gem install sass
 script:
-- cd public/app
-- npm install
-- bower install
-- cd ../neurod
-- npm install
-- bower install
-- cd ../shared
-- npm install
-- bower install
-- cd ../consent
-- npm install
-- bower install
-- cd ../
-- npm install
-- grunt release
-- cd ../
+- cd public
+- bash update-js.sh
+- cd ..
 - sbt test
 deploy:
   provider: heroku
