@@ -22,3 +22,6 @@ npm cache clean
 npm install
 bower cache clean
 bower install
+cd ..
+npm cache clean
+npm install

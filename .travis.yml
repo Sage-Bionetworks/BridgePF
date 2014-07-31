@@ -23,9 +23,8 @@ before_install:
 script:
 - cd public
 - bash update-js.sh
-- cd ..
-- npm install
 - grunt release
+- cd ..
 - sbt test
 deploy:
   provider: heroku
