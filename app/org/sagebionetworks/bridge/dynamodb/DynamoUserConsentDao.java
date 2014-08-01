@@ -23,7 +23,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
                 SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES,
                 ConsistentReads.CONSISTENT,
-                TableNameOverrideFactory.getTableNameOverride(DynamoStudyConsent.class));
+                TableNameOverrideFactory.getTableNameOverride(DynamoUserConsent.class));
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 
