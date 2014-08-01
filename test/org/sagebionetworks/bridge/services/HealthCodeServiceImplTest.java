@@ -42,9 +42,6 @@ public class HealthCodeServiceImplTest {
         HealthId healthId2 = healthCodeService.create();
         assertFalse(healthId1.getId().equals(healthId2.getId()));
         assertFalse(healthId1.getCode().equals(healthId2.getCode()));
-        String reset = healthCodeService.resetHealthId(healthId1.getCode());
-        assertFalse(reset.equals(healthId1.getId()));
-        assertEquals(healthCodeService.getHealthCode(reset), healthId1.getCode());
     }
 
     private void clearDynamo() {

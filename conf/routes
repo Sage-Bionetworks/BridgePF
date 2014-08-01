@@ -12,7 +12,6 @@ POST    /api/auth/signIn                @controllers.AuthenticationController.si
 GET     /api/auth/signOut               @controllers.AuthenticationController.signOut
 POST    /api/auth/resetPassword         @controllers.AuthenticationController.resetPassword
 POST    /api/auth/requestResetPassword  @controllers.AuthenticationController.requestResetPassword
-POST    /api/auth/consentToResearch     @controllers.AuthenticationController.consentToResearch
 POST    /api/auth/signUp                @controllers.AuthenticationController.signUp
 POST    /api/auth/verifyEmail           @controllers.AuthenticationController.verifyEmail
 
@@ -35,9 +34,9 @@ GET     /api/users/profile      @controllers.UserProfileController.getUserProfil
 POST    /api/users/profile      @controllers.UserProfileController.updateUserProfile
 
 # API - consent
-POST    /api/consent/signUp        @controllers.ConsentController.signUp
-POST    /api/consent/withdraw      @controllers.ConsentController.withdraw
-POST    /api/consent/sendCopy      @controllers.ConsentController.sendCopy
+POST    /api/consent/give           @controllers.ConsentController.give
+POST    /api/consent/withdraw       @controllers.ConsentController.withdraw
+POST    /api/consent/emailCopy      @controllers.ConsentController.emailCopy
 
 # Backfill
 GET     /admin/backfill/healthId    @controllers.BackfillController.resetHealthId
