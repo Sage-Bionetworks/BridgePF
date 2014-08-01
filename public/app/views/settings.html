@@ -76,14 +76,21 @@
 
     <div class="well well-sm">
         <h4>I would like to withdraw from the study.</h4>
-        <p><a>Click here</a> if you would like to withdraw from the study.</p>
+        <p><a ng-click="withdrawStudy()">Click here</a> if you would like to withdraw from the study.</p>
     </div>
+
 
     <div class="well well-sm">
-        <h4>I would like to download a copy of my data.</h4>
-        <p><a>Click here</a> to download a copy of my data.</p>
-    </div>
+        <h4>I would like a copy of the consent document.</h4>
+        <p><a ng-click="downloadConsent()">Click here</a> if you would like to download a copy of the consent document.</p>
+    </div>    
 
+<!-- Not yet implemented on the back end.
+    <div class="well well-sm">
+        <h4>I would like to download a copy of my data.</h4>
+        <p><a ng-click="downloadData()">Click here</a> to download a copy of my data.</p>
+    </div>
+ -->
 </form>
 
 <div class="modal-footer">

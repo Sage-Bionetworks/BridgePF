@@ -51,5 +51,23 @@ bridge.controller('SettingsModalController', ['$http', '$log', '$modalInstance',
         $scope.changePassword = function() {
             requestResetPasswordService.open();
         };
+
+        $scope.withdrawStudy = function() {
+            $log.info('Withdraw from Study has been clicked.');
+
+            $http.post('/api/consent/withdraw');
+            // Need to do something here to interact with user.
+        };
+
+        $scope.downloadConsent = function() {
+            $log.info('Download consent has been called.');
+
+            $http.get('/api/consent/sendCopy');
+        };
+
+        // Not yet implemented on back end. Will need to return to this later.
+        $scope.downloadData = function() {
+            $log.info('Download data function has been called.');
+        };
     }
 ]);
