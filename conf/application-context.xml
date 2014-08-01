@@ -46,6 +46,14 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
 
+    <bean id="studyConsentDao" class="org.sagebionetworks.bridge.dynamodb.DynamoStudyConsentDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+
+    <bean id="userConsentDao" class="org.sagebionetworks.bridge.dynamodb.DynamoUserConsentDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
 
     <!-- Stormpath identity service -->
