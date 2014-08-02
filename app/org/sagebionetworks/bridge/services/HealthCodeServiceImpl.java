@@ -44,11 +44,6 @@ public class HealthCodeServiceImpl implements HealthCodeService {
         return healthIdDao.getCode(id);
     }
 
-    @Override
-    public String resetHealthId(final String healthCode) {
-        return generateHealthId(healthCode);
-    }
-
     private String generateHealthCode() {
         String code = UUID.randomUUID().toString();
         boolean isSet = healthCodeDao.setIfNotExist(code);
