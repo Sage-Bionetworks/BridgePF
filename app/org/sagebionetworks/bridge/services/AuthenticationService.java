@@ -1,12 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
-import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
@@ -29,7 +28,4 @@ public interface AuthenticationService {
     public void requestResetPassword(Email email) throws BridgeServiceException;
 
     public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException;
-
-    public void consentToResearch(String sessionToken, ResearchConsent consent, Study study)
-            throws BridgeServiceException;
 }

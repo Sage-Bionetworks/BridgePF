@@ -3,11 +3,9 @@ package controllers;
 import models.JsonPayload;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
-import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
@@ -16,7 +14,7 @@ import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import play.mvc.*;
+import play.mvc.Result;
 
 public class AuthenticationController extends BaseController {
 
@@ -81,18 +79,5 @@ public class AuthenticationController extends BaseController {
         PasswordReset passwordReset = PasswordReset.fromJson(request().body().asJson());
         authenticationService.resetPassword(passwordReset);
         return jsonResult("Password has been changed.");
-    }
-
-    public Result consentToResearch() throws Exception {
-        // Don't call getSession(), it'll throw an exception due to lack of consent, we 
-        // know this person has not consented, that's what they're trying to do.
-        UserSession session = checkForSession();
-        if (session == null) {
-            throw new BridgeServiceException("Not signed in.", 401);
-        }
-        ResearchConsent consent = ResearchConsent.fromJson(request().body().asJson());
-        Study study = studyControllerService.getStudyByHostname(request());
-        authenticationService.consentToResearch(session.getSessionToken(), consent, study);
-        return jsonResult("Consent to research has been recorded.");
     }
 }
