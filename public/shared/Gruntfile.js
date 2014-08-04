@@ -7,7 +7,7 @@ module.exports = function(grunt) {
     var jsFiles = [
         "bower_components/angular/angular.js",
         "bower_components/angular-route/angular-route.js",
-        "bower_components/bootstrap-bower/ui-bootstrap-tpls.min.js",
+        "scripts/angular-bootstrap-ui-custom-build/ui-bootstrap-custom-tpls-0.10.0.js",
         "scripts/humane-modified.js",
         "scripts/shared.js",
         "scripts/form-service.js",
@@ -36,8 +36,13 @@ module.exports = function(grunt) {
             release: ['node_modules', 'bower_components']
         },
         jshint: {
-            options: { node: true, loopfunc: true, globals: { "angular": false } },
-            js: ['scripts/**/*.js']
+            options: { 
+                node: true, 
+                loopfunc: true, 
+                globals: { "angular": false },
+                ignores: ['**/angular.js', '**/angular-route.js', '**/ui-bootstrap-custom-tpls-0.10.0.js']
+            },
+            js: jsFiles
         },
         sass: {
             all: {

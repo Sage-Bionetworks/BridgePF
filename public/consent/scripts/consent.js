@@ -10,6 +10,11 @@ function($scope, $humane, $window, $http, formService, learnMoreService) {
     window.addEventListener("load", function() {
         document.getElementById('loading').style.display = "none";
         document.getElementById('content').style.opacity = 1;
+        
+        var images = document.querySelectorAll("*[data-src]");
+        for (var i=0, len = images.length; i < len; i++) {
+            images[i].src = images[i].getAttribute('data-src');
+        }
     }, true);
     
     // TODO: This will vary by study.
