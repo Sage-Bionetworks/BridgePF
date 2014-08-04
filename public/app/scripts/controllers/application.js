@@ -9,7 +9,7 @@ function($scope, $rootScope, $location, $humane, $window, authService, requestRe
     $rootScope.$on("loadEnd", function() {
         $rootScope.loading--;
     });
-    
+
 	var DEFAULT_PATHS = ["","/","index.html","/index.html"];
 
     $scope.session = authService;

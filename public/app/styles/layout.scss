@@ -1,3 +1,8 @@
+$white: #FFFFFF;
+$green: #A9D385;
+$dark_blue: #1E429B;
+$black: #000000;
+
 .main-pane {
     padding: 2rem;
     background-color: white;
@@ -10,7 +15,8 @@
 }
 .header {
     font-family: 'Helvetica Neue', sans-serif;
-    background: white url(/neurod/images/bridge_logo.svg) left center no-repeat;
+    font-weight: 700;
+    background: $green url(/neurod/images/bridge_logo.svg) left center no-repeat;
     background-size: 9rem;
 
     > * {
@@ -18,7 +24,7 @@
         vertical-align: middle;
     }
     a, a:visited, a:active {
-        color: #58585B;
+        color: $white;
         padding-left: 8.7rem;
         padding-top: 0.4rem;
         text-decoration: none;
@@ -34,12 +40,66 @@
     .bridge-header {
         line-height: 6rem;
         text-align: right;
-        span {
-            padding-right: 2rem;
-        } 
         form {
             margin-right: -15px; /* Squish login form to far right of box, no additional padding */
         }
+ 
+        section {
+           button:first-child {
+                color: $dark_blue;
+            }
+            button {
+                border-radius: 0;
+                background: $white;
+            }
+            img {
+                display: inline;
+                max-width: 4rem;
+            }
+            ul {
+                border-radius: 0;
+                li {
+                    a {
+                        color: $black;
+                        font-weight: 700;
+                        padding-left: 3rem;
+                        margin-left: 0.5rem;
+                        text-align: left;
+                    }
+                    #menu_settings {
+                        background: url('/app/images/menu_settings_rest.svg') left center no-repeat;
+                    }
+                    #menu_settings:active {
+                        background: url('/app/images/menu_settings_press.svg') left center no-repeat;
+                    }
+                    #menu_help {
+                        background: url('/app/images/menu_help_rest.svg') left center no-repeat;
+                        margin-top: 1.5rem;
+                        margin-bottom: 1.5rem;
+                    }
+                    #menu_help:active {
+                        background: url('/app/images/menu_help_press.svg') left center no-repeat;
+                    }
+                    #menu_logout {
+                        background: url('/app/images/menu_logout_rest.svg') left center no-repeat;
+                    }
+                    #menu_logout:active {
+                        background: url('/app/images/menu_logout_press.svg') left center no-repeat;
+                    }
+                }
+            }
+        } 
+    }
+
+}
+
+#password {
+    padding-top: 7px;
+}
+
+form[name='settings'] {
+    a, .well > h4 {
+        color: $dark_blue;
     }
 }
 

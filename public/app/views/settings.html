@@ -1,0 +1,101 @@
+<div class="modal-header">
+    <h2 style="display:inline">Settings</h2>
+    <button ng-click="cancel()" type="button" class="close">&times;</button>
+</div>
+
+<form class="form-horizontal modal-body" name="settings">
+
+<alert ng-show="submissionFailure" type="danger">Woops! Something went wrong with the profile update. Sorry, try again.</alert>
+<alert ng-show="getProfileFailure" type="danger">Woops! Something went wrong with the settings page. Close this window and try again!</alert>
+<alert ng-show="submissionSuccess" type="success">Well done! Your profile has been updated.</alert>
+
+<!-- Do not yet support profile avatars on backend, so will be ignoring this for now.
+    <div class="form-group">
+        <label>Profile Avatar Selection</label>
+        <input ng-model="formData.image" type="file" class="form-control">
+    </div>
+ -->
+    <div class="form-group">
+        <label class="col-sm-2 control-label">First Name</label>
+        <div class="col-sm-10">
+            <input ng-model="formData.firstName" type="text" class="form-control" placeholder="{{profile.firstName}}">
+        </div>
+    </div>
+    
+    <div class="form-group">
+        <label class="col-sm-2 control-label">Last Name</label>
+        <div class="col-sm-10">
+            <input ng-model="formData.lastName" type="text" class="form-control" placeholder="{{profile.lastName}}">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">Username</label>
+        <div class="col-sm-10">
+            <input ng-model="formData.username" type="text" class="form-control" placeholder="{{profile.username}}" disabled>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">Email</label>
+        <div class="col-sm-10">
+            <input ng-model="formData.email" type="email" class="form-control" placeholder="{{profile.email}}" disabled 
+            data-toggle="tooltip" data-placement="bottom" title="Currently do not support editing email address.">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">Birthdate</label>
+        <div class="col-sm-10">
+            <input ng-model="formData.birthdate" type="date" class="form-control" placeholder="{{profile.birthdate}}" disabled>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">Password</label>
+        <div class="col-sm-10" id="password">
+            <a ng-click="changePassword()">Change your password.</a>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10 checkbox">
+            <label>
+                <input type="checkbox" disabled> I would like to be contacted with questions regarding this study.
+            </label>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10 checkbox">
+            <label>
+                <input type="checkbox" disabled> I would like to be contacted about future studies that may be of interest to me.
+            </label>
+        </div>
+    </div>
+
+    <div class="well well-sm">
+        <h4>I would like to withdraw from the study.</h4>
+        <p><a ng-click="withdrawStudy()">Click here</a> if you would like to withdraw from the study.</p>
+    </div>
+
+
+    <div class="well well-sm">
+        <h4>I would like a copy of the consent document.</h4>
+        <p><a ng-click="downloadConsent()">Click here</a> if you would like to download a copy of the consent document.</p>
+    </div>    
+
+<!-- Not yet implemented on the back end.
+    <div class="well well-sm">
+        <h4>I would like to download a copy of my data.</h4>
+        <p><a ng-click="downloadData()">Click here</a> to download a copy of my data.</p>
+    </div>
+ -->
+</form>
+
+<div class="modal-footer">
+    <div class="col-sm-offset-2 col-sm-10">
+        <button ng-click="cancel()" class="btn btn-default">Cancel</button>
+        <button ng-click="submit()" class="btn btn-primary">Update Settings</button>
+    </div>
+</div>
