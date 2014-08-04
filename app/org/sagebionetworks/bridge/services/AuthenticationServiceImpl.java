@@ -14,9 +14,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
-import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.PasswordReset;
-import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
@@ -48,7 +46,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private HealthCodeService healthCodeService;
     private EmailValidator emailValidator = EmailValidator.getInstance();
     private UserProfileService userProfileService;
-    private SendMailService sendMailService;
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
@@ -72,10 +69,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     public void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
-    }
-    
-    public void setSendMailService(SendMailService sendMailService) {
-        this.sendMailService = sendMailService;
     }
 
     @Override
@@ -225,38 +218,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
-    @Override
-    public void consentToResearch(String sessionToken, ResearchConsent consent, Study study) throws BridgeServiceException {
-        try {
-            UserSession session = cache.getUserSession(sessionToken);
-            if (session == null) {
-                throw new BridgeServiceException("No session", 500);
-            }
-            Account account = stormpathClient.getResource(session.getUser().getStormpathHref(), Account.class);
-            String key = session.getStudyKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
-            CustomData data = account.getCustomData();
-            data.put(key, "true");
-
-            key = session.getStudyKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-
-            HealthId healthId = healthCodeService.create();
-            String encryptedId = healthCodeEncryptor.encrypt(healthId.getId());
-
-            data.put(key, encryptedId);
-            data.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
-            data.save();
-            
-            // send consent agreement
-            sendMailService.sendConsentAgreement(session.getUser().getEmail(), consent, study);
-
-            session.setHealthDataCode(healthId.getCode());
-            session.setConsent(true);
-            cache.setUserSession(sessionToken, session);
-        } catch (Exception e) {
-            throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
-        }
-    }
-
     private UserSession createSessionFromAccount(Study study, Account account) {
 
         UserSession session;
@@ -269,6 +230,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         CustomData data = account.getCustomData();
         String consentKey = study.getKey()+BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
+        // TODO: Read from ConsentService
         session.setConsent( "true".equals(data.get(consentKey)) );
         
         // New users will not yet have consented and generated a health ID, so skip this if it doesn't exist.
