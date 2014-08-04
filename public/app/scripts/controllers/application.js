@@ -1,5 +1,5 @@
 bridge.controller('ApplicationController', 
-['$scope', '$rootScope', '$location', '$humane', '$window', '$http', 'authService', 'requestResetPasswordService', 'signInService', 'signUpService',  
+['$scope', '$rootScope', '$location', '$humane', '$window', 'authService', 'requestResetPasswordService', 'signInService', 'signUpService',  
 function($scope, $rootScope, $location, $humane, $window, $http, authService, requestResetPasswordService, signInService, signUpService) {
     
     $rootScope.loading = 0;
