@@ -46,7 +46,7 @@ public class ConsentServiceImpl implements ConsentService {
 
         final UserSession session = cache.getUserSession(sessionToken);
         if (session == null) {
-            throw new BridgeServiceException("No session", 500);
+            throw new BridgeServiceException("No session", HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
 
         try {
