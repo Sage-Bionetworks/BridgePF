@@ -15,7 +15,7 @@
 
 <table id="loading" width="100%" height="100%"><tr><td style="text-align:center;vertical-align:middle">Loading&hellip;<td></td></table>
 
-<div id="content">
+<div id="content" style="opacity:0">
 
 <div id="welcome" ng-show="step == 'welcome'">
     <header>
@@ -67,18 +67,18 @@
             <table>
                 <tr>
                     <td>
-                        <img id="surveyImg" draggable="false" ng-click="assessTask($event, 1)" bg-pressable src="consent/images/takesurveys_rest.svg"/>
+                        <img id="surveyImg" draggable="false" ng-click="assessTask($event, 1)" bg-pressable data-src="consent/images/takesurveys_rest.svg"/>
                     </td>
                     <td>
-                        <img id="talkingImg" draggable="false" ng-click="assessTask($event, 2)" bg-pressable src="consent/images/talking_rest.svg"/>
+                        <img id="talkingImg" draggable="false" ng-click="assessTask($event, 2)" bg-pressable data-src="consent/images/talking_rest.svg"/>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <img id="tappingImg" draggable="false" ng-click="assessTask($event, 3)" bg-pressable src="consent/images/tapping_rest.svg"/>
+                        <img id="tappingImg" draggable="false" ng-click="assessTask($event, 3)" bg-pressable data-src="consent/images/tapping_rest.svg"/>
                     </td>
                     <td>
-                        <img id="walkingImg" draggable="false" ng-click="assessTask($event, 4)" bg-pressable src="consent/images/walking_rest.svg"/>
+                        <img id="walkingImg" draggable="false" ng-click="assessTask($event, 4)" bg-pressable data-src="consent/images/walking_rest.svg"/>
                     </td>                
                 </tr>
             </table>
@@ -108,7 +108,7 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('sensors')">Learn more</a>
         </div>
         <div class="image" ng-click="nextStepIfDesktop()">
-            <img draggable="false" src="consent/images/phonesensordata.svg"/>
+            <img draggable="false" data-src="consent/images/phonesensordata.svg"/>
         </div>
     </article>
     <footer>
@@ -137,7 +137,7 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('sensors')">Learn more</a>
         </div>
         <div class="image" ng-click="nextStep()">
-            <img draggable="false" src="consent/images/phonesensordata.svg"/>
+            <img draggable="false" data-src="consent/images/phonesensordata.svg"/>
         </div>
     </article>
     <footer>
@@ -166,20 +166,20 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('deidentification')">Learn more</a>
         </div>
         <div class="image animcell" ng-click="nextStepIfAnimDone()">
-            <div><img draggable="false" src="consent/images/deidentification/step4_1.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_2.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_3.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_4.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_5.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_6.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_7.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_8.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_9.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_10.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_11.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_12.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_13.svg"/></div>
-            <div><img draggable="false" src="consent/images/deidentification/step4_14.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_1.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_2.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_3.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_4.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_5.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_6.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_7.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_8.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_9.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_10.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_11.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_12.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_13.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/deidentification/step4_14.svg"/></div>
         </div>
     </article>
     <footer>
@@ -211,28 +211,28 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('aggregation')">Learn more</a>
         </div>
         <div class="image animcell" ng-click="nextStepIfAnimDone()">
-            <div><img draggable="false" src="consent/images/aggregation/step5_1.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_2.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_3.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_4.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_5.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_6.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_7.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_8.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_9.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_10.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_11.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_12.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_13.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_14.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_15.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_16.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_17.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_18.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_19.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_20.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_21.svg"/></div>
-            <div><img draggable="false" src="consent/images/aggregation/step5_22.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_1.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_2.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_3.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_4.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_5.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_6.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_7.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_8.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_9.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_10.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_11.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_12.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_13.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_14.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_15.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_16.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_17.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_18.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_19.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_20.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_21.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/aggregation/step5_22.svg"/></div>
         </div>
     </article>
     <footer>
@@ -262,7 +262,7 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('impact')">Learn more</a>
         </div>
         <div class="image" ng-click="nextStep()">
-            <img src="consent/images/impact.svg"/>
+            <img data-src="consent/images/impact.svg"/>
         </div>
     </article>
     <footer>
@@ -288,15 +288,15 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('risk')">Learn more</a>
         </div>
         <div class="image animcell" ng-click="nextStepIfAnimDone()">
-            <div><img draggable="false" src="consent/images/risk/step7a_1.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk/step7a_2.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk/step7a_3.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk/step7a_4.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk/step7a_5.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk/step7a_6.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk/step7a_7.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk/step7a_8.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk/step7a_9.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk/step7a_1.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk/step7a_2.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk/step7a_3.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk/step7a_4.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk/step7a_5.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk/step7a_6.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk/step7a_7.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk/step7a_8.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk/step7a_9.svg"/></div>
         </div>    
     </article>
     <footer>
@@ -327,20 +327,20 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('risk')">Learn more</a>
         </div>
         <div class="image animcell" ng-click="nextStepIfAnimDone()">
-            <div><img draggable="false" src="consent/images/risk2/step7b_1.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_2.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_3.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_4.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_5.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_6.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_7.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_8.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_9.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_10.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_11.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_12.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_13.svg"/></div>
-            <div><img draggable="false" src="consent/images/risk2/step7b_14.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_1.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_2.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_3.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_4.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_5.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_6.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_7.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_8.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_9.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_10.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_11.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_12.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_13.svg"/></div>
+            <div><img draggable="false" data-src="consent/images/risk2/step7b_14.svg"/></div>
         </div>    
     </article>
     <footer>
@@ -367,7 +367,7 @@
             <p class="bold">You may withdraw your consent and discontinue participation at any time.</p>
         </div>
         <div class="image" ng-click="nextStep()">
-            <img src="consent/images/withdrawal.svg"/>
+            <img data-src="consent/images/withdrawal.svg"/>
         </div>
         <div class="info">
             <p>Email pdbridge@@sagebase.org to withdraw.</p>
@@ -455,8 +455,8 @@
 </div>
 
 <!-- These file names are updated by the grunt build; do not modify directly. -->
-<script src="shared/build/bridge-shared.min.9123f0d1.js"></script>
-<script src="consent/build/consent.min.f92a55d0.js"></script>
+<script src="shared/build/bridge-shared.min.34f06c5b.js"></script>
+<script src="consent/build/consent.min.e2f127eb.js"></script>
 
 </body>
 </html>
