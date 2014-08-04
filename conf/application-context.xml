@@ -46,6 +46,14 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
 
+    <bean id="studyConsentDao" class="org.sagebionetworks.bridge.dynamodb.DynamoStudyConsentDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+
+    <bean id="userConsentDao" class="org.sagebionetworks.bridge.dynamodb.DynamoUserConsentDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
 
     <!-- Stormpath identity service -->
@@ -116,7 +124,17 @@
             </bean>
         </property>
     </bean>
-    
+
+    <bean id="controllers.ConsentController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.ConsentController">
+                <property name="authenticationService" ref="authenticationService" />
+                <property name="studyControllerService" ref="studyControllerService" />
+                <property name="consentService" ref="consentService" />
+            </bean>
+        </property>
+    </bean>
+
     <bean id="controllers.BackfillController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.BackfillController">
@@ -176,13 +194,12 @@
     </bean>
 
     <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl">
-        <property name="stormpathClient" ref="stormpathClient"/>
-        <property name="cacheProvider" ref="cacheProvider"/>
-        <property name="bridgeConfig" ref="bridgeConfig"/>
+        <property name="stormpathClient" ref="stormpathClient" />
+        <property name="cacheProvider" ref="cacheProvider" />
+        <property name="bridgeConfig" ref="bridgeConfig" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
         <property name="userProfileService" ref="userProfileService" />
-        <property name="sendMailService" ref="sendEmailViaAmazonService"/>
     </bean>
 
     <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">
@@ -208,9 +225,17 @@
         </property>
         <property name="cacheProvider" ref="cacheProvider"/>
     </bean>
-    
+
     <bean id="userProfileService" class="org.sagebionetworks.bridge.services.UserProfileServiceImpl">
         <property name="stormpathClient" ref="stormpathClient" />
+    </bean>
+
+    <bean id="consentService" class="org.sagebionetworks.bridge.services.ConsentServiceImpl">
+        <property name="stormpathClient" ref="stormpathClient" />
+        <property name="cacheProvider" ref="cacheProvider" />
+        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
+        <property name="healthCodeService" ref="healthCodeService" />
+        <property name="sendMailService" ref="sendEmailViaAmazonService"/>
     </bean>
 
     <!-- Backfill -->
