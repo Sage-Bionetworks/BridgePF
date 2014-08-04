@@ -18,10 +18,4 @@ public interface UserConsentDao {
      * Whethe the user has consented to the specified study.
      */
     boolean hasConsented(String healthCode, StudyConsent studyConsent);
-
-    /**
-     * Gets the timestamp of the consent to which the user has consented.
-     * This can be used to locate the particular consent.
-     */
-    long getConsentTimestamp(String healthCode, String studyKey);
 }
