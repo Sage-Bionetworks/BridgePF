@@ -7,7 +7,7 @@
     <base href="/app/"/>
     <!-- These file names are updated by the grunt build; do not modify directly. -->
     <link rel="stylesheet" href="../shared/build/bridge-shared.min.aabcc93c.css" />
-    <link rel="stylesheet" href="build/bridge.min.e0f69cb7.css" />
+    <link rel="stylesheet" href="build/bridge.min.8f60374c.css" />
     <script>window._session = @Html(auth);</script>
 </head>
 <body ng-app="bridge" ng-controller="ApplicationController">
@@ -18,10 +18,7 @@
             </div>
             <div class="col-sm-6 bridge-header" ng-cloak>
                 <div class="loadingclock" ng-show="loading"></div>
-                <div ng-hide="!session.authenticated">
-                    <span ng-bind="session.username"></span>
-                    <button id="signOutLink" class="btn btn-default" ng-show="session.sessionToken" ng-click="signOut()">Sign Out</button>
-                </div>
+                <bg-user-menu></bg-user-menu>
             </div>
         </div>
         <div class="row main-pane">
@@ -38,8 +35,8 @@
     </div>
 
     <!-- These file names are updated by the grunt build; do not modify directly. -->
-    <script src="../shared/build/bridge-shared.min.fa1202f6.js"></script>
-    <script src="build/bridge.min.b689242c.js"></script>
+    <script src="../shared/build/bridge-shared.min.9123f0d1.js"></script>
+    <script src="build/bridge.min.48f33576.js"></script>
 </body>
 </html>
 
