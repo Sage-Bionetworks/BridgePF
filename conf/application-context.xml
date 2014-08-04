@@ -128,6 +128,7 @@
     <bean id="controllers.ConsentController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.ConsentController">
+                <property name="authenticationService" ref="authenticationService" />
                 <property name="studyControllerService" ref="studyControllerService" />
                 <property name="consentService" ref="consentService" />
             </bean>
