@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.dao.ConsentAlreadyExistsException;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.StudyConsent;
 
@@ -10,12 +11,11 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
-import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 
 public class DynamoUserConsentDao implements UserConsentDao {
+
+    private static final long NOT_WITHDRAW_YET = 0L;
 
     private DynamoDBMapper mapper;
 
@@ -29,48 +29,34 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     @Override
     public void giveConsent(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent consent = new DynamoUserConsent();
-        consent.setHealthCodeStudy(healthCode + ":" + studyConsent.getStudyKey());
-        consent.setConsentTimestamp(studyConsent.getTimestamp());
-        consent.setGive(DateTime.now(DateTimeZone.UTC).getMillis());
-        mapper.save(consent);
+        try {
+            DynamoUserConsent consent = new DynamoUserConsent(healthCode, studyConsent);
+            consent.setGive(DateTime.now(DateTimeZone.UTC).getMillis());
+            consent.setWithdraw(NOT_WITHDRAW_YET);
+            mapper.save(consent);
+        } catch (ConditionalCheckFailedException e) {
+            throw new ConsentAlreadyExistsException();
+        }
     }
 
     @Override
     public void withdrawConsent(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent consent = new DynamoUserConsent();
-        consent.setHealthCodeStudy(healthCode + ":" + studyConsent.getStudyKey());
-        consent.setConsentTimestamp(studyConsent.getTimestamp());
-        consent.setWithdraw(DateTime.now(DateTimeZone.UTC).getMillis());
-        mapper.save(consent);
+        // Delete the consent
+        DynamoUserConsent consentToDelete = new DynamoUserConsent(healthCode, studyConsent);
+        consentToDelete.setWithdraw(NOT_WITHDRAW_YET);
+        consentToDelete = mapper.load(consentToDelete);
+        mapper.delete(consentToDelete);
+        // Save with the withdraw time stamp for audit
+        DynamoUserConsent consentToWithdraw = new DynamoUserConsent(consentToDelete);
+        consentToWithdraw.setWithdraw(DateTime.now(DateTimeZone.UTC).getMillis());
+        consentToWithdraw.setVersion(null);
+        mapper.save(consentToWithdraw);
     }
 
     @Override
     public boolean hasConsented(String healthCode, StudyConsent studyConsent) {
-        QueryResultPage<DynamoUserConsent> page = queryForConsent(healthCode, studyConsent.getStudyKey());
-        return (page != null && page.getResults().size() > 0);
-    }
-
-    @Override
-    public long getConsentTimestamp(String healthCode, String studyKey) {
-        QueryResultPage<DynamoUserConsent> page = queryForConsent(healthCode, studyKey);
-        if (page == null) {
-            throw new RuntimeException("User hasn't consented yet.");
-        }
-        if (page.getResults().size() == 0) {
-            throw new RuntimeException("User hasn't consented yet.");
-        }
-        return page.getResults().get(0).getConsentTimestamp();
-    }
-
-    private QueryResultPage<DynamoUserConsent> queryForConsent(String healthCode, String studyKey) {
-        DynamoUserConsent consentWithHashKey = new DynamoUserConsent();
-        consentWithHashKey.setHealthCodeStudy(healthCode + ":" + studyKey);
-        DynamoDBQueryExpression<DynamoUserConsent> queryExpression =
-                new DynamoDBQueryExpression<DynamoUserConsent>()
-                .withHashKeyValues(consentWithHashKey)
-                .withScanIndexForward(false)
-                .withQueryFilterEntry("withdraw", new Condition().withComparisonOperator(ComparisonOperator.NULL));
-        return mapper.queryPage(DynamoUserConsent.class, queryExpression);
+        DynamoUserConsent consentToDelete = new DynamoUserConsent(healthCode, studyConsent);
+        consentToDelete.setWithdraw(NOT_WITHDRAW_YET);
+        return mapper.load(consentToDelete) != null;
     }
 }

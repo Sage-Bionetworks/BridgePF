@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.sagebionetworks.bridge.models.StudyConsent;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
@@ -9,11 +11,29 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 @DynamoDBTable(tableName = "UserConsent")
 public class DynamoUserConsent implements DynamoTable {
 
-    private String healthCodeStudy; // <health-code>:<study-key>
+    private String healthCodeStudy; // <health-code>:<study-key>:<consent-timestamp>
+    private String studyKey;
     private long consentTimestamp;
     private Long give;              // Timestamp when the consent is given
     private Long withdraw;          // Timestamp when the consent is withdrawn
     private Long version;
+
+    public DynamoUserConsent() {}
+
+    DynamoUserConsent(String healthCode, StudyConsent consent) {
+        studyKey = consent.getStudyKey();
+        consentTimestamp = consent.getTimestamp();
+        healthCodeStudy = healthCode + ":" + studyKey + ":" + consentTimestamp;
+    }
+
+    DynamoUserConsent(DynamoUserConsent consent) {
+        healthCodeStudy = consent.healthCodeStudy;
+        studyKey = consent.studyKey;
+        consentTimestamp = consent.consentTimestamp;
+        give = consent.give;
+        withdraw = consent.withdraw;
+        version = consent.version;
+    }
 
     @DynamoDBHashKey
     public String getHealthCodeStudy() {
@@ -21,14 +41,6 @@ public class DynamoUserConsent implements DynamoTable {
     }
     public void setHealthCodeStudy(String healthCodeStudy) {
         this.healthCodeStudy = healthCodeStudy;
-    }
-
-    @DynamoDBRangeKey
-    public long getConsentTimestamp() {
-        return consentTimestamp;
-    }
-    public void setConsentTimestamp(long consentTimestamp) {
-        this.consentTimestamp = consentTimestamp;
     }
 
     @DynamoDBAttribute
@@ -39,12 +51,28 @@ public class DynamoUserConsent implements DynamoTable {
         this.give = give;
     }
 
-    @DynamoDBAttribute
+    @DynamoDBRangeKey
     public Long getWithdraw() {
         return withdraw;
     }
     public void setWithdraw(Long withdraw) {
         this.withdraw = withdraw;
+    }
+
+    @DynamoDBAttribute
+    public String getStudyKey() {
+        return studyKey;
+    }
+    public void setStudyKey(String studyKey) {
+        this.studyKey = studyKey;
+    }
+
+    @DynamoDBAttribute
+    public long getConsentTimestamp() {
+        return consentTimestamp;
+    }
+    public void setConsentTimestamp(long consentTimestamp) {
+        this.consentTimestamp = consentTimestamp;
     }
 
     @DynamoDBVersionAttribute

@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
@@ -11,6 +14,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
@@ -51,11 +55,11 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
 
     @Override
     public StudyConsent getConsent(String studyKey) {
-        DynamoStudyConsent consentWithHashKey = new DynamoStudyConsent();
-        consentWithHashKey.setStudyKey(studyKey);
+        DynamoStudyConsent hashKey = new DynamoStudyConsent();
+        hashKey.setStudyKey(studyKey);
         DynamoDBQueryExpression<DynamoStudyConsent> queryExpression =
                 new DynamoDBQueryExpression<DynamoStudyConsent>()
-                .withHashKeyValues(consentWithHashKey)
+                .withHashKeyValues(hashKey)
                 .withScanIndexForward(false)
                 .withQueryFilterEntry("active", new Condition()
                         .withComparisonOperator(ComparisonOperator.EQ)
@@ -73,5 +77,21 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         consent.setStudyKey(studyKey);
         consent.setTimestamp(timestamp);
         return mapper.load(consent);
+    }
+
+    @Override
+    public List<StudyConsent> getConsents(String studyKey) {
+        DynamoStudyConsent hashKey = new DynamoStudyConsent();
+        hashKey.setStudyKey(studyKey);
+        DynamoDBQueryExpression<DynamoStudyConsent> queryExpression =
+                new DynamoDBQueryExpression<DynamoStudyConsent>()
+                .withHashKeyValues(hashKey)
+                .withScanIndexForward(false);
+        PaginatedQueryList<DynamoStudyConsent> consents = mapper.query(DynamoStudyConsent.class, queryExpression);
+        List<StudyConsent> results = new ArrayList<StudyConsent>();
+        for (DynamoStudyConsent consent : consents) {
+            results.add(consent);
+        }
+        return results;
     }
 }
