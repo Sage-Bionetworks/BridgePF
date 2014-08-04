@@ -77,6 +77,7 @@ public class DynamoInitializer {
      * For phasing out obsolete schemas.
      */
     static void beforeInit() {
+        deleteTable("UserConsent");
     }
 
     static void deleteTable(String table) {
@@ -92,6 +93,7 @@ public class DynamoInitializer {
             }
             logger.info("Deleting table " + table);
             DYNAMO.deleteTable(table);
+            waitForDelete(tableDscr);
             logger.info("Table " + table + " deleted.");
         } catch(ResourceNotFoundException e) {
             logger.warn("Table " + table + " does not exist.");
@@ -247,7 +249,6 @@ public class DynamoInitializer {
     }
 
     static void initTables(final List<TableDescription> tables) {
-
         Map<String, TableDescription> existingTables = getExistingTables();
         for (TableDescription table : tables) {
             if (!existingTables.containsKey(table.getTableName())) {
@@ -395,6 +396,23 @@ public class DynamoInitializer {
             DescribeTableResult describeResult = DYNAMO.describeTable(
                     new DescribeTableRequest(table.getTableName()));
             table = describeResult.getTable();
+        }
+    }
+
+    static void waitForDelete(TableDescription table) {
+        while (true) {
+            try {
+                Thread.sleep(200L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Shouldn't be interrupted.", e);
+            }
+            try {
+                DescribeTableResult describeResult = DYNAMO.describeTable(
+                        new DescribeTableRequest(table.getTableName()));
+                table = describeResult.getTable();
+            } catch (ResourceNotFoundException e) {
+                return;
+            }
         }
     }
 }

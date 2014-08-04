@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
+import java.util.List;
+
 import org.sagebionetworks.bridge.models.StudyConsent;
 
 public interface StudyConsentDao {
@@ -21,7 +23,12 @@ public interface StudyConsentDao {
     StudyConsent getConsent(String studyKey);
 
     /**
-     * Gets the consent of the specified timestamp.
+     * Gets the consent, activate or inactive, of the specified timestamp.
      */
     StudyConsent getConsent(String studyKey, long timestamp);
+
+    /**
+     * Gets all the consents, active and inactive, in reverse order of the timestamp, of a particular study.
+     */
+    List<StudyConsent> getConsents(String studyKey);
 }
