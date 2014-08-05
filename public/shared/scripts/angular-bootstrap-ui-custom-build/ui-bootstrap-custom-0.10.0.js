@@ -2,10 +2,10 @@
  * angular-ui-bootstrap
  * http://angular-ui.github.io/bootstrap/
 
- * Version: 0.10.0 - 2014-01-15
+ * Version: 0.10.0 - 2014-05-28
  * License: MIT
  */
-angular.module("ui.bootstrap", ["ui.bootstrap.position","ui.bootstrap.datepicker","ui.bootstrap.transition","ui.bootstrap.modal"]);
+angular.module("ui.bootstrap", ["ui.bootstrap.position","ui.bootstrap.datepicker","ui.bootstrap.dropdown","ui.bootstrap.transition","ui.bootstrap.modal"]);
 angular.module('ui.bootstrap.position', [])
 
 /**

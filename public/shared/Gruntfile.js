@@ -7,7 +7,9 @@ module.exports = function(grunt) {
     var jsFiles = [
         "bower_components/angular/angular.js",
         "bower_components/angular-route/angular-route.js",
-        "scripts/angular-bootstrap-ui-custom-build/ui-bootstrap-custom-tpls-0.10.0.js",
+        "bower_components/bootstrap-bower/ui-bootstrap-tpls.min.js",
+        /* Build that included dropdown, modal and datepicker didn't include the dropdown module. */
+        /*"scripts/angular-bootstrap-ui-custom-build/ui-bootstrap-custom-tpls-0.10.0.js",*/
         "scripts/humane-modified.js",
         "scripts/shared.js",
         "scripts/form-service.js",
@@ -40,7 +42,7 @@ module.exports = function(grunt) {
                 node: true, 
                 loopfunc: true, 
                 globals: { "angular": false },
-                ignores: ['**/angular.js', '**/angular-route.js', '**/ui-bootstrap-custom-tpls-0.10.0.js']
+                ignores: ['**/angular.js', '**/angular-route.js', '**/ui-bootstrap-tpls.min.js', '**/ui-bootstrap-custom-tpls-0.10.0.js']
             },
             js: jsFiles
         },
