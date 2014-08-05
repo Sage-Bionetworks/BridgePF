@@ -63,6 +63,7 @@ public class ConsentServiceImpl implements ConsentService {
             String key = session.getStudyKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
             // TODO: Save in ConsentDao and deprecate this in CustomData
             customData.put(key, "true");
+            customData.save();
 
             // Email
             sendMailService.sendConsentAgreement(session.getUser().getEmail(), consent, study);
