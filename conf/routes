@@ -10,8 +10,8 @@ GET     /consent/:sessionToken      @controllers.ApplicationController.loadConse
 # API - Authentication
 POST    /api/auth/signIn                @controllers.AuthenticationController.signIn
 GET     /api/auth/signOut               @controllers.AuthenticationController.signOut
-POST    /api/auth/resetPassword         @controllers.AuthenticationController.resetPassword
 POST    /api/auth/requestResetPassword  @controllers.AuthenticationController.requestResetPassword
+POST    /api/auth/resetPassword         @controllers.AuthenticationController.resetPassword
 POST    /api/auth/signUp                @controllers.AuthenticationController.signUp
 POST    /api/auth/verifyEmail           @controllers.AuthenticationController.verifyEmail
 
@@ -21,9 +21,9 @@ POST    /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataContr
 DELETE  /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(trackerId: Long, recordId: String)
 
 # API - Health Data
-POST    /api/healthdata/:trackerId                      @controllers.HealthDataController.appendHealthData(trackerId: Long)
-GET     /api/healthdata/:trackerId/:startDate/:endDate  @controllers.HealthDataController.getHealthDataByDateRange(trackerId: Long, startDate: Long, endDate: Long)
 GET     /api/healthdata/:trackerId                      @controllers.HealthDataController.getAllHealthData(trackerId: Long)
+GET     /api/healthdata/:trackerId/:startDate/:endDate  @controllers.HealthDataController.getHealthDataByDateRange(trackerId: Long, startDate: Long, endDate: Long)
+POST    /api/healthdata/:trackerId                      @controllers.HealthDataController.appendHealthData(trackerId: Long)
 
 # API - trackers
 GET     /api/trackers                       @controllers.TrackerController.getTrackers
@@ -34,9 +34,10 @@ GET     /api/users/profile      @controllers.UserProfileController.getUserProfil
 POST    /api/users/profile      @controllers.UserProfileController.updateUserProfile
 
 # API - consent
-POST    /api/consent/give           @controllers.ConsentController.give
-POST    /api/consent/withdraw       @controllers.ConsentController.withdraw
-POST    /api/consent/emailCopy      @controllers.ConsentController.emailCopy
+POST    /api/consent            @controllers.ConsentController.give
+# These don't exist yet at the controller or even the service level
+# DELETE  /api/consent            @controllers.ConsentController.withdraw
+# POST    /api/consent/email      @controllers.ConsentController.emailCopy
 
 # Backfill
 GET     /admin/backfill/healthId    @controllers.BackfillController.resetHealthId
