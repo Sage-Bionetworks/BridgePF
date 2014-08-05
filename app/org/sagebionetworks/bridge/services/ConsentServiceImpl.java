@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
@@ -43,10 +44,20 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     public void give(String sessionToken, ResearchConsent consent, Study study) throws BridgeServiceException {
-
+        if (StringUtils.isBlank(sessionToken)) {
+            throw new BridgeServiceException("Session token is required.", HttpStatus.SC_BAD_REQUEST);
+        } else if (study == null){
+            throw new BridgeServiceException("Study is required.", HttpStatus.SC_BAD_REQUEST);
+        } else if (consent == null){
+            throw new BridgeServiceException("ResearchConsent is required.", HttpStatus.SC_BAD_REQUEST);
+        } else if (StringUtils.isBlank(consent.getName())){
+            throw new BridgeServiceException("Consent signature is required.", HttpStatus.SC_BAD_REQUEST);
+        } else if (consent.getBirthdate() == null){
+            throw new BridgeServiceException("Consent birth date  is required.", HttpStatus.SC_BAD_REQUEST);
+        }
         final UserSession session = cache.getUserSession(sessionToken);
         if (session == null) {
-            throw new BridgeServiceException("No session", HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            throw new BridgeServiceException("Not signed in.", HttpStatus.SC_FORBIDDEN);
         }
 
         try {
