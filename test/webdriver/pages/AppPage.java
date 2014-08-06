@@ -46,6 +46,8 @@ public class AppPage extends BasePage {
     }
 
     private FluentWebElement signOutLink() {
+        waitUntilPresent(MENU_LINK);
+        browser.findFirst(MENU_LINK).click();
         waitUntilPresent(SIGN_OUT_LINK);
         return browser.findFirst(SIGN_OUT_LINK);
     }

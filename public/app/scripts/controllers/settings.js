@@ -1,30 +1,27 @@
-bridge.controller('SettingsModalController', ['$http', '$log', '$modalInstance', '$scope', 'requestResetPasswordService', 
-    function($http, $log, $modalInstance, $scope, requestResetPasswordService) {
-        $scope.submissionFailure = false;
-        $scope.getProfileFailure = false;
-        $scope.submissionSuccess = false;
+bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$modalInstance', '$scope', 'formService', 'modalService', 
+    function($http, $humane, $log, $modalInstance, $scope, formService, modalService) {
 
-        $scope.profile = $http.get('/api/users/profile')
+        formService.initScope($scope, 'settings');
+
+        $http.get('/api/users/profile')
             .success(function(data, status, headers, config) {
-                var profile = data.payload;
+                var payload = data.payload;
 
                 // These are all the fields the /api/users/profile call will need to return eventually.
-                $scope.formData = {
+                $scope.profile = {
                     image: "",
-                    firstName: profile.firstName,
-                    lastName: profile.lastName,
-                    username: profile.username,
-                    email: profile.email,
+                    firstName: payload.firstName,
+                    lastName: payload.lastName,
+                    username: payload.username,
+                    email: payload.email,
                     birthdate: "",
                     questions: "",
                     futureStudies: ""
                 };
-                return profile;
             })
             .error(function(data, status, headers, config) {
+                $humane.error('Sorry, something went wrong while fetching your info. Please close this modal and try again!');
                 $log.error('API fetch for users/profile failed.');
-                $scope.getProfileFailure = true;
-                return null;
             });
 
         $scope.cancel = function() {
@@ -33,23 +30,23 @@ bridge.controller('SettingsModalController', ['$http', '$log', '$modalInstance',
 
         $scope.submit = function() {
             // Only two items possible to update are first name and last name.
-            var update = {
-                firstName: $scope.formData.firstName,
-                lastName: $scope.formData.lastName
-            };
+            var update = formService.formToJSON($scope.settings, ['firstName', 'lastName']);
             $http.post('/api/users/profile', update)
                 .success(function(data, status, headers, config) {
-                    $scope.submissionSuccess = true;
+                    $humane.confirm('Your information has been successfully updated.');
                     $log.info(data);
+                    $modalInstance.close('success');
                 })
                 .error(function(data, status, headers, config) {
-                    $scope.submissionFailure = true;
+                    $humane.error('Woops! Something went wrong on the internet. Please submit again.');
                     $log.info(data);
                 });
         };
 
         $scope.changePassword = function() {
-            requestResetPasswordService.open();
+            console.log('changePassword 1');
+            modalService.openModal('RequestResetPasswordModalController', 'sm', '/shared/views/requestResetPassword.html');
+            console.log('changePassword 2');
         };
 
         $scope.withdrawStudy = function() {
