@@ -4,6 +4,7 @@ import models.JsonPayload;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.models.UserProfile;
+import org.sagebionetworks.bridge.models.UserProfileInfo;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.UserProfileService;
 
@@ -23,9 +24,9 @@ public class UserProfileController extends BaseController {
 
     public Result getUserProfile() throws Exception {
         UserSession session = getSession();
-        UserProfile user = session.getUser();
+        UserProfileInfo user = new UserProfileInfo(session.getUser());
 
-        return jsonResult(new JsonPayload<UserProfile>(user));
+        return jsonResult(new JsonPayload<UserProfileInfo>(user));
     }
 
     public Result updateUserProfile() throws Exception {
