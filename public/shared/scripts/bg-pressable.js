@@ -16,7 +16,6 @@ bridgeShared.directive('bgPressable', [function() {
     }
     function findPressable(element) {
         for (var n = element; n !== null; n = n.parentNode) {
-            console.log(n);
             if (n.hasAttribute('bg-pressable')) {
                 return n;
             }
