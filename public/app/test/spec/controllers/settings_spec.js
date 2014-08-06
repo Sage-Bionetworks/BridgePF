@@ -7,6 +7,7 @@ describe('SettingsModalController', function() {
     beforeEach(inject(function($injector) {
         $log = $injector.get('$log');
         scope = $injector.get('$rootScope').$new();
+        scope.setMessage = jasmine.createSpy('scope.setMessage');
         formService = jasmine.createSpyObj( 'formService', ['initScope', 'formToJSON'] );
         modalInstance = jasmine.createSpyObj( 'modalInstance', ['close', 'dismiss'] );
         modalService = jasmine.createSpyObj( 'modalService', ['openModal'] );
