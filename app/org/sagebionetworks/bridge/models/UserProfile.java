@@ -63,18 +63,18 @@ public class UserProfile implements Iterable<String> {
     public static UserProfile fromJson(JsonNode node, UserProfile currentUser) {
         if (node == null)
             throw new BridgeServiceException("User JSON is null", 500);
-
+ 
         UserProfile user = new UserProfile();
         if (node.get(FIRSTNAME) != null) {
-            user.setFirstName(node.get(FIRSTNAME).asText());
+            user.setFirstName(replaceEmpty(node.get(FIRSTNAME).asText()));
         }
         if (node.get(LASTNAME) != null) {
-            user.setLastName(node.get(LASTNAME).asText());
+            user.setLastName(replaceEmpty(node.get(LASTNAME).asText()));
         }
 
-        user.setUsername(currentUser.getUsername());
-        user.setStormpathHref(currentUser.getStormpathHref());
-        user.setEmail(currentUser.getEmail());
+        user.setUsername(replaceEmpty(currentUser.getUsername()));
+        user.setStormpathHref(replaceEmpty(currentUser.getStormpathHref()));
+        user.setEmail(replaceEmpty(currentUser.getEmail()));
 
         return user;
     }
@@ -96,6 +96,15 @@ public class UserProfile implements Iterable<String> {
         String[] fieldsArr = {this.firstName, this.lastName, this.email, this.username, this.stormpathHref};
         List<String> fields = Arrays.asList(fieldsArr);
         return fields.iterator();
+    }
+    
+    private static String replaceEmpty(String s) {
+        if (s.equalsIgnoreCase("")) {
+            return "<EMPTY>";
+        }
+        else {
+            return s;
+        }
     }
 
 }
