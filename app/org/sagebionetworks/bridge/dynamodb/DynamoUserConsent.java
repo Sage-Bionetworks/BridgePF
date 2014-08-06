@@ -13,7 +13,7 @@ public class DynamoUserConsent implements DynamoTable {
 
     private String healthCodeStudy; // <health-code>:<study-key>:<consent-timestamp>
     private String studyKey;
-    private long consentTimestamp;
+    private long consentTimestamp;  // Adding this comment to deploy again.
     private Long give;              // Timestamp when the consent is given
     private Long withdraw;          // Timestamp when the consent is withdrawn
     private Long version;
