@@ -1,9 +1,9 @@
-bridgeShared.service('signInService', ['$modal', 'requestResetPasswordService', function($modal, requestResetPasswordService) {
+bridgeShared.service('signInService', ['$modal', function($modal) {
 
     var modalInstance = null, pendingRequests = [];
 
-    var ModalInstanceController = ['$scope', '$window', '$http', '$route', '$q', 'authService', 'formService',  
-       function($scope, $window, $http, $route, $q, authService, formService) {
+    var ModalInstanceController = ['$scope', '$window', '$http', '$route', '$q', 'authService', 'formService', 'modalService', 
+       function($scope, $window, $http, $route, $q, authService, formService, modalService) {
 
         formService.initScope($scope, 'signInForm');
 
@@ -42,13 +42,13 @@ bridgeShared.service('signInService', ['$modal', 'requestResetPasswordService', 
                 }
             });
         };
-        $scope.cancel = function () {
+        $scope.cancel = function() {
             modalInstance.dismiss('cancel');
             modalInstance = null;
         };
         $scope.resetPassword = function() {
             $scope.cancel();
-            requestResetPasswordService.open();
+            modalService.openModal('RequestResetPasswordModalController', 'sm', '/shared/views/requestResetPassword.html');
         };
     }];
     

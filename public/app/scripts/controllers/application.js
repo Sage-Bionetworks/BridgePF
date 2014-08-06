@@ -1,6 +1,6 @@
 bridge.controller('ApplicationController', 
-['$scope', '$rootScope', '$location', '$humane', '$window', 'authService', 'requestResetPasswordService', 'signInService', 'signUpService',  
-function($scope, $rootScope, $location, $humane, $window, authService, requestResetPasswordService, signInService, signUpService) {
+['$scope', '$rootScope', '$location', '$humane', '$window', 'authService', 'modalService', 'signInService',  
+function($scope, $rootScope, $location, $humane, $window, authService, modalService, signInService) {
     
     $rootScope.loading = 0;
     $rootScope.$on("loadStart", function() {
@@ -35,7 +35,7 @@ function($scope, $rootScope, $location, $humane, $window, authService, requestRe
 	    signInService.open();
 	};
 	$scope.signUp = function() {
-	    signUpService.open();
+	    modalService.openModal('SignUpModalController', 'lg', 'views/dialogs/signUp.html');
 	};
 	$scope.signOut = function() {
 	    authService.signOut().then(function() {
@@ -45,6 +45,6 @@ function($scope, $rootScope, $location, $humane, $window, authService, requestRe
 	    });
 	};
     $scope.resetPassword = function() {
-        requestResetPasswordService.open();
+        modalService.openModal('RequestResetPasswordModalController', 'sm', '/shared/views/requestResetPassword.html');
     };
 }]);

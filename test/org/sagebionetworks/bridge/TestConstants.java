@@ -60,6 +60,7 @@ public class TestConstants {
     public static final String PAYLOAD = "payload";
     public static final String RECORD_ID = "recordId";
 
+    public static final String MENU_LINK = "#usermenu>.dropdown-toggle";
     public static final String RESET_PASSWORD_LINK = "#resetPasswordLink";
     public static final String RESET_PASSWORD_DIALOG = "#resetPasswordDialog";
     public static final String SIGN_OUT_LINK = "#signOutLink";
