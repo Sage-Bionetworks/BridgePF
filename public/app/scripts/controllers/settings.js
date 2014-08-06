@@ -33,20 +33,20 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
             var update = formService.formToJSON($scope.settings, ['firstName', 'lastName']);
             $http.post('/api/users/profile', update)
                 .success(function(data, status, headers, config) {
+                    console.log('success');
                     $humane.confirm('Your information has been successfully updated.');
                     $log.info(data);
                     $modalInstance.close('success');
                 })
                 .error(function(data, status, headers, config) {
+                    console.log('error');
                     $humane.error('Woops! Something went wrong on the internet. Please submit again.');
                     $log.info(data);
                 });
         };
 
         $scope.changePassword = function() {
-            console.log('changePassword 1');
             modalService.openModal('RequestResetPasswordModalController', 'sm', '/shared/views/requestResetPassword.html');
-            console.log('changePassword 2');
         };
 
         $scope.withdrawStudy = function() {
