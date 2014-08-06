@@ -7,7 +7,7 @@ bridge.controller('UserMenuController', ['$humane', '$window', 'authService', 'm
             id: "menu_settings",
             imageUrl: "/images/menu_settings_rest.svg",
             method: function() {
-                modalService.openModal('views/settings.html', 'SettingsModalController');
+                modalService.openModal('SettingsModalController', 'lg', 'views/settings.html');
             }
         },
         {
@@ -19,14 +19,14 @@ bridge.controller('UserMenuController', ['$humane', '$window', 'authService', 'm
             }
         },
         {
-            name: "Log Out",
-            id: "menu_logout",
+            name: "Sign Out",
+            id: "signOutLink",
             imageUrl: "/images/menu_logout_rest.svg",
             method: function() {
                 authService.signOut().then(function() {
-                    $window.location.replace("/");  
+                    $window.location.replace("/");
                 }, function(response) {
-                    $humane.error(response.data.payload); 
+                    $humane.error(response.data.payload);
                 });
             }
         }

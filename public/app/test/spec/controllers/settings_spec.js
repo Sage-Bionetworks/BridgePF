@@ -1,14 +1,17 @@
-describe('ModalSettingsController', function() {
+describe('SettingsModalController', function() {
 
-    var $controller, $httpBackend, $log, controller, scope, modalInstance, requestResetPasswordService;
+    var $controller, $httpBackend, $log, controller, scope, modalInstance, modalService,requestResetPasswordService;
 
-    beforeEach(module('bridge'));
+    beforeEach(function() {
+        // module('bridge.shared');
+        module('bridge');
+    });
 
     beforeEach(inject(function($injector) {
         $log = $injector.get('$log');
         scope = $injector.get('$rootScope').$new();
         modalInstance = { dismiss: jasmine.createSpy('modalInstance.dismiss') };
-        requestResetPasswordService = { open: jasmine.createSpy('requestResetPasswordService.open') };
+        modalService = { openModal: jasmine.createSpy('modalService.openModal') };
 
         $httpBackend = $injector.get('$httpBackend');
         $httpBackend.when('GET', '/api/users/profile').respond({
@@ -26,8 +29,7 @@ describe('ModalSettingsController', function() {
         controller = $controller('SettingsModalController', {
             '$log': $log,
             '$scope': scope,
-            '$modalInstance': modalInstance,
-            'requestResetPasswordService': requestResetPasswordService
+            '$modalInstance': modalInstance
         });
     }));
 
@@ -47,10 +49,14 @@ describe('ModalSettingsController', function() {
         expect(modalInstance.dismiss).toHaveBeenCalled();
     });
 
-    it('should open the requestResetPasswordService when calling changePassword() in the current scope.', function() {
+    it('should open the RequestResetPassword Modal when calling changePassword() in the current scope.', function() {
+        var template = '/shared/views/requestResetPassword.html';
+        $httpBackend.when('GET', template).respond('<html></html>');
+        $httpBackend.expect('GET', template);
+        
         scope.changePassword();
 
-        expect(requestResetPasswordService.open).toHaveBeenCalled();
+        expect(modalService.openModal).toHaveBeenCalled();
     });
 
     it('should see a POST request when we submit the form.', function() {
