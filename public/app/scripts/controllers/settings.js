@@ -14,7 +14,6 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
                     lastName: payload.lastName,
                     username: payload.username,
                     email: payload.email,
-                    birthdate: "",
                     questions: "",
                     futureStudies: ""
                 };
@@ -42,7 +41,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
                     $log.info(data);
                 });
         };
-        
+
         $scope.changePassword = function() {
             modalService.openModal('RequestResetPasswordModalController', 'sm', '/shared/views/requestResetPassword.html');
         };
