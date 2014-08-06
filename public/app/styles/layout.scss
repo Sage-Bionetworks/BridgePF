@@ -22,6 +22,10 @@ form[name='settings'] {
     a, .well > h4 {
         color: $dark_blue;
     }
+    .alert {
+        margin-right: 20px;
+        margin-left: 20px;
+    }
 }
 
 /* Login */
