@@ -1,17 +1,15 @@
 describe('SettingsModalController', function() {
 
-    var $controller, $httpBackend, $log, controller, scope, modalInstance, modalService,requestResetPasswordService;
+    var $controller, $httpBackend, $log, controller, scope, formService, modalInstance, modalService;
 
-    beforeEach(function() {
-        // module('bridge.shared');
-        module('bridge');
-    });
+    beforeEach(module('bridge'));
 
     beforeEach(inject(function($injector) {
         $log = $injector.get('$log');
         scope = $injector.get('$rootScope').$new();
-        modalInstance = { dismiss: jasmine.createSpy('modalInstance.dismiss') };
-        modalService = { openModal: jasmine.createSpy('modalService.openModal') };
+        formService = jasmine.createSpyObj( 'formService', ['initScope', 'formToJSON'] );
+        modalInstance = jasmine.createSpyObj( 'modalInstance', ['close', 'dismiss'] );
+        modalService = jasmine.createSpyObj( 'modalService', ['openModal'] );
 
         $httpBackend = $injector.get('$httpBackend');
         $httpBackend.when('GET', '/api/users/profile').respond({
@@ -28,8 +26,10 @@ describe('SettingsModalController', function() {
         $controller = $injector.get('$controller');
         controller = $controller('SettingsModalController', {
             '$log': $log,
+            '$modalInstance': modalInstance,
             '$scope': scope,
-            '$modalInstance': modalInstance
+            'formService': formService,
+            'modalService': modalService
         });
     }));
 
@@ -41,6 +41,7 @@ describe('SettingsModalController', function() {
 
     it('should instantiate the controller and retreive the user profile.', function() {
         expect(controller).toBeDefined();
+        expect(formService.initScope).toHaveBeenCalled();
     });
 
     it('should dismiss the modalInstance when calling close() in the current scope.', function() {
@@ -50,24 +51,28 @@ describe('SettingsModalController', function() {
     });
 
     it('should open the RequestResetPassword Modal when calling changePassword() in the current scope.', function() {
-        var template = '/shared/views/requestResetPassword.html';
-        $httpBackend.when('GET', template).respond('<html></html>');
-        $httpBackend.expect('GET', template);
-        
         scope.changePassword();
 
-        expect(modalService.openModal).toHaveBeenCalled();
+        expect(modalService.openModal).toHaveBeenCalledWith('RequestResetPasswordModalController', 'sm', '/shared/views/requestResetPassword.html');
     });
 
-    it('should see a POST request when we submit the form.', function() {
-        scope.formData = { firstName: 'first name', lastName: 'last name' };
-
+    it('should POST when we submit the form.', function() {
         $httpBackend.when('POST', '/api/users/profile').respond({
             payload: 'Profile updated.'
         });
         $httpBackend.expect('POST', '/api/users/profile');
 
         scope.submit();
+    });
+
+    it('should POST when we submit the form and leave the modal instance open if an error occurred.', function() {
+        $httpBackend.when('POST', '/api/users/profile').respond(500);
+        $httpBackend.expect('POST', '/api/users/profile');
+
+        scope.submit();
+
+        expect(formService.formToJSON).toHaveBeenCalled();
+        expect(modalInstance.close).not.toHaveBeenCalled();
     });
 
 
