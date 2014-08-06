@@ -9,14 +9,15 @@ module.exports = function(grunt) {
         "bower_components/angular-route/angular-route.js",
         "bower_components/bootstrap-bower/ui-bootstrap-tpls.min.js",
         /* Build that included dropdown, modal and datepicker didn't include the dropdown module. */
-        /*"scripts/angular-bootstrap-ui-custom-build/ui-bootstrap-custom-tpls-0.10.0.js",*/
+        /*"scripts/angular-bootstrap-ui-custom-build/ui-bootstrap-custom-tpls-0.10.0.js",*/        
         "scripts/humane-modified.js",
         "scripts/shared.js",
         "scripts/form-service.js",
+        "scripts/modal-service.js",
         "scripts/humane.js",
         "scripts/auth-service.js",
         "scripts/signin-service.js",
-        "scripts/reset-password-service.js",
+        "scripts/request-reset-password.js",
         "scripts/auth-interceptor.js",
         "scripts/loading-interceptor.js",
         "scripts/ga.js",
