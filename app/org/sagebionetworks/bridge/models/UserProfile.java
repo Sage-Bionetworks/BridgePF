@@ -1,10 +1,14 @@
 package org.sagebionetworks.bridge.models;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class UserProfile {
+public class UserProfile implements Iterable<String> {
     private String firstName;
     private String lastName;
     private String username;
@@ -85,6 +89,13 @@ public class UserProfile {
         } else {
             return true;
         }
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+        String[] fieldsArr = {this.firstName, this.lastName, this.email, this.username, this.stormpathHref};
+        List<String> fields = Arrays.asList(fieldsArr);
+        return fields.iterator();
     }
 
 }
