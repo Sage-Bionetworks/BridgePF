@@ -73,7 +73,7 @@ public class UserProfileControllerTest {
                     }
                 }
 
-                assertEquals("User profile has all required fields.", count, 5);
+                assertEquals("User profile has all required fields.", count, 4);
 
                 TestUtils.signOut();
             }
