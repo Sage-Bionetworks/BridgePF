@@ -38,11 +38,11 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
                     $log.info(data);
                 })
                 .error(function(data, status, headers, config) {
-                    $humane.error('Woops! Something went wrong on the internet. Please submit again.');
+                    $scope.setMessage('Woops! Something went wrong on the internet. Please submit again.', 'danger');
                     $log.info(data);
                 });
         };
-
+        
         $scope.changePassword = function() {
             modalService.openModal('RequestResetPasswordModalController', 'sm', '/shared/views/requestResetPassword.html');
         };
