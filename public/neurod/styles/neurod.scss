@@ -172,7 +172,8 @@ form[name='signInForm'] {
 }
     
 .splash {
-    background-color: peru;
+    background: white url(/neurod/images/landingpagephoto.jpg) center no-repeat;
+    background-size: constrain;
     height: 30rem;
     position: relative;
     top: 12rem;
