@@ -1,9 +1,5 @@
 package org.sagebionetworks.bridge.models;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-
 public class UserProfileInfo {
     private String firstName;
     private String lastName;

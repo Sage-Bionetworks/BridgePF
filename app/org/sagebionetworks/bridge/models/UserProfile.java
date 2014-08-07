@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,14 +15,14 @@ public class UserProfile implements Iterable<String> {
     private String username;
     private String email;
     private String stormpathHref;
-
+    private DateTime birthdate;
+    
     private static final String FIRSTNAME = "firstName";
     private static final String LASTNAME = "lastName";
 
     public String getFirstName() {
         return this.firstName;
     }
-
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
@@ -29,7 +30,6 @@ public class UserProfile implements Iterable<String> {
     public String getLastName() {
         return this.lastName;
     }
-
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
@@ -37,7 +37,6 @@ public class UserProfile implements Iterable<String> {
     public String getUsername() {
         return this.username;
     }
-
     public void setUsername(String username) {
         this.username = username;
     }
@@ -45,7 +44,6 @@ public class UserProfile implements Iterable<String> {
     public String getEmail() {
         return this.email;
     }
-
     public void setEmail(String email) {
         this.email = email;
     }
@@ -53,9 +51,15 @@ public class UserProfile implements Iterable<String> {
     public String getStormpathHref() {
         return this.stormpathHref;
     }
-
     public void setStormpathHref(String stormpathHref) {
         this.stormpathHref = stormpathHref;
+    }
+    
+    public DateTime getBirthdate() {
+        return this.birthdate;
+    }
+    public void setBirthdate(DateTime birthdate) {
+        this.birthdate = birthdate;
     }
 
     // Get first name/last name from JsonNode, and
@@ -93,7 +97,7 @@ public class UserProfile implements Iterable<String> {
 
     @Override
     public Iterator<String> iterator() {
-        String[] fieldsArr = {this.firstName, this.lastName, this.email, this.username, this.stormpathHref};
+        String[] fieldsArr = {this.firstName, this.lastName, this.email, this.username, this.birthdate.toString(), this.stormpathHref};
         List<String> fields = Arrays.asList(fieldsArr);
         return fields.iterator();
     }

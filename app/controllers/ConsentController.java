@@ -22,8 +22,9 @@ public class ConsentController extends BaseController {
     }
 
     public Result give() throws Exception {
-        // Don't call getSession(), it'll throw an exception due to lack of consent, we 
-        // know this person has not consented, that's what they're trying to do.
+        // Don't call getSession(), it'll throw an exception due to lack of
+        // consent, we know this person has not consented, that's what they're
+        // trying to do.
         UserSession session = checkForSession();
         if (session == null) {
             throw new BridgeServiceException("Not signed in.", 401);
@@ -35,14 +36,28 @@ public class ConsentController extends BaseController {
     }
 
     public Result withdraw() throws Exception {
-        // TODO: Implement with ConsentService
         UserSession session = getSession();
-        return ok(Boolean.toString(session.isConsent()));
+        if (session == null) {
+            throw new BridgeServiceException("Not signed in.", 401);
+        } else if (!session.doesConsent()) {
+            throw new BridgeServiceException("Need to consent.", 412);
+        }
+        Study study = studyControllerService.getStudyByHostname(request());
+        consentService.withdraw(session, study);
+        
+        return jsonResult("Withdraw consent has been recorded.");
     }
 
     public Result emailCopy() throws Exception {
-        // TODO: Implement with ConsentService
         UserSession session = getSession();
-        return ok(Boolean.toString(session.isConsent()));
+        if (session == null) {
+            throw new BridgeServiceException("Not signed in.", 401);
+        } else if (!session.doesConsent()) {
+            throw new BridgeServiceException("Need to consent.", 412);
+        }
+        Study study = studyControllerService.getStudyByHostname(request());
+        consentService.emailCopy(session, study);
+
+        return jsonResult("Emailed consent.");
     }
 }

@@ -15,7 +15,7 @@ public interface UserConsentDao {
     void withdrawConsent(String healthCode, StudyConsent studyConsent);
 
     /**
-     * Whethe the user has consented to the specified study.
+     * Whether the user has consented to the specified study.
      */
     boolean hasConsented(String healthCode, StudyConsent studyConsent);
 }

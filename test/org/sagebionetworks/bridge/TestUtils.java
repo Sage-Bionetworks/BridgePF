@@ -8,7 +8,10 @@ import static play.test.Helpers.testServer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.sagebionetworks.bridge.TestConstants.UserCredentials;
 import org.sagebionetworks.bridge.models.UserProfile;
+import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 
 import play.libs.WS;
 import play.libs.WS.Response;
@@ -19,6 +22,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.stormpath.sdk.account.Account;
+import com.stormpath.sdk.account.AccountCriteria;
+import com.stormpath.sdk.account.AccountList;
+import com.stormpath.sdk.account.Accounts;
+import com.stormpath.sdk.application.Application;
+import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.directory.AccountStore;
+import com.stormpath.sdk.directory.Directory;
 
 public class TestUtils {
 
@@ -105,5 +116,36 @@ public class TestUtils {
         fieldNames.add("stormpathHref");
         
         return fieldNames;
+    }
+    
+    public static void addUserToSession(UserCredentials cred, UserSession session, Client stormpathClient) {
+        Application app = StormpathFactory.createStormpathApplication(stormpathClient);
+
+        // If account associated with email already exists, delete it.
+        AccountCriteria criteria = Accounts.where(Accounts.email().eqIgnoreCase(cred.EMAIL));
+        AccountList accounts = app.getAccounts(criteria);
+        for (Account x : accounts) {
+            x.delete();
+        }
+
+        // Create Account using credentials
+        Account account = stormpathClient.instantiate(Account.class);
+        account.setEmail(cred.EMAIL);
+        account.setPassword(cred.PASSWORD);
+        account.setGivenName(cred.FIRSTNAME);
+        account.setSurname(cred.LASTNAME);
+        AccountStore store = app.getDefaultAccountStore();
+        Directory directory = stormpathClient.getResource(store.getHref(), Directory.class);
+        directory.createAccount(account);
+
+        // Create UserProfile using credentials and existing account's HREF
+        UserProfile user = new UserProfile();
+        user.setEmail(cred.EMAIL);
+        user.setUsername(cred.USERNAME);
+        user.setFirstName(cred.FIRSTNAME);
+        user.setLastName(cred.LASTNAME);
+        user.setStormpathHref(account.getHref());
+
+        session.setUser(user);
     }
 }
