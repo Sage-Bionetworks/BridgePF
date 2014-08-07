@@ -3,6 +3,8 @@
     <button ng-click="cancel()" type="button" class="close">&times;</button>
 </div>
 
+<alert ng-show="message" class="text-{{messageType}}">{{message}}</alert>
+
 <form class="form-horizontal modal-body" name="$parent.settings">
 
 <!-- Do not yet support profile avatars on backend, so will be ignoring this for now.
@@ -82,8 +84,6 @@
     </div>
  -->
 </form>
-
-<alert ng-show="message" class="text-{{messageType}}">{{message}}</alert>
 
 <div class="modal-footer">
     <div class="col-sm-offset-2 col-sm-10">

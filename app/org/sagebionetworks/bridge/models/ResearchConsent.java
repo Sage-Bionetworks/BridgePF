@@ -31,6 +31,13 @@ public class ResearchConsent {
         }
         return new ResearchConsent(name, birthdate);
     }
+    
+    public static final ResearchConsent fromSession(UserSession session) {
+        String name = session.getUser().getFirstName() + " " + session.getUser().getLastName();
+        DateTime birthdate = session.getUser().getBirthdate();
+        
+        return new ResearchConsent(name, birthdate);
+    }
 
     public String getName() {
         return name;

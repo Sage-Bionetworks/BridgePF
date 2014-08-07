@@ -236,6 +236,8 @@
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
         <property name="sendMailService" ref="sendEmailViaAmazonService"/>
+        <property name="studyConsentDao" ref="studyConsentDao"/>
+        <property name="userConsentDao" ref="userConsentDao"/>
     </bean>
 
     <!-- Backfill -->
