@@ -43,11 +43,11 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
-    public UserSession createAndSignInUser(String sessionToken, Study userStudy, SignUp signUp, boolean hasConsented)
-            throws BridgeServiceException {
+    public UserSession createUser(String sessionToken, Study userStudy, SignUp signUp, boolean signUserIn,
+            boolean consentUser) throws BridgeServiceException {
         assertAdminUser(sessionToken);
         try {
-            Directory directory = stormpathClient.getResource(userStudy.getStormpathDirectoryHref(), Directory.class);
+            Directory directory = getDirectory(userStudy);
             
             // Search for email and skip creation if it already exists.
             if (userDoesNotExist(directory, signUp.getEmail())) {
@@ -67,50 +67,60 @@ public class StormPathUserAdminService implements UserAdminService {
             SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
             newUserSession = authenticationService.signIn(userStudy, signIn);
         } catch(ConsentRequiredException e) {
-            if (hasConsented) {
+            if (consentUser) {
                 ResearchConsent consent = new ResearchConsent("Test Signature", "1989-08-19");
-                return consentService.give(e.getUserSession().getSessionToken(), consent, userStudy, false);
+                newUserSession = consentService.give(e.getUserSession().getSessionToken(), consent, userStudy, false);
             } else {
-                throw e;
+                return newUserSession;
             }
+        }
+        if (!signUserIn) {
+            authenticationService.signOut(newUserSession.getSessionToken());
         }
         return newUserSession;
     }
 
     @Override
-    public void revokeAllConsentRecords(String sessionToken, Study study, String targetUserSessionToken, String userHref) throws BridgeServiceException {
+    public void revokeAllConsentRecords(String sessionToken, Study userStudy, String userEmail) throws BridgeServiceException {
         assertAdminUser(sessionToken);
         
         // Prior to Eric's refactoring, this just involves removing the record from stormpath.
         // Eventually we probably want to clean up some DynamoDB records as well.
-        Account account = stormpathClient.getResource(userHref, Account.class);
+        Directory directory = getDirectory(userStudy);
+        Account account = getUserAccountByEmail(directory, userEmail);
 
         CustomData customData = account.getCustomData();
-        String key = study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
+        String key = userStudy.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
         customData.remove(key);
         customData.save();
-
-        // Update session, because this user may currently be signed in.
-        UserSession targetSession = cacheProvider.getUserSession(targetUserSessionToken);
-        targetSession.setConsent(false);
-        targetSession.setHealthDataCode(null);
-        cacheProvider.setUserSession(targetUserSessionToken, targetSession);
-    }
+   }
 
     @Override
-    public void deleteUser(String sessionToken, String userHref) throws BridgeServiceException {
+    public void deleteUser(String sessionToken, Study userStudy, String userEmail) throws BridgeServiceException {
         assertAdminUser(sessionToken);
         try {
-            stormpathClient.getResource(userHref, Account.class).delete();
+            Directory directory = getDirectory(userStudy);
+            Account account = getUserAccountByEmail(directory, userEmail);
+            if (account != null) {
+                account.delete();    
+            }
         } catch(Throwable t) {
             throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
     }
+
+    private Directory getDirectory(Study userStudy) {
+        return stormpathClient.getResource(userStudy.getStormpathDirectoryHref(), Directory.class);
+    }
     
     private boolean userDoesNotExist(Directory directory, String email) {
+        return (getUserAccountByEmail(directory, email) == null);
+    }
+    
+    private Account getUserAccountByEmail(Directory directory, String email) {
         AccountCriteria criteria = Accounts.where(Accounts.email().eqIgnoreCase(email));
         AccountList accounts = directory.getAccounts(criteria);
-        return (!accounts.iterator().hasNext());
+        return (accounts.iterator().hasNext()) ? accounts.iterator().next() : null;
     }
 
     private void assertAdminUser(String sessionToken) throws BridgeServiceException {
