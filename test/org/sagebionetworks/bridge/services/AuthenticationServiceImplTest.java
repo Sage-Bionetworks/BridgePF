@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
@@ -51,22 +52,22 @@ public class AuthenticationServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoUsername() throws Exception {
-        service.signIn(TEST_STUDY, new SignIn(null, "bar"));
+        service.signIn(STUDY, new SignIn(null, "bar"));
     }
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoPassword() throws Exception {
-        service.signIn(TEST_STUDY, new SignIn("foo", null));
+        service.signIn(STUDY, new SignIn("foo", null));
     }
 
     @Test(expected = BridgeNotFoundException.class)
     public void signInInvalidCredentials() throws Exception {
-        service.signIn(TEST_STUDY, new SignIn("foo", "bar"));
+        service.signIn(STUDY, new SignIn("foo", "bar"));
     }
 
     @Test
     public void signInCorrectCredentials() throws Exception {
-        UserSession session = service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
+        UserSession session = service.signIn(STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
 
         assertEquals("Username is for test2 user", TEST2.USERNAME, session.getUser().getUsername());
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(session.getSessionToken()));
@@ -74,9 +75,9 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void signInWhenSignedIn() throws Exception {
-        service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
+        service.signIn(STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
 
-        UserSession session = service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
+        UserSession session = service.signIn(STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
         assertEquals("Username is for test2 user", TEST2.USERNAME, session.getUser().getUsername());
     }
 
@@ -92,7 +93,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void getSessionWhenAuthenticated() throws Exception {
-        UserSession session = service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
+        UserSession session = service.signIn(STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
         session = service.getSession(session.getSessionToken());
 
         assertEquals("Username is for test2 user", TEST2.USERNAME, session.getUser().getUsername());
@@ -114,34 +115,35 @@ public class AuthenticationServiceImplTest {
     @Test
     // This no longer works since we've moved to Storm Path
     public void canResetPassword() throws Exception {
-        service.signIn(TEST_STUDY, new SignIn(TEST3.USERNAME, TEST3.PASSWORD));
+        service.signIn(STUDY, new SignIn(TEST3.USERNAME, TEST3.PASSWORD));
         service.resetPassword(new PasswordReset("asdf", "newpassword"));
-        service.signIn(TEST_STUDY, new SignIn(TEST3.USERNAME, "newpassword"));
+        service.signIn(STUDY, new SignIn(TEST3.USERNAME, "newpassword"));
         service.resetPassword(new PasswordReset("asdf", TEST2.PASSWORD));
     }
 
     @Test(expected = BridgeServiceException.class)
     public void resetPasswordWithBadTokenFails() throws Exception {
-        service.signIn(TEST_STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
+        service.signIn(STUDY, new SignIn(TEST2.USERNAME, TEST2.PASSWORD));
         service.resetPassword(new PasswordReset("foo", "newpassword"));
     }
 
     @Test(expected = ConsentRequiredException.class)
     public void unconsentedUserMustSignTOU() throws Exception {
-        service.signIn(TEST_STUDY, new SignIn(TEST4.USERNAME, TEST4.PASSWORD));
+        service.signIn(STUDY, new SignIn(TEST4.USERNAME, TEST4.PASSWORD));
     }
     
     @Test
     public void createUserInNonDefaultAccountStore() {
-        Study study = new Study("Second Study", "secondstudy", "https://api.stormpath.com/v1/directories/5RfWcEwOK0l7goGe4ZX9cz", null, null, null);
+        
         Study defaultStudy = studyControllerService.getStudies().iterator().next();
         SignUp signUp = new SignUp("secondStudyUser", "secondStudyUser@sagebase.org", "P4ssword");
 
         deleteAccount(signUp);
-        service.signUp(signUp, study);
+        service.signUp(signUp, TestConstants.SECOND_STUDY);
 
         // Should have been saved to this account store, not the default account store.
-        Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
+        Directory directory = stormpathClient.getResource(TestConstants.SECOND_STUDY.getStormpathDirectoryHref(),
+                Directory.class);
         assertTrue("Account is in store", isInStore(directory, signUp));
         
         directory = stormpathClient.getResource(defaultStudy.getStormpathDirectoryHref(), Directory.class);
