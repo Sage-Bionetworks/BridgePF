@@ -30,7 +30,7 @@ public class ConsentController extends BaseController {
         }
         ResearchConsent consent = ResearchConsent.fromJson(request().body().asJson());
         Study study = studyControllerService.getStudyByHostname(request());
-        consentService.give(session.getSessionToken(), consent, study);
+        consentService.give(session.getSessionToken(), consent, study, true);
         return jsonResult("Consent to research has been recorded.");
     }
 

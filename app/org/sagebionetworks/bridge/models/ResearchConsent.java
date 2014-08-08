@@ -10,6 +10,7 @@ public class ResearchConsent {
 
     private static final String NAME_FIELD = "name";
     private static final String BIRTHDATE_FIELD = "birthdate";
+    private static DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
     
     private String name;
     private DateTime birthdate;
@@ -19,6 +20,11 @@ public class ResearchConsent {
         this.birthdate = birthdate;
     }
     
+    public ResearchConsent(String name, String birthdate) {
+        this.name = name;
+        this.birthdate = parseDate(birthdate);
+    }
+    
     public static final ResearchConsent fromJson(JsonNode node) {
         String name = null;
         DateTime birthdate = null;
@@ -26,8 +32,7 @@ public class ResearchConsent {
             name = node.get(NAME_FIELD).asText();
         }
         if (node != null && node.get(BIRTHDATE_FIELD) != null) {
-            DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
-            birthdate = fmt.parseDateTime(node.get(BIRTHDATE_FIELD).asText());
+            birthdate = parseDate(node.get(BIRTHDATE_FIELD).asText());
         }
         return new ResearchConsent(name, birthdate);
     }
@@ -39,5 +44,8 @@ public class ResearchConsent {
     public DateTime getBirthdate() {
         return birthdate;
     }
-
+    
+    private static DateTime parseDate(String date) {
+        return fmt.parseDateTime(date);
+    }
 }

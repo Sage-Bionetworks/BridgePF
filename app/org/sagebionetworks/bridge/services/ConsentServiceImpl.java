@@ -43,7 +43,7 @@ public class ConsentServiceImpl implements ConsentService {
         this.sendMailService = sendMailService;
     }
 
-    public void give(String sessionToken, ResearchConsent consent, Study study) throws BridgeServiceException {
+    public UserSession give(String sessionToken, ResearchConsent consent, Study study, boolean sendEmail) throws BridgeServiceException {
         if (StringUtils.isBlank(sessionToken)) {
             throw new BridgeServiceException("Session token is required.", HttpStatus.SC_BAD_REQUEST);
         } else if (study == null){
@@ -75,15 +75,18 @@ public class ConsentServiceImpl implements ConsentService {
             // TODO: Save in ConsentDao and deprecate this in CustomData
             customData.put(key, "true");
             customData.save();
-
+            
             // Email
-            sendMailService.sendConsentAgreement(session.getUser().getEmail(), consent, study);
+            if (sendEmail) {
+                sendMailService.sendConsentAgreement(session.getUser().getEmail(), consent, study);    
+            }
 
             // Update session
             session.setHealthDataCode(healthId.getCode());
             session.setConsent(true);
             cache.setUserSession(sessionToken, session);
-
+            return session;
+            
         } catch (Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }

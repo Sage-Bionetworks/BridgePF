@@ -40,7 +40,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 
     private Client stormpathClient;
-    private CacheProvider cache;
+    private CacheProvider cacheProvider;
     private BridgeConfig config;
     private BridgeEncryptor healthCodeEncryptor;
     private HealthCodeService healthCodeService;
@@ -52,7 +52,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     public void setCacheProvider(CacheProvider cache) {
-        this.cache = cache;
+        this.cacheProvider = cache;
     }
 
     public void setBridgeConfig(BridgeConfig config) {
@@ -76,7 +76,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (sessionToken == null) {
             return null;
         }
-        return cache.getUserSession(sessionToken);
+        return cacheProvider.getUserSession(sessionToken);
     }
 
     @Override
@@ -104,7 +104,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             Account account = application.authenticateAccount(request).getAccount();
             logger.info("sign in authenticate " + (System.nanoTime() - start));
             session = createSessionFromAccount(study, account);
-            cache.setUserSession(session.getSessionToken(), session);
+            cacheProvider.setUserSession(session.getSessionToken(), session);
             if (!session.doesConsent()) {
                 throw new ConsentRequiredException(new UserSessionInfo(session));
             }
@@ -126,7 +126,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public void signOut(String sessionToken) {
         if (sessionToken != null) {
-            cache.remove(sessionToken);
+            cacheProvider.remove(sessionToken);
         }
     }
 
@@ -173,7 +173,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             Account account = stormpathClient.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
 
             session = createSessionFromAccount(study, account);
-            cache.setUserSession(session.getSessionToken(), session);
+            cacheProvider.setUserSession(session.getSessionToken(), session);
             if (!session.doesConsent()) {
                 throw new ConsentRequiredException(new UserSessionInfo(session));
             }
