@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import javax.annotation.Resource;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
@@ -45,6 +46,7 @@ public class StormPathUserAdminServiceTest implements InitializingBean {
     }
     
     @Test
+    @Ignore
     public void nonAdminUserCannotCreateUser() {
         try {
             UserSession adminSession = authService.signIn(TestConstants.STUDY, TEST2_USER);
@@ -55,6 +57,7 @@ public class StormPathUserAdminServiceTest implements InitializingBean {
         }
     }
     @Test
+    @Ignore
     public void nonAdminUserCannotConsentUser() {
         try {
             UserSession adminSession = authService.signIn(TestConstants.STUDY, TEST2_USER);
@@ -66,6 +69,7 @@ public class StormPathUserAdminServiceTest implements InitializingBean {
     }
     
     @Test
+    @Ignore
     public void nonAdminUserCannotDeleteUser() {
         try {
             UserSession adminSession = authService.signIn(TestConstants.STUDY, TEST2_USER);
@@ -77,6 +81,7 @@ public class StormPathUserAdminServiceTest implements InitializingBean {
     }
     
     @Test
+    @Ignore
     public void canCreateUserIdempotently() {
         UserSession adminSession = authService.signIn(TestConstants.STUDY, ADMIN_USER);
         
@@ -93,6 +98,7 @@ public class StormPathUserAdminServiceTest implements InitializingBean {
     }
     
     @Test
+    @Ignore
     public void createdUserIsInCache() {
         UserSession adminSession = authService.signIn(TestConstants.STUDY, ADMIN_USER);
         
@@ -107,6 +113,7 @@ public class StormPathUserAdminServiceTest implements InitializingBean {
     }
     
     @Test(expected = BridgeServiceException.class)
+    @Ignore
     public void deletedUserHasBeenDeleted() {
         UserSession adminSession = authService.signIn(TestConstants.STUDY, ADMIN_USER);
         
@@ -121,6 +128,7 @@ public class StormPathUserAdminServiceTest implements InitializingBean {
     }
 
     @Test
+    @Ignore
     public void canCreateUserWithoutSigningUserIn() {
         UserSession adminSession = authService.signIn(TestConstants.STUDY, ADMIN_USER);
         
