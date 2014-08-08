@@ -1,5 +1,5 @@
-bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$modalInstance', '$scope', 'formService', 'modalService', 
-    function($http, $humane, $log, $modalInstance, $scope, formService, modalService) {
+bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$modalInstance', '$scope', 'authService', 'formService', 'modalService', 
+    function($http, $humane, $log, $modalInstance, $scope, authService, formService, modalService) {
 
         formService.initScope($scope, 'settings');
 
@@ -23,13 +23,15 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
                 $log.error('API fetch for users/profile failed.');
             });
 
+        $scope.session = authService;
+
         $scope.cancel = function() {
             $modalInstance.dismiss('cancel');
         };
 
         $scope.submit = function() {
             // Only two items possible to update are first name and last name.
-            var update = formService.formToJSON($scope.settings, ['firstName', 'lastName']);
+            var update = formService.formToJSONEmpty($scope.settings, ['firstName', 'lastName']);
             $http.post('/api/users/profile', update)
                 .success(function(data, status, headers, config) {
                     $modalInstance.close('success');
@@ -47,16 +49,24 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
         };
 
         $scope.withdrawStudy = function() {
-            $log.info('Withdraw from Study has been clicked.');
-
-            $http.post('/api/consent/withdraw');
-            // Need to do something here to interact with user.
+            $http.delete('/api/consent')
+                .success(function(data, status, headers, config) {
+                    $scope.setMessage('You have successfully withdrawn from the study.');
+                    $scope.session.consented = false;
+                })
+                .error(function(data, status, headers, config) {
+                    $scope.setMessage('Woops! Something went wrong on the internet. Please try again!');
+                });
         };
 
-        $scope.downloadConsent = function() {
-            $log.info('Download consent has been called.');
-
-            $http.get('/api/consent/sendCopy');
+        $scope.emailConsent = function() {
+            $http.post('/api/consent/email')
+                .success(function(data, status, headers, config) {
+                    $scope.setMessage('Check your email! You should be receiving a copy of the consent document shortly.');
+                })
+                .error(function(data, status, headers, config) {
+                    $scope.setMessage('Woops! Something went wrong on the internet. Please try again!');
+                });
         };
 
         // Not yet implemented on back end. Will need to return to this later.

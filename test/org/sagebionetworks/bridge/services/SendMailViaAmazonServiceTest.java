@@ -38,7 +38,7 @@ public class SendMailViaAmazonServiceTest {
         
         Resource resource = new FileSystemResource("test/conf/secondstudy-consent.html");
         consent = new ResearchConsent("Test 2", DateTime.parse("1950-05-05"));
-        study = new Study("Second Study", "secondstudy", null, null, null, resource);
+        study = new Study("Second Study", "secondstudy", 17, null, null, null, resource);
     }
     
     @Test

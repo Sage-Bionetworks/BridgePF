@@ -10,15 +10,15 @@ public class ResearchConsent {
 
     private static final String NAME_FIELD = "name";
     private static final String BIRTHDATE_FIELD = "birthdate";
-    
+
     private String name;
     private DateTime birthdate;
-    
+
     public ResearchConsent(String name, DateTime birthdate) {
         this.name = name;
         this.birthdate = birthdate;
     }
-    
+
     public static final ResearchConsent fromJson(JsonNode node) {
         String name = null;
         DateTime birthdate = null;
@@ -31,11 +31,11 @@ public class ResearchConsent {
         }
         return new ResearchConsent(name, birthdate);
     }
-    
+
     public static final ResearchConsent fromSession(UserSession session) {
         String name = session.getUser().getFirstName() + " " + session.getUser().getLastName();
-        DateTime birthdate = session.getUser().getBirthdate();
-        
+        DateTime birthdate = new DateTime(session.getUser().getBirthdate());
+
         return new ResearchConsent(name, birthdate);
     }
 

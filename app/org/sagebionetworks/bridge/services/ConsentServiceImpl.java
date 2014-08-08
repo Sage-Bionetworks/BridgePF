@@ -31,28 +31,34 @@ public class ConsentServiceImpl implements ConsentService {
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
     }
+
     public void setCacheProvider(CacheProvider cache) {
         this.cache = cache;
     }
+
     public void setHealthCodeEncryptor(BridgeEncryptor encryptor) {
         this.healthCodeEncryptor = encryptor;
     }
+
     public void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
+
     public void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
     }
+
     public void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
+
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
-    
 
     @Override
-    public void give(String sessionToken, ResearchConsent consent, Study study) throws BridgeServiceException {
+    public void consentToResearch(String sessionToken, ResearchConsent consent, Study study)
+            throws BridgeServiceException {
         if (StringUtils.isBlank(sessionToken)) {
             throw new BridgeServiceException("Session token is required.", HttpStatus.SC_BAD_REQUEST);
         } else if (study == null) {
@@ -80,6 +86,12 @@ public class ConsentServiceImpl implements ConsentService {
 
             // Write consent
             StudyConsent studyConsent = studyConsentDao.getConsent(session.getStudyKey());
+
+            if (studyConsent == null) {
+                String path = study.getConsentAgreement().getURL().toString();
+                studyConsent = studyConsentDao.addConsent(session.getStudyKey(), path, study.getMinAge());
+                studyConsentDao.setActive(studyConsent);
+            }
             userConsentDao.giveConsent(healthId.getCode(), studyConsent);
 
             // Email
@@ -88,7 +100,7 @@ public class ConsentServiceImpl implements ConsentService {
             // Update session
             session.setHealthDataCode(healthId.getCode());
             session.setConsent(true);
-            session.getUser().setBirthdate(consent.getBirthdate());
+            session.getUser().setBirthdate(consent.getBirthdate().toString().split("T")[0]);
             cache.setUserSession(sessionToken, session);
 
         } catch (Exception e) {
@@ -101,20 +113,19 @@ public class ConsentServiceImpl implements ConsentService {
         if (session == null) {
             throw new BridgeServiceException("Not signed in.", 401);
         } else if (study == null) {
-            throw new BridgeServiceException("Not signed in.", 401);
+            throw new BridgeServiceException("Study is required.", HttpStatus.SC_BAD_REQUEST);
         }
         try {
             StudyConsent studyConsent = studyConsentDao.getConsent(session.getStudyKey());
             userConsentDao.withdrawConsent(session.getHealthDataCode(), studyConsent);
-            
+
             session.setConsent(false);
             cache.setUserSession(session.getSessionToken(), session);
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             throw new BridgeServiceException(e, 500);
         }
     }
-    
+
     @Override
     public void emailCopy(UserSession session, Study study) {
         if (StringUtils.isBlank(session.getSessionToken())) {

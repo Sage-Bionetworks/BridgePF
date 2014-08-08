@@ -10,7 +10,7 @@ import com.stormpath.sdk.resource.ResourceException;
 public class UserProfileServiceImpl implements UserProfileService {
 
     private Client stormpathClient;
-
+    
     public void setStormpathClient(Client stormpathClient) {
         this.stormpathClient = stormpathClient;
     }

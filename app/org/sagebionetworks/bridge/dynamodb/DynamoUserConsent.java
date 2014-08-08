@@ -21,6 +21,7 @@ public class DynamoUserConsent implements DynamoTable {
     public DynamoUserConsent() {}
 
     DynamoUserConsent(String healthCode, StudyConsent consent) {
+        if (consent == null) System.out.println("consent is null");
         studyKey = consent.getStudyKey();
         consentTimestamp = consent.getTimestamp();
         healthCodeStudy = healthCode + ":" + studyKey + ":" + consentTimestamp;
