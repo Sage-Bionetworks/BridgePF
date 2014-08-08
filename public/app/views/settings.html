@@ -3,8 +3,6 @@
     <button ng-click="cancel()" type="button" class="close">&times;</button>
 </div>
 
-<alert ng-show="message" class="text-{{messageType}}">{{message}}</alert>
-
 <form class="form-horizontal modal-body" name="$parent.settings">
 
 <!-- Do not yet support profile avatars on backend, so will be ignoring this for now.
@@ -65,25 +63,34 @@
             </label>
         </div>
     </div>
-
-    <div class="well well-sm">
-        <h4>I would like to withdraw from the study.</h4>
-        <p><a ng-click="withdrawStudy()">Click here</a> if you would like to withdraw from the study.</p>
+    
+    <div ng-show="session.consented">
+        <div class="well well-sm">
+            <h4>I would like to withdraw from the study.</h4>
+            <p><a ng-click="withdrawStudy()">Click here</a> if you would like to withdraw from the study.</p>
+        </div>
+        <div class="well well-sm">
+            <h4>I would like a copy of the consent document.</h4>
+            <p><a ng-click="emailConsent()">Click here</a> if you would like to be emailed a copy of the consent document.</p>
+        </div>    
     </div>
 
+<!-- Not yet implemented in backend.
+    <div ng-hide="session.consented">
+        <div class="well well-sm">
+            <h3>I would like to re-enroll in the study.</h4>
+            <p><a ng-click="reenroll()">Click here</a> if you would like to re-enroll in the study.</p>
+        </div>
+    </div>
 
-    <div class="well well-sm">
-        <h4>I would like a copy of the consent document.</h4>
-        <p><a ng-click="downloadConsent()">Click here</a> if you would like to download a copy of the consent document.</p>
-    </div>    
-
-<!-- Not yet implemented on the back end.
     <div class="well well-sm">
         <h4>I would like to download a copy of my data.</h4>
         <p><a ng-click="downloadData()">Click here</a> to download a copy of my data.</p>
-    </div>
- -->
+    </div> -->
+
 </form>
+
+<alert ng-show="message" class="text-{{messageType}}" style="text-align:center">{{message}}</alert>
 
 <div class="modal-footer">
     <div class="col-sm-offset-2 col-sm-10">

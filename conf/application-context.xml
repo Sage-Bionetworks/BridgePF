@@ -151,8 +151,9 @@
                 <bean class="org.sagebionetworks.bridge.models.Study">
                     <constructor-arg index="0" value="Parkinson’s Disease Mobile Study"/>
                     <constructor-arg index="1" value="neurod"/>
-                    <constructor-arg index="2" value="#{bridgeConfig.getProperty('stormpath.neurod.directory.href')}"/>
-                    <constructor-arg index="3">
+                    <constructor-arg index="2" value="17"/>
+                    <constructor-arg index="3" value="#{bridgeConfig.getProperty('stormpath.neurod.directory.href')}"/>
+                    <constructor-arg index="4">
                         <list>
                             <value>10.0.2.2</value> <!-- IE VirtualBox Machine, local development -->
                             <value>localhost</value>
@@ -160,13 +161,13 @@
                             <value>pd.sagebridge.org</value>
                         </list>
                     </constructor-arg>
-                    <constructor-arg index="4">
+                    <constructor-arg index="5">
                         <list>
                             <ref bean="pb-tracker"/>
                             <ref bean="med-tracker"/>
                         </list>
                     </constructor-arg>
-                    <constructor-arg index="5" value="file:conf/email-templates/neurod-consent.html"/>                    
+                    <constructor-arg index="6" value="file:conf/email-templates/neurod-consent.html"/>                    
                 </bean>
             </list>
         </property>

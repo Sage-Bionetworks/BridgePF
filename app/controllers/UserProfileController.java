@@ -3,6 +3,7 @@ package controllers;
 import models.JsonPayload;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserProfileInfo;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -23,14 +24,20 @@ public class UserProfileController extends BaseController {
     }
 
     public Result getUserProfile() throws Exception {
-        UserSession session = getSession();
+        UserSession session = checkForSession();
+        if (session == null) {
+            throw new BridgeServiceException("Not signed in.", 401);
+        }
         UserProfileInfo user = new UserProfileInfo(session.getUser());
 
         return jsonResult(new JsonPayload<UserProfileInfo>(user));
     }
 
     public Result updateUserProfile() throws Exception {
-        UserSession session = getSession();
+        UserSession session = checkForSession();
+        if (session == null) {
+            throw new BridgeServiceException("Not signed in.", 401);
+        }
         UserProfile currentUser = session.getUser();
         UserProfile updatedUser = UserProfile.fromJson(requestToJSON(request()), currentUser);
         userProfileService.updateUser(updatedUser, currentUser);

@@ -35,9 +35,8 @@ POST    /api/users/profile      @controllers.UserProfileController.updateUserPro
 
 # API - consent
 POST    /api/consent            @controllers.ConsentController.give
-# These don't exist yet at the controller or even the service level
-# DELETE  /api/consent            @controllers.ConsentController.withdraw
-# POST    /api/consent/email      @controllers.ConsentController.emailCopy
+DELETE  /api/consent            @controllers.ConsentController.withdraw
+POST    /api/consent/email      @controllers.ConsentController.emailCopy
 
 # Backfill
 GET     /admin/backfill/healthId    @controllers.BackfillController.resetHealthId

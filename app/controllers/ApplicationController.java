@@ -4,6 +4,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
+import org.sagebionetworks.bridge.services.UserProfileService;
 
 import play.libs.Json;
 import play.mvc.*;
@@ -12,7 +13,7 @@ import play.mvc.*;
 public class ApplicationController extends BaseController {
 
     private StudyControllerService studyControllerService;
-
+    
     public void setStudyControllerService(StudyControllerService studyControllerService) {
         this.studyControllerService = studyControllerService;
     }
@@ -36,8 +37,9 @@ public class ApplicationController extends BaseController {
     }
 
     public Result loadPublicApp() throws Exception {
-        UserSessionInfo info = new UserSessionInfo(new UserSession());
-
+        UserSession session = new UserSession();
+        UserSessionInfo info = new UserSessionInfo(session);
+        
         // There's probably a non-crappy way of doing this in Play, but I couldn't find it.
         Study study = studyControllerService.getStudyByHostname(request());
         if (study == null || "neurod".equals(study.getKey())) {

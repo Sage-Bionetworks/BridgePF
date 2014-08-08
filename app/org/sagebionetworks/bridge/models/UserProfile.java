@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,7 +14,7 @@ public class UserProfile implements Iterable<String> {
     private String username;
     private String email;
     private String stormpathHref;
-    private DateTime birthdate;
+    private String birthdate;
     
     private static final String FIRSTNAME = "firstName";
     private static final String LASTNAME = "lastName";
@@ -55,10 +54,10 @@ public class UserProfile implements Iterable<String> {
         this.stormpathHref = stormpathHref;
     }
     
-    public DateTime getBirthdate() {
+    public String getBirthdate() {
         return this.birthdate;
     }
-    public void setBirthdate(DateTime birthdate) {
+    public void setBirthdate(String birthdate) {
         this.birthdate = birthdate;
     }
 
@@ -97,7 +96,7 @@ public class UserProfile implements Iterable<String> {
 
     @Override
     public Iterator<String> iterator() {
-        String[] fieldsArr = {this.firstName, this.lastName, this.email, this.username, this.birthdate.toString(), this.stormpathHref};
+        String[] fieldsArr = {this.firstName, this.lastName, this.email, this.username, this.birthdate, this.stormpathHref};
         List<String> fields = Arrays.asList(fieldsArr);
         return fields.iterator();
     }
