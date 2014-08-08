@@ -18,14 +18,16 @@ public interface UserAdminService {
      *            the study of the target user
      * @param signUp
      *            sign up information for the target user
-     * @param hasConsented
+     * @param signUserIn
+     *            sign user into Bridge web application in as part of the creation process
+     * @param consentUser
      *            should the user be consented to the research?
      * @return UserSession for the newly created user
      * 
      * @throws BridgeServiceException
      */
-    public UserSession createAndSignInUser(String sessionToken, Study userStudy, SignUp signUp, boolean hasConsented)
-            throws BridgeServiceException;
+    public UserSession createUser(String sessionToken, Study userStudy, SignUp signUp, boolean signUserIn,
+            boolean consentUser) throws BridgeServiceException;
     
     /**
      * Remove all consent records from the target user. The user's session (if
@@ -35,22 +37,25 @@ public interface UserAdminService {
      *            session of the admin user
      * @param userStudy
      *            the study of the target user
-     * @param userHref
-     *            the target user's Storm Path HREF value
+     * @param userEmail
+     *            the target user's email address
+     * @return UserSession for user with updated consent state
+     * 
      * @throws BridgeServiceException
      */
-    public void revokeAllConsentRecords(String sessionToken, Study userStudy, String targetUserSessionToken, String userHref) throws BridgeServiceException;
+    public void revokeAllConsentRecords(String sessionToken, Study userStudy, String userEmail) throws BridgeServiceException;
     
     /**
      * Delete the target user.
      * 
      * @param sessionToken
      *            session of the admin user
-     * @param study
+     * @param userStudy
      *            the study of the target user
-     * @param userHref
+     * @param userEmail
+     *            the target user's email address
      * @throws BridgeServiceException
      */
-    public void deleteUser(String sessionToken, String userHref) throws BridgeServiceException;
+    public void deleteUser(String sessionToken, Study userStudy, String userEmail) throws BridgeServiceException;
     
 }
