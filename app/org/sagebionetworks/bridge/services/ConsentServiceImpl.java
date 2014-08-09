@@ -57,7 +57,7 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public void consentToResearch(String sessionToken, ResearchConsent consent, Study study)
+    public UserSession consentToResearch(String sessionToken, ResearchConsent consent, Study study, boolean sendEmail)
             throws BridgeServiceException {
         if (StringUtils.isBlank(sessionToken)) {
             throw new BridgeServiceException("Session token is required.", HttpStatus.SC_BAD_REQUEST);
@@ -95,21 +95,24 @@ public class ConsentServiceImpl implements ConsentService {
             userConsentDao.giveConsent(healthId.getCode(), studyConsent);
 
             // Email
-            sendMailService.sendConsentAgreement(session.getUser().getEmail(), consent, study);
+            if (sendEmail) {
+                sendMailService.sendConsentAgreement(session.getUser().getEmail(), consent, study);    
+            }
 
             // Update session
             session.setHealthDataCode(healthId.getCode());
             session.setConsent(true);
             session.getUser().setBirthdate(consent.getBirthdate().toString().split("T")[0]);
             cache.setUserSession(sessionToken, session);
-
+            return session;
+            
         } catch (Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
-    public void withdraw(UserSession session, Study study) {
+    public UserSession withdraw(UserSession session, Study study) {
         if (session == null) {
             throw new BridgeServiceException("Not signed in.", 401);
         } else if (study == null) {
@@ -121,6 +124,7 @@ public class ConsentServiceImpl implements ConsentService {
 
             session.setConsent(false);
             cache.setUserSession(session.getSessionToken(), session);
+            return session;
         } catch (Exception e) {
             throw new BridgeServiceException(e, 500);
         }

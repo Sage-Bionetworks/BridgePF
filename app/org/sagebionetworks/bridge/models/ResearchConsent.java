@@ -10,31 +10,31 @@ public class ResearchConsent {
 
     private static final String NAME_FIELD = "name";
     private static final String BIRTHDATE_FIELD = "birthdate";
-
+    private static DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
+    
     private String name;
     private DateTime birthdate;
-
-    public ResearchConsent(String name, DateTime birthdate) {
+    
+    public ResearchConsent(String name, String birthdate) {
         this.name = name;
-        this.birthdate = birthdate;
+        this.birthdate = parseDate(birthdate);
     }
-
+    
     public static final ResearchConsent fromJson(JsonNode node) {
         String name = null;
-        DateTime birthdate = null;
+        String birthdate = null;
         if (node != null && node.get(NAME_FIELD) != null) {
             name = node.get(NAME_FIELD).asText();
         }
         if (node != null && node.get(BIRTHDATE_FIELD) != null) {
-            DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
-            birthdate = fmt.parseDateTime(node.get(BIRTHDATE_FIELD).asText());
+            birthdate = node.get(BIRTHDATE_FIELD).asText();
         }
         return new ResearchConsent(name, birthdate);
     }
 
     public static final ResearchConsent fromSession(UserSession session) {
         String name = session.getUser().getFirstName() + " " + session.getUser().getLastName();
-        DateTime birthdate = new DateTime(session.getUser().getBirthdate());
+        String birthdate = session.getUser().getBirthdate();
 
         return new ResearchConsent(name, birthdate);
     }
@@ -46,5 +46,8 @@ public class ResearchConsent {
     public DateTime getBirthdate() {
         return birthdate;
     }
-
+    
+    private static DateTime parseDate(String date) {
+        return fmt.parseDateTime(date);
+    }
 }

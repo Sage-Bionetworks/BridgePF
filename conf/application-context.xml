@@ -74,7 +74,7 @@
             <list><value>exceptionInterceptor</value></list>
         </property>
     </bean>
-
+    
     <bean id="controllers.ApplicationController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.ApplicationController">
@@ -253,5 +253,12 @@
     <bean id="sendEmailViaAmazonService" class="org.sagebionetworks.bridge.services.SendMailViaAmazonService">
         <property name="fromEmail" value="support@sagebridge.org"/>
         <property name="emailClient" ref="sesClient" />
+    </bean>
+    
+    <bean id="userAdminService" class="org.sagebionetworks.bridge.services.StormPathUserAdminService">
+        <property name="authenticationService" ref="authenticationService"/>
+        <property name="consentService" ref="consentService"/>
+        <property name="cacheProvider" ref="cacheProvider"/>
+        <property name="stormpathClient" ref="stormpathClient"/>
     </bean>
 </beans>
