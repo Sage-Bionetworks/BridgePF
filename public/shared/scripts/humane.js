@@ -1,9 +1,24 @@
 bridgeShared.service('$humane', ['$window', function($window) {
     var notifier = $window.humane.create({addnCls: "alert alert-success", timeout: 3000});
     var err = $window.humane.create({addnCls: "alert alert-danger", timeout: 3000});
+    
+    function tryUntil(obj) {
+        var message = null, i=1;
+        while (!message && i < arguments.length) {
+            try {
+                message = new Function("value", "return value."+arguments[i++]+";")(obj);
+            } catch(e) {
+            }
+        }
+        return message;
+    }
+    
     function status(response) {
-        var message = (response.data.payload.message) ? response.data.payload.message : response.data.payload;
         if (response.status !== 401) {
+            var message = tryUntil(response, "data.payload.message", "data.payload", "statusText");
+            if (typeof message !== "string") {
+                message = "There has been an error.";
+            }
             err.log(message);
         }
     }

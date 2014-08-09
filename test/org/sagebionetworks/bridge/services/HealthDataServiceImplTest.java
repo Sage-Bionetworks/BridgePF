@@ -11,7 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.STUDY;
 
 import java.util.Date;
 import java.util.List;
@@ -114,7 +114,7 @@ public class HealthDataServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void appendHealthDataErrorNullKey() throws Exception {
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         service.appendHealthData(key, null);
     }
 
@@ -127,21 +127,21 @@ public class HealthDataServiceImplTest {
     @Test(expected = BridgeServiceException.class)
     public void appendHealthDataErrorBadKey() throws Exception {
         tracker.setId(0L);
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, null);
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, null);
         HealthDataRecord record = new HealthDataRecordImpl();
         service.appendHealthData(key, Lists.newArrayList(record));
     }
 
     @Test(expected = BridgeServiceException.class)
     public void appendHealthDataErrorBadRecord() throws Exception {
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         HealthDataRecord record = new HealthDataRecordImpl();
         service.appendHealthData(key, Lists.newArrayList(record));
     }
 
     @Test(expected = BridgeServiceException.class)
     public void appendHealthDataErrorExistingRecord() throws Exception {
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         HealthDataRecord record = new HealthDataRecordImpl();
         record.setRecordId("beluga");
         service.appendHealthData(key, Lists.newArrayList(record));
@@ -150,7 +150,7 @@ public class HealthDataServiceImplTest {
     @Test
     @SuppressWarnings("unchecked")
     public void appendHealthDataSuccess() throws Exception {
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         HealthDataRecord record = createHealthDataRecord();
 
         List<String> identifiers = service.appendHealthData(key,
@@ -167,7 +167,7 @@ public class HealthDataServiceImplTest {
     @Test(expected = BridgeServiceException.class)
     @SuppressWarnings("unchecked")
     public void appendHealthDataServiceError() throws Exception {
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         HealthDataRecord record = createHealthDataRecord();
 
         doThrow(new LimitExceededException("Limit exceeded"))
@@ -185,20 +185,20 @@ public class HealthDataServiceImplTest {
     @Test(expected = BridgeServiceException.class)
     public void getAllHealthDataErrorBadKeyNoTracker() throws Exception {
         tracker.setId(null);
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         service.getAllHealthData(key);
     }
 
     @Test(expected = BridgeServiceException.class)
     public void getAllHealthDataErrorBadKeyNoSessionToken() throws Exception {
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, null);
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, null);
         service.getAllHealthData(key);
     }
 
     @Test
     @SuppressWarnings("unchecked")
     public void getAllHealthDataSuccessful() throws Exception {
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
 
         List<DynamoHealthDataRecord> records = getRecordsFromDynamo(6);
         doReturn(records).when(updateMapper).query(
@@ -229,14 +229,14 @@ public class HealthDataServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void getHealthDataRecordNullId() throws Exception {
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         service.getHealthDataRecord(key, null);
     }
 
     @Test(expected = BridgeServiceException.class)
     @SuppressWarnings("unchecked")
     public void getHealthDataRecordInvalidId() throws Exception {
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
 
         doThrow(new BridgeServiceException("Test", 500))
                 .when(createMapper)
@@ -250,7 +250,7 @@ public class HealthDataServiceImplTest {
     @SuppressWarnings("unchecked")
     public void getHealthDataRecordSuccess() throws Exception {
         long date = new Date().getTime();
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         HealthDataRecord record = new HealthDataRecordImpl("A0", date, date,
                 null);
 
@@ -271,7 +271,7 @@ public class HealthDataServiceImplTest {
     @Test(expected = BridgeServiceException.class)
     public void updateHealthDataRecordBadKey() throws Exception {
         tracker.setId(0L);
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         HealthDataRecord record = new HealthDataRecordImpl("A0",
                 new Date().getTime(), new Date().getTime(), null);
 
@@ -288,7 +288,7 @@ public class HealthDataServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void updateHealthDataRecordBadRecord() throws Exception {
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         HealthDataRecord record = new HealthDataRecordImpl("A0", 0,
                 new Date().getTime(), null);
         service.updateHealthDataRecord(key, record);
@@ -296,13 +296,13 @@ public class HealthDataServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void updateHealthDataRecordNoRecord() throws Exception {
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         service.updateHealthDataRecord(key, null);
     }
 
     @Test
     public void updateHealthDataSuccess() throws Exception {
-        HealthDataKey key = new HealthDataKey(TEST_STUDY, tracker, "belgium");
+        HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         HealthDataRecord record = new HealthDataRecordImpl("A0",
                 new Date().getTime(), new Date().getTime(), null);
 

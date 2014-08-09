@@ -40,7 +40,8 @@ module.exports = function(grunt) {
         },
         jshint: {
             options: { 
-                node: true, 
+                node: true,
+                evil: true,
                 loopfunc: true, 
                 globals: { "angular": false },
                 ignores: ['**/angular.js', '**/angular-route.js', '**/ui-bootstrap-tpls.min.js', '**/ui-bootstrap-custom-tpls-0.10.0.js']
