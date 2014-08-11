@@ -30,7 +30,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
 
         $scope.submit = function() {
             // Only two items possible to update are first name and last name.
-            var update = formService.formToJSONEmpty($scope.settings, ['firstName', 'lastName']);
+            var update = formService.formToJSON($scope.settings, ['firstName', 'lastName']);
             $http.post('/api/users/profile', update)
                 .success(function(data, status, headers, config) {
                     $modalInstance.close('success');

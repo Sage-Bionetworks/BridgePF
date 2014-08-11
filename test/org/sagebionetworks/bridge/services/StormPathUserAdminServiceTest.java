@@ -5,7 +5,6 @@ import static org.junit.Assert.*;
 import javax.annotation.Resource;
 
 import org.apache.commons.httpclient.HttpStatus;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;

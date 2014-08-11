@@ -60,7 +60,7 @@ public class BaseController extends Controller {
             return sessionCookie.value();
         }
         String[] session = request().headers().get(BridgeConstants.SESSION_TOKEN_HEADER);
-        if (session == null || session.length == 0) {
+        if (session == null || session.length == 0 || session[0].isEmpty()) {
             return null;
         }
         return session[0];

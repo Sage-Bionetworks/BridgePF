@@ -57,8 +57,7 @@ public class StormPathUserAdminService implements UserAdminService {
                 account.setEmail(signUp.getEmail());
                 account.setUsername(signUp.getUsername());
                 account.setPassword(signUp.getPassword());
-                directory.createAccount(account, false); // suppress email
-                                                         // message
+                directory.createAccount(account, false); // suppress email message
             }
         } catch (Throwable t) {
             throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);

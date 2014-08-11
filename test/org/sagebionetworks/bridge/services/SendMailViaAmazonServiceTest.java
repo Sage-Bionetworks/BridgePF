@@ -5,10 +5,9 @@ import static org.junit.Assert.*;
 
 import org.junit.*;
 import org.mockito.ArgumentCaptor;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.Study;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 
 import com.amazonaws.regions.Region;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
@@ -35,9 +34,8 @@ public class SendMailViaAmazonServiceTest {
         service.setFromEmail(recipientEmail);
         service.setEmailClient(emailClient);
         
-        Resource resource = new FileSystemResource("test/conf/secondstudy-consent.html");
         consent = new ResearchConsent("Test 2", "1950-05-05");
-        study = new Study("Second Study", "secondstudy", 17, null, null, null, resource);
+        study = new Study("Second Study", "secondstudy", 17, null, null, null, TestConstants.secondStudyConsent);
     }
     
     @Test
