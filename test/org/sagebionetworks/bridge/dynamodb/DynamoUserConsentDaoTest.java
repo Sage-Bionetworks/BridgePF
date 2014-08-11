@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.dao.ConsentAlreadyExistsException;
+import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -34,16 +35,17 @@ public class DynamoUserConsentDaoTest {
     public void test() {
         // Not consented yet
         final String healthCode = "hc789";
+        final ResearchConsent researchConsent = new ResearchConsent("John Smith", "1999-12-01");
         final DynamoStudyConsent consent = new DynamoStudyConsent();
         consent.setStudyKey("study123");
         consent.setTimestamp(123L);
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
         // Give consent
-        userConsentDao.giveConsent(healthCode, consent);
+        userConsentDao.giveConsent(healthCode, consent, researchConsent);
         assertTrue(userConsentDao.hasConsented(healthCode, consent));
         // Cannot give consent again if already consented
         try {
-            userConsentDao.giveConsent(healthCode, consent);
+            userConsentDao.giveConsent(healthCode, consent, researchConsent);
         } catch(ConsentAlreadyExistsException e) {
             assertTrue(true); // Expected
         }
@@ -51,7 +53,7 @@ public class DynamoUserConsentDaoTest {
         userConsentDao.withdrawConsent(healthCode, consent);
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
         // Can give consent again if the previous consent is withdrawn
-        userConsentDao.giveConsent(healthCode, consent);
+        userConsentDao.giveConsent(healthCode, consent, researchConsent);
         assertTrue(userConsentDao.hasConsented(healthCode, consent));
         // Withdraw again
         userConsentDao.withdrawConsent(healthCode, consent);

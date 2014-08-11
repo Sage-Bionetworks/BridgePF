@@ -67,7 +67,7 @@ public class ConsentServiceImplTest {
                 ArgumentCaptor<StudyConsent> studyConsent = ArgumentCaptor.forClass(StudyConsent.class);
                 
                 session.setConsent(true);
-                consentService.withdraw(session, study);
+                consentService.withdrawConsent(session.getSessionToken(), study);
 
                 assertEquals(session.doesConsent(), false);
                 verify(userConsentDao).withdrawConsent(healthCode.capture(), studyConsent.capture());
@@ -87,7 +87,7 @@ public class ConsentServiceImplTest {
                 ArgumentCaptor<Study> argStudy = ArgumentCaptor.forClass(Study.class);
                 
                 session.setConsent(true);
-                consentService.emailCopy(session, study);
+                consentService.emailConsentAgreement(session.getSessionToken(), study);
                 verify(sendMailService).sendConsentAgreement(recipientEmail.capture(), consent.capture(), argStudy.capture());
             }
             
