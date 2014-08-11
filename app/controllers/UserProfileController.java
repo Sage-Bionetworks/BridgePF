@@ -24,6 +24,9 @@ public class UserProfileController extends BaseController {
     }
 
     public Result getUserProfile() throws Exception {
+        // TODO Need to remove this, and still use getSession(). getSession()
+        // shouldn't return a 412 when called without consent, it should simply return the
+        // session.
         UserSession session = checkForSession();
         if (session == null) {
             throw new BridgeServiceException("Not signed in.", 401);

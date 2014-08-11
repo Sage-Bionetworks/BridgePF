@@ -11,6 +11,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 @DynamoDBTable(tableName = "UserConsent")
 public class DynamoUserConsent implements DynamoTable {
 
+    private String name;
+    private String birthdate;
     private String healthCodeStudy; // <health-code>:<study-key>:<consent-timestamp>
     private String studyKey;
     private long consentTimestamp;  // Adding this comment to deploy again.
@@ -21,13 +23,14 @@ public class DynamoUserConsent implements DynamoTable {
     public DynamoUserConsent() {}
 
     DynamoUserConsent(String healthCode, StudyConsent consent) {
-        if (consent == null) System.out.println("consent is null");
         studyKey = consent.getStudyKey();
         consentTimestamp = consent.getTimestamp();
         healthCodeStudy = healthCode + ":" + studyKey + ":" + consentTimestamp;
     }
 
     DynamoUserConsent(DynamoUserConsent consent) {
+        name = consent.name;
+        birthdate = consent.birthdate;
         healthCodeStudy = consent.healthCodeStudy;
         studyKey = consent.studyKey;
         consentTimestamp = consent.consentTimestamp;
@@ -36,6 +39,22 @@ public class DynamoUserConsent implements DynamoTable {
         version = consent.version;
     }
 
+    @DynamoDBAttribute(attributeName = "name")
+    public String getName() {
+        return this.name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    @DynamoDBAttribute(attributeName = "birthdate")
+    public String getBirthdate() {
+        return this.birthdate;
+    }
+    public void setBirthdate(String birthdate) {
+        this.birthdate = birthdate;
+    }
+    
     @DynamoDBHashKey
     public String getHealthCodeStudy() {
         return healthCodeStudy;

@@ -37,15 +37,15 @@ public class ConsentController extends BaseController {
     }
 
     public Result withdraw() throws Exception {
-        UserSession session = getSession();
+        UserSession session = getSession(); // throws exception if user isn't consented
         if (session == null) {
             throw new BridgeServiceException("Not signed in.", 401);
         } else if (!session.doesConsent()) {
             throw new BridgeServiceException("Need to consent.", 412);
         }
         Study study = studyControllerService.getStudyByHostname(request());
-        consentService.withdraw(session, study);
-        
+        consentService.withdrawConsent(session.getSessionToken(), study);
+
         return jsonResult("Withdraw consent has been recorded.");
     }
 
@@ -57,7 +57,7 @@ public class ConsentController extends BaseController {
             throw new BridgeServiceException("Need to consent.", 412);
         }
         Study study = studyControllerService.getStudyByHostname(request());
-        consentService.emailCopy(session, study);
+        consentService.emailConsentAgreement(session.getSessionToken(), study);
 
         return jsonResult("Emailed consent.");
     }

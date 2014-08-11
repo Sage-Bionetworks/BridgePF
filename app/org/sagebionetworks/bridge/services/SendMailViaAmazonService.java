@@ -62,7 +62,7 @@ public class SendMailViaAmazonService implements SendMailService {
         String signingDate = date.toString(fmt);
 
         String html = consentAgreementHTML.replace("@@name@@", consent.getName());
-        html = html.replace("@@birth.date@@", consent.getBirthdate().toString(fmt));
+        html = html.replace("@@birth.date@@", consent.getBirthdate());
         html = html.replace("@@signing.date@@", signingDate);
         Content textBody = new Content().withData(html); 
         return new Body().withHtml(textBody);

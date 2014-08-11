@@ -36,8 +36,7 @@ public class ApplicationController extends BaseController {
     }
 
     public Result loadPublicApp() throws Exception {
-        UserSession session = new UserSession();
-        UserSessionInfo info = new UserSessionInfo(session);
+        UserSessionInfo info = new UserSessionInfo(new UserSession());
         
         // There's probably a non-crappy way of doing this in Play, but I couldn't find it.
         Study study = studyControllerService.getStudyByHostname(request());

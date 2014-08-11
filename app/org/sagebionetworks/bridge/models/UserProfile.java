@@ -14,7 +14,6 @@ public class UserProfile implements Iterable<String> {
     private String username;
     private String email;
     private String stormpathHref;
-    private String birthdate;
     
     private static final String FIRSTNAME = "firstName";
     private static final String LASTNAME = "lastName";
@@ -54,13 +53,6 @@ public class UserProfile implements Iterable<String> {
         this.stormpathHref = stormpathHref;
     }
     
-    public String getBirthdate() {
-        return this.birthdate;
-    }
-    public void setBirthdate(String birthdate) {
-        this.birthdate = birthdate;
-    }
-
     // Get first name/last name from JsonNode, and
     // username, stormpathHref, and email from sessionUser.
     public static UserProfile fromJson(JsonNode node, UserProfile currentUser) {
@@ -96,7 +88,7 @@ public class UserProfile implements Iterable<String> {
 
     @Override
     public Iterator<String> iterator() {
-        String[] fieldsArr = {this.firstName, this.lastName, this.email, this.username, this.birthdate, this.stormpathHref};
+        String[] fieldsArr = {this.firstName, this.lastName, this.email, this.username, this.stormpathHref};
         List<String> fields = Arrays.asList(fieldsArr);
         return fields.iterator();
     }

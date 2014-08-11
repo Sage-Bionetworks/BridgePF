@@ -32,19 +32,12 @@ public class ResearchConsent {
         return new ResearchConsent(name, birthdate);
     }
 
-    public static final ResearchConsent fromSession(UserSession session) {
-        String name = session.getUser().getFirstName() + " " + session.getUser().getLastName();
-        String birthdate = session.getUser().getBirthdate();
-
-        return new ResearchConsent(name, birthdate);
-    }
-
     public String getName() {
         return name;
     }
 
-    public DateTime getBirthdate() {
-        return birthdate;
+    public String getBirthdate() {
+        return birthdate.toString().split("T")[0];
     }
     
     private static DateTime parseDate(String date) {

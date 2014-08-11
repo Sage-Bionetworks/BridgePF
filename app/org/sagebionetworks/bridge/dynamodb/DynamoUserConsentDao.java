@@ -4,6 +4,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.ConsentAlreadyExistsException;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -28,9 +29,11 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public void giveConsent(String healthCode, StudyConsent studyConsent) {
+    public void giveConsent(String healthCode, StudyConsent studyConsent, ResearchConsent researchConsent) {
         try {
             DynamoUserConsent consent = new DynamoUserConsent(healthCode, studyConsent);
+            consent.setName(researchConsent.getName());
+            consent.setBirthdate(researchConsent.getBirthdate());
             consent.setGive(DateTime.now(DateTimeZone.UTC).getMillis());
             consent.setWithdraw(NOT_WITHDRAW_YET);
             mapper.save(consent);
@@ -59,4 +62,14 @@ public class DynamoUserConsentDao implements UserConsentDao {
         consentToDelete.setWithdraw(NOT_WITHDRAW_YET);
         return mapper.load(consentToDelete) != null;
     }
+
+    @Override
+    public ResearchConsent getConsentSignature(String healthCode, StudyConsent studyConsent) {
+        DynamoUserConsent consent = new DynamoUserConsent(healthCode, studyConsent);
+        consent = mapper.load(consent);
+        
+        return new ResearchConsent(consent.getName(), consent.getBirthdate());
+    }
+    
+    
 }
