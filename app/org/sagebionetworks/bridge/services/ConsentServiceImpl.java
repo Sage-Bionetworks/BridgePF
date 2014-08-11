@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import java.io.IOException;
+
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -75,7 +77,7 @@ public class ConsentServiceImpl implements ConsentService {
             throw new BridgeServiceException("Not signed in.", HttpStatus.SC_FORBIDDEN);
         }
 
-        try {
+//        try {
             // Stormpath account
             final Account account = stormpathClient.getResource(session.getUser().getStormpathHref(), Account.class);
             final CustomData customData = account.getCustomData();
@@ -88,7 +90,13 @@ public class ConsentServiceImpl implements ConsentService {
             StudyConsent studyConsent = studyConsentDao.getConsent(session.getStudyKey());
 
             if (studyConsent == null) {
-                String path = study.getConsentAgreement().getURL().toString();
+                String path = "";
+                try {
+                    path = study.getConsentAgreement().getURL().toString();
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
                 studyConsent = studyConsentDao.addConsent(session.getStudyKey(), path, study.getMinAge());
                 studyConsentDao.setActive(studyConsent);
             }
@@ -104,10 +112,11 @@ public class ConsentServiceImpl implements ConsentService {
             session.setConsent(true);
             cache.setUserSession(sessionToken, session);
             return session;
-
-        } catch (Exception e) {
-            throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
-        }
+//
+//        } catch (Exception e) {
+//            System.out.println("EXCEPTION MESSAGE " +  e.getMessage());
+//            throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
+//        }
     }
 
     @Override

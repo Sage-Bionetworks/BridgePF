@@ -11,13 +11,13 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 @DynamoDBTable(tableName = "UserConsent")
 public class DynamoUserConsent implements DynamoTable {
 
-    private String name;
-    private String birthdate;
     private String healthCodeStudy; // <health-code>:<study-key>:<consent-timestamp>
     private String studyKey;
     private long consentTimestamp;  // Adding this comment to deploy again.
     private Long give;              // Timestamp when the consent is given
     private Long withdraw;          // Timestamp when the consent is withdrawn
+    private String name;
+    private String birthdate;
     private Long version;
 
     public DynamoUserConsent() {}
@@ -37,22 +37,6 @@ public class DynamoUserConsent implements DynamoTable {
         give = consent.give;
         withdraw = consent.withdraw;
         version = consent.version;
-    }
-
-    @DynamoDBAttribute(attributeName = "name")
-    public String getName() {
-        return this.name;
-    }
-    public void setName(String name) {
-        this.name = name;
-    }
-    
-    @DynamoDBAttribute(attributeName = "birthdate")
-    public String getBirthdate() {
-        return this.birthdate;
-    }
-    public void setBirthdate(String birthdate) {
-        this.birthdate = birthdate;
     }
     
     @DynamoDBHashKey
@@ -93,6 +77,22 @@ public class DynamoUserConsent implements DynamoTable {
     }
     public void setConsentTimestamp(long consentTimestamp) {
         this.consentTimestamp = consentTimestamp;
+    }
+    
+    @DynamoDBAttribute(attributeName = "name")
+    public String getName() {
+        return this.name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    @DynamoDBAttribute(attributeName = "birthdate")
+    public String getBirthdate() {
+        return this.birthdate;
+    }
+    public void setBirthdate(String birthdate) {
+        this.birthdate = birthdate;
     }
 
     @DynamoDBVersionAttribute
