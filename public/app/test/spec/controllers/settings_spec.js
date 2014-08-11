@@ -9,7 +9,7 @@ describe('SettingsModalController', function() {
         scope = $injector.get('$rootScope').$new();
         scope.setMessage = jasmine.createSpy('scope.setMessage');
         authService = jasmine.createSpyObj( 'authService', ['initScope'] );
-        formService = jasmine.createSpyObj( 'formService', ['initScope', 'formToJSONEmpty'] );
+        formService = jasmine.createSpyObj( 'formService', ['initScope', 'formToJSON'] );
         modalInstance = jasmine.createSpyObj( 'modalInstance', ['close', 'dismiss'] );
         modalService = jasmine.createSpyObj( 'modalService', ['openModal'] );
 
@@ -73,7 +73,7 @@ describe('SettingsModalController', function() {
 
         scope.submit();
 
-        expect(formService.formToJSONEmpty).toHaveBeenCalled();
+        expect(formService.formToJSON).toHaveBeenCalled();
         expect(modalInstance.close).not.toHaveBeenCalled();
     });
 
