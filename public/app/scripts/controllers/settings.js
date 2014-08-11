@@ -9,13 +9,12 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
 
                 // These are all the fields the /api/users/profile call will need to return eventually.
                 $scope.profile = {
-                    image: "",
+                    // TODO Eventually need to add other fields, such as avatar image, 
+                    // the ability to be asked about future studies, etc.
                     firstName: payload.firstName,
                     lastName: payload.lastName,
                     username: payload.username,
                     email: payload.email,
-                    questions: "",
-                    futureStudies: ""
                 };
             })
             .error(function(data, status, headers, config) {
@@ -39,7 +38,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
                     $log.info(data);
                 })
                 .error(function(data, status, headers, config) {
-                    $scope.setMessage('Woops! Something went wrong on the internet. Please submit again.', 'danger');
+                    $scope.setMessage('Something went wrong on the internet. Please submit again.', 'danger');
                     $log.info(data);
                 });
         };
@@ -55,7 +54,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
                     $scope.session.consented = false;
                 })
                 .error(function(data, status, headers, config) {
-                    $scope.setMessage('Woops! Something went wrong on the internet. Please try again!');
+                    $scope.setMessage('Something went wrong on the internet. Please try again!');
                 });
         };
 
@@ -65,11 +64,11 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
                     $scope.setMessage('Check your email! You should be receiving a copy of the consent document shortly.');
                 })
                 .error(function(data, status, headers, config) {
-                    $scope.setMessage('Woops! Something went wrong on the internet. Please try again!');
+                    $scope.setMessage('Something went wrong on the internet. Please try again!');
                 });
         };
 
-        // Not yet implemented on back end. Will need to return to this later.
+        // TODO Not yet implemented on back end. Will need to return to this later.
         $scope.downloadData = function() {
             $log.info('Download data function has been called.');
         };

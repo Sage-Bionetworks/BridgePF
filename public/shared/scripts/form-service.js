@@ -1,4 +1,4 @@
-bridgeShared.service('formService', ['$log', function($log) {
+bridgeShared.service('formService', [function() {
     return {
         retrieveSpToken: function($route) {
             // route.params don't work here given the way stormpath structures the URL
@@ -9,15 +9,6 @@ bridgeShared.service('formService', ['$log', function($log) {
             return sptoken;
         },
         formToJSON: function(form, fields) {
-            var object = {};
-            for (var i=0; i < fields.length; i++) {
-                if (form[fields[i]].$modelValue && form[fields[i]].$valid) {
-                    object[fields[i]] = form[fields[i]].$modelValue ? form[fields[i]].$modelValue : "";
-                }
-            }
-            return object;
-        },
-        formToJSONEmpty: function(form, fields) {
             var object = {};
             for (var i=0; i < fields.length; i++) {
                 if (form[fields[i]].$valid) {
