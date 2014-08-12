@@ -33,29 +33,41 @@ public interface UserAdminService {
      * Remove all consent records from the target user. The user's session (if
      * the target user is signed in) will be updated to reflect this new state.
      * 
-     * @param sessionToken
+     * @param adminSessionToken
      *            session of the admin user
+     * @param userSessionToken           
+     *            session of the target user
      * @param userStudy
      *            the study of the target user
-     * @param userEmail
-     *            the target user's email address
      * @return UserSession for user with updated consent state
      * 
      * @throws BridgeServiceException
      */
-    public void revokeAllConsentRecords(String sessionToken, Study userStudy, String userEmail) throws BridgeServiceException;
+    public void revokeAllConsentRecords(String adminSessionToken, String userSessionToken, Study userStudy) throws BridgeServiceException;
     
     /**
      * Delete the target user.
      * 
-     * @param sessionToken
+     * @param adminSessionToken
+     *            session of the admin user
+     * @param userSessionToken
+     *            session of the target user
+     * @param userStudy
+     *            the study of the target user
+     * @throws BridgeServiceException
+     */
+    public void deleteUser(String adminSessionToken, String userSessionToken, Study userStudy) throws BridgeServiceException;
+    
+    /**
+     * Delete target user account.
+     * 
+     * @param adminSessionToken
      *            session of the admin user
      * @param userStudy
      *            the study of the target user
      * @param userEmail
-     *            the target user's email address
+     *            the email of the target user
      * @throws BridgeServiceException
      */
-    public void deleteUser(String sessionToken, Study userStudy, String userEmail) throws BridgeServiceException;
-    
+    public void deleteUserAccount(String adminSessionToken, Study userStudy, String userEmail) throws BridgeServiceException;
 }

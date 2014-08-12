@@ -7,7 +7,6 @@ import org.sagebionetworks.bridge.TestConstants.UserCredentials;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -27,7 +26,6 @@ public class ConsentServiceImplTest {
     private CacheProvider cache;
     private UserSession session;
     private ConsentServiceImpl consentService;
-    private SendMailService sendMailService;
     private UserConsentDao userConsentDao;
     private Study study;
 
@@ -46,13 +44,11 @@ public class ConsentServiceImplTest {
 
         study = mock(Study.class);
         userConsentDao = mock(UserConsentDao.class);
-        sendMailService = mock(SendMailViaAmazonService.class);
         StudyConsentDao studyConsentDao = mock(StudyConsentDao.class);
 
         consentService = new ConsentServiceImpl();
         consentService.setCacheProvider(cache);
         consentService.setStormpathClient(stormpathClient);
-        consentService.setSendMailService(sendMailService);
         consentService.setUserConsentDao(userConsentDao);
         consentService.setStudyConsentDao(studyConsentDao);
     }
@@ -75,23 +71,4 @@ public class ConsentServiceImplTest {
 
         });
     }
-    
-    @Test
-    public void emailCopyDoesEmail() {
-        running(testServer(3333), new TestUtils.FailableRunnable() {
-
-            @Override
-            public void testCode() throws Exception {
-                ArgumentCaptor<String> recipientEmail = ArgumentCaptor.forClass(String.class);
-                ArgumentCaptor<ResearchConsent> consent = ArgumentCaptor.forClass(ResearchConsent.class);
-                ArgumentCaptor<Study> argStudy = ArgumentCaptor.forClass(Study.class);
-                
-                session.setConsent(true);
-                consentService.emailConsentAgreement(session.getSessionToken(), study);
-                verify(sendMailService).sendConsentAgreement(recipientEmail.capture(), consent.capture(), argStudy.capture());
-            }
-            
-        });
-    }
-
 }

@@ -92,7 +92,9 @@ public class ConsentServiceImpl implements ConsentService {
                 studyConsent = studyConsentDao.addConsent(session.getStudyKey(), path, study.getMinAge());
                 studyConsentDao.setActive(studyConsent);
             }
-            userConsentDao.giveConsent(healthId.getCode(), studyConsent, researchConsent);
+            if (!userConsentDao.hasConsented(healthId.getCode(), studyConsent)) {
+                userConsentDao.giveConsent(healthId.getCode(), studyConsent, researchConsent);
+            }
 
             // Email
             if (sendEmail) {
@@ -127,11 +129,11 @@ public class ConsentServiceImpl implements ConsentService {
         try {
             StudyConsent studyConsent = studyConsentDao.getConsent(session.getStudyKey());
             userConsentDao.withdrawConsent(session.getHealthDataCode(), studyConsent);
-
             session.setConsent(false);
             cache.setUserSession(session.getSessionToken(), session);
             return session;
         } catch (Exception e) {
+            e.printStackTrace();
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
     }
