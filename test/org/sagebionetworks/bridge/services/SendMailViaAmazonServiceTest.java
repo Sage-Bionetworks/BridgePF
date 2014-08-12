@@ -51,7 +51,7 @@ public class SendMailViaAmazonServiceTest {
         
         assertEquals("Correct sender", recipientEmail, destination.getToAddresses().get(0));
         assertTrue("Contains consent content", html.startsWith("This is a test study consent."));
-        assertTrue("Date transposed to document", html.indexOf("|May 5, 1950|") > -1);
+        assertTrue("Date transposed to document", html.indexOf("|1950-05-05|") > -1);
         assertTrue("Name transposed to document", html.indexOf("|Test 2|") > -1);
     }
     

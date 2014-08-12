@@ -16,7 +16,6 @@ import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 
 public class StormPathUserAdminService implements UserAdminService {
@@ -57,7 +56,8 @@ public class StormPathUserAdminService implements UserAdminService {
                 account.setEmail(signUp.getEmail());
                 account.setUsername(signUp.getUsername());
                 account.setPassword(signUp.getPassword());
-                directory.createAccount(account, false); // suppress email message
+                directory.createAccount(account, false); // suppress email
+                                                         // message
             }
         } catch (Throwable t) {
             throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -82,34 +82,37 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
-    public void revokeAllConsentRecords(String sessionToken, Study userStudy, String userEmail)
-            throws BridgeServiceException {
-        assertAdminUser(sessionToken);
-
-        // Prior to Eric's refactoring, this just involves removing the record
-        // from stormpath.
-        // Eventually we probably want to clean up some DynamoDB records as
-        // well.
-        Directory directory = getDirectory(userStudy);
-        Account account = getUserAccountByEmail(directory, userEmail);
-
-        CustomData customData = account.getCustomData();
-        String key = userStudy.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
-        customData.remove(key);
-        customData.save();
+    public void revokeAllConsentRecords(String adminSessionToken, String userSessionToken, Study userStudy) throws BridgeServiceException {
+        assertAdminUser(adminSessionToken);
+        consentService.withdrawConsent(userSessionToken, userStudy);
     }
 
     @Override
-    public void deleteUser(String sessionToken, Study userStudy, String userEmail) throws BridgeServiceException {
-        assertAdminUser(sessionToken);
+    public void deleteUser(String adminSessionToken, String userSessionToken, Study userStudy)
+            throws BridgeServiceException {
+        assertAdminUser(adminSessionToken);
+        try {
+            revokeAllConsentRecords(adminSessionToken, userSessionToken, userStudy);
+            
+            String userEmail = authenticationService.getSession(userSessionToken).getUser().getEmail();
+            deleteUserAccount(adminSessionToken, userStudy, userEmail);
+            authenticationService.signOut(userSessionToken);
+        } catch (Throwable t) {
+            throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    @Override
+    public void deleteUserAccount(String adminSessionToken, Study userStudy, String userEmail) {
+        assertAdminUser(adminSessionToken);
         try {
             Directory directory = getDirectory(userStudy);
             Account account = getUserAccountByEmail(directory, userEmail);
             if (account != null) {
                 account.delete();
             }
-        } catch (Throwable t) {
-            throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -136,5 +139,6 @@ public class StormPathUserAdminService implements UserAdminService {
         }
 
     }
+    
 
 }

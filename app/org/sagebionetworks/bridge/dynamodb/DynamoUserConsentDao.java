@@ -49,6 +49,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         consentToDelete.setWithdraw(NOT_WITHDRAW_YET);
         consentToDelete = mapper.load(consentToDelete);
         mapper.delete(consentToDelete);
+        
         // Save with the withdraw time stamp for audit
         DynamoUserConsent consentToWithdraw = new DynamoUserConsent(consentToDelete);
         consentToWithdraw.setWithdraw(DateTime.now(DateTimeZone.UTC).getMillis());
