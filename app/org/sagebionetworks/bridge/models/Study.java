@@ -10,6 +10,7 @@ public class Study {
 
     private String name;
     private String key;
+    private int minAge;
     /**
      * There is a separate StormPath directory for each study (all associated to
      * the production application). This allows us to tailor the email for each
@@ -20,10 +21,11 @@ public class Study {
     private List<String> hostnames = Collections.emptyList();
     private List<Tracker> trackers = Collections.emptyList();
     
-    public Study(String name, String key, String stormpathDirectoryHref, List<String> hostnames,
+    public Study(String name, String key, int minAge, String stormpathDirectoryHref, List<String> hostnames,
             List<Tracker> trackers, Resource consentAgreement) {
         this.name = name;
         this.key = key; 
+        this.minAge = minAge;
         this.stormpathDirectoryHref = stormpathDirectoryHref;
         this.consentAgreement = consentAgreement;
         if (hostnames != null) {
@@ -35,7 +37,7 @@ public class Study {
     }
     
     public Study(Study study) {
-        this(study.getName(), study.getKey(), study.getStormpathDirectoryHref(), study.getHostnames(), 
+        this(study.getName(), study.getKey(), study.getMinAge(), study.getStormpathDirectoryHref(), study.getHostnames(), 
             study.getTrackers(), study.getConsentAgreement());
     }
     
@@ -47,6 +49,9 @@ public class Study {
     }
     public String getKey() {
         return key;
+    }
+    public int getMinAge() {
+        return minAge;
     }
     public String getStormpathDirectoryHref() {
         return stormpathDirectoryHref;

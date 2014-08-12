@@ -1,5 +1,5 @@
-bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$modalInstance', '$scope', 'formService', 'modalService', 
-    function($http, $humane, $log, $modalInstance, $scope, formService, modalService) {
+bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$modalInstance', '$scope', 'authService', 'formService', 'modalService', 
+    function($http, $humane, $log, $modalInstance, $scope, authService, formService, modalService) {
 
         formService.initScope($scope, 'settings');
 
@@ -9,20 +9,20 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
 
                 // These are all the fields the /api/users/profile call will need to return eventually.
                 $scope.profile = {
-                    image: "",
+                    // TODO Eventually need to add other fields, such as avatar image, 
+                    // the ability to be asked about future studies, etc.
                     firstName: payload.firstName,
                     lastName: payload.lastName,
                     username: payload.username,
                     email: payload.email,
-                    birthdate: "",
-                    questions: "",
-                    futureStudies: ""
                 };
             })
             .error(function(data, status, headers, config) {
                 $humane.error('Sorry, something went wrong while fetching your info. Please close this modal and try again!');
                 $log.error('API fetch for users/profile failed.');
             });
+
+        $scope.session = authService;
 
         $scope.cancel = function() {
             $modalInstance.dismiss('cancel');
@@ -33,14 +33,12 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
             var update = formService.formToJSON($scope.settings, ['firstName', 'lastName']);
             $http.post('/api/users/profile', update)
                 .success(function(data, status, headers, config) {
-                    console.log('success');
+                    $modalInstance.close('success');
                     $humane.confirm('Your information has been successfully updated.');
                     $log.info(data);
-                    $modalInstance.close('success');
                 })
                 .error(function(data, status, headers, config) {
-                    console.log('error');
-                    $humane.error('Woops! Something went wrong on the internet. Please submit again.');
+                    $scope.setMessage('Something went wrong on the internet. Please submit again.', 'danger');
                     $log.info(data);
                 });
         };
@@ -50,19 +48,27 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
         };
 
         $scope.withdrawStudy = function() {
-            $log.info('Withdraw from Study has been clicked.');
-
-            $http.post('/api/consent/withdraw');
-            // Need to do something here to interact with user.
+            $http.delete('/api/consent')
+                .success(function(data, status, headers, config) {
+                    $scope.setMessage('You have successfully withdrawn from the study.');
+                    $scope.session.consented = false;
+                })
+                .error(function(data, status, headers, config) {
+                    $scope.setMessage('Something went wrong on the internet. Please try again!');
+                });
         };
 
-        $scope.downloadConsent = function() {
-            $log.info('Download consent has been called.');
-
-            $http.get('/api/consent/sendCopy');
+        $scope.emailConsent = function() {
+            $http.post('/api/consent/email')
+                .success(function(data, status, headers, config) {
+                    $scope.setMessage('Check your email! You should be receiving a copy of the consent document shortly.');
+                })
+                .error(function(data, status, headers, config) {
+                    $scope.setMessage('Something went wrong on the internet. Please try again!');
+                });
         };
 
-        // Not yet implemented on back end. Will need to return to this later.
+        // TODO Not yet implemented on back end. Will need to return to this later.
         $scope.downloadData = function() {
             $log.info('Download data function has been called.');
         };

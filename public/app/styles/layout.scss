@@ -7,7 +7,6 @@ $black: #000000;
     padding: 2rem;
     background-color: white;
     min-height: 50rem;
-    box-shadow: 0px 1px 3px silver inset;
     
     .nav-tabs {
         margin-bottom: 2rem;
@@ -18,9 +17,14 @@ $black: #000000;
     padding-top: 7px;
 }
 
-form[name='settings'] {
+form[name='$parent.settings'] {
     a, .well > h4 {
         color: $dark_blue;
+    }
+    .alert {
+        margin-right: 20px;
+        margin-left: 20px;
+        text-align: center;
     }
 }
 

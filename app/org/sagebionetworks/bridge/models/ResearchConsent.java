@@ -15,11 +15,6 @@ public class ResearchConsent {
     private String name;
     private DateTime birthdate;
     
-    public ResearchConsent(String name, DateTime birthdate) {
-        this.name = name;
-        this.birthdate = birthdate;
-    }
-    
     public ResearchConsent(String name, String birthdate) {
         this.name = name;
         this.birthdate = parseDate(birthdate);
@@ -27,12 +22,12 @@ public class ResearchConsent {
     
     public static final ResearchConsent fromJson(JsonNode node) {
         String name = null;
-        DateTime birthdate = null;
+        String birthdate = null;
         if (node != null && node.get(NAME_FIELD) != null) {
             name = node.get(NAME_FIELD).asText();
         }
         if (node != null && node.get(BIRTHDATE_FIELD) != null) {
-            birthdate = parseDate(node.get(BIRTHDATE_FIELD).asText());
+            birthdate = node.get(BIRTHDATE_FIELD).asText();
         }
         return new ResearchConsent(name, birthdate);
     }
@@ -41,8 +36,8 @@ public class ResearchConsent {
         return name;
     }
 
-    public DateTime getBirthdate() {
-        return birthdate;
+    public String getBirthdate() {
+        return birthdate.toString().split("T")[0];
     }
     
     private static DateTime parseDate(String date) {

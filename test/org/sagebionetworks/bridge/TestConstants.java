@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.sagebionetworks.bridge.models.Study;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 
 public class TestConstants {
 
@@ -40,10 +42,11 @@ public class TestConstants {
     public static final UserCredentials TEST4 = new UserCredentials("test4",
             "P4ssword", "test4@sagebase.org", "test4", "test4");
     
-    public static final Study STUDY = new Study("Neuro-Degenerative Diseases Study", "neurod", null, null, null, null);
+    public static final Study STUDY = new Study("Neuro-Degenerative Diseases Study", "neurod", 17, null, null, null, null);
     
-    public static final Study SECOND_STUDY = new Study("Second Study", "secondstudy",
-            "https://api.stormpath.com/v1/directories/5RfWcEwOK0l7goGe4ZX9cz", null, null, null);
+    public static final Resource secondStudyConsent = new FileSystemResource("test/conf/secondstudy-consent.html");
+    public static final Study SECOND_STUDY = new Study("Second Study", "secondstudy", 17,
+            "https://api.stormpath.com/v1/directories/5RfWcEwOK0l7goGe4ZX9cz", null, null, secondStudyConsent);
     
     public static final int TIMEOUT = 10000;
     public static final String TEST_URL = "http://localhost:3333";
