@@ -7,6 +7,8 @@ describe('SettingsModalController', function() {
     beforeEach(inject(function($injector) {
         $log = $injector.get('$log');
         scope = $injector.get('$rootScope').$new();
+        scope.setMessage = jasmine.createSpy('scope.setMessage');
+        authService = jasmine.createSpyObj( 'authService', ['initScope'] );
         formService = jasmine.createSpyObj( 'formService', ['initScope', 'formToJSON'] );
         modalInstance = jasmine.createSpyObj( 'modalInstance', ['close', 'dismiss'] );
         modalService = jasmine.createSpyObj( 'modalService', ['openModal'] );
@@ -17,8 +19,7 @@ describe('SettingsModalController', function() {
                 firstName: 'first name',
                 lastName: 'last name',
                 username: 'username',
-                email: 'username@email.com',
-                stormpathHref: 'https://api.stormpath.com/v1/dfasdlafkj2343234adf'
+                email: 'username@email.com'
             }
         });
         $httpBackend.expect('GET', '/api/users/profile');
@@ -28,6 +29,7 @@ describe('SettingsModalController', function() {
             '$log': $log,
             '$modalInstance': modalInstance,
             '$scope': scope,
+            'authService': authService,
             'formService': formService,
             'modalService': modalService
         });

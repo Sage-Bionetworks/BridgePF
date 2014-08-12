@@ -134,7 +134,6 @@ public class AuthenticationServiceImplTest {
     
     @Test
     public void createUserInNonDefaultAccountStore() {
-        
         Study defaultStudy = studyControllerService.getStudies().iterator().next();
         SignUp signUp = new SignUp("secondStudyUser", "secondStudyUser@sagebase.org", "P4ssword");
 

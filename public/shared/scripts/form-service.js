@@ -11,8 +11,8 @@ bridgeShared.service('formService', [function() {
         formToJSON: function(form, fields) {
             var object = {};
             for (var i=0; i < fields.length; i++) {
-                if (form[fields[i]].$modelValue && form[fields[i]].$valid) {
-                    object[fields[i]] = form[fields[i]].$modelValue;
+                if (form[fields[i]].$valid) {
+                    object[fields[i]] = form[fields[i]].$modelValue ? form[fields[i]].$modelValue : "";
                 }
             }
             return object;

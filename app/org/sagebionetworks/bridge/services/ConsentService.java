@@ -6,5 +6,10 @@ import org.sagebionetworks.bridge.models.UserSession;
 
 public interface ConsentService {
 
-    public UserSession give(String sessionToken, ResearchConsent consent, Study study, boolean sendEmail);
+    public UserSession consentToResearch(String sessionToken, ResearchConsent researchConsent, Study study, boolean sendEmail);
+    
+    public UserSession withdrawConsent(String sessionToken, Study study);
+    
+    public void emailConsentAgreement(String sessionToken, Study study);
+    
 }

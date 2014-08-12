@@ -26,7 +26,7 @@ public class UserProfileInfo {
         return this.email;
     }
     private String removeEmpty(String s) {
-        if (s.equalsIgnoreCase("<EMPTY")) {
+        if (s.equalsIgnoreCase("<EMPTY>")) {
             return "";
         }
         else {

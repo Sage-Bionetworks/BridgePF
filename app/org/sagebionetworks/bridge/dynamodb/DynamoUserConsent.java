@@ -16,6 +16,8 @@ public class DynamoUserConsent implements DynamoTable {
     private long consentTimestamp;  // Adding this comment to deploy again.
     private Long give;              // Timestamp when the consent is given
     private Long withdraw;          // Timestamp when the consent is withdrawn
+    private String name;
+    private String birthdate;
     private Long version;
 
     public DynamoUserConsent() {}
@@ -27,6 +29,8 @@ public class DynamoUserConsent implements DynamoTable {
     }
 
     DynamoUserConsent(DynamoUserConsent consent) {
+        name = consent.name;
+        birthdate = consent.birthdate;
         healthCodeStudy = consent.healthCodeStudy;
         studyKey = consent.studyKey;
         consentTimestamp = consent.consentTimestamp;
@@ -34,7 +38,7 @@ public class DynamoUserConsent implements DynamoTable {
         withdraw = consent.withdraw;
         version = consent.version;
     }
-
+    
     @DynamoDBHashKey
     public String getHealthCodeStudy() {
         return healthCodeStudy;
@@ -73,6 +77,22 @@ public class DynamoUserConsent implements DynamoTable {
     }
     public void setConsentTimestamp(long consentTimestamp) {
         this.consentTimestamp = consentTimestamp;
+    }
+    
+    @DynamoDBAttribute(attributeName = "name")
+    public String getName() {
+        return this.name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    @DynamoDBAttribute(attributeName = "birthdate")
+    public String getBirthdate() {
+        return this.birthdate;
+    }
+    public void setBirthdate(String birthdate) {
+        this.birthdate = birthdate;
     }
 
     @DynamoDBVersionAttribute

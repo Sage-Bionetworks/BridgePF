@@ -12,7 +12,7 @@ import play.mvc.*;
 public class ApplicationController extends BaseController {
 
     private StudyControllerService studyControllerService;
-
+    
     public void setStudyControllerService(StudyControllerService studyControllerService) {
         this.studyControllerService = studyControllerService;
     }
@@ -37,7 +37,7 @@ public class ApplicationController extends BaseController {
 
     public Result loadPublicApp() throws Exception {
         UserSessionInfo info = new UserSessionInfo(new UserSession());
-
+        
         // There's probably a non-crappy way of doing this in Play, but I couldn't find it.
         Study study = studyControllerService.getStudyByHostname(request());
         if (study == null || "neurod".equals(study.getKey())) {
