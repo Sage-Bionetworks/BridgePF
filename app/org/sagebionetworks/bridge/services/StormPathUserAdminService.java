@@ -23,11 +23,14 @@ import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
 
+import controllers.StudyControllerService;
+
 public class StormPathUserAdminService implements UserAdminService {
 
     private AuthenticationService authenticationService;
     private ConsentService consentService;
     private HealthDataService healthDataService;
+    private StudyControllerService studyControllerService;
     private CacheProvider cacheProvider;
     private Client stormpathClient;
 
@@ -38,9 +41,13 @@ public class StormPathUserAdminService implements UserAdminService {
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
-    
+
     public void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
+    }
+
+    public void setStudyControllerService(StudyControllerService studyControllerService) {
+        this.studyControllerService = studyControllerService;
     }
 
     public void setCacheProvider(CacheProvider cache) {
@@ -99,22 +106,6 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
-    public void removeAllHealthDataRecords(String adminSessionToken, String userSessionToken, Study userStudy)
-            throws BridgeServiceException {
-        assertAdminUser(adminSessionToken);
-        
-        List<Tracker> trackers = userStudy.getTrackers();
-        HealthDataKey key = null;
-        for (Tracker tracker : trackers) {
-            key = new HealthDataKey(userStudy, tracker, userSessionToken);
-            List<HealthDataRecord> records = healthDataService.getAllHealthData(key);
-            for (HealthDataRecord record : records) {
-                healthDataService.deleteHealthDataRecord(key, record.getRecordId());
-            }
-        }
-    }
-
-    @Override
     public void deleteUser(String adminSessionToken, String userSessionToken, Study userStudy)
             throws BridgeServiceException {
         assertAdminUser(adminSessionToken);
@@ -131,7 +122,29 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
-    public void deleteUserAccount(String adminSessionToken, Study userStudy, String userEmail) {
+    public void deleteUserGlobal(String adminSessionToken, String userSessionToken) throws BridgeServiceException {
+        assertAdminUser(adminSessionToken);
+        for (Study study : studyControllerService.getStudies()) {
+            deleteUser(adminSessionToken, userSessionToken, study);
+        }
+    }
+
+    private void removeAllHealthDataRecords(String adminSessionToken, String userSessionToken, Study userStudy)
+            throws BridgeServiceException {
+        assertAdminUser(adminSessionToken);
+
+        List<Tracker> trackers = userStudy.getTrackers();
+        HealthDataKey key = null;
+        for (Tracker tracker : trackers) {
+            key = new HealthDataKey(userStudy, tracker, userSessionToken);
+            List<HealthDataRecord> records = healthDataService.getAllHealthData(key);
+            for (HealthDataRecord record : records) {
+                healthDataService.deleteHealthDataRecord(key, record.getRecordId());
+            }
+        }
+    }
+
+    private void deleteUserAccount(String adminSessionToken, Study userStudy, String userEmail) {
         assertAdminUser(adminSessionToken);
         try {
             Directory directory = getDirectory(userStudy);
