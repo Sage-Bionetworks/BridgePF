@@ -76,30 +76,26 @@ public class HealthDataServiceImplTest {
         return record;
     }
 
-    private PaginatedQueryList<DynamoHealthDataRecord> getRecordsFromDynamo(
-            int count) throws Exception {
+    private PaginatedQueryList<DynamoHealthDataRecord> getRecordsFromDynamo(int count) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode data = mapper.readTree("{\"weight\": 20}");
 
         List<DynamoHealthDataRecord> list = Lists.newArrayList();
         for (int i = 0; i < count; i++) {
-            list.add(new DynamoHealthDataRecord("1:1:1",
-                    new HealthDataRecordImpl("A" + i, new Date().getTime(),
-                            new Date().getTime(), data)));
+            list.add(new DynamoHealthDataRecord("1:1:1", new HealthDataRecordImpl("A" + i, new Date().getTime(),
+                    new Date().getTime(), data)));
         }
         return toPaginatedQueryList(list);
     }
 
-    private PaginatedQueryList<DynamoHealthDataRecord> getRecordsFromDynamo(
-            HealthDataRecord record) throws Exception {
+    private PaginatedQueryList<DynamoHealthDataRecord> getRecordsFromDynamo(HealthDataRecord record) throws Exception {
         List<DynamoHealthDataRecord> list = Lists.newArrayList();
         list.add(new DynamoHealthDataRecord("1:1:1", record));
         return toPaginatedQueryList(list);
     }
 
     @SuppressWarnings("unchecked")
-    private PaginatedQueryList<DynamoHealthDataRecord> toPaginatedQueryList(
-            final List<DynamoHealthDataRecord> list) {
+    private PaginatedQueryList<DynamoHealthDataRecord> toPaginatedQueryList(final List<DynamoHealthDataRecord> list) {
         PaginatedQueryList<DynamoHealthDataRecord> results = mock(PaginatedQueryList.class);
         doReturn(list.iterator()).when(results).iterator();
         doReturn(list.size()).when(results).size();
@@ -153,13 +149,11 @@ public class HealthDataServiceImplTest {
         HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         HealthDataRecord record = createHealthDataRecord();
 
-        List<String> identifiers = service.appendHealthData(key,
-                Lists.newArrayList(record));
+        List<String> identifiers = service.appendHealthData(key, Lists.newArrayList(record));
 
         verify(createMapper).batchSave(any(List.class));
 
-        assertEquals("Returns the assigned ID for health data record",
-                identifiers.get(0), record.getRecordId());
+        assertEquals("Returns the assigned ID for health data record", identifiers.get(0), record.getRecordId());
 
         verifyNoMoreInteractions(createMapper);
     }
@@ -170,8 +164,7 @@ public class HealthDataServiceImplTest {
         HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
         HealthDataRecord record = createHealthDataRecord();
 
-        doThrow(new LimitExceededException("Limit exceeded"))
-                .when(createMapper).batchSave(any(List.class));
+        doThrow(new LimitExceededException("Limit exceeded")).when(createMapper).batchSave(any(List.class));
         service.appendHealthData(key, Lists.newArrayList(record));
     }
 
@@ -201,17 +194,14 @@ public class HealthDataServiceImplTest {
         HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
 
         List<DynamoHealthDataRecord> records = getRecordsFromDynamo(6);
-        doReturn(records).when(updateMapper).query(
-                (Class<DynamoHealthDataRecord>) any(),
+        doReturn(records).when(updateMapper).query((Class<DynamoHealthDataRecord>) any(),
                 (DynamoDBQueryExpression<DynamoHealthDataRecord>) any());
 
         List<HealthDataRecord> entries = service.getAllHealthData(key);
 
         assertEquals("Returns 6 records", 6, entries.size());
-        assertTrue("Returns HealthDataRecord objects",
-                entries.get(0) instanceof HealthDataRecord);
-        assertNotNull("Data for first record is not null", entries.get(0)
-                .getData());
+        assertTrue("Returns HealthDataRecord objects", entries.get(0) instanceof HealthDataRecord);
+        assertNotNull("Data for first record is not null", entries.get(0).getData());
     }
 
     @Test(expected = BridgeServiceException.class)
@@ -238,10 +228,8 @@ public class HealthDataServiceImplTest {
     public void getHealthDataRecordInvalidId() throws Exception {
         HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
 
-        doThrow(new BridgeServiceException("Test", 500))
-                .when(createMapper)
-                .query((Class<DynamoHealthDataRecord>) any(),
-                        (DynamoDBQueryExpression<DynamoHealthDataRecord>) any());
+        doThrow(new BridgeServiceException("Test", 500)).when(createMapper).query(
+                (Class<DynamoHealthDataRecord>) any(), (DynamoDBQueryExpression<DynamoHealthDataRecord>) any());
 
         service.getHealthDataRecord(key, "foo");
     }
@@ -251,29 +239,23 @@ public class HealthDataServiceImplTest {
     public void getHealthDataRecordSuccess() throws Exception {
         long date = new Date().getTime();
         HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
-        HealthDataRecord record = new HealthDataRecordImpl("A0", date, date,
-                null);
+        HealthDataRecord record = new HealthDataRecordImpl("A0", date, date, null);
 
         List<DynamoHealthDataRecord> records = getRecordsFromDynamo(record);
-        doReturn(records.get(0)).when(updateMapper).load(
-                (Class<DynamoHealthDataRecord>) any());
+        doReturn(records.get(0)).when(updateMapper).load((Class<DynamoHealthDataRecord>) any());
 
         HealthDataRecord result = service.getHealthDataRecord(key, "foo");
 
-        assertEquals("Returns correct record ID", record.getRecordId(),
-                result.getRecordId());
-        assertEquals("Returns correct start date", record.getStartDate(),
-                result.getStartDate());
-        assertEquals("Returns correct end date", record.getEndDate(),
-                result.getEndDate());
+        assertEquals("Returns correct record ID", record.getRecordId(), result.getRecordId());
+        assertEquals("Returns correct start date", record.getStartDate(), result.getStartDate());
+        assertEquals("Returns correct end date", record.getEndDate(), result.getEndDate());
     }
 
     @Test(expected = BridgeServiceException.class)
     public void updateHealthDataRecordBadKey() throws Exception {
         tracker.setId(0L);
         HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
-        HealthDataRecord record = new HealthDataRecordImpl("A0",
-                new Date().getTime(), new Date().getTime(), null);
+        HealthDataRecord record = new HealthDataRecordImpl("A0", new Date().getTime(), new Date().getTime(), null);
 
         service.updateHealthDataRecord(key, record);
         verify(updateMapper).save(any(DynamoHealthDataRecord.class));
@@ -281,16 +263,14 @@ public class HealthDataServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void updateHealthDataRecordNoKey() throws Exception {
-        HealthDataRecord record = new HealthDataRecordImpl("A0",
-                new Date().getTime(), new Date().getTime(), null);
+        HealthDataRecord record = new HealthDataRecordImpl("A0", new Date().getTime(), new Date().getTime(), null);
         service.updateHealthDataRecord(null, record);
     }
 
     @Test(expected = BridgeServiceException.class)
     public void updateHealthDataRecordBadRecord() throws Exception {
         HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
-        HealthDataRecord record = new HealthDataRecordImpl("A0", 0,
-                new Date().getTime(), null);
+        HealthDataRecord record = new HealthDataRecordImpl("A0", 0, new Date().getTime(), null);
         service.updateHealthDataRecord(key, record);
     }
 
@@ -303,8 +283,7 @@ public class HealthDataServiceImplTest {
     @Test
     public void updateHealthDataSuccess() throws Exception {
         HealthDataKey key = new HealthDataKey(STUDY, tracker, "belgium");
-        HealthDataRecord record = new HealthDataRecordImpl("A0",
-                new Date().getTime(), new Date().getTime(), null);
+        HealthDataRecord record = new HealthDataRecordImpl("A0", new Date().getTime(), new Date().getTime(), null);
 
         service.updateHealthDataRecord(key, record);
         verify(updateMapper).save(any(DynamoHealthDataRecord.class));
