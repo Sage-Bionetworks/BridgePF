@@ -48,22 +48,6 @@ public interface UserAdminService {
             throws BridgeServiceException;
 
     /**
-     * Removes all health data records from the target user. The user's session
-     * (if the target user is signed in) will be updated to reflect this new
-     * state.
-     * 
-     * @param adminSessionToken
-     *            session of the admin user
-     * @param userSessionToken
-     *            session of the target user
-     * @param userStudy
-     *            study of the target user
-     * @throws BridgeServiceException
-     */
-    public void removeAllHealthDataRecords(String adminSessionToken, String userSessionToken, Study userStudy)
-            throws BridgeServiceException;
-
-    /**
      * Delete the target user.
      * 
      * @param adminSessionToken
@@ -78,16 +62,13 @@ public interface UserAdminService {
             throws BridgeServiceException;
 
     /**
-     * Delete target user account.
+     * Deletes the target user from all studies he/she is involved in.
      * 
      * @param adminSessionToken
      *            session of the admin user
-     * @param userStudy
-     *            the study of the target user
-     * @param userEmail
-     *            the email of the target user
+     * @param userSessionToken
+     *            session of the target user
      * @throws BridgeServiceException
      */
-    public void deleteUserAccount(String adminSessionToken, Study userStudy, String userEmail)
-            throws BridgeServiceException;
+    public void deleteUserGlobal(String adminSessionToken, String userSessionToken) throws BridgeServiceException;
 }

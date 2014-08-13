@@ -259,6 +259,7 @@
         <property name="authenticationService" ref="authenticationService"/>
         <property name="consentService" ref="consentService"/>
         <property name="healthDataService" ref="healthDataService"/>
+        <property name="studyControllerService" ref="studyControllerService"/>
         <property name="cacheProvider" ref="cacheProvider"/>
         <property name="stormpathClient" ref="stormpathClient"/>
     </bean>
