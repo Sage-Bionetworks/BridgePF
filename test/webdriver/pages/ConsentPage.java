@@ -3,7 +3,7 @@ package webdriver.pages;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static org.sagebionetworks.bridge.TestConstants.CONSENT_TEST_URL;
+import static org.sagebionetworks.bridge.TestConstants.*;
 
 import org.fluentlenium.core.domain.FluentWebElement;
 
