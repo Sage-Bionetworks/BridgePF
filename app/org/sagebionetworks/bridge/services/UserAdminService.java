@@ -19,7 +19,8 @@ public interface UserAdminService {
      * @param signUp
      *            sign up information for the target user
      * @param signUserIn
-     *            sign user into Bridge web application in as part of the creation process
+     *            sign user into Bridge web application in as part of the
+     *            creation process
      * @param consentUser
      *            should the user be consented to the research?
      * @return UserSession for the newly created user
@@ -28,14 +29,14 @@ public interface UserAdminService {
      */
     public UserSession createUser(String sessionToken, Study userStudy, SignUp signUp, boolean signUserIn,
             boolean consentUser) throws BridgeServiceException;
-    
+
     /**
      * Remove all consent records from the target user. The user's session (if
      * the target user is signed in) will be updated to reflect this new state.
      * 
      * @param adminSessionToken
      *            session of the admin user
-     * @param userSessionToken           
+     * @param userSessionToken
      *            session of the target user
      * @param userStudy
      *            the study of the target user
@@ -43,8 +44,25 @@ public interface UserAdminService {
      * 
      * @throws BridgeServiceException
      */
-    public void revokeAllConsentRecords(String adminSessionToken, String userSessionToken, Study userStudy) throws BridgeServiceException;
-    
+    public void revokeAllConsentRecords(String adminSessionToken, String userSessionToken, Study userStudy)
+            throws BridgeServiceException;
+
+    /**
+     * Removes all health data records from the target user. The user's session
+     * (if the target user is signed in) will be updated to reflect this new
+     * state.
+     * 
+     * @param adminSessionToken
+     *            session of the admin user
+     * @param userSessionToken
+     *            session of the target user
+     * @param userStudy
+     *            study of the target user
+     * @throws BridgeServiceException
+     */
+    public void removeAllHealthDataRecords(String adminSessionToken, String userSessionToken, Study userStudy)
+            throws BridgeServiceException;
+
     /**
      * Delete the target user.
      * 
@@ -56,8 +74,9 @@ public interface UserAdminService {
      *            the study of the target user
      * @throws BridgeServiceException
      */
-    public void deleteUser(String adminSessionToken, String userSessionToken, Study userStudy) throws BridgeServiceException;
-    
+    public void deleteUser(String adminSessionToken, String userSessionToken, Study userStudy)
+            throws BridgeServiceException;
+
     /**
      * Delete target user account.
      * 
@@ -69,5 +88,6 @@ public interface UserAdminService {
      *            the email of the target user
      * @throws BridgeServiceException
      */
-    public void deleteUserAccount(String adminSessionToken, Study userStudy, String userEmail) throws BridgeServiceException;
+    public void deleteUserAccount(String adminSessionToken, Study userStudy, String userEmail)
+            throws BridgeServiceException;
 }
