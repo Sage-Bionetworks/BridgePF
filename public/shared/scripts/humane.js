@@ -15,7 +15,7 @@ bridgeShared.service('$humane', ['$window', function($window) {
     
     function status(response) {
         if (response.status !== 401) {
-            var message = tryUntil(response, "data.payload.message", "data.payload", "statusText");
+            var message = tryUntil(response, "data.message", "data", "statusText");
             if (typeof message !== "string") {
                 message = "There has been an error.";
             }

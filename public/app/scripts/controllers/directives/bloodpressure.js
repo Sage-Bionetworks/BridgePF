@@ -49,7 +49,7 @@ function($scope, healthDataService, $humane, dashboardService) {
         var payload = healthDataService.createPayload($scope.bpForm, ['date', 'date'], ['systolic', 'diastolic'], true);
         var chartScope = $scope.$parent;
         healthDataService.create(chartScope.tracker.id, payload).then(function(response) {
-            payload.recordId = response.data.payload.ids[0];
+            payload.recordId = response.data.ids[0];
             chartScope.dataset.convertOne(payload);
         }, $humane.status);
         $scope.cancel();
