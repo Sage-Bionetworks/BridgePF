@@ -14,5 +14,7 @@ public class BridgeConstants {
 
     public static final int BRIDGE_SESSION_EXPIRE_IN_SECONDS = 20*60;
     
+    public static final int BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS = 5*60; // INTERN NOTE Is this reasonable?
+    
     public static final String CONSENT_REQUIRED_MESSAGE = "Before you may continue, we require you to consent to participate in this study.";
 }
