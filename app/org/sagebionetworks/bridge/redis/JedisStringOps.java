@@ -41,7 +41,7 @@ public class JedisStringOps implements StringOps {
         return new AbstractJedisTemplate<String>() {
             @Override
             String execute(Jedis jedis) {
-                return (jedis.get(key) == null) ? null : "OK";
+                return jedis.get(key);
             }
         };
     }
