@@ -12,4 +12,8 @@ public interface ConsentService {
     
     public void emailConsentAgreement(String sessionToken, Study study);
     
+    public UserSession suspendDataSharing(String sessionToken, Study study);
+    
+    public UserSession resumeDataSharing(String sessionToken, Study study);
+    
 }
