@@ -7,6 +7,7 @@ import static play.test.Helpers.testServer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.sagebionetworks.bridge.TestConstants.UserCredentials;
 import org.sagebionetworks.bridge.models.UserProfile;
@@ -51,8 +52,7 @@ public class TestUtils {
         node.put(USERNAME, TEST2.USERNAME);
         node.put(PASSWORD, TEST2.PASSWORD);
 
-        Response response = WS.url(TEST_URL + SIGN_IN_URL).post(node)
-                .get(TIMEOUT);
+        Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode responseNode = mapper.readTree(response.getBody());
@@ -60,12 +60,21 @@ public class TestUtils {
     }
 
     public static WSRequestHolder getURL(String sessionToken, String path) {
-        return WS.url(TEST_URL + path).setHeader(
-                BridgeConstants.SESSION_TOKEN_HEADER, sessionToken);
+        return getURL(sessionToken, path, null);
+    }
+    
+    public static WSRequestHolder getURL(String sessionToken, String path, Map<String,String> queryMap) {
+        WSRequestHolder request = WS.url(TEST_BASE_URL + path).setHeader(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken);
+        if (queryMap != null) {
+            for (Map.Entry<String,String> entry : queryMap.entrySet()) {
+                request.setQueryParameter(entry.getKey(), entry.getValue());
+            }
+        }
+        return request;
     }
 
     public static void signOut() {
-        WS.url(TEST_URL + SIGN_OUT_URL).get().get(TIMEOUT);
+        WS.url(TEST_BASE_URL + SIGN_OUT_URL).get().get(TIMEOUT);
     }
 
     public static void deleteAllHealthData() {
@@ -73,8 +82,7 @@ public class TestUtils {
             public void testCode() throws Exception {
                 String sessionToken = signIn();
 
-                Response response = getURL(sessionToken, TRACKER_URL).get()
-                        .get(TIMEOUT);
+                Response response = getURL(sessionToken, TRACKER_URL).get().get(TIMEOUT);
 
                 JsonNode body = response.asJson();
                 ArrayNode array = (ArrayNode) body.get(PAYLOAD);
@@ -82,8 +90,7 @@ public class TestUtils {
                     for (int i = 0; i < array.size(); i++) {
                         JsonNode child = array.get(i);
                         String recordId = child.get(RECORD_ID).asText();
-                        response = getURL(sessionToken, RECORD_URL + recordId)
-                                .delete().get(TIMEOUT);
+                        response = getURL(sessionToken, RECORD_URL + recordId).delete().get(TIMEOUT);
                     }
                 }
 
