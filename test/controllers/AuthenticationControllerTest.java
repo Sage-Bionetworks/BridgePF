@@ -72,9 +72,9 @@ public class AuthenticationControllerTest {
                 JsonNode responseNode = mapper.readTree(response.getBody());
 
                 assertEquals("HTTP response indicates request OK", OK, response.getStatus());
-                String sessionToken = responseNode.get(PAYLOAD).get(SESSION_TOKEN).asText();
+                String sessionToken = responseNode.get(SESSION_TOKEN).asText();
                 assertNotNull("Session token is assigned", sessionToken);
-                String username = responseNode.get(PAYLOAD).get(USERNAME).asText();
+                String username = responseNode.get(USERNAME).asText();
                 assertEquals("Username is for test2 user", TEST2.USERNAME, username);
             }
         });

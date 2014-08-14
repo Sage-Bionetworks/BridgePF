@@ -9,7 +9,7 @@ bridgeShared.controller('RequestResetPasswordModalController', ['$scope', '$http
             $modalInstance.dismiss('cancel');
             $humane.confirm("Please look for further instructions in your email inbox.");
         }, function(response) {
-            $scope.setMessage(response.data.payload, 'danger');
+            $scope.setMessage(response.data, 'danger');
         });
     };
     $scope.cancel = function () {

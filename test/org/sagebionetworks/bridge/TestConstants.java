@@ -63,7 +63,6 @@ public class TestConstants {
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
     public static final String SESSION_TOKEN = "sessionToken";
-    public static final String PAYLOAD = "payload";
     public static final String RECORD_ID = "recordId";
 
     public static final String MENU_LINK = "#usermenu>.dropdown-toggle";

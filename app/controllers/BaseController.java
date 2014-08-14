@@ -2,7 +2,6 @@ package controllers;
 
 import java.io.IOException;
 
-import models.JsonPayload;
 import models.StatusMessage;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -68,10 +67,6 @@ public class BaseController extends Controller {
 
     protected Result jsonResult(String message) {
         return ok(Json.toJson(new StatusMessage(message)));
-    }
-
-    protected Result jsonResult(JsonPayload<?> payload) {
-        return ok(Json.toJson(payload));
     }
 
     protected Result jsonError(String message) {

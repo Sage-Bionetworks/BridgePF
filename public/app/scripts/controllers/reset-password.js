@@ -10,7 +10,7 @@ function($scope, $route, $humane, $window, authService, formService) {
         authService.resetPassword($scope.password, $scope.sptoken).then(function() {
             $window.location.replace("/#/?msg=passwordChanged");
         }, function(response) {
-            $humane.error(response.data.payload);
+            $humane.error(response.data);
         });
     };
     

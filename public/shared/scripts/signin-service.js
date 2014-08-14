@@ -15,7 +15,7 @@ bridgeShared.service('signInService', ['$modal', function($modal) {
 
             authService.signIn(credentials).then(function(response) {
                 $scope.cancel();
-                authService.initSession(response.data.payload);
+                authService.initSession(response.data);
 
                 if (!/\/app\//.test($window.location.pathname)) {
                     $window.location.replace("/app/");
@@ -33,11 +33,11 @@ bridgeShared.service('signInService', ['$modal', function($modal) {
             }, function(response) {
                 if (response.status === 412) {
                     $scope.cancel();
-                    authService.initSession(response.data.payload);
+                    authService.initSession(response.data);
                 } else if (response.status === 404 || response.status === 401) {
                     $scope.setMessage("Wrong user name or password.", "danger");
                 } else {
-                    console.error(response.data.payload);
+                    console.error(response.data);
                     $scope.setMessage("There has been an error.", "danger");
                 }
             });

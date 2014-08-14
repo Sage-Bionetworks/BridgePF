@@ -1,7 +1,5 @@
 package controllers;
 
-import models.JsonPayload;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
@@ -14,6 +12,7 @@ import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import play.libs.Json;
 import play.mvc.Result;
 
 public class AuthenticationController extends BaseController {
@@ -31,13 +30,13 @@ public class AuthenticationController extends BaseController {
         UserSession session = checkForSession();
         if (session != null) {
             setSessionToken(session.getSessionToken());
-            return jsonResult(new JsonPayload<UserSessionInfo>(new UserSessionInfo(session)));
+            return ok(Json.toJson(new UserSessionInfo(session)));
         }
         Study study = studyControllerService.getStudyByHostname(request());
         SignIn signIn = SignIn.fromJson(request().body().asJson());
         session = authenticationService.signIn(study, signIn);
         setSessionToken(session.getSessionToken());
-        Result result = jsonResult(new JsonPayload<UserSessionInfo>(new UserSessionInfo(session)));
+        Result result = ok(Json.toJson(new UserSessionInfo(session)));
         final long end = System.nanoTime();
         logger.info("sign in controller " + (end - start));
         return result;
@@ -66,7 +65,7 @@ public class AuthenticationController extends BaseController {
         // an exception is thrown. Code after this line will rarely execute
         UserSession session = authenticationService.verifyEmail(study, ev);
         setSessionToken(session.getSessionToken());
-        return jsonResult(new JsonPayload<UserSessionInfo>(new UserSessionInfo(session)));
+        return ok(Json.toJson((new UserSessionInfo(session))));
     }
 
     public Result requestResetPassword() throws Exception {
