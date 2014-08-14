@@ -49,7 +49,7 @@ public class RedisUserLockDao implements UserLockDao {
         String redisKey = RedisKey.LOCK.getRedisKey(healthDataCode);
         
         String getResult = stringOps.get(redisKey).execute();
-        return "OK".equals(getResult) ? true : false;
+        return (getResult == null) ? false : true;
     }
 
 }
