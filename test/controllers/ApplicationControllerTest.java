@@ -15,7 +15,7 @@ public class ApplicationControllerTest {
     public void indexRedirectsToApp() {
         running(testServer(3333), new Runnable() {
             public void run() {
-                WSRequestHolder holder = WS.url(TEST_URL + "/index.html")
+                WSRequestHolder holder = WS.url(TEST_BASE_URL + "/index.html")
                         .setFollowRedirects(false);
                 Response response = holder.get().get(TIMEOUT);
                 assertEquals("HTTP status is SEE OTHER", SEE_OTHER,
@@ -30,7 +30,7 @@ public class ApplicationControllerTest {
     public void canLoadApp() {
         running(testServer(3333), new Runnable() {
             public void run() {
-                WSRequestHolder holder = WS.url(TEST_URL);
+                WSRequestHolder holder = WS.url(TEST_BASE_URL);
                 Response response = holder.get().get(TIMEOUT);
                 assertEquals("HTTP status is OK (200)", OK,
                         response.getStatus());

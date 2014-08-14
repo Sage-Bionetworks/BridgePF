@@ -8,6 +8,7 @@ import static play.test.Helpers.testServer;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
@@ -23,7 +24,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import play.libs.WS.Response;
 import static org.sagebionetworks.bridge.TestConstants.*;
@@ -31,6 +34,8 @@ import static org.junit.Assert.*;
 
 public class HealthDataControllerTest {
 
+    private static final String END_DATE = "endDate";
+    private static final String START_DATE = "startDate";
     private ObjectMapper mapper = new ObjectMapper();
 
     public HealthDataControllerTest() {
@@ -77,14 +82,10 @@ public class HealthDataControllerTest {
         Collections.sort(ids);
         return ids;
     }
-
+    
     @Before
-    public void deleteRecordsBefore() throws Exception {
-        TestUtils.deleteAllHealthData();
-    }
-
     @After
-    public void deleteRecordsAfter() throws Exception {
+    public void deleteRecords() throws Exception {
         TestUtils.deleteAllHealthData();
     }
 
@@ -195,24 +196,24 @@ public class HealthDataControllerTest {
                             .get(TIMEOUT);
                 String id6 = retrieveNewId(response);
 
-                String queryPath = String.format("/%s/%s", Long.toString(time2), Long.toString(time5));
-                response = TestUtils.getURL(sessionToken, TRACKER_URL + queryPath).get().get(TIMEOUT);
+                
+                Map<String, String> queryMap = ImmutableMap.of(START_DATE, Long.toString(time2), END_DATE, Long.toString(time5));
+                response = TestUtils.getURL(sessionToken, TRACKER_URL, queryMap).get().get(TIMEOUT);
                 List<String> ids = getIds(response);
                 assertTrue("Returns records 2, 3, 4, and 6", ids.containsAll(Lists.newArrayList(id2, id3, id4, id6)));
                 assertFalse("Does not contain records 1 or 5", ids.containsAll(Lists.newArrayList(id1, id5)));
 
-                queryPath = String.format("/%s/%s", Long.toString(time1), Long.toString(time3));
-                response = TestUtils.getURL(sessionToken, TRACKER_URL + queryPath).get().get(TIMEOUT);
+                queryMap = ImmutableMap.of(START_DATE, Long.toString(time1), END_DATE, Long.toString(time3));
+                response = TestUtils.getURL(sessionToken, TRACKER_URL, queryMap).get().get(TIMEOUT);
                 ids = getIds(response);
                 assertTrue("Returns records 1, 2, 4, and 6", ids.containsAll(Lists.newArrayList(id1, id2, id4, id6)));
                 assertFalse("Does not contain records 3 or 5", ids.containsAll(Lists.newArrayList(id3, id5)));
 
-                queryPath = String.format("/%s/%s", Long.toString(time4), Long.toString(time5));
-                response = TestUtils.getURL(sessionToken, TRACKER_URL + queryPath).get().get(TIMEOUT);
+                queryMap = ImmutableMap.of(START_DATE, Long.toString(time4), END_DATE, Long.toString(time5));
+                response = TestUtils.getURL(sessionToken, TRACKER_URL, queryMap).get().get(TIMEOUT);
                 ids = getIds(response);
                 assertTrue("Returns records 3, 4, and 6", ids.containsAll(Lists.newArrayList(id3, id4, id6)));
                 assertFalse("Does not contain records 1, 2 or 5", ids.containsAll(Lists.newArrayList(id1, id2, id5)));
-
                 TestUtils.signOut();
             }
         });

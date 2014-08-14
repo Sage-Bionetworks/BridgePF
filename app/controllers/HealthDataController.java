@@ -8,6 +8,7 @@ import java.util.List;
 import models.IdHolder;
 import models.JsonPayload;
 
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -15,6 +16,8 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.sagebionetworks.bridge.services.HealthDataService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
@@ -23,6 +26,8 @@ import play.mvc.Result;
 
 public class HealthDataController extends BaseController {
 
+    private final static Logger logger = LoggerFactory.getLogger(HealthDataController.class);
+    
     private HealthDataService healthDataService;
     private StudyControllerService studyControllerService;
     
@@ -54,8 +59,20 @@ public class HealthDataController extends BaseController {
         List<String> ids = healthDataService.appendHealthData(key, records);
         return jsonResult(new JsonPayload<IdHolder>(new IdHolder(ids)));
     }
-
-    public Result getAllHealthData(Long trackerId) throws Exception {
+    
+    public Result getHealthData(Long trackerId, Long startDate, Long endDate) throws Exception {
+        if (startDate == null && endDate == null) {
+            return getAllHealthData(trackerId);
+        }
+        if (startDate == null) {
+            startDate = -Long.MAX_VALUE;
+        } else if (endDate == null) {
+            endDate = Long.MAX_VALUE;
+        }
+        return getHealthDataByDateRange(trackerId, startDate, endDate);
+    }
+    
+    private Result getAllHealthData(Long trackerId) throws Exception {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
@@ -66,22 +83,12 @@ public class HealthDataController extends BaseController {
         return jsonResult(new JsonPayload<List<HealthDataRecord>>(tracker.getType() + "[]", entries));
     }
     
-    public Result getHealthDataByDate(Long trackerId, Long date) throws Exception {
+    private Result getHealthDataByDateRange(Long trackerId, Long startDate, Long endDate) throws Exception {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
         HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
-        
-        List<HealthDataRecord> entries = healthDataService.getHealthDataByDateRange(key, new Date(date), new Date(date));
-        return jsonResult(new JsonPayload<List<HealthDataRecord>>(tracker.getType(), entries));
-    }
-    
-    public Result getHealthDataByDateRange(Long trackerId, Long startDate, Long endDate) throws Exception {
-        UserSession session = getSession();
-        Study study = studyControllerService.getStudyByHostname(request());
-        Tracker tracker = study.getTrackerById(trackerId);
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
-        
+
         List<HealthDataRecord> entries = healthDataService.getHealthDataByDateRange(key, new Date(startDate), new Date(endDate));
         return jsonResult(new JsonPayload<List<HealthDataRecord>>(tracker.getType(), entries));
     }
