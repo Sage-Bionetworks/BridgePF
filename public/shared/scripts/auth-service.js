@@ -24,7 +24,7 @@ function($http, $window, $q, $location, $humane) {
         signIn: function(credentials) {
             var deferred = $q.defer();
             $http.post('/api/auth/signIn', credentials).then(function(response) {
-                service.initSession(response.data.payload);
+                service.initSession(response.data);
                 deferred.resolve(response);
             }, function(response) {
                 deferred.reject(response);

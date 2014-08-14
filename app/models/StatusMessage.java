@@ -1,10 +1,15 @@
 package models;
 
-public class StatusMessage extends JsonPayload<String> {
+public class StatusMessage {
 
+    private final String message;
+    
     public StatusMessage(String message) {
-        super(message);
-        this.type = "StatusMessage";
+        this.message = message;
+    }
+    
+    public String getMessage() {
+        return message;
     }
     
 }

@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import play.libs.WS.Response;
 import static org.sagebionetworks.bridge.TestConstants.*;
@@ -66,14 +65,13 @@ public class HealthDataControllerTest {
 
     private String retrieveNewId(Response response) {
         JsonNode body = response.asJson();
-        JsonNode payload = body.get("payload");
-        JsonNode ids = payload.get("ids");
+        JsonNode ids = body.get("ids");
         return ids.get(0).asText();
     }
 
     private List<String> getIds(Response response) {
         JsonNode body = response.asJson();
-        ArrayNode array = (ArrayNode) body.get("payload");
+        ArrayNode array = (ArrayNode)body;
         List<String> ids = Lists.newArrayList();
         for (int i = 0; i < array.size(); i++) {
             JsonNode child = array.get(i);
@@ -124,7 +122,7 @@ public class HealthDataControllerTest {
                 Response response = TestUtils.getURL(sessionToken, TRACKER_URL).get().get(TIMEOUT);
 
                 JsonNode body = response.asJson();
-                ArrayNode array = (ArrayNode) body.get("payload");
+                ArrayNode array = (ArrayNode) body;
                 assertEquals("Returns 3 records", 3, array.size());
 
                 TestUtils.signOut();
@@ -249,8 +247,7 @@ public class HealthDataControllerTest {
                 // Get it and verify that it was persisted.
                 response = TestUtils.getURL(sessionToken, RECORD_URL + id).get().get(TIMEOUT);
                 JsonNode body = response.asJson();
-                JsonNode payload = body.get("payload");
-                long valueSaved = payload.get("data").get("systolic").asLong();
+                long valueSaved = body.get("data").get("systolic").asLong();
                 assertEquals("Value saved is 200", 200L, valueSaved);
 
                 TestUtils.signOut();

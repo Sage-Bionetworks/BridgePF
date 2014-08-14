@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models;
 
-import org.sagebionetworks.bridge.BridgeConstants;
-
 /**
  * Greatly trimmed user session object that is embedded in the initial render of the 
  * web application.
@@ -33,7 +31,8 @@ public class UserSessionInfo {
     public String getUsername() {
         return username;
     }
+    /*
     public String getMessage() {
         return BridgeConstants.CONSENT_REQUIRED_MESSAGE;
-    }
+    }*/
 }

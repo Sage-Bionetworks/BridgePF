@@ -15,12 +15,10 @@ describe('SettingsModalController', function() {
 
         $httpBackend = $injector.get('$httpBackend');
         $httpBackend.when('GET', '/api/users/profile').respond({
-            payload: {
-                firstName: 'first name',
-                lastName: 'last name',
-                username: 'username',
-                email: 'username@email.com'
-            }
+            firstName: 'first name',
+            lastName: 'last name',
+            username: 'username',
+            email: 'username@email.com'
         });
         $httpBackend.expect('GET', '/api/users/profile');
 
@@ -60,7 +58,7 @@ describe('SettingsModalController', function() {
 
     it('should POST when we submit the form.', function() {
         $httpBackend.when('POST', '/api/users/profile').respond({
-            payload: 'Profile updated.'
+            message: 'Profile updated.'
         });
         $httpBackend.expect('POST', '/api/users/profile');
 

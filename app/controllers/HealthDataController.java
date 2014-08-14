@@ -6,9 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import models.IdHolder;
-import models.JsonPayload;
 
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -16,17 +14,14 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.sagebionetworks.bridge.services.HealthDataService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 
+import play.libs.Json;
 import play.mvc.Result;
 
 public class HealthDataController extends BaseController {
-
-    private final static Logger logger = LoggerFactory.getLogger(HealthDataController.class);
     
     private HealthDataService healthDataService;
     private StudyControllerService studyControllerService;
@@ -57,7 +52,7 @@ public class HealthDataController extends BaseController {
         HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
         
         List<String> ids = healthDataService.appendHealthData(key, records);
-        return jsonResult(new JsonPayload<IdHolder>(new IdHolder(ids)));
+        return ok(Json.toJson(new IdHolder(ids)));
     }
     
     public Result getHealthData(Long trackerId, Long startDate, Long endDate) throws Exception {
@@ -80,7 +75,7 @@ public class HealthDataController extends BaseController {
         HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
         
         List<HealthDataRecord> entries = healthDataService.getAllHealthData(key);
-        return jsonResult(new JsonPayload<List<HealthDataRecord>>(tracker.getType() + "[]", entries));
+        return ok(Json.toJson(entries));
     }
     
     private Result getHealthDataByDateRange(Long trackerId, Long startDate, Long endDate) throws Exception {
@@ -90,7 +85,7 @@ public class HealthDataController extends BaseController {
         HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
 
         List<HealthDataRecord> entries = healthDataService.getHealthDataByDateRange(key, new Date(startDate), new Date(endDate));
-        return jsonResult(new JsonPayload<List<HealthDataRecord>>(tracker.getType(), entries));
+        return ok(Json.toJson(entries));
     }
     
     public Result getHealthDataRecord(Long trackerId, String recordId) throws Exception {
@@ -100,7 +95,7 @@ public class HealthDataController extends BaseController {
         HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
         
         HealthDataRecord record = healthDataService.getHealthDataRecord(key, recordId);
-        return jsonResult(new JsonPayload<HealthDataRecord>(tracker.getType(), record));
+        return ok(Json.toJson(record));
     }
     
     public Result updateHealthDataRecord(Long trackerId, String recordId) throws Exception {

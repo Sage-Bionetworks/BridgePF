@@ -10,9 +10,9 @@ function($scope, $route, authService, formService) {
         $scope.setMessage("Your email address has been verified. Thank you!");
     }, function(response) {
         if (response.status === 412) {
-            authService.initSession(response.data.payload);
+            authService.initSession(response.data);
         } else {
-            $scope.setMessage(response.data.payload, "danger");    
+            $scope.setMessage(response.data, "danger");    
         }
     });
     

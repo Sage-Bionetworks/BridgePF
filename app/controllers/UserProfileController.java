@@ -1,14 +1,12 @@
 package controllers;
 
-import models.JsonPayload;
-
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserProfileInfo;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.UserProfileService;
 
+import play.libs.Json;
 import play.mvc.Result;
 
 public class UserProfileController extends BaseController {
@@ -24,23 +22,14 @@ public class UserProfileController extends BaseController {
     }
 
     public Result getUserProfile() throws Exception {
-        // TODO Need to remove this, and still use getSession(). getSession()
-        // shouldn't return a 412 when called without consent, it should simply return the
-        // session.
-        UserSession session = checkForSession();
-        if (session == null) {
-            throw new BridgeServiceException("Not signed in.", 401);
-        }
+        UserSession session = getSession();
         UserProfileInfo user = new UserProfileInfo(session.getUser());
 
-        return jsonResult(new JsonPayload<UserProfileInfo>(user));
+        return ok(Json.toJson(user));
     }
 
     public Result updateUserProfile() throws Exception {
-        UserSession session = checkForSession();
-        if (session == null) {
-            throw new BridgeServiceException("Not signed in.", 401);
-        }
+        UserSession session = getSession();
         UserProfile currentUser = session.getUser();
         UserProfile updatedUser = UserProfile.fromJson(requestToJSON(request()), currentUser);
         userProfileService.updateUser(updatedUser, currentUser);
