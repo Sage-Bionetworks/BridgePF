@@ -3,7 +3,7 @@ package webdriver.pages;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static org.sagebionetworks.bridge.TestConstants.CONSENT_TEST_URL;
+import static org.sagebionetworks.bridge.TestConstants.*;
 
 import org.fluentlenium.core.domain.FluentWebElement;
 
@@ -13,7 +13,7 @@ public class ConsentPage extends BasePage {
 
     public ConsentPage(TestBrowser browser) {
         super(browser);
-        browser.goTo(CONSENT_TEST_URL);
+        browser.goTo(TEST_BASE_URL + CONSENT_TEST_URL);
         assertTrue("Title includes phrase 'Consent to Participate in Bridge'",
                 browser.pageSource().contains("Consent to Participate in Bridge"));
     }

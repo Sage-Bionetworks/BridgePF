@@ -24,7 +24,7 @@ public class AuthenticationControllerTest {
         running(testServer(3333), new Runnable() {
             public void run() {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                Response response = WS.url(TEST_URL + SIGN_IN_URL)
+                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL)
                         .post(node)
                         .get(TIMEOUT);
                 assertEquals("HTTP response indicates user not found", NOT_FOUND, response.getStatus());
@@ -36,7 +36,7 @@ public class AuthenticationControllerTest {
     public void signInGarbageCredentialsFailsWith404() {
         running(testServer(3333), new Runnable() {
             public void run() {
-                Response response = WS.url(TEST_URL + SIGN_IN_URL)
+                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL)
                         .post("username=bob&password=foo")
                         .get(TIMEOUT);
                 assertEquals("HTTP response indicates user not found", NOT_FOUND, response.getStatus());
@@ -48,7 +48,7 @@ public class AuthenticationControllerTest {
     public void signInBadCredentialsFailsWith404() {
         running(testServer(3333), new Runnable() {
             public void run() {
-                Response response = WS.url(TEST_URL + SIGN_IN_URL)
+                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL)
                         .setContentType(APPLICATION_JSON)
                         .post("{\"username\":\"bob\",\"password\":\"foo\"}")
                         .get(TIMEOUT);
@@ -65,7 +65,7 @@ public class AuthenticationControllerTest {
                 node.put(USERNAME, TEST2.USERNAME);
                 node.put(PASSWORD, TEST2.PASSWORD);
 
-                Response response = WS.url(TEST_URL + SIGN_IN_URL)
+                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL)
                         .post(node)
                         .get(TIMEOUT);
                 ObjectMapper mapper = new ObjectMapper();
@@ -87,14 +87,14 @@ public class AuthenticationControllerTest {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 node.put(USERNAME, TEST3.USERNAME);
                 node.put(PASSWORD, TEST3.PASSWORD);
-                Response response = WS.url(TEST_URL + SIGN_IN_URL)
+                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL)
                         .post(node)
                         .get(TIMEOUT);
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 
                 assertTrue("Cookie is not empty", StringUtils.isNotBlank(cookie.getValue()));
 
-                response = WS.url(TEST_URL + SIGN_OUT_URL)
+                response = WS.url(TEST_BASE_URL + SIGN_OUT_URL)
                         .setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue())
                         .get()
                         .get(TIMEOUT);
