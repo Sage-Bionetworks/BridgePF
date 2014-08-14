@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import java.util.List;
+
 import org.apache.commons.httpclient.HttpStatus;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -9,7 +11,10 @@ import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountCriteria;
@@ -18,10 +23,14 @@ import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
 
+import controllers.StudyControllerService;
+
 public class StormPathUserAdminService implements UserAdminService {
 
     private AuthenticationService authenticationService;
     private ConsentService consentService;
+    private HealthDataService healthDataService;
+    private StudyControllerService studyControllerService;
     private CacheProvider cacheProvider;
     private Client stormpathClient;
 
@@ -31,6 +40,14 @@ public class StormPathUserAdminService implements UserAdminService {
 
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
+    }
+
+    public void setHealthDataService(HealthDataService healthDataService) {
+        this.healthDataService = healthDataService;
+    }
+
+    public void setStudyControllerService(StudyControllerService studyControllerService) {
+        this.studyControllerService = studyControllerService;
     }
 
     public void setCacheProvider(CacheProvider cache) {
@@ -82,7 +99,8 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
-    public void revokeAllConsentRecords(String adminSessionToken, String userSessionToken, Study userStudy) throws BridgeServiceException {
+    public void revokeAllConsentRecords(String adminSessionToken, String userSessionToken, Study userStudy)
+            throws BridgeServiceException {
         assertAdminUser(adminSessionToken);
         consentService.withdrawConsent(userSessionToken, userStudy);
     }
@@ -93,7 +111,8 @@ public class StormPathUserAdminService implements UserAdminService {
         assertAdminUser(adminSessionToken);
         try {
             revokeAllConsentRecords(adminSessionToken, userSessionToken, userStudy);
-            
+            removeAllHealthDataRecords(adminSessionToken, userSessionToken, userStudy);
+
             String userEmail = authenticationService.getSession(userSessionToken).getUser().getEmail();
             deleteUserAccount(adminSessionToken, userStudy, userEmail);
             authenticationService.signOut(userSessionToken);
@@ -101,9 +120,31 @@ public class StormPathUserAdminService implements UserAdminService {
             throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
     }
-    
+
     @Override
-    public void deleteUserAccount(String adminSessionToken, Study userStudy, String userEmail) {
+    public void deleteUserGlobal(String adminSessionToken, String userSessionToken) throws BridgeServiceException {
+        assertAdminUser(adminSessionToken);
+        for (Study study : studyControllerService.getStudies()) {
+            deleteUser(adminSessionToken, userSessionToken, study);
+        }
+    }
+
+    private void removeAllHealthDataRecords(String adminSessionToken, String userSessionToken, Study userStudy)
+            throws BridgeServiceException {
+        assertAdminUser(adminSessionToken);
+
+        List<Tracker> trackers = userStudy.getTrackers();
+        HealthDataKey key = null;
+        for (Tracker tracker : trackers) {
+            key = new HealthDataKey(userStudy, tracker, userSessionToken);
+            List<HealthDataRecord> records = healthDataService.getAllHealthData(key);
+            for (HealthDataRecord record : records) {
+                healthDataService.deleteHealthDataRecord(key, record.getRecordId());
+            }
+        }
+    }
+
+    private void deleteUserAccount(String adminSessionToken, Study userStudy, String userEmail) {
         assertAdminUser(adminSessionToken);
         try {
             Directory directory = getDirectory(userStudy);
@@ -139,6 +180,5 @@ public class StormPathUserAdminService implements UserAdminService {
         }
 
     }
-    
 
 }

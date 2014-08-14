@@ -167,6 +167,18 @@ public class ConsentServiceImpl implements ConsentService {
         }
     }
 
+    @Override
+    public UserSession suspendDataSharing(String sessionToken, Study study) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public UserSession resumeDataSharing(String sessionToken, Study study) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    
     private HealthId getHealthId(String healthIdKey, CustomData customData) {
         Object healthIdObj = customData.get(healthIdKey);
         if (healthIdObj != null) {

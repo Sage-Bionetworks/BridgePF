@@ -33,9 +33,10 @@ GET     /api/users/profile      @controllers.UserProfileController.getUserProfil
 POST    /api/users/profile      @controllers.UserProfileController.updateUserProfile
 
 # API - consent
-POST    /api/consent            @controllers.ConsentController.give
-DELETE  /api/consent            @controllers.ConsentController.withdraw
-POST    /api/consent/email      @controllers.ConsentController.emailCopy
+POST    /api/consent                                @controllers.ConsentController.give
+POST    /api/consent/email                          @controllers.ConsentController.emailCopy
+POST    /api/users/consent/dataSharing/suspend      @controllers.ConsentController.suspendDataSharing
+POST    /api/users/consent/dataSharing/resume       @controllers.ConsentController.resumeDataSharing
 
 # Backfill
 GET     /admin/backfill/healthId    @controllers.BackfillController.resetHealthId
