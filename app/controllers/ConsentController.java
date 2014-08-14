@@ -61,4 +61,13 @@ public class ConsentController extends BaseController {
 
         return jsonResult("Emailed consent.");
     }
+    
+    public Result suspendDataSharing() throws Exception {
+        return jsonResult("Suspended data sharing.");
+        
+    }
+    
+    public Result resumeDataSharing() throws Exception {
+        return jsonResult("Resuming data sharing.");
+    }
 }
