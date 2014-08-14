@@ -40,7 +40,7 @@ describe("ResetPasswordController", function() {
         $rootScope.sptoken = "abc";
         $rootScope.password = "P4ssword";
 
-        setupPOST().respond(500, {"payload":"Invalid session token (abc)"});
+        setupPOST().respond(500, {"message":"Invalid session token (abc)"});
         $rootScope.submit();
         $httpBackend.flush();
         expect($humane.error).toHaveBeenCalledWith('Invalid session token (abc)');

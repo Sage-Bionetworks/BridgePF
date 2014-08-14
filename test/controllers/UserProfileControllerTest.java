@@ -61,20 +61,17 @@ public class UserProfileControllerTest {
                 String sessionToken = TestUtils.signIn();
 
                 Response response = TestUtils.getURL(sessionToken, PROFILE_URL).get().get(TIMEOUT);
-                JsonNode payload = response.asJson().get("payload");
 
                 int count = 0;
                 List<String> profileFieldNames = TestUtils.getUserProfileFieldNames();
-                Iterator<Entry<String, JsonNode>> payloadFields = payload.fields();
-                while (payloadFields.hasNext()) {
-                    String payloadFieldName = payloadFields.next().getKey();
-                    if (profileFieldNames.contains(payloadFieldName)) {
+                Iterator<Entry<String, JsonNode>> fields = response.asJson().fields();
+                while (fields.hasNext()) {
+                    String fieldName = fields.next().getKey();
+                    if (profileFieldNames.contains(fieldName)) {
                         count++;
                     }
                 }
-
                 assertEquals("User profile has all required fields.", count, 4);
-
                 TestUtils.signOut();
             }
         });

@@ -41,7 +41,7 @@ function($scope, $rootScope, $location, $humane, $window, authService, modalServ
 	    authService.signOut().then(function() {
 	        $window.location.replace("/");  
 	    }, function(response) {
-	        $humane.error(response.data.payload); 
+	        $humane.error(response.data); 
 	    });
 	};
     $scope.resetPassword = function() {

@@ -56,7 +56,7 @@ public class TestUtils {
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode responseNode = mapper.readTree(response.getBody());
-        return responseNode.get(PAYLOAD).get("sessionToken").asText();
+        return responseNode.get("sessionToken").asText();
     }
 
     public static WSRequestHolder getURL(String sessionToken, String path) {
@@ -85,7 +85,7 @@ public class TestUtils {
                 Response response = getURL(sessionToken, TRACKER_URL).get().get(TIMEOUT);
 
                 JsonNode body = response.asJson();
-                ArrayNode array = (ArrayNode) body.get(PAYLOAD);
+                ArrayNode array = (ArrayNode)body;
                 if (array.isArray()) {
                     for (int i = 0; i < array.size(); i++) {
                         JsonNode child = array.get(i);
@@ -96,7 +96,7 @@ public class TestUtils {
 
                 response = getURL(sessionToken, TRACKER_URL).get().get(TIMEOUT);
                 body = response.asJson();
-                array = (ArrayNode) body.get(PAYLOAD);
+                array = (ArrayNode)body;
 
                 signOut();
             }
