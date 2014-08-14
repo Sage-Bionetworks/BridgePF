@@ -6,19 +6,54 @@ package org.sagebionetworks.bridge.redis;
 public interface StringOps {
 
     /**
-     * Sets the value of the key and makes it expire after the specified seconds.
+     * The specified key will expire after seconds.
+     * 
+     * @param key
+     *            target key.
+     * @param seconds
+     *            number of seconds until expiration.
+     * @return
+     */
+    RedisOp<String> expire(String key, int seconds);
+
+    /**
+     * Sets the value of the key and makes it expire after the specified
+     * seconds.
+     * 
+     * @param key
+     *            key of the key-value pair.
+     * @param seconds
+     *            number of seconds until expiration.
+     * @param value
+     *            value of the key-value pair.
      */
     RedisOp<String> setex(String key, int seconds, String value);
 
     /**
-     * Gets the value of the specified key. If the key does not exist null is returned.
+     * Sets the value of the key if and only if the key does not already have a
+     * value.
+     * 
+     * @param key
+     *            key of the key-value pair.
+     * @param value
+     *            value of the key-value pair.
+     * @return
+     */
+    RedisOp<String> setnx(String key, String value);
+
+    /**
+     * Gets the value of the specified key. If the key does not exist null is
+     * returned.
      */
     RedisOp<String> get(String key);
-    
+
     /**
-     * Deletes the value of the specified key. 
+     * Deletes the value of the specified key.
+     * 
      * @param key
-     * @return OK" if at least one key is deleted, or null if the key does not exist.
+     * @return "OK" if at least one key is deleted, or null if the key does not
+     *         exist.
      */
     RedisOp<String> delete(String key);
+
 }
