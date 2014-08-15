@@ -18,6 +18,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     private static final long NOT_WITHDRAW_YET = 0L;
 
+    private DynamoDBMapper mapperOld;
     private DynamoDBMapper mapper;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
@@ -25,6 +26,11 @@ public class DynamoUserConsentDao implements UserConsentDao {
                 SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES,
                 ConsistentReads.CONSISTENT,
                 TableNameOverrideFactory.getTableNameOverride(DynamoUserConsent.class));
+        mapperOld = new DynamoDBMapper(client, mapperConfig);
+        mapperConfig = new DynamoDBMapperConfig(
+                SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES,
+                ConsistentReads.CONSISTENT,
+                TableNameOverrideFactory.getTableNameOverride(DynamoUserConsent1.class));
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 
@@ -90,7 +96,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
             consent.setBirthdate(researchConsent.getBirthdate());
             consent.setGive(DateTime.now(DateTimeZone.UTC).getMillis());
             consent.setWithdraw(NOT_WITHDRAW_YET);
-            mapper.save(consent);
+            mapperOld.save(consent);
         } catch (ConditionalCheckFailedException e) {
             throw new ConsentAlreadyExistsException();
         }
@@ -100,24 +106,24 @@ public class DynamoUserConsentDao implements UserConsentDao {
         // Delete the consent
         DynamoUserConsent consentToDelete = new DynamoUserConsent(healthCode, studyConsent);
         consentToDelete.setWithdraw(NOT_WITHDRAW_YET);
-        consentToDelete = mapper.load(consentToDelete);
-        mapper.delete(consentToDelete);
+        consentToDelete = mapperOld.load(consentToDelete);
+        mapperOld.delete(consentToDelete);
         // Save with the withdraw time stamp for audit
         DynamoUserConsent consentToWithdraw = new DynamoUserConsent(consentToDelete);
         consentToWithdraw.setWithdraw(DateTime.now(DateTimeZone.UTC).getMillis());
         consentToWithdraw.setVersion(null);
-        mapper.save(consentToWithdraw);
+        mapperOld.save(consentToWithdraw);
     }
 
     private boolean hasConsentedOld(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent consent = new DynamoUserConsent(healthCode, studyConsent);
         consent.setWithdraw(NOT_WITHDRAW_YET);
-        return mapper.load(consent) != null;
+        return mapperOld.load(consent) != null;
     }
 
     private ResearchConsent getConsentSignatureOld(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent consent = new DynamoUserConsent(healthCode, studyConsent);
-        consent = mapper.load(consent);
+        consent = mapperOld.load(consent);
         return new ResearchConsent(consent.getName(), consent.getBirthdate());
     }
 
