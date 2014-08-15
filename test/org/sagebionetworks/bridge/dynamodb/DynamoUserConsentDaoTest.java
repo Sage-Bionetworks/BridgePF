@@ -23,6 +23,7 @@ public class DynamoUserConsentDaoTest {
 
     @Before
     public void before() {
+        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
         DynamoTestUtil.clearTable(DynamoUserConsent1.class, "name", "birthdate", "timestamp", "studyKey", "consentTimestamp",
