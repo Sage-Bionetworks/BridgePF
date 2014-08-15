@@ -56,6 +56,10 @@
 
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
 
+    <!-- Redis -->
+    
+    <bean id="userLockDao" class="org.sagebionetworks.bridge.redis.RedisUserLockDao"/>
+
     <!-- Stormpath identity service -->
 
     <bean id="stormpathClient" class="org.sagebionetworks.bridge.stormpath.StormpathFactory" 
@@ -262,5 +266,6 @@
         <property name="studyControllerService" ref="studyControllerService"/>
         <property name="cacheProvider" ref="cacheProvider"/>
         <property name="stormpathClient" ref="stormpathClient"/>
+        <property name="userLockDao" ref="userLockDao"/>
     </bean>
 </beans>
