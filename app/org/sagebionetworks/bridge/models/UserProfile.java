@@ -14,6 +14,7 @@ public class UserProfile implements Iterable<String> {
     private String username;
     private String email;
     private String stormpathHref;
+    private String stormpathID;
     
     private static final String FIRSTNAME = "firstName";
     private static final String LASTNAME = "lastName";
@@ -51,6 +52,11 @@ public class UserProfile implements Iterable<String> {
     }
     public void setStormpathHref(String stormpathHref) {
         this.stormpathHref = stormpathHref;
+        this.stormpathID = stormpathHref.substring(38);
+    }
+    
+    public String getStormpathID() {
+        return this.stormpathID;
     }
     
     // Get first name/last name from JsonNode, and

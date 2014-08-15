@@ -51,9 +51,20 @@ public interface StringOps {
      * Deletes the value of the specified key.
      * 
      * @param key
+     *            key of the key-value pair
      * @return "OK" if at least one key is deleted, or null if the key does not
      *         exist.
      */
     RedisOp<String> delete(String key);
+
+    /**
+     * Determines the time until expiration for a key (time-to-live).
+     * 
+     * @param key
+     *            key of the key-value pair.
+     * @return ttl if key's expiration is set, and null if key doesn't exist or no
+     *         expiration is set.
+     */
+    RedisOp<String> ttl(String key);
 
 }

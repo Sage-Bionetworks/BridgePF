@@ -11,37 +11,38 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 public class RedisUserLockDaoTest {
     UserLockDao lock = new RedisUserLockDao();
     private String healthDataCode = "1234";
+    private String uuid;
     
     @Before
     public void before() {
         if (lock.isLocked(healthDataCode)) {
-            lock.releaseLock(healthDataCode);
+            lock.releaseLock(healthDataCode, uuid);
         }
     }
     
     @After
     public void after() {
         if (lock.isLocked(healthDataCode)) {
-            lock.releaseLock(healthDataCode);
+            lock.releaseLock(healthDataCode, uuid);
         }
     }
     
     @Test (expected = BridgeServiceException.class)
     public void createLockPreventsNewLock() {
-        lock.createLock(healthDataCode);
+        uuid = lock.createLock(healthDataCode);
         lock.createLock(healthDataCode);
     }
     
     @Test (expected = BridgeServiceException.class)
     public void releaseLockWhenNoLockErrors() {
-        lock.releaseLock(healthDataCode);        
-        lock.releaseLock(healthDataCode);
+        lock.releaseLock(healthDataCode, uuid);        
+        lock.releaseLock(healthDataCode, uuid);
     }
     
     @Test
     public void createAndReleaseLockSuccess() {
-        lock.createLock(healthDataCode);
-        lock.releaseLock(healthDataCode);
+        uuid = lock.createLock(healthDataCode);
+        lock.releaseLock(healthDataCode, uuid);
         assertFalse(lock.isLocked(healthDataCode));
     }
     

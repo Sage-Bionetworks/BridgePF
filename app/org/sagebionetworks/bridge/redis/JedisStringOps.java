@@ -57,4 +57,15 @@ public class JedisStringOps implements StringOps {
         };
     }
 
+    @Override
+    public RedisOp<String> ttl(final String key) {
+        return new AbstractJedisTemplate<String>() {
+            @Override
+            String execute(Jedis jedis) {
+                Long ttl = jedis.ttl(key);
+                return (ttl > 0) ? Long.toString(ttl) : null;
+            }
+        };
+    }
+
 }

@@ -109,7 +109,7 @@ public class TestUtils {
         user.setUsername(cred.USERNAME);
         user.setFirstName(cred.FIRSTNAME);
         user.setLastName(cred.LASTNAME);
-        user.setStormpathHref("<EMPTY>");
+        user.setStormpathHref("https://api.stormpath.com/v1/accounts/1234");
         
         return user;
     }
@@ -121,6 +121,7 @@ public class TestUtils {
         fieldNames.add("username");
         fieldNames.add("email");
         fieldNames.add("stormpathHref");
+        fieldNames.add("stormpathID");
         
         return fieldNames;
     }
