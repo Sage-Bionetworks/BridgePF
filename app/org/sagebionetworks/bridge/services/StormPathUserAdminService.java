@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.commons.httpclient.HttpStatus;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dao.UserLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.ResearchConsent;
@@ -33,6 +34,7 @@ public class StormPathUserAdminService implements UserAdminService {
     private StudyControllerService studyControllerService;
     private CacheProvider cacheProvider;
     private Client stormpathClient;
+    private UserLockDao userLockDao;
 
     public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
@@ -57,11 +59,15 @@ public class StormPathUserAdminService implements UserAdminService {
     public void setStormpathClient(Client stormpathClient) {
         this.stormpathClient = stormpathClient;
     }
+    
+    public void setUserLockDao(UserLockDao userLockDao) {
+        this.userLockDao = userLockDao;
+    }
 
     @Override
-    public UserSession createUser(String sessionToken, Study userStudy, SignUp signUp, boolean signUserIn,
+    public UserSession createUser(String adminSessionToken, Study userStudy, SignUp signUp, boolean signUserIn,
             boolean consentUser) throws BridgeServiceException {
-        assertAdminUser(sessionToken);
+        assertAdminUser(adminSessionToken);
         try {
             Directory directory = getDirectory(userStudy);
 
@@ -109,7 +115,12 @@ public class StormPathUserAdminService implements UserAdminService {
     public void deleteUser(String adminSessionToken, String userSessionToken, Study userStudy)
             throws BridgeServiceException {
         assertAdminUser(adminSessionToken);
+        String stormpathID = null;
+        String uuid = null;
         try {
+            stormpathID = authenticationService.getSession(userSessionToken).getUser().getStormpathID();
+            uuid = userLockDao.createLock(stormpathID);
+            
             revokeAllConsentRecords(adminSessionToken, userSessionToken, userStudy);
             removeAllHealthDataRecords(adminSessionToken, userSessionToken, userStudy);
 
@@ -118,6 +129,10 @@ public class StormPathUserAdminService implements UserAdminService {
             authenticationService.signOut(userSessionToken);
         } catch (Throwable t) {
             throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        } finally {
+            if (stormpathID != null && uuid != null) {
+                userLockDao.releaseLock(stormpathID, uuid);
+            }
         }
     }
 

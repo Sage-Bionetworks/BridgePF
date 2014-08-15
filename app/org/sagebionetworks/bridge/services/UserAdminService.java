@@ -12,7 +12,7 @@ public interface UserAdminService {
      * research. The method is idempotent: no error occurs if the user exists,
      * or is already signed in, or has already consented.
      * 
-     * @param sessionToken
+     * @param adminSessionToken
      *            session of the admin user
      * @param userStudy
      *            the study of the target user
@@ -27,7 +27,7 @@ public interface UserAdminService {
      * 
      * @throws BridgeServiceException
      */
-    public UserSession createUser(String sessionToken, Study userStudy, SignUp signUp, boolean signUserIn,
+    public UserSession createUser(String adminSessionToken, Study userStudy, SignUp signUp, boolean signUserIn,
             boolean consentUser) throws BridgeServiceException;
 
     /**
