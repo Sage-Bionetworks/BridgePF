@@ -4,28 +4,31 @@ public interface UserLockDao {
 
     /**
      * Sets a data lock on a target user, where the unique identifier is their
-     * email address.
+     * stormpath ID.
      * 
-     * @param healthDataCode
+     * @param stormpathID
      *            The target user's health data code.
+     * @return String A UUID used to identify the lock owner.
      */
-    public void createLock(String healthDataCode);
+    public String createLock(String stormpathID);
 
     /**
      * Releases a data lock on a target user, where the unique identifier is
-     * their email address.
+     * their stormpathID.
      * 
-     * @param userEmail
-     *            The target user's health data code.
+     * @param stormpathID
+     *            The target user's stormpath ID.
+     * @param UUID
+     *            The UUID identifying the lock owner.
      */
-    public void releaseLock(String healthDataCode);
+    public void releaseLock(String stormpathID, String UUID);
 
     /**
      * Returns a boolean true if there is a lock, and false otherwise.
      * 
-     * @param healthDataCode
-     *            The target user's health data code.
+     * @param stormpathID
+     *            The target user's stormpath ID.
      * @return boolean
      */
-    public boolean isLocked(String healthDataCode);
+    public boolean isLocked(String stormpathID);
 }

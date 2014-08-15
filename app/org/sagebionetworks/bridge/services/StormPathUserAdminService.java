@@ -115,9 +115,11 @@ public class StormPathUserAdminService implements UserAdminService {
     public void deleteUser(String adminSessionToken, String userSessionToken, Study userStudy)
             throws BridgeServiceException {
         assertAdminUser(adminSessionToken);
+        String stormpathID = null;
+        String uuid = null;
         try {
-            String healthDataCode = authenticationService.getSession(userSessionToken).getHealthDataCode();
-            userLockDao.createLock(healthDataCode);
+            stormpathID = authenticationService.getSession(userSessionToken).getUser().getStormpathID();
+            uuid = userLockDao.createLock(stormpathID);
             
             revokeAllConsentRecords(adminSessionToken, userSessionToken, userStudy);
             removeAllHealthDataRecords(adminSessionToken, userSessionToken, userStudy);
@@ -125,10 +127,12 @@ public class StormPathUserAdminService implements UserAdminService {
             String userEmail = authenticationService.getSession(userSessionToken).getUser().getEmail();
             deleteUserAccount(adminSessionToken, userStudy, userEmail);
             authenticationService.signOut(userSessionToken);
-            
-            userLockDao.releaseLock(healthDataCode);
         } catch (Throwable t) {
             throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        } finally {
+            if (stormpathID != null && uuid != null) {
+                userLockDao.releaseLock(stormpathID, uuid);
+            }
         }
     }
 
