@@ -25,11 +25,15 @@ public class DynamoUserConsentDaoTest {
     public void before() {
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent1.class, "name", "birthdate", "timestamp", "studyKey", "consentTimestamp",
+                "version");
     }
 
     @After
     public void after() {
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
+                "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent1.class, "name", "birthdate", "timestamp", "studyKey", "consentTimestamp",
                 "version");
     }
 
