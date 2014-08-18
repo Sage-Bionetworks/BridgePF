@@ -68,6 +68,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
     public void resumeSharing(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent1 consent = new DynamoUserConsent1(healthCode, studyConsent);
         consent = mapper.load(consent);
+        if (consent == null) {
+            throw new IllegalArgumentException("Must consent first before sharing data.");
+        }
         consent.setDataSharing(true);
         mapper.save(consent);
     }
@@ -76,6 +79,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
     public void suspendSharing(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent1 consent = new DynamoUserConsent1(healthCode, studyConsent);
         consent = mapper.load(consent);
+        if (consent == null) {
+            throw new IllegalArgumentException("Must consent first before sharing data.");
+        }
         consent.setDataSharing(false);
         mapper.save(consent);
     }
@@ -129,7 +135,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     // New
 
-    private void giveConsentNew(String healthCode, StudyConsent studyConsent, ResearchConsent researchConsent) {
+    void giveConsentNew(String healthCode, StudyConsent studyConsent, ResearchConsent researchConsent) {
         try {
             DynamoUserConsent1 consent = new DynamoUserConsent1(healthCode, studyConsent);
             consent.setName(researchConsent.getName());
@@ -142,18 +148,18 @@ public class DynamoUserConsentDao implements UserConsentDao {
         }
     }
 
-    private void withdrawConsentNew(String healthCode, StudyConsent studyConsent) {
+    void withdrawConsentNew(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent1 consentToDelete = new DynamoUserConsent1(healthCode, studyConsent);
         consentToDelete = mapper.load(consentToDelete);
         mapper.delete(consentToDelete);
     }
 
-    private boolean hasConsentedNew(String healthCode, StudyConsent studyConsent) {
+    boolean hasConsentedNew(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent1 consent = new DynamoUserConsent1(healthCode, studyConsent);
         return mapper.load(consent) != null;
     }
 
-    private ResearchConsent getConsentSignatureNew(String healthCode, StudyConsent studyConsent) {
+    ResearchConsent getConsentSignatureNew(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent1 consent = new DynamoUserConsent1(healthCode, studyConsent);
         consent = mapper.load(consent);
         return new ResearchConsent(consent.getName(), consent.getBirthdate());
