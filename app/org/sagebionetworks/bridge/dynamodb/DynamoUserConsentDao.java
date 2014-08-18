@@ -134,7 +134,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
             DynamoUserConsent1 consent = new DynamoUserConsent1(healthCode, studyConsent);
             consent.setName(researchConsent.getName());
             consent.setBirthdate(researchConsent.getBirthdate());
-            consent.setTimestamp(DateTime.now(DateTimeZone.UTC).getMillis());
+            consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
             consent.setDataSharing(true);
             mapper.save(consent);
         } catch (ConditionalCheckFailedException e) {
