@@ -73,11 +73,11 @@ public class DynamoUserConsent1 implements DynamoTable {
     }
 
     @DynamoDBAttribute
-    public long getConsentTimestamp() {
+    public long getConsentCreatedOn() {
         return consentCreatedOn;
     }
-    public void setConsentTimestamp(long consentTimestamp) {
-        this.consentCreatedOn = consentTimestamp;
+    public void setConsentCreatedOn(long consentCreatedOn) {
+        this.consentCreatedOn = consentCreatedOn;
     }
     
     @DynamoDBAttribute(attributeName = "name")
