@@ -42,9 +42,9 @@ public class DynamoUserConsentDaoTest {
     public void test() {
         // Not consented yet
         final String healthCode = "hc789";
-        final DynamoStudyConsent consent = new DynamoStudyConsent();
+        final DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey("study123");
-        consent.setTimestamp(123L);
+        consent.setCreatedOn(123L);
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
         
         // Give consent

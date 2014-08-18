@@ -12,7 +12,7 @@ public class DynamoUserConsent1 implements DynamoTable {
 
     // Schema attributes
     private String healthCodeStudyConsent; // composite hash key: <health-code>:<key-of-study-consent>
-    private Long timestamp;
+    private Long signedOn;
     private Long version;
 
     // Value attributes
@@ -20,24 +20,24 @@ public class DynamoUserConsent1 implements DynamoTable {
     private String name;
     private String birthdate;
     private String studyKey;       // study-consent composite key copied over to avoid parsing
-    private long consentTimestamp; // study-consent composite key copied over to avoid parsing
+    private long consentCreatedOn; // study-consent composite key copied over to avoid parsing
 
     public DynamoUserConsent1() {}
 
     DynamoUserConsent1(String healthCode, StudyConsent consent) {
         studyKey = consent.getStudyKey();
-        consentTimestamp = consent.getTimestamp();
-        healthCodeStudyConsent = healthCode + ":" + studyKey + ":" + consentTimestamp;
+        consentCreatedOn = consent.getCreatedOn();
+        healthCodeStudyConsent = healthCode + ":" + studyKey + ":" + consentCreatedOn;
     }
 
     DynamoUserConsent1(DynamoUserConsent1 consent) {
         healthCodeStudyConsent = consent.healthCodeStudyConsent;
-        timestamp = consent.timestamp;
+        signedOn = consent.signedOn;
         version = consent.version;
         name = consent.name;
         birthdate = consent.birthdate;
         studyKey = consent.studyKey;
-        consentTimestamp = consent.consentTimestamp;
+        consentCreatedOn = consent.consentCreatedOn;
     }
 
     @DynamoDBHashKey
@@ -49,11 +49,11 @@ public class DynamoUserConsent1 implements DynamoTable {
     }
 
     @DynamoDBAttribute
-    public Long getTimestamp() {
-        return timestamp;
+    public Long getSignedOn() {
+        return signedOn;
     }
-    public void setTimestamp(Long timestamp) {
-        this.timestamp = timestamp;
+    public void setSignedOn(Long timestamp) {
+        this.signedOn = timestamp;
     }
 
     @DynamoDBAttribute
@@ -74,10 +74,10 @@ public class DynamoUserConsent1 implements DynamoTable {
 
     @DynamoDBAttribute
     public long getConsentTimestamp() {
-        return consentTimestamp;
+        return consentCreatedOn;
     }
     public void setConsentTimestamp(long consentTimestamp) {
-        this.consentTimestamp = consentTimestamp;
+        this.consentCreatedOn = consentTimestamp;
     }
     
     @DynamoDBAttribute(attributeName = "name")
