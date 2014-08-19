@@ -8,6 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.User;
 
 import com.amazonaws.regions.Region;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
@@ -40,7 +41,9 @@ public class SendMailViaAmazonServiceTest {
     
     @Test
     public void sendConsentEmail() {
-        service.sendConsentAgreement(recipientEmail, consent, study);
+        User user = new User();
+        user.setEmail(recipientEmail);
+        service.sendConsentAgreement(user, consent, study);
         
         verify(emailClient).setRegion(any(Region.class));
         verify(emailClient).sendEmail(argument.capture());

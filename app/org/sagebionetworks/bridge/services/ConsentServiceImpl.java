@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
@@ -12,7 +11,7 @@ import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.StudyConsent;
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.User;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.client.Client;
@@ -21,7 +20,6 @@ import com.stormpath.sdk.directory.CustomData;
 public class ConsentServiceImpl implements ConsentService {
 
     private Client stormpathClient;
-    private CacheProvider cache;
     private BridgeEncryptor healthCodeEncryptor;
     private HealthCodeService healthCodeService;
     private SendMailService sendMailService;
@@ -30,10 +28,6 @@ public class ConsentServiceImpl implements ConsentService {
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
-    }
-
-    public void setCacheProvider(CacheProvider cache) {
-        this.cache = cache;
     }
 
     public void setHealthCodeEncryptor(BridgeEncryptor encryptor) {
@@ -57,10 +51,10 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public UserSession consentToResearch(String sessionToken, ResearchConsent researchConsent, Study study,
+    public User consentToResearch(User caller, ResearchConsent researchConsent, Study study,
             boolean sendEmail) throws BridgeServiceException {
-        if (StringUtils.isBlank(sessionToken)) {
-            throw new BridgeServiceException("Session token is required.", HttpStatus.SC_BAD_REQUEST);
+        if (caller == null) {
+            throw new BridgeServiceException("User is required.", HttpStatus.SC_BAD_REQUEST);
         } else if (study == null) {
             throw new BridgeServiceException("Study is required.", HttpStatus.SC_BAD_REQUEST);
         } else if (researchConsent == null) {
@@ -70,111 +64,98 @@ public class ConsentServiceImpl implements ConsentService {
         } else if (researchConsent.getBirthdate() == null) {
             throw new BridgeServiceException("Consent birth date  is required.", HttpStatus.SC_BAD_REQUEST);
         }
-        final UserSession session = cache.getUserSession(sessionToken);
-        if (session == null) {
-            throw new BridgeServiceException("Not signed in.", HttpStatus.SC_FORBIDDEN);
-        }
-
         try {
             // Stormpath account
-            final Account account = stormpathClient.getResource(session.getUser().getStormpathHref(), Account.class);
+            final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
             final CustomData customData = account.getCustomData();
 
             // HealthID
-            final String healthIdKey = session.getStudyKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            final HealthId healthId = getHealthId(healthIdKey, customData);
+            final String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+            getHealthId(healthIdKey, customData); // This sets the ID, which we will need when fully implemented
 
-            // Write consent
-            StudyConsent studyConsent = studyConsentDao.getConsent(session.getStudyKey());
-
-            if (studyConsent == null) {
-                String path = study.getConsentAgreement().getURL().toString();
-                studyConsent = studyConsentDao.addConsent(session.getStudyKey(), path, study.getMinAge());
-                studyConsentDao.setActive(studyConsent);
-            }
-            if (!userConsentDao.hasConsented(healthId.getCode(), studyConsent)) {
-                userConsentDao.giveConsent(healthId.getCode(), studyConsent, researchConsent);
-            }
-
-            // Email
+            customData.put(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX, "true");
+            customData.save();
+            caller.setConsent(true);
+            
             if (sendEmail) {
-                sendMailService.sendConsentAgreement(session.getUser().getEmail(), researchConsent, study);
+                sendMailService.sendConsentAgreement(caller, researchConsent, study);
             }
-
-            // Update session
-            session.setHealthDataCode(healthId.getCode());
-            session.setConsent(true);
-            cache.setUserSession(sessionToken, session);
-            return session;
-
+            return caller;
+            
         } catch (Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
-    public UserSession withdrawConsent(String sessionToken, Study study) {
-        if (StringUtils.isBlank(sessionToken)) {
-            throw new BridgeServiceException("Session token required.", HttpStatus.SC_BAD_REQUEST);
+    public boolean hasUserConsentedToResearch(User caller, Study study) {
+        if (caller == null) {
+            throw new BridgeServiceException("User is required.", HttpStatus.SC_BAD_REQUEST);
         } else if (study == null) {
             throw new BridgeServiceException("Study is required.", HttpStatus.SC_BAD_REQUEST);
         }
-        UserSession session = cache.getUserSession(sessionToken);
-        if (session == null) {
-            throw new BridgeServiceException("Not signed in.", HttpStatus.SC_UNAUTHORIZED);
-        } else if (!session.doesConsent()) {
-            throw new BridgeServiceException("Consent is required.", HttpStatus.SC_BAD_REQUEST);
-        }
-
         try {
-            StudyConsent studyConsent = studyConsentDao.getConsent(session.getStudyKey());
-            userConsentDao.withdrawConsent(session.getHealthDataCode(), studyConsent);
-            session.setConsent(false);
-            cache.setUserSession(session.getSessionToken(), session);
-            return session;
+            final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+            final CustomData customData = account.getCustomData();
+
+            return ("true".equals(customData.get(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX)));
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        }
+     }
+
+    @Override
+    public void withdrawConsent(User caller, Study study) {
+        if (caller == null) {
+            throw new BridgeServiceException("User is required.", HttpStatus.SC_BAD_REQUEST);
+        } else if (study == null) {
+            throw new BridgeServiceException("Study is required.", HttpStatus.SC_BAD_REQUEST);
+        }
+        try {
+            final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+            final CustomData customData = account.getCustomData();
+            customData.remove(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX);
+            customData.save();
+            caller.setConsent(false);
+            /*
+            StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
+            userConsentDao.withdrawConsent(caller.getHealthDataCode(), studyConsent);
+            caller.setConsent(false);
+            */
+        } catch (Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
-    public void emailConsentAgreement(String sessionToken, Study study) {
-        if (StringUtils.isBlank(sessionToken)) {
-            throw new BridgeServiceException("Session token is required.", HttpStatus.SC_BAD_REQUEST);
+    public void emailConsentAgreement(User caller, Study study) {
+        if (caller == null) {
+            throw new BridgeServiceException("User is required.", HttpStatus.SC_BAD_REQUEST);
         } else if (study == null) {
             throw new BridgeServiceException("Study is required.", HttpStatus.SC_BAD_REQUEST);
         }
-
-        UserSession session = cache.getUserSession(sessionToken);
-        if (session == null) {
-            throw new BridgeServiceException("Not signed in.", HttpStatus.SC_UNAUTHORIZED);
-        } else if (!session.doesConsent()) {
-            throw new BridgeServiceException("Consent is required.", HttpStatus.SC_BAD_REQUEST);
-        }
-
         try {
-            StudyConsent studyConsent = studyConsentDao.getConsent(session.getStudyKey());
-            ResearchConsent consent = userConsentDao.getConsentSignature(session.getHealthDataCode(), studyConsent);
+            StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
+            ResearchConsent consent = userConsentDao.getConsentSignature(caller.getHealthDataCode(), studyConsent);
             if (studyConsent == null || consent == null) {
                 throw new BridgeServiceException("Study Consent or Consent Signature not found.",
                         HttpStatus.SC_INTERNAL_SERVER_ERROR);
             }
 
-            sendMailService.sendConsentAgreement(session.getUser().getEmail(), consent, study);
+            sendMailService.sendConsentAgreement(caller, consent, study);
         } catch (Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_BAD_REQUEST);
         }
     }
 
     @Override
-    public UserSession suspendDataSharing(String sessionToken, Study study) {
+    public User suspendDataSharing(User caller, Study study) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public UserSession resumeDataSharing(String sessionToken, Study study) {
+    public User resumeDataSharing(User caller, Study study) {
         // TODO Auto-generated method stub
         return null;
     }

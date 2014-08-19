@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.services;
 import java.util.List;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.UserLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -13,9 +13,12 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
+import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountCriteria;
@@ -28,11 +31,12 @@ import controllers.StudyControllerService;
 
 public class StormPathUserAdminService implements UserAdminService {
 
+    private static Logger logger = LoggerFactory.getLogger(StormPathUserAdminService.class);
+
     private AuthenticationService authenticationService;
     private ConsentService consentService;
     private HealthDataService healthDataService;
     private StudyControllerService studyControllerService;
-    private CacheProvider cacheProvider;
     private Client stormpathClient;
     private UserLockDao userLockDao;
 
@@ -52,10 +56,6 @@ public class StormPathUserAdminService implements UserAdminService {
         this.studyControllerService = studyControllerService;
     }
 
-    public void setCacheProvider(CacheProvider cache) {
-        this.cacheProvider = cache;
-    }
-
     public void setStormpathClient(Client stormpathClient) {
         this.stormpathClient = stormpathClient;
     }
@@ -65,12 +65,24 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
-    public UserSession createUser(String adminSessionToken, Study userStudy, SignUp signUp, boolean signUserIn,
-            boolean consentUser) throws BridgeServiceException {
-        assertAdminUser(adminSessionToken);
+    public UserSession createUser(User adminUser, SignUp signUp, Study userStudy, boolean signUserIn, boolean consentUser)
+            throws BridgeServiceException {
+        if (adminUser == null) {
+            throw new BridgeServiceException("Calling admin user cannot be null", 400);
+        } else if (signUp == null) {
+            throw new BridgeServiceException("User cannot be null", 400);
+        } else if (StringUtils.isBlank(signUp.getUsername())) {
+            throw new BridgeServiceException("User's username cannot be null", 400);
+        } else if (StringUtils.isBlank(signUp.getEmail())) {
+            throw new BridgeServiceException("User's meail cannot be null", 400);
+        } else if (StringUtils.isBlank(signUp.getPassword())) {
+            throw new BridgeServiceException("User's password cannot be null", 400);
+        } else if (userStudy == null) {
+            throw new BridgeServiceException("User study cannot be null", 400);
+        }
+        assertAdminUser(adminUser);
         try {
             Directory directory = getDirectory(userStudy);
-
             // Search for email and skip creation if it already exists.
             if (userDoesNotExist(directory, signUp.getEmail())) {
                 Account account = stormpathClient.instantiate(Account.class);
@@ -79,88 +91,125 @@ public class StormPathUserAdminService implements UserAdminService {
                 account.setEmail(signUp.getEmail());
                 account.setUsername(signUp.getUsername());
                 account.setPassword(signUp.getPassword());
-                directory.createAccount(account, false); // suppress email
-                                                         // message
+                directory.createAccount(account, false); // suppress email message
             }
         } catch (Throwable t) {
             throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
+        SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
         UserSession newUserSession = null;
         try {
-            SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
             newUserSession = authenticationService.signIn(userStudy, signIn);
         } catch (ConsentRequiredException e) {
+            newUserSession = e.getUserSession();
             if (consentUser) {
                 ResearchConsent consent = new ResearchConsent("Test Signature", "1989-08-19");
-                newUserSession = consentService.consentToResearch(e.getUserSession().getSessionToken(), consent,
-                        userStudy, false);
-            } else {
-                return newUserSession;
+                consentService.consentToResearch(newUserSession.getUser(), consent, userStudy, false);
+
+                // Now, sign in again so you get the consented user into the session
+                authenticationService.signOut(newUserSession.getSessionToken());
+                newUserSession = authenticationService.signIn(userStudy, signIn);
             }
         }
-        if (!signUserIn) {
+        if (!signUserIn && newUserSession != null) {
             authenticationService.signOut(newUserSession.getSessionToken());
+            newUserSession = null;
         }
         return newUserSession;
     }
 
     @Override
-    public void revokeAllConsentRecords(String adminSessionToken, String userSessionToken, Study userStudy)
-            throws BridgeServiceException {
-        assertAdminUser(adminSessionToken);
-        consentService.withdrawConsent(userSessionToken, userStudy);
+    public void revokeAllConsentRecords(User caller, User user, Study userStudy) throws BridgeServiceException {
+        if (caller == null) {
+            throw new BridgeServiceException("Calling admin user cannot be null", 400);
+        } else if (user == null) {
+            throw new BridgeServiceException("User cannot be null", 400);
+        } else if (userStudy == null) {
+            throw new BridgeServiceException("User study cannot be null", 400);
+        }
+        assertAdminUser(caller);
+        consentService.withdrawConsent(user, userStudy);
     }
 
     @Override
-    public void deleteUser(String adminSessionToken, String userSessionToken, Study userStudy)
-            throws BridgeServiceException {
-        assertAdminUser(adminSessionToken);
+    public void deleteUser(User caller, User user, Study userStudy) throws BridgeServiceException {
+        if (caller == null) {
+            throw new BridgeServiceException("Calling admin user cannot be null", 400);
+        } else if (user == null) {
+            throw new BridgeServiceException("User cannot be null", 400);
+        } else if (userStudy == null) {
+            throw new BridgeServiceException("User study cannot be null", 400);
+        }
+        assertAdminUser(caller);
         String stormpathID = null;
         String uuid = null;
         try {
-            stormpathID = authenticationService.getSession(userSessionToken).getUser().getStormpathID();
-            uuid = userLockDao.createLock(stormpathID);
+            //uuid = userLockDao.createLock(user.getId());
             
-            revokeAllConsentRecords(adminSessionToken, userSessionToken, userStudy);
-            removeAllHealthDataRecords(adminSessionToken, userSessionToken, userStudy);
-
-            String userEmail = authenticationService.getSession(userSessionToken).getUser().getEmail();
-            deleteUserAccount(adminSessionToken, userStudy, userEmail);
-            authenticationService.signOut(userSessionToken);
+            // Verify the user exists before doing this work. Otherwise, it just throws errors.
+            Directory directory = getDirectory(userStudy);
+            Account account = getUserAccountByEmail(directory, user.getEmail());
+            if (account != null) {
+                revokeAllConsentRecords(caller, user, userStudy);
+                removeAllHealthDataRecords(caller, user, userStudy);
+                deleteUserAccount(caller, userStudy, user.getEmail());
+            }
         } catch (Throwable t) {
             throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
-        } finally {
+        } /*finally {
             if (stormpathID != null && uuid != null) {
                 userLockDao.releaseLock(stormpathID, uuid);
             }
-        }
+        }*/
     }
 
     @Override
-    public void deleteUserGlobal(String adminSessionToken, String userSessionToken) throws BridgeServiceException {
-        assertAdminUser(adminSessionToken);
+    public void deleteUserGlobal(User caller, User user) throws BridgeServiceException {
+        if (caller == null) {
+            throw new BridgeServiceException("Calling admin user cannot be null", 400);
+        } else if (user == null) {
+            throw new BridgeServiceException("User cannot be null", 400);
+        }
+        assertAdminUser(caller);
         for (Study study : studyControllerService.getStudies()) {
-            deleteUser(adminSessionToken, userSessionToken, study);
+            deleteUser(caller, user, study);
         }
     }
 
-    private void removeAllHealthDataRecords(String adminSessionToken, String userSessionToken, Study userStudy)
+    private void removeAllHealthDataRecords(User caller, User user, Study userStudy)
             throws BridgeServiceException {
-        assertAdminUser(adminSessionToken);
+        if (caller == null) {
+            throw new BridgeServiceException("Calling admin user cannot be null", 400);
+        } else if (user == null) {
+            throw new BridgeServiceException("User cannot be null", 400);
+        } else if (userStudy == null) {
+            throw new BridgeServiceException("User study cannot be null", 400);
+        }
+        assertAdminUser(caller);
 
-        List<Tracker> trackers = userStudy.getTrackers();
-        HealthDataKey key = null;
-        for (Tracker tracker : trackers) {
-            key = new HealthDataKey(userStudy, tracker, userSessionToken);
-            List<HealthDataRecord> records = healthDataService.getAllHealthData(key);
-            for (HealthDataRecord record : records) {
-                healthDataService.deleteHealthDataRecord(key, record.getRecordId());
+        // This user may have never consented to research. Ignore if that's the case.
+        if (user.getHealthDataCode() != null) {
+            List<Tracker> trackers = userStudy.getTrackers();
+            HealthDataKey key = null;
+            for (Tracker tracker : trackers) {
+                key = new HealthDataKey(userStudy, tracker, user);
+                List<HealthDataRecord> records = healthDataService.getAllHealthData(key);
+                for (HealthDataRecord record : records) {
+                    healthDataService.deleteHealthDataRecord(key, record.getRecordId());
+                }
             }
         }
     }
 
-    private void deleteUserAccount(String adminSessionToken, Study userStudy, String userEmail) {
-        assertAdminUser(adminSessionToken);
+    private void deleteUserAccount(User caller, Study userStudy, String userEmail) throws BridgeServiceException {
+        if (caller == null) {
+            throw new BridgeServiceException("Calling admin user cannot be null", 400);
+        } else if (userStudy == null) {
+            throw new BridgeServiceException("User study cannot be null", 400);
+        } else if (StringUtils.isBlank(userEmail)) {
+            throw new BridgeServiceException("User email cannot be blank", 400);
+        }
+        assertAdminUser(caller);
         try {
             Directory directory = getDirectory(userStudy);
             Account account = getUserAccountByEmail(directory, userEmail);
@@ -186,14 +235,11 @@ public class StormPathUserAdminService implements UserAdminService {
         return (accounts.iterator().hasNext()) ? accounts.iterator().next() : null;
     }
 
-    private void assertAdminUser(String sessionToken) throws BridgeServiceException {
-        UserSession session = cacheProvider.getUserSession(sessionToken);
-        Account account = stormpathClient.getResource(session.getUser().getStormpathHref(), Account.class);
-
-        if (!account.isMemberOfGroup(BridgeConstants.ADMIN_GROUP)) {
+    private void assertAdminUser(User user) throws BridgeServiceException {
+        logger.info("Admin user: " + user.toString());
+        if (!user.getRoles().contains(BridgeConstants.ADMIN_GROUP)) {
             throw new BridgeServiceException("Requires admin user", HttpStatus.SC_FORBIDDEN);
         }
-
     }
 
 }

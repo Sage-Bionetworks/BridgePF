@@ -14,6 +14,8 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.sagebionetworks.bridge.services.HealthDataService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
@@ -22,6 +24,8 @@ import play.libs.Json;
 import play.mvc.Result;
 
 public class HealthDataController extends BaseController {
+    
+    private static Logger logger = LoggerFactory.getLogger(HealthDataController.class);
     
     private HealthDataService healthDataService;
     private StudyControllerService studyControllerService;
@@ -49,7 +53,9 @@ public class HealthDataController extends BaseController {
             records.add(HealthDataRecordImpl.fromJson(child));
         }
         
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
+        logger.info(Json.toJson(session.getUser()).toString());
+        
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
         
         List<String> ids = healthDataService.appendHealthData(key, records);
         return ok(Json.toJson(new IdHolder(ids)));
@@ -72,7 +78,7 @@ public class HealthDataController extends BaseController {
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
         
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
         
         List<HealthDataRecord> entries = healthDataService.getAllHealthData(key);
         return ok(Json.toJson(entries));
@@ -82,7 +88,7 @@ public class HealthDataController extends BaseController {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
         List<HealthDataRecord> entries = healthDataService.getHealthDataByDateRange(key, new Date(startDate), new Date(endDate));
         return ok(Json.toJson(entries));
@@ -92,7 +98,7 @@ public class HealthDataController extends BaseController {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
         
         HealthDataRecord record = healthDataService.getHealthDataRecord(key, recordId);
         return ok(Json.toJson(record));
@@ -102,7 +108,7 @@ public class HealthDataController extends BaseController {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
         
         JsonNode node = requestToJSON(request());
 
@@ -110,17 +116,17 @@ public class HealthDataController extends BaseController {
         HealthDataRecord record = HealthDataRecordImpl.fromJson(node);
         
         healthDataService.updateHealthDataRecord(key, record);
-        return jsonResult("Record updated.");
+        return okResult("Record updated.");
     }
     
     public Result deleteHealthDataRecord(Long trackerId, String recordId) throws Exception {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getSessionToken());
+        HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
         healthDataService.deleteHealthDataRecord(key, recordId);
-        return jsonResult("Record deleted.");
+        return okResult("Record deleted.");
     }
     
 }
