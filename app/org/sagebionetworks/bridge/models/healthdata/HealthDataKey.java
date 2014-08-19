@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
 import org.apache.commons.httpclient.HttpStatus;
-
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.Study;
@@ -12,7 +11,7 @@ public final class HealthDataKey {
 
     private final String studyKey;
     private final long trackerId;
-    private final User user;
+    private final String healthDataCode;
     
     public HealthDataKey(Study study, Tracker tracker, User user) {
         if (study == null) {
@@ -30,7 +29,7 @@ public final class HealthDataKey {
         }
         this.studyKey = study.getKey();
         this.trackerId = tracker.getId();
-        this.user = user;
+        this.healthDataCode = user.getHealthDataCode();
     }
 
     public String getStudyKey() {
@@ -39,17 +38,22 @@ public final class HealthDataKey {
     public long getTrackerId() {
         return trackerId;
     }
-    public User getUser() {
-        return user;
+    public String getHealthDataCode() {
+        return healthDataCode;
+    }
+    
+    @Override
+    public String toString() {
+        return String.format("%s:%s:%s", getStudyKey(), getTrackerId(), getHealthDataCode());
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ((healthDataCode == null) ? 0 : healthDataCode.hashCode());
         result = prime * result + ((studyKey == null) ? 0 : studyKey.hashCode());
         result = prime * result + (int) (trackerId ^ (trackerId >>> 32));
-        result = prime * result + ((user == null) ? 0 : user.hashCode());
         return result;
     }
 
@@ -62,6 +66,11 @@ public final class HealthDataKey {
         if (getClass() != obj.getClass())
             return false;
         HealthDataKey other = (HealthDataKey) obj;
+        if (healthDataCode == null) {
+            if (other.healthDataCode != null)
+                return false;
+        } else if (!healthDataCode.equals(other.healthDataCode))
+            return false;
         if (studyKey == null) {
             if (other.studyKey != null)
                 return false;
@@ -69,12 +78,6 @@ public final class HealthDataKey {
             return false;
         if (trackerId != other.trackerId)
             return false;
-        if (user == null) {
-            if (other.user != null)
-                return false;
-        } else if (!user.equals(other.user))
-            return false;
         return true;
     }
-
 }

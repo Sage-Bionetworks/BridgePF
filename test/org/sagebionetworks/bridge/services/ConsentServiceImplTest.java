@@ -1,12 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
 import org.junit.*;
-import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
 
 import com.stormpath.sdk.account.Account;

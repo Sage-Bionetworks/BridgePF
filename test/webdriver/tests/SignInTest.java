@@ -2,7 +2,6 @@ package webdriver.tests;
 
 import javax.annotation.Resource;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,7 +18,6 @@ import controllers.StudyControllerService;
 import play.libs.F.Callback;
 import play.test.TestBrowser;
 import webdriver.pages.AppPage;
-import static org.sagebionetworks.bridge.TestConstants.*;
 
 @ContextConfiguration("file:conf/application-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
