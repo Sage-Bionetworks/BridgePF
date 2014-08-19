@@ -10,7 +10,7 @@ public interface StudyConsent {
     /**
      * Timestamp when this consent is created.
      */
-    long getTimestamp();
+    long getCreatedOn();
 
     /**
      * Whether the consent is active.

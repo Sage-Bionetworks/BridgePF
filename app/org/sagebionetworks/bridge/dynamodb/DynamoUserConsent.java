@@ -24,7 +24,7 @@ public class DynamoUserConsent implements DynamoTable {
 
     DynamoUserConsent(String healthCode, StudyConsent consent) {
         studyKey = consent.getStudyKey();
-        consentTimestamp = consent.getTimestamp();
+        consentTimestamp = consent.getCreatedOn();
         healthCodeStudy = healthCode + ":" + studyKey + ":" + consentTimestamp;
     }
 
