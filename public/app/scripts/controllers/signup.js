@@ -12,7 +12,7 @@ bridge.controller('SignUpModalController', ['$scope', '$humane', 'authService', 
                 modalInstance.dismiss('cancel');
                 $humane.confirm("Please check your email for a message to verify your email address.");
             }, function(response) {
-                $scope.message = response.data;
+                $scope.message = response.data.message;
             });
         }
     };

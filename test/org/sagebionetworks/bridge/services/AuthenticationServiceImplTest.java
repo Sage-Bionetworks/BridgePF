@@ -70,9 +70,6 @@ public class AuthenticationServiceImplTest {
 
         user = userAdminService.createUser(adminUser, testUser.getSignUp(), study, true, true).getUser();
         UserSession session = userAdminService.createUser(adminUser, testUser2.getSignUp(), study, true, false);
-        if (session == null) {
-            throw new RuntimeException("Yup, it's not returning a sessino");
-        }
         user2 = session.getUser();
     }
     

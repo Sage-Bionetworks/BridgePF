@@ -54,7 +54,7 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
 
-    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
+    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
 
     <!-- Redis -->
     
@@ -210,7 +210,6 @@
         <property name="bridgeConfig" ref="bridgeConfig" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
-        <property name="consentService" ref="consentService" />
     </bean>
 
     <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">
