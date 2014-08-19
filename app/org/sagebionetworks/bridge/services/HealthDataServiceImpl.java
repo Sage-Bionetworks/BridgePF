@@ -34,13 +34,6 @@ public class HealthDataServiceImpl implements HealthDataService {
         this.updateMapper = updateMapper;
     }
     
-    private String healthDataKeyToAnonimizedKeyString(HealthDataKey key) throws BridgeServiceException {
-        if (key == null) {
-            throw new BridgeServiceException("HealthDataKey cannot be null", HttpStatus.SC_BAD_REQUEST);
-        }
-        return String.format("%s:%s:%s", key.getStudyKey(), key.getTrackerId(), key.getUser().getHealthDataCode());
-    }
-    
     private String generateId() {
         return UUID.randomUUID().toString();
     }
@@ -63,9 +56,6 @@ public class HealthDataServiceImpl implements HealthDataService {
             throw new BridgeServiceException("No health data records to add", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            // Nothing verifies the values that make up this key.
-            String anonKey = healthDataKeyToAnonimizedKeyString(key);
-            
             List<String> ids = Lists.newArrayListWithCapacity(records.size());
             List<DynamoHealthDataRecord> recordsToSave = Lists.newArrayListWithCapacity(records.size());
 
@@ -76,7 +66,7 @@ public class HealthDataServiceImpl implements HealthDataService {
                 String recordId = generateId();
                 record.setRecordId(recordId);
                 ids.add(recordId);
-                recordsToSave.add( new DynamoHealthDataRecord(anonKey, record) );
+                recordsToSave.add( new DynamoHealthDataRecord(key.toString(), record) );
             }
             // TODO: The docs say that individual records in the batch can fail, and that these will be retried
             // with exponential back-off. However, I could find no examples to verify that all this happens, or 
@@ -94,7 +84,7 @@ public class HealthDataServiceImpl implements HealthDataService {
             throw new BridgeServiceException("HealthDataKey key is null", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(healthDataKeyToAnonimizedKeyString(key));
+            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString());
             DynamoDBQueryExpression<DynamoHealthDataRecord> queryExpression = new DynamoDBQueryExpression<DynamoHealthDataRecord>()
                     .withHashKeyValues(dynamoRecord);
 
@@ -134,7 +124,7 @@ public class HealthDataServiceImpl implements HealthDataService {
             }).toList();
             */
             // Find records whose start date is before the window end date, and whose end date is after the window start date (or zero)
-            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(healthDataKeyToAnonimizedKeyString(key));
+            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString());
 
             Condition isLessThanOrEqualToEndDateWindow = new Condition()
                 .withComparisonOperator(ComparisonOperator.LE.toString())
@@ -178,7 +168,7 @@ public class HealthDataServiceImpl implements HealthDataService {
             throw new BridgeServiceException("HealthDataRecord record ID cannot be null", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(healthDataKeyToAnonimizedKeyString(key));
+            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString());
             dynamoRecord.setRecordId(recordId);
             dynamoRecord = updateMapper.load(dynamoRecord);
             if (dynamoRecord == null) {
@@ -208,8 +198,7 @@ public class HealthDataServiceImpl implements HealthDataService {
         }
         try {
 
-            String anonKey = healthDataKeyToAnonimizedKeyString(key);
-            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(anonKey, record);
+            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString(), record);
             updateMapper.save(dynamoRecord);
 
         } catch(Exception e) {
@@ -229,11 +218,10 @@ public class HealthDataServiceImpl implements HealthDataService {
         try {
             HealthDataRecord record = getHealthDataRecord(key, recordId);
             if (record == null) {
-                throw new BridgeServiceException("Object does not exist: " + key.toString() + ", record ID #"
-                        + recordId, HttpStatus.SC_NOT_FOUND);
+                throw new BridgeServiceException("Object does not exist: record ID #" + recordId,
+                        HttpStatus.SC_NOT_FOUND);
             }
-            String anonKey = healthDataKeyToAnonimizedKeyString(key);
-            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(anonKey, recordId, record);
+            DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString(), recordId, record);
             updateMapper.delete(dynamoRecord);
             
         } catch(Exception e) {

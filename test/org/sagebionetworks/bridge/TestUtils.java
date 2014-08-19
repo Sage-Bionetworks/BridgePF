@@ -55,6 +55,7 @@ public class TestUtils {
         return request;
     }
 
+    // TODO: There are now methods in deleteUser() that could do this without starting a controller.
     public static void deleteHealthDataFor(final UserSession session) {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
@@ -77,6 +78,7 @@ public class TestUtils {
         });
     }
     
+    // TODO: Admin service can now do this
     public static void addUserToSession(TestUser testUser, UserSession session, Client stormpathClient) {
         Application app = StormpathFactory.createStormpathApplication(stormpathClient);
 
