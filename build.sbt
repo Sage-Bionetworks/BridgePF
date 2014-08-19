@@ -28,4 +28,7 @@ libraryDependencies ++= Seq(
   "com.github.detro.ghostdriver" % "phantomjsdriver" % "1.1.0" % "test"
 )
 
+// To avoid reloading the Spring context
+sbt.Keys.fork in Test := false
+
 play.Project.playJavaSettings

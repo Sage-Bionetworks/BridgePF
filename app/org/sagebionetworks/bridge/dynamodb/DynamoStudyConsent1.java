@@ -8,11 +8,11 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 
-@DynamoDBTable(tableName = "StudyConsent")
-public class DynamoStudyConsent implements StudyConsent, DynamoTable {
+@DynamoDBTable(tableName = "StudyConsent1")
+public class DynamoStudyConsent1 implements StudyConsent, DynamoTable {
 
     private String studyKey;
-    private long timestamp;
+    private long createdOn;
     private boolean active;
     private String path;
     private int minAge;
@@ -29,11 +29,11 @@ public class DynamoStudyConsent implements StudyConsent, DynamoTable {
 
     @Override
     @DynamoDBRangeKey
-    public long getTimestamp() {
-        return timestamp;
+    public long getCreatedOn() {
+        return createdOn;
     }
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
+    public void setCreatedOn(long timestamp) {
+        this.createdOn = timestamp;
     }
 
     @Override
