@@ -7,10 +7,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
@@ -27,7 +25,6 @@ public class HealthDataServiceImpl implements HealthDataService {
 
     private DynamoDBMapper createMapper;
     private DynamoDBMapper updateMapper;
-    private CacheProvider cache;
 
     public void setCreateMapper(DynamoDBMapper createMapper) {
         this.createMapper = createMapper;
@@ -37,18 +34,11 @@ public class HealthDataServiceImpl implements HealthDataService {
         this.updateMapper = updateMapper;
     }
     
-    public void setCacheProvider(CacheProvider cacheProvider) {
-        this.cache = cacheProvider;
-    }
-
     private String healthDataKeyToAnonimizedKeyString(HealthDataKey key) throws BridgeServiceException {
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey cannot be null", HttpStatus.SC_BAD_REQUEST);
         }
-        
-        UserSession session = cache.getUserSession(key.getSessionToken());
-        String healthDataCode = session.getHealthDataCode();
-        return String.format("%s:%s:%s", key.getStudyKey(), key.getTrackerId(), healthDataCode);
+        return String.format("%s:%s:%s", key.getStudyKey(), key.getTrackerId(), key.getUser().getHealthDataCode());
     }
     
     private String generateId() {
@@ -73,6 +63,7 @@ public class HealthDataServiceImpl implements HealthDataService {
             throw new BridgeServiceException("No health data records to add", HttpStatus.SC_BAD_REQUEST);
         }
         try {
+            // Nothing verifies the values that make up this key.
             String anonKey = healthDataKeyToAnonimizedKeyString(key);
             
             List<String> ids = Lists.newArrayListWithCapacity(records.size());

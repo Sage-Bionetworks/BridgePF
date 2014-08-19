@@ -2,46 +2,53 @@ package org.sagebionetworks.bridge;
 
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
+import org.sagebionetworks.bridge.models.SignIn;
+import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.UserProfile;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
 public class TestConstants {
-
-    // These were the original test accounts and their states. On Stormpath in
-    // the development
-    // application, The state of the consent acceptance has been mirrored for
-    // the tests.
-    // "test1", "test1@sagebase.org", tou false, not admin
-    // "test2", "test2@sagebase.org", tou true, not admin
-    // "test3", "test3@sagebase.org", tou true, admin
-    // "test4", "test4@sagebase.org", tou false, admin
-
-    public static class UserCredentials {
-        public final String USERNAME;
-        public final String PASSWORD;
-        public final String EMAIL;
-        public final String FIRSTNAME;
-        public final String LASTNAME;
-
-        public UserCredentials(String username, String password, String email, String firstname, String lastname) {
-            this.USERNAME = username;
-            this.PASSWORD = password;
-            this.EMAIL = email;
-            this.FIRSTNAME = firstname;
-            this.LASTNAME = lastname;
+    
+    public static class TestUser {
+        private final String username;
+        private final String email;
+        private final String password;
+        
+        public TestUser(String username, String email, String password) {
+            this.username = username;
+            this.email = email;
+            this.password = password;
+        }
+        public SignUp getSignUp() {
+            return new SignUp(username, email, password);
+        }
+        public SignIn getSignIn() {
+            return new SignIn(email, password);
+        }
+        public User getUser(String id) {
+            User user = new User();
+            user.setUsername(username);
+            user.setEmail(email);
+            user.setId(id);
+            return user;
+        }
+        public UserProfile getUserProfile(String id) {
+            return new UserProfile(getUser(id));
+        }
+        public String getUsername() {
+            return username;
+        }
+        public String getEmail() {
+            return email;
+        }
+        public String getPassword() {
+            return password;
         }
     }
 
-    public static final UserCredentials TEST1 = new UserCredentials("test1",
-            "P4ssword", "test1@sagebase.org", "test1", "test1");
-    public static final UserCredentials TEST2 = new UserCredentials("test2",
-            "P4ssword", "test2@sagebase.org", "test2", "test2");
-    public static final UserCredentials TEST3 = new UserCredentials("test3",
-            "P4ssword", "test3@sagebase.org", "test3", "test3");
-    public static final UserCredentials TEST4 = new UserCredentials("test4",
-            "P4ssword", "test4@sagebase.org", "test4", "test4");
-    
     public static final Study STUDY = new Study("Neuro-Degenerative Diseases Study", "neurod", 17, null, null, null, null);
     
     public static final Resource secondStudyConsent = new FileSystemResource("test/conf/secondstudy-consent.html");

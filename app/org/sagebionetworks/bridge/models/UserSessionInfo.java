@@ -15,7 +15,7 @@ public class UserSessionInfo {
     public UserSessionInfo(UserSession session) {
         this.authenticated = session.isAuthenticated();
         this.sessionToken = session.getSessionToken();
-        this.consented = session.doesConsent();
+        this.consented = session.getUser().doesConsent();
         this.username = session.getUser().getUsername();
     }
 
@@ -31,8 +31,4 @@ public class UserSessionInfo {
     public String getUsername() {
         return username;
     }
-    /*
-    public String getMessage() {
-        return BridgeConstants.CONSENT_REQUIRED_MESSAGE;
-    }*/
 }

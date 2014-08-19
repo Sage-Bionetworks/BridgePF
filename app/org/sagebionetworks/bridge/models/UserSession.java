@@ -3,15 +3,12 @@ package org.sagebionetworks.bridge.models;
 public class UserSession {
 
     private boolean authenticated;
-    private boolean consent;
     private String environment;
-    private String healthDataCode;
     private String sessionToken;
-    private String studyKey;
-    private UserProfile user;
+    private User user;
     
     public UserSession() {
-        this.user = new UserProfile();
+        this.user = new User();
     }
 
     public String getSessionToken() {
@@ -32,32 +29,16 @@ public class UserSession {
     public void setEnvironment(String environment) {
         this.environment = environment;
     }
-    public String getStudyKey() {
-        return studyKey;
-    }
-    public void setStudyKey(String studyKey) {
-        this.studyKey = studyKey;
-    }
-    public boolean doesConsent() {
-        return consent;
-    }
-    // Jackson serialization needs this method, even though linguistically, it makes no sense.
-    public boolean isConsent() {
-        return consent;
-    }
-    public void setConsent(boolean consent) {
-        this.consent = consent;
-    }
-    public String getHealthDataCode() {
-        return healthDataCode;
-    }
-    public void setHealthDataCode(String healthDataCode) {
-        this.healthDataCode = healthDataCode;
-    }
-    public UserProfile getUser() {
+    public User getUser() {
         return user;
     }
-    public void setUser(UserProfile user) {
+    public void setUser(User user) {
         this.user = user;
+    }
+
+    @Override
+    public String toString() {
+        return "UserSession [authenticated=" + authenticated + ", environment=" + environment + ", sessionToken="
+                + sessionToken + ", user=" + user + "]";
     }
 }

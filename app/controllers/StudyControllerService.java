@@ -23,6 +23,10 @@ public class StudyControllerService {
         }
     }
 
+    public Study getStudyByHostname(String hostname) {
+        return studies.get(hostname);
+    }
+    
     public Study getStudyByHostname(Request request) {
         String hostname = getHostname(request);
         return studies.get(hostname);

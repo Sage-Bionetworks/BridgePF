@@ -11,6 +11,7 @@ import play.mvc.*;
 @org.springframework.stereotype.Controller
 public class ApplicationController extends BaseController {
 
+    private static final UserSession EMPTY_USER_SESSION = new UserSession();
     private StudyControllerService studyControllerService;
     
     public void setStudyControllerService(StudyControllerService studyControllerService) {
@@ -45,14 +46,14 @@ public class ApplicationController extends BaseController {
         }
         throw new BridgeServiceException("Cannot determine your study from the host name: " + studyControllerService.getHostname(request()), 400);
     }
-
+    
     public Result loadConsent(String sessionToken) throws Exception {
+        UserSession session = null;
         if (sessionToken != null) {
-            setSessionToken(sessionToken);    
+            session = cacheProvider.getUserSession(sessionToken);    
         }
-        UserSession session = checkForSession();
         if (session == null) {
-            session = new UserSession();
+            session = EMPTY_USER_SESSION;
         }
         UserSessionInfo info = new UserSessionInfo(session);
         return ok(views.html.consent.render(Json.toJson(info).toString()));
