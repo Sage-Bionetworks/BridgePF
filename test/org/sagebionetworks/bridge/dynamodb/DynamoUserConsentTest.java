@@ -11,9 +11,9 @@ public class DynamoUserConsentTest {
         String healthCode = "123";
         String studyKey = "456";
         long consentTimestamp = 789L;
-        DynamoStudyConsent studyConsent = new DynamoStudyConsent();
+        DynamoStudyConsent1 studyConsent = new DynamoStudyConsent1();
         studyConsent.setStudyKey(studyKey);
-        studyConsent.setTimestamp(consentTimestamp);
+        studyConsent.setCreatedOn(consentTimestamp);
         DynamoUserConsent userConsent = new DynamoUserConsent(healthCode, studyConsent);
         assertEquals(healthCode + ":" + studyKey + ":" + consentTimestamp, userConsent.getHealthCodeStudy());
         assertEquals(consentTimestamp, userConsent.getConsentTimestamp());

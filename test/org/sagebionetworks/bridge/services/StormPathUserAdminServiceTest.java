@@ -11,7 +11,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -54,7 +54,7 @@ public class StormPathUserAdminServiceTest implements InitializingBean {
     public void before() {
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
-        DynamoTestUtil.clearTable(DynamoStudyConsent.class, "active", "path", "minAge", "version");
+        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
 
     }
 
@@ -62,7 +62,7 @@ public class StormPathUserAdminServiceTest implements InitializingBean {
     public void after() {
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
-        DynamoTestUtil.clearTable(DynamoStudyConsent.class, "active", "path", "minAge", "version");
+        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
 
     }
 
