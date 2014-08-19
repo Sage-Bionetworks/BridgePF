@@ -5,7 +5,7 @@ describe("ResetPasswordController", function() {
     beforeEach(function() {
         module('bridge');
 
-        $humane = {confirm: jasmine.createSpy(), error: jasmine.createSpy()};
+        $humane = {confirm: jasmine.createSpy(), error: jasmine.createSpy(), status: jasmine.createSpy()};
         $window = {_session: {sessionToken: 'foo'}, location: {replace: jasmine.createSpy()}};
         module(function($provide) {
             $provide.value('$route', {current:{params:{sptoken: "abc"}}});
@@ -43,7 +43,7 @@ describe("ResetPasswordController", function() {
         setupPOST().respond(500, {"message":"Invalid session token (abc)"});
         $rootScope.submit();
         $httpBackend.flush();
-        expect($humane.error).toHaveBeenCalledWith('Invalid session token (abc)');
+        expect($humane.status.calls.argsFor(0)[0].data.message).toEqual("Invalid session token (abc)");
     });
     it("submitting correctly shows a confirmation message", function() {
         ResetPasswordController = createController();
