@@ -18,8 +18,8 @@ import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,8 +44,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private BridgeConfig config;
     private BridgeEncryptor healthCodeEncryptor;
     private HealthCodeService healthCodeService;
+    private ConsentService consentService;
     private EmailValidator emailValidator = EmailValidator.getInstance();
-    private UserProfileService userProfileService;
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
@@ -66,9 +66,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
-
-    public void setUserProfileService(UserProfileService userProfileService) {
-        this.userProfileService = userProfileService;
+    
+    public void setConsentService(ConsentService consentService) {
+        this.consentService = consentService;
     }
 
     @Override
@@ -105,8 +105,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             logger.info("sign in authenticate " + (System.nanoTime() - start));
             session = createSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
-            if (!session.doesConsent()) {
-                throw new ConsentRequiredException(new UserSessionInfo(session));
+            
+            if (!session.getUser().doesConsent()) {
+                throw new ConsentRequiredException(session);
             }
 
         } catch (ResourceException re) {
@@ -174,8 +175,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             session = createSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
-            if (!session.doesConsent()) {
-                throw new ConsentRequiredException(new UserSessionInfo(session));
+            if (!session.getUser().doesConsent()) {
+                throw new ConsentRequiredException(session);
             }
             return session;
         } catch (ResourceException re) {
@@ -219,28 +220,30 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     private UserSession createSessionFromAccount(Study study, Account account) {
-
         UserSession session;
         session = new UserSession();
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment().getEnvName());
         session.setSessionToken(UUID.randomUUID().toString());
-        session.setStudyKey(study.getKey());
-        session.setUser(userProfileService.createUserFromAccount(account));
+        User user = new User(account);
+        user.setStudyKey(study.getKey());
 
+        // Generating the health data key has to be done regardless of consent, because we can't 
+        // check consent until we have a health data code
         CustomData data = account.getCustomData();
-        String consentKey = study.getKey()+BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
-        // TODO: Read from ConsentService
-        session.setConsent( "true".equals(data.get(consentKey)) );
+        final String hdcKey = study.getKey()+BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+        final String encryptedId = (String)data.get(hdcKey);
         
-        // New users will not yet have consented and generated a health ID, so skip this if it doesn't exist.
-        if (session.isConsent()) {
-            final String hdcKey = study.getKey()+BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            final String encryptedId = (String)data.get(hdcKey);
+        if (encryptedId != null) {
             String healthId = healthCodeEncryptor.decrypt(encryptedId);
-            String healthCode = healthCodeService.getHealthCode(healthId);
-            session.setHealthDataCode(healthCode);
+            logger.info("The healthId: " + healthId);
+            String healthDataCode = healthCodeService.getHealthCode(healthId);
+            logger.info("The health data code: " + healthDataCode);
+            user.setHealthDataCode(healthDataCode);
+            boolean hasConsented = consentService.hasUserConsentedToResearch(user, study);
+            user.setConsent(hasConsented);
         }
+        session.setUser(user);
         return session;
     }
 }

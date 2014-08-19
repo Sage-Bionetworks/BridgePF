@@ -3,6 +3,7 @@ package controllers;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.ConsentService;
 
@@ -20,7 +21,7 @@ public class ConsentController extends BaseController {
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
-
+    
     public Result give() throws Exception {
         // Don't call getSession(), it'll throw an exception due to lack of
         // consent, we know this person has not consented, that's what they're
@@ -31,43 +32,59 @@ public class ConsentController extends BaseController {
         }
         ResearchConsent consent = ResearchConsent.fromJson(request().body().asJson());
         Study study = studyControllerService.getStudyByHostname(request());
-        consentService.consentToResearch(session.getSessionToken(), consent, study, true);
+        User user = consentService.consentToResearch(session.getUser(), consent, study, true);
+        updateSessionUser(session, user);
 
-        return jsonResult("Consent to research has been recorded.");
+        return okResult("Consent to research has been recorded.");
     }
 
     public Result withdraw() throws Exception {
         UserSession session = getSession(); // throws exception if user isn't consented
         if (session == null) {
             throw new BridgeServiceException("Not signed in.", 401);
-        } else if (!session.doesConsent()) {
+        } else if (!session.getUser().doesConsent()) {
             throw new BridgeServiceException("Need to consent.", 412);
         }
         Study study = studyControllerService.getStudyByHostname(request());
-        consentService.withdrawConsent(session.getSessionToken(), study);
+        consentService.withdrawConsent(session.getUser(), study);
 
-        return jsonResult("Withdraw consent has been recorded.");
+        return okResult("Withdraw consent has been recorded.");
     }
 
     public Result emailCopy() throws Exception {
         UserSession session = getSession();
         if (session == null) {
             throw new BridgeServiceException("Not signed in.", 401);
-        } else if (!session.doesConsent()) {
+        } else if (!session.getUser().doesConsent()) {
             throw new BridgeServiceException("Need to consent.", 412);
         }
         Study study = studyControllerService.getStudyByHostname(request());
-        consentService.emailConsentAgreement(session.getSessionToken(), study);
+        consentService.emailConsentAgreement(session.getUser(), study);
 
-        return jsonResult("Emailed consent.");
+        return okResult("Emailed consent.");
     }
     
     public Result suspendDataSharing() throws Exception {
-        return jsonResult("Suspended data sharing.");
-        
+        UserSession session = checkForSession();
+        if (session == null) {
+            throw new BridgeServiceException("Not signed in.", 401);
+        }
+        Study study = studyControllerService.getStudyByHostname(request());
+        User user = consentService.suspendDataSharing(session.getUser(), study);
+        updateSessionUser(session, user);
+
+        return okResult("Suspended data sharing.");
     }
     
     public Result resumeDataSharing() throws Exception {
-        return jsonResult("Resuming data sharing.");
+        UserSession session = checkForSession();
+        if (session == null) {
+            throw new BridgeServiceException("Not signed in.", 401);
+        }
+        Study study = studyControllerService.getStudyByHostname(request());
+        User user = consentService.resumeDataSharing(session.getUser(), study);
+        updateSessionUser(session, user);
+        
+        return okResult("Resuming data sharing.");
     }
 }

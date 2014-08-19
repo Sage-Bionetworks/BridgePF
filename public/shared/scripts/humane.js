@@ -10,15 +10,19 @@ bridgeShared.service('$humane', ['$window', function($window) {
             } catch(e) {
             }
         }
-        return message;
+        return (typeof message === "string") ? message : "There has been an error.";
     }
     
     function status(response) {
+        if (arguments.length > 1) {
+            // directly handling an $http error callback, assemble to something like a response object
+            // 0 = data, 1 = status, 2 = headers, 3 = config, 4 = statusText
+            response = {
+                data: arguments[0], status: arguments[1], statusText: arguments[4]
+            };
+        }
         if (response.status !== 401) {
-            var message = tryUntil(response, "data.message", "data", "statusText");
-            if (typeof message !== "string") {
-                message = "There has been an error.";
-            }
+            var message = tryUntil(response, "data.message", "data", "message", "statusText");
             err.log(message);
         }
     }

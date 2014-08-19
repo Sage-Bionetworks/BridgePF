@@ -10,6 +10,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.User;
 
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
@@ -37,13 +38,13 @@ public class SendMailViaAmazonService implements SendMailService {
     }
     
     @Override
-    public void sendConsentAgreement(String recipientEmail, ResearchConsent consent, Study study) {
+    public void sendConsentAgreement(User user, ResearchConsent consent, Study study) {
         try {
             Content subject = new Content().withData("Consent Agreement for " + study.getName());
             Body body = createSignedDocument(consent, study);
             Message message = new Message().withSubject(subject).withBody(body);
             
-            Destination destination = new Destination().withToAddresses(new String[]{recipientEmail});
+            Destination destination = new Destination().withToAddresses(new String[]{user.getEmail()});
             SendEmailRequest request = new SendEmailRequest(fromEmail, destination, message);
             
             emailClient.setRegion(region);

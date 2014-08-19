@@ -1,26 +1,35 @@
 package org.sagebionetworks.bridge.models;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class UserProfile implements Iterable<String> {
+public class UserProfile {
+    
     private String firstName;
     private String lastName;
     private String username;
     private String email;
-    private String stormpathHref;
-    private String stormpathID;
     
     private static final String FIRSTNAME = "firstName";
     private static final String LASTNAME = "lastName";
 
+    public UserProfile(User user) {
+        this.firstName = removeEmpty(user.getFirstName());
+        this.lastName = removeEmpty(user.getLastName());
+        this.username = removeEmpty(user.getUsername());
+        this.email = removeEmpty(user.getEmail());
+    }
+    
+    public UserProfile() {
+    }
+    
     public String getFirstName() {
         return this.firstName;
+    }
+    public String getFirstNameWithEmptyString() {
+        return replaceWithEmpty(this.firstName);
     }
     public void setFirstName(String firstName) {
         this.firstName = firstName;
@@ -28,6 +37,9 @@ public class UserProfile implements Iterable<String> {
 
     public String getLastName() {
         return this.lastName;
+    }
+    public String getLastNameWithEmptyString() {
+        return replaceWithEmpty(this.lastName);
     }
     public void setLastName(String lastName) {
         this.lastName = lastName;
@@ -47,63 +59,32 @@ public class UserProfile implements Iterable<String> {
         this.email = email;
     }
 
-    public String getStormpathHref() {
-        return this.stormpathHref;
-    }
-    public void setStormpathHref(String stormpathHref) {
-        this.stormpathHref = stormpathHref;
-        this.stormpathID = stormpathHref.substring(38);
-    }
-    
-    public String getStormpathID() {
-        return this.stormpathID;
-    }
-    
-    // Get first name/last name from JsonNode, and
-    // username, stormpathHref, and email from sessionUser.
-    public static UserProfile fromJson(JsonNode node, UserProfile currentUser) {
-        if (node == null)
+    public static UserProfile fromJson(JsonNode node) {
+        if (node == null) {
             throw new BridgeServiceException("User JSON is null", 500);
- 
+        }
         UserProfile user = new UserProfile();
         if (node.get(FIRSTNAME) != null) {
-            user.setFirstName(replaceEmpty(node.get(FIRSTNAME).asText()));
+            user.setFirstName(replaceWithEmpty(node.get(FIRSTNAME).asText()));
         }
         if (node.get(LASTNAME) != null) {
-            user.setLastName(replaceEmpty(node.get(LASTNAME).asText()));
+            user.setLastName(replaceWithEmpty(node.get(LASTNAME).asText()));
         }
-
-        user.setUsername(replaceEmpty(currentUser.getUsername()));
-        user.setStormpathHref(replaceEmpty(currentUser.getStormpathHref()));
-        user.setEmail(replaceEmpty(currentUser.getEmail()));
-
         return user;
     }
     
-    public static boolean isValidUser(UserProfile user) {
-        if (user.getEmail() == null 
-                || user.getFirstName() == null 
-                || user.getLastName() == null
-                || user.getStormpathHref() == null 
-                || user.getUsername() == null) {
-            return false;
+    private static String replaceWithEmpty(String s) {
+        if (StringUtils.isBlank(s)) {
+            return "<EMPTY>";
         } else {
-            return true;
+            return s;
         }
-    }
-
-    @Override
-    public Iterator<String> iterator() {
-        String[] fieldsArr = {this.firstName, this.lastName, this.email, this.username, this.stormpathHref};
-        List<String> fields = Arrays.asList(fieldsArr);
-        return fields.iterator();
     }
     
-    private static String replaceEmpty(String s) {
-        if (s.equalsIgnoreCase("")) {
-            return "<EMPTY>";
-        }
-        else {
+    private String removeEmpty(String s) {
+        if (StringUtils.isBlank(s) || s.equalsIgnoreCase("<EMPTY>")) {
+            return "";
+        } else {
             return s;
         }
     }
