@@ -27,12 +27,12 @@ public class DynamoStudyConsentDaoTest {
 
     @Before
     public void before() {
-        DynamoTestUtil.clearTable(DynamoStudyConsent.class, "active", "path", "minAge", "version");
+        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
     }
 
     @After
     public void after() {
-        DynamoTestUtil.clearTable(DynamoStudyConsent.class, "active", "path", "minAge", "version");
+        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
     }
 
     @Test
@@ -49,7 +49,7 @@ public class DynamoStudyConsentDaoTest {
         assertEquals(consent1.getStudyKey(), consent.getStudyKey());
         assertEquals(consent1.getPath(), consent.getPath());
         assertEquals(consent1.getMinAge(), consent.getMinAge());
-        assertTrue(consent.getTimestamp() > 0);
+        assertTrue(consent.getCreatedOn() > 0);
         // Add version 2
         StudyConsent consent2 = studyConsentDao.addConsent("fake-study", "fake-path2", 18);
         studyConsentDao.setActive(consent2);
@@ -60,7 +60,7 @@ public class DynamoStudyConsentDaoTest {
         assertEquals(consent2.getPath(), consent.getPath());
         assertEquals(consent2.getMinAge(), consent.getMinAge());
         // Can still get version 1 using its timestamp
-        consent = studyConsentDao.getConsent(consent1.getStudyKey(), consent1.getTimestamp());
+        consent = studyConsentDao.getConsent(consent1.getStudyKey(), consent1.getCreatedOn());
         assertTrue(consent.getActive());
         assertEquals(consent1.getStudyKey(), consent.getStudyKey());
         assertEquals(consent1.getPath(), consent.getPath());

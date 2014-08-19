@@ -28,15 +28,15 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
                 SaveBehavior.UPDATE,
                 ConsistentReads.CONSISTENT,
-                TableNameOverrideFactory.getTableNameOverride(DynamoStudyConsent.class));
+                TableNameOverrideFactory.getTableNameOverride(DynamoStudyConsent1.class));
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 
     @Override
     public StudyConsent addConsent(String studyKey, String path, int minAge) {
-        DynamoStudyConsent consent = new DynamoStudyConsent();
+        DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyKey);
-        consent.setTimestamp(DateTime.now(DateTimeZone.UTC).getMillis());
+        consent.setCreatedOn(DateTime.now(DateTimeZone.UTC).getMillis());
         consent.setPath(path);
         consent.setMinAge(minAge);
         mapper.save(consent);
@@ -45,9 +45,9 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
 
     @Override
     public void setActive(StudyConsent studyConsent) {
-        DynamoStudyConsent consent = new DynamoStudyConsent();
+        DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyConsent.getStudyKey());
-        consent.setTimestamp(studyConsent.getTimestamp());
+        consent.setCreatedOn(studyConsent.getCreatedOn());
         consent = mapper.load(consent);
         consent.setActive(true);
         mapper.save(consent);
@@ -55,16 +55,16 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
 
     @Override
     public StudyConsent getConsent(String studyKey) {
-        DynamoStudyConsent hashKey = new DynamoStudyConsent();
+        DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyKey);
-        DynamoDBQueryExpression<DynamoStudyConsent> queryExpression =
-                new DynamoDBQueryExpression<DynamoStudyConsent>()
+        DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression =
+                new DynamoDBQueryExpression<DynamoStudyConsent1>()
                 .withHashKeyValues(hashKey)
                 .withScanIndexForward(false)
                 .withQueryFilterEntry("active", new Condition()
                         .withComparisonOperator(ComparisonOperator.EQ)
                         .withAttributeValueList(new AttributeValue().withN("1")));
-        QueryResultPage<DynamoStudyConsent> page = mapper.queryPage(DynamoStudyConsent.class, queryExpression);
+        QueryResultPage<DynamoStudyConsent1> page = mapper.queryPage(DynamoStudyConsent1.class, queryExpression);
         if (page == null || page.getResults().size() == 0) {
             return null;
         }
@@ -73,23 +73,23 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
 
     @Override
     public StudyConsent getConsent(String studyKey, long timestamp) {
-        DynamoStudyConsent consent = new DynamoStudyConsent();
+        DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyKey);
-        consent.setTimestamp(timestamp);
+        consent.setCreatedOn(timestamp);
         return mapper.load(consent);
     }
 
     @Override
     public List<StudyConsent> getConsents(String studyKey) {
-        DynamoStudyConsent hashKey = new DynamoStudyConsent();
+        DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyKey);
-        DynamoDBQueryExpression<DynamoStudyConsent> queryExpression =
-                new DynamoDBQueryExpression<DynamoStudyConsent>()
+        DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression =
+                new DynamoDBQueryExpression<DynamoStudyConsent1>()
                 .withHashKeyValues(hashKey)
                 .withScanIndexForward(false);
-        PaginatedQueryList<DynamoStudyConsent> consents = mapper.query(DynamoStudyConsent.class, queryExpression);
+        PaginatedQueryList<DynamoStudyConsent1> consents = mapper.query(DynamoStudyConsent1.class, queryExpression);
         List<StudyConsent> results = new ArrayList<StudyConsent>();
-        for (DynamoStudyConsent consent : consents) {
+        for (DynamoStudyConsent1 consent : consents) {
             results.add(consent);
         }
         return results;

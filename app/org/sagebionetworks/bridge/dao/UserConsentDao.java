@@ -19,7 +19,22 @@ public interface UserConsentDao {
      * Whether the user has consented to the specified study.
      */
     boolean hasConsented(String healthCode, StudyConsent studyConsent);
-    
+
+    /**
+     * Resume sharing data for the study.
+     */
+    void resumeSharing(String healthCode, StudyConsent studyConsent);
+
+    /**
+     * Stop sharing data for the study.
+     */
+    void suspendSharing(String healthCode, StudyConsent studyConsent);
+
+    /**
+     * Whether the user has agreed to share data for the study.
+     */
+    boolean isSharingData(String healthCode, StudyConsent studyConsent);
+
     /**
      * Returns the consent signature, consisting of the signature name and birthdate.
      */
