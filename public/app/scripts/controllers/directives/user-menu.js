@@ -25,9 +25,7 @@ bridge.controller('UserMenuController', ['$humane', '$window', 'authService', 'm
             method: function() {
                 authService.signOut().then(function() {
                     $window.location.replace("/");
-                }, function(response) {
-                    $humane.error(response.data);
-                });
+                }, $humane.status);
             }
         }
     ];

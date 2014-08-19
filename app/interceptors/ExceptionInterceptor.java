@@ -8,6 +8,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.models.UserSessionInfo;
 
 import play.Logger;
 import play.libs.Json;
@@ -28,7 +29,7 @@ public class ExceptionInterceptor implements MethodInterceptor {
             // but a 412 error status code.
             if (throwable instanceof ConsentRequiredException) {
                 ConsentRequiredException cre = (ConsentRequiredException)throwable;
-                return Results.status(cre.getStatusCode(), Json.toJson(cre.getUserSession()));
+                return Results.status(cre.getStatusCode(), Json.toJson(new UserSessionInfo(cre.getUserSession())));
             }
 
             // Don't log errors here. Log at the source with a level of detail that's useful for 

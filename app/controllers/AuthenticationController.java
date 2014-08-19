@@ -48,14 +48,14 @@ public class AuthenticationController extends BaseController {
             authenticationService.signOut(session.getSessionToken());    
         }
         response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
-        return jsonResult("Signed out.");
+        return okResult("Signed out.");
     }
 
     public Result signUp() throws Exception {
         SignUp signUp = SignUp.fromJson(request().body().asJson());
         Study study = studyControllerService.getStudyByHostname(request());
         authenticationService.signUp(signUp, study);
-        return jsonResult("Signed up.");
+        return okResult("Signed up.");
     }
 
     public Result verifyEmail() throws Exception {
@@ -71,12 +71,12 @@ public class AuthenticationController extends BaseController {
     public Result requestResetPassword() throws Exception {
         Email email = Email.fromJson(request().body().asJson());
         authenticationService.requestResetPassword(email);
-        return jsonResult("An email has been sent allowing you to set a new password.");
+        return okResult("An email has been sent allowing you to set a new password.");
     }
 
     public Result resetPassword() throws Exception {
         PasswordReset passwordReset = PasswordReset.fromJson(request().body().asJson());
         authenticationService.resetPassword(passwordReset);
-        return jsonResult("Password has been changed.");
+        return okResult("Password has been changed.");
     }
 }

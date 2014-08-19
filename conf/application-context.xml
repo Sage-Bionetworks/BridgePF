@@ -83,6 +83,7 @@
         <property name="target">
             <bean class="controllers.ApplicationController">
                 <property name="authenticationService" ref="authenticationService" />
+                <property name="cacheProvider" ref="cacheProvider" />
                 <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
@@ -91,7 +92,8 @@
     <bean id="controllers.AuthenticationController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.AuthenticationController">
-                <property name="authenticationService" ref="authenticationService"/>
+                <property name="authenticationService" ref="authenticationService" />
+                <property name="cacheProvider" ref="cacheProvider" />
                 <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
@@ -100,8 +102,9 @@
     <bean id="controllers.HealthDataController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.HealthDataController">
+                <property name="authenticationService" ref="authenticationService" />
+                <property name="cacheProvider" ref="cacheProvider" />
                 <property name="healthDataService" ref="healthDataService"/>
-                <property name="authenticationService" ref="authenticationService"/>
                 <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
@@ -110,11 +113,12 @@
     <bean id="controllers.TrackerController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.TrackerController">
+                <property name="authenticationService" ref="authenticationService" />
+                <property name="cacheProvider" ref="cacheProvider" />
                 <property name="jsonSchemaValidator">
                     <bean class="global.JsonSchemaValidator"/>
                 </property>
                 <property name="studyControllerService" ref="studyControllerService"/>
-                <property name="authenticationService" ref="authenticationService"/>
             </bean>
         </property>
     </bean>
@@ -133,6 +137,7 @@
         <property name="target">
             <bean class="controllers.ConsentController">
                 <property name="authenticationService" ref="authenticationService" />
+                <property name="cacheProvider" ref="cacheProvider" />
                 <property name="studyControllerService" ref="studyControllerService" />
                 <property name="consentService" ref="consentService" />
             </bean>
@@ -143,6 +148,7 @@
         <property name="target">
             <bean class="controllers.BackfillController">
                 <property name="authenticationService" ref="authenticationService" />
+                <property name="cacheProvider" ref="cacheProvider" />
                 <property name="stormpathClient" ref="stormpathClient" />
                 <property name="healthCodeBackfill" ref="healthCodeBackfill" />
             </bean>
@@ -204,7 +210,7 @@
         <property name="bridgeConfig" ref="bridgeConfig" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
-        <property name="userProfileService" ref="userProfileService" />
+        <property name="consentService" ref="consentService" />
     </bean>
 
     <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">
@@ -228,7 +234,6 @@
                 </constructor-arg>
             </bean>
         </property>
-        <property name="cacheProvider" ref="cacheProvider"/>
     </bean>
 
     <bean id="userProfileService" class="org.sagebionetworks.bridge.services.UserProfileServiceImpl">
@@ -237,7 +242,6 @@
 
     <bean id="consentService" class="org.sagebionetworks.bridge.services.ConsentServiceImpl">
         <property name="stormpathClient" ref="stormpathClient" />
-        <property name="cacheProvider" ref="cacheProvider" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
         <property name="sendMailService" ref="sendEmailViaAmazonService"/>
@@ -264,7 +268,6 @@
         <property name="consentService" ref="consentService"/>
         <property name="healthDataService" ref="healthDataService"/>
         <property name="studyControllerService" ref="studyControllerService"/>
-        <property name="cacheProvider" ref="cacheProvider"/>
         <property name="stormpathClient" ref="stormpathClient"/>
         <property name="userLockDao" ref="userLockDao"/>
     </bean>

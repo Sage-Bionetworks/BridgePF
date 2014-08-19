@@ -3,12 +3,11 @@ package org.sagebionetworks.bridge.services;
 import org.junit.*;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 
-import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.client.Client;
 
 import static org.sagebionetworks.bridge.TestConstants.*;
@@ -37,36 +36,43 @@ public class UserProfileServiceImplTest {
         service.setStormpathClient(stormpathClient);
     }
 
-    private boolean areUsersEqual(UserProfile a, UserProfile b) {
-        if (a.getEmail().equals(b.getEmail()) && a.getUsername().equals(b.getUsername()))
-            return true;
-
-        return false;
-    }
-
-    @Test(expected = BridgeServiceException.class)
-    public void createUserFromAccountWithInvalidAccountFails() {
-        Account account = null;
-        service.createUserFromAccount(account);
+    private boolean areUsersEqual(User a, User b) {
+        return (a.getEmail().equals(b.getEmail()) && a.getUsername().equals(b.getUsername()));
     }
     
     @Test
-    public void updateUserUpdatesUserSession() {
+    public void canUpdateUserProfile() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
-
             @Override
             public void testCode() throws Exception {
-                UserCredentials a = new UserCredentials("auser", "P4ssword", "a@sagebase.org", "afirstname",
-                        "alastname");
-                UserCredentials b = new UserCredentials("buser", "P4ssword", "b@sagebase.org", "bfirstname",
-                        "blastname");
+                
+            }
+        });
+    }
+
+    @Test
+    @Ignore
+    // This is no longer true unless you are calling through a controller. May rewrite or delete this test not sure.
+    // Also, you do not need to use the whole integration test infrastructure, which is slow, if you are not testing
+    // the controllers.
+    public void updateUserUpdatesUserSession() {
+        running(testServer(3333), new TestUtils.FailableRunnable() {
+            @Override
+            public void testCode() throws Exception {
+                TestUser a = new TestUser("auser", "a@sagebase.org", "P4ssword");
+                TestUser b = new TestUser("buser", "b@sagebase.org", "P4ssword");
 
                 TestUtils.addUserToSession(a, session, stormpathClient);
-                UserProfile user = TestUtils.constructTestUser(b);
+                
+                User user = a.getUser(null);
+                UserProfile profile = b.getUserProfile(null);
 
-                service.updateUser(user, session.getUser());
+                service.updateProfile(user, profile);
+                // TODO
+                // If you set this here, are we testing that it was set by updateUser()?
                 session.setUser(user);
 
+                // If we set the session in the cache, do are we verifying that this was done by the service?
                 String sessionToken = session.getSessionToken();
                 cache.setUserSession(sessionToken, session);
 

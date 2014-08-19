@@ -5,7 +5,9 @@ import java.io.IOException;
 import models.StatusMessage;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 
@@ -23,11 +25,23 @@ import play.mvc.Result;
 public class BaseController extends Controller {
 
     protected AuthenticationService authenticationService;
+    protected CacheProvider cacheProvider;
 
     public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
+    
+    public void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
+    }
 
+    /**
+     * Retrieve user's session using the Bridge-Session header or cookie, throwing 
+     * an exception if the session doesn't exist (user not authorized) or consent 
+     * has not been given.
+     * @return
+     * @throws Exception
+     */
     protected UserSession getSession() throws Exception {
         String sessionToken = getSessionToken();
         if (sessionToken == null || sessionToken.isEmpty()) {
@@ -37,12 +51,17 @@ public class BaseController extends Controller {
         UserSession session = authenticationService.getSession(sessionToken);
         if (session == null || !session.isAuthenticated()) {
             throw new BridgeServiceException("Not signed in.", 401);
-        } else if (!session.isConsent()) {
+        } else if (!session.getUser().isConsent()) {
             throw new BridgeServiceException("Must consent to research study.", 412);
         }
         return session;
     }
 
+    /**
+     * Return a session if it exists, or null otherwise. Will not throw exception if 
+     * user is not authorized or has not consented to research. 
+     * @return
+     */
     protected UserSession checkForSession() {
         String sessionToken = getSessionToken();
         return authenticationService.getSession(sessionToken);
@@ -51,6 +70,11 @@ public class BaseController extends Controller {
     protected void setSessionToken(String sessionToken) {
         response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
                 BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+    }
+    
+    protected void updateSessionUser(UserSession session, User user) {
+        session.setUser(user);
+        cacheProvider.setUserSession(session.getSessionToken(), session);
     }
 
     private String getSessionToken() {
@@ -65,11 +89,11 @@ public class BaseController extends Controller {
         return session[0];
     }
 
-    protected Result jsonResult(String message) {
+    protected Result okResult(String message) {
         return ok(Json.toJson(new StatusMessage(message)));
     }
 
-    protected Result jsonError(String message) {
+    protected Result errorResult(String message) {
         return internalServerError(Json.toJson(new StatusMessage(message)));
     }
 

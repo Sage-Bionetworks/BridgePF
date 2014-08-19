@@ -40,9 +40,7 @@ function($scope, $rootScope, $location, $humane, $window, authService, modalServ
 	$scope.signOut = function() {
 	    authService.signOut().then(function() {
 	        $window.location.replace("/");  
-	    }, function(response) {
-	        $humane.error(response.data); 
-	    });
+	    }, $humane.status);
 	};
     $scope.resetPassword = function() {
         modalService.openModal('RequestResetPasswordModalController', 'sm', '/shared/views/requestResetPassword.html');

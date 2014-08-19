@@ -30,6 +30,6 @@ public class BackfillController extends BaseController {
             throw new BridgeServiceException(account.getUsername() + " not allowed to perform backfill.", 403);
         }
         int total = healthCodeBackfill.resetHealthId();
-        return jsonResult("Done. " + total + " accounts backfilled.");
+        return okResult("Done. " + total + " accounts backfilled.");
     }
 }
