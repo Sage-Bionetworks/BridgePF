@@ -1,6 +1,7 @@
 package controllers;
 
 import java.util.Iterator;
+
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -93,7 +94,6 @@ public class UserProfileControllerTest {
             @Override
             public void testCode() throws Exception {
                 Response response = TestUtils.getURL(null, PROFILE_URL).get().get(TIMEOUT);
-
                 assertEquals("HTTP Status will be 401", UNAUTHORIZED, response.getStatus());
             }
         });
@@ -127,9 +127,8 @@ public class UserProfileControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             @Override
             public void testCode() throws Exception {
-                UserProfile user = new TestUser("tester", "tester@sagebase.org", "tester").getUserProfile("1234");
-                Response response = TestUtils.getURL("", PROFILE_URL).post(mapper.writeValueAsString(user))
-                        .get(TIMEOUT);
+                Response response = TestUtils.getURL("", PROFILE_URL)
+                        .post(mapper.writeValueAsString(userSession.getUser())).get(TIMEOUT);
 
                 assertEquals("HTTP Status should be 401", UNAUTHORIZED, response.getStatus());
             }
@@ -142,9 +141,8 @@ public class UserProfileControllerTest {
 
             @Override
             public void testCode() throws Exception {
-                UserProfile user = new TestUser("tester", "tester@sagebase.org", "tester").getUserProfile("1234");
-                Response response = TestUtils.getURL(null, PROFILE_URL).post(mapper.writeValueAsString(user))
-                        .get(TIMEOUT);
+                Response response = TestUtils.getURL(null, PROFILE_URL)
+                        .post(mapper.writeValueAsString(userSession.getUser())).get(TIMEOUT);
 
                 assertEquals("HTTP Status should be 401", UNAUTHORIZED, response.getStatus());
             }
@@ -157,9 +155,8 @@ public class UserProfileControllerTest {
 
             @Override
             public void testCode() throws Exception {
-                UserProfile user = new TestUser("tester", "tester@sagebase.org", "tester").getUserProfile("1234");
                 Response response = TestUtils.getURL(userSession.getSessionToken(), PROFILE_URL)
-                        .post(mapper.writeValueAsString(user)).get(TIMEOUT);
+                        .post(mapper.writeValueAsString(userSession.getUser())).get(TIMEOUT);
 
                 assertEquals("HTTP Status should be 200 OK", OK, response.getStatus());
             }

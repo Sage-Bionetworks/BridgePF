@@ -17,8 +17,6 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountCriteria;
@@ -30,8 +28,6 @@ import com.stormpath.sdk.directory.Directory;
 import controllers.StudyControllerService;
 
 public class StormPathUserAdminService implements UserAdminService {
-
-    private static Logger logger = LoggerFactory.getLogger(StormPathUserAdminService.class);
 
     private AuthenticationService authenticationService;
     private ConsentService consentService;
@@ -236,7 +232,6 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     private void assertAdminUser(User user) throws BridgeServiceException {
-        logger.info("Admin user: " + user.toString());
         if (!user.getRoles().contains(BridgeConstants.ADMIN_GROUP)) {
             throw new BridgeServiceException("Requires admin user", HttpStatus.SC_FORBIDDEN);
         }
