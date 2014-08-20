@@ -39,12 +39,12 @@ public class UserProfileControllerTest {
     
     @Before
     public void before() {
-        helper.before();
+        helper.createOneUser();
     }
     
     @After
     public void after() {
-        helper.after();
+        helper.deleteOneUser();
     }
 
     @Test
@@ -78,7 +78,7 @@ public class UserProfileControllerTest {
 
             @Override
             public void testCode() throws Exception {
-                Response response = TestUtils.getURL(helper.getUserSession(), PROFILE_URL).get().get(TIMEOUT);
+                Response response = TestUtils.getURL(helper.getUserSessionToken(), PROFILE_URL).get().get(TIMEOUT);
 
                 int count = 0;
                 
@@ -101,7 +101,7 @@ public class UserProfileControllerTest {
             @Override
             public void testCode() throws Exception {
                 Response response = TestUtils.getURL("", PROFILE_URL)
-                        .post(mapper.writeValueAsString(helper.getUserSession())).get(TIMEOUT);
+                        .post(mapper.writeValueAsString(helper.getUserSessionToken())).get(TIMEOUT);
 
                 assertEquals("HTTP Status should be 401", UNAUTHORIZED, response.getStatus());
             }
@@ -115,7 +115,7 @@ public class UserProfileControllerTest {
             @Override
             public void testCode() throws Exception {
                 Response response = TestUtils.getURL(null, PROFILE_URL)
-                        .post(mapper.writeValueAsString(helper.getUserSession())).get(TIMEOUT);
+                        .post(mapper.writeValueAsString(helper.getUserSessionToken())).get(TIMEOUT);
 
                 assertEquals("HTTP Status should be 401", UNAUTHORIZED, response.getStatus());
             }
@@ -128,7 +128,7 @@ public class UserProfileControllerTest {
 
             @Override
             public void testCode() throws Exception {
-                Response response = TestUtils.getURL(helper.getUserSession(), PROFILE_URL)
+                Response response = TestUtils.getURL(helper.getUserSessionToken(), PROFILE_URL)
                         .post(mapper.writeValueAsString(helper.getUser())).get(TIMEOUT);
 
                 assertEquals("HTTP Status should be 200 OK", OK, response.getStatus());

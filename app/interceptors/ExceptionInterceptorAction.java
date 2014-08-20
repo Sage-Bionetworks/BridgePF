@@ -34,9 +34,8 @@ public class ExceptionInterceptorAction extends Simple {
             if (throwable instanceof ConsentRequiredException) {
                 ConsentRequiredException cre = (ConsentRequiredException)throwable;
                 
-                // This looks very dubious.
+                // This looks very dubious. For one thing, it could be in a cookie and that's okay.
                 String sessionToken = context.request().getHeader("Bridge-Session");
-                
                 
                 Result result = Results.status(cre.getStatusCode(), Json.toJson(new UserSessionInfo(cre.getUserSession())));
                 return F.Promise.pure((SimpleResult)result);

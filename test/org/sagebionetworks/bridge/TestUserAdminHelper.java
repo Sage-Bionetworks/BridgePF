@@ -5,18 +5,27 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
 import controllers.StudyControllerService;
 
+/**
+ * A support class that can be injected into any SpringJUnit4ClassRunner test
+ * that needs to create a test user before performing some tests. This is an
+ * involved process because it goes through our regular UserAdminService class.
+ * It requires that your bridge.conf specify the credentials of an existing user
+ * with admin privileges (such a user already exists in the local and dev
+ * environments; you can get the credentials from Alx).
+ */
 public class TestUserAdminHelper {
 
-    private UserAdminService userAdminService;
-    private AuthenticationService authService;
-    private BridgeConfig bridgeConfig;
-    private StudyControllerService studyControllerService;
+    UserAdminService userAdminService;
+    AuthenticationService authService;
+    BridgeConfig bridgeConfig;
+    StudyControllerService studyControllerService;
     
     private TestUser testUser = new TestUser("tester", "tester@sagebase.org", "P4ssword");
     private Study study;
@@ -35,28 +44,44 @@ public class TestUserAdminHelper {
     public void setStudyControllerService(StudyControllerService studyControllerService) {
         this.studyControllerService = studyControllerService;
     }
-
-    public void before() {
+    
+    public void createOneUser() {
         study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
         SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         adminSession = authService.signIn(study, admin);
-
+        
         userSession = userAdminService.createUser(adminSession.getUser(), testUser.getSignUp(), study, true, true);
     }
+    public void deleteOneUser() {
+        userAdminService.deleteUser(adminSession.getUser(), userSession.getUser());
+        
+        authService.signOut(adminSession.getSessionToken());
+    }
     
-    public void after() {
-        userAdminService.deleteUser(adminSession.getUser(), userSession.getUser(), study);
+    public Study getStudy() {
+        return study;
     }
     
     public User getUser() {
         return userSession.getUser();
     }
-    
-    public String getUserSession() {
+    public SignIn getUserSignIn() {
+        return testUser.getSignIn();
+    }
+    public String getUserSessionToken() {
         return userSession.getSessionToken();
     }
-    
+    public UserProfile getUserProfile() {
+        return new UserProfile(userSession.getUser());
+    }
     public TestUser getTestUser() {
         return testUser;
+    }
+
+    public UserSession createUserWithoutConsentOrSignIn(TestUser user) {
+        return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), study, false, false);
+    }
+    public void deleteUser(User user) {
+        userAdminService.deleteUser(adminSession.getUser(), user);
     }
 }

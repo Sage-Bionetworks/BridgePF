@@ -26,7 +26,7 @@ public class TestConstants {
             return new SignUp(username, email, password);
         }
         public SignIn getSignIn() {
-            return new SignIn(email, password);
+            return new SignIn(username, password);
         }
         public User getUser(String id) {
             User user = new User();

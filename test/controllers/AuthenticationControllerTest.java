@@ -32,12 +32,12 @@ public class AuthenticationControllerTest {
     
     @Before
     public void before() {
-        helper.before();
+        helper.createOneUser();
     }
     
     @After
     public void after() {
-        helper.after();
+        helper.deleteOneUser();
     }
     
     @Test

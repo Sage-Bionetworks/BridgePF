@@ -128,7 +128,19 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
-    public void deleteUser(User caller, User user, Study userStudy) throws BridgeServiceException {
+    public void deleteUser(User caller, User user) throws BridgeServiceException {
+        if (caller == null) {
+            throw new BridgeServiceException("Calling admin user cannot be null", 400);
+        } else if (user == null) {
+            throw new BridgeServiceException("User cannot be null", 400);
+        }
+        assertAdminUser(caller);
+        for (Study study : studyControllerService.getStudies()) {
+            deleteUserInStudy(caller, user, study);
+        }
+    }
+
+    private void deleteUserInStudy(User caller, User user, Study userStudy) throws BridgeServiceException {
         if (caller == null) {
             throw new BridgeServiceException("Calling admin user cannot be null", 400);
         } else if (user == null) {
@@ -157,19 +169,6 @@ public class StormPathUserAdminService implements UserAdminService {
                 userLockDao.releaseLock(stormpathID, uuid);
             }
         }*/
-    }
-
-    @Override
-    public void deleteUserGlobal(User caller, User user) throws BridgeServiceException {
-        if (caller == null) {
-            throw new BridgeServiceException("Calling admin user cannot be null", 400);
-        } else if (user == null) {
-            throw new BridgeServiceException("User cannot be null", 400);
-        }
-        assertAdminUser(caller);
-        for (Study study : studyControllerService.getStudies()) {
-            deleteUser(caller, user, study);
-        }
     }
 
     private void removeAllHealthDataRecords(User caller, User user, Study userStudy)
