@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.dao;
 
-public class ConsentRequiredException extends RuntimeException {
+public class ConsentNotFoundException extends RuntimeException {
 
     private static final long serialVersionUID = 7966546401978600518L;
 
-    public ConsentRequiredException() {
+    public ConsentNotFoundException() {
         super("Must consent first.");
     }
 }
