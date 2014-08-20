@@ -29,10 +29,14 @@ public class DynamoUserConsent2 implements DynamoTable {
     public DynamoUserConsent2() {}
 
     // Constructor to create a hash-key object
-    DynamoUserConsent2(String healthCode, StudyConsent consent) {
-        studyKey = consent.getStudyKey();
-        consentCreatedOn = consent.getCreatedOn();
+    DynamoUserConsent2(String healthCode, String studyKey) {
         healthCodeStudy = healthCode + ":" + studyKey;
+    }
+
+    // Constructor to create a hash-key object
+    DynamoUserConsent2(String healthCode, StudyConsent consent) {
+        this(healthCode, consent.getStudyKey());
+        consentCreatedOn = consent.getCreatedOn();
     }
 
     // Copy constructor

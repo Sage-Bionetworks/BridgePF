@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import javax.annotation.Resource;
@@ -26,16 +28,16 @@ public class DynamoUserConsentDaoTest {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "name", "birthdate", "timestamp", "studyKey", "consentTimestamp",
-                "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
+                "consentCreatedOn", "version");
     }
 
     @After
     public void after() {
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "name", "birthdate", "timestamp", "studyKey", "consentTimestamp",
-                "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
+                "consentCreatedOn", "version");
     }
 
     @Test
@@ -48,12 +50,14 @@ public class DynamoUserConsentDaoTest {
         consent.setCreatedOn(123L);
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
         assertFalse(userConsentDao.hasConsentedNew(healthCode, consent));
+        assertNull(userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
 
         // Give consent
         final ResearchConsent researchConsent = new ResearchConsent("John Smith", "1999-12-01");
         userConsentDao.giveConsent(healthCode, consent, researchConsent);
         assertTrue(userConsentDao.hasConsented(healthCode, consent));
         assertTrue(userConsentDao.hasConsentedNew(healthCode, consent));
+        assertEquals(Long.valueOf(123), userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
 
         // Cannot give consent again if already consented
         try {
