@@ -109,7 +109,8 @@ public class DynamoUserConsentDaoTest {
         // Give consent
         final ResearchConsent researchConsent = new ResearchConsent("John Smith", "2009-12-01");
         userConsentDao.giveConsent(healthCode, consent, researchConsent);
-        assertFalse(userConsentDao.hasConsented(healthCode, consent));
+        assertTrue(userConsentDao.hasConsented(healthCode, consent));
+        assertTrue(userConsentDao.isSharingData(healthCode, consent));
 
         // Share data
         userConsentDao.resumeSharing(healthCode, consent);
