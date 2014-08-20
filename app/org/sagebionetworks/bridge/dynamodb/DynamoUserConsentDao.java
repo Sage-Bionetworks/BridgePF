@@ -61,7 +61,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         if (consentOld != null && !consentOld.equals(getConsentSignatureNew(healthCode, studyConsent))) {
             // TODO: After backfill, log an error here
         }
-        return getConsentSignatureOld(healthCode, studyConsent);
+        return consentOld;
     }
 
     @Override

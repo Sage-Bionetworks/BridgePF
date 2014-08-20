@@ -12,11 +12,11 @@ public class DynamoUserConsent1 implements DynamoTable {
 
     // Schema attributes
     private String healthCodeStudyConsent; // composite hash key: <health-code>:<key-of-study-consent>
-    private Long signedOn;
+    private long signedOn; // Epoch time in milleseconds
     private Long version;
 
     // Value attributes
-    private Boolean dataSharing;
+    private boolean dataSharing;
     private String name;
     private String birthdate;
     private String studyKey;       // study-consent composite key copied over to avoid parsing
@@ -48,19 +48,22 @@ public class DynamoUserConsent1 implements DynamoTable {
         this.healthCodeStudyConsent = healthCodeStudyConsent;
     }
 
+    /**
+     * Epoch time in milliseconds.
+     */
     @DynamoDBAttribute
-    public Long getSignedOn() {
+    public long getSignedOn() {
         return signedOn;
     }
-    public void setSignedOn(Long timestamp) {
+    public void setSignedOn(long timestamp) {
         this.signedOn = timestamp;
     }
 
     @DynamoDBAttribute
-    public Boolean getDataSharing() {
+    public boolean getDataSharing() {
         return dataSharing;
     }
-    public void setDataSharing(Boolean dataSharing) {
+    public void setDataSharing(boolean dataSharing) {
         this.dataSharing = dataSharing;
     }
 
