@@ -31,7 +31,7 @@ describe("ResetPasswordController", function() {
     function setupPOST() {
         // verify that the password is posted along with the session token in the header, 
         // as was extracted from the routing service.
-        return $httpBackend.expectPOST('/api/auth/resetPassword', {password: "P4ssword", sptoken: "abc"});
+        return $httpBackend.expectPOST('/api/v1/auth/resetPassword', {password: "P4ssword", sptoken: "abc"});
     }
 
     it("submitting wrong session token shows an error", function() {

@@ -25,7 +25,7 @@ import com.stormpath.sdk.directory.CustomData;
 
 import controllers.StudyControllerService;
 
-@ContextConfiguration("file:conf/application-context.xml")
+@ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class HealthCodeBackfillTest {
 

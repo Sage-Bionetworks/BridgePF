@@ -26,7 +26,7 @@ public class TestConstants {
             return new SignUp(username, email, password);
         }
         public SignIn getSignIn() {
-            return new SignIn(email, password);
+            return new SignIn(username, password);
         }
         public User getUser(String id) {
             User user = new User();
@@ -58,13 +58,13 @@ public class TestConstants {
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";
     public static final String CONSENT_TEST_URL = "/consent/asdf";
-    public static final String SIGN_OUT_URL = "/api/auth/signOut";
-    public static final String SIGN_IN_URL = "/api/auth/signIn";
+    public static final String SIGN_OUT_URL = "/api/v1/auth/signOut";
+    public static final String SIGN_IN_URL = "/api/v1/auth/signIn";
 
-    public static final String TRACKER_URL = "/api/healthdata/2";
-    public static final String RECORD_URL = "/api/healthdata/2/record/";
+    public static final String TRACKER_URL = "/api/v1/healthdata/2";
+    public static final String RECORD_URL = "/api/v1/healthdata/2/record/";
 
-    public static final String PROFILE_URL = "/api/users/profile";
+    public static final String PROFILE_URL = "/api/v1/users/profile";
     
     public static final String APPLICATION_JSON = "application/json";
     public static final String USERNAME = "username";

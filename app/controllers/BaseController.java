@@ -22,7 +22,7 @@ import play.mvc.Http.Request;
 import play.mvc.Result;
 
 @org.springframework.stereotype.Controller
-public class BaseController extends Controller {
+public abstract class BaseController extends Controller {
 
     protected AuthenticationService authenticationService;
     protected CacheProvider cacheProvider;
