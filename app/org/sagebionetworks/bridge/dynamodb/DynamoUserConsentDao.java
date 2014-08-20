@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.ConsentAlreadyExistsException;
+import org.sagebionetworks.bridge.dao.ConsentRequiredException;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.StudyConsent;
@@ -48,9 +49,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     @Override
     public Long getConsentCreatedOn(String healthCode, String studyKey) {
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyKey);
-        consent = mapper.load(consent);
-        return consent == null ? null : consent.getConsentCreatedOn();
+        return getConsentCreatedOnNew(healthCode, studyKey);
     }
 
     @Override
@@ -76,7 +75,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
         if (consent == null) {
-            throw new IllegalArgumentException("Must consent first before sharing data.");
+            throw new ConsentRequiredException();
         }
         consent.setDataSharing(true);
         mapper.save(consent);
@@ -87,7 +86,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
         if (consent == null) {
-            throw new IllegalArgumentException("Must consent first before sharing data.");
+            throw new ConsentRequiredException();
         }
         consent.setDataSharing(false);
         mapper.save(consent);
@@ -120,6 +119,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent consentToDelete = new DynamoUserConsent(healthCode, studyConsent);
         consentToDelete.setWithdraw(NOT_WITHDRAW_YET);
         consentToDelete = mapperOld.load(consentToDelete);
+        if (consentToDelete == null) {
+            throw new ConsentRequiredException();
+        }
         mapperOld.delete(consentToDelete);
         // Save with the withdraw time stamp for audit
         DynamoUserConsent consentToWithdraw = new DynamoUserConsent(consentToDelete);
@@ -137,6 +139,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
     private ResearchConsent getConsentSignatureOld(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent consent = new DynamoUserConsent(healthCode, studyConsent);
         consent = mapperOld.load(consent);
+        if (consent == null) {
+            throw new ConsentRequiredException();
+        }
         return new ResearchConsent(consent.getName(), consent.getBirthdate());
     }
 
@@ -145,6 +150,10 @@ public class DynamoUserConsentDao implements UserConsentDao {
     void giveConsentNew(String healthCode, StudyConsent studyConsent, ResearchConsent researchConsent) {
         try {
             DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
+            consent = mapper.load(consent);
+            if (consent == null) { // If the user has not consented yet
+                consent = new DynamoUserConsent2(healthCode, studyConsent);
+            }
             consent.setName(researchConsent.getName());
             consent.setBirthdate(researchConsent.getBirthdate());
             consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
@@ -158,7 +167,16 @@ public class DynamoUserConsentDao implements UserConsentDao {
     void withdrawConsentNew(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent2 consentToDelete = new DynamoUserConsent2(healthCode, studyConsent);
         consentToDelete = mapper.load(consentToDelete);
+        if (consentToDelete == null) {
+            throw new ConsentRequiredException();
+        }
         mapper.delete(consentToDelete);
+    }
+
+    Long getConsentCreatedOnNew(String healthCode, String studyKey) {
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyKey);
+        consent = mapper.load(consent);
+        return consent == null ? null : consent.getConsentCreatedOn();
     }
 
     boolean hasConsentedNew(String healthCode, StudyConsent studyConsent) {
@@ -169,6 +187,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
     ResearchConsent getConsentSignatureNew(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
+        if (consent == null) {
+            throw new ConsentRequiredException();
+        }
         return new ResearchConsent(consent.getName(), consent.getBirthdate());
     }
 }
