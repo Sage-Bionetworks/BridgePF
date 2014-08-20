@@ -133,7 +133,7 @@ public class AuthenticationServiceImplTest {
     
     @Test
     public void createUserInNonDefaultAccountStore() {
-        TestUser nonDefaultUser = new TestUser("secondStudyUser", "secondStudyUser@sagebase.org", "P4ssword");
+        TestUser nonDefaultUser = new TestUser("secondStudyUser", "secondStudyUser@sagebridge.org", "P4ssword");
         try {
             Study defaultStudy = helper.getStudy();
             authService.signUp(nonDefaultUser.getSignUp(), TestConstants.SECOND_STUDY);
