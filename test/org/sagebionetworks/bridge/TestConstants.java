@@ -5,8 +5,6 @@ import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserProfile;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
@@ -28,17 +26,7 @@ public class TestConstants {
         public SignIn getSignIn() {
             return new SignIn(username, password);
         }
-        public User getUser(String id) {
-            User user = new User();
-            user.setUsername(username);
-            user.setEmail(email);
-            user.setId(id);
-            return user;
-        }
-        public UserProfile getUserProfile(String id) {
-            return new UserProfile(getUser(id));
-        }
-        public String getUsername() {
+       public String getUsername() {
             return username;
         }
         public String getEmail() {
