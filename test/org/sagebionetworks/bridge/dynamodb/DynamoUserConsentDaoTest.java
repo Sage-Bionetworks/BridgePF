@@ -12,6 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.dao.ConsentAlreadyExistsException;
+import org.sagebionetworks.bridge.dao.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -97,16 +98,29 @@ public class DynamoUserConsentDaoTest {
         consent.setCreatedOn(456L);
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
 
-        // Must consent first then share data
+        // Must consent first
+        assertFalse(userConsentDao.isSharingData(healthCode, consent));
+        try {
+            userConsentDao.getConsentSignature(healthCode, consent);
+        } catch (ConsentRequiredException e) {
+            assertTrue(true); // Expected
+        }
+        try {
+            userConsentDao.withdrawConsent(healthCode, consent);
+        } catch (ConsentRequiredException e) {
+            assertTrue(true); // Expected
+        }
+
+        // Must consent first before sharing data
         assertFalse(userConsentDao.isSharingData(healthCode, consent));
         try {
             userConsentDao.resumeSharing(healthCode, consent);
-        } catch (IllegalArgumentException e) {
+        } catch (ConsentRequiredException e) {
             assertTrue(true); // Expected
         }
         try {
             userConsentDao.suspendSharing(healthCode, consent);
-        } catch (IllegalArgumentException e) {
+        } catch (ConsentRequiredException e) {
             assertTrue(true); // Expected
         }
 
