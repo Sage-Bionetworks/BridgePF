@@ -8,7 +8,6 @@ import java.util.Map;
 import play.libs.WS;
 import play.libs.WS.WSRequestHolder;
 
-// TODO: If we create a controller base class, these methods could go there.
 public class TestUtils {
     
     public abstract static class FailableRunnable implements Runnable {
