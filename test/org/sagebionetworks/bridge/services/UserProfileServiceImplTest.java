@@ -4,27 +4,17 @@ import javax.annotation.Resource;
 
 import org.junit.*;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.stormpath.sdk.client.Client;
-
 import controllers.StudyControllerService;
-import static org.sagebionetworks.bridge.TestConstants.*;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static play.test.Helpers.*;
 
 @ContextConfiguration("file:conf/application-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
