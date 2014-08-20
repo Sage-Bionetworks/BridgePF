@@ -3,7 +3,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
 
         formService.initScope($scope, 'settings');
 
-        $http.get('/api/users/profile')
+        $http.get('/api/v1/users/profile')
             .success(function(data, status, headers, config) {
                 // These are all the fields the /api/users/profile call will need to return eventually.
                 $scope.profile = {
@@ -26,7 +26,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
         $scope.submit = function() {
             // Only two items possible to update are first name and last name.
             var update = formService.formToJSON($scope.settings, ['firstName', 'lastName']);
-            $http.post('/api/users/profile', update)
+            $http.post('/api/v1/users/profile', update)
                 .success(function(data, status, headers, config) {
                     $modalInstance.close('success');
                     $humane.confirm('Your information has been successfully updated.');
@@ -40,7 +40,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
         };
 
         $scope.withdrawStudy = function() {
-            $http.delete('/api/consent')
+            $http.delete('/api/v1/users/consent')
                 .success(function(data, status, headers, config) {
                     $scope.setMessage('You have successfully withdrawn from the study.');
                     $scope.session.consented = false;
@@ -49,7 +49,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
         };
 
         $scope.emailConsent = function() {
-            $http.post('/api/consent/email')
+            $http.post('/api/v1/users/consent/email')
                 .success(function(data, status, headers, config) {
                     $scope.setMessage('Check your email! You should be receiving a copy of the consent document shortly.');
                 })

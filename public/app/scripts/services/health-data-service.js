@@ -2,33 +2,33 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q', function($http
 
     var service = {
         getAll: function(trackerId) {
-            var url = '/api/healthdata/'+trackerId;
+            var url = '/api/v1/healthdata/'+trackerId;
             return $http.get(url);
         },
         getByDateRange: function(trackerId, startDate, endDate) {
-            var url = '/api/healthdata/'+trackerId+'?startDate='+startDate+'&endDate='+endDate;
+            var url = '/api/v1/healthdata/'+trackerId+'?startDate='+startDate+'&endDate='+endDate;
             return $http.get(url);
         },
         get: function(trackerId, recordId) {
-            var url = '/api/healthdata/'+trackerId+"/record/"+recordId;
+            var url = '/api/v1/healthdata/'+trackerId+"/record/"+recordId;
             return $http.get(url);
         },
         create: function(trackerId, object) {
             if (object.recordId) {
                 throw new Error("Trying to create a record with a pre-existing recordId");
             }
-            var url = '/api/healthdata/'+trackerId;
+            var url = '/api/v1/healthdata/'+trackerId;
             return $http.post(url, JSON.stringify([object]));
         },
         update: function(trackerId, object) {
             if (!object.recordId) {
                 throw new Error("Trying to update a record with no recordId");
             }
-            var url = '/api/healthdata/'+trackerId+'/record/'+object.recordId;
+            var url = '/api/v1/healthdata/'+trackerId+'/record/'+object.recordId;
             return $http.post(url, JSON.stringify(object));
         },
         remove: function(trackerId, recordId) {
-            var url = '/api/healthdata/'+trackerId+'/record/'+recordId;
+            var url = '/api/v1/healthdata/'+trackerId+'/record/'+recordId;
             return $http['delete'](url);
         },
         createPayload: function(form, dateFields, fields, toMidnight) {

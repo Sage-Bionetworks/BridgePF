@@ -8,38 +8,38 @@ GET     /index.html                 @controllers.ApplicationController.redirectT
 GET     /consent/:sessionToken      @controllers.ApplicationController.loadConsent(sessionToken: String)
 
 # API - Authentication
-POST    /api/auth/signIn                @controllers.AuthenticationController.signIn
-GET     /api/auth/signOut               @controllers.AuthenticationController.signOut
-POST    /api/auth/requestResetPassword  @controllers.AuthenticationController.requestResetPassword
-POST    /api/auth/resetPassword         @controllers.AuthenticationController.resetPassword
-POST    /api/auth/signUp                @controllers.AuthenticationController.signUp
-POST    /api/auth/verifyEmail           @controllers.AuthenticationController.verifyEmail
+POST    /api/v1/auth/signIn                @controllers.AuthenticationController.signIn
+GET     /api/v1/auth/signOut               @controllers.AuthenticationController.signOut
+POST    /api/v1/auth/requestResetPassword  @controllers.AuthenticationController.requestResetPassword
+POST    /api/v1/auth/resetPassword         @controllers.AuthenticationController.resetPassword
+POST    /api/v1/auth/signUp                @controllers.AuthenticationController.signUp
+POST    /api/v1/auth/verifyEmail           @controllers.AuthenticationController.verifyEmail
 
 # API - Individual health data record
-GET     /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(trackerId: Long, recordId: String)
-POST    /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.updateHealthDataRecord(trackerId: Long, recordId: String)
-DELETE  /api/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(trackerId: Long, recordId: String)
+GET     /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(trackerId: Long, recordId: String)
+POST    /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.updateHealthDataRecord(trackerId: Long, recordId: String)
+DELETE  /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(trackerId: Long, recordId: String)
 
 # API - Health Data
-GET     /api/healthdata/:trackerId      @controllers.HealthDataController.getHealthData(trackerId: Long, startDate: java.lang.Long ?= null, endDate: java.lang.Long ?= null)
-POST    /api/healthdata/:trackerId      @controllers.HealthDataController.appendHealthData(trackerId: Long)
+GET     /api/v1/healthdata/:trackerId      @controllers.HealthDataController.getHealthData(trackerId: Long, startDate: java.lang.Long ?= null, endDate: java.lang.Long ?= null)
+POST    /api/v1/healthdata/:trackerId      @controllers.HealthDataController.appendHealthData(trackerId: Long)
 
 # API - trackers
-GET     /api/trackers                       @controllers.TrackerController.getTrackers
-GET     /api/trackers/schema/:trackerId     @controllers.TrackerController.getTrackerSchema(trackerId: Long)
+GET     /api/v1/trackers                       @controllers.TrackerController.getTrackers
+GET     /api/v1/trackers/schema/:trackerId     @controllers.TrackerController.getTrackerSchema(trackerId: Long)
 
 # API - users
-GET     /api/users/profile      @controllers.UserProfileController.getUserProfile
-POST    /api/users/profile      @controllers.UserProfileController.updateUserProfile
+GET     /api/v1/users/profile      @controllers.UserProfileController.getUserProfile
+POST    /api/v1/users/profile      @controllers.UserProfileController.updateUserProfile
 
 # API - consent
-POST    /api/consent                                @controllers.ConsentController.give
-POST    /api/consent/email                          @controllers.ConsentController.emailCopy
-POST    /api/users/consent/dataSharing/suspend      @controllers.ConsentController.suspendDataSharing
-POST    /api/users/consent/dataSharing/resume       @controllers.ConsentController.resumeDataSharing
+POST    /api/v1/users/consent                       @controllers.ConsentController.give
+POST    /api/v1/users/consent/email                 @controllers.ConsentController.emailCopy
+POST    /api/v1/users/consent/dataSharing/suspend   @controllers.ConsentController.suspendDataSharing
+POST    /api/v1/users/consent/dataSharing/resume    @controllers.ConsentController.resumeDataSharing
 
 # Backfill
-GET     /admin/backfill/healthId    @controllers.BackfillController.resetHealthId
+GET     /admin/v1/backfill/healthId    @controllers.BackfillController.resetHealthId
 
 # AngularJS application
 GET     /*file      controllers.Assets.at(path="/public", file)

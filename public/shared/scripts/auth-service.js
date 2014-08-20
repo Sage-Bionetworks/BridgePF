@@ -23,7 +23,7 @@ function($http, $window, $q, $location, $humane) {
         },
         signIn: function(credentials) {
             var deferred = $q.defer();
-            $http.post('/api/auth/signIn', credentials).then(function(response) {
+            $http.post('/api/v1/auth/signIn', credentials).then(function(response) {
                 service.initSession(response.data);
                 deferred.resolve(response);
             }, function(response) {
@@ -32,16 +32,16 @@ function($http, $window, $q, $location, $humane) {
             return deferred.promise;
         },
         signUp: function(credentials) {
-            return $http.post('/api/auth/signUp', credentials);
+            return $http.post('/api/v1/auth/signUp', credentials);
         },
         signOut: function() {
-            return $http.get('/api/auth/signOut');
+            return $http.get('/api/v1/auth/signOut');
         },
         resetPassword: function(password, sptoken) {
-            return $http.post('/api/auth/resetPassword', {password: password, sptoken: sptoken});
+            return $http.post('/api/v1/auth/resetPassword', {password: password, sptoken: sptoken});
         },
         verifyEmail: function(payload) {
-            return $http.post('/api/auth/verifyEmail', payload);
+            return $http.post('/api/v1/auth/verifyEmail', payload);
         }
     };
 

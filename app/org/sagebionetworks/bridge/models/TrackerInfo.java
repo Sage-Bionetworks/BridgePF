@@ -11,7 +11,7 @@ public class TrackerInfo {
         name = tracker.getName();
         type = tracker.getType();
         id = tracker.getId();
-        schemaUrl = "/api/trackers/schema/" + tracker.getId().toString();
+        schemaUrl = "/api/v1/trackers/schema/" + tracker.getId().toString();
     }
 
     public String getName() {
