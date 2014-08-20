@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import java.util.List;
+
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -73,12 +75,17 @@ public class ConsentServiceImpl implements ConsentService {
 
             // HealthID
             final String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            getHealthId(healthIdKey, customData); // This sets the ID, which we will need when fully implemented
+            HealthId healthId = getHealthId(healthIdKey, customData); // This sets the ID, which we will need when fully implemented
 
-            customData.put(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX, "true");
-            customData.save();
-            caller.setConsent(true);
-            
+            {
+                // TODO: Old. To be removed.
+                customData.put(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX, "true");
+                customData.save();
+                // TODO: New
+                StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
+                userConsentDao.giveConsent(healthId.getCode(), studyConsent, researchConsent);
+            }
+
             if (sendEmail) {
                 sendMailService.sendConsentAgreement(caller, researchConsent, study);
             }
@@ -97,10 +104,11 @@ public class ConsentServiceImpl implements ConsentService {
             throw new BridgeServiceException("Study is required.", HttpStatus.SC_BAD_REQUEST);
         }
         try {
+            // TODO: Old. To be removed
             final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
             final CustomData customData = account.getCustomData();
-
-            return ("true".equals(customData.get(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX)));
+            boolean consented = ("true".equals(customData.get(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX)));
+            return consented;
         } catch (Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
@@ -114,16 +122,23 @@ public class ConsentServiceImpl implements ConsentService {
             throw new BridgeServiceException("Study is required.", HttpStatus.SC_BAD_REQUEST);
         }
         try {
+            // TODO: Old
             final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
             final CustomData customData = account.getCustomData();
             customData.remove(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX);
             customData.save();
             caller.setConsent(false);
-            /*
-            StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
-            userConsentDao.withdrawConsent(caller.getHealthDataCode(), studyConsent);
+            // TODO: New
+            String healthCode = caller.getHealthDataCode();
+            List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
+            for (StudyConsent consent : consents) {
+                if (userConsentDao.hasConsented(healthCode, consent)) {
+                    userConsentDao.withdrawConsent(healthCode, consent);
+                }
+            }
+
             caller.setConsent(false);
-            */
+
         } catch (Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
