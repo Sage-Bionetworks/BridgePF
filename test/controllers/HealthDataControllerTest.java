@@ -37,7 +37,7 @@ import com.google.common.collect.Lists;
 import play.libs.WS.Response;
 import static org.junit.Assert.*;
 
-@ContextConfiguration("file:conf/application-context.xml")
+@ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class HealthDataControllerTest {
     

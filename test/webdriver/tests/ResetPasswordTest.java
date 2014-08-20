@@ -14,7 +14,7 @@ import play.test.TestBrowser;
 import webdriver.pages.AppPage;
 import webdriver.pages.AppPage.RequestResetPasswordDialog;
 
-@ContextConfiguration("file:conf/application-context.xml")
+@ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ResetPasswordTest extends BaseIntegrationTest {
     
