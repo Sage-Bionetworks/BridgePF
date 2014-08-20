@@ -53,6 +53,7 @@ public class ConsentServiceImpl implements ConsentService {
     @Override
     public User consentToResearch(User caller, ResearchConsent researchConsent, Study study,
             boolean sendEmail) throws BridgeServiceException {
+
         if (caller == null) {
             throw new BridgeServiceException("User is required.", HttpStatus.SC_BAD_REQUEST);
         } else if (study == null) {
@@ -64,6 +65,7 @@ public class ConsentServiceImpl implements ConsentService {
         } else if (researchConsent.getBirthdate() == null) {
             throw new BridgeServiceException("Consent birth date  is required.", HttpStatus.SC_BAD_REQUEST);
         }
+
         try {
             // Stormpath account
             final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
@@ -159,7 +161,7 @@ public class ConsentServiceImpl implements ConsentService {
         // TODO Auto-generated method stub
         return null;
     }
-    
+
     private HealthId getHealthId(String healthIdKey, CustomData customData) {
         Object healthIdObj = customData.get(healthIdKey);
         if (healthIdObj != null) {
@@ -170,12 +172,10 @@ public class ConsentServiceImpl implements ConsentService {
                 public String getId() {
                     return healthId;
                 }
-
                 @Override
                 public String getCode() {
                     return healthCode;
                 }
-
             };
         }
         HealthId healthId = healthCodeService.create();
@@ -184,5 +184,4 @@ public class ConsentServiceImpl implements ConsentService {
         customData.save();
         return healthId;
     }
-
 }

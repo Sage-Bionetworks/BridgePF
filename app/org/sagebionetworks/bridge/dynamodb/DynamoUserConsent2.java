@@ -7,31 +7,37 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 
-@DynamoDBTable(tableName = "UserConsent1")
-public class DynamoUserConsent1 implements DynamoTable {
+@DynamoDBTable(tableName = "UserConsent2")
+public class DynamoUserConsent2 implements DynamoTable {
 
     // Schema attributes
-    private String healthCodeStudyConsent; // composite hash key: <health-code>:<key-of-study-consent>
-    private long signedOn; // Epoch time in milleseconds
-    private Long version;
+    private String healthCodeStudy; // <health-code>:<study-key>
+    private Long version;           // Version for optimistic locking
 
     // Value attributes
-    private boolean dataSharing;
+    private long signedOn;          // Time stamp is epoch time in milliseconds
+    private boolean dataSharing;    // Whether the user agrees to share data for the study
+
+    // User consent signature
     private String name;
     private String birthdate;
-    private String studyKey;       // study-consent composite key copied over to avoid parsing
-    private long consentCreatedOn; // study-consent composite key copied over to avoid parsing
 
-    public DynamoUserConsent1() {}
+    // Study-consent composite key copied over to avoid parsing
+    private String studyKey;
+    private long consentCreatedOn;
 
-    DynamoUserConsent1(String healthCode, StudyConsent consent) {
+    public DynamoUserConsent2() {}
+
+    // Constructor to create a hash-key object
+    DynamoUserConsent2(String healthCode, StudyConsent consent) {
         studyKey = consent.getStudyKey();
         consentCreatedOn = consent.getCreatedOn();
-        healthCodeStudyConsent = healthCode + ":" + studyKey + ":" + consentCreatedOn;
+        healthCodeStudy = healthCode + ":" + studyKey;
     }
 
-    DynamoUserConsent1(DynamoUserConsent1 consent) {
-        healthCodeStudyConsent = consent.healthCodeStudyConsent;
+    // Copy constructor
+    DynamoUserConsent2(DynamoUserConsent2 consent) {
+        healthCodeStudy = consent.healthCodeStudy;
         signedOn = consent.signedOn;
         version = consent.version;
         name = consent.name;
@@ -41,15 +47,15 @@ public class DynamoUserConsent1 implements DynamoTable {
     }
 
     @DynamoDBHashKey
-    public String getHealthCodeStudyConsent() {
-        return healthCodeStudyConsent;
+    public String getHealthCodeStudy() {
+        return healthCodeStudy;
     }
-    public void setHealthCodeStudyConsent(String healthCodeStudyConsent) {
-        this.healthCodeStudyConsent = healthCodeStudyConsent;
+    public void setHealthCodeStudy(String healthCodeStudy) {
+        this.healthCodeStudy = healthCodeStudy;
     }
 
     /**
-     * Epoch time in milliseconds.
+     * Consent time stamp. Epoch time in milliseconds.
      */
     @DynamoDBAttribute
     public long getSignedOn() {
@@ -82,16 +88,16 @@ public class DynamoUserConsent1 implements DynamoTable {
     public void setConsentCreatedOn(long consentCreatedOn) {
         this.consentCreatedOn = consentCreatedOn;
     }
-    
-    @DynamoDBAttribute(attributeName = "name")
+
+    @DynamoDBAttribute
     public String getName() {
         return this.name;
     }
     public void setName(String name) {
         this.name = name;
     }
-    
-    @DynamoDBAttribute(attributeName = "birthdate")
+
+    @DynamoDBAttribute
     public String getBirthdate() {
         return this.birthdate;
     }

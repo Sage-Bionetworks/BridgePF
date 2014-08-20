@@ -26,7 +26,7 @@ public class DynamoUserConsentDaoTest {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
-        DynamoTestUtil.clearTable(DynamoUserConsent1.class, "name", "birthdate", "timestamp", "studyKey", "consentTimestamp",
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "name", "birthdate", "timestamp", "studyKey", "consentTimestamp",
                 "version");
     }
 
@@ -34,7 +34,7 @@ public class DynamoUserConsentDaoTest {
     public void after() {
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
-        DynamoTestUtil.clearTable(DynamoUserConsent1.class, "name", "birthdate", "timestamp", "studyKey", "consentTimestamp",
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "name", "birthdate", "timestamp", "studyKey", "consentTimestamp",
                 "version");
     }
 
