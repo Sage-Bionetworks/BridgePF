@@ -47,6 +47,13 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
+    public Long getConsentCreatedOn(String healthCode, String studyKey) {
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyKey);
+        consent = mapper.load(consent);
+        return consent == null ? null : consent.getConsentCreatedOn();
+    }
+
+    @Override
     public boolean hasConsented(String healthCode, StudyConsent studyConsent) {
         boolean hasConsentedOld = hasConsentedOld(healthCode, studyConsent);
         if (hasConsentedOld != hasConsentedNew(healthCode, studyConsent)) {
