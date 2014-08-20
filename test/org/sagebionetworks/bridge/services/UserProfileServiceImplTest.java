@@ -41,7 +41,7 @@ public class UserProfileServiceImplTest {
         
         User updatedUser = service.updateProfile(helper.getUser(), userProfile);
         
-        assertTrue(helper.getUser().equals(updatedUser));
+        assertEquals("Test", updatedUser.getFirstName());
+        assertEquals("Powers", updatedUser.getLastName());
     }
-
 }
