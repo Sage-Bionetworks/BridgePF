@@ -24,7 +24,7 @@ import static play.test.Helpers.*;
 import static org.sagebionetworks.bridge.TestConstants.*;
 import static org.junit.Assert.*;
 
-@ContextConfiguration("file:conf/application-context.xml")
+@ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class UserProfileControllerTest {
 

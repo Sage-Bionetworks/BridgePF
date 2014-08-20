@@ -12,7 +12,7 @@ import play.libs.F.Callback;
 import play.test.TestBrowser;
 import webdriver.pages.AppPage;
 
-@ContextConfiguration("file:conf/application-context.xml")
+@ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class SignInTest extends BaseIntegrationTest {
     
