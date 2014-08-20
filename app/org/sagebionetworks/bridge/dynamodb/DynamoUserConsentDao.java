@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.ConsentAlreadyExistsException;
-import org.sagebionetworks.bridge.dao.ConsentRequiredException;
+import org.sagebionetworks.bridge.dao.ConsentNotFoundException;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.sagebionetworks.bridge.models.StudyConsent;
@@ -75,7 +75,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
         if (consent == null) {
-            throw new ConsentRequiredException();
+            throw new ConsentNotFoundException();
         }
         consent.setDataSharing(true);
         mapper.save(consent);
@@ -86,7 +86,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
         if (consent == null) {
-            throw new ConsentRequiredException();
+            throw new ConsentNotFoundException();
         }
         consent.setDataSharing(false);
         mapper.save(consent);
@@ -120,7 +120,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         consentToDelete.setWithdraw(NOT_WITHDRAW_YET);
         consentToDelete = mapperOld.load(consentToDelete);
         if (consentToDelete == null) {
-            throw new ConsentRequiredException();
+            throw new ConsentNotFoundException();
         }
         mapperOld.delete(consentToDelete);
         // Save with the withdraw time stamp for audit
@@ -140,7 +140,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent consent = new DynamoUserConsent(healthCode, studyConsent);
         consent = mapperOld.load(consent);
         if (consent == null) {
-            throw new ConsentRequiredException();
+            throw new ConsentNotFoundException();
         }
         return new ResearchConsent(consent.getName(), consent.getBirthdate());
     }
@@ -168,7 +168,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 consentToDelete = new DynamoUserConsent2(healthCode, studyConsent);
         consentToDelete = mapper.load(consentToDelete);
         if (consentToDelete == null) {
-            throw new ConsentRequiredException();
+            throw new ConsentNotFoundException();
         }
         mapper.delete(consentToDelete);
     }
@@ -188,7 +188,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
         if (consent == null) {
-            throw new ConsentRequiredException();
+            throw new ConsentNotFoundException();
         }
         return new ResearchConsent(consent.getName(), consent.getBirthdate());
     }

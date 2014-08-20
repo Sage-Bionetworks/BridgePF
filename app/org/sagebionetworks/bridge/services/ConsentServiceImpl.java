@@ -53,7 +53,7 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public User consentToResearch(User caller, ResearchConsent researchConsent, Study study,
+    public User consentToResearch(User caller, ResearchConsent researchConsent, final Study study,
             boolean sendEmail) throws BridgeServiceException {
 
         if (caller == null) {
@@ -83,6 +83,31 @@ public class ConsentServiceImpl implements ConsentService {
                 customData.save();
                 // TODO: New
                 StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
+                if (studyConsent == null) {
+                    // TODO: To be removed once DynamoDB's study consent is ready
+                    studyConsent = new StudyConsent() {
+                        @Override
+                        public String getStudyKey() {
+                            return study.getKey();
+                        }
+                        @Override
+                        public long getCreatedOn() {
+                            return 1406325157000L; // July 25, 2014
+                        }
+                        @Override
+                        public boolean getActive() {
+                            return true;
+                        }
+                        @Override
+                        public String getPath() {
+                            return "conf/email-templates/neurod-consent.html";
+                        }
+                        @Override
+                        public int getMinAge() {
+                            return 17;
+                        }
+                    };
+                }
                 userConsentDao.giveConsent(healthId.getCode(), studyConsent, researchConsent);
             }
 
