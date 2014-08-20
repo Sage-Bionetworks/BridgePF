@@ -29,10 +29,11 @@ function($scope, healthDataService, $humane, dashboardService) {
     $scope.disabled = function(date, mode) {
         return date.getTime() > new Date().getTime();
     };
-    $scope.open = function(event) {
-        $scope.opened = true; // contrary to docs, this does nothing
-        setTimeout(function() { // however, this does work
-            document.getElementById('datePicker').focus();    
+    $scope.open = function() {
+        setTimeout(function() {
+            $scope.$apply(function() {
+                $scope.opened = true;    
+            });
         }, 1);
     };
     $scope.canSave = function() {

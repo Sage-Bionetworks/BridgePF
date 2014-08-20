@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 
-import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -28,7 +27,7 @@ public class SendMailViaAmazonService implements SendMailService {
     private static Region region = Region.getRegion(Regions.US_EAST_1);
     
     private static DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
-    private static DateTimeFormatter fmt2 = DateTimeFormat.forPattern("yyyy-mm-dd");
+    private static DateTimeFormatter fmt2 = DateTimeFormat.forPattern("yyyy-MM-dd");
     
     private String fromEmail;
     private AmazonSimpleEmailServiceClient emailClient;
