@@ -30,7 +30,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         mapperConfig = new DynamoDBMapperConfig(
                 SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES,
                 ConsistentReads.CONSISTENT,
-                TableNameOverrideFactory.getTableNameOverride(DynamoUserConsent1.class));
+                TableNameOverrideFactory.getTableNameOverride(DynamoUserConsent2.class));
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 
@@ -66,7 +66,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     @Override
     public void resumeSharing(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent1 consent = new DynamoUserConsent1(healthCode, studyConsent);
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
         if (consent == null) {
             throw new IllegalArgumentException("Must consent first before sharing data.");
@@ -77,7 +77,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     @Override
     public void suspendSharing(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent1 consent = new DynamoUserConsent1(healthCode, studyConsent);
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
         if (consent == null) {
             throw new IllegalArgumentException("Must consent first before sharing data.");
@@ -88,7 +88,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     @Override
     public boolean isSharingData(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent1 consent = new DynamoUserConsent1(healthCode, studyConsent);
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
         return (consent != null && consent.getDataSharing());
     }
@@ -137,7 +137,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     void giveConsentNew(String healthCode, StudyConsent studyConsent, ResearchConsent researchConsent) {
         try {
-            DynamoUserConsent1 consent = new DynamoUserConsent1(healthCode, studyConsent);
+            DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
             consent.setName(researchConsent.getName());
             consent.setBirthdate(researchConsent.getBirthdate());
             consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
@@ -149,18 +149,18 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     void withdrawConsentNew(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent1 consentToDelete = new DynamoUserConsent1(healthCode, studyConsent);
+        DynamoUserConsent2 consentToDelete = new DynamoUserConsent2(healthCode, studyConsent);
         consentToDelete = mapper.load(consentToDelete);
         mapper.delete(consentToDelete);
     }
 
     boolean hasConsentedNew(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent1 consent = new DynamoUserConsent1(healthCode, studyConsent);
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         return mapper.load(consent) != null;
     }
 
     ResearchConsent getConsentSignatureNew(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent1 consent = new DynamoUserConsent1(healthCode, studyConsent);
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
         return new ResearchConsent(consent.getName(), consent.getBirthdate());
     }

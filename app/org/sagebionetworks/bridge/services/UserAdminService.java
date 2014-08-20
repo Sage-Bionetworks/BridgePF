@@ -31,6 +31,7 @@ public interface UserAdminService {
     public UserSession createUser(User caller, SignUp signUp, Study userStudy, boolean signUserIn, boolean consentUser)
             throws BridgeServiceException;
 
+    // TODO: Do not expose this. Instead do it when deleting a user.
     /**
      * Remove all consent records from the target user. The user's session (if
      * the target user is signed in) will be updated to reflect this new state.

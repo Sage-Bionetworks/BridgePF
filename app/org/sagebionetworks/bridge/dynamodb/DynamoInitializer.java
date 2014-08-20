@@ -78,6 +78,7 @@ public class DynamoInitializer {
      */
     static void beforeInit() {
         deleteTable("StudyConsent");
+        deleteTable("UserConsent1");
     }
 
     static void deleteTable(String table) {
