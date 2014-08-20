@@ -27,6 +27,9 @@ public class SendMailViaAmazonService implements SendMailService {
 
     private static Region region = Region.getRegion(Regions.US_EAST_1);
     
+    private static DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
+    private static DateTimeFormatter fmt2 = DateTimeFormat.forPattern("yyyy-mm-dd");
+    
     private String fromEmail;
     private AmazonSimpleEmailServiceClient emailClient;
     
@@ -60,14 +63,11 @@ public class SendMailViaAmazonService implements SendMailService {
         String consentAgreementHTML = CharStreams.toString(isr);
 
         LocalDate date = LocalDate.now();
-        DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
         String signingDate = date.toString(fmt);
-        
-        DateTimeFormatter fmt2 = DateTimeFormat.forPattern("yyyy-mm-dd");
-        DateTime birthdate = fmt2.parseDateTime(consent.getBirthdate());
+        String birthdate = fmt2.parseDateTime(consent.getBirthdate()).toString(fmt);
 
         String html = consentAgreementHTML.replace("@@name@@", consent.getName());
-        html = html.replace("@@birth.date@@", consent.getBirthdate());
+        html = html.replace("@@birth.date@@", birthdate);
         html = html.replace("@@signing.date@@", signingDate);
         Content textBody = new Content().withData(html); 
         return new Body().withHtml(textBody);
