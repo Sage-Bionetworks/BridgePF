@@ -48,19 +48,6 @@ public class UserProfileControllerTest {
     }
 
     @Test
-    public void getUserProfileWithEmptySessionFails401() {
-        running(testServer(3333), new TestUtils.FailableRunnable() {
-
-            @Override
-            public void testCode() throws Exception {
-                Response response = TestUtils.getURL("", PROFILE_URL).get().get(TIMEOUT);
-
-                assertEquals("HTTP Status will be 401", UNAUTHORIZED, response.getStatus());
-            }
-        });
-    }
-    
-    @Test
     public void getUserProfileWithNullSessionFails401() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
 
@@ -101,20 +88,6 @@ public class UserProfileControllerTest {
             @Override
             public void testCode() throws Exception {
                 Response response = TestUtils.getURL("", PROFILE_URL)
-                        .post(mapper.writeValueAsString(helper.getUserSessionToken())).get(TIMEOUT);
-
-                assertEquals("HTTP Status should be 401", UNAUTHORIZED, response.getStatus());
-            }
-        });
-    }
-
-    @Test
-    public void updateUserProfileWithNullSessionFails401() {
-        running(testServer(3333), new TestUtils.FailableRunnable() {
-
-            @Override
-            public void testCode() throws Exception {
-                Response response = TestUtils.getURL(null, PROFILE_URL)
                         .post(mapper.writeValueAsString(helper.getUserSessionToken())).get(TIMEOUT);
 
                 assertEquals("HTTP Status should be 401", UNAUTHORIZED, response.getStatus());
