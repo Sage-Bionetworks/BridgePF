@@ -18,6 +18,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.IdVersionHolder;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.User;
@@ -74,7 +75,7 @@ public class HealthDataServiceImplTest {
         List<DynamoHealthDataRecord> list = Lists.newArrayList();
         for (int i = 0; i < count; i++) {
             list.add(new DynamoHealthDataRecord("1:1:1", new HealthDataRecordImpl("A" + i, new Date().getTime(),
-                    new Date().getTime(), data)));
+                    new Date().getTime(), 1L, data)));
         }
         return toPaginatedQueryList(list);
     }
@@ -136,11 +137,11 @@ public class HealthDataServiceImplTest {
     public void appendHealthDataSuccess() throws Exception {
         HealthDataRecord record = createHealthDataRecord();
 
-        List<String> identifiers = service.appendHealthData(key, Lists.newArrayList(record));
+        List<IdVersionHolder> identifiers = service.appendHealthData(key, Lists.newArrayList(record));
 
         verify(createMapper).batchSave(any(List.class));
 
-        assertEquals("Returns the assigned ID for health data record", identifiers.get(0), record.getRecordId());
+        assertEquals("Returns the assigned ID for health data record", identifiers.get(0).getId(), record.getRecordId());
 
         verifyNoMoreInteractions(createMapper);
     }
@@ -218,7 +219,7 @@ public class HealthDataServiceImplTest {
     @SuppressWarnings("unchecked")
     public void getHealthDataRecordSuccess() throws Exception {
         long date = new Date().getTime();
-        HealthDataRecord record = new HealthDataRecordImpl("A0", date, date, null);
+        HealthDataRecord record = new HealthDataRecordImpl("A0", date, date, 1L, null);
 
         List<DynamoHealthDataRecord> records = getRecordsFromDynamo(record);
         doReturn(records.get(0)).when(updateMapper).load((Class<DynamoHealthDataRecord>) any());
@@ -232,7 +233,7 @@ public class HealthDataServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void updateHealthDataRecordBadKey() throws Exception {
-        HealthDataRecord record = new HealthDataRecordImpl("A0", new Date().getTime(), new Date().getTime(), null);
+        HealthDataRecord record = new HealthDataRecordImpl("A0", new Date().getTime(), new Date().getTime(), 1L, null);
         tracker.setId(0L);
         service.updateHealthDataRecord(new HealthDataKey(STUDY, tracker, user), record);
         verify(updateMapper).save(any(DynamoHealthDataRecord.class));
@@ -240,13 +241,14 @@ public class HealthDataServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void updateHealthDataRecordNoKey() throws Exception {
-        HealthDataRecord record = new HealthDataRecordImpl("A0", new Date().getTime(), new Date().getTime(), null);
+        HealthDataRecord record = new HealthDataRecordImpl("A0", new Date().getTime(), new Date().getTime(), 1L, null);
         service.updateHealthDataRecord(null, record);
     }
 
     @Test(expected = BridgeServiceException.class)
     public void updateHealthDataRecordBadRecord() throws Exception {
-        HealthDataRecord record = new HealthDataRecordImpl("A0", 0, new Date().getTime(), null);
+        long time = new Date().getTime();
+        HealthDataRecord record = new HealthDataRecordImpl("A0", 0, time, time, null);
         service.updateHealthDataRecord(key, record);
     }
 
@@ -257,7 +259,7 @@ public class HealthDataServiceImplTest {
 
     @Test
     public void updateHealthDataSuccess() throws Exception {
-        HealthDataRecord record = new HealthDataRecordImpl("A0", new Date().getTime(), new Date().getTime(), null);
+        HealthDataRecord record = new HealthDataRecordImpl("A0", new Date().getTime(), new Date().getTime(), 1L, null);
 
         service.updateHealthDataRecord(key, record);
         verify(updateMapper).save(any(DynamoHealthDataRecord.class));

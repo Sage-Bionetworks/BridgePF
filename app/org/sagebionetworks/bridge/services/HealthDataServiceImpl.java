@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.apache.commons.httpclient.HttpStatus;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.IdVersionHolder;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
@@ -47,7 +48,7 @@ public class HealthDataServiceImpl implements HealthDataService {
     }
     
     @Override
-    public List<String> appendHealthData(HealthDataKey key, List<HealthDataRecord> records) throws BridgeServiceException {
+    public List<IdVersionHolder> appendHealthData(HealthDataKey key, List<HealthDataRecord> records) throws BridgeServiceException {
         if (key == null) {
             throw new BridgeServiceException("Cannot create a new HealthDataRecord instance without specifying a HealthDataKey", HttpStatus.SC_BAD_REQUEST);
         } else if (records == null) {
@@ -56,22 +57,26 @@ public class HealthDataServiceImpl implements HealthDataService {
             throw new BridgeServiceException("No health data records to add", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            List<String> ids = Lists.newArrayListWithCapacity(records.size());
+            List<IdVersionHolder> ids = Lists.newArrayListWithCapacity(records.size());
             List<DynamoHealthDataRecord> recordsToSave = Lists.newArrayListWithCapacity(records.size());
 
             for (HealthDataRecord record : records) {
                 if (record.getStartDate() == 0) {
                     throw new BridgeServiceException("New health data record instance does not have a startDate", HttpStatus.SC_BAD_REQUEST);
                 }
+                
                 String recordId = generateId();
                 record.setRecordId(recordId);
-                ids.add(recordId);
                 recordsToSave.add( new DynamoHealthDataRecord(key.toString(), record) );
             }
             // TODO: The docs say that individual records in the batch can fail, and that these will be retried
             // with exponential back-off. However, I could find no examples to verify that all this happens, or 
             // is configured in a way that we would be happy with (how many retries, what's the back-off, etc.)
             createMapper.batchSave(recordsToSave);
+            
+            for (DynamoHealthDataRecord record : recordsToSave) {
+                ids.add( new IdVersionHolder(record.getRecordId(), record.getVersion()) );
+            }
             return ids;
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -181,13 +186,15 @@ public class HealthDataServiceImpl implements HealthDataService {
     }
 
     @Override
-    public void updateHealthDataRecord(HealthDataKey key, HealthDataRecord record) throws BridgeServiceException {
+    public IdVersionHolder updateHealthDataRecord(HealthDataKey key, HealthDataRecord record) throws BridgeServiceException {
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey is required on update (it's null)",
                     HttpStatus.SC_BAD_REQUEST);
         } else if (record == null) {
             throw new BridgeServiceException("HealthDataRecord is required on update (it's null)",
                     HttpStatus.SC_BAD_REQUEST);
+        } else if (record.getVersion() == null) {
+            throw new BridgeServiceException("HealthDataRecord requires version on update", HttpStatus.SC_BAD_REQUEST);
         } else if (record.getStartDate() == 0L) {
             throw new BridgeServiceException(
                     "HealthDataRecord startDate & endDate are required on update (point-in-time events set the same time for both fields",
@@ -197,9 +204,9 @@ public class HealthDataServiceImpl implements HealthDataService {
                     HttpStatus.SC_BAD_REQUEST);
         }
         try {
-
             DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString(), record);
             updateMapper.save(dynamoRecord);
+            return new IdVersionHolder(dynamoRecord.getRecordId(), dynamoRecord.getVersion());
 
         } catch(Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
