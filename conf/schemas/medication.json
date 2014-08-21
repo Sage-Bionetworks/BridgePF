@@ -7,6 +7,7 @@
         "recordId": {"type": "string"},
         "startDate": {"type": "number"},
         "endDate": {"type": "number"},
+        "version": {"type": "number"},
         "data": {
             "type": "object",
             "required": ["medication", "dosage", "frequency"],

@@ -22,7 +22,9 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q', function($http
         },
         update: function(trackerId, object) {
             if (!object.recordId) {
-                throw new Error("Trying to update a record with no recordId");
+                throw new Error("Cannot update a record with no recordId");
+            } else if (typeof object.version === "undefined") {
+                throw new Error("Cannot update a record with no version");
             }
             var url = '/api/v1/healthdata/'+trackerId+'/record/'+object.recordId;
             return $http.post(url, JSON.stringify(object));

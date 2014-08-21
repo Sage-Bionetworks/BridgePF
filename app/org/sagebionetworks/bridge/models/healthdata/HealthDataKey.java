@@ -25,7 +25,7 @@ public final class HealthDataKey {
         } else if (user == null) {
             throw new BridgeServiceException("HealthDataKey user must not be null", HttpStatus.SC_BAD_REQUEST);
         } else if (StringUtils.isBlank(user.getHealthDataCode())) {
-            throw new BridgeServiceException("User health data code must not be null", HttpStatus.SC_BAD_REQUEST);
+            throw new BridgeServiceException("HealthDataKey healthDataCode must not be null", HttpStatus.SC_BAD_REQUEST);
         }
         this.studyKey = study.getKey();
         this.trackerId = tracker.getId();

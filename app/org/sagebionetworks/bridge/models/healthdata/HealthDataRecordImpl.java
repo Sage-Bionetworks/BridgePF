@@ -7,27 +7,23 @@ public class HealthDataRecordImpl implements HealthDataRecord {
     private static final String RECORD_ID = "recordId";
     private static final String START_DATE = "startDate";
     private static final String END_DATE = "endDate";
+    private static final String VERSION = "version";
     private static final String DATA = "data";
 
     protected String recordId;
     protected long startDate;
     protected long endDate;
+    protected Long version;
     protected JsonNode data;
     
     public HealthDataRecordImpl() {
     }
     
-    public HealthDataRecordImpl(String recordId, long date, JsonNode data) {
-        this.recordId = recordId;
-        this.startDate = date;
-        this.endDate = date;
-        this.data = data;
-    }
-    
-    public HealthDataRecordImpl(String recordId, long startDate, long endDate, JsonNode data) {
+    public HealthDataRecordImpl(String recordId, long startDate, long endDate, Long version, JsonNode data) {
         this.recordId = recordId;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.version = version;
         this.data = data;
     }
     
@@ -35,6 +31,7 @@ public class HealthDataRecordImpl implements HealthDataRecord {
         String recordId = null;
         long startDate = 0L;
         long endDate = 0L;
+        long version = 0L;
         JsonNode data = null;
         
         if (node != null) {
@@ -50,11 +47,14 @@ public class HealthDataRecordImpl implements HealthDataRecord {
             if (node.get(END_DATE) != null) {
                 endDate = node.get(END_DATE).asLong();
             }
+            if (node.get(VERSION) != null) {
+                version = node.get(VERSION).asLong();
+            }
             if (node.get(DATA) != null) {
                 data = node.get(DATA);
             }
         }
-        return new HealthDataRecordImpl(recordId, startDate, endDate, data);
+        return new HealthDataRecordImpl(recordId, startDate, endDate, version, data);
     }
     
     
@@ -79,10 +79,16 @@ public class HealthDataRecordImpl implements HealthDataRecord {
     public void setData(JsonNode data) { this.data = data; }
 
     @Override
+    public Long getVersion() { return version; }
+    @Override
+    public void setVersion(Long version) { this.version = version; }
+
+    @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((recordId == null) ? 0 : recordId.hashCode());
+        result = prime * result + ((version == null) ? 0 : version.hashCode());
         return result;
     }
 
@@ -100,6 +106,18 @@ public class HealthDataRecordImpl implements HealthDataRecord {
                 return false;
         } else if (!recordId.equals(other.recordId))
             return false;
+        if (version == null) {
+            if (other.version != null)
+                return false;
+        } else if (!version.equals(other.version))
+            return false;
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "HealthDataRecordImpl [recordId=" + recordId + ", startDate=" + startDate + ", endDate=" + endDate
+                + ", version=" + version + ", data=" + data + "]";
+    }
+    
 }
