@@ -54,7 +54,7 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
 
-    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor" />
+    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
 
     <!-- Redis -->
     
@@ -72,6 +72,11 @@
 
     <!-- Play controllers. -->
 
+    <bean id="BaseController" class="controllers.BaseController" abstract="true">
+        <property name="authenticationService" ref="authenticationService" />
+        <property name="cacheProvider" ref="cacheProvider" />
+    </bean>
+    
     <bean id="proxiedController" class="org.springframework.aop.framework.ProxyFactoryBean">
         <property name="proxyTargetClass" value="true"/>
         <property name="interceptorNames">
@@ -81,9 +86,7 @@
     
     <bean id="controllers.ApplicationController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.ApplicationController">
-                <property name="authenticationService" ref="authenticationService" />
-                <property name="cacheProvider" ref="cacheProvider" />
+            <bean class="controllers.ApplicationController" parent="BaseController">
                 <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
@@ -91,9 +94,7 @@
 
     <bean id="controllers.AuthenticationController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.AuthenticationController">
-                <property name="authenticationService" ref="authenticationService" />
-                <property name="cacheProvider" ref="cacheProvider" />
+            <bean class="controllers.AuthenticationController" parent="BaseController">
                 <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
@@ -101,9 +102,7 @@
  
     <bean id="controllers.HealthDataController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.HealthDataController">
-                <property name="authenticationService" ref="authenticationService" />
-                <property name="cacheProvider" ref="cacheProvider" />
+            <bean class="controllers.HealthDataController" parent="BaseController">
                 <property name="healthDataService" ref="healthDataService"/>
                 <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
@@ -112,9 +111,7 @@
 
     <bean id="controllers.TrackerController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.TrackerController">
-                <property name="authenticationService" ref="authenticationService" />
-                <property name="cacheProvider" ref="cacheProvider" />
+            <bean class="controllers.TrackerController" parent="BaseController">
                 <property name="jsonSchemaValidator">
                     <bean class="global.JsonSchemaValidator"/>
                 </property>
@@ -125,9 +122,7 @@
 
     <bean id="controllers.UserProfileController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.UserProfileController">
-                <property name="authenticationService" ref="authenticationService"/>
-                <property name="cacheProvider" ref="cacheProvider"/>
+            <bean class="controllers.UserProfileController" parent="BaseController">
                 <property name="userProfileService" ref="userProfileService"/>
             </bean>
         </property>
@@ -135,9 +130,7 @@
 
     <bean id="controllers.ConsentController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.ConsentController">
-                <property name="authenticationService" ref="authenticationService" />
-                <property name="cacheProvider" ref="cacheProvider" />
+            <bean class="controllers.ConsentController" parent="BaseController">
                 <property name="studyControllerService" ref="studyControllerService" />
                 <property name="consentService" ref="consentService" />
             </bean>
@@ -146,9 +139,7 @@
 
     <bean id="controllers.BackfillController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.BackfillController">
-                <property name="authenticationService" ref="authenticationService" />
-                <property name="cacheProvider" ref="cacheProvider" />
+            <bean class="controllers.BackfillController" parent="BaseController">
                 <property name="stormpathClient" ref="stormpathClient" />
                 <property name="healthCodeBackfill" ref="healthCodeBackfill" />
             </bean>
@@ -210,7 +201,6 @@
         <property name="bridgeConfig" ref="bridgeConfig" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
-        <property name="consentService" ref="consentService" />
     </bean>
 
     <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">

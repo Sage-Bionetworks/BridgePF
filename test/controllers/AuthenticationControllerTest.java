@@ -6,13 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.TestConstants.TestUser;
-import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.services.AuthenticationServiceImpl;
-import org.sagebionetworks.bridge.services.StormPathUserAdminService;
+import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -29,43 +23,21 @@ import static play.test.Helpers.*;
 import static org.sagebionetworks.bridge.TestConstants.*;
 import static org.junit.Assert.*;
 
-@ContextConfiguration("file:conf/application-context.xml")
+@ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class AuthenticationControllerTest {
 
-    private static TestUser testUser = new TestUser("test", "tester@sagebridge.org", "P4ssword");
-    private Study study;
-    private User adminUser; 
-    private User user;
-    
     @Resource
-    AuthenticationServiceImpl authService;
+    TestUserAdminHelper helper;
     
-    @Resource
-    BridgeConfig bridgeConfig;
-    
-    @Resource
-    StudyControllerService studyControllerService;
-    
-    @Resource
-    StormPathUserAdminService userAdminService;
-
     @Before
     public void before() {
-        study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
-        TestUser admin = new TestUser("administrator", bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
-        adminUser = authService.signIn(study, admin.getSignIn()).getUser();
-
-        UserSession session = userAdminService.createUser(adminUser, testUser.getSignUp(), study, true, true);
-        user = session.getUser();
-        authService.signOut(session.getSessionToken());
+        helper.createOneUser();
     }
     
     @After
     public void after() {
-        if (user != null) {
-            userAdminService.deleteUser(adminUser, user, study);    
-        }
+        helper.deleteOneUser();
     }
     
     @Test
@@ -111,8 +83,8 @@ public class AuthenticationControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put(USERNAME, testUser.getUsername());
-                node.put(PASSWORD, testUser.getPassword());
+                node.put(USERNAME, helper.getTestUser().getUsername());
+                node.put(PASSWORD, helper.getTestUser().getPassword());
 
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL)
                         .post(node)
@@ -124,7 +96,7 @@ public class AuthenticationControllerTest {
                 String sessionToken = responseNode.get(SESSION_TOKEN).asText();
                 assertNotNull("Session token is assigned", sessionToken);
                 String username = responseNode.get(USERNAME).asText();
-                assertEquals("Username is for test2 user", testUser.getUsername(), username);
+                assertEquals("Username is for test2 user", helper.getTestUser().getUsername(), username);
             }
         });
     }
@@ -134,8 +106,8 @@ public class AuthenticationControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put(USERNAME, testUser.getUsername());
-                node.put(PASSWORD, testUser.getPassword());
+                node.put(USERNAME, helper.getTestUser().getUsername());
+                node.put(PASSWORD, helper.getTestUser().getPassword());
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
                 
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);

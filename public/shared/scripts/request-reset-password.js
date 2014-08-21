@@ -5,7 +5,7 @@ bridgeShared.controller('RequestResetPasswordModalController', ['$scope', '$http
     
     $scope.send = function () {
         var json = formService.formToJSON($scope.requestResetPasswordForm, ['email']);
-        $http.post('/api/auth/requestResetPassword', json).then(function() {
+        $http.post('/api/v1/auth/requestResetPassword', json).then(function() {
             $modalInstance.dismiss('cancel');
             $humane.confirm("Please look for further instructions in your email inbox.");
         }, function(response) {

@@ -10,7 +10,7 @@ function($scope, $location, formService, authService) {
             authService.signUp(credentials).then(function() {
                 $location.path('/joined/'+credentials.email);
             }, function(response) {
-                $scope.message = response.data;
+                $scope.message = response.data.message;
             });
         }
     };
