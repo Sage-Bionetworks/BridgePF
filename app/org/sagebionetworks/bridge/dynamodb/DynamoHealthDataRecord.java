@@ -9,6 +9,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
@@ -24,7 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  *  startDate-index (key String + startDate Number)
  *
  */
-@DynamoDBTable(tableName = "HealthDataRecord")
+@DynamoDBTable(tableName = "HealthDataRecord2")
 public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
 
     private String key;
@@ -32,6 +33,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     private long startDate;
     private long endDate;
     private JsonNode data;
+    private Long version;
 
     public DynamoHealthDataRecord() {
     }
@@ -46,6 +48,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
         this.startDate = record.getStartDate();
         this.endDate = record.getEndDate();
         this.data = record.getData();
+        this.version = record.getVersion();
     }
     
     public DynamoHealthDataRecord(String key, String recordId, HealthDataRecord record) {
@@ -54,10 +57,11 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
         this.startDate = record.getStartDate();
         this.endDate = record.getEndDate();
         this.data = record.getData();
+        this.version = record.getVersion();
     }
     
     public HealthDataRecord toHealthDataRecord() {
-        return new HealthDataRecordImpl(recordId, startDate, endDate, data);
+        return new HealthDataRecordImpl(recordId, startDate, endDate, version, data);
     }
     
     @DynamoDBHashKey
@@ -110,15 +114,27 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     public void setData(JsonNode payload) { 
         this.data = payload; 
     }
+    
+    @Override
+    @DynamoDBVersionAttribute
+    public Long getVersion() {
+        return version;
+    }
+    
+    @Override
+    public void setVersion(Long version) {
+        this.version = version;
+    }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + (int) (endDate ^ (endDate >>> 32));
-        result = prime * result + ((recordId == null) ? 0 : recordId.hashCode());
         result = prime * result + ((key == null) ? 0 : key.hashCode());
+        result = prime * result + ((recordId == null) ? 0 : recordId.hashCode());
         result = prime * result + (int) (startDate ^ (startDate >>> 32));
+        result = prime * result + ((version == null) ? 0 : version.hashCode());
         return result;
     }
 
@@ -131,20 +147,30 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
         if (getClass() != obj.getClass())
             return false;
         DynamoHealthDataRecord other = (DynamoHealthDataRecord) obj;
-        if (endDate != other.endDate)
-            return false;
-        if (recordId == null) {
-            if (other.recordId != null)
+        if (data == null) {
+            if (other.data != null)
                 return false;
-        } else if (!recordId.equals(other.recordId))
+        }
+        if (endDate != other.endDate)
             return false;
         if (key == null) {
             if (other.key != null)
                 return false;
         } else if (!key.equals(other.key))
             return false;
+        if (recordId == null) {
+            if (other.recordId != null)
+                return false;
+        } else if (!recordId.equals(other.recordId))
+            return false;
         if (startDate != other.startDate)
+            return false;
+        if (version == null) {
+            if (other.version != null)
+                return false;
+        } else if (!version.equals(other.version))
             return false;
         return true;
     }
+
 }
