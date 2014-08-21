@@ -260,6 +260,7 @@ public class HealthDataControllerTest {
         data.put("medication", "Lionipril");
         data.put("dosage", "10mg");
         data.put("frequency", "1x/day");
+        data.put("version", "1");
         record.setData(data);
 
         return Lists.newArrayList(record);
