@@ -55,20 +55,8 @@ public interface UserAdminService {
      *            Admin user making service call
      * @param user
      *            target user
-     * @param userStudy
-     *            the study of the target user
      * @throws BridgeServiceException
      */
-    public void deleteUser(User caller, User user, Study userStudy) throws BridgeServiceException;
+    public void deleteUser(User caller, User user) throws BridgeServiceException;
 
-    /**
-     * Deletes the target user from all studies he/she is involved in.
-     * 
-     * @param caller
-     *            Admin user making service call
-     * @param userSessionToken
-     *            session of the target user
-     * @throws BridgeServiceException
-     */
-    public void deleteUserGlobal(User caller, User user) throws BridgeServiceException;
 }

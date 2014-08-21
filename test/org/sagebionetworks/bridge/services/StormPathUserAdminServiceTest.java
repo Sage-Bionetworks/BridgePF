@@ -25,10 +25,13 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import controllers.StudyControllerService;
 
-@ContextConfiguration("file:conf/application-context.xml")
+@ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StormPathUserAdminServiceTest {
 
+    // Decided not to use the helper class for this test because so many edge conditions are 
+    // being tested here.
+    
     @Resource
     AuthenticationServiceImpl authService;
 
@@ -43,7 +46,6 @@ public class StormPathUserAdminServiceTest {
     
     @Resource
     StormPathUserAdminService userAdminService;
-
     private Study study;
     
     private TestUser admin;
@@ -74,11 +76,11 @@ public class StormPathUserAdminServiceTest {
         DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
         
         if (test2User != null) {
-            userAdminService.deleteUser(adminUser, test2User, study);
+            userAdminService.deleteUser(adminUser, test2User);
             test2User = null;
         }
         if (test3User != null) {
-            userAdminService.deleteUser(adminUser, test3User, study);
+            userAdminService.deleteUser(adminUser, test3User);
             test3User = null;
         }
     }
@@ -119,7 +121,7 @@ public class StormPathUserAdminServiceTest {
             
             test2User = authService.signIn(study, test2.getSignIn()).getUser();
             test3User = authService.signIn(study, test3.getSignIn()).getUser();
-            service.deleteUser(test3User, test2User, study);
+            service.deleteUser(test3User, test2User);
             
             fail("Did not throw 403 exception");
         } catch (BridgeServiceException e) {
@@ -141,7 +143,7 @@ public class StormPathUserAdminServiceTest {
     public void deletedUserHasBeenDeleted() {
         test2User = service.createUser(adminUser, test2.getSignUp(), study, true, true).getUser();
         
-        service.deleteUser(adminUser, test2User, study);
+        service.deleteUser(adminUser, test2User);
         
         // This should fail with a 404.
         authService.signIn(study, test2.getSignIn());

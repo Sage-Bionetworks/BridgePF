@@ -17,8 +17,6 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountCriteria;
@@ -30,8 +28,6 @@ import com.stormpath.sdk.directory.Directory;
 import controllers.StudyControllerService;
 
 public class StormPathUserAdminService implements UserAdminService {
-
-    private static Logger logger = LoggerFactory.getLogger(StormPathUserAdminService.class);
 
     private AuthenticationService authenticationService;
     private ConsentService consentService;
@@ -132,7 +128,19 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
-    public void deleteUser(User caller, User user, Study userStudy) throws BridgeServiceException {
+    public void deleteUser(User caller, User user) throws BridgeServiceException {
+        if (caller == null) {
+            throw new BridgeServiceException("Calling admin user cannot be null", 400);
+        } else if (user == null) {
+            throw new BridgeServiceException("User cannot be null", 400);
+        }
+        assertAdminUser(caller);
+        for (Study study : studyControllerService.getStudies()) {
+            deleteUserInStudy(caller, user, study);
+        }
+    }
+
+    private void deleteUserInStudy(User caller, User user, Study userStudy) throws BridgeServiceException {
         if (caller == null) {
             throw new BridgeServiceException("Calling admin user cannot be null", 400);
         } else if (user == null) {
@@ -161,19 +169,6 @@ public class StormPathUserAdminService implements UserAdminService {
                 userLockDao.releaseLock(stormpathID, uuid);
             }
         }*/
-    }
-
-    @Override
-    public void deleteUserGlobal(User caller, User user) throws BridgeServiceException {
-        if (caller == null) {
-            throw new BridgeServiceException("Calling admin user cannot be null", 400);
-        } else if (user == null) {
-            throw new BridgeServiceException("User cannot be null", 400);
-        }
-        assertAdminUser(caller);
-        for (Study study : studyControllerService.getStudies()) {
-            deleteUser(caller, user, study);
-        }
     }
 
     private void removeAllHealthDataRecords(User caller, User user, Study userStudy)
@@ -236,7 +231,6 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     private void assertAdminUser(User user) throws BridgeServiceException {
-        logger.info("Admin user: " + user.toString());
         if (!user.getRoles().contains(BridgeConstants.ADMIN_GROUP)) {
             throw new BridgeServiceException("Requires admin user", HttpStatus.SC_FORBIDDEN);
         }

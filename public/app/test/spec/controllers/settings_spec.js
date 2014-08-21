@@ -14,13 +14,13 @@ describe('SettingsModalController', function() {
         modalService = jasmine.createSpyObj( 'modalService', ['openModal'] );
 
         $httpBackend = $injector.get('$httpBackend');
-        $httpBackend.when('GET', '/api/users/profile').respond({
+        $httpBackend.when('GET', '/api/v1/users/profile').respond({
             firstName: 'first name',
             lastName: 'last name',
             username: 'username',
             email: 'username@email.com'
         });
-        $httpBackend.expect('GET', '/api/users/profile');
+        $httpBackend.expect('GET', '/api/v1/users/profile');
 
         $controller = $injector.get('$controller');
         controller = $controller('SettingsModalController', {
@@ -57,17 +57,17 @@ describe('SettingsModalController', function() {
     });
 
     it('should POST when we submit the form.', function() {
-        $httpBackend.when('POST', '/api/users/profile').respond({
+        $httpBackend.when('POST', '/api/v1/users/profile').respond({
             message: 'Profile updated.'
         });
-        $httpBackend.expect('POST', '/api/users/profile');
+        $httpBackend.expect('POST', '/api/v1/users/profile');
 
         scope.submit();
     });
 
     it('should POST when we submit the form and leave the modal instance open if an error occurred.', function() {
-        $httpBackend.when('POST', '/api/users/profile').respond(500);
-        $httpBackend.expect('POST', '/api/users/profile');
+        $httpBackend.when('POST', '/api/v1/users/profile').respond(500);
+        $httpBackend.expect('POST', '/api/v1/users/profile');
 
         scope.submit();
 

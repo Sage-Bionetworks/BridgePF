@@ -18,16 +18,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.models.SignIn;
-import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
-import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.bridge.services.UserAdminService;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -43,7 +37,7 @@ import com.google.common.collect.Lists;
 import play.libs.WS.Response;
 import static org.junit.Assert.*;
 
-@ContextConfiguration("file:conf/application-context.xml")
+@ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class HealthDataControllerTest {
     
@@ -51,25 +45,203 @@ public class HealthDataControllerTest {
     private static final String START_DATE = "startDate";
 
     private ObjectMapper mapper = new ObjectMapper();
-    private Study study;
-    private UserSession adminUser;
-    private UserSession user;
-    
-    @Resource
-    UserAdminService userAdminService;
-    
-    @Resource
-    AuthenticationService authService;
-    
-    @Resource
-    BridgeConfig bridgeConfig;
-    
-    @Resource
-    StudyControllerService studyControllerService;
 
+    @Resource
+    TestUserAdminHelper helper;
+    
     public HealthDataControllerTest() {
         mapper.setSerializationInclusion(Include.NON_NULL);
     }
+    
+    @Before
+    public void before() {
+        helper.createOneUser();
+    }
+    
+    @After
+    public void after() {
+        helper.deleteOneUser();
+    }
+    
+    @Test
+    public void appendHealthData() throws Exception {
+        running(testServer(3333), new TestUtils.FailableRunnable() {
+            public void testCode() throws Exception {
+
+                List<HealthDataRecord> records = getTestRecords();
+
+                Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
+                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                assertEquals("HTTP response indicates response OK", OK, response.getStatus());
+
+                String id = retrieveNewId(response);
+                assertTrue("ID is not empty", StringUtils.isNotBlank(id));
+            }
+        });
+    }
+
+    @Test
+    public void getAllHealthData() throws Exception {
+        running(testServer(3333), new TestUtils.FailableRunnable() {
+            public void testCode() throws Exception {
+                TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
+                        .post(mapper.writeValueAsString(getTestRecords()))
+                        .get(TIMEOUT);
+                TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
+                        .post(mapper.writeValueAsString(getTestRecords()))
+                        .get(TIMEOUT);
+                TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
+                        .post(mapper.writeValueAsString(getTestRecords()))
+                        .get(TIMEOUT);
+
+                Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL).get().get(TIMEOUT);
+
+                JsonNode body = response.asJson();
+                ArrayNode array = (ArrayNode) body;
+                assertEquals("Returns 3 records", 3, array.size());
+            }
+        });
+    }
+
+    @Test
+    public void getHealthDataByDateRange() throws Exception {
+        running(testServer(3333), new TestUtils.FailableRunnable() {
+            public void testCode() throws Exception {
+                // Time ranges used in this test, and where they overlap with the 3 test windows or not.
+                //       1        1...<2
+                //       2        1............3
+                //       3                                                 4............6
+                //       4                     3...........................4
+                //       5                                                       >5.....6
+                //       6                     3............................................
+                //
+                //                     2__________________________________________5
+                //                1____________3
+                //                                                         4______5
+                
+                long threeDays = (1000L * 60L * 60L * 24L * 3L);
+
+                long thousandDaysAgo = new Date().getTime() - (1000 * 60 * 60 * 24 * 1000);
+                long time1 = thousandDaysAgo + threeDays;
+                long time2 = thousandDaysAgo + threeDays * 2;
+                long time3 = thousandDaysAgo + threeDays * 3;
+                long time4 = thousandDaysAgo + threeDays * 4;
+                long time5 = thousandDaysAgo + threeDays * 5;
+                long time6 = thousandDaysAgo + threeDays * 6;
+
+                List<HealthDataRecord> records = getTestRecords(time1, time2 - 1);
+                Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
+                                        .post(mapper.writeValueAsString(records))
+                                        .get(TIMEOUT);
+                String id1 = retrieveNewId(response);
+
+                records = getTestRecords(time1, time3);
+                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
+                            .post(mapper.writeValueAsString(records))
+                            .get(TIMEOUT);
+                String id2 = retrieveNewId(response);
+
+                records = getTestRecords(time4, time6);
+                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
+                            .post(mapper.writeValueAsString(records))
+                            .get(TIMEOUT);
+                String id3 = retrieveNewId(response);
+
+                records = getTestRecords(time3, time4);
+                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
+                            .post(mapper.writeValueAsString(records))
+                            .get(TIMEOUT);
+                String id4 = retrieveNewId(response);
+
+                records = getTestRecords(time5 + 1, time6);
+                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
+                            .post(mapper.writeValueAsString(records))
+                            .get(TIMEOUT);
+                String id5 = retrieveNewId(response);
+
+                records = getTestRecords(time3, 0);
+                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
+                            .post(mapper.writeValueAsString(records))
+                            .get(TIMEOUT);
+                String id6 = retrieveNewId(response);
+
+                
+                Map<String, String> queryMap = ImmutableMap.of(START_DATE, Long.toString(time2), END_DATE, Long.toString(time5));
+                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
+                List<String> ids = getIds(response);
+                assertTrue("Returns records 2, 3, 4, and 6", ids.containsAll(Lists.newArrayList(id2, id3, id4, id6)));
+                assertFalse("Does not contain records 1 or 5", ids.containsAll(Lists.newArrayList(id1, id5)));
+
+                queryMap = ImmutableMap.of(START_DATE, Long.toString(time1), END_DATE, Long.toString(time3));
+                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
+                ids = getIds(response);
+                assertTrue("Returns records 1, 2, 4, and 6", ids.containsAll(Lists.newArrayList(id1, id2, id4, id6)));
+                assertFalse("Does not contain records 3 or 5", ids.containsAll(Lists.newArrayList(id3, id5)));
+
+                queryMap = ImmutableMap.of(START_DATE, Long.toString(time4), END_DATE, Long.toString(time5));
+                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
+                ids = getIds(response);
+                assertTrue("Returns records 3, 4, and 6", ids.containsAll(Lists.newArrayList(id3, id4, id6)));
+                assertFalse("Does not contain records 1, 2 or 5", ids.containsAll(Lists.newArrayList(id1, id2, id5)));
+            }
+        });
+    }
+
+    @Test
+    public void updateHealthDataRecord() throws Exception {
+        running(testServer(3333), new TestUtils.FailableRunnable() {
+            public void testCode() throws Exception {
+                List<HealthDataRecord> records = getTestRecords();
+
+                Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
+                                        .post(mapper.writeValueAsString(records))
+                                        .get(TIMEOUT);
+                assertEquals("Response status indicates OK response", OK, response.getStatus());
+
+                // Get the id and set it on the object
+                String id = retrieveNewId(response);
+
+                // Add the ID, change a value
+                records.get(0).setRecordId(id);
+                ObjectNode onode = (ObjectNode) records.get(0).getData();
+                onode.put("systolic", 200L);
+
+                // Save it (update)
+                response = TestUtils.getURL(helper.getUserSessionToken(), RECORD_URL + id)
+                            .post(mapper.writeValueAsString(records.get(0)))
+                            .get(TIMEOUT);
+                assertEquals("Response status indicates OK response", OK, response.getStatus());
+
+                // Get it and verify that it was persisted.
+                response = TestUtils.getURL(helper.getUserSessionToken(), RECORD_URL + id).get().get(TIMEOUT);
+                JsonNode body = response.asJson();
+                long valueSaved = body.get("data").get("systolic").asLong();
+                assertEquals("Value saved is 200", 200L, valueSaved);
+            }
+        });
+    }
+
+    @Test
+    public void deleteHealthDataRecord() throws Exception {
+        running(testServer(3333), new TestUtils.FailableRunnable() {
+            public void testCode() throws Exception {
+                List<HealthDataRecord> records = getTestRecords();
+
+                // Create a record, retrieve its ID
+                Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
+                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                String id = retrieveNewId(response);
+
+                response = TestUtils.getURL(helper.getUserSessionToken(), RECORD_URL + id).delete().get(TIMEOUT);
+                assertEquals("Response status indicates OK response", OK, response.getStatus());
+
+                // Now this should generate a not found
+                response = TestUtils.getURL(helper.getUserSessionToken(), RECORD_URL + id).get().get(TIMEOUT);
+                assertEquals("Response status indicates data not found", NOT_FOUND, response.getStatus());
+            }
+        });
+    }
+    
     
     private List<HealthDataRecord> getTestRecords() throws Exception {
         return getTestRecords(1399666566890L, 1399666566890L);
@@ -109,203 +281,5 @@ public class HealthDataControllerTest {
         }
         Collections.sort(ids);
         return ids;
-    }
-    
-    @Before
-    public void before() {
-        study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
-        SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
-        adminUser = authService.signIn(study, admin);
-
-        SignUp signUp = new SignUp("tester", "tester@sagebase.org", "P4ssword");
-        user = userAdminService.createUser(adminUser.getUser(), signUp, study, true, true);
-        
-        TestUtils.deleteHealthDataFor(user);
-    }
-    
-    @After
-    public void after() {
-        userAdminService.deleteUser(adminUser.getUser(), user.getUser(), study);
-        
-        TestUtils.deleteHealthDataFor(user);
-    }
-
-    @Test
-    public void appendHealthData() throws Exception {
-        running(testServer(3333), new TestUtils.FailableRunnable() {
-            public void testCode() throws Exception {
-
-                List<HealthDataRecord> records = getTestRecords();
-
-                Response response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
-                assertEquals("HTTP response indicates response OK", OK, response.getStatus());
-
-                String id = retrieveNewId(response);
-                assertTrue("ID is not empty", StringUtils.isNotBlank(id));
-            }
-        });
-    }
-
-    @Test
-    public void getAllHealthData() throws Exception {
-        running(testServer(3333), new TestUtils.FailableRunnable() {
-            public void testCode() throws Exception {
-                TestUtils.getURL(user.getSessionToken(), TRACKER_URL)
-                        .post(mapper.writeValueAsString(getTestRecords()))
-                        .get(TIMEOUT);
-                TestUtils.getURL(user.getSessionToken(), TRACKER_URL)
-                        .post(mapper.writeValueAsString(getTestRecords()))
-                        .get(TIMEOUT);
-                TestUtils.getURL(user.getSessionToken(), TRACKER_URL)
-                        .post(mapper.writeValueAsString(getTestRecords()))
-                        .get(TIMEOUT);
-
-                Response response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL).get().get(TIMEOUT);
-
-                JsonNode body = response.asJson();
-                ArrayNode array = (ArrayNode) body;
-                assertEquals("Returns 3 records", 3, array.size());
-            }
-        });
-    }
-
-    @Test
-    public void getHealthDataByDateRange() throws Exception {
-        running(testServer(3333), new TestUtils.FailableRunnable() {
-            public void testCode() throws Exception {
-                // Time ranges used in this test, and where they overlap with the 3 test windows or not.
-                //       1        1...<2
-                //       2        1............3
-                //       3                                                 4............6
-                //       4                     3...........................4
-                //       5                                                       >5.....6
-                //       6                     3............................................
-                //
-                //                     2__________________________________________5
-                //                1____________3
-                //                                                         4______5
-                
-                long threeDays = (1000L * 60L * 60L * 24L * 3L);
-
-                long thousandDaysAgo = new Date().getTime() - (1000 * 60 * 60 * 24 * 1000);
-                long time1 = thousandDaysAgo + threeDays;
-                long time2 = thousandDaysAgo + threeDays * 2;
-                long time3 = thousandDaysAgo + threeDays * 3;
-                long time4 = thousandDaysAgo + threeDays * 4;
-                long time5 = thousandDaysAgo + threeDays * 5;
-                long time6 = thousandDaysAgo + threeDays * 6;
-
-                List<HealthDataRecord> records = getTestRecords(time1, time2 - 1);
-                Response response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL)
-                                        .post(mapper.writeValueAsString(records))
-                                        .get(TIMEOUT);
-                String id1 = retrieveNewId(response);
-
-                records = getTestRecords(time1, time3);
-                response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL)
-                            .post(mapper.writeValueAsString(records))
-                            .get(TIMEOUT);
-                String id2 = retrieveNewId(response);
-
-                records = getTestRecords(time4, time6);
-                response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL)
-                            .post(mapper.writeValueAsString(records))
-                            .get(TIMEOUT);
-                String id3 = retrieveNewId(response);
-
-                records = getTestRecords(time3, time4);
-                response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL)
-                            .post(mapper.writeValueAsString(records))
-                            .get(TIMEOUT);
-                String id4 = retrieveNewId(response);
-
-                records = getTestRecords(time5 + 1, time6);
-                response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL)
-                            .post(mapper.writeValueAsString(records))
-                            .get(TIMEOUT);
-                String id5 = retrieveNewId(response);
-
-                records = getTestRecords(time3, 0);
-                response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL)
-                            .post(mapper.writeValueAsString(records))
-                            .get(TIMEOUT);
-                String id6 = retrieveNewId(response);
-
-                
-                Map<String, String> queryMap = ImmutableMap.of(START_DATE, Long.toString(time2), END_DATE, Long.toString(time5));
-                response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
-                List<String> ids = getIds(response);
-                assertTrue("Returns records 2, 3, 4, and 6", ids.containsAll(Lists.newArrayList(id2, id3, id4, id6)));
-                assertFalse("Does not contain records 1 or 5", ids.containsAll(Lists.newArrayList(id1, id5)));
-
-                queryMap = ImmutableMap.of(START_DATE, Long.toString(time1), END_DATE, Long.toString(time3));
-                response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
-                ids = getIds(response);
-                assertTrue("Returns records 1, 2, 4, and 6", ids.containsAll(Lists.newArrayList(id1, id2, id4, id6)));
-                assertFalse("Does not contain records 3 or 5", ids.containsAll(Lists.newArrayList(id3, id5)));
-
-                queryMap = ImmutableMap.of(START_DATE, Long.toString(time4), END_DATE, Long.toString(time5));
-                response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
-                ids = getIds(response);
-                assertTrue("Returns records 3, 4, and 6", ids.containsAll(Lists.newArrayList(id3, id4, id6)));
-                assertFalse("Does not contain records 1, 2 or 5", ids.containsAll(Lists.newArrayList(id1, id2, id5)));
-            }
-        });
-    }
-
-    @Test
-    public void updateHealthDataRecord() throws Exception {
-        running(testServer(3333), new TestUtils.FailableRunnable() {
-            public void testCode() throws Exception {
-                List<HealthDataRecord> records = getTestRecords();
-
-                Response response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL)
-                                        .post(mapper.writeValueAsString(records))
-                                        .get(TIMEOUT);
-                assertEquals("Response status indicates OK response", OK, response.getStatus());
-
-                // Get the id and set it on the object
-                String id = retrieveNewId(response);
-
-                // Add the ID, change a value
-                records.get(0).setRecordId(id);
-                ObjectNode onode = (ObjectNode) records.get(0).getData();
-                onode.put("systolic", 200L);
-
-                // Save it (update)
-                response = TestUtils.getURL(user.getSessionToken(), RECORD_URL + id)
-                            .post(mapper.writeValueAsString(records.get(0)))
-                            .get(TIMEOUT);
-                assertEquals("Response status indicates OK response", OK, response.getStatus());
-
-                // Get it and verify that it was persisted.
-                response = TestUtils.getURL(user.getSessionToken(), RECORD_URL + id).get().get(TIMEOUT);
-                JsonNode body = response.asJson();
-                long valueSaved = body.get("data").get("systolic").asLong();
-                assertEquals("Value saved is 200", 200L, valueSaved);
-            }
-        });
-    }
-
-    @Test
-    public void deleteHealthDataRecord() throws Exception {
-        running(testServer(3333), new TestUtils.FailableRunnable() {
-            public void testCode() throws Exception {
-                List<HealthDataRecord> records = getTestRecords();
-
-                // Create a record, retrieve its ID
-                Response response = TestUtils.getURL(user.getSessionToken(), TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
-                String id = retrieveNewId(response);
-
-                response = TestUtils.getURL(user.getSessionToken(), RECORD_URL + id).delete().get(TIMEOUT);
-                assertEquals("Response status indicates OK response", OK, response.getStatus());
-
-                // Now this should generate a not found
-                response = TestUtils.getURL(user.getSessionToken(), RECORD_URL + id).get().get(TIMEOUT);
-                assertEquals("Response status indicates data not found", NOT_FOUND, response.getStatus());
-            }
-        });
     }
 }
