@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import java.util.List;
+
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -51,8 +53,9 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public User consentToResearch(User caller, ResearchConsent researchConsent, Study study,
+    public User consentToResearch(User caller, ResearchConsent researchConsent, final Study study,
             boolean sendEmail) throws BridgeServiceException {
+
         if (caller == null) {
             throw new BridgeServiceException("User is required.", HttpStatus.SC_BAD_REQUEST);
         } else if (study == null) {
@@ -64,6 +67,7 @@ public class ConsentServiceImpl implements ConsentService {
         } else if (researchConsent.getBirthdate() == null) {
             throw new BridgeServiceException("Consent birth date  is required.", HttpStatus.SC_BAD_REQUEST);
         }
+
         try {
             // Stormpath account
             final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
@@ -71,12 +75,42 @@ public class ConsentServiceImpl implements ConsentService {
 
             // HealthID
             final String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            getHealthId(healthIdKey, customData); // This sets the ID, which we will need when fully implemented
+            HealthId healthId = getHealthId(healthIdKey, customData); // This sets the ID, which we will need when fully implemented
 
-            customData.put(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX, "true");
-            customData.save();
-            caller.setConsent(true);
-            
+            {
+                // TODO: Old. To be removed.
+                customData.put(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX, "true");
+                customData.save();
+                // TODO: New
+                StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
+                if (studyConsent == null) {
+                    // TODO: To be removed once DynamoDB's study consent is ready
+                    studyConsent = new StudyConsent() {
+                        @Override
+                        public String getStudyKey() {
+                            return study.getKey();
+                        }
+                        @Override
+                        public long getCreatedOn() {
+                            return 1406325157000L; // July 25, 2014
+                        }
+                        @Override
+                        public boolean getActive() {
+                            return true;
+                        }
+                        @Override
+                        public String getPath() {
+                            return "conf/email-templates/neurod-consent.html";
+                        }
+                        @Override
+                        public int getMinAge() {
+                            return 17;
+                        }
+                    };
+                }
+                userConsentDao.giveConsent(healthId.getCode(), studyConsent, researchConsent);
+            }
+
             if (sendEmail) {
                 sendMailService.sendConsentAgreement(caller, researchConsent, study);
             }
@@ -95,10 +129,11 @@ public class ConsentServiceImpl implements ConsentService {
             throw new BridgeServiceException("Study is required.", HttpStatus.SC_BAD_REQUEST);
         }
         try {
+            // TODO: Old. To be removed
             final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
             final CustomData customData = account.getCustomData();
-
-            return ("true".equals(customData.get(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX)));
+            boolean consented = ("true".equals(customData.get(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX)));
+            return consented;
         } catch (Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
@@ -112,16 +147,23 @@ public class ConsentServiceImpl implements ConsentService {
             throw new BridgeServiceException("Study is required.", HttpStatus.SC_BAD_REQUEST);
         }
         try {
+            // TODO: Old
             final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
             final CustomData customData = account.getCustomData();
             customData.remove(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX);
             customData.save();
             caller.setConsent(false);
-            /*
-            StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
-            userConsentDao.withdrawConsent(caller.getHealthDataCode(), studyConsent);
+            // TODO: New
+            String healthCode = caller.getHealthDataCode();
+            List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
+            for (StudyConsent consent : consents) {
+                if (userConsentDao.hasConsented(healthCode, consent)) {
+                    userConsentDao.withdrawConsent(healthCode, consent);
+                }
+            }
+
             caller.setConsent(false);
-            */
+
         } catch (Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
@@ -159,7 +201,7 @@ public class ConsentServiceImpl implements ConsentService {
         // TODO Auto-generated method stub
         return null;
     }
-    
+
     private HealthId getHealthId(String healthIdKey, CustomData customData) {
         Object healthIdObj = customData.get(healthIdKey);
         if (healthIdObj != null) {
@@ -170,12 +212,10 @@ public class ConsentServiceImpl implements ConsentService {
                 public String getId() {
                     return healthId;
                 }
-
                 @Override
                 public String getCode() {
                     return healthCode;
                 }
-
             };
         }
         HealthId healthId = healthCodeService.create();
@@ -184,5 +224,4 @@ public class ConsentServiceImpl implements ConsentService {
         customData.save();
         return healthId;
     }
-
 }
