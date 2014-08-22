@@ -37,3 +37,7 @@ deploy:
   app:
     develop: bridge-develop
     prod: bridge-prod
+after_deploy:
+- cd public
+- bash update-js.sh
+- grunt release
