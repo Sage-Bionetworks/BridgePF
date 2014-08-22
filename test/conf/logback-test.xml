@@ -20,6 +20,9 @@
   <logger name="org.sagebionetworks.bridge" level="DEBUG">
     <appender-ref ref="STDOUT" />
   </logger>
+  <logger name="org.sagebionetworks.bridge.dynamodb" level="DEBUG">
+    <appender-ref ref="STDOUT" />
+  </logger>
   <logger name="org.springframework" level="INFO">
     <appender-ref ref="STDOUT" />
   </logger>
