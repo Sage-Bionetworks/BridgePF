@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.List;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.ConsentAlreadyExistsException;
@@ -13,6 +15,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 
 public class DynamoUserConsentDao implements UserConsentDao {
@@ -101,7 +104,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     // Old
 
-    private void giveConsentOld(String healthCode, StudyConsent studyConsent, ResearchConsent researchConsent) {
+    void giveConsentOld(String healthCode, StudyConsent studyConsent, ResearchConsent researchConsent) {
         try {
             DynamoUserConsent consent = new DynamoUserConsent(healthCode, studyConsent);
             consent.setName(researchConsent.getName());
@@ -191,5 +194,33 @@ public class DynamoUserConsentDao implements UserConsentDao {
             throw new ConsentNotFoundException();
         }
         return new ResearchConsent(consent.getName(), consent.getBirthdate());
+    }
+
+    @Override
+    public int backfill() {
+        int count = 0;
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        List<DynamoUserConsent> consentsOld = mapperOld.scan(DynamoUserConsent.class, scanExpression);
+        for (DynamoUserConsent consentOld : consentsOld) {
+            String hashKey = consentOld.getHealthCodeStudy();
+            final String studyKey = consentOld.getStudyKey();
+            final long consentTimestamp = consentOld.getConsentTimestamp();
+            final String healthCode = hashKey.substring(0, hashKey.indexOf(":" + studyKey + ":" + consentTimestamp));
+            final DynamoStudyConsent1 studyConsent = new DynamoStudyConsent1();
+            studyConsent.setStudyKey(studyKey);
+            studyConsent.setCreatedOn(consentTimestamp);
+            if (hasConsentedOld(healthCode, studyConsent)) {
+                if (!hasConsentedNew(healthCode, studyConsent)) {
+                    DynamoUserConsent2 consentNew = new DynamoUserConsent2(healthCode, studyConsent);
+                    consentNew.setDataSharing(true);
+                    consentNew.setName(consentOld.getName());
+                    consentNew.setBirthdate(consentOld.getBirthdate());
+                    consentNew.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
+                    mapper.save(consentNew);
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 }
