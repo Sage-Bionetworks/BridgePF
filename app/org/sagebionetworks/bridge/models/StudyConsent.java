@@ -1,10 +1,13 @@
 package org.sagebionetworks.bridge.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public interface StudyConsent {
 
     /**
      * The study associated with this consent.
      */
+    @JsonIgnore
     String getStudyKey();
 
     /**

@@ -44,7 +44,6 @@ GET     /api/v1/admin/consents/active               @controllers.StudyConsentCon
 GET     /api/v1/admin/consents/:timestamp           @controllers.StudyConsentController.getConsent(timestamp: Long)
 POST    /api/v1/admin/consents                      @controllers.StudyConsentController.addConsent
 POST    /api/v1/admin/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: Long)
-DELETE  /api/v1/admin/consents/:timestamp           @controllers.StudyConsentController.deleteConsent(timestamp: Long)
 
 # Backfill
 GET     /admin/v1/backfill/healthId    @controllers.BackfillController.resetHealthId

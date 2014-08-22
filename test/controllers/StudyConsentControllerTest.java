@@ -60,10 +60,7 @@ public class StudyConsentControllerTest {
                                             .get(TIMEOUT);
                 assertEquals("Must be admin to access consent.", FORBIDDEN, addConsentFail.getStatus());
 
-                // Now admin, can do consent things.
-                helper.addRoleToUser("admin");
-
-                Response addConsent = TestUtils.getURL(helper.getUserSessionToken(), STUDYCONSENT_URL)
+                Response addConsent = TestUtils.getURL(helper.getAdminSessionToken(), STUDYCONSENT_URL)
                                         .post(mapper.writeValueAsString(summary))
                                         .get(TIMEOUT);
                 assertEquals("Successfully add consent.", OK, addConsent.getStatus());
@@ -71,34 +68,21 @@ public class StudyConsentControllerTest {
                 // Get timeout to access this consent later.
                 String timeout = addConsent.asJson().get("createdOn").asText();
 
-                Response getActive = TestUtils.getURL(helper.getUserSessionToken(), STUDYCONSENT_ACTIVE_URL)
+                Response getActive = TestUtils.getURL(helper.getAdminSessionToken(), STUDYCONSENT_ACTIVE_URL)
                                         .get()
                                         .get(TIMEOUT);
                 assertEquals("Successfully get active consent.", OK, getActive.getStatus());
 
-                Response setActive = TestUtils.getURL(helper.getUserSessionToken(), STUDYCONSENT_ACTIVE_URL + "/" + timeout)
+                Response setActive = TestUtils.getURL(helper.getAdminSessionToken(), STUDYCONSENT_ACTIVE_URL + "/" + timeout)
                                         .post("")
                                         .get(TIMEOUT);
                 assertEquals("Successfully set active consent.", OK, setActive.getStatus());
 
-                Response getAll = TestUtils.getURL(helper.getUserSessionToken(), STUDYCONSENT_URL)
+                Response getAll = TestUtils.getURL(helper.getAdminSessionToken(), STUDYCONSENT_URL)
                                     .get()
                                     .get(TIMEOUT);
                 assertEquals("Successfully get all consents.", OK, getAll.getStatus());
 
-                Response deleteFail = TestUtils.getURL(helper.getUserSessionToken(), STUDYCONSENT_URL + "/" + timeout)
-                                    .delete()
-                                    .get(TIMEOUT);
-                assertEquals("Cannot delete active consent.", BAD_REQUEST, deleteFail.getStatus());
-
-                summary = new StudyConsentSummary(19, 0L, true, "fake-path2");
-                addConsent = TestUtils.getURL(helper.getUserSessionToken(), STUDYCONSENT_URL)
-                                        .post(mapper.writeValueAsString(summary))
-                                        .get(TIMEOUT);
-                Response deleteSuccess = TestUtils.getURL(helper.getUserSessionToken(), STUDYCONSENT_URL + "/" + timeout)
-                                            .delete()
-                                            .get(TIMEOUT);
-                assertEquals("Successfully deleted first consent.", OK, deleteSuccess.getStatus());
             }
         });
     }

@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge;
 
-import java.util.Set;
-
 import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -34,7 +32,7 @@ public class TestUserAdminHelper {
     private TestUser testUser = new TestUser("tester", "tester@sagebase.org", "P4ssword");
     private Study study;
     private UserSession adminSession;
-    private String userSessionToken;
+    private UserSession userSession;
 
     public void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
@@ -61,14 +59,12 @@ public class TestUserAdminHelper {
         SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         adminSession = authService.signIn(study, admin);
 
-        UserSession userSession = userAdminService.createUser(adminSession.getUser(), testUser.getSignUp(), study,
+        userSession = userAdminService.createUser(adminSession.getUser(), testUser.getSignUp(), study,
                 true, true);
-        userSessionToken = userSession.getSessionToken();
-        cache.setUserSession(userSessionToken, userSession);
     }
 
     public void deleteOneUser() {
-        userAdminService.deleteUser(adminSession.getUser(), cache.getUserSession(userSessionToken).getUser());
+        userAdminService.deleteUser(adminSession.getUser(), userSession.getUser());
 
         authService.signOut(adminSession.getSessionToken());
     }
@@ -77,8 +73,16 @@ public class TestUserAdminHelper {
         return study;
     }
 
+    public User getAdminUser() {
+        return adminSession.getUser();
+    }
+    
+    public String getAdminSessionToken() {
+        return adminSession.getSessionToken();
+    }
+    
     public User getUser() {
-        return cache.getUserSession(userSessionToken).getUser();
+        return userSession.getUser();
     }
 
     public SignIn getUserSignIn() {
@@ -86,45 +90,15 @@ public class TestUserAdminHelper {
     }
 
     public String getUserSessionToken() {
-        return cache.getUserSession(userSessionToken).getSessionToken();
+        return userSession.getSessionToken();
     }
 
     public UserProfile getUserProfile() {
-        return new UserProfile(cache.getUserSession(userSessionToken).getUser());
+        return new UserProfile(userSession.getUser());
     }
 
     public TestUser getTestUser() {
         return testUser;
-    }
-
-    public void addRoleToUser(String role) {
-        User user = cache.getUserSession(userSessionToken).getUser();
-
-        role = role.toLowerCase();
-        Set<String> roles = user.getRoles();
-        if (!roles.contains(role)) {
-            roles.add(role);
-        }
-
-        user.setRoles(roles);
-        UserSession session = cache.getUserSession(userSessionToken);
-        session.setUser(user);
-        cache.setUserSession(userSessionToken, session);
-    }
-
-    public void removeRoleFromUser(String role) {
-        User user = cache.getUserSession(userSessionToken).getUser();
-
-        role = role.toLowerCase();
-        Set<String> roles = user.getRoles();
-        if (roles.contains(role)) {
-            roles.remove(role);
-        }
-
-        user.setRoles(roles);
-        UserSession session = cache.getUserSession(userSessionToken);
-        session.setUser(user);
-        cache.setUserSession(userSessionToken, session);
     }
 
     public UserSession createUserWithoutConsentOrSignIn(TestUser user) {
