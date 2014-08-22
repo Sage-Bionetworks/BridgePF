@@ -164,7 +164,6 @@ public class HealthDataControllerTest {
                             .post(mapper.writeValueAsString(records))
                             .get(TIMEOUT);
                 String id6 = retrieveNewId(response);
-
                 
                 Map<String, String> queryMap = ImmutableMap.of(START_DATE, Long.toString(time2), END_DATE, Long.toString(time5));
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
@@ -242,7 +241,6 @@ public class HealthDataControllerTest {
         });
     }
     
-    
     private List<HealthDataRecord> getTestRecords() throws Exception {
         return getTestRecords(1399666566890L, 1399666566890L);
     }
@@ -267,8 +265,8 @@ public class HealthDataControllerTest {
 
     private String retrieveNewId(Response response) {
         JsonNode body = response.asJson();
-        JsonNode ids = body.get("ids");
-        return ids.get(0).asText();
+        ArrayNode array = (ArrayNode)body;
+        return array.get(0).get("id").asText();
     }
 
     private List<String> getIds(Response response) {

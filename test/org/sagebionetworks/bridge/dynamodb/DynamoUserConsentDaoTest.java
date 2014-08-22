@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import javax.annotation.Resource;
@@ -10,6 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.dao.ConsentAlreadyExistsException;
+import org.sagebionetworks.bridge.dao.ConsentNotFoundException;
 import org.sagebionetworks.bridge.models.ResearchConsent;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -26,16 +29,16 @@ public class DynamoUserConsentDaoTest {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
-        DynamoTestUtil.clearTable(DynamoUserConsent1.class, "name", "birthdate", "timestamp", "studyKey", "consentTimestamp",
-                "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
+                "consentCreatedOn", "version");
     }
 
     @After
     public void after() {
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
-        DynamoTestUtil.clearTable(DynamoUserConsent1.class, "name", "birthdate", "timestamp", "studyKey", "consentTimestamp",
-                "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
+                "consentCreatedOn", "version");
     }
 
     @Test
@@ -48,12 +51,14 @@ public class DynamoUserConsentDaoTest {
         consent.setCreatedOn(123L);
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
         assertFalse(userConsentDao.hasConsentedNew(healthCode, consent));
+        assertNull(userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
 
         // Give consent
         final ResearchConsent researchConsent = new ResearchConsent("John Smith", "1999-12-01");
         userConsentDao.giveConsent(healthCode, consent, researchConsent);
         assertTrue(userConsentDao.hasConsented(healthCode, consent));
         assertTrue(userConsentDao.hasConsentedNew(healthCode, consent));
+        assertEquals(Long.valueOf(123), userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
 
         // Cannot give consent again if already consented
         try {
@@ -93,23 +98,37 @@ public class DynamoUserConsentDaoTest {
         consent.setCreatedOn(456L);
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
 
-        // Must consent first then share data
+        // Must consent first
+        assertFalse(userConsentDao.isSharingData(healthCode, consent));
+        try {
+            userConsentDao.getConsentSignature(healthCode, consent);
+        } catch (ConsentNotFoundException e) {
+            assertTrue(true); // Expected
+        }
+        try {
+            userConsentDao.withdrawConsent(healthCode, consent);
+        } catch (ConsentNotFoundException e) {
+            assertTrue(true); // Expected
+        }
+
+        // Must consent first before sharing data
         assertFalse(userConsentDao.isSharingData(healthCode, consent));
         try {
             userConsentDao.resumeSharing(healthCode, consent);
-        } catch (IllegalArgumentException e) {
+        } catch (ConsentNotFoundException e) {
             assertTrue(true); // Expected
         }
         try {
             userConsentDao.suspendSharing(healthCode, consent);
-        } catch (IllegalArgumentException e) {
+        } catch (ConsentNotFoundException e) {
             assertTrue(true); // Expected
         }
 
         // Give consent
         final ResearchConsent researchConsent = new ResearchConsent("John Smith", "2009-12-01");
         userConsentDao.giveConsent(healthCode, consent, researchConsent);
-        assertFalse(userConsentDao.hasConsented(healthCode, consent));
+        assertTrue(userConsentDao.hasConsented(healthCode, consent));
+        assertTrue(userConsentDao.isSharingData(healthCode, consent));
 
         // Share data
         userConsentDao.resumeSharing(healthCode, consent);
