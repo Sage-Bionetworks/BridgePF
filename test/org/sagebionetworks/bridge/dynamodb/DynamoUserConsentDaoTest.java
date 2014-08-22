@@ -149,7 +149,7 @@ public class DynamoUserConsentDaoTest {
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
         userConsentDao.giveConsentOld(healthCode, consent, researchConsent);
         assertFalse(userConsentDao.hasConsentedNew(healthCode, consent));
-        userConsentDao.backfill();
+        assertEquals(1, userConsentDao.backfill());
         assertTrue(userConsentDao.hasConsentedNew(healthCode, consent));
         assertTrue(userConsentDao.getConsentCreatedOnNew(healthCode, consent.getStudyKey()) > 0L);
         ResearchConsent signature = userConsentDao.getConsentSignatureNew(healthCode, consent);
