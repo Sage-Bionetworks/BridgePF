@@ -56,17 +56,17 @@ public class BackfillService {
     /**
      * Backfill user consent from Stormpath.
      */
-    public int stormpathUserConsent(Study study) {
+    private int stormpathUserConsent(Study study) {
         int count = 0;
         Application application = StormpathFactory.createStormpathApplication(stormpathClient);
         AccountList accounts = application.getAccounts();
         for (Account account : accounts) {
-            CustomData customData = account.getCustomData();
-            String studyKey = study.getKey();
-            String customDataKey = studyKey + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
-            Object consentedObj = customData.get(customDataKey);
-            String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            Object healthIdObj = customData.get(healthIdKey);
+            final CustomData customData = account.getCustomData();
+            final String studyKey = study.getKey();
+            final String consentedKey = studyKey + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
+            final Object consentedObj = customData.get(consentedKey);
+            final String healthIdKey = studyKey + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+            final Object healthIdObj = customData.get(healthIdKey);
             if (consentedObj != null && healthIdObj != null) {
                 boolean consented = (Boolean)consentedObj;
                 if (consented) {
@@ -89,7 +89,7 @@ public class BackfillService {
     /**
      * Backfill user consent from old schema to new schema.
      */
-    public int userConsent() {
+    public int dynamoUserConsent() {
         return userConsentDao.backfill();
     }
 }
