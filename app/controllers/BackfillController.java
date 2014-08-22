@@ -1,8 +1,8 @@
 package controllers;
 
-import org.sagebionetworks.bridge.backfill.HealthCodeBackfill;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.services.BackfillService;
 
 import play.mvc.Result;
 
@@ -13,23 +13,33 @@ public class BackfillController extends BaseController {
 
     private Client stormpathClient;
 
-    private HealthCodeBackfill healthCodeBackfill;
+    private BackfillService backfillService;
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
     }
 
-    public void setHealthCodeBackfill(HealthCodeBackfill healthCodeBackfill) {
-        this.healthCodeBackfill = healthCodeBackfill;
+    public void setBackfillService(BackfillService backfillService) {
+        this.backfillService = backfillService;
     }
 
-    public Result resetHealthId() throws Exception {
+    public Result stormpathUserConsent() throws Exception {
+        checkUser();
+        int total = backfillService.stormpathUserConsent();
+        return okResult("Done. " + total + " accounts backfilled.");
+    }
+
+    public Result dynamoUserConsent() throws Exception {
+        checkUser();
+        int total = backfillService.dynamoUserConsent();
+        return okResult("Done. " + total + " records backfilled.");
+    }
+
+    private void checkUser() throws Exception {
         UserSession session = getSession();
         Account account = stormpathClient.getResource(session.getUser().getStormpathHref(), Account.class);
         if (!account.isMemberOfGroup("backfill")) {
             throw new BridgeServiceException(account.getUsername() + " not allowed to perform backfill.", 403);
         }
-        int total = healthCodeBackfill.resetHealthId();
-        return okResult("Done. " + total + " accounts backfilled.");
     }
 }
