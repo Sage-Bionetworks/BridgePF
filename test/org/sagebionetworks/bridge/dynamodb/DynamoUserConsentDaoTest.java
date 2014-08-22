@@ -13,7 +13,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.dao.ConsentAlreadyExistsException;
 import org.sagebionetworks.bridge.dao.ConsentNotFoundException;
-import org.sagebionetworks.bridge.models.ResearchConsent;
+import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -54,7 +54,7 @@ public class DynamoUserConsentDaoTest {
         assertNull(userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
 
         // Give consent
-        final ResearchConsent researchConsent = new ResearchConsent("John Smith", "1999-12-01");
+        final ConsentSignature researchConsent = new ConsentSignature("John Smith", "1999-12-01");
         userConsentDao.giveConsent(healthCode, consent, researchConsent);
         assertTrue(userConsentDao.hasConsented(healthCode, consent));
         assertTrue(userConsentDao.hasConsentedNew(healthCode, consent));
@@ -125,7 +125,7 @@ public class DynamoUserConsentDaoTest {
         }
 
         // Give consent
-        final ResearchConsent researchConsent = new ResearchConsent("John Smith", "2009-12-01");
+        final ConsentSignature researchConsent = new ConsentSignature("John Smith", "2009-12-01");
         userConsentDao.giveConsent(healthCode, consent, researchConsent);
         assertTrue(userConsentDao.hasConsented(healthCode, consent));
         assertTrue(userConsentDao.isSharingData(healthCode, consent));
@@ -145,14 +145,14 @@ public class DynamoUserConsentDaoTest {
         final DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey("study789");
         consent.setCreatedOn(456L);
-        ResearchConsent researchConsent = new ResearchConsent("John Smith", "2009-12-01");
+        ConsentSignature researchConsent = new ConsentSignature("John Smith", "2009-12-01");
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
         userConsentDao.giveConsentOld(healthCode, consent, researchConsent);
         assertFalse(userConsentDao.hasConsentedNew(healthCode, consent));
         assertEquals(1, userConsentDao.backfill());
         assertTrue(userConsentDao.hasConsentedNew(healthCode, consent));
         assertTrue(userConsentDao.getConsentCreatedOnNew(healthCode, consent.getStudyKey()) > 0L);
-        ResearchConsent signature = userConsentDao.getConsentSignatureNew(healthCode, consent);
+        ConsentSignature signature = userConsentDao.getConsentSignatureNew(healthCode, consent);
         assertEquals("John Smith", signature.getName());
         assertEquals("2009-12-01", signature.getBirthdate());
     }

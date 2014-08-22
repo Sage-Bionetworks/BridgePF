@@ -7,7 +7,7 @@ import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.ConsentAlreadyExistsException;
 import org.sagebionetworks.bridge.dao.ConsentNotFoundException;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.models.ResearchConsent;
+import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -39,7 +39,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public void giveConsent(String healthCode, StudyConsent studyConsent, ResearchConsent researchConsent) {
+    public void giveConsent(String healthCode, StudyConsent studyConsent, ConsentSignature researchConsent) {
         giveConsentOld(healthCode, studyConsent, researchConsent);
         giveConsentNew(healthCode, studyConsent, researchConsent);
     }
@@ -65,8 +65,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public ResearchConsent getConsentSignature(String healthCode, StudyConsent studyConsent) {
-        ResearchConsent consentOld = getConsentSignatureOld(healthCode, studyConsent);
+    public ConsentSignature getConsentSignature(String healthCode, StudyConsent studyConsent) {
+        ConsentSignature consentOld = getConsentSignatureOld(healthCode, studyConsent);
         if (consentOld != null && !consentOld.equals(getConsentSignatureNew(healthCode, studyConsent))) {
             // TODO: After backfill, log an error here
         }
@@ -104,7 +104,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     // Old
 
-    void giveConsentOld(String healthCode, StudyConsent studyConsent, ResearchConsent researchConsent) {
+    void giveConsentOld(String healthCode, StudyConsent studyConsent, ConsentSignature researchConsent) {
         try {
             DynamoUserConsent consent = new DynamoUserConsent(healthCode, studyConsent);
             consent.setName(researchConsent.getName());
@@ -139,18 +139,18 @@ public class DynamoUserConsentDao implements UserConsentDao {
         return mapperOld.load(consent) != null;
     }
 
-    private ResearchConsent getConsentSignatureOld(String healthCode, StudyConsent studyConsent) {
+    private ConsentSignature getConsentSignatureOld(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent consent = new DynamoUserConsent(healthCode, studyConsent);
         consent = mapperOld.load(consent);
         if (consent == null) {
             throw new ConsentNotFoundException();
         }
-        return new ResearchConsent(consent.getName(), consent.getBirthdate());
+        return new ConsentSignature(consent.getName(), consent.getBirthdate());
     }
 
     // New
 
-    void giveConsentNew(String healthCode, StudyConsent studyConsent, ResearchConsent researchConsent) {
+    void giveConsentNew(String healthCode, StudyConsent studyConsent, ConsentSignature researchConsent) {
         try {
             DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
             consent = mapper.load(consent);
@@ -187,13 +187,13 @@ public class DynamoUserConsentDao implements UserConsentDao {
         return mapper.load(consent) != null;
     }
 
-    ResearchConsent getConsentSignatureNew(String healthCode, StudyConsent studyConsent) {
+    ConsentSignature getConsentSignatureNew(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
         if (consent == null) {
             throw new ConsentNotFoundException();
         }
-        return new ResearchConsent(consent.getName(), consent.getBirthdate());
+        return new ConsentSignature(consent.getName(), consent.getBirthdate());
     }
 
     @Override

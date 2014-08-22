@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.HealthId;
-import org.sagebionetworks.bridge.models.ResearchConsent;
+import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
@@ -53,7 +53,7 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public User consentToResearch(User caller, ResearchConsent researchConsent, final Study study,
+    public User consentToResearch(User caller, ConsentSignature researchConsent, final Study study,
             boolean sendEmail) throws BridgeServiceException {
 
         if (caller == null) {
@@ -178,7 +178,7 @@ public class ConsentServiceImpl implements ConsentService {
         }
         try {
             StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
-            ResearchConsent consent = userConsentDao.getConsentSignature(caller.getHealthDataCode(), studyConsent);
+            ConsentSignature consent = userConsentDao.getConsentSignature(caller.getHealthDataCode(), studyConsent);
             if (studyConsent == null || consent == null) {
                 throw new BridgeServiceException("Study Consent or Consent Signature not found.",
                         HttpStatus.SC_INTERNAL_SERVER_ERROR);
