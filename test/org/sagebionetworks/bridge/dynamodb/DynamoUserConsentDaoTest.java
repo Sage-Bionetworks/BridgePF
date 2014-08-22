@@ -30,7 +30,7 @@ public class DynamoUserConsentDaoTest {
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
         DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
-                "consentCreatedOn", "version");
+                "healthCode", "consentCreatedOn", "version");
     }
 
     @After
@@ -38,7 +38,7 @@ public class DynamoUserConsentDaoTest {
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
         DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
-                "consentCreatedOn", "version");
+                "healthCode", "consentCreatedOn", "version");
     }
 
     @Test
@@ -137,5 +137,23 @@ public class DynamoUserConsentDaoTest {
         assertFalse(userConsentDao.isSharingData(healthCode, consent));
         userConsentDao.resumeSharing(healthCode, consent);
         assertTrue(userConsentDao.isSharingData(healthCode, consent));
+    }
+
+    @Test
+    public void testBackfill() {
+        final String healthCode = "hc123";
+        final DynamoStudyConsent1 consent = new DynamoStudyConsent1();
+        consent.setStudyKey("study789");
+        consent.setCreatedOn(456L);
+        ResearchConsent researchConsent = new ResearchConsent("John Smith", "2009-12-01");
+        assertFalse(userConsentDao.hasConsented(healthCode, consent));
+        userConsentDao.giveConsentOld(healthCode, consent, researchConsent);
+        assertFalse(userConsentDao.hasConsentedNew(healthCode, consent));
+        userConsentDao.backfill();
+        assertTrue(userConsentDao.hasConsentedNew(healthCode, consent));
+        assertTrue(userConsentDao.getConsentCreatedOnNew(healthCode, consent.getStudyKey()) > 0L);
+        ResearchConsent signature = userConsentDao.getConsentSignatureNew(healthCode, consent);
+        assertEquals("John Smith", signature.getName());
+        assertEquals("2009-12-01", signature.getBirthdate());
     }
 }
