@@ -140,7 +140,6 @@
     <bean id="controllers.BackfillController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.BackfillController" parent="BaseController">
-                <property name="stormpathClient" ref="stormpathClient" />
                 <property name="backfillService" ref="backfillService" />
             </bean>
         </property>
