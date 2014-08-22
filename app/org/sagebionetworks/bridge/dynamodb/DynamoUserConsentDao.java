@@ -215,7 +215,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
                     consentNew.setDataSharing(true);
                     consentNew.setName(consentOld.getName());
                     consentNew.setBirthdate(consentOld.getBirthdate());
-                    consentNew.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
+                    consentNew.setSignedOn(consentOld.getGive());
                     mapper.save(consentNew);
                     count++;
                 }
