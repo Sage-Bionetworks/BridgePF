@@ -6,7 +6,7 @@ import static org.junit.Assert.*;
 import org.junit.*;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.models.ResearchConsent;
+import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 
@@ -22,7 +22,7 @@ public class SendMailViaAmazonServiceTest {
     
     private SendMailViaAmazonService service;
     private AmazonSimpleEmailServiceClient emailClient;
-    private ResearchConsent consent;
+    private ConsentSignature consent;
     private Study study;
     private ArgumentCaptor<SendEmailRequest> argument;
 
@@ -35,7 +35,7 @@ public class SendMailViaAmazonServiceTest {
         service.setFromEmail(recipientEmail);
         service.setEmailClient(emailClient);
         
-        consent = new ResearchConsent("Test 2", "1950-05-05");
+        consent = new ConsentSignature("Test 2", "1950-05-05");
         study = new Study("Second Study", "secondstudy", 17, null, null, null, TestConstants.secondStudyConsent);
     }
     
