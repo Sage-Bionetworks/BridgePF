@@ -14,7 +14,6 @@ import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
-import org.sagebionetworks.bridge.models.StudyConsentSummary;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -53,15 +52,17 @@ public class StudyConsentControllerTest {
 
             @Override
             public void testCode() throws Exception {
-                StudyConsentSummary summary = new StudyConsentSummary(17, 0L, false, "fake-path");
+                DynamoStudyConsent1 consent = new DynamoStudyConsent1();
+                consent.setMinAge(17);
+                consent.setPath("fake-path");
 
                 Response addConsentFail = TestUtils.getURL(helper.getUserSessionToken(), STUDYCONSENT_URL)
-                                            .post(mapper.writeValueAsString(summary))
+                                            .post(mapper.writeValueAsString(consent))
                                             .get(TIMEOUT);
                 assertEquals("Must be admin to access consent.", FORBIDDEN, addConsentFail.getStatus());
 
                 Response addConsent = TestUtils.getURL(helper.getAdminSessionToken(), STUDYCONSENT_URL)
-                                        .post(mapper.writeValueAsString(summary))
+                                        .post(mapper.writeValueAsString(consent))
                                         .get(TIMEOUT);
                 assertEquals("Successfully add consent.", OK, addConsent.getStatus());
 
