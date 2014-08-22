@@ -5,8 +5,7 @@ import global.JsonSchemaValidator;
 import java.util.Date;
 import java.util.List;
 
-import models.IdHolder;
-
+import org.sagebionetworks.bridge.models.IdVersionHolder;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -51,8 +50,8 @@ public class HealthDataController extends BaseController {
         
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
         
-        List<String> ids = healthDataService.appendHealthData(key, records);
-        return ok(Json.toJson(new IdHolder(ids)));
+        List<IdVersionHolder> ids = healthDataService.appendHealthData(key, records);
+        return ok(Json.toJson(ids));
     }
     
     public Result getHealthData(Long trackerId, Long startDate, Long endDate) throws Exception {
@@ -109,8 +108,8 @@ public class HealthDataController extends BaseController {
         new JsonSchemaValidator().validate(tracker, node);
         HealthDataRecord record = HealthDataRecordImpl.fromJson(node);
         
-        healthDataService.updateHealthDataRecord(key, record);
-        return okResult("Record updated.");
+        IdVersionHolder holder = healthDataService.updateHealthDataRecord(key, record);
+        return ok(Json.toJson(holder));
     }
     
     public Result deleteHealthDataRecord(Long trackerId, String recordId) throws Exception {

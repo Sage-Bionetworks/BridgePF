@@ -7,6 +7,9 @@ public interface HealthDataRecord {
     public String getRecordId();
     public void setRecordId(String recordId);
     
+    public Long getVersion();
+    public void setVersion(Long version);
+    
     public long getStartDate();
     public void setStartDate(long startDate);
     
