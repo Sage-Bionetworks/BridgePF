@@ -39,7 +39,8 @@ POST    /api/v1/users/consent/dataSharing/suspend   @controllers.ConsentControll
 POST    /api/v1/users/consent/dataSharing/resume    @controllers.ConsentController.resumeDataSharing
 
 # Backfill
-GET     /admin/v1/backfill/healthId    @controllers.BackfillController.resetHealthId
+GET     /admin/v1/backfill/stormpathUserConsent     @controllers.BackfillController.stormpathUserConsent
+GET     /admin/v1/backfill/dynamoUserConsent        @controllers.BackfillController.dynamoUserConsent
 
 # AngularJS application
 GET     /*file      controllers.Assets.at(path="/public", file)
