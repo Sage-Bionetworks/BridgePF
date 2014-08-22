@@ -149,7 +149,7 @@
     <bean id="controllers.StudyConsentController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.StudyConsentController" parent="BaseController">
-                <property name="studyConsentDao" ref="studyConsentDao" />
+                <property name="studyConsentService" ref="studyConsentService" />
                 <property name="studyControllerService" ref="studyControllerService" />
             </bean>
         </property>
@@ -246,6 +246,10 @@
         <property name="sendMailService" ref="sendEmailViaAmazonService"/>
         <property name="studyConsentDao" ref="studyConsentDao"/>
         <property name="userConsentDao" ref="userConsentDao"/>
+    </bean>
+    
+    <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">
+        <property name="studyConsentDao" ref="studyConsentDao" />
     </bean>
 
     <!-- Backfill -->
