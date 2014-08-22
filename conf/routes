@@ -39,11 +39,12 @@ POST    /api/v1/users/consent/dataSharing/suspend   @controllers.ConsentControll
 POST    /api/v1/users/consent/dataSharing/resume    @controllers.ConsentController.resumeDataSharing
 
 # API - study consent
-GET     /api/v1/admin/consents              @controllers.StudyConsentController.getConsents
-GET     /api/v1/admin/consents/active       @controllers.StudyConsentController.getActiveConsent
-GET     /api/v1/admin/consents/:consentId   @controllers.StudyConsentController.getConsentWithId
-POST    /api/v1/admin/consents              @controllers.StudyConsentController.addConsent
-POST    /api/v1/admin/consents/active       @contorllers.StudyConsentController.setActiveConsent
+GET     /api/v1/admin/consents                      @controllers.StudyConsentController.getAllConsents
+GET     /api/v1/admin/consents/active               @controllers.StudyConsentController.getActiveConsent
+GET     /api/v1/admin/consents/:timestamp           @controllers.StudyConsentController.getConsent(timestamp: Long)
+POST    /api/v1/admin/consents                      @controllers.StudyConsentController.addConsent
+POST    /api/v1/admin/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: Long)
+DELETE  /api/v1/admin/consents/:timestamp           @controllers.StudyConsentController.deleteConsent(timestamp: Long)
 
 # Backfill
 GET     /admin/v1/backfill/healthId    @controllers.BackfillController.resetHealthId

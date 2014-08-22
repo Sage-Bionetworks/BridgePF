@@ -17,6 +17,7 @@
         <property name="authService" ref="authenticationService"/>
         <property name="bridgeConfig" ref="bridgeConfig"/>
         <property name="studyControllerService" ref="studyControllerService"/>
+        <property name="cacheProvider" ref="cacheProvider"/>
     </bean>
     
 </beans>
