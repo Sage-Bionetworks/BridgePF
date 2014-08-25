@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.UserLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
-import org.sagebionetworks.bridge.models.ResearchConsent;
+import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
@@ -99,7 +99,7 @@ public class StormPathUserAdminService implements UserAdminService {
         } catch (ConsentRequiredException e) {
             newUserSession = e.getUserSession();
             if (consentUser) {
-                ResearchConsent consent = new ResearchConsent("Test Signature", "1989-08-19");
+                ConsentSignature consent = new ConsentSignature("Test Signature", "1989-08-19");
                 consentService.consentToResearch(newUserSession.getUser(), consent, userStudy, false);
 
                 // Now, sign in again so you get the consented user into the session

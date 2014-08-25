@@ -22,7 +22,8 @@ public class DynamoUserConsent2 implements DynamoTable {
     private String name;
     private String birthdate;
 
-    // Study-consent composite key copied over to avoid parsing
+    // Composite key parts copied over to avoid parsing
+    private String healthCode;
     private String studyKey;
     private long consentCreatedOn;
 
@@ -30,6 +31,8 @@ public class DynamoUserConsent2 implements DynamoTable {
 
     // Constructor to create a hash-key object
     DynamoUserConsent2(String healthCode, String studyKey) {
+        this.healthCode = healthCode;
+        this.studyKey = studyKey;
         healthCodeStudy = healthCode + ":" + studyKey;
     }
 
@@ -46,6 +49,7 @@ public class DynamoUserConsent2 implements DynamoTable {
         version = consent.version;
         name = consent.name;
         birthdate = consent.birthdate;
+        healthCode = consent.healthCode;
         studyKey = consent.studyKey;
         consentCreatedOn = consent.consentCreatedOn;
     }
@@ -75,6 +79,14 @@ public class DynamoUserConsent2 implements DynamoTable {
     }
     public void setDataSharing(boolean dataSharing) {
         this.dataSharing = dataSharing;
+    }
+
+    @DynamoDBAttribute
+    public String getHealthCode() {
+        return healthCode;
+    }
+    public void setHealthCode(String healthCode) {
+        this.healthCode = healthCode;
     }
 
     @DynamoDBAttribute

@@ -6,7 +6,7 @@ import org.joda.time.format.DateTimeFormatter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class ResearchConsent {
+public class ConsentSignature {
 
     private static final String NAME_FIELD = "name";
     private static final String BIRTHDATE_FIELD = "birthdate";
@@ -15,12 +15,12 @@ public class ResearchConsent {
     private String name;
     private DateTime birthdate;
     
-    public ResearchConsent(String name, String birthdate) {
+    public ConsentSignature(String name, String birthdate) {
         this.name = name;
         this.birthdate = parseDate(birthdate);
     }
     
-    public static final ResearchConsent fromJson(JsonNode node) {
+    public static final ConsentSignature fromJson(JsonNode node) {
         String name = null;
         String birthdate = null;
         if (node != null && node.get(NAME_FIELD) != null) {
@@ -29,7 +29,7 @@ public class ResearchConsent {
         if (node != null && node.get(BIRTHDATE_FIELD) != null) {
             birthdate = node.get(BIRTHDATE_FIELD).asText();
         }
-        return new ResearchConsent(name, birthdate);
+        return new ConsentSignature(name, birthdate);
     }
 
     public String getName() {
