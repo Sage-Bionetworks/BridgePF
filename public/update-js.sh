@@ -1,27 +1,16 @@
-# npm cache clean
 npm install
-# bower cache clean
-bower install
+#bower install
 cd app/
-# npm cache clean
 npm install
-# bower cache clean
-bower install
+#bower install
 cd ../shared
-# npm cache clean
 npm install
-# bower cache clean
-bower install
+#bower install
 cd ../neurod
-# npm cache clean
 npm install
-# bower cache clean
-bower install
+#bower install
 cd ../consent
-# npm cache clean
 npm install
-# bower cache clean
-bower install
+#bower install
 cd ..
-# npm cache clean
 npm install
