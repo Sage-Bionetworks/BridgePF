@@ -68,11 +68,35 @@ public class BackfillService {
             final String healthIdKey = studyKey + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
             final Object healthIdObj = customData.get(healthIdKey);
             if (consentedObj != null && healthIdObj != null) {
-                boolean consented = (Boolean)consentedObj;
+                boolean consented = "true".equals(((String)consentedObj).toLowerCase());
                 if (consented) {
                     String healthId = healthCodeEncryptor.decrypt((String) healthIdObj);
                     String healthCode = healthCodeService.getHealthCode(healthId);
                     StudyConsent studyConsent = studyConsentDao.getConsent(studyKey);
+                    if (studyConsent == null) {
+                        studyConsent = new StudyConsent() {
+                            @Override
+                            public String getStudyKey() {
+                                return studyKey;
+                            }
+                            @Override
+                            public long getCreatedOn() {
+                                return 1406325157000L; // July 25, 2014
+                            }
+                            @Override
+                            public boolean getActive() {
+                                return true;
+                            }
+                            @Override
+                            public String getPath() {
+                                return "conf/email-templates/neurod-consent.html";
+                            }
+                            @Override
+                            public int getMinAge() {
+                                return 17;
+                            }
+                        };
+                    }
                     if (!userConsentDao.hasConsented(healthCode, studyConsent)) {
                         // Consent signature is not stored in Stormpath
                         String userName = account.getUsername();
