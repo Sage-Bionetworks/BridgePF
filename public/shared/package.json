@@ -23,8 +23,5 @@
     "grunt-contrib-watch": "^0.6.1",
     "grunt-contrib-jasmine": "^0.6.3",
     "grunt-hashres": "^0.4.1"
-  },
-  "scripts": {
-    "postinstall": "bower install --config.directory=bower_components"
   }
 }
