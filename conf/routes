@@ -46,7 +46,8 @@ POST    /api/v1/admin/consents                      @controllers.StudyConsentCon
 POST    /api/v1/admin/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: Long)
 
 # Backfill
-GET     /admin/v1/backfill/healthId    @controllers.BackfillController.resetHealthId
+GET     /admin/v1/backfill/stormpathUserConsent     @controllers.BackfillController.stormpathUserConsent
+GET     /admin/v1/backfill/dynamoUserConsent        @controllers.BackfillController.dynamoUserConsent
 
 # AngularJS application
 GET     /*file      controllers.Assets.at(path="/public", file)

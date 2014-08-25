@@ -8,7 +8,7 @@ import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.ResearchConsent;
+import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 
@@ -41,7 +41,7 @@ public class SendMailViaAmazonService implements SendMailService {
     }
     
     @Override
-    public void sendConsentAgreement(User user, ResearchConsent consent, Study study) {
+    public void sendConsentAgreement(User user, ConsentSignature consent, Study study) {
         try {
             Content subject = new Content().withData("Consent Agreement for " + study.getName());
             Body body = createSignedDocument(consent, study);
@@ -57,7 +57,7 @@ public class SendMailViaAmazonService implements SendMailService {
         }
     }
     
-    private Body createSignedDocument(ResearchConsent consent, Study study) throws UnsupportedEncodingException, IOException {
+    private Body createSignedDocument(ConsentSignature consent, Study study) throws UnsupportedEncodingException, IOException {
         InputStreamReader isr = new InputStreamReader(study.getConsentAgreement().getInputStream(), "UTF-8");
         String consentAgreementHTML = CharStreams.toString(isr);
 
