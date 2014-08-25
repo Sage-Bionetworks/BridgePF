@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge;
 
 import org.sagebionetworks.bridge.TestConstants.TestUser;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.Study;
@@ -14,12 +13,10 @@ import org.sagebionetworks.bridge.services.UserAdminService;
 import controllers.StudyControllerService;
 
 /**
- * A support class that can be injected into any SpringJUnit4ClassRunner test
- * that needs to create a test user before performing some tests. This is an
- * involved process because it goes through our regular UserAdminService class.
- * It requires that your bridge.conf specify the credentials of an existing user
- * with admin privileges (such a user already exists in the local and dev
- * environments; you can get the credentials from Alx).
+ * A support class that can be injected into any SpringJUnit4ClassRunner test that needs to create a test user before
+ * performing some tests. This is an involved process because it goes through our regular UserAdminService class. It
+ * requires that your bridge.conf specify the credentials of an existing user with admin privileges (such a user already
+ * exists in the local and dev environments; you can get the credentials from Alx).
  */
 public class TestUserAdminHelper {
 
@@ -27,7 +24,6 @@ public class TestUserAdminHelper {
     AuthenticationService authService;
     BridgeConfig bridgeConfig;
     StudyControllerService studyControllerService;
-    CacheProvider cache;
 
     private TestUser testUser = new TestUser("tester", "tester@sagebase.org", "P4ssword");
     private Study study;
@@ -35,77 +31,72 @@ public class TestUserAdminHelper {
     private UserSession userSession;
 
     public void setUserAdminService(UserAdminService userAdminService) {
-        this.userAdminService = userAdminService;
+	this.userAdminService = userAdminService;
     }
 
     public void setAuthService(AuthenticationService authService) {
-        this.authService = authService;
+	this.authService = authService;
     }
 
     public void setBridgeConfig(BridgeConfig bridgeConfig) {
-        this.bridgeConfig = bridgeConfig;
+	this.bridgeConfig = bridgeConfig;
     }
 
     public void setStudyControllerService(StudyControllerService studyControllerService) {
-        this.studyControllerService = studyControllerService;
-    }
-
-    public void setCacheProvider(CacheProvider cache) {
-        this.cache = cache;
+	this.studyControllerService = studyControllerService;
     }
 
     public void createOneUser() {
-        study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
-        SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
-        adminSession = authService.signIn(study, admin);
+	study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
+	SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
+	adminSession = authService.signIn(study, admin);
 
-        userSession = userAdminService.createUser(adminSession.getUser(), testUser.getSignUp(), study,
-                true, true);
+	userSession = userAdminService.createUser(adminSession.getUser(), testUser.getSignUp(), study, true, true);
     }
 
     public void deleteOneUser() {
-        userAdminService.deleteUser(adminSession.getUser(), userSession.getUser());
+	userAdminService.deleteUser(adminSession.getUser(), userSession.getUser());
 
-        authService.signOut(adminSession.getSessionToken());
+	authService.signOut(adminSession.getSessionToken());
     }
 
     public Study getStudy() {
-        return study;
+	return study;
     }
 
     public User getAdminUser() {
-        return adminSession.getUser();
+	return adminSession.getUser();
     }
-    
+
     public String getAdminSessionToken() {
-        return adminSession.getSessionToken();
+	return adminSession.getSessionToken();
     }
-    
+
     public User getUser() {
-        return userSession.getUser();
+	return userSession.getUser();
     }
 
     public SignIn getUserSignIn() {
-        return testUser.getSignIn();
+	return testUser.getSignIn();
     }
 
     public String getUserSessionToken() {
-        return userSession.getSessionToken();
+	return userSession.getSessionToken();
     }
 
     public UserProfile getUserProfile() {
-        return new UserProfile(userSession.getUser());
+	return new UserProfile(userSession.getUser());
     }
 
     public TestUser getTestUser() {
-        return testUser;
+	return testUser;
     }
 
     public UserSession createUserWithoutConsentOrSignIn(TestUser user) {
-        return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), study, false, false);
+	return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), study, false, false);
     }
 
     public void deleteUser(User user) {
-        userAdminService.deleteUser(adminSession.getUser(), user);
+	userAdminService.deleteUser(adminSession.getUser(), user);
     }
 }
