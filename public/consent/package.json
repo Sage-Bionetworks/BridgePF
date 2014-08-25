@@ -24,6 +24,6 @@
     "grunt-hashres": "^0.4.1"
   },
   "scripts": {
-    "postinstall": "bower install"
+    "postinstall": "bower install --config.directory=bower_components"
   }
 }
