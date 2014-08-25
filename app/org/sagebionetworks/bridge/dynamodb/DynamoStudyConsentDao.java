@@ -58,7 +58,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyKey);
         DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
-        	new DynamoDBQueryExpression<DynamoStudyConsent1>()
+                new DynamoDBQueryExpression<DynamoStudyConsent1>()
                 .withHashKeyValues(hashKey)
                 .withScanIndexForward(false)
                 .withQueryFilterEntry("active", new Condition()
@@ -84,7 +84,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyKey);
         DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
-        	new DynamoDBQueryExpression<DynamoStudyConsent1>()
+                new DynamoDBQueryExpression<DynamoStudyConsent1>()
                 .withHashKeyValues(hashKey)
                 .withScanIndexForward(false);
         PaginatedQueryList<DynamoStudyConsent1> consents = mapper.query(DynamoStudyConsent1.class, queryExpression);

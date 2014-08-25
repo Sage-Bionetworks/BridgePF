@@ -31,72 +31,72 @@ public class TestUserAdminHelper {
     private UserSession userSession;
 
     public void setUserAdminService(UserAdminService userAdminService) {
-	this.userAdminService = userAdminService;
+        this.userAdminService = userAdminService;
     }
 
     public void setAuthService(AuthenticationService authService) {
-	this.authService = authService;
+        this.authService = authService;
     }
 
     public void setBridgeConfig(BridgeConfig bridgeConfig) {
-	this.bridgeConfig = bridgeConfig;
+        this.bridgeConfig = bridgeConfig;
     }
 
     public void setStudyControllerService(StudyControllerService studyControllerService) {
-	this.studyControllerService = studyControllerService;
+        this.studyControllerService = studyControllerService;
     }
 
     public void createOneUser() {
-	study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
-	SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
-	adminSession = authService.signIn(study, admin);
+        study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
+        SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
+        adminSession = authService.signIn(study, admin);
 
-	userSession = userAdminService.createUser(adminSession.getUser(), testUser.getSignUp(), study, true, true);
+        userSession = userAdminService.createUser(adminSession.getUser(), testUser.getSignUp(), study, true, true);
     }
 
     public void deleteOneUser() {
-	userAdminService.deleteUser(adminSession.getUser(), userSession.getUser());
+        userAdminService.deleteUser(adminSession.getUser(), userSession.getUser());
 
-	authService.signOut(adminSession.getSessionToken());
+        authService.signOut(adminSession.getSessionToken());
     }
 
     public Study getStudy() {
-	return study;
+        return study;
     }
 
     public User getAdminUser() {
-	return adminSession.getUser();
+        return adminSession.getUser();
     }
 
     public String getAdminSessionToken() {
-	return adminSession.getSessionToken();
+        return adminSession.getSessionToken();
     }
 
     public User getUser() {
-	return userSession.getUser();
+        return userSession.getUser();
     }
 
     public SignIn getUserSignIn() {
-	return testUser.getSignIn();
+        return testUser.getSignIn();
     }
 
     public String getUserSessionToken() {
-	return userSession.getSessionToken();
+        return userSession.getSessionToken();
     }
 
     public UserProfile getUserProfile() {
-	return new UserProfile(userSession.getUser());
+        return new UserProfile(userSession.getUser());
     }
 
     public TestUser getTestUser() {
-	return testUser;
+        return testUser;
     }
 
     public UserSession createUserWithoutConsentOrSignIn(TestUser user) {
-	return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), study, false, false);
+        return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), study, false, false);
     }
 
     public void deleteUser(User user) {
-	userAdminService.deleteUser(adminSession.getUser(), user);
+        userAdminService.deleteUser(adminSession.getUser(), user);
     }
 }
