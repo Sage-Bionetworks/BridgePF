@@ -100,7 +100,7 @@ public class BackfillService {
                     if (!userConsentDao.hasConsented(healthCode, studyConsent)) {
                         // Consent signature is not stored in Stormpath
                         String userName = account.getUsername();
-                        ConsentSignature researchConsent = new ConsentSignature(userName, "1970/01/01");
+                        ConsentSignature researchConsent = new ConsentSignature(userName, "1970-01-01");
                         userConsentDao.giveConsent(healthCode, studyConsent, researchConsent);
                         count++;
                     }
