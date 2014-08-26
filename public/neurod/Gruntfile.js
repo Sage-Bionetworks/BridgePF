@@ -15,7 +15,8 @@ module.exports = function(grunt) {
         output: "build",
         
         clean: {
-            build: ['<%= output %>']
+            build: ['<%= output %>'],
+            release: ['bower_components', 'node_modules']
         },
         jshint: {
             options: { node: true, loopfunc: true, globals: { "angular": false } },
@@ -79,5 +80,5 @@ module.exports = function(grunt) {
     grunt.registerTask('test', ['build']);
     grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify', 'hashres']);
     grunt.registerTask('default', ['jshint', 'clean:build', 'concat', 'sass', 'uglify', 'hashres']);
-    grunt.registerTask('release', ['build']);
+    grunt.registerTask('release', ['test', 'clean:release']);
 };
