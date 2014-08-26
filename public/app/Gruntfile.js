@@ -10,8 +10,7 @@ module.exports = function(grunt) {
         output: "build",
         
         clean: {
-            build: ['<%= output %>'],
-            release: ['node_modules', 'bower_components']
+            build: ['<%= output %>']
         },
         jshint: {
             options: { node: true, loopfunc: true, globals: { "angular": false } },
@@ -25,7 +24,7 @@ module.exports = function(grunt) {
         concat: {
             js: {
                 src: [
-                    'bower_components/dygraphs/dygraph.dev.js',
+                    'bower_components/dygraphs/dygraph.js',
                     'scripts/app.js',
                     'scripts/services/*.js',
                     'scripts/directives/*.js',
@@ -87,5 +86,5 @@ module.exports = function(grunt) {
     grunt.registerTask('test', ['build', 'jasmine']);
     grunt.registerTask('build', ['jshint', 'clean:build', 'concat', 'sass', 'uglify', 'hashres']);
     grunt.registerTask('default', ['jshint', 'clean:build', 'concat', 'sass', 'uglify', 'hashres']);
-    grunt.registerTask('release', ['test', 'clean:release']);
+    grunt.registerTask('release', ['build']);
 };
