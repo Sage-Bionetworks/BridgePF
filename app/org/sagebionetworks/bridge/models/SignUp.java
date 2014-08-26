@@ -18,7 +18,7 @@ public class SignUp {
         this.password = password;
     }
     
-    public static SignUp fromJson(JsonNode node) {
+    public static final SignUp fromJson(JsonNode node) {
         String username = null;
         String email = null;
         String password = null;
@@ -44,6 +44,10 @@ public class SignUp {
     
     public String getPassword() {
         return password;
+    }
+    
+    public String getType() {
+        return this.getClass().getSimpleName();
     }
 
 }

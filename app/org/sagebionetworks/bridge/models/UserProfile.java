@@ -25,6 +25,20 @@ public class UserProfile {
     public UserProfile() {
     }
     
+    public static UserProfile fromJson(JsonNode node) {
+        if (node == null) {
+            throw new BridgeServiceException("User JSON is null", 500);
+        }
+        UserProfile user = new UserProfile();
+        if (node.get(FIRSTNAME) != null) {
+            user.setFirstName(replaceWithEmpty(node.get(FIRSTNAME).asText()));
+        }
+        if (node.get(LASTNAME) != null) {
+            user.setLastName(replaceWithEmpty(node.get(LASTNAME).asText()));
+        }
+        return user;
+    }
+    
     public String getFirstName() {
         return this.firstName;
     }
@@ -58,21 +72,11 @@ public class UserProfile {
     public void setEmail(String email) {
         this.email = email;
     }
-
-    public static UserProfile fromJson(JsonNode node) {
-        if (node == null) {
-            throw new BridgeServiceException("User JSON is null", 500);
-        }
-        UserProfile user = new UserProfile();
-        if (node.get(FIRSTNAME) != null) {
-            user.setFirstName(replaceWithEmpty(node.get(FIRSTNAME).asText()));
-        }
-        if (node.get(LASTNAME) != null) {
-            user.setLastName(replaceWithEmpty(node.get(LASTNAME).asText()));
-        }
-        return user;
-    }
     
+    public String getType() {
+        return this.getClass().getSimpleName();
+    }
+
     private static String replaceWithEmpty(String s) {
         if (StringUtils.isBlank(s)) {
             return "<EMPTY>";

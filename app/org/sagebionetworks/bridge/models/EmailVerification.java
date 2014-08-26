@@ -5,13 +5,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class EmailVerification {
 
     private static final String SPTOKEN_FIELD = "sptoken";
-    
+
     private final String sptoken;
-    
+
     public EmailVerification(String sptoken) {
         this.sptoken = sptoken;
     }
-    
+
     public static final EmailVerification fromJson(JsonNode node) {
         String sptoken = null;
         if (node != null && node.get(SPTOKEN_FIELD) != null) {
@@ -22,6 +22,10 @@ public class EmailVerification {
 
     public String getSptoken() {
         return sptoken;
+    }
+
+    public String getType() {
+        return this.getClass().getSimpleName();
     }
 
 }

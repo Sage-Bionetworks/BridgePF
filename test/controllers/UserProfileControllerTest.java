@@ -1,28 +1,34 @@
 package controllers;
 
+import static org.junit.Assert.assertEquals;
+import static org.sagebionetworks.bridge.TestConstants.PROFILE_URL;
+import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
+import static play.mvc.Http.Status.OK;
+import static play.mvc.Http.Status.UNAUTHORIZED;
+import static play.test.Helpers.running;
+import static play.test.Helpers.testServer;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
 import javax.annotation.Resource;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import play.libs.WS.Response;
+
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-
-import play.libs.WS.Response;
-import static play.mvc.Http.Status.*;
-import static play.test.Helpers.*;
-import static org.sagebionetworks.bridge.TestConstants.*;
-import static org.junit.Assert.*;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -69,7 +75,7 @@ public class UserProfileControllerTest {
 
                 int count = 0;
                 
-                List<String> profileFieldNames = Lists.newArrayList("firstName", "lastName", "username", "email");
+                List<String> profileFieldNames = Lists.newArrayList("firstName", "lastName", "username", "email", "type");
                 Iterator<Entry<String, JsonNode>> fields = response.asJson().fields();
                 while (fields.hasNext()) {
                     String fieldName = fields.next().getKey();
@@ -77,7 +83,7 @@ public class UserProfileControllerTest {
                         count++;
                     }
                 }
-                assertEquals("User profile has all required fields.", count, 4);
+                assertEquals("User profile has all required fields.", count, 5);
             }
         });
     }
