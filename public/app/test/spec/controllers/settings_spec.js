@@ -75,5 +75,20 @@ describe('SettingsModalController', function() {
         expect(modalInstance.close).not.toHaveBeenCalled();
     });
 
+    it('should POST when we call suspend or resume data sharing.', function() {
+        $httpBackend.when('POST', '/api/v1/users/consent/dataSharing/resume').respond({
+            message: 'Resuming data sharing.'
+        });
+        $httpBackend.when('POST', '/api/v1/users/consent/dataSharing/suspend').respond({
+            message: 'Suspended data sharing.'
+        });
+
+        $httpBackend.expect('POST', '/api/v1/users/consent/dataSharing/resume');
+        $httpBackend.expect('POST', '/api/v1/users/consent/dataSharing/suspend');
+
+        scope.resumeDataSharing();
+        scope.suspendDataSharing();
+    });
+
 
 });

@@ -74,11 +74,10 @@ public class ConsentServiceImpl implements ConsentService {
             // Stormpath account
             final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
             final CustomData customData = account.getCustomData();
-
+            
             // HealthID
             final String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
             HealthId healthId = getHealthId(healthIdKey, customData); // This sets the ID, which we will need when fully
-                                                                      // implemented
 
             {
                 // TODO: Old. To be removed.
@@ -117,7 +116,7 @@ public class ConsentServiceImpl implements ConsentService {
                 }
                 userConsentDao.giveConsent(healthId.getCode(), studyConsent, researchConsent);
             }
-
+            
             if (sendEmail) {
                 sendMailService.sendConsentAgreement(caller, researchConsent, study);
             }
@@ -226,7 +225,6 @@ public class ConsentServiceImpl implements ConsentService {
         try {
             StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
             userConsentDao.resumeSharing(caller.getHealthDataCode(), studyConsent);
-
             caller.setDataSharing(true);
         } catch (Exception e) {
             throw new BridgeServiceException(e, INTERNAL_SERVER_ERROR);
