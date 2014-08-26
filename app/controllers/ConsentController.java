@@ -47,7 +47,8 @@ public class ConsentController extends BaseController {
             throw new BridgeServiceException("Need to consent.", PRECONDITION_FAILED);
         }
         Study study = studyControllerService.getStudyByHostname(request());
-        consentService.withdrawConsent(session.getUser(), study);
+        User user = consentService.withdrawConsent(session.getUser(), study);
+        updateSessionUser(session, user);
 
         return okResult("Withdraw consent has been recorded.");
     }

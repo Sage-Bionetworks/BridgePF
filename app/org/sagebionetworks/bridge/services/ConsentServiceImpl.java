@@ -148,7 +148,7 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public void withdrawConsent(User caller, Study study) {
+    public User withdrawConsent(User caller, Study study) {
         if (caller == null) {
             throw new BridgeServiceException("User is required.", BAD_REQUEST);
         } else if (study == null) {
@@ -171,6 +171,7 @@ public class ConsentServiceImpl implements ConsentService {
             }
 
             caller.setConsent(false);
+            return caller;
 
         } catch (Exception e) {
             throw new BridgeServiceException(e, INTERNAL_SERVER_ERROR);
