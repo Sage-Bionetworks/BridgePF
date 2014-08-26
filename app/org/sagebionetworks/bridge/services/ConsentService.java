@@ -18,4 +18,6 @@ public interface ConsentService {
     public User suspendDataSharing(User caller, Study study);
 
     public User resumeDataSharing(User caller, Study study);
+    
+    public boolean isSharingData(User caller, Study study);
 }

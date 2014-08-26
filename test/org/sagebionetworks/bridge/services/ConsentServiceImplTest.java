@@ -1,73 +1,79 @@
 package org.sagebionetworks.bridge.services;
 
-import org.junit.*;
-import org.sagebionetworks.bridge.TestUtils;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import javax.annotation.Resource;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.ConsentSignature;
+import org.sagebionetworks.bridge.models.StudyConsent;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.CustomData;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static play.test.Helpers.*;
-
+@ContextConfiguration("classpath:test-context.xml")
+@RunWith(SpringJUnit4ClassRunner.class)
 public class ConsentServiceImplTest {
-    private Client stormpathClient;
-    private ConsentServiceImpl consentService;
-    private UserConsentDao userConsentDao;
-    private User user;
-    private Study study;
 
-    @SuppressWarnings("unchecked")
+    private StudyConsent studyConsent;
+
+    @Resource
+    private Client stormpathClient;
+
+    @Resource
+    private ConsentService consentService;
+
+    @Resource
+    private StudyConsentDao studyConsentDao;
+
+    @Resource
+    private UserConsentDao userConsentDao;
+
+    @Resource
+    private TestUserAdminHelper helper;
+
     @Before
     public void before() {
-        stormpathClient = mock(Client.class);
-         
-        Account account = mock(Account.class);
-        CustomData customData = mock(CustomData.class);
-        when(account.getCustomData()).thenReturn(customData);
-        
-        when(stormpathClient.getResource(anyString(), any(Class.class))).thenReturn(account);
-        
-        user = new User();
-        user.setUsername("user");
-        user.setEmail("a@sagebase.org");
-        user.setFirstName("first");
-        user.setLastName("last");
-        user.setStudyKey("1234");
-        
-        study = mock(Study.class);
-        userConsentDao = mock(UserConsentDao.class);
-        StudyConsentDao studyConsentDao = mock(StudyConsentDao.class);
+        helper.createOneUser();
+        studyConsent = studyConsentDao
+                .addConsent(helper.getStudy().getKey(), "/path/to", helper.getStudy().getMinAge());
+        studyConsentDao.setActive(studyConsent, true);
+    }
 
-        consentService = new ConsentServiceImpl();
-        consentService.setStormpathClient(stormpathClient);
-        consentService.setUserConsentDao(userConsentDao);
-        consentService.setStudyConsentDao(studyConsentDao);
+    @After
+    public void after() {
+        helper.deleteOneUser();
+        studyConsentDao.setActive(studyConsent, false);
+        studyConsentDao.deleteConsent(helper.getStudy().getKey(), studyConsent.getCreatedOn());
     }
 
     @Test
-    public void withdrawRemovesConsent() {
-        running(testServer(3333), new TestUtils.FailableRunnable() {
+    public void test() {
+        ConsentSignature researchConsent = new ConsentSignature("John Smith", "2011-11-11");
+        boolean sendEmail = false;
 
-            @Override
-            public void testCode() throws Exception {
-                /* TODO: Re-enable these when userConsentDao is in use again.
-                ArgumentCaptor<String> healthCode = ArgumentCaptor.forClass(String.class);
-                ArgumentCaptor<StudyConsent> studyConsent = ArgumentCaptor.forClass(StudyConsent.class);
-                */
-                user.setConsent(true);
-                consentService.withdrawConsent(user, study);
+        // Withdrawing and consenting again should return to original state.
+        consentService.withdrawConsent(helper.getUser(), helper.getStudy());
+        consentService.consentToResearch(helper.getUser(), researchConsent, helper.getStudy(), sendEmail);
+        boolean hasConsented = consentService.hasUserConsentedToResearch(helper.getUser(), helper.getStudy());
+        assertTrue(hasConsented);
 
-                // TODO: The user should be returned if the user is manipulated.
-                assertEquals(user.doesConsent(), false);
-                //verify(userConsentDao).withdrawConsent(healthCode.capture(), studyConsent.capture());
-            }
+        // Suspend sharing should make isSharingData return false.
+        consentService.suspendDataSharing(helper.getUser(), helper.getStudy());
+        boolean isSharing = consentService.isSharingData(helper.getUser(), helper.getStudy());
+        assertFalse(isSharing);
 
-        });
+        // Resume sharing should make isSharingData return true.
+        consentService.resumeDataSharing(helper.getUser(), helper.getStudy());
+        isSharing = consentService.isSharingData(helper.getUser(), helper.getStudy());
+
     }
 }
