@@ -1,4 +1,4 @@
-bower cache clean
+# This starts and ends in public/ directory
 cd app/
 npm install
 bower install
