@@ -18,6 +18,9 @@ apt-get -q -y install bzip2
 apt-get -q -y install zip
 apt-get -q -y install git
 
+# NFS Client
+apt-get -q -y install nfs-common
+
 # node.js
 apt-get -q -y install nodejs
 ln -s /usr/bin/nodejs /usr/bin/node
