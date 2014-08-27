@@ -44,13 +44,14 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
 
     @Override
-    public void setActive(StudyConsent studyConsent, boolean active) {
+    public StudyConsent setActive(StudyConsent studyConsent, boolean active) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyConsent.getStudyKey());
         consent.setCreatedOn(studyConsent.getCreatedOn());
         consent = mapper.load(consent);
         consent.setActive(active);
         mapper.save(consent);
+        return consent;
     }
 
     @Override

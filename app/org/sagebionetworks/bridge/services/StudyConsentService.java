@@ -74,9 +74,10 @@ public interface StudyConsentService {
      *            key associated with the study.
      * @param timestamp
      *            time the consent document was added to the database.
+     * @return the activated consent document.
      * @throws BridgeServiceException
      */
-    public void activateConsent(User caller, String studyKey, long timestamp) throws BridgeServiceException;
+    public StudyConsent activateConsent(User caller, String studyKey, long timestamp) throws BridgeServiceException;
 
     /**
      * Deletes the specified consent document from the study. If this consent
