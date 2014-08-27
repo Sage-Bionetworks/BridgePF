@@ -8,74 +8,81 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.SurveyDao;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.collect.Lists;
 
 public class DynamoSurveyDao implements SurveyDao {
 
-    private static Logger logger = LoggerFactory.getLogger(DynamoSurveyDao.class);
-
-    private DynamoDBMapper mapper;
+    private DynamoDBMapper surveyMapper;
+    private DynamoDBMapper surveyQuestionMapper;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
                 SaveBehavior.UPDATE,
                 ConsistentReads.CONSISTENT,
                 TableNameOverrideFactory.getTableNameOverride(DynamoSurvey.class));
-        mapper = new DynamoDBMapper(client, mapperConfig);
+        surveyMapper = new DynamoDBMapper(client, mapperConfig);
+        
+        mapperConfig = new DynamoDBMapperConfig(
+                SaveBehavior.UPDATE,
+                ConsistentReads.CONSISTENT,
+                TableNameOverrideFactory.getTableNameOverride(DynamoSurveyQuestion.class));
+        surveyQuestionMapper = new DynamoDBMapper(client, mapperConfig);
     }
     
     @Override
     public Survey createSurvey(Survey survey) {
         if (!isNew(survey)) {
-            throw new IllegalArgumentException("Cannot create an already created survey");
+            throw new BridgeServiceException("Cannot create an already created survey", 400);
         } else if (!isValid(survey)) {
-            throw new IllegalArgumentException("Survey is invalid (most likely missing required fields)");
+            throw new BridgeServiceException("Survey is invalid (most likely missing required fields)", 400);
         }
+
         survey.setGuid(generateId());
         survey.setVersionedOn(DateTime.now(DateTimeZone.UTC).getMillis());
+        
         List<SurveyQuestion> questions = nomod(survey.getQuestions());
         for (int i=0; i < questions.size(); i++) {
             SurveyQuestion question = questions.get(i);
+            question.setSurveyGuid(survey.getGuid());
             question.setGuid(generateId());
             question.setOrder(i);
-            question.setSurveyGuid(survey.getGuid());
-            mapper.save(question);
+            surveyQuestionMapper.save(question);
         }
-        logger.info(survey.toString());
-        mapper.save(survey);
+        surveyMapper.save(survey);
         return survey;
     }
 
     @Override
     public Survey updateSurvey(Survey survey) {
         if (isNew(survey)) {
-            throw new IllegalArgumentException("Cannot update a new survey before you create it");
+            throw new BridgeServiceException("Cannot update a new survey before you create it", 400);
         } else if (!isValid(survey)) {
-            throw new IllegalArgumentException("Survey is invalid (most likely missing required fields)");
+            throw new BridgeServiceException("Survey is invalid (most likely missing required fields)", 400);
         }
-        Survey existingSurvey = getSurvey(survey.getGuid());
+        Survey existingSurvey = getSurvey(survey.getStudyKey(), survey.getGuid());
         if (existingSurvey.isPublished()) {
-            throw new IllegalArgumentException("Cannot update a published survey");
+            throw new BridgeServiceException("Cannot update a published survey", 400);
         }
         // Enforce these, they are readonly
         survey.setPublished(existingSurvey.isPublished());
         survey.setVersionedOn(existingSurvey.getVersionedOn());
         
+        deleteAllQuestions(survey.getGuid());
         List<SurveyQuestion> questions = nomod(survey.getQuestions());
         for (int i=0; i < questions.size(); i++) {
             SurveyQuestion question = questions.get(i);
@@ -85,16 +92,33 @@ public class DynamoSurveyDao implements SurveyDao {
             if (question.getGuid() == null) {
                 question.setGuid(generateId());
             }
-            mapper.save(question);
+            surveyQuestionMapper.save(question);
         }
-        logger.info(survey.toString());
-        mapper.save(survey);
+        surveyMapper.save(survey);
         return survey;
     }
     
+    private void deleteAllQuestions(String surveyGuid) {
+        for (DynamoSurveyQuestion question :  getAllQuestions(surveyGuid)) {
+            surveyQuestionMapper.delete(question);
+        }
+    }
+    
+    private List<DynamoSurveyQuestion> getAllQuestions(String surveyGuid) {
+        DynamoSurveyQuestion template = new DynamoSurveyQuestion();
+        template.setSurveyGuid(surveyGuid);
+        
+        DynamoDBQueryExpression<DynamoSurveyQuestion> queryExpression = new DynamoDBQueryExpression<DynamoSurveyQuestion>()
+                .withHashKeyValues(template);
+        
+        QueryResultPage<DynamoSurveyQuestion> page = surveyQuestionMapper.queryPage(DynamoSurveyQuestion.class,
+                queryExpression);
+        return page.getResults();
+    }
+    
     @Override
-    public Survey versionSurvey(String surveyGuid) {
-        Survey existing = getSurvey(surveyGuid);
+    public Survey versionSurvey(String studyKey, String surveyGuid) {
+        Survey existing = getSurvey(studyKey, surveyGuid);
         Survey copy = new DynamoSurvey(existing);
         copy.setGuid(null);
         copy.setPublished(false);
@@ -112,28 +136,37 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public Survey getSurvey(String surveyGuid) {
-        // TODO: Why not mapper.load?
-        Condition condition = new Condition().withComparisonOperator(ComparisonOperator.EQ).withAttributeValueList(
-                new AttributeValue().withS(surveyGuid));
-        DynamoDBQueryExpression<DynamoSurvey> queryExpression = new DynamoDBQueryExpression<DynamoSurvey>()
-                .withRangeKeyCondition("guid", condition);
+    public Survey getSurvey(String studyKey, String surveyGuid) {
+        Survey survey = new DynamoSurvey();
+        survey.setStudyKey(studyKey);
+        survey.setGuid(surveyGuid);
         
-        QueryResultPage<DynamoSurvey> page = mapper.queryPage(DynamoSurvey.class, queryExpression);
-        if (page == null || page.getResults().size() == 0) {
-            return null;
+        survey = surveyMapper.load(survey);
+        if (survey == null) {
+            throw new IllegalArgumentException("The survey was null, studyKey: " + studyKey + ", surveyGuid: " + surveyGuid);
         }
-        return page.getResults().get(0);
+        
+        List<DynamoSurveyQuestion> dynoSurveyQuestions = getAllQuestions(surveyGuid);
+        if (dynoSurveyQuestions == null) {
+            throw new IllegalArgumentException("The survey questions were null");
+        }
+        List<SurveyQuestion> questions = Lists.newArrayListWithCapacity(dynoSurveyQuestions.size());
+        for (DynamoSurveyQuestion question : getAllQuestions(surveyGuid)) {
+            questions.add((SurveyQuestion)question);
+        }
+        survey.setQuestions(questions);
+        
+        return survey;
     }
 
     @Override
-    public void deleteSurvey(String surveyGuid) {
-        Survey existing = getSurvey(surveyGuid);
+    public void deleteSurvey(String studyKey, String surveyGuid) {
+        Survey existing = getSurvey(studyKey, surveyGuid);
         if (existing.isPublished()) {
             // something has to happen here, this could be bad. Might need to publish another survey?
         }
-        mapper.batchDelete(existing.getQuestions());
-        mapper.delete(existing);
+        surveyMapper.batchDelete(existing.getQuestions());
+        surveyMapper.delete(existing);
     }
     
     private String generateId() {
@@ -157,7 +190,7 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     private boolean isValid(Survey survey) {
-        if (StringUtils.isBlank(survey.getIdentifier())) {
+        if (StringUtils.isBlank(survey.getIdentifier()) || StringUtils.isBlank(survey.getStudyKey())) {
             return false;
         }
         for (SurveyQuestion question : nomod(survey.getQuestions())) {

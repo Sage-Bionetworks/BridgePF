@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
@@ -133,6 +134,7 @@ public class DynamoSurvey implements Survey, DynamoTable {
     }
 
     @Override
+    @DynamoDBIgnore
     public List<SurveyQuestion> getQuestions() {
         return questions;
     }

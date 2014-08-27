@@ -11,13 +11,16 @@
   <logger name="play" level="INFO">
     <appender-ref ref="STDOUT" />
   </logger>
-  <logger name="application" level="DEBUG" additivity="false">
+  <logger name="application" level="DEBUG" additivity="true">
     <appender-ref ref="STDOUT" />
   </logger>
-  <logger name="controllers" level="DEBUG" additivity="false">
+  <logger name="controllers" level="DEBUG" additivity="true">
     <appender-ref ref="STDOUT" />
   </logger>
-  <logger name="org.sagebionetworks.bridge" level="DEBUG" additivity="false">
+  <logger name="org.sagebionetworks.bridge" level="DEBUG" additivity="true">
+    <appender-ref ref="STDOUT" />
+  </logger>
+  <logger name="org.sagebionetworks.dynamodb" level="DEBUG" additivity="true">
     <appender-ref ref="STDOUT" />
   </logger>
   <logger name="org.springframework" level="INFO" additivity="false">
