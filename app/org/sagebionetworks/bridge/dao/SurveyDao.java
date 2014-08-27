@@ -11,13 +11,13 @@ public interface SurveyDao {
     
     public Survey updateSurvey(Survey survey);
     
-    public Survey versionSurvey(String surveyGuid);
+    public Survey versionSurvey(String studyKey, String surveyGuid);
     
     // As we flesh out a UI for managing surveys, this will be elaborated.
     public List<Survey> getSurveys(Study study);
     
-    public Survey getSurvey(String surveyGuid);
+    public Survey getSurvey(String studyKey, String surveyGuid);
      
-    public void deleteSurvey(String surveyGuid);
+    public void deleteSurvey(String studyKey, String surveyGuid);
 
 }
