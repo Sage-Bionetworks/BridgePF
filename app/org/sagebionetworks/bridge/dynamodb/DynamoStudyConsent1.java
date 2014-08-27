@@ -31,7 +31,6 @@ public class DynamoStudyConsent1 implements StudyConsent, DynamoTable {
 
     @Override
     @DynamoDBRangeKey
-    @JsonIgnore
     public long getCreatedOn() {
         return createdOn;
     }
