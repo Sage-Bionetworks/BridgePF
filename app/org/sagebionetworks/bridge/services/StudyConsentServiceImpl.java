@@ -39,21 +39,34 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     @Override
     public List<StudyConsent> getAllConsents(User caller, String studyKey) {
         assertAdminUser(caller);
-        return studyConsentDao.getConsents(studyKey);
+        
+        List<StudyConsent> consents = studyConsentDao.getConsents(studyKey);
+        if (consents == null || consents.isEmpty()) {
+            throw new BridgeServiceException("There are no consent records.", BAD_REQUEST);
+        }
+        return consents;
     }
 
     @Override
     public StudyConsent getConsent(User caller, String studyKey, long timestamp) {
         assertAdminUser(caller);
-        return studyConsentDao.getConsent(studyKey, timestamp);
+        
+        StudyConsent consent = studyConsentDao.getConsent(studyKey, timestamp);
+        if (consent == null) {
+            throw new BridgeServiceException("No consent with that timestamp exists.", BAD_REQUEST);
+        }
+        return consent;
     }
 
     @Override
     public StudyConsent activateConsent(User caller, String studyKey, long timestamp) {
         assertAdminUser(caller);
         
-        StudyConsent studyConsent = studyConsentDao.getConsent(studyKey, timestamp);
-        return studyConsentDao.setActive(studyConsent, true);
+        StudyConsent consent = studyConsentDao.getConsent(studyKey, timestamp);
+        if (consent == null) {
+            throw new BridgeServiceException("No consent with that timestamp exists.", BAD_REQUEST);
+        }
+        return studyConsentDao.setActive(consent, true);
     }
 
     @Override
