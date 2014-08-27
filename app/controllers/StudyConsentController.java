@@ -38,7 +38,7 @@ public class StudyConsentController extends BaseController {
         return ok(Json.toJson(consent));
     }
 
-    public Result getConsent(String timestamp) throws Exception {
+    public Result getConsent(long timestamp) throws Exception {
         User user = getSession().getUser();
         String studyKey = studyControllerService.getStudyByHostname(request()).getKey();
         
@@ -56,7 +56,7 @@ public class StudyConsentController extends BaseController {
         return ok(Json.toJson(studyConsent));
     }
 
-    public Result setActiveConsent(String timestamp) throws Exception {
+    public Result setActiveConsent(long timestamp) throws Exception {
         User user = getSession().getUser();
         String studyKey = studyControllerService.getStudyByHostname(request()).getKey();
         
