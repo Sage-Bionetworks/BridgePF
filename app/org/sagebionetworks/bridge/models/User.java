@@ -22,14 +22,14 @@ public class User {
 
     public User() {
     }
-    
+
     public User(Account account) {
         this.email = account.getEmail();
         this.username = account.getUsername();
         this.firstName = account.getGivenName();
         this.lastName = account.getSurname();
         this.id = account.getHref().split("/accounts/")[1];
-        for (Iterator<Group> i = account.getGroups().iterator(); i.hasNext(); ) {
+        for (Iterator<Group> i = account.getGroups().iterator(); i.hasNext();) {
             roles.add(i.next().getName());
         }
     }
@@ -37,62 +37,84 @@ public class User {
     public String getEmail() {
         return email;
     }
+
     public void setEmail(String email) {
         this.email = email;
     }
+
     public String getUsername() {
         return username;
     }
+
     public void setUsername(String username) {
         this.username = username;
     }
+
     public String getFirstName() {
         return firstName;
     }
+
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
+
     public String getLastName() {
         return lastName;
     }
+
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
+
     public String getHealthDataCode() {
         return healthDataCode;
     }
+
     public void setHealthDataCode(String healthDataCode) {
         this.healthDataCode = healthDataCode;
     }
+
     public String getId() {
         return id;
     }
+
     public void setId(String id) {
         this.id = id;
     }
+
     public String getStudyKey() {
         return studyKey;
     }
+
     public void setStudyKey(String studyKey) {
         this.studyKey = studyKey;
     }
+
     public Set<String> getRoles() {
         return roles;
     }
+
     public void setRoles(Set<String> roles) {
         this.roles = roles;
     }
+
     public boolean doesConsent() {
         return consent;
     }
+
     // Jackson serialization needs this method, even though linguistically, it makes no sense.
     public boolean isConsent() {
         return consent;
     }
+
     public void setConsent(boolean consent) {
         this.consent = consent;
     }
-    
+
+    public boolean isInRole(String role) {
+        return this.roles.contains(role);
+    }
+
     @JsonIgnore
     public String getStormpathHref() {
         return (id == null) ? null : ("https://api.stormpath.com/v1/accounts/" + id);

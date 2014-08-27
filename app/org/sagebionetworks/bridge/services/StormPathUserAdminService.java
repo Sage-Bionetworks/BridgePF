@@ -149,10 +149,9 @@ public class StormPathUserAdminService implements UserAdminService {
             throw new BridgeServiceException("User study cannot be null", 400);
         }
         assertAdminUser(caller);
-        String stormpathID = null;
         String uuid = null;
         try {
-            //uuid = userLockDao.createLock(user.getId());
+            uuid = userLockDao.createLock(caller.getId());
             
             // Verify the user exists before doing this work. Otherwise, it just throws errors.
             Directory directory = getDirectory(userStudy);
@@ -164,11 +163,11 @@ public class StormPathUserAdminService implements UserAdminService {
             }
         } catch (Throwable t) {
             throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
-        } /*finally {
-            if (stormpathID != null && uuid != null) {
-                userLockDao.releaseLock(stormpathID, uuid);
+        } finally {
+            if (uuid != null) {
+                userLockDao.releaseLock(caller.getId(), uuid);
             }
-        }*/
+        }
     }
 
     private void removeAllHealthDataRecords(User caller, User user, Study userStudy)
