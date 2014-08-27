@@ -52,6 +52,7 @@ public class BackfillService {
     public int stormpathUserConsent() {
         int count = 0;
         for (Study study : studyControllerService.getStudies()) {
+            logger.info("For study " + study.getKey() + "    " + study.getName());
             count = count + stormpathUserConsent(study);
         }
         return count;
@@ -71,6 +72,7 @@ public class BackfillService {
             final Object consentedObj = customData.get(consentedKey);
             final String healthIdKey = studyKey + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
             final Object healthIdObj = customData.get(healthIdKey);
+            logger.info("Stormpath directory: " + account.getDirectory().getName());
             logger.info("Stormpath user: " + account.getEmail());
             logger.info("Stormpath consented: " + consentedObj);
             if (consentedObj != null && healthIdObj != null) {
