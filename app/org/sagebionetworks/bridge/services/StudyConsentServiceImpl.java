@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
+import static play.mvc.Http.Status.BAD_REQUEST;
+import static play.mvc.Http.Status.FORBIDDEN;
+
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
@@ -7,8 +10,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.StudyConsentForm;
 import org.sagebionetworks.bridge.models.User;
-
-import static play.mvc.Http.Status.*;
 
 public class StudyConsentServiceImpl implements StudyConsentService {
 
@@ -21,16 +22,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     @Override
     public StudyConsent addConsent(User caller, String studyKey, StudyConsentForm form) {
         assertAdminUser(caller);
-
-        StudyConsent studyConsent = studyConsentDao.getConsent(studyKey);
-        if (studyConsent != null) {
-            studyConsentDao.setActive(studyConsent, false);
-        }
-
-        studyConsent = studyConsentDao.addConsent(studyKey, form.getPath(), form.getMinAge());
-        studyConsentDao.setActive(studyConsent, true);
-
-        return studyConsentDao.getConsent(studyKey);
+        return studyConsentDao.addConsent(studyKey, form.getPath(), form.getMinAge());
     }
 
     @Override
@@ -57,16 +49,11 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     }
 
     @Override
-    public void activateConsent(User caller, String studyKey, long timestamp) {
+    public StudyConsent activateConsent(User caller, String studyKey, long timestamp) {
         assertAdminUser(caller);
-
-        StudyConsent studyConsent = studyConsentDao.getConsent(studyKey);
-        if (studyConsent != null) {
-            studyConsentDao.setActive(studyConsent, false);
-        }
-
-        studyConsent = studyConsentDao.getConsent(studyKey, timestamp);
-        studyConsentDao.setActive(studyConsent, true);
+        
+        StudyConsent studyConsent = studyConsentDao.getConsent(studyKey, timestamp);
+        return studyConsentDao.setActive(studyConsent, true);
     }
 
     @Override

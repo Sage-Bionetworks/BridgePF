@@ -15,7 +15,7 @@ public interface StudyConsentDao {
     /**
      * Sets the consent active or inactive, depending on the boolean flag.
      */
-    void setActive(StudyConsent studyConsent, boolean active);
+    StudyConsent setActive(StudyConsent studyConsent, boolean active);
 
     /**
      * Gets the latest, active consent.

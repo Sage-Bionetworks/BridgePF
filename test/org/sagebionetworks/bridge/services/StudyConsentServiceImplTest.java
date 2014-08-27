@@ -61,30 +61,24 @@ public class StudyConsentServiceImplTest {
 	StudyConsent addedConsent1 = studyConsentService.addConsent(helper.getAdminUser(), studyKey, form);
 	assertNotNull(addedConsent1);
 
-	// After consent is added, the active consent should be the same as the added consent.
-	StudyConsent activeConsent = studyConsentService.getActiveConsent(helper.getAdminUser(), studyKey);
-	assertTrue(addedConsent1.getCreatedOn() == activeConsent.getCreatedOn());
+	try {
+	    studyConsentService.getActiveConsent(helper.getAdminUser(), studyKey);
+	    fail("getActiveConsent should throw exception, as there is no currently active consent.");
+	} catch (Exception e) {
+	}
 
-	// Newly added consent is the new active consent, and the old added consent is not active.
-	StudyConsent addedConsent2 = studyConsentService.addConsent(helper.getAdminUser(), studyKey, form);
-	activeConsent = studyConsentService.getActiveConsent(helper.getAdminUser(), studyKey);
-	assertTrue(activeConsent.getCreatedOn() == addedConsent2.getCreatedOn()
-		&& activeConsent.getCreatedOn() != addedConsent1.getCreatedOn());
+	// Get active consent returns the most recently activated consent document.
+	StudyConsent activatedConsent = studyConsentService.activateConsent(helper.getAdminUser(), studyKey, addedConsent1.getCreatedOn());
+	StudyConsent getActiveConsent = studyConsentService.getActiveConsent(helper.getAdminUser(), studyKey);
+	assertTrue(activatedConsent.getCreatedOn() == getActiveConsent.getCreatedOn());
 
-	// Activated the first added consent, and this is now the active consent. Additionally, the second added consent
-	// is no longer active.
-	studyConsentService.activateConsent(helper.getAdminUser(), studyKey, addedConsent1.getCreatedOn());
-	activeConsent = studyConsentService.getActiveConsent(helper.getAdminUser(), studyKey);
-	assertTrue(activeConsent.getCreatedOn() == addedConsent1.getCreatedOn()
-		&& activeConsent.getCreatedOn() != addedConsent2.getCreatedOn());
-
-	// Get all consents returns two consent documents (addedConsent1 and addedConsent2).
+	// Get all consents returns one consent document (addedConsent).
 	List<StudyConsent> allConsents = studyConsentService.getAllConsents(helper.getAdminUser(), studyKey);
-	assertTrue(allConsents.size() == 2);
+	assertTrue(allConsents.size() == 1);
 
 	// Cannot delete active consent document.
 	try {
-	    studyConsentService.deleteConsent(helper.getAdminUser(), studyKey, activeConsent.getCreatedOn());
+	    studyConsentService.deleteConsent(helper.getAdminUser(), studyKey, getActiveConsent.getCreatedOn());
 	    fail("Was able to successfully delete active consent, which we should not be able to do.");
 	} catch (BridgeServiceException e) {
 	}
