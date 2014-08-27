@@ -26,8 +26,8 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
-                SaveBehavior.UPDATE,
-                ConsistentReads.CONSISTENT,
+        	SaveBehavior.UPDATE, 
+        	ConsistentReads.CONSISTENT,
                 TableNameOverrideFactory.getTableNameOverride(DynamoStudyConsent1.class));
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
@@ -44,20 +44,21 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
 
     @Override
-    public void setActive(StudyConsent studyConsent) {
+    public StudyConsent setActive(StudyConsent studyConsent, boolean active) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyConsent.getStudyKey());
         consent.setCreatedOn(studyConsent.getCreatedOn());
         consent = mapper.load(consent);
-        consent.setActive(true);
+        consent.setActive(active);
         mapper.save(consent);
+        return consent;
     }
 
     @Override
     public StudyConsent getConsent(String studyKey) {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyKey);
-        DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression =
+        DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
                 new DynamoDBQueryExpression<DynamoStudyConsent1>()
                 .withHashKeyValues(hashKey)
                 .withScanIndexForward(false)
@@ -83,7 +84,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     public List<StudyConsent> getConsents(String studyKey) {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyKey);
-        DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression =
+        DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
                 new DynamoDBQueryExpression<DynamoStudyConsent1>()
                 .withHashKeyValues(hashKey)
                 .withScanIndexForward(false);
@@ -93,5 +94,14 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
             results.add(consent);
         }
         return results;
+    }
+
+    @Override
+    public void deleteConsent(String studyKey, long timestamp) {
+        DynamoStudyConsent1 consent = new DynamoStudyConsent1();
+        consent.setStudyKey(studyKey);
+        consent.setCreatedOn(timestamp);
+        consent = mapper.load(consent);
+        mapper.delete(consent);
     }
 }
