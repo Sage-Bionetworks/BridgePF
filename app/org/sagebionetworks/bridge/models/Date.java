@@ -11,4 +11,10 @@ public class Date {
     
     private static final DateTimeFormatter dateFmt = DateTimeFormat.forPattern("yyyy-mm-dd");
     private static final DateTimeFormatter dateTimeFmt = DateTimeFormat.forPattern("yyyy-MM-ddTHH:mm:ss.SSSZ");
+    
+    public Date(long millisFromEpoch, String isoDate, String isoDateTime) {
+        this.millisFromEpoch = millisFromEpoch;
+        this.isoDate = isoDate;
+        this.isoDateTime = isoDateTime;
+    }
 }
