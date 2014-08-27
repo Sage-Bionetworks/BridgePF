@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.sagebionetworks.bridge.models.Date;
 import org.sagebionetworks.bridge.models.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
@@ -7,6 +8,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @DynamoDBTable(tableName = "StudyConsent1")
 public class DynamoStudyConsent1 implements StudyConsent, DynamoTable {
@@ -20,6 +22,7 @@ public class DynamoStudyConsent1 implements StudyConsent, DynamoTable {
 
     @Override
     @DynamoDBHashKey
+    @JsonIgnore
     public String getStudyKey() {
         return studyKey;
     }
@@ -29,6 +32,7 @@ public class DynamoStudyConsent1 implements StudyConsent, DynamoTable {
 
     @Override
     @DynamoDBRangeKey
+    @JsonIgnore
     public long getCreatedOn() {
         return createdOn;
     }
@@ -36,6 +40,10 @@ public class DynamoStudyConsent1 implements StudyConsent, DynamoTable {
         this.createdOn = timestamp;
     }
 
+    public String getTimestamp() {
+        return new Date(createdOn).getISODateTime();
+    }
+    
     @Override
     @DynamoDBAttribute
     public boolean getActive() {
