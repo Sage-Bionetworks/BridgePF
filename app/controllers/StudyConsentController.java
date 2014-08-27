@@ -2,6 +2,7 @@ package controllers;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.Date;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.StudyConsentForm;
 import org.sagebionetworks.bridge.models.User;
@@ -42,7 +43,9 @@ public class StudyConsentController extends BaseController {
         User user = getSession().getUser();
         String studyKey = studyControllerService.getStudyByHostname(request()).getKey();
         
-        StudyConsent consent = studyConsentService.getConsent(user, studyKey, timestamp);
+        Date d = new Date(timestamp);
+        
+        StudyConsent consent = studyConsentService.getConsent(user, studyKey, d.getMillisFromEpoch());
         return ok(Json.toJson(consent));
 
     }
@@ -60,7 +63,9 @@ public class StudyConsentController extends BaseController {
         User user = getSession().getUser();
         String studyKey = studyControllerService.getStudyByHostname(request()).getKey();
         
-        studyConsentService.activateConsent(user, studyKey, timestamp);
+        Date d = new Date(timestamp);
+        
+        studyConsentService.activateConsent(user, studyKey, d.getMillisFromEpoch());
 
         return okResult("Consent document set as active.");
     }

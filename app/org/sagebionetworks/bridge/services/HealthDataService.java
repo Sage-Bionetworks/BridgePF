@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
-import java.util.Date;
 import java.util.List;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.Date;
 import org.sagebionetworks.bridge.models.IdVersionHolder;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;

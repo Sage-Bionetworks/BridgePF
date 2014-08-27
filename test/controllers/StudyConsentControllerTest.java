@@ -71,7 +71,7 @@ public class StudyConsentControllerTest {
                 assertEquals("Successfully add consent.", OK, addConsent.getStatus());
 
                 // Get timeout to access this consent later.
-                String timeout = addConsent.asJson().get("createdOn").asText();
+                String timeout = addConsent.asJson().get("timestamp").asText();
 
                 Response setActive = TestUtils
                         .getURL(helper.getAdminSessionToken(), STUDYCONSENT_ACTIVE_URL + "/" + timeout)
