@@ -179,7 +179,7 @@ public class ConsentServiceImpl implements ConsentService {
         try {
             StudyConsent consent = studyConsentDao.getConsent(study.getKey());
             if (consent == null) {
-                throw new BridgeServiceException("Consent not found for study " + study.getKey() + ".",
+                throw new BridgeServiceException("Consent not found.",
                         HttpStatus.SC_INTERNAL_SERVER_ERROR);
             }
             ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthDataCode(), consent);
