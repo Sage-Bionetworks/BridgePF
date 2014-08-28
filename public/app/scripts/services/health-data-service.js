@@ -6,6 +6,8 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q', function($http
             return $http.get(url);
         },
         getByDateRange: function(trackerId, startDate, endDate) {
+            startDate = startDate.toISOString();
+            endDate = endDate.toISOString();
             var url = '/api/v1/healthdata/'+trackerId+'?startDate='+startDate+'&endDate='+endDate;
             return $http.get(url);
         },
@@ -38,12 +40,12 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q', function($http
             var startDate = form[dateFields[0]].$modelValue;
             if (toMidnight) {
                 startDate.setHours(0,0,0,0);
-                startDate = startDate.getTime();
+                startDate = startDate.toISOString();
             }
             var endDate = form[dateFields[0]].$modelValue;
             if (toMidnight) {
                 endDate.setHours(0,0,0,0);
-                endDate = endDate.getTime();
+                endDate = endDate.toISOString();
             }
             var payload = { startDate: startDate, endDate: endDate, data: {} };
             fields.forEach(function(field) {
@@ -52,8 +54,8 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q', function($http
             return payload;
         },
         updateRecord: function(record, form, dateFields, fields) {
-            record.startDate = form[dateFields[0]].$modelValue.getTime();
-            record.endDate = form[dateFields[1]].$modelValue.getTime();
+            record.startDate = form[dateFields[0]].$modelValue.toISOString();
+            record.endDate = form[dateFields[1]].$modelValue.toISOString();
             fields.forEach(function(field) {
                 record.data[field] = form[field].$modelValue;
             });
