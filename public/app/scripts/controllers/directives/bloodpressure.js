@@ -62,7 +62,7 @@ function($scope, healthDataService, $humane, dashboardService) {
         var chartScope = $scope.$parent;
         chartScope.dataset.update(payload);
         healthDataService.update(chartScope.tracker.id, payload).then(function(response) {
-            $scope.recordToEdit.version = response.data.version;
+            $scope.recordToEdit.version = response.items.data.version;
         }, $humane.status);
         $scope.cancel();
     };
