@@ -15,4 +15,7 @@ public class IdVersionHolder {
     public Long getVersion() {
         return version;
     }
+    public String getType() {
+        return this.getClass().getSimpleName();
+    }
 }

@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.models;
 
+import static play.mvc.Http.Status.BAD_REQUEST;
+
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 import com.fasterxml.jackson.databind.JsonNode;
-
-import static play.mvc.Http.Status.*;
 
 public class StudyConsentForm {
 
@@ -18,6 +18,11 @@ public class StudyConsentForm {
         this.path = path;
         this.minAge = minAge;
     }
+    
+    public static final StudyConsentForm fromJson(JsonNode json) {
+        assertFieldsValid(json);
+        return new StudyConsentForm(json.get(PATH).asText(), json.get(MIN_AGE).asInt());
+    }
 
     public String getPath() {
         return path;
@@ -26,10 +31,9 @@ public class StudyConsentForm {
     public int getMinAge() {
         return minAge;
     }
-
-    public static StudyConsentForm fromJson(JsonNode json) {
-        assertFieldsValid(json);
-        return new StudyConsentForm(json.get(PATH).asText(), json.get(MIN_AGE).asInt());
+    
+    public String getType() {
+        return this.getClass().getSimpleName();
     }
 
     private static void assertFieldsValid(JsonNode json) {
