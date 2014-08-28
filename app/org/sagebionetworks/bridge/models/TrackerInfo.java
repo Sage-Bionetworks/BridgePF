@@ -2,10 +2,10 @@ package org.sagebionetworks.bridge.models;
 
 public class TrackerInfo {
 
-    private String name;
-    private String type;
-    private Long id;
-    private String schemaUrl;
+    private final String name;
+    private final String type;
+    private final Long id;
+    private final String schemaUrl;
 
     public TrackerInfo(Tracker tracker) {
         name = tracker.getName();

@@ -115,6 +115,10 @@ public class User {
         return this.roles.contains(role);
     }
 
+    public String getType() {
+        return this.getClass().getSimpleName();
+    }
+    
     @JsonIgnore
     public String getStormpathHref() {
         return (id == null) ? null : ("https://api.stormpath.com/v1/accounts/" + id);

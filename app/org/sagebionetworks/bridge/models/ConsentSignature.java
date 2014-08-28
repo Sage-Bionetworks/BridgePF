@@ -10,10 +10,10 @@ public class ConsentSignature {
 
     private static final String NAME_FIELD = "name";
     private static final String BIRTHDATE_FIELD = "birthdate";
-    private static DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
     
-    private String name;
-    private DateTime birthdate;
+    private final String name;
+    private final DateTime birthdate;
     
     public ConsentSignature(String name, String birthdate) {
         this.name = name;
@@ -38,6 +38,10 @@ public class ConsentSignature {
 
     public String getBirthdate() {
         return birthdate.toString().split("T")[0];
+    }
+    
+    public String getType() {
+        return this.getClass().getSimpleName();
     }
     
     private static DateTime parseDate(String date) {

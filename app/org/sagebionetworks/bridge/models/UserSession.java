@@ -35,6 +35,9 @@ public class UserSession {
     public void setUser(User user) {
         this.user = user;
     }
+    public String getType() {
+        return this.getClass().getSimpleName();
+    }
 
     @Override
     public String toString() {
