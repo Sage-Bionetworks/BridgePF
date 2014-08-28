@@ -17,14 +17,11 @@ import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.CustomData;
 
-import controllers.StudyControllerService;
-
 public class BackfillService {
 
     private final Logger logger = LoggerFactory.getLogger(BackfillService.class);
 
     private Client stormpathClient;
-    private StudyControllerService studyControllerService;
     private BridgeEncryptor healthCodeEncryptor;
     private HealthCodeService healthCodeService;
     private StudyConsentDao studyConsentDao;
@@ -32,9 +29,6 @@ public class BackfillService {
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
-    }
-    public void setStudyControllerService(StudyControllerService studyControllerService) {
-        this.studyControllerService = studyControllerService;
     }
     public void setHealthCodeEncryptor(BridgeEncryptor encryptor) {
         this.healthCodeEncryptor = encryptor;
@@ -49,19 +43,10 @@ public class BackfillService {
         this.userConsentDao = userConsentDao;
     }
 
-    public int stormpathUserConsent() {
-        int count = 0;
-        for (Study study : studyControllerService.getStudies()) {
-            logger.info("For study " + study.getKey() + "    " + study.getName());
-            count = count + stormpathUserConsent(study);
-        }
-        return count;
-    }
-
     /**
      * Backfills user consent from Stormpath.
      */
-    private int stormpathUserConsent(Study study) {
+    public int stormpathUserConsent(Study study) {
         int count = 0;
         Application application = StormpathFactory.createStormpathApplication(stormpathClient);
         AccountList accounts = application.getAccounts();

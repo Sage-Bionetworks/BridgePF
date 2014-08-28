@@ -141,6 +141,7 @@
         <property name="target">
             <bean class="controllers.BackfillController" parent="BaseController">
                 <property name="backfillService" ref="backfillService" />
+                <property name="studyControllerService" ref="studyControllerService" />
             </bean>
         </property>
     </bean>
@@ -254,7 +255,6 @@
     <!-- Backfill -->
     <bean id="backfillService" class="org.sagebionetworks.bridge.services.BackfillService">
         <property name="stormpathClient" ref="stormpathClient"/>
-        <property name="studyControllerService" ref="studyControllerService" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
         <property name="studyConsentDao" ref="studyConsentDao" />
