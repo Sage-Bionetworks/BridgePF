@@ -12,7 +12,6 @@ import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import play.libs.Json;
 import play.mvc.Result;
 
 public class AuthenticationController extends BaseController {
@@ -30,13 +29,13 @@ public class AuthenticationController extends BaseController {
         UserSession session = checkForSession();
         if (session != null) {
             setSessionToken(session.getSessionToken());
-            return ok(Json.toJson(new UserSessionInfo(session)));
+            return ok(constructJSON(new UserSessionInfo(session)));
         }
         Study study = studyControllerService.getStudyByHostname(request());
         SignIn signIn = SignIn.fromJson(request().body().asJson());
         session = authenticationService.signIn(study, signIn);
         setSessionToken(session.getSessionToken());
-        Result result = ok(Json.toJson(new UserSessionInfo(session)));
+        Result result = ok(constructJSON(new UserSessionInfo(session)));
         final long end = System.nanoTime();
         logger.info("sign in controller " + (end - start));
         return result;
@@ -45,7 +44,7 @@ public class AuthenticationController extends BaseController {
     public Result signOut() throws Exception {
         UserSession session = checkForSession();
         if (session != null) {
-            authenticationService.signOut(session.getSessionToken());    
+            authenticationService.signOut(session.getSessionToken());
         }
         response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         return okResult("Signed out.");
@@ -61,11 +60,11 @@ public class AuthenticationController extends BaseController {
     public Result verifyEmail() throws Exception {
         Study study = studyControllerService.getStudyByHostname(request());
         EmailVerification ev = EmailVerification.fromJson(request().body().asJson());
-        // In normal course of events (verify email, consent to research), 
+        // In normal course of events (verify email, consent to research),
         // an exception is thrown. Code after this line will rarely execute
         UserSession session = authenticationService.verifyEmail(study, ev);
         setSessionToken(session.getSessionToken());
-        return ok(Json.toJson((new UserSessionInfo(session))));
+        return ok(constructJSON((new UserSessionInfo(session))));
     }
 
     public Result requestResetPassword() throws Exception {

@@ -5,7 +5,6 @@ import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.UserProfileService;
 
-import play.libs.Json;
 import play.mvc.Result;
 
 public class UserProfileController extends BaseController {
@@ -20,7 +19,7 @@ public class UserProfileController extends BaseController {
         UserSession session = getSession();
         UserProfile profile = new UserProfile(session.getUser());
 
-        return ok(Json.toJson(profile));
+        return ok(constructJSON(profile));
     }
 
     public Result updateUserProfile() throws Exception {

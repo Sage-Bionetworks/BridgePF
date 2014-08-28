@@ -1,19 +1,14 @@
 package org.sagebionetworks.bridge.models;
 
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class ConsentSignature {
 
     private static final String NAME_FIELD = "name";
     private static final String BIRTHDATE_FIELD = "birthdate";
-    private static final DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
     
-    private final String name;
-    private final DateTime birthdate;
+    private String name;
+    private String birthdate;
     
     public ConsentSignature(String name, String birthdate) {
         this.name = name;
@@ -37,14 +32,14 @@ public class ConsentSignature {
     }
 
     public String getBirthdate() {
-        return birthdate.toString().split("T")[0];
+        return birthdate;
     }
     
     public String getType() {
         return this.getClass().getSimpleName();
     }
-    
-    private static DateTime parseDate(String date) {
-        return fmt.parseDateTime(date);
+
+    private static String parseDate(String date) {
+        return new Date(date).getISODate();
     }
 }

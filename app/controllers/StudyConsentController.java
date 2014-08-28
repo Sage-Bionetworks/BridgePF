@@ -2,13 +2,16 @@ package controllers;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.Date;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.StudyConsentForm;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 
-import play.libs.Json;
 import play.mvc.Result;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class StudyConsentController extends BaseController {
 
@@ -27,7 +30,7 @@ public class StudyConsentController extends BaseController {
         String studyKey = studyControllerService.getStudyByHostname(request()).getKey();
 
         List<StudyConsent> consents = studyConsentService.getAllConsents(user, studyKey);
-        return ok(Json.toJson(consents));
+        return ok(constructJSON(consents));
     }
 
     public Result getActiveConsent() throws Exception {
@@ -35,16 +38,19 @@ public class StudyConsentController extends BaseController {
         String studyKey = studyControllerService.getStudyByHostname(request()).getKey();
 
         StudyConsent consent = studyConsentService.getActiveConsent(user, studyKey);
-        return ok(Json.toJson(consent));
+        JsonNode json = addTimestamp(consent);
+        return ok(json);
     }
 
     public Result getConsent(long timestamp) throws Exception {
         User user = getSession().getUser();
         String studyKey = studyControllerService.getStudyByHostname(request()).getKey();
         
-        StudyConsent consent = studyConsentService.getConsent(user, studyKey, timestamp);
-        return ok(Json.toJson(consent));
-
+        Date d = new Date(timestamp);
+        
+        StudyConsent consent = studyConsentService.getConsent(user, studyKey, d.getMillisFromEpoch());
+        JsonNode json = addTimestamp(consent);
+        return ok(json);
     }
     
     public Result addConsent() throws Exception {
@@ -52,17 +58,27 @@ public class StudyConsentController extends BaseController {
         String studyKey = studyControllerService.getStudyByHostname(request()).getKey();
         StudyConsentForm form = StudyConsentForm.fromJson(requestToJSON(request()));
         
-        StudyConsent studyConsent = studyConsentService.addConsent(user, studyKey, form);
-        return ok(Json.toJson(studyConsent));
+        StudyConsent consent = studyConsentService.addConsent(user, studyKey, form);
+        JsonNode json = addTimestamp(consent);
+        return ok(json);
     }
 
     public Result setActiveConsent(long timestamp) throws Exception {
         User user = getSession().getUser();
         String studyKey = studyControllerService.getStudyByHostname(request()).getKey();
         
-        studyConsentService.activateConsent(user, studyKey, timestamp);
+        Date d = new Date(timestamp);
+        
+        studyConsentService.activateConsent(user, studyKey, d.getMillisFromEpoch());
 
         return okResult("Consent document set as active.");
+    }
+    
+    private JsonNode addTimestamp(StudyConsent consent) {
+        String timestamp = new Date(consent.getCreatedOn()).getISODateTime();
+        ObjectNode node = (ObjectNode) constructJSON(consent);
+        node.put("timestamp", timestamp);
+        return (JsonNode) node;
     }
 
 }

@@ -2,13 +2,13 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.Date;
 import org.sagebionetworks.bridge.models.IdVersionHolder;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -110,9 +110,9 @@ public class HealthDataServiceImpl implements HealthDataService {
     public List<HealthDataRecord> getHealthDataByDateRange(HealthDataKey key, final Date startDate, final Date endDate) throws BridgeServiceException {
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey cannot be null", HttpStatus.SC_BAD_REQUEST);
-        } else if (startDate == null || startDate.getTime() == 0) {
+        } else if (startDate == null || startDate.getMillisFromEpoch() == 0) {
             throw new BridgeServiceException("startDate cannot be null/0", HttpStatus.SC_BAD_REQUEST);
-        } else if (endDate == null || endDate.getTime() == 0) {
+        } else if (endDate == null || endDate.getMillisFromEpoch() == 0) {
             throw new BridgeServiceException("endDate cannot be null/0", HttpStatus.SC_BAD_REQUEST);
         }
         try {
@@ -133,7 +133,7 @@ public class HealthDataServiceImpl implements HealthDataService {
 
             Condition isLessThanOrEqualToEndDateWindow = new Condition()
                 .withComparisonOperator(ComparisonOperator.LE.toString())
-                .withAttributeValueList(new AttributeValue().withN(Long.toString(endDate.getTime())));
+                .withAttributeValueList(new AttributeValue().withN(Long.toString(endDate.getMillisFromEpoch())));
 
             DynamoDBQueryExpression<DynamoHealthDataRecord> queryExpression = new DynamoDBQueryExpression<DynamoHealthDataRecord>()
                 .withHashKeyValues(dynamoRecord)
@@ -159,7 +159,7 @@ public class HealthDataServiceImpl implements HealthDataService {
             
             return toHealthDataEntries(FluentIterable.from(records).filter(new Predicate<DynamoHealthDataRecord>() {
                 public boolean apply(DynamoHealthDataRecord record) {
-                    return !(record.getEndDate() != 0 && record.getEndDate() < startDate.getTime());
+                    return !(record.getEndDate() != 0 && record.getEndDate() < startDate.getMillisFromEpoch());
                 }
             }).toList());
         } catch(Exception e) {
