@@ -54,20 +54,22 @@ public class DynamoUserConsentDaoTest {
         assertNull(userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
 
         // Give consent
-        final ConsentSignature researchConsent = new ConsentSignature("John Smith", "1999-12-01");
-        userConsentDao.giveConsent(healthCode, consent, researchConsent);
+        final ConsentSignature consentSignature = new ConsentSignature("John Smith", "1999-12-01");
+        userConsentDao.giveConsent(healthCode, consent, consentSignature);
         assertTrue(userConsentDao.hasConsented(healthCode, consent));
         assertTrue(userConsentDao.hasConsentedNew(healthCode, consent));
         assertEquals(Long.valueOf(123), userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
+        ConsentSignature cs = userConsentDao.getConsentSignature(healthCode, consent);
+        assertEquals(consentSignature.getName(), cs.getName());
 
         // Cannot give consent again if already consented
         try {
-            userConsentDao.giveConsent(healthCode, consent, researchConsent);
+            userConsentDao.giveConsent(healthCode, consent, consentSignature);
         } catch (ConsentAlreadyExistsException e) {
             assertTrue(true); // Expected
         }
         try {
-            userConsentDao.giveConsentNew(healthCode, consent, researchConsent);
+            userConsentDao.giveConsentNew(healthCode, consent, consentSignature);
         } catch (ConsentAlreadyExistsException e) {
             assertTrue(true); // Expected
         }
@@ -78,7 +80,7 @@ public class DynamoUserConsentDaoTest {
         assertFalse(userConsentDao.hasConsentedNew(healthCode, consent));
 
         // Can give consent again if the previous consent is withdrawn
-        userConsentDao.giveConsent(healthCode, consent, researchConsent);
+        userConsentDao.giveConsent(healthCode, consent, consentSignature);
         assertTrue(userConsentDao.hasConsented(healthCode, consent));
         assertTrue(userConsentDao.hasConsentedNew(healthCode, consent));
 
@@ -89,6 +91,7 @@ public class DynamoUserConsentDaoTest {
 
     }
 
+    @Test
     public void testDataSharing() {
 
         // Not consented yet
@@ -125,8 +128,8 @@ public class DynamoUserConsentDaoTest {
         }
 
         // Give consent
-        final ConsentSignature researchConsent = new ConsentSignature("John Smith", "2009-12-01");
-        userConsentDao.giveConsent(healthCode, consent, researchConsent);
+        final ConsentSignature consentSignature = new ConsentSignature("John Smith", "2009-12-01");
+        userConsentDao.giveConsent(healthCode, consent, consentSignature);
         assertTrue(userConsentDao.hasConsented(healthCode, consent));
         assertTrue(userConsentDao.isSharingData(healthCode, consent));
 
