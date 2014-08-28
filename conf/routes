@@ -38,14 +38,14 @@ POST    /api/v1/users/consent/email                 @controllers.ConsentControll
 POST    /api/v1/users/consent/dataSharing/suspend   @controllers.ConsentController.suspendDataSharing
 POST    /api/v1/users/consent/dataSharing/resume    @controllers.ConsentController.resumeDataSharing
 
-# API - study consent
-GET     /api/v1/admin/consents                      @controllers.StudyConsentController.getAllConsents
-GET     /api/v1/admin/consents/active               @controllers.StudyConsentController.getActiveConsent
-GET     /api/v1/admin/consents/:timestamp           @controllers.StudyConsentController.getConsent(timestamp: Long)
-POST    /api/v1/admin/consents                      @controllers.StudyConsentController.addConsent
-POST    /api/v1/admin/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: Long)
+# Admin - Consent
+GET     /admin/v1/consents                      @controllers.StudyConsentController.getAllConsents
+GET     /admin/v1/consents/active               @controllers.StudyConsentController.getActiveConsent
+GET     /admin/v1/consents/:timestamp           @controllers.StudyConsentController.getConsent(timestamp: Long)
+POST    /admin/v1/consents                      @controllers.StudyConsentController.addConsent
+POST    /admin/v1/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: Long)
 
-# Backfill
+# Admin - Backfill
 GET     /admin/v1/backfill/stormpathUserConsent     @controllers.BackfillController.stormpathUserConsent
 GET     /admin/v1/backfill/dynamoUserConsent        @controllers.BackfillController.dynamoUserConsent
 
