@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import org.sagebionetworks.bridge.models.Date;
 import org.sagebionetworks.bridge.models.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
@@ -38,10 +37,6 @@ public class DynamoStudyConsent1 implements StudyConsent, DynamoTable {
     }
     public void setCreatedOn(long timestamp) {
         this.createdOn = timestamp;
-    }
-
-    public String getTimestamp() {
-        return new Date(createdOn).getISODateTime();
     }
     
     @Override

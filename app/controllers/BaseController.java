@@ -1,6 +1,7 @@
 package controllers;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import models.StatusMessage;
 
@@ -11,15 +12,17 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http.Cookie;
 import play.mvc.Http.Request;
 import play.mvc.Result;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @org.springframework.stereotype.Controller
 public abstract class BaseController extends Controller {
@@ -109,5 +112,25 @@ public abstract class BaseController extends Controller {
             node = mapper.readTree(request().body().asText());
         }
         return node;
+    }
+    
+    protected JsonNode constructJSON(Collection<?> items) {
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode itemsNode = mapper.createArrayNode();
+        for (Object item : items) {
+            itemsNode.add(Json.toJson(item));
+        }
+        
+        ObjectNode json = mapper.createObjectNode();
+        json.put("items", itemsNode);
+        json.put("total", items.size());
+        System.out.println("CONSTRUCTJSON root " + json.asText());
+        System.out.println("CONSTRUCTJSON items " + json.get("items").size());
+        System.out.println("CONSTRUCTJSON total " + json.get("total"));
+        return json;
+    }
+    
+    protected JsonNode constructJSON(Object item) {
+        return Json.toJson(item);
     }
 }

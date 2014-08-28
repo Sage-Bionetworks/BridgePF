@@ -74,7 +74,7 @@ public class ConsentController extends BaseController {
         User user = consentService.suspendDataSharing(session.getUser(), study);
         updateSessionUser(session, user);
 
-        return okResult("Suspended data sharing.");
+        return okResult("Data sharing with the study researchers has been suspended.");
     }
     
     public Result resumeDataSharing() throws Exception {
@@ -86,6 +86,6 @@ public class ConsentController extends BaseController {
         User user = consentService.resumeDataSharing(session.getUser(), study);
         updateSessionUser(session, user);
         
-        return okResult("Resuming data sharing.");
+        return okResult("Data sharing with the study researchers has been resumed.");
     }
 }
