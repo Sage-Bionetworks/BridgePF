@@ -21,7 +21,7 @@ POST    /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataCo
 DELETE  /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(trackerId: Long, recordId: String)
 
 # API - Health Data
-GET     /api/v1/healthdata/:trackerId      @controllers.HealthDataController.getHealthData(trackerId: Long, startDate: java.lang.Long ?= null, endDate: java.lang.Long ?= null)
+GET     /api/v1/healthdata/:trackerId      @controllers.HealthDataController.getHealthData(trackerId: Long, startDate: java.lang.String ?= null, endDate: java.lang.String ?= null)
 POST    /api/v1/healthdata/:trackerId      @controllers.HealthDataController.appendHealthData(trackerId: Long)
 
 # API - trackers

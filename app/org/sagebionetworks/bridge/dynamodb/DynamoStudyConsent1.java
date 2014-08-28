@@ -31,13 +31,14 @@ public class DynamoStudyConsent1 implements StudyConsent, DynamoTable {
 
     @Override
     @DynamoDBRangeKey
+    @JsonIgnore
     public long getCreatedOn() {
         return createdOn;
     }
     public void setCreatedOn(long timestamp) {
         this.createdOn = timestamp;
     }
-
+    
     @Override
     @DynamoDBAttribute
     public boolean getActive() {
