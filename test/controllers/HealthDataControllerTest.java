@@ -12,7 +12,6 @@ import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.models.Date;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.springframework.test.context.ContextConfiguration;
@@ -120,7 +120,7 @@ public class HealthDataControllerTest {
 
                 long threeDays = (1000L * 60L * 60L * 24L * 3L);
 
-                long thousandDaysAgo = new Date().getTime() - (1000 * 60 * 60 * 24 * 1000);
+                long thousandDaysAgo = Date.getCurrentMillisFromEpoch() - (1000 * 60 * 60 * 24 * 1000);
                 long time1 = thousandDaysAgo + threeDays;
                 long time2 = thousandDaysAgo + threeDays * 2;
                 long time3 = thousandDaysAgo + threeDays * 3;
@@ -158,20 +158,22 @@ public class HealthDataControllerTest {
                         .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id6 = retrieveNewId(response);
 
-                Map<String, String> queryMap = ImmutableMap.of(START_DATE, Long.toString(time2), END_DATE,
-                        Long.toString(time5));
+                Map<String, String> queryMap = ImmutableMap.of(START_DATE, new Date(time2).getISODateTime(), END_DATE,
+                        new Date(time5).getISODateTime());
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
                 List<String> ids = getIds(response);
                 assertTrue("Returns records 2, 3, 4, and 6", ids.containsAll(Lists.newArrayList(id2, id3, id4, id6)));
                 assertFalse("Does not contain records 1 or 5", ids.containsAll(Lists.newArrayList(id1, id5)));
 
-                queryMap = ImmutableMap.of(START_DATE, Long.toString(time1), END_DATE, Long.toString(time3));
+                queryMap = ImmutableMap.of(START_DATE, new Date(time1).getISODateTime(), END_DATE,
+                        new Date(time3).getISODateTime());
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
                 ids = getIds(response);
                 assertTrue("Returns records 1, 2, 4, and 6", ids.containsAll(Lists.newArrayList(id1, id2, id4, id6)));
                 assertFalse("Does not contain records 3 or 5", ids.containsAll(Lists.newArrayList(id3, id5)));
 
-                queryMap = ImmutableMap.of(START_DATE, Long.toString(time4), END_DATE, Long.toString(time5));
+                queryMap = ImmutableMap.of(START_DATE, new Date(time4).getISODateTime(), END_DATE,
+                        new Date(time5).getISODateTime());
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
                 ids = getIds(response);
                 assertTrue("Returns records 3, 4, and 6", ids.containsAll(Lists.newArrayList(id3, id4, id6)));
@@ -205,7 +207,7 @@ public class HealthDataControllerTest {
 
                 // Get it and verify that it was persisted.
                 response = TestUtils.getURL(helper.getUserSessionToken(), RECORD_URL + id).get().get(TIMEOUT);
-                JsonNode body = response.asJson().get("items");
+                JsonNode body = response.asJson();
                 long valueSaved = body.get("data").get("systolic").asLong();
                 assertEquals("Value saved is 200", 200L, valueSaved);
             }

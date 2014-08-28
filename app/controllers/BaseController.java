@@ -114,7 +114,7 @@ public abstract class BaseController extends Controller {
         return node;
     }
     
-    protected JsonNode constructJSON(Collection<?> items) {
+    protected <T> JsonNode constructJSON(Collection<T> items) {
         ObjectMapper mapper = new ObjectMapper();
         ArrayNode itemsNode = mapper.createArrayNode();
         for (Object item : items) {
@@ -124,13 +124,10 @@ public abstract class BaseController extends Controller {
         ObjectNode json = mapper.createObjectNode();
         json.put("items", itemsNode);
         json.put("total", items.size());
-        System.out.println("CONSTRUCTJSON root " + json.asText());
-        System.out.println("CONSTRUCTJSON items " + json.get("items").size());
-        System.out.println("CONSTRUCTJSON total " + json.get("total"));
         return json;
     }
     
-    protected JsonNode constructJSON(Object item) {
+    protected <T> JsonNode constructJSON(T item) {
         return Json.toJson(item);
     }
 }
