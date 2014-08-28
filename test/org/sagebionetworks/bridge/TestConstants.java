@@ -46,6 +46,7 @@ public class TestConstants {
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";
     public static final String API_URL = "/api/v1";
+    public static final String ADMIN_URL = "/admin/v1";
     public static final String CONSENT_TEST_URL = "/consent/asdf";
     public static final String SIGN_OUT_URL = API_URL + "/auth/signOut";
     public static final String SIGN_IN_URL = API_URL + "/auth/signIn";
@@ -55,7 +56,7 @@ public class TestConstants {
 
     public static final String PROFILE_URL = API_URL + "/users/profile";
     
-    public static final String STUDYCONSENT_URL = API_URL + "/admin/consents";
+    public static final String STUDYCONSENT_URL = ADMIN_URL + "/consents";
     public static final String STUDYCONSENT_ACTIVE_URL = STUDYCONSENT_URL + "/active";
     
     public static final String APPLICATION_JSON = "application/json";
