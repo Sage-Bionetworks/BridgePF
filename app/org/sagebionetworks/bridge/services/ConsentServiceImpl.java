@@ -53,18 +53,18 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public User consentToResearch(User caller, ConsentSignature researchConsent, final Study study,
+    public User consentToResearch(User caller, ConsentSignature consentSignature, final Study study,
             boolean sendEmail) throws BridgeServiceException {
 
         if (caller == null) {
             throw new BridgeServiceException("User is required.", HttpStatus.SC_BAD_REQUEST);
         } else if (study == null) {
             throw new BridgeServiceException("Study is required.", HttpStatus.SC_BAD_REQUEST);
-        } else if (researchConsent == null) {
+        } else if (consentSignature == null) {
             throw new BridgeServiceException("ResearchConsent is required.", HttpStatus.SC_BAD_REQUEST);
-        } else if (StringUtils.isBlank(researchConsent.getName())) {
+        } else if (StringUtils.isBlank(consentSignature.getName())) {
             throw new BridgeServiceException("Consent signature is required.", HttpStatus.SC_BAD_REQUEST);
-        } else if (researchConsent.getBirthdate() == null) {
+        } else if (consentSignature.getBirthdate() == null) {
             throw new BridgeServiceException("Consent birth date  is required.", HttpStatus.SC_BAD_REQUEST);
         }
 
@@ -108,11 +108,11 @@ public class ConsentServiceImpl implements ConsentService {
                         }
                     };
                 }
-                userConsentDao.giveConsent(healthId.getCode(), studyConsent, researchConsent);
+                userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
             }
 
             if (sendEmail) {
-                sendMailService.sendConsentAgreement(caller, researchConsent, study);
+                sendMailService.sendConsentAgreement(caller, consentSignature, study);
             }
             return caller;
             
@@ -177,14 +177,17 @@ public class ConsentServiceImpl implements ConsentService {
             throw new BridgeServiceException("Study is required.", HttpStatus.SC_BAD_REQUEST);
         }
         try {
-            StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
-            ConsentSignature consent = userConsentDao.getConsentSignature(caller.getHealthDataCode(), studyConsent);
-            if (studyConsent == null || consent == null) {
-                throw new BridgeServiceException("Study Consent or Consent Signature not found.",
+            StudyConsent consent = studyConsentDao.getConsent(study.getKey());
+            if (consent == null) {
+                throw new BridgeServiceException("Consent not found.",
                         HttpStatus.SC_INTERNAL_SERVER_ERROR);
             }
-
-            sendMailService.sendConsentAgreement(caller, consent, study);
+            ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthDataCode(), consent);
+            if (consentSignature == null) {
+                throw new BridgeServiceException("Consent signature not found.",
+                        HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            }
+            sendMailService.sendConsentAgreement(caller, consentSignature, study);
         } catch (Exception e) {
             throw new BridgeServiceException(e, HttpStatus.SC_BAD_REQUEST);
         }
