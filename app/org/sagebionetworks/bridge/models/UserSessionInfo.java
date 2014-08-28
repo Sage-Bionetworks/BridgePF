@@ -9,6 +9,7 @@ public class UserSessionInfo {
 
     private final boolean authenticated;
     private final boolean consented;
+    private final boolean dataSharing;
     private final String sessionToken;
     private final String username;
     
@@ -16,6 +17,7 @@ public class UserSessionInfo {
         this.authenticated = session.isAuthenticated();
         this.sessionToken = session.getSessionToken();
         this.consented = session.getUser().doesConsent();
+        this.dataSharing = session.getUser().isDataSharing();
         this.username = session.getUser().getUsername();
     }
 
@@ -24,6 +26,9 @@ public class UserSessionInfo {
     }
     public boolean isConsented() {
         return consented;
+    }
+    public boolean isDataSharing() {
+        return dataSharing;
     }
     public String getSessionToken() {
         return sessionToken;
