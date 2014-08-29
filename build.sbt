@@ -8,7 +8,7 @@ libraryDependencies ++= Seq(
   javaJdbc,
   javaEbean,
   cache,
-  "com.amazonaws" % "aws-java-sdk" % "1.8.8",
+  "com.amazonaws" % "aws-java-sdk" % "1.8.9.1",
   "org.springframework" % "spring-context" % "4.0.5.RELEASE",
   "org.springframework" % "spring-test" % "4.0.5.RELEASE",
   "org.apache.commons" % "commons-lang3" % "3.3.2",
