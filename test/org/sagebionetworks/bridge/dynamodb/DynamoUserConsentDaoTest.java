@@ -141,22 +141,4 @@ public class DynamoUserConsentDaoTest {
         userConsentDao.resumeSharing(healthCode, consent);
         assertTrue(userConsentDao.isSharingData(healthCode, consent));
     }
-
-    @Test
-    public void testBackfill() {
-        final String healthCode = "hc123";
-        final DynamoStudyConsent1 consent = new DynamoStudyConsent1();
-        consent.setStudyKey("study789");
-        consent.setCreatedOn(456L);
-        ConsentSignature researchConsent = new ConsentSignature("John Smith", "2009-12-01");
-        assertFalse(userConsentDao.hasConsented(healthCode, consent));
-        userConsentDao.giveConsentOld(healthCode, consent, researchConsent);
-        assertFalse(userConsentDao.hasConsentedNew(healthCode, consent));
-        assertEquals(1, userConsentDao.backfill());
-        assertTrue(userConsentDao.hasConsentedNew(healthCode, consent));
-        assertTrue(userConsentDao.getConsentCreatedOnNew(healthCode, consent.getStudyKey()) > 0L);
-        ConsentSignature signature = userConsentDao.getConsentSignatureNew(healthCode, consent);
-        assertEquals("John Smith", signature.getName());
-        assertEquals("2009-12-01", signature.getBirthdate());
-    }
 }
