@@ -153,7 +153,6 @@ public class ConsentServiceImpl implements ConsentService {
             final CustomData customData = account.getCustomData();
             customData.remove(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX);
             customData.save();
-            caller.setConsent(false);
             // TODO: New
             String healthCode = caller.getHealthDataCode();
             List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
