@@ -39,15 +39,15 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public void giveConsent(String healthCode, StudyConsent studyConsent, ConsentSignature researchConsent) {
-        giveConsentOld(healthCode, studyConsent, researchConsent);
-        giveConsentNew(healthCode, studyConsent, researchConsent);
+    public void giveConsent(String healthCode, StudyConsent consent, ConsentSignature consentSignature) {
+        giveConsentOld(healthCode, consent, consentSignature);
+        giveConsentNew(healthCode, consent, consentSignature);
     }
 
     @Override
-    public void withdrawConsent(String healthCode, StudyConsent studyConsent) {
-        withdrawConsentOld(healthCode, studyConsent);
-        withdrawConsentNew(healthCode, studyConsent);
+    public void withdrawConsent(String healthCode, StudyConsent consent) {
+        withdrawConsentOld(healthCode, consent);
+        withdrawConsentNew(healthCode, consent);
     }
 
     @Override
@@ -56,50 +56,50 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public boolean hasConsented(String healthCode, StudyConsent studyConsent) {
-        boolean hasConsentedOld = hasConsentedOld(healthCode, studyConsent);
-        if (hasConsentedOld != hasConsentedNew(healthCode, studyConsent)) {
+    public boolean hasConsented(String healthCode, StudyConsent consent) {
+        boolean hasConsentedOld = hasConsentedOld(healthCode, consent);
+        if (hasConsentedOld != hasConsentedNew(healthCode, consent)) {
             // TODO: After backfill, log an error here
         }
         return hasConsentedOld;
     }
 
     @Override
-    public ConsentSignature getConsentSignature(String healthCode, StudyConsent studyConsent) {
-        ConsentSignature consentOld = getConsentSignatureOld(healthCode, studyConsent);
-        if (consentOld != null && !consentOld.equals(getConsentSignatureNew(healthCode, studyConsent))) {
+    public ConsentSignature getConsentSignature(String healthCode, StudyConsent consent) {
+        ConsentSignature consentOld = getConsentSignatureOld(healthCode, consent);
+        if (consentOld != null && !consentOld.equals(getConsentSignatureNew(healthCode, consent))) {
             // TODO: After backfill, log an error here
         }
         return consentOld;
     }
 
     @Override
-    public void resumeSharing(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
-        consent = mapper.load(consent);
-        if (consent == null) {
+    public void resumeSharing(String healthCode, StudyConsent consent) {
+        DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
+        userConsent = mapper.load(userConsent);
+        if (userConsent == null) {
             throw new ConsentNotFoundException();
         }
-        consent.setDataSharing(true);
-        mapper.save(consent);
+        userConsent.setDataSharing(true);
+        mapper.save(userConsent);
     }
 
     @Override
-    public void suspendSharing(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
-        consent = mapper.load(consent);
-        if (consent == null) {
+    public void suspendSharing(String healthCode, StudyConsent consent) {
+        DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
+        userConsent = mapper.load(userConsent);
+        if (userConsent == null) {
             throw new ConsentNotFoundException();
         }
-        consent.setDataSharing(false);
-        mapper.save(consent);
+        userConsent.setDataSharing(false);
+        mapper.save(userConsent);
     }
 
     @Override
-    public boolean isSharingData(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
-        consent = mapper.load(consent);
-        return (consent != null && consent.getDataSharing());
+    public boolean isSharingData(String healthCode, StudyConsent consent) {
+        DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
+        userConsent = mapper.load(userConsent);
+        return (userConsent != null && userConsent.getDataSharing());
     }
 
     // Old
@@ -141,6 +141,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     private ConsentSignature getConsentSignatureOld(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent consent = new DynamoUserConsent(healthCode, studyConsent);
+        consent.setWithdraw(NOT_WITHDRAW_YET);
         consent = mapperOld.load(consent);
         if (consent == null) {
             throw new ConsentNotFoundException();
