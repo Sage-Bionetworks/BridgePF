@@ -84,29 +84,25 @@ public class ConsentServiceImpl implements ConsentService {
                 // TODO: New
                 StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
                 if (studyConsent == null) {
-                    // TODO: To be removed once DynamoDB's study consent is
-                    // ready
+                    // TODO: To be removed once DynamoDB's study consent is ready.
+                    //       This is kept here for testing purpose
                     studyConsent = new StudyConsent() {
                         @Override
                         public String getStudyKey() {
                             return study.getKey();
                         }
-
                         @Override
                         public long getCreatedOn() {
                             return 1406325157000L; // July 25, 2014
                         }
-
                         @Override
                         public boolean getActive() {
                             return true;
                         }
-
                         @Override
                         public String getPath() {
-                            return "conf/emailtemplates/neurodconsent.html";
+                            return "conf/email-templates/neurod-consent.html";
                         }
-
                         @Override
                         public int getMinAge() {
                             return 17;
