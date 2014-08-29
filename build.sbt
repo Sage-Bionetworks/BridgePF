@@ -2,15 +2,13 @@ name := "BridgePF"
 
 version := "0.1-SNAPSHOT"
 
-scalaVersion := "2.11"
-
-resolvers += "Sage Local Repository" at "http://sagebionetworks.artifactoryonline.com/sagebionetworks/libs-releases-local"
+scalaVersion := "2.10.3"
 
 libraryDependencies ++= Seq(
   javaJdbc,
   javaEbean,
   cache,
-  "com.amazonaws" % "aws-java-sdk" % "1.7.12",
+  "com.amazonaws" % "aws-java-sdk" % "1.8.8",
   "org.springframework" % "spring-context" % "4.0.5.RELEASE",
   "org.springframework" % "spring-test" % "4.0.5.RELEASE",
   "org.apache.commons" % "commons-lang3" % "3.3.2",
@@ -30,5 +28,7 @@ libraryDependencies ++= Seq(
 
 // To avoid reloading the Spring context
 sbt.Keys.fork in Test := false
+
+generateReverseRouter := false
 
 play.Project.playJavaSettings
