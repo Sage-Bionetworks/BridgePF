@@ -27,4 +27,5 @@ public interface StudyConsent {
      * Minimum age required to sign this consent.
      */
     int getMinAge();
+
 }
