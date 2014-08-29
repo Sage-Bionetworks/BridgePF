@@ -20,8 +20,8 @@ libraryDependencies ++= Seq(
   "org.bouncycastle" % "bcprov-jdk15on" % "1.50",
   "com.github.fge" % "json-schema-validator" % "2.2.5",
   "commons-httpclient" % "commons-httpclient" % "3.1",
-  "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.beta",
-  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.beta",
+  "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC2",
+  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC2",
   "redis.clients" % "jedis" % "2.4.2",
   "com.github.detro.ghostdriver" % "phantomjsdriver" % "1.1.0" % "test"
 )
