@@ -31,10 +31,6 @@ public class StudyConsentForm {
     public int getMinAge() {
         return minAge;
     }
-    
-    public String getType() {
-        return this.getClass().getSimpleName();
-    }
 
     private static void assertFieldsValid(JsonNode json) {
         if (json == null) {

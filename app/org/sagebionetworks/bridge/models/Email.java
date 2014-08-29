@@ -23,9 +23,5 @@ public class Email {
     public String getEmail() {
         return email;
     }
-    
-    public String getType() {
-        return this.getClass().getSimpleName();
-    }
 
 }

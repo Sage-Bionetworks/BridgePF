@@ -73,9 +73,6 @@ public class UserProfile {
         this.email = email;
     }
     
-    public String getType() {
-        return this.getClass().getSimpleName();
-    }
 
     private static String replaceWithEmpty(String s) {
         if (StringUtils.isBlank(s)) {

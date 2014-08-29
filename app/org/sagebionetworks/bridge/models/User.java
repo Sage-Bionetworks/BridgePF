@@ -123,10 +123,6 @@ public class User {
     public boolean isInRole(String role) {
         return this.roles.contains(role);
     }
-
-    public String getType() {
-        return this.getClass().getSimpleName();
-    }
     
     @JsonIgnore
     public String getStormpathHref() {

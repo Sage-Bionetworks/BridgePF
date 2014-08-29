@@ -37,10 +37,6 @@ public final class SignIn {
         return password;
     }
     
-    public String getType() {
-        return this.getClass().getSimpleName();
-    }
-    
     public boolean isBlank() {
         return StringUtils.isBlank(username) && StringUtils.isBlank(password);
     }
