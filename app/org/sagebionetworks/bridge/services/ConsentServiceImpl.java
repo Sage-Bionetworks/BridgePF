@@ -112,6 +112,7 @@ public class ConsentServiceImpl implements ConsentService {
                         public int getMinAge() {
                             return 17;
                         }
+
                     };
                 }
                 userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);

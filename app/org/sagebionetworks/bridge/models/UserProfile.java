@@ -73,7 +73,6 @@ public class UserProfile {
         this.email = email;
     }
     
-
     private static String replaceWithEmpty(String s) {
         if (StringUtils.isBlank(s)) {
             return "<EMPTY>";

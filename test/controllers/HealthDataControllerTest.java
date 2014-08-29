@@ -3,6 +3,7 @@ package controllers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.RECORD_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static org.sagebionetworks.bridge.TestConstants.TRACKER_URL;
@@ -12,7 +13,6 @@ import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -261,11 +261,8 @@ public class HealthDataControllerTest {
     private String retrieveNewId(Response response) {
         JsonNode body = response.asJson();
         if (body.get("message") != null) {
-            System.out.println(body.get("message"));
+            fail(body.get("message").asText());
         }
-        
-        Iterator<String> fs = body.fieldNames();
-        while (fs.hasNext()) System.out.println(fs.next());
         return body.get("items").get(0).get("id").asText();
     }
 

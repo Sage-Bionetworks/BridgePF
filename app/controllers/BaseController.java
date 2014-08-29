@@ -118,18 +118,20 @@ public abstract class BaseController extends Controller {
         ObjectMapper mapper = new ObjectMapper();
         ArrayNode itemsNode = mapper.createArrayNode();
         for (Object item : items) {
-            itemsNode.add(Json.toJson(item));
+            ObjectNode node = (ObjectNode) Json.toJson(item);
+            node.put("type", item.getClass().getSimpleName());
+            itemsNode.add(node);
         }
         
         ObjectNode json = mapper.createObjectNode();
         json.put("items", itemsNode);
         json.put("total", items.size());
-        
-        System.out.println(itemsNode.size());
         return json;
     }
     
     protected <T> JsonNode constructJSON(T item) {
-        return Json.toJson(item);
+        ObjectNode node = (ObjectNode) Json.toJson(item);
+        node.put("type", item.getClass().getSimpleName());
+        return node;
     }
 }
