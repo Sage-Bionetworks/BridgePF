@@ -15,7 +15,6 @@ function($http, $window, $q, $location, $humane) {
             this.consented = session.consented;
             this.authenticated = session.authenticated;
             this.dataSharing = session.dataSharing;
-            console.log(session.dataSharing);
         },
         clear: function() {
             delete $http.defaults.headers.common['Bridge-Session'];

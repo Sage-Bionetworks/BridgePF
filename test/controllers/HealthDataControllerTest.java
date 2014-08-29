@@ -108,16 +108,16 @@ public class HealthDataControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 // Time ranges used in this test, and where they overlap with the 3 test windows or not.
-                // 1 1...<2
-                // 2 1............3
-                // 3 4............6
-                // 4 3...........................4
-                // 5 >5.....6
-                // 6 3............................................
+                //              1        1...<2
+                //       2        1............3
+                //       3                                                 4............6
+                //       4                     3...........................4
+                //       5                                                       >5.....6
+                //       6                     3............................................
                 //
-                // 2__________________________________________5
-                // 1____________3
-                // 4______5
+                //                     2__________________________________________5
+                //                1____________3
+                //                                                         4______5
 
                 long threeDays = (1000L * 60L * 60L * 24L * 3L);
 
@@ -131,50 +131,60 @@ public class HealthDataControllerTest {
 
                 List<HealthDataRecord> records = getTestRecords(time1, time2 - 1);
                 Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                                        .post(mapper.writeValueAsString(records))
+                                        .get(TIMEOUT);
                 String id1 = retrieveNewId(response);
 
                 records = getTestRecords(time1, time3);
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                                .post(mapper.writeValueAsString(records))
+                                .get(TIMEOUT);
                 String id2 = retrieveNewId(response);
 
                 records = getTestRecords(time4, time6);
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                                .post(mapper.writeValueAsString(records))
+                                .get(TIMEOUT);
                 String id3 = retrieveNewId(response);
 
                 records = getTestRecords(time3, time4);
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                                .post(mapper.writeValueAsString(records))
+                                .get(TIMEOUT);
                 String id4 = retrieveNewId(response);
 
                 records = getTestRecords(time5 + 1, time6);
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                                .post(mapper.writeValueAsString(records))
+                                .get(TIMEOUT);
                 String id5 = retrieveNewId(response);
 
                 records = getTestRecords(time3, 0);
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
-                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
+                                .post(mapper.writeValueAsString(records))
+                                .get(TIMEOUT);
                 String id6 = retrieveNewId(response);
 
-                Map<String, String> queryMap = ImmutableMap.of(START_DATE, new Date(time2).getISODateTime(), END_DATE,
-                        new Date(time5).getISODateTime());
-                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
+                Map<String, String> queryMap = ImmutableMap.of(START_DATE, new Date(time2).getISODateTime(), 
+                                                                END_DATE, new Date(time5).getISODateTime());
+                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap)
+                                .get()
+                                .get(TIMEOUT);
                 List<String> ids = getIds(response);
                 assertTrue("Returns records 2, 3, 4, and 6", ids.containsAll(Lists.newArrayList(id2, id3, id4, id6)));
                 assertFalse("Does not contain records 1 or 5", ids.containsAll(Lists.newArrayList(id1, id5)));
 
-                queryMap = ImmutableMap.of(START_DATE, new Date(time1).getISODateTime(), END_DATE,
-                        new Date(time3).getISODateTime());
-                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
+                queryMap = ImmutableMap.of(START_DATE, new Date(time1).getISODateTime(), 
+                                            END_DATE, new Date(time3).getISODateTime());
+                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap)
+                                .get()
+                                .get(TIMEOUT);
                 ids = getIds(response);
                 assertTrue("Returns records 1, 2, 4, and 6", ids.containsAll(Lists.newArrayList(id1, id2, id4, id6)));
                 assertFalse("Does not contain records 3 or 5", ids.containsAll(Lists.newArrayList(id3, id5)));
 
-                queryMap = ImmutableMap.of(START_DATE, new Date(time4).getISODateTime(), END_DATE,
-                        new Date(time5).getISODateTime());
+                queryMap = ImmutableMap.of(START_DATE, new Date(time4).getISODateTime(), 
+                                            END_DATE, new Date(time5).getISODateTime());
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
                 ids = getIds(response);
                 assertTrue("Returns records 3, 4, and 6", ids.containsAll(Lists.newArrayList(id3, id4, id6)));
