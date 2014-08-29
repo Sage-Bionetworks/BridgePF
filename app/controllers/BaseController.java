@@ -119,7 +119,9 @@ public abstract class BaseController extends Controller {
         ArrayNode itemsNode = mapper.createArrayNode();
         for (Object item : items) {
             ObjectNode node = (ObjectNode) Json.toJson(item);
-            node.put("type", item.getClass().getSimpleName());
+            if (!node.has("type")) {
+                node.put("type", item.getClass().getSimpleName());
+            }
             itemsNode.add(node);
         }
         
@@ -131,7 +133,9 @@ public abstract class BaseController extends Controller {
     
     protected <T> JsonNode constructJSON(T item) {
         ObjectNode node = (ObjectNode) Json.toJson(item);
-        node.put("type", item.getClass().getSimpleName());
+        if (!node.has("type")) {
+            node.put("type", item.getClass().getSimpleName());
+        }
         return node;
     }
 }
