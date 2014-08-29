@@ -70,7 +70,4 @@ public class Study {
         }
         throw new BridgeNotFoundException(String.format("Tracker %s not available for study '%s'", id.toString(), key));
     }
-    public String getType() {
-        return this.getClass().getSimpleName();
-    }
 }

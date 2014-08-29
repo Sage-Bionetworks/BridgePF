@@ -45,9 +45,5 @@ public class SignUp {
     public String getPassword() {
         return password;
     }
-    
-    public String getType() {
-        return this.getClass().getSimpleName();
-    }
 
 }

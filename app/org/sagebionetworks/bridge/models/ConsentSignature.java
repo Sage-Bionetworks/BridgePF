@@ -35,10 +35,6 @@ public class ConsentSignature {
         return birthdate;
     }
     
-    public String getType() {
-        return this.getClass().getSimpleName();
-    }
-
     private static String parseDate(String date) {
         return new Date(date).getISODate();
     }

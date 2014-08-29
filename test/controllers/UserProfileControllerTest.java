@@ -75,7 +75,7 @@ public class UserProfileControllerTest {
 
                 int count = 0;
                 
-                List<String> profileFieldNames = Lists.newArrayList("firstName", "lastName", "username", "email", "type");
+                List<String> profileFieldNames = Lists.newArrayList("firstName", "lastName", "username", "email");
                 Iterator<Entry<String, JsonNode>> fields = response.asJson().fields();
                 while (fields.hasNext()) {
                     String fieldName = fields.next().getKey();
@@ -83,7 +83,7 @@ public class UserProfileControllerTest {
                         count++;
                     }
                 }
-                assertEquals("User profile has all required fields.", count, 5);
+                assertEquals("User profile has all required fields.", count, profileFieldNames.size());
             }
         });
     }

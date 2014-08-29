@@ -24,8 +24,4 @@ public class EmailVerification {
         return sptoken;
     }
 
-    public String getType() {
-        return this.getClass().getSimpleName();
-    }
-
 }

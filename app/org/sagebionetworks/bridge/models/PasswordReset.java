@@ -34,9 +34,5 @@ public class PasswordReset {
     public String getSptoken() {
         return sptoken;
     }
-    
-    public String getType() {
-        return this.getClass().getSimpleName();
-    }
 
 }

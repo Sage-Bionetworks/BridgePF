@@ -12,6 +12,7 @@ import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -258,8 +259,14 @@ public class HealthDataControllerTest {
     }
 
     private String retrieveNewId(Response response) {
-        JsonNode body = response.asJson().get("items");
-        return body.get(0).get("id").asText();
+        JsonNode body = response.asJson();
+        if (body.get("message") != null) {
+            System.out.println(body.get("message"));
+        }
+        
+        Iterator<String> fs = body.fieldNames();
+        while (fs.hasNext()) System.out.println(fs.next());
+        return body.get("items").get(0).get("id").asText();
     }
 
     private List<String> getIds(Response response) {

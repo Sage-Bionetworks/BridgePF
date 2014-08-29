@@ -124,6 +124,8 @@ public abstract class BaseController extends Controller {
         ObjectNode json = mapper.createObjectNode();
         json.put("items", itemsNode);
         json.put("total", items.size());
+        
+        System.out.println(itemsNode.size());
         return json;
     }
     
