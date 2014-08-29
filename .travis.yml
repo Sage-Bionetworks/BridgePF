@@ -33,7 +33,6 @@ deploy:
   api_key:
     secure: To9IEKT4ppYgFW7vHVfC5s5FHzxALA+/Krg9fLv8Fx9BI3rMB91yN+MfE0yhWySaTs8BEHfAdOBN/zvWcXGyhpta10TtvKs04DzZt9foP+MPbRDbE5WEQ9M2n3uAy10ACX2Kxj3ebv3d97I8TYD2qfVBArIIOG29FZlJsRDYIWg=
   strategy: git
-  buildpack: https://github.com/Sage-Bionetworks/heroku-buildpack-scala
   app:
     develop: bridge-develop
     prod: bridge-prod
