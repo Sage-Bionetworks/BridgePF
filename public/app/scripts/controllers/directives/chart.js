@@ -15,8 +15,9 @@ function($scope, healthDataService, dashboardService, $q, $modal) {
         start = start - ((end-start)*2);
 
         healthDataService.getByDateRange($scope.tracker.id, start, end).then(function(response) {
-            $scope.dataset.convert(response.items.data);
-            response.items.data = $scope.dataset;
+            console.log(response);
+            $scope.dataset.convert(response.data.items);
+            response.data.items = $scope.dataset;
             deferred.resolve(response);
         }, function(response) {
             $scope.dataset.clear();
