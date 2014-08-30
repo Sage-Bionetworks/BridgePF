@@ -45,9 +45,4 @@ public interface UserConsentDao {
      * Returns the consent signature, consisting of the signature name and birthdate.
      */
     ConsentSignature getConsentSignature(String healthCode, StudyConsent consent);
-
-    /**
-     * Backfills the new schema. Returns the number of records backfilled.
-     */
-    int backfill();
 }
