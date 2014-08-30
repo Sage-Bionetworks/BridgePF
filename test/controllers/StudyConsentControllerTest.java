@@ -48,7 +48,6 @@ public class StudyConsentControllerTest {
     @After
     public void after() {
         helper.deleteOneUser();
-        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
     }
 
     @Test
