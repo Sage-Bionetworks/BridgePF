@@ -136,7 +136,6 @@ public class StormPathUserAdminService implements UserAdminService {
         }
         assertAdminUser(caller);
         for (Study study : studyControllerService.getStudies()) {
-            revokeAllConsentRecords(caller, user, study);
             deleteUserInStudy(caller, user, study);
         }
     }

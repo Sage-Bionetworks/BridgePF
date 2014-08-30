@@ -17,8 +17,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
+import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent;
+import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -42,6 +43,12 @@ public class StudyConsentControllerTest {
 
     @Before
     public void before() {
+        // TODO: Temporary patch. These DynamoDB clean up calls shouldn't be here
+        // But the tables are not properly cleaned by tests run before us.
+        DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
+                "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
+                "healthCode", "consentCreatedOn", "version");
         helper.createOneUser();
     }
 
