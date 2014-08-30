@@ -129,7 +129,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         consentToDelete.setWithdraw(NOT_WITHDRAW_YET);
         consentToDelete = mapperOld.load(consentToDelete);
         if (consentToDelete == null) {
-            throw new ConsentNotFoundException();
+            return;
         }
         mapperOld.delete(consentToDelete);
         // Save with the withdraw time stamp for audit
@@ -178,7 +178,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 consentToDelete = new DynamoUserConsent2(healthCode, studyConsent);
         consentToDelete = mapper.load(consentToDelete);
         if (consentToDelete == null) {
-            throw new ConsentNotFoundException();
+            return;
         }
         mapper.delete(consentToDelete);
     }

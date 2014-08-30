@@ -108,11 +108,6 @@ public class DynamoUserConsentDaoTest {
         } catch (ConsentNotFoundException e) {
             assertTrue(true); // Expected
         }
-        try {
-            userConsentDao.withdrawConsent(healthCode, consent);
-        } catch (ConsentNotFoundException e) {
-            assertTrue(true); // Expected
-        }
 
         // Must consent first before sharing data
         assertFalse(userConsentDao.isSharingData(healthCode, consent));
