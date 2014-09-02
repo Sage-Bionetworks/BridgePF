@@ -38,7 +38,7 @@ public class DynamoUserConsent implements DynamoTable {
         withdraw = consent.withdraw;
         version = consent.version;
     }
-    
+
     @DynamoDBHashKey
     public String getHealthCodeStudy() {
         return healthCodeStudy;
