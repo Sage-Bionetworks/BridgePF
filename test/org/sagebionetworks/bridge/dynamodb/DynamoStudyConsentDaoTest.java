@@ -15,6 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.models.StudyConsent;
+import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -43,7 +44,7 @@ public class DynamoStudyConsentDaoTest {
         assertFalse(consent1.getActive());
         assertNull(studyConsentDao.getConsent(consent1.getStudyKey()));
         // Make version1 active
-        studyConsentDao.setActive(consent1);
+        studyConsentDao.setActive(consent1, true);
         StudyConsent consent = studyConsentDao.getConsent(consent1.getStudyKey());
         assertTrue(consent.getActive());
         assertEquals(consent1.getStudyKey(), consent.getStudyKey());
@@ -52,7 +53,8 @@ public class DynamoStudyConsentDaoTest {
         assertTrue(consent.getCreatedOn() > 0);
         // Add version 2
         StudyConsent consent2 = studyConsentDao.addConsent("fake-study", "fake-path2", 18);
-        studyConsentDao.setActive(consent2);
+        studyConsentDao.setActive(consent1, false);
+        studyConsentDao.setActive(consent2, true);
         // The latest should be version 2
         consent = studyConsentDao.getConsent(consent.getStudyKey());
         assertTrue(consent.getActive());
@@ -61,7 +63,7 @@ public class DynamoStudyConsentDaoTest {
         assertEquals(consent2.getMinAge(), consent.getMinAge());
         // Can still get version 1 using its timestamp
         consent = studyConsentDao.getConsent(consent1.getStudyKey(), consent1.getCreatedOn());
-        assertTrue(consent.getActive());
+        assertFalse(consent.getActive());
         assertEquals(consent1.getStudyKey(), consent.getStudyKey());
         assertEquals(consent1.getPath(), consent.getPath());
         assertEquals(consent1.getMinAge(), consent.getMinAge());
@@ -75,15 +77,21 @@ public class DynamoStudyConsentDaoTest {
         assertEquals(consent3.getStudyKey(), consent.getStudyKey());
         assertEquals(consent3.getPath(), consent.getPath());
         assertEquals(consent3.getMinAge(), consent.getMinAge());
-        consent= all.get(1);
+        consent = all.get(1);
         assertTrue(consent.getActive());
         assertEquals(consent2.getStudyKey(), consent.getStudyKey());
         assertEquals(consent2.getPath(), consent.getPath());
         assertEquals(consent2.getMinAge(), consent.getMinAge());
         consent = all.get(2);
-        assertTrue(consent.getActive());
+        assertFalse(consent.getActive());
         assertEquals(consent1.getStudyKey(), consent.getStudyKey());
         assertEquals(consent1.getPath(), consent.getPath());
         assertEquals(consent1.getMinAge(), consent.getMinAge());
+        // Delete all consents
+        for (StudyConsent x : all) {
+            studyConsentDao.deleteConsent(x.getStudyKey(), x.getCreatedOn());
+        }
+        all = studyConsentDao.getConsents("fake-study");
+        assertTrue(all.isEmpty());
     }
 }

@@ -13,9 +13,9 @@ public interface StudyConsentDao {
     StudyConsent addConsent(String studyKey, String path, int minAge);
 
     /**
-     * Sets the consent active.
+     * Sets the consent active or inactive, depending on the boolean flag.
      */
-    void setActive(StudyConsent studyConsent);
+    StudyConsent setActive(StudyConsent studyConsent, boolean active);
 
     /**
      * Gets the latest, active consent.
@@ -26,6 +26,11 @@ public interface StudyConsentDao {
      * Gets the consent, activate or inactive, of the specified timestamp.
      */
     StudyConsent getConsent(String studyKey, long timestamp);
+    
+    /**
+     * Deletes the consent of the specified timestamp.
+     */
+    void deleteConsent(String studyKey, long timestamp);
 
     /**
      * Gets all the consents, active and inactive, in reverse order of the timestamp, of a particular study.

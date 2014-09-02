@@ -144,8 +144,17 @@
     <bean id="controllers.BackfillController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.BackfillController" parent="BaseController">
-                <property name="stormpathClient" ref="stormpathClient" />
-                <property name="healthCodeBackfill" ref="healthCodeBackfill" />
+                <property name="backfillService" ref="backfillService" />
+                <property name="studyControllerService" ref="studyControllerService" />
+            </bean>
+        </property>
+    </bean>
+    
+    <bean id="controllers.StudyConsentController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.StudyConsentController" parent="BaseController">
+                <property name="studyConsentService" ref="studyConsentService" />
+                <property name="studyControllerService" ref="studyControllerService" />
             </bean>
         </property>
     </bean>
@@ -242,14 +251,18 @@
         <property name="studyConsentDao" ref="studyConsentDao"/>
         <property name="userConsentDao" ref="userConsentDao"/>
     </bean>
+    
+    <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">
+        <property name="studyConsentDao" ref="studyConsentDao" />
+    </bean>
 
     <!-- Backfill -->
-    <bean id="healthCodeBackfill" class="org.sagebionetworks.bridge.backfill.HealthCodeBackfill">
-        <property name="bridgeConfig" ref="bridgeConfig" />
+    <bean id="backfillService" class="org.sagebionetworks.bridge.services.BackfillService">
         <property name="stormpathClient" ref="stormpathClient"/>
-        <property name="studyControllerService" ref="studyControllerService" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
+        <property name="studyConsentDao" ref="studyConsentDao" />
+        <property name="userConsentDao" ref="userConsentDao" />
     </bean>
 
     <bean id="sendEmailViaAmazonService" class="org.sagebionetworks.bridge.services.SendMailViaAmazonService">

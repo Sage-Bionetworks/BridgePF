@@ -1,7 +1,7 @@
 package controllers;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.ResearchConsent;
+import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -30,7 +30,7 @@ public class ConsentController extends BaseController {
         if (session == null) {
             throw new BridgeServiceException("Not signed in.", 401);
         }
-        ResearchConsent consent = ResearchConsent.fromJson(request().body().asJson());
+        ConsentSignature consent = ConsentSignature.fromJson(request().body().asJson());
         Study study = studyControllerService.getStudyByHostname(request());
         User user = consentService.consentToResearch(session.getUser(), consent, study, true);
         updateSessionUser(session, user);

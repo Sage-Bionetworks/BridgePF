@@ -18,4 +18,5 @@ setup.sh
 /bin
 .cache
 .vagrant
-
+verify.rb
+/project
