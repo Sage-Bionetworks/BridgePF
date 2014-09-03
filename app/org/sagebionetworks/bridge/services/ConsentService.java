@@ -11,11 +11,13 @@ public interface ConsentService {
     public boolean hasUserConsentedToResearch(User caller, Study study);
 
     // TODO: Remove. This is currently equivalent to deleting a user.
-    public void withdrawConsent(User caller, Study study);
+    public User withdrawConsent(User caller, Study study);
 
     public void emailConsentAgreement(User caller, Study study);
 
     public User suspendDataSharing(User caller, Study study);
 
     public User resumeDataSharing(User caller, Study study);
+    
+    public boolean isSharingData(User caller, Study study);
 }

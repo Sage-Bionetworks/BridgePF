@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.redis;
 
 import java.util.UUID;
 
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.UserLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;

@@ -4,11 +4,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 
-import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
+import org.sagebionetworks.bridge.models.DateConverter;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 
@@ -27,7 +27,6 @@ public class SendMailViaAmazonService implements SendMailService {
     private static Region region = Region.getRegion(Regions.US_EAST_1);
     
     private static DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
-    private static DateTimeFormatter fmt2 = DateTimeFormat.forPattern("yyyy-MM-dd");
     
     private String fromEmail;
     private AmazonSimpleEmailServiceClient emailClient;
@@ -61,9 +60,8 @@ public class SendMailViaAmazonService implements SendMailService {
         InputStreamReader isr = new InputStreamReader(study.getConsentAgreement().getInputStream(), "UTF-8");
         String consentAgreementHTML = CharStreams.toString(isr);
 
-        LocalDate date = LocalDate.now();
-        String signingDate = date.toString(fmt);
-        String birthdate = fmt2.parseDateTime(consent.getBirthdate()).toString(fmt);
+        String signingDate = fmt.print(DateConverter.getCurrentMillisFromEpoch());
+        String birthdate = fmt.print(DateConverter.convertMillisFromEpoch(consent.getBirthdate()));
 
         String html = consentAgreementHTML.replace("@@name@@", consent.getName());
         html = html.replace("@@birth.date@@", birthdate);

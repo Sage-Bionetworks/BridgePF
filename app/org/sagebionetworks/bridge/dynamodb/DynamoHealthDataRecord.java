@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 
@@ -11,6 +13,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Used by the services to join a HealthDataKey to a HealthDataRecord, into a complete 
@@ -85,10 +89,12 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     @Override 
     @DynamoDBAttribute
     @DynamoDBIndexRangeKey(attributeName="startDate", localSecondaryIndexName="startDate-index")
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getStartDate() { 
         return startDate; 
     }
     @Override
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
     public void setStartDate(long startDate) { 
         this.startDate = startDate; 
     }
@@ -96,10 +102,12 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     @Override 
     @DynamoDBAttribute
     @DynamoDBIndexRangeKey(attributeName="endDate", localSecondaryIndexName="endDate-index")
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getEndDate() { 
         return endDate; 
     }
     @Override
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
     public void setEndDate(long endDate) { 
         this.endDate = endDate; 
     }

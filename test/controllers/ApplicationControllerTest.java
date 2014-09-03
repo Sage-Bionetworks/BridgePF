@@ -1,13 +1,20 @@
 package controllers;
 
-import org.junit.*;
+import static org.apache.commons.httpclient.HttpStatus.SC_OK;
+import static org.apache.commons.httpclient.HttpStatus.SC_SEE_OTHER;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
+import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
+import static play.mvc.Http.HeaderNames.LOCATION;
+import static play.test.Helpers.running;
+import static play.test.Helpers.testServer;
+
+import org.junit.Test;
 
 import play.libs.WS;
 import play.libs.WS.Response;
 import play.libs.WS.WSRequestHolder;
-import static play.test.Helpers.*;
-import static org.sagebionetworks.bridge.TestConstants.*;
-import static org.junit.Assert.*;
 
 public class ApplicationControllerTest {
 
@@ -18,7 +25,7 @@ public class ApplicationControllerTest {
                 WSRequestHolder holder = WS.url(TEST_BASE_URL + "/index.html")
                         .setFollowRedirects(false);
                 Response response = holder.get().get(TIMEOUT);
-                assertEquals("HTTP status is SEE OTHER", SEE_OTHER,
+                assertEquals("HTTP status is SEE OTHER", SC_SEE_OTHER,
                         response.getStatus());
                 assertEquals("Location header redirects to /", "/",
                         response.getHeader(LOCATION));
@@ -32,7 +39,7 @@ public class ApplicationControllerTest {
             public void run() {
                 WSRequestHolder holder = WS.url(TEST_BASE_URL);
                 Response response = holder.get().get(TIMEOUT);
-                assertEquals("HTTP status is OK (200)", OK,
+                assertEquals("HTTP status is OK (200)", SC_OK,
                         response.getStatus());
                 assertTrue("Page title includes expected Bridge text", response
                         .getBody().contains("Sage Bionetworks"));

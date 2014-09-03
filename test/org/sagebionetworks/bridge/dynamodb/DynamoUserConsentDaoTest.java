@@ -136,4 +136,5 @@ public class DynamoUserConsentDaoTest {
         userConsentDao.resumeSharing(healthCode, consent);
         assertTrue(userConsentDao.isSharingData(healthCode, consent));
     }
+
 }

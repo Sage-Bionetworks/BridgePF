@@ -8,16 +8,16 @@ import org.springframework.core.io.Resource;
 
 public class Study {
 
-    private String name;
-    private String key;
-    private int minAge;
+    private final String name;
+    private final String key;
+    private final int minAge;
     /**
      * There is a separate StormPath directory for each study (all associated to
      * the production application). This allows us to tailor the email for each
      * study, linking back to the correct host name for that study.
      */
-    private String stormpathDirectoryHref;
-    private Resource consentAgreement;
+    private final String stormpathDirectoryHref;
+    private final Resource consentAgreement;
     private List<String> hostnames = Collections.emptyList();
     private List<Tracker> trackers = Collections.emptyList();
     
