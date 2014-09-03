@@ -35,4 +35,5 @@ deploy:
   strategy: git
   app:
     develop: bridge-develop
+    uat: bridge-uat
     prod: bridge-prod
