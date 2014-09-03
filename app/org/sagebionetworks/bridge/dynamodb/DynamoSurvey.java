@@ -30,6 +30,11 @@ public class DynamoSurvey implements Survey, DynamoTable {
         this.questions = Lists.newArrayList();
     }
     
+    public DynamoSurvey(String guid) {
+        this();
+        setGuid(guid);
+    }
+    
     public DynamoSurvey(Survey survey) {
         this();
         setStudyKey(survey.getStudyKey());
@@ -46,7 +51,7 @@ public class DynamoSurvey implements Survey, DynamoTable {
     }
 
     @Override
-    @DynamoDBHashKey
+    @DynamoDBAttribute
     public String getStudyKey() {
         return studyKey;
     }
@@ -56,8 +61,8 @@ public class DynamoSurvey implements Survey, DynamoTable {
         this.studyKey = studyKey;
     }
 
-    @DynamoDBRangeKey
     @Override
+    @DynamoDBHashKey
     public String getGuid() {
         return guid;
     }
@@ -68,7 +73,7 @@ public class DynamoSurvey implements Survey, DynamoTable {
     }
 
     @Override
-    @DynamoDBAttribute
+    @DynamoDBRangeKey
     public long getVersionedOn() {
         return versionedOn;
     }
