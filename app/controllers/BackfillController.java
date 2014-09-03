@@ -29,7 +29,7 @@ public class BackfillController extends AdminController {
     private void checkUser() throws Exception {
         User user = checkForAdmin();
         if (!user.getRoles().contains("backfill")) {
-            throw new BridgeServiceException(user.getUsername() + " not allowed to perform backfill.", 403);
+            throw new BridgeServiceException(user.getUsername() + " not allowed to perform backfill.", FORBIDDEN);
         }
     }
 }
