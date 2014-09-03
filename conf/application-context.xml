@@ -76,14 +76,19 @@
         <property name="authenticationService" ref="authenticationService" />
         <property name="cacheProvider" ref="cacheProvider" />
     </bean>
-    
+
+    <bean id="AdminController" class="controllers.AdminController" abstract="true">
+        <property name="authenticationService" ref="authenticationService" />
+        <property name="cacheProvider" ref="cacheProvider" />
+    </bean>
+
     <bean id="proxiedController" class="org.springframework.aop.framework.ProxyFactoryBean">
         <property name="proxyTargetClass" value="true"/>
         <property name="interceptorNames">
             <list><value>exceptionInterceptor</value></list>
         </property>
     </bean>
-    
+
     <bean id="controllers.ApplicationController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.ApplicationController" parent="BaseController">
@@ -99,7 +104,7 @@
             </bean>
         </property>
     </bean>
- 
+
     <bean id="controllers.HealthDataController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.HealthDataController" parent="BaseController">
@@ -139,16 +144,16 @@
 
     <bean id="controllers.BackfillController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.BackfillController" parent="BaseController">
+            <bean class="controllers.BackfillController" parent="AdminController">
                 <property name="backfillService" ref="backfillService" />
                 <property name="studyControllerService" ref="studyControllerService" />
             </bean>
         </property>
     </bean>
-    
+
     <bean id="controllers.StudyConsentController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.StudyConsentController" parent="BaseController">
+            <bean class="controllers.StudyConsentController" parent="AdminController">
                 <property name="studyConsentService" ref="studyConsentService" />
                 <property name="studyControllerService" ref="studyControllerService" />
             </bean>
