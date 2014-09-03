@@ -22,7 +22,6 @@ public class DynamoSurvey implements Survey, DynamoTable {
     private Long version;
     private String name;
     private String identifier;
-    private String ownerGroup;
     private boolean published;
     private List<SurveyQuestion> questions;
     
@@ -44,7 +43,6 @@ public class DynamoSurvey implements Survey, DynamoTable {
         setVersion(survey.getVersion());
         setName(survey.getName());
         setIdentifier(survey.getIdentifier());
-        setOwnerGroup(survey.getOwnerGroup());
         setPublished(survey.isPublished());
         for (SurveyQuestion question : survey.getQuestions()) {
             questions.add( new DynamoSurveyQuestion(question) );
@@ -119,17 +117,6 @@ public class DynamoSurvey implements Survey, DynamoTable {
 
     @Override
     @DynamoDBAttribute
-    public String getOwnerGroup() {
-        return ownerGroup;
-    }
-
-    @Override
-    public void setOwnerGroup(String ownerGroup) {
-        this.ownerGroup = ownerGroup;
-    }
-
-    @Override
-    @DynamoDBAttribute
     public boolean isPublished() {
         return published;
     }
@@ -153,8 +140,7 @@ public class DynamoSurvey implements Survey, DynamoTable {
     @Override
     public String toString() {
         return "DynamoSurvey [studyKey=" + studyKey + ", guid=" + guid + ", versionedOn=" + versionedOn + ", version="
-                + version + ", name=" + name + ", identifier=" + identifier + ", ownerGroup=" + ownerGroup
-                + ", published=" + published + ", questions=" + questions + "]";
+                + version + ", name=" + name + ", identifier=" + identifier + ", published=" + published
+                + ", questions=" + questions + "]";
     }
-
 }
