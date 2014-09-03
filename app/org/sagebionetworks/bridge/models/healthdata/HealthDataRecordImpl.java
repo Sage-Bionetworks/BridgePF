@@ -1,6 +1,12 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
+import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.models.DateConverter;
+
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 public class HealthDataRecordImpl implements HealthDataRecord {
 
@@ -18,7 +24,7 @@ public class HealthDataRecordImpl implements HealthDataRecord {
     
     public HealthDataRecordImpl() {
     }
-    
+
     public HealthDataRecordImpl(String recordId, long startDate, long endDate, Long version, JsonNode data) {
         this.recordId = recordId;
         this.startDate = startDate;
@@ -26,26 +32,23 @@ public class HealthDataRecordImpl implements HealthDataRecord {
         this.version = version;
         this.data = data;
     }
-    
+
     public static final HealthDataRecordImpl fromJson(JsonNode node) {
         String recordId = null;
         long startDate = 0L;
         long endDate = 0L;
         long version = 0L;
         JsonNode data = null;
-        
+
         if (node != null) {
             if (node.get(RECORD_ID) != null) {
                 recordId = node.get(RECORD_ID).asText();
             }
             if (node.get(START_DATE) != null) {
-                startDate = node.get(START_DATE).asLong();
+                startDate = DateConverter.convertMillisFromEpoch(node.get(START_DATE).asText());
             }
             if (node.get(END_DATE) != null) {
-                endDate = node.get(END_DATE).asLong();
-            }
-            if (node.get(END_DATE) != null) {
-                endDate = node.get(END_DATE).asLong();
+                endDate = DateConverter.convertMillisFromEpoch(node.get(END_DATE).asText());
             }
             if (node.get(VERSION) != null) {
                 version = node.get(VERSION).asLong();
@@ -57,20 +60,23 @@ public class HealthDataRecordImpl implements HealthDataRecord {
         return new HealthDataRecordImpl(recordId, startDate, endDate, version, data);
     }
     
-    
     @Override
     public String getRecordId() { return recordId; }
     @Override
     public void setRecordId(String recordId) { this.recordId = recordId;}
     
     @Override
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getStartDate() { return startDate; }
     @Override
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
     public void setStartDate(long startDate) { this.startDate = startDate; }
     
     @Override
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getEndDate() { return endDate; }
     @Override
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
     public void setEndDate(long endDate) { this.endDate = endDate; }
 
     @Override

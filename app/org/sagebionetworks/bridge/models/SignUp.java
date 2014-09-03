@@ -18,7 +18,7 @@ public class SignUp {
         this.password = password;
     }
     
-    public static SignUp fromJson(JsonNode node) {
+    public static final SignUp fromJson(JsonNode node) {
         String username = null;
         String email = null;
         String password = null;

@@ -2,9 +2,9 @@ package controllers;
 
 import global.JsonSchemaValidator;
 
-import java.util.Date;
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.DateConverter;
 import org.sagebionetworks.bridge.models.IdVersionHolder;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
@@ -14,25 +14,24 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
+import play.mvc.Result;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 
-import play.libs.Json;
-import play.mvc.Result;
-
 public class HealthDataController extends BaseController {
-    
+
     private HealthDataService healthDataService;
     private StudyControllerService studyControllerService;
-    
+
     public void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
     }
-    
+
     public void setStudyControllerService(StudyControllerService scs) {
         this.studyControllerService = scs;
     }
-    
+
     public Result appendHealthData(Long trackerId) throws Exception {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
@@ -42,76 +41,81 @@ public class HealthDataController extends BaseController {
         JsonNode node = requestToJSON(request());
 
         List<HealthDataRecord> records = Lists.newArrayListWithCapacity(node.size());
-        for (int i=0; i < node.size(); i++) {
+        for (int i = 0; i < node.size(); i++) {
             JsonNode child = node.get(i);
             validator.validate(tracker, child);
             records.add(HealthDataRecordImpl.fromJson(child));
         }
-        
+
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
-        
+
         List<IdVersionHolder> ids = healthDataService.appendHealthData(key, records);
-        return ok(Json.toJson(ids));
+        return ok(constructJSON(ids));
     }
-    
-    public Result getHealthData(Long trackerId, Long startDate, Long endDate) throws Exception {
+
+    public Result getHealthData(Long trackerId, String startDate, String endDate) throws Exception {
         if (startDate == null && endDate == null) {
             return getAllHealthData(trackerId);
         }
+        Long start, end;
         if (startDate == null) {
-            startDate = -Long.MAX_VALUE;
-        } else if (endDate == null) {
-            endDate = Long.MAX_VALUE;
+            start = -Long.MAX_VALUE;
+        } else {
+            start = DateConverter.convertMillisFromEpoch(startDate);
         }
-        return getHealthDataByDateRange(trackerId, startDate, endDate);
+        if (endDate == null) {
+            end = Long.MAX_VALUE;
+        } else {
+            end = DateConverter.convertMillisFromEpoch(endDate);
+        }
+        return getHealthDataByDateRange(trackerId, start, end);
     }
-    
+
     private Result getAllHealthData(Long trackerId) throws Exception {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
-        
+
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
-        
+
         List<HealthDataRecord> entries = healthDataService.getAllHealthData(key);
-        return ok(Json.toJson(entries));
+        return ok(constructJSON(entries));
     }
-    
-    private Result getHealthDataByDateRange(Long trackerId, Long startDate, Long endDate) throws Exception {
+
+    private Result getHealthDataByDateRange(Long trackerId, long startDate, long endDate) throws Exception {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
-        List<HealthDataRecord> entries = healthDataService.getHealthDataByDateRange(key, new Date(startDate), new Date(endDate));
-        return ok(Json.toJson(entries));
+        List<HealthDataRecord> entries = healthDataService.getHealthDataByDateRange(key, startDate, endDate);
+        return ok(constructJSON(entries));
     }
-    
+
     public Result getHealthDataRecord(Long trackerId, String recordId) throws Exception {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
-        
+
         HealthDataRecord record = healthDataService.getHealthDataRecord(key, recordId);
-        return ok(Json.toJson(record));
+        return ok(constructJSON(record));
     }
-    
+
     public Result updateHealthDataRecord(Long trackerId, String recordId) throws Exception {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
-        
-        JsonNode node = requestToJSON(request());
 
+        JsonNode node = requestToJSON(request());
         new JsonSchemaValidator().validate(tracker, node);
         HealthDataRecord record = HealthDataRecordImpl.fromJson(node);
-        
+
         IdVersionHolder holder = healthDataService.updateHealthDataRecord(key, record);
-        return ok(Json.toJson(holder));
+        return ok(constructJSON(holder));
     }
-    
+
     public Result deleteHealthDataRecord(Long trackerId, String recordId) throws Exception {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
@@ -121,5 +125,5 @@ public class HealthDataController extends BaseController {
         healthDataService.deleteHealthDataRecord(key, recordId);
         return okResult("Record deleted.");
     }
-    
+
 }

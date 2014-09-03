@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -107,13 +106,15 @@ public class HealthDataServiceImpl implements HealthDataService {
     // I think this is okay. That's per user per tracker per study. That's 160k records.
     
     @Override
-    public List<HealthDataRecord> getHealthDataByDateRange(HealthDataKey key, final Date startDate, final Date endDate) throws BridgeServiceException {
+    public List<HealthDataRecord> getHealthDataByDateRange(HealthDataKey key, final long startDate, final long endDate) throws BridgeServiceException {
         if (key == null) {
             throw new BridgeServiceException("HealthDataKey cannot be null", HttpStatus.SC_BAD_REQUEST);
-        } else if (startDate == null || startDate.getTime() == 0) {
+        } else if (startDate <= 0) {
             throw new BridgeServiceException("startDate cannot be null/0", HttpStatus.SC_BAD_REQUEST);
-        } else if (endDate == null || endDate.getTime() == 0) {
+        } else if (endDate <= 0) {
             throw new BridgeServiceException("endDate cannot be null/0", HttpStatus.SC_BAD_REQUEST);
+        } else if (endDate < startDate) {
+            throw new BridgeServiceException("endDate cannot be less than startDate.", HttpStatus.SC_BAD_REQUEST);
         }
         try {
             /* Works for sure, very inefficient. Code below this at least queries out records that start after 
@@ -133,7 +134,7 @@ public class HealthDataServiceImpl implements HealthDataService {
 
             Condition isLessThanOrEqualToEndDateWindow = new Condition()
                 .withComparisonOperator(ComparisonOperator.LE.toString())
-                .withAttributeValueList(new AttributeValue().withN(Long.toString(endDate.getTime())));
+                .withAttributeValueList(new AttributeValue().withN(Long.toString(endDate)));
 
             DynamoDBQueryExpression<DynamoHealthDataRecord> queryExpression = new DynamoDBQueryExpression<DynamoHealthDataRecord>()
                 .withHashKeyValues(dynamoRecord)
@@ -159,7 +160,7 @@ public class HealthDataServiceImpl implements HealthDataService {
             
             return toHealthDataEntries(FluentIterable.from(records).filter(new Predicate<DynamoHealthDataRecord>() {
                 public boolean apply(DynamoHealthDataRecord record) {
-                    return !(record.getEndDate() != 0 && record.getEndDate() < startDate.getTime());
+                    return !(record.getEndDate() != 0 && record.getEndDate() < startDate);
                 }
             }).toList());
         } catch(Exception e) {

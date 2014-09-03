@@ -1,9 +1,27 @@
 package controllers;
 
+import static org.apache.commons.httpclient.HttpStatus.SC_NOT_FOUND;
+import static org.apache.commons.httpclient.HttpStatus.SC_OK;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.sagebionetworks.bridge.TestConstants.APPLICATION_JSON;
+import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_TOKEN;
+import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_URL;
+import static org.sagebionetworks.bridge.TestConstants.SIGN_OUT_URL;
+import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
+import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
+import static org.sagebionetworks.bridge.TestConstants.USERNAME;
+import static play.test.Helpers.running;
+import static play.test.Helpers.testServer;
+
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
@@ -11,17 +29,13 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import play.libs.WS;
+import play.libs.WS.Response;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import play.libs.WS;
-import play.libs.WS.Response;
-import static play.mvc.Http.Status.*;
-import static play.test.Helpers.*;
-import static org.sagebionetworks.bridge.TestConstants.*;
-import static org.junit.Assert.*;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -48,7 +62,7 @@ public class AuthenticationControllerTest {
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL)
                         .post(node)
                         .get(TIMEOUT);
-                assertEquals("HTTP response indicates user not found", NOT_FOUND, response.getStatus());
+                assertEquals("HTTP response indicates user not found", SC_NOT_FOUND, response.getStatus());
             }
         });
     }
@@ -60,7 +74,7 @@ public class AuthenticationControllerTest {
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL)
                         .post("username=bob&password=foo")
                         .get(TIMEOUT);
-                assertEquals("HTTP response indicates user not found", NOT_FOUND, response.getStatus());
+                assertEquals("HTTP response indicates user not found", SC_NOT_FOUND, response.getStatus());
             }
         });
     }
@@ -73,7 +87,7 @@ public class AuthenticationControllerTest {
                         .setContentType(APPLICATION_JSON)
                         .post("{\"username\":\"bob\",\"password\":\"foo\"}")
                         .get(TIMEOUT);
-                assertEquals("HTTP response indicates user not found", NOT_FOUND, response.getStatus());
+                assertEquals("HTTP response indicates user not found", SC_NOT_FOUND, response.getStatus());
             }
         });
     }
@@ -92,7 +106,7 @@ public class AuthenticationControllerTest {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode responseNode = mapper.readTree(response.getBody());
 
-                assertEquals("HTTP response indicates request OK", OK, response.getStatus());
+                assertEquals("HTTP response indicates request OK", SC_OK, response.getStatus());
                 String sessionToken = responseNode.get(SESSION_TOKEN).asText();
                 assertNotNull("Session token is assigned", sessionToken);
                 String username = responseNode.get(USERNAME).asText();

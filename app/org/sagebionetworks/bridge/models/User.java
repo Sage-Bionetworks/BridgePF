@@ -18,6 +18,7 @@ public class User {
     private String healthDataCode;
     private String studyKey;
     private boolean consent;
+    private boolean dataSharing;
     private Set<String> roles = Sets.newHashSet();
 
     public User() {
@@ -110,11 +111,19 @@ public class User {
     public void setConsent(boolean consent) {
         this.consent = consent;
     }
+    
+    public boolean isDataSharing() {
+        return dataSharing;
+    }
+    
+    public void setDataSharing(boolean dataSharing) {
+        this.dataSharing = dataSharing;
+    }
 
     public boolean isInRole(String role) {
         return this.roles.contains(role);
     }
-
+    
     @JsonIgnore
     public String getStormpathHref() {
         return (id == null) ? null : ("https://api.stormpath.com/v1/accounts/" + id);

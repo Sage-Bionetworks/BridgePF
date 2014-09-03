@@ -5,7 +5,6 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
 
         $http.get('/api/v1/users/profile')
             .success(function(data, status, headers, config) {
-                // These are all the fields the /api/users/profile call will need to return eventually.
                 $scope.profile = {
                     // TODO Eventually need to add other fields, such as avatar image, 
                     // the ability to be asked about future studies, etc.
@@ -27,7 +26,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
             // Only two items possible to update are first name and last name.
             var update = formService.formToJSON($scope.settings, ['firstName', 'lastName']);
             $http.post('/api/v1/users/profile', update)
-                .success(function(data, status, headers, config) {
+                .success(function(data) {
                     $modalInstance.close('success');
                     $humane.confirm('Your information has been successfully updated.');
                     $log.info(data);
@@ -44,6 +43,25 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
                 .success(function(data, status, headers, config) {
                     $scope.setMessage('You have successfully withdrawn from the study.');
                     $scope.session.consented = false;
+                })
+                .error($humane.status);
+        };
+
+        // Resume data sharing and suspend data sharing will work properly as soon as study consent is fixed.
+        $scope.resumeDataSharing = function() {
+            $http.post('/api/v1/users/consent/dataSharing/resume')
+                .success(function(data, status, headers, config) {
+                    $scope.setMessage('Data sharing is now activated.');
+                    $scope.session.dataSharing = true;
+                })
+                .error($humane.status);
+        };
+
+        $scope.suspendDataSharing = function() {
+            $http.post('/api/v1/users/consent/dataSharing/suspend')
+                .success(function(data, status, headers, config) {
+                    $scope.setMessage('Data sharing is now suspended.');
+                    $scope.session.dataSharing = false;
                 })
                 .error($humane.status);
         };

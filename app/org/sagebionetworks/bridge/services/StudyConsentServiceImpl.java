@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
-import static play.mvc.Http.Status.BAD_REQUEST;
-import static play.mvc.Http.Status.FORBIDDEN;
+import static org.apache.commons.httpclient.HttpStatus.SC_BAD_REQUEST;
+import static org.apache.commons.httpclient.HttpStatus.SC_FORBIDDEN;
 
 import java.util.List;
 
@@ -31,7 +31,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
 
         StudyConsent consent = studyConsentDao.getConsent(studyKey);
         if (consent == null) {
-            throw new BridgeServiceException("There is no active consent document.", BAD_REQUEST);
+            throw new BridgeServiceException("There is no active consent document.", SC_BAD_REQUEST);
         }
         return consent;
     }
@@ -39,10 +39,10 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     @Override
     public List<StudyConsent> getAllConsents(User caller, String studyKey) {
         assertAdminUser(caller);
-        
+
         List<StudyConsent> consents = studyConsentDao.getConsents(studyKey);
         if (consents == null || consents.isEmpty()) {
-            throw new BridgeServiceException("There are no consent records.", BAD_REQUEST);
+            throw new BridgeServiceException("There are no consent records.", SC_BAD_REQUEST);
         }
         return consents;
     }
@@ -50,10 +50,10 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     @Override
     public StudyConsent getConsent(User caller, String studyKey, long timestamp) {
         assertAdminUser(caller);
-        
+
         StudyConsent consent = studyConsentDao.getConsent(studyKey, timestamp);
         if (consent == null) {
-            throw new BridgeServiceException("No consent with that timestamp exists.", BAD_REQUEST);
+            throw new BridgeServiceException("No consent with that timestamp exists.", SC_BAD_REQUEST);
         }
         return consent;
     }
@@ -61,10 +61,10 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     @Override
     public StudyConsent activateConsent(User caller, String studyKey, long timestamp) {
         assertAdminUser(caller);
-        
+
         StudyConsent consent = studyConsentDao.getConsent(studyKey, timestamp);
         if (consent == null) {
-            throw new BridgeServiceException("No consent with that timestamp exists.", BAD_REQUEST);
+            throw new BridgeServiceException("No consent with that timestamp exists.", SC_BAD_REQUEST);
         }
         return studyConsentDao.setActive(consent, true);
     }
@@ -74,15 +74,15 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         assertAdminUser(caller);
 
         if (studyConsentDao.getConsent(studyKey, timestamp).getActive()) {
-            throw new BridgeServiceException("Cannot delete active consent document.", BAD_REQUEST);
+            throw new BridgeServiceException("Cannot delete active consent document.", SC_BAD_REQUEST);
         }
 
         studyConsentDao.deleteConsent(studyKey, timestamp);
     }
-    
+
     private void assertAdminUser(User user) {
         if (!user.isInRole("admin")) {
-            throw new BridgeServiceException("Must be admin to add consent document.", FORBIDDEN);
+            throw new BridgeServiceException("Must be admin to add consent document.", SC_FORBIDDEN);
         }
     }
 
