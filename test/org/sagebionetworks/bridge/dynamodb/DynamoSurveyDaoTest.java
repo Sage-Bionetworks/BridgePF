@@ -133,20 +133,17 @@ public class DynamoSurveyDaoTest {
         //survey.setVersionedOn(new DateTime().getMillis());
         survey.setIdentifier("B");
         survey.setName("C");
-        survey.setOwnerGroup("D");
         
         surveyDao.updateSurvey(survey);
         survey = surveyDao.getSurvey(survey.getGuid(), survey.getVersionedOn());
         
         assertEquals("Identifier can be updated", "B", survey.getIdentifier());
         assertEquals("Name can be updated", "C", survey.getName());
-        assertEquals("Owner group can be updated", "D", survey.getOwnerGroup());
         
         // Now verify the nextVersion has not been changed
         nextVersion = surveyDao.getSurvey(nextVersion.getGuid(), nextVersion.getVersionedOn());
         assertEquals("Next version has same identifier", "overview", nextVersion.getIdentifier());
         assertEquals("Next name has not changed", "Health Overview Test Survey", nextVersion.getName());
-        assertEquals("Next owner group still null", null, nextVersion.getOwnerGroup());
     }
     
     @Test

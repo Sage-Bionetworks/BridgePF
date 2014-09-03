@@ -21,10 +21,7 @@ public interface Survey {
     
     public String getIdentifier();
     public void setIdentifier(String identifier);
-    
-    public String getOwnerGroup();
-    public void setOwnerGroup(String ownerGroup);
-    
+
     public boolean isPublished();
     public void setPublished(boolean published);
     
