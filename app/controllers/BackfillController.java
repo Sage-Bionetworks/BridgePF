@@ -27,12 +27,6 @@ public class BackfillController extends BaseController {
         return okResult("Done. " + total + " accounts backfilled.");
     }
 
-    public Result dynamoUserConsent() throws Exception {
-        checkUser();
-        int total = backfillService.dynamoUserConsent();
-        return okResult("Done. " + total + " records backfilled.");
-    }
-
     private void checkUser() throws Exception {
         UserSession session = getSession();
         User user = session.getUser();

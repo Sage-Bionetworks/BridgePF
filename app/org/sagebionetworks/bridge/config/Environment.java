@@ -4,6 +4,7 @@ public enum Environment {
 
     LOCAL("local"),
     DEV("dev"),
+    UAT("uat"),
     PROD("prod");
 
     public String getEnvName() {
