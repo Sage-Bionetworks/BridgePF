@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
-import static play.mvc.Http.Status.BAD_REQUEST;
-import static play.mvc.Http.Status.INTERNAL_SERVER_ERROR;
+import static org.apache.commons.httpclient.HttpStatus.SC_BAD_REQUEST;
+import static org.apache.commons.httpclient.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 
 import java.util.List;
 
@@ -59,15 +59,15 @@ public class ConsentServiceImpl implements ConsentService {
             throws BridgeServiceException {
 
         if (caller == null) {
-            throw new BridgeServiceException("User is required.", BAD_REQUEST);
+            throw new BridgeServiceException("User is required.", SC_BAD_REQUEST);
         } else if (study == null) {
-            throw new BridgeServiceException("Study is required.", BAD_REQUEST);
+            throw new BridgeServiceException("Study is required.", SC_BAD_REQUEST);
         } else if (consentSignature == null) {
-            throw new BridgeServiceException("Consent signature is required.", BAD_REQUEST);
+            throw new BridgeServiceException("Consent signature is required.", SC_BAD_REQUEST);
         } else if (StringUtils.isBlank(consentSignature.getName())) {
-            throw new BridgeServiceException("Consent full name is required.", BAD_REQUEST);
+            throw new BridgeServiceException("Consent full name is required.", SC_BAD_REQUEST);
         } else if (consentSignature.getBirthdate() == null) {
-            throw new BridgeServiceException("Consent birth date  is required.", BAD_REQUEST);
+            throw new BridgeServiceException("Consent birth date  is required.", SC_BAD_REQUEST);
         }
 
         try {
@@ -124,16 +124,16 @@ public class ConsentServiceImpl implements ConsentService {
             return caller;
 
         } catch (Exception e) {
-            throw new BridgeServiceException(e, INTERNAL_SERVER_ERROR);
+            throw new BridgeServiceException(e, SC_INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
     public boolean hasUserConsentedToResearch(User caller, Study study) {
         if (caller == null) {
-            throw new BridgeServiceException("User is required.", BAD_REQUEST);
+            throw new BridgeServiceException("User is required.", SC_BAD_REQUEST);
         } else if (study == null) {
-            throw new BridgeServiceException("Study is required.", BAD_REQUEST);
+            throw new BridgeServiceException("Study is required.", SC_BAD_REQUEST);
         }
         try {
             // TODO: Old. To be removed
@@ -143,16 +143,16 @@ public class ConsentServiceImpl implements ConsentService {
                     + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX)));
             return consented;
         } catch (Exception e) {
-            throw new BridgeServiceException(e, INTERNAL_SERVER_ERROR);
+            throw new BridgeServiceException(e, SC_INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
     public User withdrawConsent(User caller, Study study) {
         if (caller == null) {
-            throw new BridgeServiceException("User is required.", BAD_REQUEST);
+            throw new BridgeServiceException("User is required.", SC_BAD_REQUEST);
         } else if (study == null) {
-            throw new BridgeServiceException("Study is required.", BAD_REQUEST);
+            throw new BridgeServiceException("Study is required.", SC_BAD_REQUEST);
         }
         try {
             // TODO: Old
@@ -174,38 +174,38 @@ public class ConsentServiceImpl implements ConsentService {
             return caller;
 
         } catch (Exception e) {
-            throw new BridgeServiceException(e, INTERNAL_SERVER_ERROR);
+            throw new BridgeServiceException(e, SC_INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
     public void emailConsentAgreement(User caller, Study study) {
         if (caller == null) {
-            throw new BridgeServiceException("User is required.", BAD_REQUEST);
+            throw new BridgeServiceException("User is required.", SC_BAD_REQUEST);
         } else if (study == null) {
-            throw new BridgeServiceException("Study is required.", BAD_REQUEST);
+            throw new BridgeServiceException("Study is required.", SC_BAD_REQUEST);
         }
         try {
             StudyConsent consent = studyConsentDao.getConsent(study.getKey());
             if (consent == null) {
-                throw new BridgeServiceException("Consent not found.", INTERNAL_SERVER_ERROR);
+                throw new BridgeServiceException("Consent not found.", SC_INTERNAL_SERVER_ERROR);
             }
             ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthDataCode(), consent);
             if (consentSignature == null) {
-                throw new BridgeServiceException("Consent signature not found.", INTERNAL_SERVER_ERROR);
+                throw new BridgeServiceException("Consent signature not found.", SC_INTERNAL_SERVER_ERROR);
             }
             sendMailService.sendConsentAgreement(caller, consentSignature, study);
         } catch (Exception e) {
-            throw new BridgeServiceException(e, INTERNAL_SERVER_ERROR);
+            throw new BridgeServiceException(e, SC_INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
     public User suspendDataSharing(User caller, Study study) {
         if (caller == null) {
-            throw new BridgeServiceException("User is required.", BAD_REQUEST);
+            throw new BridgeServiceException("User is required.", SC_BAD_REQUEST);
         } else if (study == null) {
-            throw new BridgeServiceException("Study is required.", BAD_REQUEST);
+            throw new BridgeServiceException("Study is required.", SC_BAD_REQUEST);
         }
         try {
             StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
@@ -213,7 +213,7 @@ public class ConsentServiceImpl implements ConsentService {
 
             caller.setDataSharing(false);
         } catch (Exception e) {
-            throw new BridgeServiceException(e, INTERNAL_SERVER_ERROR);
+            throw new BridgeServiceException(e, SC_INTERNAL_SERVER_ERROR);
         }
         return caller;
     }
@@ -221,16 +221,16 @@ public class ConsentServiceImpl implements ConsentService {
     @Override
     public User resumeDataSharing(User caller, Study study) {
         if (caller == null) {
-            throw new BridgeServiceException("User is required.", BAD_REQUEST);
+            throw new BridgeServiceException("User is required.", SC_BAD_REQUEST);
         } else if (study == null) {
-            throw new BridgeServiceException("Study is required.", BAD_REQUEST);
+            throw new BridgeServiceException("Study is required.", SC_BAD_REQUEST);
         }
         try {
             StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
             userConsentDao.resumeSharing(caller.getHealthDataCode(), studyConsent);
             caller.setDataSharing(true);
         } catch (Exception e) {
-            throw new BridgeServiceException(e, INTERNAL_SERVER_ERROR);
+            throw new BridgeServiceException(e, SC_INTERNAL_SERVER_ERROR);
         }
         return caller;
     }
@@ -238,15 +238,15 @@ public class ConsentServiceImpl implements ConsentService {
     @Override
     public boolean isSharingData(User caller, Study study) {
         if (caller == null) {
-            throw new BridgeServiceException("User is required.", BAD_REQUEST);
+            throw new BridgeServiceException("User is required.", SC_BAD_REQUEST);
         } else if (study == null) {
-            throw new BridgeServiceException("Study is required.", BAD_REQUEST);
+            throw new BridgeServiceException("Study is required.", SC_BAD_REQUEST);
         }
         try {
             StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
             return userConsentDao.isSharingData(caller.getHealthDataCode(), studyConsent);
         } catch (Exception e) {
-            throw new BridgeServiceException(e, INTERNAL_SERVER_ERROR);
+            throw new BridgeServiceException(e, SC_INTERNAL_SERVER_ERROR);
         }
     }
 

@@ -1,5 +1,7 @@
 package controllers;
 
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -7,8 +9,6 @@ import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.RECORD_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static org.sagebionetworks.bridge.TestConstants.TRACKER_URL;
-import static play.mvc.Http.Status.NOT_FOUND;
-import static play.mvc.Http.Status.OK;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
@@ -75,7 +75,7 @@ public class HealthDataControllerTest {
                 List<HealthDataRecord> records = getTestRecords();
                 Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
                         .post(mapper.writeValueAsString(records)).get(TIMEOUT);
-                assertEquals("HTTP response indicates response OK", OK, response.getStatus());
+                assertEquals("HTTP response indicates response OK", SC_OK, response.getStatus());
                 System.out.println(response.getStatusText());
 
                 String id = retrieveNewId(response);
@@ -89,7 +89,6 @@ public class HealthDataControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 System.out.println(mapper.writeValueAsString(getTestRecords()));
-                System.out.println(mapper.readTree(mapper.writeValueAsString(getTestRecords())));
                 TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
                         .post(mapper.writeValueAsString(getTestRecords())).get(TIMEOUT);
                 TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
@@ -111,16 +110,16 @@ public class HealthDataControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 // Time ranges used in this test, and where they overlap with the 3 test windows or not.
-                //              1        1...<2
-                //       2        1............3
-                //       3                                                 4............6
-                //       4                     3...........................4
-                //       5                                                       >5.....6
-                //       6                     3............................................
+                // 1 1...<2
+                // 2 1............3
+                // 3 4............6
+                // 4 3...........................4
+                // 5 >5.....6
+                // 6 3............................................
                 //
-                //                     2__________________________________________5
-                //                1____________3
-                //                                                         4______5
+                // 2__________________________________________5
+                // 1____________3
+                // 4______5
 
                 long threeDays = (1000L * 60L * 60L * 24L * 3L);
 
@@ -134,60 +133,50 @@ public class HealthDataControllerTest {
 
                 List<HealthDataRecord> records = getTestRecords(time1, time2 - 1);
                 Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
-                                        .post(mapper.writeValueAsString(records))
-                                        .get(TIMEOUT);
+                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id1 = retrieveNewId(response);
 
                 records = getTestRecords(time1, time3);
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
-                                .post(mapper.writeValueAsString(records))
-                                .get(TIMEOUT);
+                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id2 = retrieveNewId(response);
 
                 records = getTestRecords(time4, time6);
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
-                                .post(mapper.writeValueAsString(records))
-                                .get(TIMEOUT);
+                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id3 = retrieveNewId(response);
 
                 records = getTestRecords(time3, time4);
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
-                                .post(mapper.writeValueAsString(records))
-                                .get(TIMEOUT);
+                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id4 = retrieveNewId(response);
 
                 records = getTestRecords(time5 + 1, time6);
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
-                                .post(mapper.writeValueAsString(records))
-                                .get(TIMEOUT);
+                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id5 = retrieveNewId(response);
 
                 records = getTestRecords(time3, 0);
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
-                                .post(mapper.writeValueAsString(records))
-                                .get(TIMEOUT);
+                        .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id6 = retrieveNewId(response);
 
-                Map<String, String> queryMap = ImmutableMap.of(START_DATE, DateConverter.convertISODateTime(time2), 
-                                                                END_DATE, DateConverter.convertISODateTime(time5));
-                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap)
-                                .get()
-                                .get(TIMEOUT);
+                Map<String, String> queryMap = ImmutableMap.of(START_DATE, DateConverter.convertISODateTime(time2),
+                        END_DATE, DateConverter.convertISODateTime(time5));
+                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
                 List<String> ids = getIds(response);
                 assertTrue("Returns records 2, 3, 4, and 6", ids.containsAll(Lists.newArrayList(id2, id3, id4, id6)));
                 assertFalse("Does not contain records 1 or 5", ids.containsAll(Lists.newArrayList(id1, id5)));
 
-                queryMap = ImmutableMap.of(START_DATE, DateConverter.convertISODateTime(time1),
-                                            END_DATE, DateConverter.convertISODateTime(time3));
-                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap)
-                                .get()
-                                .get(TIMEOUT);
+                queryMap = ImmutableMap.of(START_DATE, DateConverter.convertISODateTime(time1), END_DATE,
+                        DateConverter.convertISODateTime(time3));
+                response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
                 ids = getIds(response);
                 assertTrue("Returns records 1, 2, 4, and 6", ids.containsAll(Lists.newArrayList(id1, id2, id4, id6)));
                 assertFalse("Does not contain records 3 or 5", ids.containsAll(Lists.newArrayList(id3, id5)));
 
-                queryMap = ImmutableMap.of(START_DATE, DateConverter.convertISODateTime(time4), 
-                                            END_DATE, DateConverter.convertISODateTime(time5));
+                queryMap = ImmutableMap.of(START_DATE, DateConverter.convertISODateTime(time4), END_DATE,
+                        DateConverter.convertISODateTime(time5));
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
                 ids = getIds(response);
                 assertTrue("Returns records 3, 4, and 6", ids.containsAll(Lists.newArrayList(id3, id4, id6)));
@@ -204,7 +193,7 @@ public class HealthDataControllerTest {
 
                 Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
                         .post(mapper.writeValueAsString(records)).get(TIMEOUT);
-                assertEquals("Response status indicates OK response", OK, response.getStatus());
+                assertEquals("Response status indicates OK response", SC_OK, response.getStatus());
                 System.out.println(response.getStatusText());
 
                 // Get the id and set it on the object
@@ -218,7 +207,7 @@ public class HealthDataControllerTest {
                 // Save it (update)
                 response = TestUtils.getURL(helper.getUserSessionToken(), RECORD_URL + id)
                         .post(mapper.writeValueAsString(records.get(0))).get(TIMEOUT);
-                assertEquals("Response status indicates OK response", OK, response.getStatus());
+                assertEquals("Response status indicates OK response", SC_OK, response.getStatus());
 
                 // Get it and verify that it was persisted.
                 response = TestUtils.getURL(helper.getUserSessionToken(), RECORD_URL + id).get().get(TIMEOUT);
@@ -241,11 +230,11 @@ public class HealthDataControllerTest {
                 String id = retrieveNewId(response);
 
                 response = TestUtils.getURL(helper.getUserSessionToken(), RECORD_URL + id).delete().get(TIMEOUT);
-                assertEquals("Response status indicates OK response", OK, response.getStatus());
+                assertEquals("Response status indicates OK response", SC_OK, response.getStatus());
 
                 // Now this should generate a not found
                 response = TestUtils.getURL(helper.getUserSessionToken(), RECORD_URL + id).get().get(TIMEOUT);
-                assertEquals("Response status indicates data not found", NOT_FOUND, response.getStatus());
+                assertEquals("Response status indicates data not found", SC_NOT_FOUND, response.getStatus());
             }
         });
     }

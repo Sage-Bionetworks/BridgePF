@@ -33,15 +33,15 @@ public abstract class BaseController extends Controller {
     public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
-    
+
     public void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
 
     /**
-     * Retrieve user's session using the Bridge-Session header or cookie, throwing 
-     * an exception if the session doesn't exist (user not authorized) or consent 
-     * has not been given.
+     * Retrieve user's session using the Bridge-Session header or cookie, throwing an exception if the session doesn't
+     * exist (user not authorized) or consent has not been given.
+     * 
      * @return
      * @throws Exception
      */
@@ -61,8 +61,9 @@ public abstract class BaseController extends Controller {
     }
 
     /**
-     * Return a session if it exists, or null otherwise. Will not throw exception if 
-     * user is not authorized or has not consented to research. 
+     * Return a session if it exists, or null otherwise. Will not throw exception if user is not authorized or has not
+     * consented to research.
+     * 
      * @return
      */
     protected UserSession checkForSession() {
@@ -74,7 +75,7 @@ public abstract class BaseController extends Controller {
         response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
                 BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
-    
+
     protected void updateSessionUser(UserSession session, User user) {
         session.setUser(user);
         cacheProvider.setUserSession(session.getSessionToken(), session);
@@ -109,15 +110,11 @@ public abstract class BaseController extends Controller {
         JsonNode node = request().body().asJson();
         if (node == null) {
             ObjectMapper mapper = new ObjectMapper();
-            System.out.println("BEFORE DESERIALIZATION");
             node = mapper.readTree(request().body().asText());
-            System.out.println("AFTER DESERIALIZATION");
-            System.out.println(node.isNull());
-            System.out.println(node.get(0).asText());
         }
         return node;
     }
-    
+
     protected <T> JsonNode constructJSON(Collection<T> items) {
         ObjectMapper mapper = new ObjectMapper();
         ArrayNode itemsNode = mapper.createArrayNode();
@@ -128,13 +125,13 @@ public abstract class BaseController extends Controller {
             }
             itemsNode.add(node);
         }
-        
+
         ObjectNode json = mapper.createObjectNode();
         json.put("items", itemsNode);
         json.put("total", items.size());
         return json;
     }
-    
+
     protected <T> JsonNode constructJSON(T item) {
         ObjectNode node = (ObjectNode) Json.toJson(item);
         if (!node.has("type")) {

@@ -1,12 +1,12 @@
 package controllers;
 
+import static org.apache.commons.httpclient.HttpStatus.SC_INTERNAL_SERVER_ERROR;
+import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.CONSENT_URL;
 import static org.sagebionetworks.bridge.TestConstants.RESUME_URL;
 import static org.sagebionetworks.bridge.TestConstants.SUSPEND_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
-import static play.mvc.Http.Status.INTERNAL_SERVER_ERROR;
-import static play.mvc.Http.Status.OK;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
@@ -64,15 +64,15 @@ public class ConsentControllerTest {
                 // Helper's user is already consented, so consenting again should fail.
                 Response giveConsentFail = TestUtils.getURL(helper.getUserSessionToken(), CONSENT_URL).post("")
                         .get(TIMEOUT);
-                assertEquals("give Consent fails with 500", giveConsentFail.getStatus(), INTERNAL_SERVER_ERROR);
+                assertEquals("give Consent fails with 500", giveConsentFail.getStatus(), SC_INTERNAL_SERVER_ERROR);
 
                 Response resumeDataSharing = TestUtils.getURL(helper.getUserSessionToken(), RESUME_URL).post("")
                         .get(TIMEOUT);
-                assertEquals("resumeDataSharing succeeds with 200", resumeDataSharing.getStatus(), OK);
+                assertEquals("resumeDataSharing succeeds with 200", resumeDataSharing.getStatus(), SC_OK);
 
                 Response suspendDataSharing = TestUtils.getURL(helper.getUserSessionToken(), SUSPEND_URL).post("")
                         .get(TIMEOUT);
-                assertEquals("suspendDataSharing succeeds with 200", suspendDataSharing.getStatus(), OK);
+                assertEquals("suspendDataSharing succeeds with 200", suspendDataSharing.getStatus(), SC_OK);
 
             }
 

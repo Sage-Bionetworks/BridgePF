@@ -1,5 +1,7 @@
 package controllers;
 
+import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
+
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.Study;
@@ -28,7 +30,7 @@ public class ConsentController extends BaseController {
         // trying to do.
         UserSession session = checkForSession();
         if (session == null) {
-            throw new BridgeServiceException("Not signed in.", UNAUTHORIZED);
+            throw new BridgeServiceException("Not signed in.", SC_UNAUTHORIZED);
         }
         ConsentSignature consent = ConsentSignature.fromJson(requestToJSON(request()));
         Study study = studyControllerService.getStudyByHostname(request());
