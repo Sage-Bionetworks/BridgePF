@@ -157,6 +157,6 @@ public class DynamoUserConsentDaoTest {
         assertTrue(userConsentDao.getConsentCreatedOnNew(healthCode, consent.getStudyKey()) > 0L);
         ConsentSignature signature = userConsentDao.getConsentSignatureNew(healthCode, consent);
         assertEquals("John Smith", signature.getName());
-        assertEquals("2009-12-01", signature.getBirthdate());
+        assertEquals("2009-12-01T00:00:00.000-08:00", signature.getBirthdate());
     }
 }

@@ -4,7 +4,7 @@ import global.JsonSchemaValidator;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.Date;
+import org.sagebionetworks.bridge.models.DateConverter;
 import org.sagebionetworks.bridge.models.IdVersionHolder;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
@@ -57,16 +57,16 @@ public class HealthDataController extends BaseController {
         if (startDate == null && endDate == null) {
             return getAllHealthData(trackerId);
         }
-        Date start, end;
+        Long start, end;
         if (startDate == null) {
-            start = new Date(-Long.MAX_VALUE);
+            start = -Long.MAX_VALUE;
         } else {
-            start = new Date(startDate);
+            start = DateConverter.convertMillisFromEpoch(startDate);
         }
         if (endDate == null) {
-            end = new Date(Long.MAX_VALUE);
+            end = Long.MAX_VALUE;
         } else {
-            end = new Date(endDate);
+            end = DateConverter.convertMillisFromEpoch(endDate);
         }
         return getHealthDataByDateRange(trackerId, start, end);
     }
@@ -82,7 +82,7 @@ public class HealthDataController extends BaseController {
         return ok(constructJSON(entries));
     }
 
-    private Result getHealthDataByDateRange(Long trackerId, Date startDate, Date endDate) throws Exception {
+    private Result getHealthDataByDateRange(Long trackerId, long startDate, long endDate) throws Exception {
         UserSession session = getSession();
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.models.Date;
+import org.sagebionetworks.bridge.models.DateConverter;
 import org.sagebionetworks.bridge.models.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -35,7 +35,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     public StudyConsent addConsent(String studyKey, String path, int minAge) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyKey);
-        consent.setCreatedOn(Date.getCurrentMillisFromEpoch());
+        consent.setCreatedOn(DateConverter.getCurrentMillisFromEpoch());
         consent.setPath(path);
         consent.setMinAge(minAge);
         mapper.save(consent);
