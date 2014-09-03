@@ -13,7 +13,7 @@ public abstract class AdminController extends BaseController {
     protected User checkForAdmin() {
         UserSession session = checkForSession();
         if (session == null || !session.isAuthenticated()) {
-            throw new BridgeServiceException("Not signed in.", 401);
+            throw new BridgeServiceException("Not signed in.", UNAUTHORIZED);
         }
         User user = session.getUser();
         if (user == null || !user.isInRole("admin")) {
