@@ -20,7 +20,7 @@ public interface SurveyDao {
     
     public void deleteSurvey(Survey survey);
 
-    public void closeSurvey(Survey survey);
+    public Survey closeSurvey(Survey survey);
     
     /**
      * Get the most recently published survey, if the survey has been published.

@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.dao.ConcurrentModificationException;
 import org.sagebionetworks.bridge.dao.PublishedSurveyException;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.dao.SurveyNotFoundException;
@@ -20,13 +20,134 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.collect.Lists;
 
 public class DynamoSurveyDao implements SurveyDao {
+    
+    class QueryBuilder {
+        
+        DynamoDBQueryExpression<DynamoSurvey> query;
+        String surveyGuid;
+        String studyKey;
+        long versionedOn;
+        boolean published;
+        
+        QueryBuilder() {
+            query = new DynamoDBQueryExpression<DynamoSurvey>();
+            query.withScanIndexForward(false);
+        }
+        
+        QueryBuilder setSurvey(String surveyGuid) {
+            this.surveyGuid = surveyGuid;
+            return this;
+        }
+        
+        QueryBuilder setStudy(String studyKey) {
+            this.studyKey = studyKey;
+            return this;
+        }
+        
+        QueryBuilder setVersionedOn(long versionedOn) {
+            this.versionedOn = versionedOn;
+            return this;
+        }
+        
+        QueryBuilder isPublished() {
+            this.published = true;
+            return this;
+        }
+        
+        List<Survey> get() {
+            List<DynamoSurvey> dynamoSurveys = (surveyGuid == null) ? scan() : query();
+
+            if (dynamoSurveys.size() == 0) {
+                throw new SurveyNotFoundException(studyKey, surveyGuid, versionedOn);
+            }
+            List<Survey> surveys = Lists.newArrayListWithCapacity(dynamoSurveys.size());
+            for (DynamoSurvey s : dynamoSurveys) {
+                surveys.add((Survey)s);
+            }
+            return surveys;
+        }
+        
+        Survey getOne() {
+            List<Survey> surveys = get();
+            attachQuestions(surveys.get(0));
+            return surveys.get(0);
+        }
+
+        private List<DynamoSurvey> query() {
+            query.withHashKeyValues(new DynamoSurvey(surveyGuid));    
+            if (studyKey != null) {
+                query.withQueryFilterEntry("studyKey", studyCondition());
+            }
+            if (versionedOn != 0L) {
+                query.withRangeKeyCondition("versionedOn", versionedOnCondition());
+            }
+            if (published) {
+                query.withQueryFilterEntry("published", publishedCondition());
+            }
+            return surveyMapper.queryPage(DynamoSurvey.class, query).getResults();
+        }
+
+        private List<DynamoSurvey> scan() {
+            DynamoDBScanExpression scan = new DynamoDBScanExpression();
+            if (studyKey != null) {
+                scan.addFilterCondition("studyKey", studyCondition());
+            }
+            if (versionedOn != 0L) {
+                scan.addFilterCondition("versionedOn", versionedOnCondition());
+            }
+            if (published) {
+                scan.addFilterCondition("published", publishedCondition());
+            }
+            return surveyMapper.scan(DynamoSurvey.class, scan);
+        }
+
+        private Condition publishedCondition() {
+            Condition condition = new Condition();
+            condition.withComparisonOperator(ComparisonOperator.EQ);
+            condition.withAttributeValueList(new AttributeValue().withN("1"));
+            return condition;
+        }
+
+        private Condition studyCondition() {
+            Condition studyCond = new Condition();
+            studyCond.withComparisonOperator(ComparisonOperator.EQ);
+            studyCond.withAttributeValueList(new AttributeValue().withS(studyKey));
+            return studyCond;
+        }
+
+        private Condition versionedOnCondition() {
+            Condition rangeCond = new Condition();
+            rangeCond.withComparisonOperator(ComparisonOperator.EQ);
+            rangeCond.withAttributeValueList(new AttributeValue().withN(Long.toString(versionedOn)));
+            return rangeCond;
+        }
+        
+        private void attachQuestions(Survey survey) {
+            DynamoSurveyQuestion template = new DynamoSurveyQuestion();
+            template.setSurveyGuid(survey.getGuid());
+            
+            DynamoDBQueryExpression<DynamoSurveyQuestion> query = new DynamoDBQueryExpression<DynamoSurveyQuestion>();
+            query.withHashKeyValues(template);
+            
+            QueryResultPage<DynamoSurveyQuestion> page = surveyQuestionMapper.queryPage(DynamoSurveyQuestion.class,
+                    query);
+            
+            List<SurveyQuestion> questions = Lists.newArrayList();
+            for (DynamoSurveyQuestion question : page.getResults()) {
+                questions.add((SurveyQuestion)question);
+            }
+            survey.setQuestions(questions);
+        }
+    }
 
     private DynamoDBMapper surveyMapper;
     private DynamoDBMapper surveyQuestionMapper;
@@ -56,23 +177,10 @@ public class DynamoSurveyDao implements SurveyDao {
         survey.setVersionedOn(DateTime.now(DateTimeZone.UTC).getMillis());
         
         return saveSurvey(survey);
-        /*
-        List<SurveyQuestion> questions = nomod(survey.getQuestions());
-        for (int i=0; i < questions.size(); i++) {
-            SurveyQuestion question = questions.get(i);
-            question.setSurveyGuid(survey.getGuid());
-            question.setGuid(generateId());
-            question.setOrder(i);
-            surveyQuestionMapper.save(question);
-        }
-        surveyMapper.save(survey);
-        return survey;
-        */
     }
 
     @Override
     public Survey publishSurvey(Survey surveyKey) {
-        verifyKeyFields(surveyKey);
         Survey survey = getSurvey(surveyKey.getStudyKey(), surveyKey.getGuid(), surveyKey.getVersionedOn());
         if (survey.isPublished()) {
             return survey;
@@ -83,9 +191,15 @@ public class DynamoSurveyDao implements SurveyDao {
             surveyMapper.save(existingPublished);
         } catch(SurveyNotFoundException snfe) {
             // This is fine
+        } catch(ConditionalCheckFailedException e) {
+            throw new ConcurrentModificationException();
         }
         survey.setPublished(true);
-        surveyMapper.save(survey);
+        try {
+            surveyMapper.save(survey);
+        } catch(ConditionalCheckFailedException e) {
+            throw new ConcurrentModificationException();
+        }
         return survey;
     }
     
@@ -100,7 +214,7 @@ public class DynamoSurveyDao implements SurveyDao {
         if (existingSurvey.isPublished()) {
             throw new PublishedSurveyException(survey);
         }
-        // Cannot change publication state from false
+        // Cannot change publication state from false on an update
         survey.setPublished(false);
         
         return saveSurvey(survey);
@@ -108,10 +222,10 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey versionSurvey(Survey surveyKey) {
-        verifyKeyFields(surveyKey);
         Survey existing = getSurvey(surveyKey.getStudyKey(), surveyKey.getGuid(), surveyKey.getVersionedOn());
         Survey copy = new DynamoSurvey(existing);
-        
+        copy.setPublished(false);
+        copy.setVersion(null);
         copy.setVersionedOn(DateTime.now(DateTimeZone.UTC).getMillis());
 
         for (SurveyQuestion question : copy.getQuestions()) {
@@ -125,10 +239,7 @@ public class DynamoSurveyDao implements SurveyDao {
         if (StringUtils.isBlank(studyKey)) {
             throw new BridgeServiceException("Study key is required", 400);
         }
-        DynamoSurvey survey = new DynamoSurvey();
-        survey.setStudyKey(studyKey);
-
-        return findSurveys(survey);
+        return new QueryBuilder().setStudy(studyKey).get();
     }
     
     @Override
@@ -138,89 +249,32 @@ public class DynamoSurveyDao implements SurveyDao {
         } else if (StringUtils.isBlank(surveyGuid)) {
             throw new BridgeServiceException("Survey GUID is required", 400);
         }
-        DynamoSurvey survey = new DynamoSurvey();
-        survey.setStudyKey(studyKey);
-        survey.setGuid(surveyGuid);
-
-        return findSurveys(survey);
-    }
-
-    private List<Survey> findSurveys(DynamoSurvey hashKey) {
-        Condition rangeKeyCondition = null;
-        if (hashKey.getGuid() != null) {
-            rangeKeyCondition = new Condition()
-                .withComparisonOperator(ComparisonOperator.EQ.toString())
-                .withAttributeValueList(new AttributeValue().withS(hashKey.getGuid()));
-        }
-        DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
-        query.withHashKeyValues(hashKey);
-        query.withScanIndexForward(false);
-        if (rangeKeyCondition != null) {
-            query.withRangeKeyCondition("guid", rangeKeyCondition);
-        }
-        QueryResultPage<DynamoSurvey> page = surveyMapper.queryPage(DynamoSurvey.class, query);
-        if (page == null || page.getResults().size() == 0) {
-            throw new SurveyNotFoundException(hashKey.getStudyKey(), null, 0L);
-        }
-        List<Survey> list = Lists.newArrayListWithCapacity(page.getResults().size());
-        for (Survey survey : page.getResults()) {
-            list.add((Survey)survey);
-        }
-        return list;
+        return new QueryBuilder().setStudy(studyKey).setSurvey(surveyGuid).get();
     }
 
     @Override
     public Survey getSurvey(String studyKey, String surveyGuid, long versionedOn) {
-        DynamoSurvey hashKey = new DynamoSurvey();
-        hashKey.setStudyKey(studyKey);
-        hashKey.setGuid(surveyGuid);
-
-        Condition condition = new Condition();
-        condition.withComparisonOperator(ComparisonOperator.EQ);
-        condition.withAttributeValueList(new AttributeValue().withN(Long.toString(versionedOn)));
-        
-        DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
-        query.withHashKeyValues(hashKey);
-        query.withScanIndexForward(false);
-        query.withQueryFilterEntry("versionedOn", condition);
-        QueryResultPage<DynamoSurvey> page = surveyMapper.queryPage(DynamoSurvey.class, query);
-        if (page == null || page.getResults().size() == 0) {
-            throw new SurveyNotFoundException(studyKey, surveyGuid, versionedOn);
+        if (StringUtils.isBlank(studyKey)) {
+            throw new BridgeServiceException("Survey study key cannot be null/blank", 400);
+        } else if (StringUtils.isBlank(surveyGuid)) {
+            throw new BridgeServiceException("Survey GUID cannot be null/blank", 400);
+        } else if (versionedOn == 0L) {
+            throw new BridgeServiceException("Survey must have versionedOn date", 400);
         }
-        Survey survey = page.getResults().get(0);
-        addAllQuestions(survey);
-        return survey;
+        return new QueryBuilder().setStudy(studyKey).setSurvey(surveyGuid).setVersionedOn(versionedOn).getOne();
     }
     
     @Override
     public Survey getPublishedSurvey(String studyKey, String surveyGuid) {
-        DynamoSurvey hashKey = new DynamoSurvey();
-        hashKey.setStudyKey(studyKey);
-        hashKey.setGuid(surveyGuid);
-
-        Condition condition = new Condition();
-        condition.withComparisonOperator(ComparisonOperator.EQ);
-        condition.withAttributeValueList(new AttributeValue().withN("1"));
-        
-        DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
-        query.withHashKeyValues(hashKey);
-        query.withScanIndexForward(false);
-        query.withQueryFilterEntry("published", condition);
-        
-        QueryResultPage<DynamoSurvey> page = surveyMapper.queryPage(DynamoSurvey.class, query);
-        if (page == null || page.getResults().size() == 0) {
-            throw new SurveyNotFoundException(studyKey, surveyGuid, 0L);
-        } else if (page.getResults().size() > 1) {
-            throw new BridgeServiceException("Invalid state, survey has multiple published versions ("+surveyGuid+")", 500);
-        }
-        Survey survey = page.getResults().get(0);
-        addAllQuestions(survey);
-        return survey;
+        List<Survey> surveys = new QueryBuilder().setStudy(studyKey).setSurvey(surveyGuid).isPublished().get();
+        if (surveys.size() > 1) {
+            throw new BridgeServiceException("Invalid state, survey has multiple versions ("+surveyGuid+")", 500);
+        }            
+        return surveys.get(0);
     }
 
     @Override
     public void deleteSurvey(Survey surveyKey) {
-        verifyKeyFields(surveyKey);
         Survey existing = getSurvey(surveyKey.getStudyKey(), surveyKey.getGuid(), surveyKey.getVersionedOn());
         if (existing.isPublished()) {
             // something has to happen here, this could be bad. Might need to publish another survey?
@@ -230,17 +284,21 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     @Override
-    public void closeSurvey(Survey surveyKey) {
-        verifyKeyFields(surveyKey);
+    public Survey closeSurvey(Survey surveyKey) {
         Survey existing = getSurvey(surveyKey.getStudyKey(), surveyKey.getGuid(), surveyKey.getVersionedOn());
         if (!existing.isPublished()) {
             throw new PublishedSurveyException(existing); 
         }
         existing.setPublished(false);
-        surveyMapper.save(existing);
+        try {
+            surveyMapper.save(existing);
+        } catch(ConditionalCheckFailedException e) {
+            throw new ConcurrentModificationException();
+        }
+        return existing;
         // TODO:
-        // Eventually this must do much more than this, it must also close out any existing survey response
-        // records.
+        // Eventually this must do much more than this, it must also close out any existing 
+        // survey response records.
     }
     
     private String generateId() {
@@ -258,9 +316,17 @@ public class DynamoSurveyDao implements SurveyDao {
             if (question.getGuid() == null) {
                 question.setGuid(generateId());
             }
-            surveyQuestionMapper.save(question);
+            try {
+                surveyQuestionMapper.save(question);    
+            } catch(ConditionalCheckFailedException e) {
+                throw new ConcurrentModificationException();
+            }
         }
-        surveyMapper.save(survey);
+        try {
+            surveyMapper.save(survey);    
+        } catch(ConditionalCheckFailedException e) {
+            throw new ConcurrentModificationException();
+        }
         return survey;
     }
     
@@ -277,34 +343,7 @@ public class DynamoSurveyDao implements SurveyDao {
             surveyQuestionMapper.delete(question);
         }
     }
-    
-    private void addAllQuestions(Survey survey) {
-        DynamoSurveyQuestion template = new DynamoSurveyQuestion();
-        template.setSurveyGuid(survey.getGuid());
-        
-        DynamoDBQueryExpression<DynamoSurveyQuestion> queryExpression = new DynamoDBQueryExpression<DynamoSurveyQuestion>()
-                .withHashKeyValues(template);
-        
-        QueryResultPage<DynamoSurveyQuestion> page = surveyQuestionMapper.queryPage(DynamoSurveyQuestion.class,
-                queryExpression);
-        
-        List<SurveyQuestion> questions = Lists.newArrayList();
-        for (DynamoSurveyQuestion question : page.getResults()) {
-            questions.add((SurveyQuestion)question);
-        }
-        survey.setQuestions(questions);
-    }
-    
-    private void verifyKeyFields(Survey survey) {
-        if (StringUtils.isBlank(survey.getStudyKey())) {
-            throw new BridgeServiceException("Survey study key cannot be null/blank", 400);
-        } else if (StringUtils.isBlank(survey.getGuid())) {
-            throw new BridgeServiceException("Survey GUID cannot be null/blank", 400);
-        } else if (survey.getVersionedOn() == 0L) {
-            throw new BridgeServiceException("Survey must have versionedOn date", 400);
-        }
-    }
-    
+
     private boolean isNew(Survey survey) {
         if (survey.getGuid() != null || survey.isPublished() || survey.getVersion() != null || survey.getVersionedOn() != 0L) {
             return false;
