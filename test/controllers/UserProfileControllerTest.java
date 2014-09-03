@@ -1,10 +1,10 @@
 package controllers;
 
+import static org.apache.commons.httpclient.HttpStatus.SC_OK;
+import static org.apache.commons.httpclient.HttpStatus.SC_UNAUTHORIZED;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.PROFILE_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
-import static play.mvc.Http.Status.OK;
-import static play.mvc.Http.Status.UNAUTHORIZED;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
@@ -60,7 +60,7 @@ public class UserProfileControllerTest {
             @Override
             public void testCode() throws Exception {
                 Response response = TestUtils.getURL(null, PROFILE_URL).get().get(TIMEOUT);
-                assertEquals("HTTP Status will be 401", UNAUTHORIZED, response.getStatus());
+                assertEquals("HTTP Status will be 401", SC_UNAUTHORIZED, response.getStatus());
             }
         });
     }
@@ -96,7 +96,7 @@ public class UserProfileControllerTest {
                 Response response = TestUtils.getURL("", PROFILE_URL)
                         .post(mapper.writeValueAsString(helper.getUserSessionToken())).get(TIMEOUT);
 
-                assertEquals("HTTP Status should be 401", UNAUTHORIZED, response.getStatus());
+                assertEquals("HTTP Status should be 401", SC_UNAUTHORIZED, response.getStatus());
             }
         });
     }
@@ -110,7 +110,7 @@ public class UserProfileControllerTest {
                 Response response = TestUtils.getURL(helper.getUserSessionToken(), PROFILE_URL)
                         .post(mapper.writeValueAsString(helper.getUser())).get(TIMEOUT);
 
-                assertEquals("HTTP Status should be 200 OK", OK, response.getStatus());
+                assertEquals("HTTP Status should be 200 OK", SC_OK, response.getStatus());
             }
         });
     }

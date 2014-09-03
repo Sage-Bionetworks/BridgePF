@@ -109,7 +109,6 @@ public class HealthDataController extends BaseController {
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
         JsonNode node = requestToJSON(request());
-
         new JsonSchemaValidator().validate(tracker, node);
         HealthDataRecord record = HealthDataRecordImpl.fromJson(node);
 

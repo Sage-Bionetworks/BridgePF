@@ -24,7 +24,7 @@ public class HealthDataRecordImpl implements HealthDataRecord {
     
     public HealthDataRecordImpl() {
     }
-    
+
     public HealthDataRecordImpl(String recordId, long startDate, long endDate, Long version, JsonNode data) {
         this.recordId = recordId;
         this.startDate = startDate;
@@ -32,20 +32,19 @@ public class HealthDataRecordImpl implements HealthDataRecord {
         this.version = version;
         this.data = data;
     }
-    
+
     public static final HealthDataRecordImpl fromJson(JsonNode node) {
         String recordId = null;
         long startDate = 0L;
         long endDate = 0L;
         long version = 0L;
         JsonNode data = null;
-        
+
         if (node != null) {
             if (node.get(RECORD_ID) != null) {
                 recordId = node.get(RECORD_ID).asText();
             }
             if (node.get(START_DATE) != null) {
-                System.out.println(node.get(START_DATE).asText());
                 startDate = DateConverter.convertMillisFromEpoch(node.get(START_DATE).asText());
             }
             if (node.get(END_DATE) != null) {
@@ -60,7 +59,6 @@ public class HealthDataRecordImpl implements HealthDataRecord {
         }
         return new HealthDataRecordImpl(recordId, startDate, endDate, version, data);
     }
-    
     
     @Override
     public String getRecordId() { return recordId; }
