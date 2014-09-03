@@ -10,34 +10,32 @@ public interface SurveyDao {
     
     public Survey updateSurvey(Survey survey);
     
-    public Survey versionSurvey(Survey survey);
+    public Survey versionSurvey(String surveyGuid, long versionedOn);
     
-    public Survey publishSurvey(Survey survey);
+    public Survey publishSurvey(String surveyGuid, long versionedOn);
     
     public List<Survey> getSurveys(String studyKey);
     
-    public List<Survey> getSurveys(String studyKey, String surveyGuid);
+    public List<Survey> getSurveyVersions(String studyKey, String surveyGuid);
     
-    public void deleteSurvey(Survey survey);
+    public void deleteSurvey(String surveyGuid, long versionedOn);
 
-    public Survey closeSurvey(Survey survey);
+    public Survey closeSurvey(String surveyGuid, long versionedOn);
     
     /**
      * Get the most recently published survey, if the survey has been published.
-     * Otherwise you must use the versioned date to retrieve the survey.
-     * @param studyKey
+     * Otherwise you must use the versionedOn date to retrieve the survey.
      * @param surveyGuid
      * @return
      */
-    public Survey getPublishedSurvey(String studyKey, String surveyGuid);
+    public Survey getPublishedSurvey(String surveyGuid);
     
     /**
      * Get a particular survey by version, regardless of publication state.
-     * @param studyKey
      * @param surveyGuid
      * @param versionedOn
      * @return
      */
-    public Survey getSurvey(String studyKey, String surveyGuid, long versionedOn);
+    public Survey getSurvey(String surveyGuid, long versionedOn);
 
 }

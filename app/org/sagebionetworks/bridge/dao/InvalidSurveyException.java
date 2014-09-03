@@ -3,19 +3,18 @@ package org.sagebionetworks.bridge.dao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
-public class SurveyNotFoundException extends BridgeServiceException {
+public class InvalidSurveyException extends BridgeServiceException {
 
-    private static final long serialVersionUID = 8127893323437931302L;
-
+    private static final long serialVersionUID = -8140190585391762426L;
     private Survey survey;
     
-    public SurveyNotFoundException(Survey survey) {
-        super("Survey not found.", 404);
+    public InvalidSurveyException(Survey survey) {
+        super("Survey is invalid (most likely missing required fields)", 400);
         this.survey = survey;
     }
-
+    
     public Survey getSurvey() {
         return survey;
     }
-    
+
 }
