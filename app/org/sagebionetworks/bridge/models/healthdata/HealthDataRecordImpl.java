@@ -1,6 +1,12 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
+import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.models.DateConverter;
+
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 public class HealthDataRecordImpl implements HealthDataRecord {
 
@@ -39,13 +45,11 @@ public class HealthDataRecordImpl implements HealthDataRecord {
                 recordId = node.get(RECORD_ID).asText();
             }
             if (node.get(START_DATE) != null) {
-                startDate = node.get(START_DATE).asLong();
+                System.out.println(node.get(START_DATE).asText());
+                startDate = DateConverter.convertMillisFromEpoch(node.get(START_DATE).asText());
             }
             if (node.get(END_DATE) != null) {
-                endDate = node.get(END_DATE).asLong();
-            }
-            if (node.get(END_DATE) != null) {
-                endDate = node.get(END_DATE).asLong();
+                endDate = DateConverter.convertMillisFromEpoch(node.get(END_DATE).asText());
             }
             if (node.get(VERSION) != null) {
                 version = node.get(VERSION).asLong();
@@ -64,13 +68,17 @@ public class HealthDataRecordImpl implements HealthDataRecord {
     public void setRecordId(String recordId) { this.recordId = recordId;}
     
     @Override
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getStartDate() { return startDate; }
     @Override
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
     public void setStartDate(long startDate) { this.startDate = startDate; }
     
     @Override
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getEndDate() { return endDate; }
     @Override
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
     public void setEndDate(long endDate) { this.endDate = endDate; }
 
     @Override

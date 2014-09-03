@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.models.Date;
+import org.sagebionetworks.bridge.models.DateConverter;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.springframework.test.context.ContextConfiguration;
@@ -73,10 +73,10 @@ public class HealthDataControllerTest {
             public void testCode() throws Exception {
 
                 List<HealthDataRecord> records = getTestRecords();
-
                 Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
                         .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 assertEquals("HTTP response indicates response OK", OK, response.getStatus());
+                System.out.println(response.getStatusText());
 
                 String id = retrieveNewId(response);
                 assertTrue("ID is not empty", StringUtils.isNotBlank(id));
@@ -88,6 +88,8 @@ public class HealthDataControllerTest {
     public void getAllHealthData() throws Exception {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
+                System.out.println(mapper.writeValueAsString(getTestRecords()));
+                System.out.println(mapper.readTree(mapper.writeValueAsString(getTestRecords())));
                 TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
                         .post(mapper.writeValueAsString(getTestRecords())).get(TIMEOUT);
                 TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
@@ -96,6 +98,7 @@ public class HealthDataControllerTest {
                         .post(mapper.writeValueAsString(getTestRecords())).get(TIMEOUT);
 
                 Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL).get().get(TIMEOUT);
+                System.out.println(response.getStatusText());
 
                 JsonNode body = response.asJson().get("items");
                 assertEquals("Returns 3 records", 3, body.size());
@@ -121,7 +124,7 @@ public class HealthDataControllerTest {
 
                 long threeDays = (1000L * 60L * 60L * 24L * 3L);
 
-                long thousandDaysAgo = Date.getCurrentMillisFromEpoch() - (1000 * 60 * 60 * 24 * 1000);
+                long thousandDaysAgo = DateConverter.getCurrentMillisFromEpoch() - (1000 * 60 * 60 * 24 * 1000);
                 long time1 = thousandDaysAgo + threeDays;
                 long time2 = thousandDaysAgo + threeDays * 2;
                 long time3 = thousandDaysAgo + threeDays * 3;
@@ -165,8 +168,8 @@ public class HealthDataControllerTest {
                                 .get(TIMEOUT);
                 String id6 = retrieveNewId(response);
 
-                Map<String, String> queryMap = ImmutableMap.of(START_DATE, new Date(time2).getISODateTime(), 
-                                                                END_DATE, new Date(time5).getISODateTime());
+                Map<String, String> queryMap = ImmutableMap.of(START_DATE, DateConverter.convertISODateTime(time2), 
+                                                                END_DATE, DateConverter.convertISODateTime(time5));
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap)
                                 .get()
                                 .get(TIMEOUT);
@@ -174,8 +177,8 @@ public class HealthDataControllerTest {
                 assertTrue("Returns records 2, 3, 4, and 6", ids.containsAll(Lists.newArrayList(id2, id3, id4, id6)));
                 assertFalse("Does not contain records 1 or 5", ids.containsAll(Lists.newArrayList(id1, id5)));
 
-                queryMap = ImmutableMap.of(START_DATE, new Date(time1).getISODateTime(), 
-                                            END_DATE, new Date(time3).getISODateTime());
+                queryMap = ImmutableMap.of(START_DATE, DateConverter.convertISODateTime(time1),
+                                            END_DATE, DateConverter.convertISODateTime(time3));
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap)
                                 .get()
                                 .get(TIMEOUT);
@@ -183,8 +186,8 @@ public class HealthDataControllerTest {
                 assertTrue("Returns records 1, 2, 4, and 6", ids.containsAll(Lists.newArrayList(id1, id2, id4, id6)));
                 assertFalse("Does not contain records 3 or 5", ids.containsAll(Lists.newArrayList(id3, id5)));
 
-                queryMap = ImmutableMap.of(START_DATE, new Date(time4).getISODateTime(), 
-                                            END_DATE, new Date(time5).getISODateTime());
+                queryMap = ImmutableMap.of(START_DATE, DateConverter.convertISODateTime(time4), 
+                                            END_DATE, DateConverter.convertISODateTime(time5));
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
                 ids = getIds(response);
                 assertTrue("Returns records 3, 4, and 6", ids.containsAll(Lists.newArrayList(id3, id4, id6)));
@@ -202,6 +205,7 @@ public class HealthDataControllerTest {
                 Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
                         .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 assertEquals("Response status indicates OK response", OK, response.getStatus());
+                System.out.println(response.getStatusText());
 
                 // Get the id and set it on the object
                 String id = retrieveNewId(response);

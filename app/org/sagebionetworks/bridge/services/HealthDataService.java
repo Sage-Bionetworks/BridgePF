@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import java.util.List;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.Date;
 import org.sagebionetworks.bridge.models.IdVersionHolder;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -14,7 +13,7 @@ public interface HealthDataService {
     
     public List<HealthDataRecord> getAllHealthData(HealthDataKey key) throws BridgeServiceException;
     
-    public List<HealthDataRecord> getHealthDataByDateRange(HealthDataKey key, Date startDate, Date endDate) throws BridgeServiceException;
+    public List<HealthDataRecord> getHealthDataByDateRange(HealthDataKey key, long startDate, long endDate) throws BridgeServiceException;
     
     public HealthDataRecord getHealthDataRecord(HealthDataKey key, String recordId) throws BridgeServiceException;
 

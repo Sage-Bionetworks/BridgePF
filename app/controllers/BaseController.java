@@ -109,7 +109,11 @@ public abstract class BaseController extends Controller {
         JsonNode node = request().body().asJson();
         if (node == null) {
             ObjectMapper mapper = new ObjectMapper();
+            System.out.println("BEFORE DESERIALIZATION");
             node = mapper.readTree(request().body().asText());
+            System.out.println("AFTER DESERIALIZATION");
+            System.out.println(node.isNull());
+            System.out.println(node.get(0).asText());
         }
         return node;
     }

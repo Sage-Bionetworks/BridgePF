@@ -12,7 +12,7 @@ public class ConsentSignature {
     
     public ConsentSignature(String name, String birthdate) {
         this.name = name;
-        this.birthdate = parseDate(birthdate);
+        this.birthdate = DateConverter.convertISODateTime(birthdate);
     }
     
     public static final ConsentSignature fromJson(JsonNode node) {
@@ -33,9 +33,5 @@ public class ConsentSignature {
 
     public String getBirthdate() {
         return birthdate;
-    }
-    
-    private static String parseDate(String date) {
-        return new Date(date).getISODate();
     }
 }

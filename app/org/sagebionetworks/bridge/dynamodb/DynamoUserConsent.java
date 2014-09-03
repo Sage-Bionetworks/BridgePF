@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
@@ -7,6 +9,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @DynamoDBTable(tableName = "UserConsent")
 public class DynamoUserConsent implements DynamoTable {
@@ -72,9 +76,11 @@ public class DynamoUserConsent implements DynamoTable {
     }
 
     @DynamoDBAttribute
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getConsentTimestamp() {
         return consentTimestamp;
     }
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
     public void setConsentTimestamp(long consentTimestamp) {
         this.consentTimestamp = consentTimestamp;
     }
