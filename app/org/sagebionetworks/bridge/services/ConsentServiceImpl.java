@@ -86,7 +86,8 @@ public class ConsentServiceImpl implements ConsentService {
                 // TODO: New
                 StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
                 if (studyConsent == null) {
-                    // TODO: To be removed once DynamoDB's study consent is ready
+                    // TODO: To be removed once DynamoDB's study consent is ready.
+                    //       This is kept here for testing purpose
                     studyConsent = new StudyConsent() {
                         @Override
                         public String getStudyKey() {
@@ -160,7 +161,6 @@ public class ConsentServiceImpl implements ConsentService {
             final CustomData customData = account.getCustomData();
             customData.remove(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX);
             customData.save();
-            caller.setConsent(false);
             // TODO: New
             String healthCode = caller.getHealthDataCode();
             List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());

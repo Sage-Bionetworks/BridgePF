@@ -65,31 +65,6 @@ public class BackfillService {
                     String healthId = healthCodeEncryptor.decrypt((String) healthIdObj);
                     String healthCode = healthCodeService.getHealthCode(healthId);
                     StudyConsent studyConsent = studyConsentDao.getConsent(studyKey);
-                    if (studyConsent == null) {
-                        logger.warn("Missing study consent.");
-                        studyConsent = new StudyConsent() {
-                            @Override
-                            public String getStudyKey() {
-                                return studyKey;
-                            }
-                            @Override
-                            public long getCreatedOn() {
-                                return 1406325157000L; // July 25, 2014
-                            }
-                            @Override
-                            public boolean getActive() {
-                                return true;
-                            }
-                            @Override
-                            public String getPath() {
-                                return "conf/email-templates/neurod-consent.html";
-                            }
-                            @Override
-                            public int getMinAge() {
-                                return 17;
-                            }
-                        };
-                    }
                     final boolean dynamoConsented = userConsentDao.hasConsented(healthCode, studyConsent);
                     logger.info("Dynamo consented: " + dynamoConsented);
                     if (!dynamoConsented) {
@@ -104,12 +79,5 @@ public class BackfillService {
             }
         }
         return count;
-    }
-
-    /**
-     * Backfills user consent from old schema to new schema.
-     */
-    public int dynamoUserConsent() {
-        return userConsentDao.backfill();
     }
 }

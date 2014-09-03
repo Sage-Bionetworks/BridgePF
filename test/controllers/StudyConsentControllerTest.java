@@ -17,8 +17,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
-import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -48,7 +46,6 @@ public class StudyConsentControllerTest {
     @After
     public void after() {
         helper.deleteOneUser();
-        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
     }
 
     @Test

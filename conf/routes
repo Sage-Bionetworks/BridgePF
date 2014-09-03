@@ -47,7 +47,6 @@ POST    /admin/v1/consents/active/:timestamp    @controllers.StudyConsentControl
 
 # Admin - Backfill
 GET     /admin/v1/backfill/stormpathUserConsent     @controllers.BackfillController.stormpathUserConsent
-GET     /admin/v1/backfill/dynamoUserConsent        @controllers.BackfillController.dynamoUserConsent
 
 # AngularJS application
 GET     /*file      controllers.Assets.at(path="/public", file)
