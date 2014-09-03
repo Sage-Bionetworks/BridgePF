@@ -88,7 +88,6 @@ public class HealthDataControllerTest {
     public void getAllHealthData() throws Exception {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
-                System.out.println(mapper.writeValueAsString(getTestRecords()));
                 TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
                         .post(mapper.writeValueAsString(getTestRecords())).get(TIMEOUT);
                 TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
@@ -97,7 +96,6 @@ public class HealthDataControllerTest {
                         .post(mapper.writeValueAsString(getTestRecords())).get(TIMEOUT);
 
                 Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL).get().get(TIMEOUT);
-                System.out.println(response.getStatusText());
 
                 JsonNode body = response.asJson().get("items");
                 assertEquals("Returns 3 records", 3, body.size());
@@ -194,7 +192,6 @@ public class HealthDataControllerTest {
                 Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
                         .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 assertEquals("Response status indicates OK response", SC_OK, response.getStatus());
-                System.out.println(response.getStatusText());
 
                 // Get the id and set it on the object
                 String id = retrieveNewId(response);
