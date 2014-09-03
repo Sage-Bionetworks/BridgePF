@@ -30,9 +30,10 @@ public class DynamoSurvey implements Survey, DynamoTable {
         this.questions = Lists.newArrayList();
     }
     
-    public DynamoSurvey(String guid) {
+    public DynamoSurvey(String guid, long versionedOn) {
         this();
         setGuid(guid);
+        setVersionedOn(versionedOn);
     }
     
     public DynamoSurvey(Survey survey) {

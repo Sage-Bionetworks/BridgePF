@@ -1,32 +1,21 @@
 package org.sagebionetworks.bridge.dao;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 
 public class SurveyNotFoundException extends BridgeServiceException {
 
     private static final long serialVersionUID = 8127893323437931302L;
 
-    private final String studyKey;
-    private final String surveyGuid;
-    private final long versionedOn;
+    private Survey survey;
     
-    public SurveyNotFoundException(String studyKey, String surveyGuid, long versionedOn) {
+    public SurveyNotFoundException(Survey survey) {
         super("Survey not found.", 404);
-        this.studyKey = studyKey;
-        this.surveyGuid = surveyGuid;
-        this.versionedOn = versionedOn;
+        this.survey = survey;
     }
 
-    public String getStudyKey() {
-        return studyKey;
-    }
-
-    public String getSurveyGuid() {
-        return surveyGuid;
+    public Survey getSurvey() {
+        return survey;
     }
     
-    public long getVersionedOn() {
-        return versionedOn;
-    }
-
 }
