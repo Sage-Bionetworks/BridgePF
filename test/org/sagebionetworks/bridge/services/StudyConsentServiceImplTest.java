@@ -33,55 +33,46 @@ public class StudyConsentServiceImplTest {
 
     @Before
     public void before() {
-	helper.createOneUser();
-	DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
+        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
     }
 
     @After
     public void after() {
-	helper.deleteOneUser();
-	DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
+        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
     }
 
     @Test
     public void test() {
-	String studyKey = "study-key";
-	String path = "fake-path";
-	int minAge = 17;
-	StudyConsentForm form = new StudyConsentForm(path, minAge);
 
-	// Adding a consent with a non-admin user fails.
-	try {
-	    studyConsentService.addConsent(helper.getUser(), studyKey, form);
-	    fail("studyConsentService.addConsent allowed a non-admin user to add consent.");
-	} catch (BridgeServiceException e) {
-	}
+        String studyKey = "study-key";
+        String path = "fake-path";
+        int minAge = 17;
+        StudyConsentForm form = new StudyConsentForm(path, minAge);
 
-	// addConsent should return a non-null consent object.
-	StudyConsent addedConsent1 = studyConsentService.addConsent(helper.getAdminUser(), studyKey, form);
-	assertNotNull(addedConsent1);
+        // addConsent should return a non-null consent object.
+        StudyConsent addedConsent1 = studyConsentService.addConsent(studyKey, form);
+        assertNotNull(addedConsent1);
 
-	try {
-	    studyConsentService.getActiveConsent(helper.getAdminUser(), studyKey);
-	    fail("getActiveConsent should throw exception, as there is no currently active consent.");
-	} catch (Exception e) {
-	}
+        try {
+            studyConsentService.getActiveConsent(studyKey);
+            fail("getActiveConsent should throw exception, as there is no currently active consent.");
+        } catch (Exception e) {
+        }
 
-	// Get active consent returns the most recently activated consent document.
-	StudyConsent activatedConsent = studyConsentService.activateConsent(helper.getAdminUser(), studyKey, addedConsent1.getCreatedOn());
-	StudyConsent getActiveConsent = studyConsentService.getActiveConsent(helper.getAdminUser(), studyKey);
-	assertTrue(activatedConsent.getCreatedOn() == getActiveConsent.getCreatedOn());
+        // Get active consent returns the most recently activated consent document.
+        StudyConsent activatedConsent = studyConsentService.activateConsent(studyKey, addedConsent1.getCreatedOn());
+        StudyConsent getActiveConsent = studyConsentService.getActiveConsent(studyKey);
+        assertTrue(activatedConsent.getCreatedOn() == getActiveConsent.getCreatedOn());
 
-	// Get all consents returns one consent document (addedConsent).
-	List<StudyConsent> allConsents = studyConsentService.getAllConsents(helper.getAdminUser(), studyKey);
-	assertTrue(allConsents.size() == 1);
+        // Get all consents returns one consent document (addedConsent).
+        List<StudyConsent> allConsents = studyConsentService.getAllConsents(studyKey);
+        assertTrue(allConsents.size() == 1);
 
-	// Cannot delete active consent document.
-	try {
-	    studyConsentService.deleteConsent(helper.getAdminUser(), studyKey, getActiveConsent.getCreatedOn());
-	    fail("Was able to successfully delete active consent, which we should not be able to do.");
-	} catch (BridgeServiceException e) {
-	}
-
+        // Cannot delete active consent document.
+        try {
+            studyConsentService.deleteConsent(studyKey, getActiveConsent.getCreatedOn());
+            fail("Was able to successfully delete active consent, which we should not be able to do.");
+        } catch (BridgeServiceException e) {
+        }
     }
 }
