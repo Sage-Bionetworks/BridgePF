@@ -10,7 +10,7 @@ public class PublishedSurveyException extends BridgeServiceException {
     private final Survey survey;
     
     public PublishedSurveyException(Survey survey) {
-        super("Survey is in the wrong publication state for this operation.", 400);
+        super("A published survey cannot be updated or deleted (only closed).", 400);
         this.survey = survey;
     }
 
