@@ -1,6 +1,10 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
@@ -29,8 +33,15 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 public class DynamoSurveyDao implements SurveyDao {
+    
+    Comparator<DynamoSurvey> VERSIONED_ON_DESC_SORTER = new Comparator<DynamoSurvey>() {
+        @Override public int compare(DynamoSurvey o1, DynamoSurvey o2) {
+            return (int)(o2.getVersionedOn() - o1.getVersionedOn());
+        }
+    };
     
     class QueryBuilder {
         
@@ -56,14 +67,14 @@ public class DynamoSurveyDao implements SurveyDao {
             return this;
         }
         
-        List<Survey> getAll() {
+        List<Survey> getAll(boolean exceptionIfEmpty) {
             List<DynamoSurvey> dynamoSurveys = null;
             if (surveyGuid == null) {
                 dynamoSurveys = scan();
             } else {
                 dynamoSurveys = query();
             }
-            if (dynamoSurveys.size() == 0) {
+            if (exceptionIfEmpty && dynamoSurveys.size() == 0) {
                 throw new SurveyNotFoundException(new DynamoSurvey(surveyGuid, versionedOn));
             }
             List<Survey> surveys = Lists.newArrayListWithCapacity(dynamoSurveys.size());
@@ -73,10 +84,13 @@ public class DynamoSurveyDao implements SurveyDao {
             return surveys;
         }
         
-        Survey getOne() {
-            List<Survey> surveys = getAll();
-            attachQuestions(surveys.get(0));
-            return surveys.get(0);
+        Survey getOne(boolean exceptionIfEmpty) {
+            List<Survey> surveys = getAll(exceptionIfEmpty);
+            if (!surveys.isEmpty()) {
+                attachQuestions(surveys.get(0));
+                return surveys.get(0);
+            }
+            return null;
         }
 
         private List<DynamoSurvey> query() {
@@ -106,7 +120,10 @@ public class DynamoSurveyDao implements SurveyDao {
             if (published) {
                 scan.addFilterCondition("published", publishedCondition());
             }
-            return surveyMapper.scan(DynamoSurvey.class, scan);
+            // Scans will not sort as queries do. Sort Manually.
+            List<DynamoSurvey> surveys = Lists.newArrayList(surveyMapper.scan(DynamoSurvey.class, scan));
+            Collections.sort(surveys, VERSIONED_ON_DESC_SORTER);
+            return surveys;
         }
 
         private Condition publishedCondition() {
@@ -132,7 +149,7 @@ public class DynamoSurveyDao implements SurveyDao {
         
         private void attachQuestions(Survey survey) {
             DynamoSurveyQuestion template = new DynamoSurveyQuestion();
-            template.setSurveyGuid(survey.getGuid());
+            template.setSurveyKeyComponents(survey.getGuid(), survey.getVersionedOn());
             
             DynamoDBQueryExpression<DynamoSurveyQuestion> query = new DynamoDBQueryExpression<DynamoSurveyQuestion>();
             query.withHashKeyValues(template);
@@ -181,23 +198,13 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey publishSurvey(String surveyGuid, long versionedOn) {
         Survey survey = getSurvey(surveyGuid, versionedOn);
-        if (survey.isPublished()) {
-            return survey;
-        }
-        try {
-            Survey existingPublished = getPublishedSurvey(survey.getGuid());
-            existingPublished.setPublished(false);
-            surveyMapper.save(existingPublished);
-        } catch(SurveyNotFoundException snfe) {
-            // This is fine
-        } catch(ConditionalCheckFailedException e) {
-            throw new ConcurrentModificationException(survey);
-        }
-        survey.setPublished(true);
-        try {
-            surveyMapper.save(survey);
-        } catch(ConditionalCheckFailedException e) {
-            throw new ConcurrentModificationException(survey);
+        if (!survey.isPublished()) {
+            survey.setPublished(true);
+            try {
+                surveyMapper.save(survey);
+            } catch(ConditionalCheckFailedException e) {
+                throw new ConcurrentModificationException(survey);
+            }
         }
         return survey;
     }
@@ -209,12 +216,13 @@ public class DynamoSurveyDao implements SurveyDao {
         } else if (!isValid(survey)) {
             throw new InvalidSurveyException(survey);
         }
-        Survey existingSurvey = getSurvey(survey.getGuid(), survey.getVersionedOn());
-        if (existingSurvey.isPublished()) {
+        Survey existing = getSurvey(survey.getGuid(), survey.getVersionedOn());
+        if (existing.isPublished()) {
             throw new PublishedSurveyException(survey);
         }
-        // Cannot change publication state from false on an update
-        survey.setPublished(false);
+        existing.setIdentifier(survey.getIdentifier());
+        existing.setName(survey.getName());
+        existing.setQuestions(survey.getQuestions());
         
         return saveSurvey(survey);
     }
@@ -225,7 +233,12 @@ public class DynamoSurveyDao implements SurveyDao {
         Survey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
         copy.setVersion(null);
-        copy.setVersionedOn(DateTime.now(DateTimeZone.UTC).getMillis());
+        // It is possible for this to conflict.
+        long time = DateTime.now(DateTimeZone.UTC).getMillis();
+        if (time == versionedOn) {
+            throw new IllegalArgumentException("Versioning too fast");
+        }
+        copy.setVersionedOn(time);
 
         for (SurveyQuestion question : copy.getQuestions()) {
             question.setGuid(null);
@@ -238,7 +251,7 @@ public class DynamoSurveyDao implements SurveyDao {
         if (StringUtils.isBlank(studyKey)) {
             throw new BridgeServiceException("Study key is required", 400);
         }
-        return new QueryBuilder().setStudy(studyKey).getAll();
+        return new QueryBuilder().setStudy(studyKey).getAll(false);
     }
     
     @Override
@@ -248,7 +261,7 @@ public class DynamoSurveyDao implements SurveyDao {
         } else if (StringUtils.isBlank(surveyGuid)) {
             throw new BridgeServiceException("Survey GUID is required", 400);
         }
-        return new QueryBuilder().setStudy(studyKey).setSurvey(surveyGuid).getAll();
+        return new QueryBuilder()/*.setStudy(studyKey)*/.setSurvey(surveyGuid).getAll(true);
     }
 
     @Override
@@ -258,17 +271,25 @@ public class DynamoSurveyDao implements SurveyDao {
         } else if (versionedOn == 0L) {
             throw new BridgeServiceException("Survey must have versionedOn date", 400);
         }
-        return new QueryBuilder().setSurvey(surveyGuid).setVersionedOn(versionedOn).getOne();
+        return new QueryBuilder().setSurvey(surveyGuid).setVersionedOn(versionedOn).getOne(true);
     }
-    
+
     @Override
-    public Survey getPublishedSurvey(String surveyGuid) {
-        List<Survey> surveys = new QueryBuilder().setSurvey(surveyGuid).isPublished().getAll();
-        if (surveys.size() > 1) {
-            throw new BridgeServiceException("Invalid state, survey has multiple versions ("+surveyGuid+")", 500);
-        }            
-        return surveys.get(0);
-    }
+    public List<Survey> getMostRecentlyPublishedSurveys(String studyKey) {
+        List<Survey> surveys = new QueryBuilder().setStudy(studyKey).isPublished().getAll(false);
+        if (surveys.isEmpty()) {
+            return surveys;
+        }
+        // Find the most recent. I believe they will all be at the front of the list, FWIW.
+        Map<String, Survey> map = Maps.newLinkedHashMap();
+        for (Survey survey : surveys) {
+            Survey stored = map.get(survey.getGuid());
+            if (stored == null || survey.getVersionedOn() > stored.getVersionedOn()) {
+                map.put(survey.getGuid(), survey);
+            }
+        }
+        return new ArrayList<Survey>(map.values());
+    }    
 
     @Override
     public void deleteSurvey(String surveyGuid, long versionedOn) {
@@ -282,10 +303,9 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey closeSurvey(String surveyGuid, long versionedOn) {
+        // TODO: Eventually this must do much more than this, it must 
+        // also close out any existing survey response records.
         Survey existing = getSurvey(surveyGuid, versionedOn);
-        if (!existing.isPublished()) {
-            throw new PublishedSurveyException(existing); 
-        }
         existing.setPublished(false);
         try {
             surveyMapper.save(existing);
@@ -293,9 +313,6 @@ public class DynamoSurveyDao implements SurveyDao {
             throw new ConcurrentModificationException(existing);
         }
         return existing;
-        // TODO:
-        // Eventually this must do much more than this, it must also close out any existing 
-        // survey response records.
     }
     
     private String generateId() {
@@ -303,11 +320,12 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     private Survey saveSurvey(Survey survey) {
-        deleteAllQuestions(survey.getGuid());
+        deleteAllQuestions(survey.getGuid(), survey.getVersionedOn());
         List<SurveyQuestion> questions = survey.getQuestions();
+        Throwable error = null;
         for (int i=0; i < questions.size(); i++) {
             SurveyQuestion question = questions.get(i);
-            question.setSurveyGuid(survey.getGuid());
+            question.setSurveyKeyComponents(survey.getGuid(), survey.getVersionedOn());
             question.setOrder(i);
             // A new question was added to the survey.
             if (question.getGuid() == null) {
@@ -315,21 +333,29 @@ public class DynamoSurveyDao implements SurveyDao {
             }
             try {
                 surveyQuestionMapper.save(question);    
-            } catch(ConditionalCheckFailedException e) {
-                throw new ConcurrentModificationException(survey);
+            } catch(Throwable throwable) {
+                error = throwable;
             }
         }
         try {
             surveyMapper.save(survey);    
-        } catch(ConditionalCheckFailedException e) {
-            throw new ConcurrentModificationException(survey);
+        } catch(Throwable throwable) {
+            error = throwable;
+        }
+        // this will only be the last exception if there was more than one
+        if (error != null) { 
+            if (error.getClass() == ConditionalCheckFailedException.class) {
+                throw new ConcurrentModificationException(survey);
+            } else if (error != null) {
+                throw new BridgeServiceException(error.getMessage(), 500);
+            }
         }
         return survey;
     }
     
-    private void deleteAllQuestions(String surveyGuid) {
+    private void deleteAllQuestions(String surveyGuid, long versionedOn) {
         DynamoSurveyQuestion template = new DynamoSurveyQuestion();
-        template.setSurveyGuid(surveyGuid);
+        template.setSurveyKeyComponents(surveyGuid, versionedOn);
         
         DynamoDBQueryExpression<DynamoSurveyQuestion> query = new DynamoDBQueryExpression<DynamoSurveyQuestion>();
         query.withHashKeyValues(template);

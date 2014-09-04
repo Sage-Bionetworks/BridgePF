@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 @DynamoDBTable(tableName = "SurveyQuestion")
 public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
 
-    private String surveyGuid;
+    private String surveyCompoundKey;
     private String guid;
     private String identifier;
     private int order;
@@ -22,7 +22,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     }
     
     public DynamoSurveyQuestion(SurveyQuestion question) {
-        setSurveyGuid(question.getSurveyGuid());
+        setSurveyCompoundKey(question.getSurveyCompoundKey());
         setGuid(question.getGuid());
         setIdentifier(question.getIdentifier());
         setOrder(question.getOrder());
@@ -31,17 +31,22 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
 
     @Override
     @DynamoDBHashKey
-    public String getSurveyGuid() {
-        return surveyGuid;
+    public String getSurveyCompoundKey() {
+        return surveyCompoundKey;
     }
 
     @Override
-    public void setSurveyGuid(String surveyGuid) {
-        this.surveyGuid = surveyGuid;
+    public void setSurveyCompoundKey(String surveyCompoundKey) {
+        this.surveyCompoundKey = surveyCompoundKey;
     }
 
     @Override
-    @DynamoDBRangeKey
+    public void setSurveyKeyComponents(String surveyGuid, long versionedOn) {
+        this.surveyCompoundKey = surveyGuid + ":" + Long.toString(versionedOn);
+    }
+
+    @Override
+    @DynamoDBAttribute
     public String getGuid() {
         return guid;
     }
@@ -52,7 +57,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     }
 
     @Override
-    @DynamoDBAttribute
+    @DynamoDBRangeKey
     public int getOrder() {
         return order;
     }
@@ -87,7 +92,8 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
 
     @Override
     public String toString() {
-        return "DynamoSurveyQuestion [surveyGuid=" + surveyGuid + ", guid=" + guid + ", identifier=" + identifier
-                + ", order=" + order + ", data=" + data + "]";
+        return "DynamoSurveyQuestion [surveyCompoundKey=" + surveyCompoundKey + ", guid=" + guid + ", identifier="
+                + identifier + ", order=" + order + ", data=" + data + "]";
     }
+
 }
