@@ -59,6 +59,10 @@ public class TestConstants {
     public static final String STUDYCONSENT_URL = ADMIN_URL + "/consents";
     public static final String STUDYCONSENT_ACTIVE_URL = STUDYCONSENT_URL + "/active";
     
+    public static final String CONSENT_URL = API_URL + "/users/consent";
+    public static final String SUSPEND_URL = CONSENT_URL + "/dataSharing/suspend";
+    public static final String RESUME_URL = CONSENT_URL + "/dataSharing/resume";
+    
     public static final String APPLICATION_JSON = "application/json";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";

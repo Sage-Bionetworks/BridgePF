@@ -15,4 +15,5 @@ public class IdVersionHolder {
     public Long getVersion() {
         return version;
     }
+
 }

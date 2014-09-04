@@ -8,11 +8,10 @@ import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.TrackerInfo;
 
+import play.mvc.Result;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
-
-import play.libs.Json;
-import play.mvc.Result;
 
 public class TrackerController extends BaseController {
 
@@ -33,7 +32,7 @@ public class TrackerController extends BaseController {
         for (Tracker tracker : study.getTrackers()) {
             infos.add(new TrackerInfo(tracker));
         }
-        return ok(Json.toJson(infos));
+        return ok(constructJSON(infos));
     }
     
     
@@ -41,7 +40,7 @@ public class TrackerController extends BaseController {
         Study study = studyControllerService.getStudyByHostname(request());
         Tracker tracker = study.getTrackerById(trackerId);
         JsonNode node = jsonSchemaValidator.getSchemaAsNode(tracker);
-        return ok(Json.toJson(node));
+        return ok(constructJSON(node));
     }
 
 }

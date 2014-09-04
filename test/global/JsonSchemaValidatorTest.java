@@ -1,7 +1,7 @@
 package global;
 
-import static org.junit.Assert.*;
-import global.JsonSchemaValidator;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -43,12 +43,12 @@ public class JsonSchemaValidatorTest {
 
     @Test
     public void schemaValidationSucceedsWithRecordId() throws Exception {
-        validate("{ \"recordId\": \"asdf-zxfv-sdfg\", \"key\": \"1:1:asdf\", \"startDate\":100, \"endDate\":100, \"data\":{ \"systolic\":120, \"diastolic\":80 } }");
+        validate("{ \"recordId\": \"asdf-zxfv-sdfg\", \"key\": \"1:1:asdf\", \"startDate\":\"date+time\", \"endDate\":\"date+time\", \"data\":{ \"systolic\":120, \"diastolic\":80 } }");
     }
 
     @Test
     public void schemaValidationSucceedsWithoutRecordId() throws Exception {
-        validate("{ \"key\": \"1:1:asdf\", \"startDate\":100, \"endDate\":100, \"data\":{ \"systolic\":120, \"diastolic\":80 } }");
+        validate("{ \"key\": \"1:1:asdf\", \"startDate\":\"date-time\", \"endDate\":\"date-time\", \"data\":{ \"systolic\":120, \"diastolic\":80 } }");
     }
 
 }
