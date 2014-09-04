@@ -215,8 +215,34 @@ public class DynamoSurveyDaoTest {
         Long originalVersion = survey.getVersionedOn();
         survey = surveyDao.versionSurvey(survey.getGuid(), survey.getVersionedOn());
         
+        assertEquals("Newly versioned survey is not published", false, survey.isPublished());
+        
         Long newVersion = survey.getVersionedOn();
         assertNotEquals("Versions differ", newVersion, originalVersion);
+    }
+    
+    @Test
+    public void versioningASurveyCopiesTheQuestions() {
+        Survey survey = constructTestSurvey();
+        
+        SurveyQuestion question = new DynamoSurveyQuestion();
+        question.setIdentifier("question1");
+        survey.getQuestions().add(question);
+        
+        question = new DynamoSurveyQuestion();
+        question.setIdentifier("question2");
+        survey.getQuestions().add(question);
+        
+        survey = surveyDao.createSurvey(survey);
+        String v1SurveyCompoundKey = survey.getQuestions().get(0).getSurveyCompoundKey();
+        String v1Guid = survey.getQuestions().get(0).getGuid();
+        
+        survey = surveyDao.versionSurvey(survey.getGuid(), survey.getVersionedOn());
+        String v2SurveyCompoundKey = survey.getQuestions().get(0).getSurveyCompoundKey();
+        String v2Guid = survey.getQuestions().get(0).getGuid();
+        
+        assertNotEquals("Survey reference differs", v1SurveyCompoundKey, v2SurveyCompoundKey);
+        assertNotEquals("Survey question GUID differs", v1Guid, v2Guid);
     }
     
     // PUBLISH SURVEY
@@ -291,7 +317,7 @@ public class DynamoSurveyDaoTest {
         assertEquals("All surveys are returned", 6, surveys.size());
         
         // Get all surveys of a version
-        surveys = surveyDao.getSurveyVersions(STUDY_KEY, survey.getGuid());
+        surveys = surveyDao.getSurveyVersions(survey.getGuid());
         assertEquals("All surveys are returned", 2, surveys.size());
 
         Survey survey1 = surveys.get(0);

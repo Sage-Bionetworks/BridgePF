@@ -26,7 +26,9 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         setGuid(question.getGuid());
         setIdentifier(question.getIdentifier());
         setOrder(question.getOrder());
-        setData(question.getData().deepCopy());
+        if (question.getData() != null) {
+            setData(question.getData().deepCopy());    
+        }
     }
 
     @Override

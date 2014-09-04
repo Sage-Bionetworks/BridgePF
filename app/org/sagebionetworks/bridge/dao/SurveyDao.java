@@ -26,7 +26,7 @@ public interface SurveyDao {
     public List<Survey> getMostRecentlyPublishedSurveys(String studyKey);
     
     
-    public List<Survey> getSurveyVersions(String studyKey, String surveyGuid);
+    public List<Survey> getSurveyVersions(String surveyGuid);
     
     /**
      * Delete a survey. A survey cannot be deleted if it has been published. 
