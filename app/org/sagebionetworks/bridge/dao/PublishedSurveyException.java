@@ -7,27 +7,15 @@ public class PublishedSurveyException extends BridgeServiceException {
 
     private static final long serialVersionUID = 6286676048771804971L;
     
-    private final String studyKey;
-    private final String surveyGuid;
-    private final long versionedOn;
+    private final Survey survey;
     
     public PublishedSurveyException(Survey survey) {
         super("Survey is in the wrong publication state for this operation.", 400);
-        this.studyKey = survey.getStudyKey();
-        this.surveyGuid = survey.getGuid();
-        this.versionedOn = survey.getVersionedOn();
+        this.survey = survey;
     }
 
-    public String getStudyKey() {
-        return studyKey;
-    }
-
-    public String getSurveyGuid() {
-        return surveyGuid;
-    }
-    
-    public long getVersionedOn() {
-        return versionedOn;
+    public Survey getSurvey() {
+        return survey;
     }
 
 }

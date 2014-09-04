@@ -16,19 +16,42 @@ public interface SurveyDao {
     
     public List<Survey> getSurveys(String studyKey);
     
-    public List<Survey> getSurveyVersions(String studyKey, String surveyGuid);
-    
-    public void deleteSurvey(String surveyGuid, long versionedOn);
-
-    public Survey closeSurvey(String surveyGuid, long versionedOn);
-    
     /**
-     * Get the most recently published survey, if the survey has been published.
-     * Otherwise you must use the versionedOn date to retrieve the survey.
+     * Get the most recently published version of each survey that has been 
+     * published. These are usually the only surveys that a user would want 
+     * to use when creating activities (?)
      * @param surveyGuid
      * @return
      */
-    public Survey getPublishedSurvey(String surveyGuid);
+    public List<Survey> getMostRecentlyPublishedSurveys(String studyKey);
+    
+    
+    public List<Survey> getSurveyVersions(String studyKey, String surveyGuid);
+    
+    /**
+     * Delete a survey. A survey cannot be deleted if it has been published. 
+     * You must first close the survey, which will address any links to the 
+     * survey before it is unpublished; then it can be deleted.
+     * 
+     * NOTE: If there are any references to this survey, then in it 
+     * may not be deleted. It may be necessary to delete survey responses 
+     * before this method will work. Generally this method will only be used 
+     * by tests.
+     *  
+     * @param surveyGuid
+     * @param versionedOn
+     */
+    public void deleteSurvey(String surveyGuid, long versionedOn);
+
+    /**
+     * Unpublish the survey, closing out any active records that are still 
+     * pointing to this survey. 
+     * @param surveyGuid
+     * @param versionedOn
+     * @return
+     */
+    public Survey closeSurvey(String surveyGuid, long versionedOn);
+    
     
     /**
      * Get a particular survey by version, regardless of publication state.

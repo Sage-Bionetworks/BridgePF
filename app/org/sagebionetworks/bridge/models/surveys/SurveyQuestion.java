@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public interface SurveyQuestion {
     
-    public String getSurveyGuid();
-    public void setSurveyGuid(String surveyGuid);
+    public String getSurveyCompoundKey();
+    public void setSurveyCompoundKey(String surveyCompoundKey);
+    
+    public void setSurveyKeyComponents(String surveyGuid, long versionedOn);
     
     public String getGuid();
     public void setGuid(String guid);

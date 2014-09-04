@@ -76,7 +76,6 @@ public class HealthDataControllerTest {
                 Response response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL)
                         .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 assertEquals("HTTP response indicates response OK", SC_OK, response.getStatus());
-                System.out.println(response.getStatusText());
 
                 String id = retrieveNewId(response);
                 assertTrue("ID is not empty", StringUtils.isNotBlank(id));
