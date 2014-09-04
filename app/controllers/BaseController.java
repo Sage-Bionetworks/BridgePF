@@ -1,6 +1,7 @@
 package controllers;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import models.StatusMessage;
 
@@ -11,15 +12,17 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http.Cookie;
 import play.mvc.Http.Request;
 import play.mvc.Result;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @org.springframework.stereotype.Controller
 public abstract class BaseController extends Controller {
@@ -30,15 +33,15 @@ public abstract class BaseController extends Controller {
     public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
-    
+
     public void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
 
     /**
-     * Retrieve user's session using the Bridge-Session header or cookie, throwing 
-     * an exception if the session doesn't exist (user not authorized) or consent 
-     * has not been given.
+     * Retrieve user's session using the Bridge-Session header or cookie, throwing an exception if the session doesn't
+     * exist (user not authorized) or consent has not been given.
+     * 
      * @return
      * @throws Exception
      */
@@ -58,8 +61,9 @@ public abstract class BaseController extends Controller {
     }
 
     /**
-     * Return a session if it exists, or null otherwise. Will not throw exception if 
-     * user is not authorized or has not consented to research. 
+     * Return a session if it exists, or null otherwise. Will not throw exception if user is not authorized or has not
+     * consented to research.
+     * 
      * @return
      */
     protected UserSession checkForSession() {
@@ -71,7 +75,7 @@ public abstract class BaseController extends Controller {
         response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
                 BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
-    
+
     protected void updateSessionUser(UserSession session, User user) {
         session.setUser(user);
         cacheProvider.setUserSession(session.getSessionToken(), session);
@@ -107,6 +111,31 @@ public abstract class BaseController extends Controller {
         if (node == null) {
             ObjectMapper mapper = new ObjectMapper();
             node = mapper.readTree(request().body().asText());
+        }
+        return node;
+    }
+
+    protected <T> JsonNode constructJSON(Collection<T> items) {
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode itemsNode = mapper.createArrayNode();
+        for (Object item : items) {
+            ObjectNode node = (ObjectNode) Json.toJson(item);
+            if (!node.has("type")) {
+                node.put("type", item.getClass().getSimpleName());
+            }
+            itemsNode.add(node);
+        }
+
+        ObjectNode json = mapper.createObjectNode();
+        json.put("items", itemsNode);
+        json.put("total", items.size());
+        return json;
+    }
+
+    protected <T> JsonNode constructJSON(T item) {
+        ObjectNode node = (ObjectNode) Json.toJson(item);
+        if (!node.has("type")) {
+            node.put("type", item.getClass().getSimpleName());
         }
         return node;
     }

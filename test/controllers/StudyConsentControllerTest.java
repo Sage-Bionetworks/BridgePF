@@ -1,11 +1,11 @@
 package controllers;
 
+import static org.apache.commons.httpclient.HttpStatus.SC_FORBIDDEN;
+import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.STUDYCONSENT_ACTIVE_URL;
 import static org.sagebionetworks.bridge.TestConstants.STUDYCONSENT_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
-import static play.mvc.Http.Status.FORBIDDEN;
-import static play.mvc.Http.Status.OK;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
@@ -60,31 +60,31 @@ public class StudyConsentControllerTest {
                 Response addConsentFail = TestUtils.getURL(helper.getUserSessionToken(), STUDYCONSENT_URL)
                                                 .post(consent)
                                                 .get(TIMEOUT);
-                assertEquals("Must be admin to access consent.", FORBIDDEN, addConsentFail.getStatus());
+                assertEquals("Must be admin to access consent.", SC_FORBIDDEN, addConsentFail.getStatus());
 
                 Response addConsent = TestUtils.getURL(helper.getAdminSessionToken(), STUDYCONSENT_URL)
                                             .post(consent)
                                             .get(TIMEOUT);
-                assertEquals("Successfully add consent.", OK, addConsent.getStatus());
+                assertEquals("Successfully add consent.", SC_OK, addConsent.getStatus());
 
                 // Get timeout to access this consent later.
-                String timeout = addConsent.asJson().get("createdOn").asText();
+                String createdOn = addConsent.asJson().get("createdOn").asText();
 
                 Response setActive = TestUtils
-                        .getURL(helper.getAdminSessionToken(), STUDYCONSENT_ACTIVE_URL + "/" + timeout)
+                        .getURL(helper.getAdminSessionToken(), STUDYCONSENT_ACTIVE_URL + "/" + createdOn)
                         .post("")
                         .get(TIMEOUT);
-                assertEquals("Successfully set active consent.", OK, setActive.getStatus());
+                assertEquals("Successfully set active consent.", SC_OK, setActive.getStatus());
 
                 Response getActive = TestUtils.getURL(helper.getAdminSessionToken(), STUDYCONSENT_ACTIVE_URL)
                                             .get()
                                             .get(TIMEOUT);
-                assertEquals("Successfully get active consent.", OK, getActive.getStatus());
+                assertEquals("Successfully get active consent.", SC_OK, getActive.getStatus());
 
                 Response getAll = TestUtils.getURL(helper.getAdminSessionToken(), STUDYCONSENT_URL)
                                         .get()
                                         .get(TIMEOUT);
-                assertEquals("Successfully get all consents.", OK, getAll.getStatus());
+                assertEquals("Successfully get all consents.", SC_OK, getAll.getStatus());
 
             }
         });

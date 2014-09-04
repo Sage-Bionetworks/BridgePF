@@ -5,6 +5,7 @@ function($http, $window, $q, $location, $humane) {
         username: '',
         authenticated: false,
         consented: false,
+        dataSharing: false,
         
         initSession: function(session) {
             $http.defaults.headers.common['Bridge-Session'] = session.sessionToken;
@@ -13,6 +14,7 @@ function($http, $window, $q, $location, $humane) {
             this.username = session.username;
             this.consented = session.consented;
             this.authenticated = session.authenticated;
+            this.dataSharing = session.dataSharing;
         },
         clear: function() {
             delete $http.defaults.headers.common['Bridge-Session'];
@@ -20,6 +22,7 @@ function($http, $window, $q, $location, $humane) {
             this.username = '';
             this.authenticated = false;
             this.consented = false;
+            this.dataSharing = false;
         },
         signIn: function(credentials) {
             var deferred = $q.defer();
