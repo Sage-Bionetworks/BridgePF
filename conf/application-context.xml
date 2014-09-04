@@ -54,6 +54,10 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
 
+    <bean id="surveyDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+    
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
 
     <!-- Redis -->
