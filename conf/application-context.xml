@@ -174,6 +174,7 @@
                             <value>localhost</value>
                             <value>bridge-develop.herokuapp.com</value>
                             <value>bridge-uat.herokuapp.com</value>
+                            <value>pd-staging.sagebridge.org</value>
 			    <value>pd.sagebridge.org</value>
                         </list>
                     </constructor-arg>
