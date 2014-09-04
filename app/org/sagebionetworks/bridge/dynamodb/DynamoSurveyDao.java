@@ -255,13 +255,11 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     @Override
-    public List<Survey> getSurveyVersions(String studyKey, String surveyGuid) {
-        if (StringUtils.isBlank(studyKey)) {
-            throw new BridgeServiceException("Study key is required", 400);
-        } else if (StringUtils.isBlank(surveyGuid)) {
+    public List<Survey> getSurveyVersions(String surveyGuid) {
+        if (StringUtils.isBlank(surveyGuid)) {
             throw new BridgeServiceException("Survey GUID is required", 400);
         }
-        return new QueryBuilder()/*.setStudy(studyKey)*/.setSurvey(surveyGuid).getAll(true);
+        return new QueryBuilder().setSurvey(surveyGuid).getAll(true);
     }
 
     @Override
@@ -362,9 +360,11 @@ public class DynamoSurveyDao implements SurveyDao {
         
         QueryResultPage<DynamoSurveyQuestion> page = surveyQuestionMapper.queryPage(DynamoSurveyQuestion.class, query);
 
+        surveyQuestionMapper.batchDelete(page.getResults());
+        /*
         for (DynamoSurveyQuestion question :  page.getResults()) {
             surveyQuestionMapper.delete(question);
-        }
+        }*/
     }
 
     private boolean isNew(Survey survey) {

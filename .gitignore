@@ -19,4 +19,5 @@ setup.sh
 .cache
 .vagrant
 verify.rb
+.dpl
 /project
