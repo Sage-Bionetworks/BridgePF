@@ -5,7 +5,7 @@ abstract class AbstractRedisKey implements RedisKey {
     @Override
     public String getRedisKey(String key) {
         validate(key);
-        return key + RedisKey.SEPARATOR + getSuffix();
+        return RedisKey.DEV_ENV + RedisKey.SEPARATOR + key + RedisKey.SEPARATOR + getSuffix();
     }
 
     @Override
