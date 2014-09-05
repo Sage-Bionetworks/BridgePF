@@ -20,7 +20,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 public interface RedisKey {
 
     /** For name spacing **/
-    public static final String DEV_ENV = BridgeConfigFactory.getConfig().getUser() + "-"
+    public static final String ENV_NAME = BridgeConfigFactory.getConfig().getUser() + "-"
             + BridgeConfigFactory.getConfig().getEnvironment().getEnvName();
 
     /** For internal locking. */
