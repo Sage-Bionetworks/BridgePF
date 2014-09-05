@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.redis;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+
 /**
  * A Redis key concatenates the original key with a list of domains to form a compound key
  * where different parts are separated by ':'.
@@ -17,6 +19,10 @@ package org.sagebionetworks.bridge.redis;
  */
 public interface RedisKey {
 
+    /** For name spacing **/
+    public static final String DEV_ENV = BridgeConfigFactory.getConfig().getUser() + "-"
+            + BridgeConfigFactory.getConfig().getEnvironment().getEnvName();
+
     /** For internal locking. */
     public static final RedisKey LOCK = new SimpleKey("lock");
 
@@ -29,7 +35,7 @@ public interface RedisKey {
     /** Health code lock. */
     public static final RedisKey HEALTH_CODE_LOCK = new CompoundKey((SimpleKey)HEALTH_CODE, (SimpleKey)LOCK);
 
-    static final String SEPARATOR = ":";
+    public static final String SEPARATOR = ":";
 
     /**
      * The suffix that is appended to the original key to obtain the Redis key.
