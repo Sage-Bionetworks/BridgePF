@@ -19,6 +19,7 @@ public class DynamoSurvey implements Survey, DynamoTable {
     private String studyKey;
     private String guid;
     private long versionedOn;
+    private long modifiedOn;
     private Long version;
     private String name;
     private String identifier;
@@ -40,6 +41,7 @@ public class DynamoSurvey implements Survey, DynamoTable {
         setStudyKey(survey.getStudyKey());
         setGuid(survey.getGuid());
         setVersionedOn(survey.getVersionedOn());
+        setModifiedOn(survey.getModifiedOn());
         setVersion(survey.getVersion());
         setName(survey.getName());
         setIdentifier(survey.getIdentifier());
@@ -92,6 +94,17 @@ public class DynamoSurvey implements Survey, DynamoTable {
     public void setVersion(Long version) {
         this.version = version;
     }
+    
+    @Override
+    @DynamoDBAttribute
+    public long getModifiedOn() {
+        return modifiedOn;
+    }
+
+    @Override
+    public void setModifiedOn(long modifiedOn) {
+        this.modifiedOn = modifiedOn;
+    }
 
     @Override
     @DynamoDBAttribute
@@ -139,8 +152,8 @@ public class DynamoSurvey implements Survey, DynamoTable {
 
     @Override
     public String toString() {
-        return "DynamoSurvey [studyKey=" + studyKey + ", guid=" + guid + ", versionedOn=" + versionedOn + ", version="
-                + version + ", name=" + name + ", identifier=" + identifier + ", published=" + published
-                + ", questions=" + questions + "]";
+        return "DynamoSurvey [studyKey=" + studyKey + ", guid=" + guid + ", versionedOn=" + versionedOn
+                + ", modifiedOn=" + modifiedOn + ", version=" + version + ", name=" + name + ", identifier="
+                + identifier + ", published=" + published + ", questions=" + questions + "]";
     }
 }
