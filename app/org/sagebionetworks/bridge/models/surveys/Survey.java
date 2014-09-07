@@ -13,6 +13,9 @@ public interface Survey {
     public long getVersionedOn();
     public void setVersionedOn(long versionedOn);
     
+    public long getModifiedOn();
+    public void setModifiedOn(long modifiedOn);
+    
     public Long getVersion();
     public void setVersion(Long version);
     
