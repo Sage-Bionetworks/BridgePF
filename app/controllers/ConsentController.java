@@ -35,9 +35,8 @@ public class ConsentController extends BaseController {
         ConsentSignature consent = ConsentSignature.fromJson(requestToJSON(request()));
         Study study = studyControllerService.getStudyByHostname(request());
 
-        User user = consentService.consentToResearch(session.getUser(), consent, study, true);
-        user = consentService.resumeDataSharing(user, study);
-
+        User user = consentService.consentToResearch(session.getUser(), consent, study, consent.isSendEmail());
+        
         updateSessionUser(session, user);
         setSessionToken(session.getSessionToken());
 

@@ -59,6 +59,7 @@ function($scope, healthDataService, $humane, dashboardService) {
     $scope.update = function() {
         var payload = healthDataService.updateRecord($scope.recordToEdit, 
                 $scope.bpForm, ['date', 'date'], ['systolic', 'diastolic']);
+        delete payload.type;
         var chartScope = $scope.$parent;
         chartScope.dataset.update(payload);
         healthDataService.update(chartScope.tracker.id, payload).then(function(response) {

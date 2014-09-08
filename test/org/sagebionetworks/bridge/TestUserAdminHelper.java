@@ -25,7 +25,7 @@ public class TestUserAdminHelper {
     BridgeConfig bridgeConfig;
     StudyControllerService studyControllerService;
 
-    private TestUser testUser = new TestUser("tester", "tester@sagebase.org", "P4ssword");
+    private TestUser testUser = new TestUser("tester", "support@sagebase.org", "P4ssword");
     private Study study;
     private UserSession adminSession;
     private UserSession userSession;
@@ -93,7 +93,15 @@ public class TestUserAdminHelper {
     }
 
     public UserSession createUserWithoutConsentOrSignIn(TestUser user) {
+        if (study == null) {
+            study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
+        }
+        if (adminSession == null) {
+            SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
+            adminSession = authService.signIn(study, admin);
+        }
         return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), study, false, false);
+        
     }
 
     public void deleteUser(User user) {
