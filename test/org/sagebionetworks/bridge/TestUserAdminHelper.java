@@ -27,7 +27,7 @@ public class TestUserAdminHelper {
     BridgeConfig bridgeConfig;
     StudyControllerService studyControllerService;
 
-    private TestUser testUser = new TestUser("tester", "tester@sagebase.org", "P4ssword");
+    private TestUser testUser = new TestUser("tester", "support@sagebase.org", "P4ssword");
     private Study study;
     private UserSession adminSession;
     private UserSession userSession;
