@@ -50,6 +50,8 @@ function($scope, healthDataService, $humane, dashboardService) {
         var payload = healthDataService.createPayload($scope.bpForm, ['date', 'date'], ['systolic', 'diastolic'], true);
         var chartScope = $scope.$parent;
         healthDataService.create(chartScope.tracker.id, payload).then(function(response) {
+            console.log("healthdataservice.create success");
+            console.log(response);
             payload.recordId = response.data.items[0].id;
             payload.version = response.data.items[0].version;
             chartScope.dataset.convertOne(payload);
@@ -59,6 +61,7 @@ function($scope, healthDataService, $humane, dashboardService) {
     $scope.update = function() {
         var payload = healthDataService.updateRecord($scope.recordToEdit, 
                 $scope.bpForm, ['date', 'date'], ['systolic', 'diastolic']);
+        delete payload.type;
         var chartScope = $scope.$parent;
         chartScope.dataset.update(payload);
         healthDataService.update(chartScope.tracker.id, payload).then(function(response) {
