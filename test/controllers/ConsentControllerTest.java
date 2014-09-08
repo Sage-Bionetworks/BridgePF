@@ -19,6 +19,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
+import org.sagebionetworks.bridge.models.DateConverter;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -61,6 +62,16 @@ public class ConsentControllerTest {
 
             @Override
             public void testCode() throws Exception {
+                String name = "John Smith";
+                String birthdate = DateConverter.getCurrentISODateTime();
+                boolean sendEmail = false;
+                String consentSignature = "{\"name\":\"" + name + "\",\"birthdate\":\"" + birthdate
+                        + "\",\"sendEmail\":" + sendEmail + "}";
+
+                Response giveConsentSuccess = TestUtils.getURL(helper.getUserSessionToken(), CONSENT_URL)
+                        .post(consentSignature).get(TIMEOUT);
+                assertEquals("Give consent succeeds with 200", giveConsentSuccess.getStatus(), SC_OK);
+
                 // Helper's user is already consented, so consenting again should fail.
                 Response giveConsentFail = TestUtils.getURL(helper.getUserSessionToken(), CONSENT_URL).post("")
                         .get(TIMEOUT);

@@ -6,8 +6,8 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q', function($http
             return $http.get(url);
         },
         getByDateRange: function(trackerId, startDate, endDate) {
-            startDate = startDate.toISOString();
-            endDate = endDate.toISOString();
+            startDate = new Date(startDate).toISOString();
+            endDate = new Date(endDate).toISOString();
             var url = '/api/v1/healthdata/'+trackerId+'?startDate='+startDate+'&endDate='+endDate;
             return $http.get(url);
         },
