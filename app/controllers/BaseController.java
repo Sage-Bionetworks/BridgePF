@@ -8,6 +8,7 @@ import models.StatusMessage;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -37,7 +38,28 @@ public abstract class BaseController extends Controller {
     public void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
+    
+    // TODO: Clean up these session retrieval methods and name them more clearly.
+    
+    /**
+     * Retrieve a user's session or throw an exception if the user is not authenticated. 
+     * User does not have to give consent. 
+     * @return
+     * @throws Exception
+     */
+    protected UserSession getAuthenticatedSession() throws Exception {
+        String sessionToken = getSessionToken();
+        if (sessionToken == null || sessionToken.isEmpty()) {
+            throw new NotAuthenticatedException();
+        }
 
+        UserSession session = authenticationService.getSession(sessionToken);
+        if (session == null || !session.isAuthenticated()) {
+            throw new NotAuthenticatedException();
+        }
+        return session;
+    }
+    
     /**
      * Retrieve user's session using the Bridge-Session header or cookie, throwing an exception if the session doesn't
      * exist (user not authorized) or consent has not been given.

@@ -2,6 +2,9 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 
@@ -11,10 +14,34 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
 
 @DynamoDBTable(tableName = "Survey")
 public class DynamoSurvey implements Survey, DynamoTable {
+    
+    private static final String VERSION = "version";
+    private static final String NAME = "name";
+    private static final String IDENTIFIER = "identifier";
+    private static final String QUESTIONS = "questions";
+    
+    public static final DynamoSurvey fromJson(JsonNode node) {
+        DynamoSurvey survey = new DynamoSurvey();
+        survey.setVersion( JsonUtils.asLong(node, VERSION) );
+        survey.setName( JsonUtils.asText(node, NAME) );
+        survey.setIdentifier( JsonUtils.asText(node, IDENTIFIER) );
+        ArrayNode questionsNode = JsonUtils.asArrayNode(node,  QUESTIONS);
+        if (questionsNode != null) {
+            for (JsonNode questionNode : questionsNode) {
+                SurveyQuestion question = DynamoSurveyQuestion.fromJson(questionNode);
+                survey.getQuestions().add(question);
+            }
+        }
+        return survey;
+    }
 
     private String studyKey;
     private String guid;
@@ -75,11 +102,13 @@ public class DynamoSurvey implements Survey, DynamoTable {
 
     @Override
     @DynamoDBRangeKey
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getVersionedOn() {
         return versionedOn;
     }
 
     @Override
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
     public void setVersionedOn(long versionedOn) {
         this.versionedOn = versionedOn;
     }
@@ -97,11 +126,13 @@ public class DynamoSurvey implements Survey, DynamoTable {
     
     @Override
     @DynamoDBAttribute
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getModifiedOn() {
         return modifiedOn;
     }
 
     @Override
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
     public void setModifiedOn(long modifiedOn) {
         this.modifiedOn = modifiedOn;
     }
@@ -148,6 +179,12 @@ public class DynamoSurvey implements Survey, DynamoTable {
     @Override
     public void setQuestions(List<SurveyQuestion> questions) {
         this.questions = questions;
+    }
+    
+    @Override
+    @DynamoDBIgnore
+    public String getType() {
+        return "Survey";
     }
 
     @Override

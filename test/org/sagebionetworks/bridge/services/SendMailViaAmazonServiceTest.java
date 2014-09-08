@@ -40,7 +40,7 @@ public class SendMailViaAmazonServiceTest {
         service.setEmailClient(emailClient);
         
         consent = new ConsentSignature("Test 2", "1950-05-05");
-        study = new Study("Second Study", "secondstudy", 17, null, null, null, TestConstants.secondStudyConsent);
+        study = new Study("Second Study", "secondstudy", 17, null, null, null, TestConstants.secondStudyConsent, "secondstudy_researcher");
     }
     
     @Test
