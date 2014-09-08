@@ -136,11 +136,6 @@ public class StormPathUserAdminService implements UserAdminService {
         }
         assertAdminUser(caller);
         for (Study study : studyControllerService.getStudies()) {
-            Directory directory = getDirectory(study);
-            Account account = getUserAccountByEmail(directory, "cjspook@clearwire.net");
-            if (account != null) {
-                deleteUserInStudy(caller, new User(account), study);
-            }
             deleteUserInStudy(caller, user, study);
         }
     }

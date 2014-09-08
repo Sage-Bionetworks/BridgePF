@@ -10,6 +10,7 @@ function($http, $window, $q, $location, $humane) {
         initSession: function(session) {
             $http.defaults.headers.common['Bridge-Session'] = session.sessionToken;
             
+            console.log(session);
             this.sessionToken = session.sessionToken;
             this.username = session.username;
             this.consented = session.consented;
