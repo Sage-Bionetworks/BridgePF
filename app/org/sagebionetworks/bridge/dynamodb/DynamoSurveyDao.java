@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.ConcurrentModificationException;
 import org.sagebionetworks.bridge.dao.InvalidSurveyException;
 import org.sagebionetworks.bridge.dao.PublishedSurveyException;
@@ -17,6 +15,7 @@ import org.sagebionetworks.bridge.dao.SurveyAlreadyExistsException;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.dao.SurveyNotFoundException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.DateConverter;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 
@@ -190,7 +189,10 @@ public class DynamoSurveyDao implements SurveyDao {
             throw new InvalidSurveyException(survey);
         }
         survey.setGuid(generateId());
-        survey.setVersionedOn(DateTime.now(DateTimeZone.UTC).getMillis());
+        
+        long time = DateConverter.getCurrentMillisFromEpoch();
+        survey.setVersionedOn(time);
+        survey.setModifiedOn(time);
         
         return saveSurvey(survey);
     }
@@ -200,6 +202,7 @@ public class DynamoSurveyDao implements SurveyDao {
         Survey survey = getSurvey(surveyGuid, versionedOn);
         if (!survey.isPublished()) {
             survey.setPublished(true);
+            survey.setModifiedOn(DateConverter.getCurrentMillisFromEpoch());
             try {
                 surveyMapper.save(survey);
             } catch(ConditionalCheckFailedException e) {
@@ -223,6 +226,7 @@ public class DynamoSurveyDao implements SurveyDao {
         existing.setIdentifier(survey.getIdentifier());
         existing.setName(survey.getName());
         existing.setQuestions(survey.getQuestions());
+        existing.setModifiedOn(DateConverter.getCurrentMillisFromEpoch());
         
         return saveSurvey(survey);
     }
@@ -233,12 +237,9 @@ public class DynamoSurveyDao implements SurveyDao {
         Survey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
         copy.setVersion(null);
-        // It is possible for this to conflict.
-        long time = DateTime.now(DateTimeZone.UTC).getMillis();
-        if (time == versionedOn) {
-            throw new IllegalArgumentException("Versioning too fast");
-        }
+        long time = DateConverter.getCurrentMillisFromEpoch();
         copy.setVersionedOn(time);
+        copy.setModifiedOn(time);
 
         for (SurveyQuestion question : copy.getQuestions()) {
             question.setGuid(null);
@@ -290,6 +291,23 @@ public class DynamoSurveyDao implements SurveyDao {
     }    
 
     @Override
+    public List<Survey> getMostRecentSurveys(String studyKey) {
+        List<Survey> surveys = new QueryBuilder().setStudy(studyKey).getAll(false);
+        if (surveys.isEmpty()) {
+            return surveys;
+        }
+        // Find the most recent. I believe they will all be at the front of the list, FWIW.
+        Map<String, Survey> map = Maps.newLinkedHashMap();
+        for (Survey survey : surveys) {
+            Survey stored = map.get(survey.getGuid());
+            if (stored == null || survey.getVersionedOn() > stored.getVersionedOn()) {
+                map.put(survey.getGuid(), survey);
+            }
+        }
+        return new ArrayList<Survey>(map.values());
+    }
+
+    @Override
     public void deleteSurvey(String surveyGuid, long versionedOn) {
         Survey existing = getSurvey(surveyGuid, versionedOn);
         if (existing.isPublished()) {
@@ -305,6 +323,7 @@ public class DynamoSurveyDao implements SurveyDao {
         // also close out any existing survey response records.
         Survey existing = getSurvey(surveyGuid, versionedOn);
         existing.setPublished(false);
+        existing.setModifiedOn(DateConverter.getCurrentMillisFromEpoch());
         try {
             surveyMapper.save(existing);
         } catch(ConditionalCheckFailedException e) {
@@ -361,10 +380,6 @@ public class DynamoSurveyDao implements SurveyDao {
         QueryResultPage<DynamoSurveyQuestion> page = surveyQuestionMapper.queryPage(DynamoSurveyQuestion.class, query);
 
         surveyQuestionMapper.batchDelete(page.getResults());
-        /*
-        for (DynamoSurveyQuestion question :  page.getResults()) {
-            surveyQuestionMapper.delete(question);
-        }*/
     }
 
     private boolean isNew(Survey survey) {

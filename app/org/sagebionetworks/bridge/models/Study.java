@@ -20,9 +20,15 @@ public class Study {
     private final Resource consentAgreement;
     private List<String> hostnames = Collections.emptyList();
     private List<Tracker> trackers = Collections.emptyList();
+    /**
+     * The name of the role assigned to researchers for this study, who have 
+     * permissions to engage in a wider range of activities vis-a-vis the API
+     * than study participants.
+     */
+    private String researcherRole;
     
     public Study(String name, String key, int minAge, String stormpathDirectoryHref, List<String> hostnames,
-            List<Tracker> trackers, Resource consentAgreement) {
+            List<Tracker> trackers, Resource consentAgreement, String researcherRole) {
         this.name = name;
         this.key = key; 
         this.minAge = minAge;
@@ -34,11 +40,12 @@ public class Study {
         if (trackers != null) {
             this.trackers = Collections.unmodifiableList(trackers);
         }
+        this.researcherRole = researcherRole;
     }
     
     public Study(Study study) {
         this(study.getName(), study.getKey(), study.getMinAge(), study.getStormpathDirectoryHref(), study.getHostnames(), 
-            study.getTrackers(), study.getConsentAgreement());
+            study.getTrackers(), study.getConsentAgreement(), study.getResearcherRole());
     }
     
     public List<String> getHostnames() {
@@ -61,6 +68,9 @@ public class Study {
     }
     public Resource getConsentAgreement() {
         return consentAgreement;
+    }
+    public String getResearcherRole() {
+        return researcherRole;
     }
     public Tracker getTrackerById(Long id) {
         for (Tracker tracker : trackers) {

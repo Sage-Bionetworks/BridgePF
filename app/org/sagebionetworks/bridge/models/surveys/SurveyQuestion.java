@@ -22,4 +22,5 @@ public interface SurveyQuestion {
     public JsonNode getData();
     public void setData(JsonNode data);
     
+    public String getType();
 }

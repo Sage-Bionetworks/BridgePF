@@ -31,4 +31,5 @@ public interface Survey {
     public List<SurveyQuestion> getQuestions();
     public void setQuestions(List<SurveyQuestion> questions);
     
+    public String getType();
 }
