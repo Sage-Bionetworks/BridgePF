@@ -6,7 +6,7 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
 
 import play.libs.Json;
-import play.mvc.*;
+import play.mvc.Result;
 
 @org.springframework.stereotype.Controller
 public class ApplicationController extends BaseController {
