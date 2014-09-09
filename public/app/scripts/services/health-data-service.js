@@ -54,8 +54,8 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q', function($http
             return payload;
         },
         updateRecord: function(record, form, dateFields, fields) {
-            record.startDate = form[dateFields[0]].$modelValue.toISOString();
-            record.endDate = form[dateFields[1]].$modelValue.toISOString();
+            record.startDate = form[dateFields[0]].$modelValue.getTime();
+            record.endDate = form[dateFields[1]].$modelValue.getTime();
             fields.forEach(function(field) {
                 record.data[field] = form[field].$modelValue;
             });
