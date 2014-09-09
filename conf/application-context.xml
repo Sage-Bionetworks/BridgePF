@@ -163,6 +163,15 @@
             </bean>
         </property>
     </bean>
+    
+    <bean id="controllers.SurveyController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.SurveyController" parent="BaseController">
+                <property name="surveyService" ref="surveyService" />
+                <property name="studyControllerService" ref="studyControllerService"/>
+            </bean>
+        </property>
+    </bean>    
 
     <bean id="studyControllerService" class="controllers.StudyControllerService">
         <property name="studies">
@@ -179,7 +188,7 @@
                             <value>bridge-develop.herokuapp.com</value>
                             <value>bridge-uat.herokuapp.com</value>
                             <value>pd-staging.sagebridge.org</value>
-			    <value>pd.sagebridge.org</value>
+			                 <value>pd.sagebridge.org</value>
                         </list>
                     </constructor-arg>
                     <constructor-arg index="5">
@@ -188,7 +197,8 @@
                             <ref bean="med-tracker"/>
                         </list>
                     </constructor-arg>
-                    <constructor-arg index="6" value="file:conf/email-templates/neurod-consent.html"/>                    
+                    <constructor-arg index="6" value="file:conf/email-templates/neurod-consent.html"/>
+                    <constructor-arg index="7" value="neurod_researcher"/>                       
                 </bean>
             </list>
         </property>
@@ -285,4 +295,8 @@
         <property name="stormpathClient" ref="stormpathClient"/>
         <property name="userLockDao" ref="userLockDao"/>
     </bean>
+    
+    <bean id="surveyService" class="org.sagebionetworks.bridge.services.SurveyServiceImpl">
+        <property name="surveyDao" ref="surveyDao"/>
+    </bean>    
 </beans>

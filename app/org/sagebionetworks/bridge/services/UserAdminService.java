@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import java.util.List;
+
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
@@ -17,6 +19,8 @@ public interface UserAdminService {
      *            Admin user making service call
      * @param signUp
      *            sign up information for the target user
+     * @param roles
+     *            the names of any roles that should be assigned to the user
      * @param userStudy
      *            the study of the target user
      * @param signUserIn
@@ -28,8 +32,8 @@ public interface UserAdminService {
      * 
      * @throws BridgeServiceException
      */
-    public UserSession createUser(User caller, SignUp signUp, Study userStudy, boolean signUserIn, boolean consentUser)
-            throws BridgeServiceException;
+    public UserSession createUser(User caller, SignUp signUp, List<String> roles, Study userStudy, boolean signUserIn,
+            boolean consentUser) throws BridgeServiceException;
 
     // TODO: Do not expose this. Instead do it when deleting a user.
     /**

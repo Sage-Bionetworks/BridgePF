@@ -25,6 +25,13 @@ public interface SurveyDao {
      */
     public List<Survey> getMostRecentlyPublishedSurveys(String studyKey);
     
+    /**
+     * Get the most recent version of each survey in the study, whether 
+     * published or not.
+     * @param studyKey
+     * @return
+     */
+    public List<Survey> getMostRecentSurveys(String studyKey);    
     
     public List<Survey> getSurveyVersions(String surveyGuid);
     
