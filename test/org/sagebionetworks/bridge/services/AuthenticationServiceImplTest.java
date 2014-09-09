@@ -123,7 +123,7 @@ public class AuthenticationServiceImplTest {
         try {
             // Create a user who has not consented.
             TestUser user = new TestUser("authTestUser", "authTestUser@sagebridge.org", "P4ssword");
-            helper.createUserWithoutConsentOrSignIn(user);
+            helper.createUser(user, null, false, false);
             authService.signIn(helper.getStudy(), user.getSignIn());
             fail("Should have thrown consent exception");
         } catch(ConsentRequiredException e) {

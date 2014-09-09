@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import java.util.List;
+
 import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.models.SignIn;
@@ -47,17 +49,29 @@ public class TestUserAdminHelper {
     }
 
     public void createOneUser() {
+        createOneUser(null);
+    }
+
+    public void createOneUser(List<String> roles) {
         study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
         SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         adminSession = authService.signIn(study, admin);
 
-        userSession = userAdminService.createUser(adminSession.getUser(), testUser.getSignUp(), study, true, true);
+        userSession = userAdminService.createUser(adminSession.getUser(), testUser.getSignUp(), roles, study, true, true);
     }
-
+    
     public void deleteOneUser() {
         userAdminService.deleteUser(adminSession.getUser(), userSession.getUser());
 
         authService.signOut(adminSession.getSessionToken());
+    }
+
+    public UserSession createUser(TestUser user, List<String> roles, boolean signIn, boolean consent) {
+        return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), roles, study, signIn, consent);
+    }
+
+    public void deleteUser(User user) {
+        userAdminService.deleteUser(adminSession.getUser(), user);
     }
 
     public Study getStudy() {
@@ -90,21 +104,5 @@ public class TestUserAdminHelper {
 
     public TestUser getTestUser() {
         return testUser;
-    }
-
-    public UserSession createUserWithoutConsentOrSignIn(TestUser user) {
-        if (study == null) {
-            study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
-        }
-        if (adminSession == null) {
-            SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
-            adminSession = authService.signIn(study, admin);
-        }
-        return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), study, false, false);
-        
-    }
-
-    public void deleteUser(User user) {
-        userAdminService.deleteUser(adminSession.getUser(), user);
     }
 }

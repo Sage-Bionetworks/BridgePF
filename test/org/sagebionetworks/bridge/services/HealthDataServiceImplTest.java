@@ -157,7 +157,7 @@ public class HealthDataServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void getAllHealthDataErrorBadKeyNoStudy() throws Exception {
-        Study badStudy = new Study("", null, -12, null, null, null, null);
+        Study badStudy = new Study("", null, -12, null, null, null, null, null);
         HealthDataKey key = new HealthDataKey(badStudy, tracker, user);
         service.getAllHealthData(key);
     }
@@ -195,7 +195,7 @@ public class HealthDataServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void getHealthDataRecordBadKey() throws Exception {
-        Study badStudy = new Study("", "", 0, null, null, null, null);
+        Study badStudy = new Study("", "", 0, null, null, null, null, null);
         tracker.setId(0L);
         HealthDataKey key = new HealthDataKey(badStudy, tracker, null);
         service.getHealthDataRecord(key, "belgium");
