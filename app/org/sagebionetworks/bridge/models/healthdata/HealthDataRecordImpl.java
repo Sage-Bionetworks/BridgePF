@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models.healthdata;
 
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
-import org.sagebionetworks.bridge.models.DateConverter;
+import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -10,11 +10,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 public class HealthDataRecordImpl implements HealthDataRecord {
 
-    private static final String RECORD_ID = "recordId";
-    private static final String START_DATE = "startDate";
-    private static final String END_DATE = "endDate";
-    private static final String VERSION = "version";
-    private static final String DATA = "data";
+    private static final String RECORD_ID_FIELD = "recordId";
+    private static final String START_DATE_FIELD = "startDate";
+    private static final String END_DATE_FIELD = "endDate";
+    private static final String VERSION_FIELD = "version";
+    private static final String DATA_FIELD = "data";
 
     protected String recordId;
     protected long startDate;
@@ -34,29 +34,11 @@ public class HealthDataRecordImpl implements HealthDataRecord {
     }
 
     public static final HealthDataRecordImpl fromJson(JsonNode node) {
-        String recordId = null;
-        long startDate = 0L;
-        long endDate = 0L;
-        long version = 0L;
-        JsonNode data = null;
-
-        if (node != null) {
-            if (node.get(RECORD_ID) != null) {
-                recordId = node.get(RECORD_ID).asText();
-            }
-            if (node.get(START_DATE) != null) {
-                startDate = DateConverter.convertMillisFromEpoch(node.get(START_DATE).asText());
-            }
-            if (node.get(END_DATE) != null) {
-                endDate = DateConverter.convertMillisFromEpoch(node.get(END_DATE).asText());
-            }
-            if (node.get(VERSION) != null) {
-                version = node.get(VERSION).asLong();
-            }
-            if (node.get(DATA) != null) {
-                data = node.get(DATA);
-            }
-        }
+        String recordId = JsonUtils.asText(node, RECORD_ID_FIELD);
+        long version = JsonUtils.asLongPrimitive(node, VERSION_FIELD);
+        long startDate = JsonUtils.asMillisSinceEpoch(node, START_DATE_FIELD);
+        long endDate = JsonUtils.asMillisSinceEpoch(node, END_DATE_FIELD);
+        JsonNode data = JsonUtils.asJsonNode(node, DATA_FIELD);
         return new HealthDataRecordImpl(recordId, startDate, endDate, version, data);
     }
     

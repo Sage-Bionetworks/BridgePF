@@ -8,10 +8,12 @@ import models.StatusMessage;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.StudyService;
 
 import play.libs.Json;
 import play.mvc.Controller;
@@ -29,7 +31,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public abstract class BaseController extends Controller {
 
     protected AuthenticationService authenticationService;
+    protected StudyService studyService;
     protected CacheProvider cacheProvider;
+    
+    public void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
 
     public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
@@ -47,7 +54,7 @@ public abstract class BaseController extends Controller {
      * @return
      * @throws Exception
      */
-    protected UserSession getAuthenticatedSession() throws Exception {
+    protected UserSession getAuthenticatedSession() throws BridgeServiceException {
         String sessionToken = getSessionToken();
         if (sessionToken == null || sessionToken.isEmpty()) {
             throw new NotAuthenticatedException();
@@ -67,17 +74,17 @@ public abstract class BaseController extends Controller {
      * @return
      * @throws Exception
      */
-    protected UserSession getSession() throws Exception {
+    protected UserSession getAuthenticatedAndConsentedSession() throws BridgeServiceException {
         String sessionToken = getSessionToken();
         if (sessionToken == null || sessionToken.isEmpty()) {
-            throw new BridgeServiceException("Not signed in.", 401);
+            throw new NotAuthenticatedException();
         }
 
         UserSession session = authenticationService.getSession(sessionToken);
         if (session == null || !session.isAuthenticated()) {
-            throw new BridgeServiceException("Not signed in.", 401);
+            throw new NotAuthenticatedException();
         } else if (!session.getUser().isConsent()) {
-            throw new BridgeServiceException("Must consent to research study.", 412);
+            throw new ConsentRequiredException(session);
         }
         return session;
     }
@@ -88,7 +95,7 @@ public abstract class BaseController extends Controller {
      * 
      * @return
      */
-    protected UserSession checkForSession() {
+    protected UserSession getSessionIfItExists() {
         String sessionToken = getSessionToken();
         return authenticationService.getSession(sessionToken);
     }
@@ -103,6 +110,14 @@ public abstract class BaseController extends Controller {
         cacheProvider.setUserSession(session.getSessionToken(), session);
     }
 
+    protected String getHostname() {
+        String host = request().host();
+        if (host.indexOf(":") > -1) {
+            host = host.split(":")[0];
+        }
+        return host;
+    }
+    
     private String getSessionToken() {
         Cookie sessionCookie = request().cookie(BridgeConstants.SESSION_TOKEN_HEADER);
         if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {

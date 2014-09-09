@@ -16,7 +16,7 @@ public class TestUtils {
             try {
                 testCode();
             } catch (Exception e) {
-                // Need to rethrow this (rather than logging, etc) or there's not enough information
+                // there is no fail(e);
                 throw new RuntimeException(e);
             }
         }

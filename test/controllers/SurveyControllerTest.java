@@ -33,8 +33,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -49,8 +48,6 @@ import com.google.common.collect.Lists;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class SurveyControllerTest {
-    
-    private static Logger logger = LoggerFactory.getLogger(SurveyControllerTest.class);
 
     @Resource
     TestUserAdminHelper helper;
@@ -59,7 +56,7 @@ public class SurveyControllerTest {
     DynamoSurveyDao surveyDao;
     
     @Resource
-    StudyControllerService studyControllerSerivce;
+    StudyServiceImpl studyService;
     
     private ObjectMapper mapper = new ObjectMapper();
     private Study study;
@@ -67,7 +64,7 @@ public class SurveyControllerTest {
 
     @Before
     public void before() {
-        study = studyControllerSerivce.getStudyByHostname("localhost");
+        study = studyService.getStudyByHostname("localhost");
         roles = Lists.newArrayList(study.getKey()+"_researcher");
         List<Survey> surveys = surveyDao.getSurveys(study.getKey());
         for (Survey survey : surveys) {
@@ -229,7 +226,10 @@ public class SurveyControllerTest {
                     GuidVersionHolder keys = createSurvey("Name");
                     JsonNode node = getSurvey(keys);
                     
-                    logger.info(node.toString());
+                    //node.put("name", "Name Changed");
+                    //keys = updateSurvey(survey);
+                    
+                    
                 } finally {
                     helper.deleteOneUser();    
                 }

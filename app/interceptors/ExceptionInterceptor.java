@@ -33,7 +33,8 @@ public class ExceptionInterceptor implements MethodInterceptor {
             }
 
             // Don't log errors here. Log at the source with a level of detail that's useful for 
-            // developers, at the correct level of severity.
+            // developers, at the correct level of severity. However, I don't see this in the logs 
+            // at all when developing.
             Logger.debug(throwable.getMessage(), throwable);
             
             int status = 500;

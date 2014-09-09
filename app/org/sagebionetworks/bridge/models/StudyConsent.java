@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
 
-public interface StudyConsent {
+public interface StudyConsent extends BridgeEntity {
 
     /**
      * The study associated with this consent.
