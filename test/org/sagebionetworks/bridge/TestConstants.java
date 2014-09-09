@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge;
 
 import org.openqa.selenium.firefox.FirefoxDriver;
+
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
@@ -16,8 +18,9 @@ public class TestConstants {
         private final String password;
         
         public TestUser(String username, String email, String password) {
-            this.username = username;
-            this.email = email;
+            String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
+            this.username = prefix + username;
+            this.email = prefix + email;
             this.password = password;
         }
         public SignUp getSignUp() {
@@ -26,7 +29,7 @@ public class TestConstants {
         public SignIn getSignIn() {
             return new SignIn(username, password);
         }
-       public String getUsername() {
+        public String getUsername() {
             return username;
         }
         public String getEmail() {
@@ -37,11 +40,11 @@ public class TestConstants {
         }
     }
 
-    public static final Study STUDY = new Study("Neuro-Degenerative Diseases Study", "neurod", 17, null, null, null, null);
+    public static final Study STUDY = new Study("Neuro-Degenerative Diseases Study", "neurod", 17, null, null, null, null, "neurod_researcher");
     
     public static final Resource secondStudyConsent = new FileSystemResource("test/conf/secondstudy-consent.html");
     public static final Study SECOND_STUDY = new Study("Second Study", "secondstudy", 17,
-            "https://api.stormpath.com/v1/directories/5RfWcEwOK0l7goGe4ZX9cz", null, null, secondStudyConsent);
+            "https://api.stormpath.com/v1/directories/5RfWcEwOK0l7goGe4ZX9cz", null, null, secondStudyConsent, "secondstudy_researcher");
     
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";
@@ -62,6 +65,14 @@ public class TestConstants {
     public static final String CONSENT_URL = API_URL + "/users/consent";
     public static final String SUSPEND_URL = CONSENT_URL + "/dataSharing/suspend";
     public static final String RESUME_URL = CONSENT_URL + "/dataSharing/resume";
+    
+    public static final String SURVEYS_URL = API_URL + "/researchers/surveys";
+    public static final String GET_SURVEY_URL = API_URL + "/researchers/surveys/%s/%s";
+    public static final String GET_VERSIONS_OF_SURVEY_URL = API_URL + "/researchers/surveys/%s/versions";
+    public static final String VERSION_SURVEY_URL = GET_SURVEY_URL + "/version";
+    public static final String PUBLISH_SURVEY_URL = GET_SURVEY_URL + "/publish";
+    public static final String RECENT_SURVEYS_URL = API_URL + "/researchers/surveys/recent";
+    public static final String RECENT_PUBLISHED_SURVEYS_URL = API_URL + "/researchers/surveys/published";
     
     public static final String APPLICATION_JSON = "application/json";
     public static final String USERNAME = "username";
