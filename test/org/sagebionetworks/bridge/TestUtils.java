@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge;
 
-import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.*;
 
 import java.util.Map;
@@ -17,8 +16,8 @@ public class TestUtils {
             try {
                 testCode();
             } catch (Exception e) {
-                e.printStackTrace();
-                fail(e.getMessage());
+                // Need to rethrow this (rather than logging, etc) or there's not enough information
+                throw new RuntimeException(e);
             }
         }
     }

@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -11,6 +13,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 @DynamoDBTable(tableName = "SurveyQuestion")
 public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
+    
+    private static final String IDENTIFIER_FIELD = "identifier";
+    private static final String GUID_FIELD = "guid";
+    private static final String DATA_FIELD = "data";
+    
+    public static SurveyQuestion fromJson(JsonNode node) {
+        SurveyQuestion question = new DynamoSurveyQuestion();
+        question.setIdentifier( JsonUtils.asText(node, IDENTIFIER_FIELD) );
+        question.setGuid( JsonUtils.asText(node, GUID_FIELD) );
+        question.setData( JsonUtils.asJsonNode(node, DATA_FIELD) );
+        return question;
+    }
 
     private String surveyCompoundKey;
     private String guid;
@@ -90,6 +104,12 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     @Override
     public void setData(JsonNode data) {
         this.data = data;
+    }
+    
+    @Override
+    @DynamoDBIgnore
+    public String getType() {
+        return "SurveyQuestion";
     }
 
     @Override

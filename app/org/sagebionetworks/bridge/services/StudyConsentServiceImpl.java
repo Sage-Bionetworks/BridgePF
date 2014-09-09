@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.apache.commons.httpclient.HttpStatus.SC_BAD_REQUEST;
-import static org.apache.commons.httpclient.HttpStatus.SC_FORBIDDEN;
 
 import java.util.List;
 

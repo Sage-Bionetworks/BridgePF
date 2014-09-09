@@ -24,6 +24,8 @@ import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
+import com.stormpath.sdk.group.Group;
+import com.stormpath.sdk.group.GroupList;
 
 import controllers.StudyControllerService;
 
@@ -61,8 +63,8 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
-    public UserSession createUser(User adminUser, SignUp signUp, Study userStudy, boolean signUserIn, boolean consentUser)
-            throws BridgeServiceException {
+    public UserSession createUser(User adminUser, SignUp signUp, List<String> roles, Study userStudy,
+            boolean signUserIn, boolean consentUser) throws BridgeServiceException {
         if (adminUser == null) {
             throw new BridgeServiceException("Calling admin user cannot be null", 400);
         } else if (signUp == null) {
@@ -88,6 +90,7 @@ public class StormPathUserAdminService implements UserAdminService {
                 account.setUsername(signUp.getUsername());
                 account.setPassword(signUp.getPassword());
                 directory.createAccount(account, false); // suppress email message
+                addAccountToGroups(directory, account, roles);
             }
         } catch (Throwable t) {
             throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -137,6 +140,17 @@ public class StormPathUserAdminService implements UserAdminService {
         assertAdminUser(caller);
         for (Study study : studyControllerService.getStudies()) {
             deleteUserInStudy(caller, user, study);
+        }
+    }
+    
+    private void addAccountToGroups(Directory directory, Account account, List<String> roles) {
+        if (roles != null) {
+            GroupList groups = directory.getGroups();
+            for (Group group : groups) {
+                if (roles.contains(group.getName())) {
+                    account.addGroup(group);
+                }
+            }
         }
     }
 

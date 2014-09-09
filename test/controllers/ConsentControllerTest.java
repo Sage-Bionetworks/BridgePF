@@ -10,6 +10,8 @@ import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
+import java.util.Arrays;
+
 import javax.annotation.Resource;
 
 import org.junit.After;
@@ -43,7 +45,8 @@ public class ConsentControllerTest {
 
     @Before
     public void before() {
-        session = helper.createUserWithoutConsent(helper.getTestUser());
+        String[] roles = { "user" };
+        session = helper.createUserWithoutConsent(helper.getTestUser(), Arrays.asList(roles));
 
         // TODO need to remove the study consent dao - ideally this information is already there, and we don't need to
         // create it.
