@@ -8,13 +8,13 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.dao.ConcurrentModificationException;
-import org.sagebionetworks.bridge.dao.InvalidSurveyException;
 import org.sagebionetworks.bridge.dao.PublishedSurveyException;
-import org.sagebionetworks.bridge.dao.SurveyAlreadyExistsException;
 import org.sagebionetworks.bridge.dao.SurveyDao;
-import org.sagebionetworks.bridge.dao.SurveyNotFoundException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.DateConverter;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
@@ -74,7 +74,7 @@ public class DynamoSurveyDao implements SurveyDao {
                 dynamoSurveys = query();
             }
             if (exceptionIfEmpty && dynamoSurveys.size() == 0) {
-                throw new SurveyNotFoundException(new DynamoSurvey(surveyGuid, versionedOn));
+                throw new EntityNotFoundException(DynamoSurvey.class);
             }
             List<Survey> surveys = Lists.newArrayListWithCapacity(dynamoSurveys.size());
             for (DynamoSurvey s : dynamoSurveys) {
@@ -184,9 +184,9 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey createSurvey(Survey survey) {
         if (!isNew(survey)) {
-            throw new SurveyAlreadyExistsException(survey);
+            throw new EntityAlreadyExistsException(survey);
         } else if (!isValid(survey)) {
-            throw new InvalidSurveyException(survey);
+            throw new InvalidEntityException(survey);
         }
         survey.setGuid(generateId());
         
@@ -215,9 +215,9 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey updateSurvey(Survey survey) {
         if (isNew(survey)) {
-            throw new SurveyNotFoundException(survey);
+            throw new EntityNotFoundException(Survey.class);
         } else if (!isValid(survey)) {
-            throw new InvalidSurveyException(survey);
+            throw new InvalidEntityException(survey);
         }
         Survey existing = getSurvey(survey.getGuid(), survey.getVersionedOn());
         if (existing.isPublished()) {

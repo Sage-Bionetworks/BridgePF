@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models;
 
 import org.springframework.core.io.Resource;
 
-public class Tracker {
+public class Tracker implements BridgeEntity {
 
     private String name;
     private String type;

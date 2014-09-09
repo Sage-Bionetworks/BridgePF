@@ -13,8 +13,8 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
@@ -66,7 +66,7 @@ public class AuthenticationServiceImplTest {
         authService.signIn(helper.getStudy(), new SignIn("foo", null));
     }
 
-    @Test(expected = BridgeNotFoundException.class)
+    @Test(expected = EntityNotFoundException.class)
     public void signInInvalidCredentials() throws Exception {
         authService.signIn(helper.getStudy(), new SignIn("foo", "bar"));
     }

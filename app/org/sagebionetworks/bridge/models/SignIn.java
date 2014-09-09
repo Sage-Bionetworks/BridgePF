@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -18,14 +19,8 @@ public final class SignIn {
     }
     
     public static final SignIn fromJson(JsonNode node) {
-        String username = null;
-        String password = null;
-        if (node != null && node.get(USERNAME_FIELD) != null) {
-            username = node.get(USERNAME_FIELD).asText();
-        }
-        if (node != null && node.get(PASSWORD_FIELD) != null) {
-            password = node.get(PASSWORD_FIELD).asText();
-        }
+        String username = JsonUtils.asText(node, USERNAME_FIELD);
+        String password = JsonUtils.asText(node, PASSWORD_FIELD);
         return new SignIn(username, password);
     }
 

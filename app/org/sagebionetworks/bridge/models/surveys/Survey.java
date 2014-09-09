@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.List;
 
-public interface Survey {
+import org.sagebionetworks.bridge.models.BridgeEntity;
+
+public interface Survey extends BridgeEntity {
 
     public String getStudyKey();
     public void setStudyKey(String studyKey);

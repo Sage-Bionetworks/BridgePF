@@ -20,19 +20,13 @@ public class SurveyController extends BaseController {
 
     private SurveyService surveyService;
     
-    private StudyControllerService studyControllerService;
-    
     public void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
     }
     
-    public void setStudyControllerService(StudyControllerService studyControllerService) {
-        this.studyControllerService = studyControllerService;
-    }
-    
     public Result getAllSurveysAllVersions() throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
         
         List<Survey> surveys = surveyService.getSurveys(study);
@@ -41,7 +35,7 @@ public class SurveyController extends BaseController {
     
     public Result getMostRecentSurveys() throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
 
         List<Survey> surveys = surveyService.getMostRecentSurveys(study);
@@ -50,7 +44,7 @@ public class SurveyController extends BaseController {
     
     public Result getMostRecentlyPublishedSurveys() throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
 
         List<Survey> surveys = surveyService.getMostRecentlyPublishedSurveys(study);
@@ -68,7 +62,7 @@ public class SurveyController extends BaseController {
     
     public Result getAllVersionsOfASurvey(String surveyGuid) throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
         
         List<Survey> surveys = surveyService.getAllVersionsOfSurvey(surveyGuid);
@@ -77,7 +71,7 @@ public class SurveyController extends BaseController {
     
     public Result createSurvey() throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
         
         Survey survey = DynamoSurvey.fromJson(requestToJSON(request()));
@@ -89,7 +83,7 @@ public class SurveyController extends BaseController {
     
     public Result versionSurvey(String surveyGuid, String versionString) throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
         long surveyVersion = DateConverter.convertMillisFromEpoch(versionString);
 
@@ -99,7 +93,7 @@ public class SurveyController extends BaseController {
     
     public Result updateSurvey(String surveyGuid, String versionString) throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
         
         // The parameters in the URL take precedence over anything declared in 
@@ -116,7 +110,7 @@ public class SurveyController extends BaseController {
     
     public Result publishSurvey(String surveyGuid, String versionString) throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
         
         long surveyVersion = DateConverter.convertMillisFromEpoch(versionString);
@@ -126,7 +120,7 @@ public class SurveyController extends BaseController {
     
     public Result closeSurvey(String surveyGuid, String versionString) throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
         
         long surveyVersion = DateConverter.convertMillisFromEpoch(versionString);
