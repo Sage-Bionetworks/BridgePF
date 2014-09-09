@@ -103,6 +103,17 @@ public class TestUserAdminHelper {
         return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), study, false, false);
         
     }
+    
+    public UserSession createUserWithoutConsent(TestUser user) {
+        if (study == null) {
+            study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
+        }
+        if (adminSession == null) {
+            SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
+            adminSession = authService.signIn(study, admin);
+        }
+        return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), study, true, false);
+    }
 
     public void deleteUser(User user) {
         userAdminService.deleteUser(adminSession.getUser(), user);

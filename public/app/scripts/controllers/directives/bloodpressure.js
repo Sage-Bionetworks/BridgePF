@@ -1,4 +1,4 @@
-bridge.controller('BloodPressureController', ['$scope', 'healthDataService', '$humane', 'dashboardService',   
+bridge.controller('BloodPressureController', ['$scope', 'healthDataService', '$humane', 'dashboardService',  
 function($scope, healthDataService, $humane, dashboardService) {
     
     if ($scope.recordToEdit) {
@@ -15,7 +15,6 @@ function($scope, healthDataService, $humane, dashboardService) {
     $scope.setFormReference = function(bpForm) { $scope.bpForm = bpForm; };
     
     // somehow, this gets set as the default in the calendar control, go figure
-     
     $scope.opened = false;
     $scope.format = 'MM/dd/yyyy';
 
@@ -29,12 +28,11 @@ function($scope, healthDataService, $humane, dashboardService) {
     $scope.disabled = function(date, mode) {
         return date.getTime() > new Date().getTime();
     };
-    $scope.open = function() {
-        setTimeout(function() {
-            $scope.$apply(function() {
-                $scope.opened = true;    
-            });
-        }, 1);
+    $scope.open = function($event) {
+        $event.preventDefault();
+        $event.stopPropagation();
+
+        $scope.opened = true;
     };
     $scope.canSave = function() {
         // Have to test for presence of form because it's not immediately available,
@@ -52,6 +50,8 @@ function($scope, healthDataService, $humane, dashboardService) {
         healthDataService.create(chartScope.tracker.id, payload).then(function(response) {
             payload.recordId = response.data.items[0].id;
             payload.version = response.data.items[0].version;
+            payload.startDate = new Date(payload.startDate).getTime();
+            payload.endDate = new Date(payload.endDate).getTime();
             chartScope.dataset.convertOne(payload);
         }, $humane.status);
         $scope.cancel();
@@ -62,12 +62,15 @@ function($scope, healthDataService, $humane, dashboardService) {
         delete payload.type;
         var chartScope = $scope.$parent;
         chartScope.dataset.update(payload);
+
+        payload.startDate = new Date(payload.startDate).toISOString();
+        payload.endDate = new Date(payload.endDate).toISOString();
         healthDataService.update(chartScope.tracker.id, payload).then(function(response) {
             $scope.recordToEdit.version = response.data.version;
         }, $humane.status);
         $scope.cancel();
     };
-    $scope.cancel = function () {
+    $scope.cancel = function() {
         $scope.modalInstance.dismiss('cancel');
     };
     

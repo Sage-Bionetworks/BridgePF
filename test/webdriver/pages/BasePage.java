@@ -9,9 +9,9 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-import com.google.common.base.Predicate;
-
 import play.test.TestBrowser;
+
+import com.google.common.base.Predicate;
 
 public class BasePage {
 
