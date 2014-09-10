@@ -34,6 +34,6 @@ describe('ModalService', function() {
         var instance = modalService.openModal(controller, size, url);
 
         expect(instance).toBeDefined();
-    })
+    });
 
 });
