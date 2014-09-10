@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models.surveys;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.List;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public interface SurveyQuestion {
     
@@ -18,9 +20,18 @@ public interface SurveyQuestion {
     public int getOrder();
     public void setOrder(int order);
     
-    // type, prompt, minValue, maxValue, options, etc.
-    public JsonNode getData();
-    public void setData(JsonNode data);
-    
-    public String getType();
+    // When we're done, will we even need this? I don't think so... only in the dynamo implementation.
+    public ObjectNode getData();
+    public void setData(ObjectNode data);
+
+    // prompt, declined, uihint
+    public String getPrompt();
+    public boolean getDeclined();
+    public List<String> getUiHints();
+
+    // minValue, maxValue, enumerated options, etc. These would
+    // vary by the data type.
+    public Constraints getConstraints();
+
+    public String getType(); // Not the name of the class, e.g. "SurveyQuestion". The data type of the question.
 }
