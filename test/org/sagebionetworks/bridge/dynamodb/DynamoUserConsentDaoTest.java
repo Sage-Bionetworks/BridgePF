@@ -11,8 +11,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.dao.ConsentAlreadyExistsException;
-import org.sagebionetworks.bridge.dao.ConsentNotFoundException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -65,12 +65,12 @@ public class DynamoUserConsentDaoTest {
         // Cannot give consent again if already consented
         try {
             userConsentDao.giveConsent(healthCode, consent, consentSignature);
-        } catch (ConsentAlreadyExistsException e) {
+        } catch (EntityAlreadyExistsException e) {
             assertTrue(true); // Expected
         }
         try {
             userConsentDao.giveConsentNew(healthCode, consent, consentSignature);
-        } catch (ConsentAlreadyExistsException e) {
+        } catch (EntityAlreadyExistsException e) {
             assertTrue(true); // Expected
         }
 
@@ -105,7 +105,7 @@ public class DynamoUserConsentDaoTest {
         assertFalse(userConsentDao.isSharingData(healthCode, consent));
         try {
             userConsentDao.getConsentSignature(healthCode, consent);
-        } catch (ConsentNotFoundException e) {
+        } catch (EntityNotFoundException e) {
             assertTrue(true); // Expected
         }
 
@@ -113,12 +113,12 @@ public class DynamoUserConsentDaoTest {
         assertFalse(userConsentDao.isSharingData(healthCode, consent));
         try {
             userConsentDao.resumeSharing(healthCode, consent);
-        } catch (ConsentNotFoundException e) {
+        } catch (EntityNotFoundException e) {
             assertTrue(true); // Expected
         }
         try {
             userConsentDao.suspendSharing(healthCode, consent);
-        } catch (ConsentNotFoundException e) {
+        } catch (EntityNotFoundException e) {
             assertTrue(true); // Expected
         }
 

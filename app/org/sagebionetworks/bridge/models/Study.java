@@ -3,10 +3,10 @@ package org.sagebionetworks.bridge.models;
 import java.util.Collections;
 import java.util.List;
 
-import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.springframework.core.io.Resource;
 
-public class Study {
+public class Study implements BridgeEntity {
 
     private final String name;
     private final String key;
@@ -78,6 +78,7 @@ public class Study {
                 return tracker;
             }
         }
-        throw new BridgeNotFoundException(String.format("Tracker %s not available for study '%s'", id.toString(), key));
+        String message = String.format("Tracker %s not available for study '%s'", id.toString(), key);
+        throw new EntityNotFoundException(Tracker.class, message);
     }
 }
