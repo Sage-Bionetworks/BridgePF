@@ -101,7 +101,6 @@ public class ConsentControllerTest {
                 String[] roles = { "user" };
                 UserSession session = helper.createUserWithoutConsent(helper.getTestUser(), Arrays.asList(roles));
                 
-                // User is not consented, so we need to give consent.
                 Response giveConsentSuccess = TestUtils.getURL(session.getSessionToken(), CONSENT_URL)
                                                 .post(consentSignature)
                                                 .get(TIMEOUT);
