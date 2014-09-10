@@ -1,4 +1,4 @@
-package controllers;
+package org.sagebionetworks.bridge.services;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -7,11 +7,9 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.models.Study;
 
-import play.mvc.Http.Request;
-
 import com.google.common.collect.Maps;
 
-public class StudyControllerService {
+public class StudyServiceImpl implements StudyService {
 
     private Map<String,Study> studies = Maps.newHashMap();
 
@@ -27,22 +25,8 @@ public class StudyControllerService {
         return studies.get(hostname);
     }
     
-    public Study getStudyByHostname(Request request) {
-        String hostname = getHostname(request);
-        return studies.get(hostname);
-    }
-    
     public Collection<Study> getStudies() {
         return Collections.unmodifiableCollection(studies.values());
-    }
-
-    public String getHostname(Request request) {
-        // InetAddress.getLocalHost().getHostName() ?
-        String host = request.host();
-        if (host.indexOf(":") > -1) {
-            host = host.split(":")[0];
-        }
-        return host;
     }
 
 }

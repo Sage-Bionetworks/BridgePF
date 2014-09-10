@@ -8,7 +8,7 @@ import com.google.common.collect.Sets;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.group.Group;
 
-public class User {
+public class User implements BridgeEntity {
 
     private String id;
     private String username;

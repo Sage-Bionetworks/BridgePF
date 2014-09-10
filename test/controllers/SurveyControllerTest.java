@@ -33,8 +33,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -49,8 +48,6 @@ import com.google.common.collect.Lists;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class SurveyControllerTest {
-    
-    private static Logger logger = LoggerFactory.getLogger(SurveyControllerTest.class);
 
     @Resource
     TestUserAdminHelper helper;
@@ -59,7 +56,7 @@ public class SurveyControllerTest {
     DynamoSurveyDao surveyDao;
     
     @Resource
-    StudyControllerService studyControllerSerivce;
+    StudyServiceImpl studyService;
     
     private ObjectMapper mapper = new ObjectMapper();
     private Study study;
@@ -67,7 +64,7 @@ public class SurveyControllerTest {
 
     @Before
     public void before() {
-        study = studyControllerSerivce.getStudyByHostname("localhost");
+        study = studyService.getStudyByHostname("localhost");
         roles = Lists.newArrayList(study.getKey()+"_researcher");
         List<Survey> surveys = surveyDao.getSurveys(study.getKey());
         for (Survey survey : surveys) {
@@ -227,9 +224,14 @@ public class SurveyControllerTest {
                     helper.createOneUser(roles);
                     
                     GuidVersionHolder keys = createSurvey("Name");
-                    JsonNode node = getSurvey(keys);
+                    ObjectNode node = (ObjectNode)getSurvey(keys);
+                    node.put("name", "Name Changed");
                     
-                    logger.info(node.toString());
+                    updateSurvey(keys, node);
+                    
+                    node = (ObjectNode)getSurvey(keys);
+                    String finalName = node.get("name").asText();
+                    assertEquals("Name has been updated", "Name Changed", finalName);
                 } finally {
                     helper.deleteOneUser();    
                 }
@@ -249,6 +251,13 @@ public class SurveyControllerTest {
         public String toString() {
             return "GuidVersionHolder [guid=" + guid + ", versionedOn=" + versionedOn + "]";
         }
+    }
+    
+    private void updateSurvey(GuidVersionHolder keys, JsonNode survey) throws Exception {
+        String content = survey.toString();
+        String url = String.format(GET_SURVEY_URL, keys.guid, keys.versionedOn);
+        Response response = TestUtils.getURL(helper.getUserSessionToken(), url).post(content).get(TIMEOUT);
+        assertEquals("200 response [createSurvey]", SC_OK, response.getStatus());
     }
     
     private GuidVersionHolder createSurvey(String name) throws Exception {
