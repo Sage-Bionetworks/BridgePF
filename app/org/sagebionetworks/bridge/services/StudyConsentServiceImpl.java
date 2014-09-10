@@ -4,8 +4,11 @@ import static org.apache.commons.httpclient.HttpStatus.SC_BAD_REQUEST;
 
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.StudyConsentForm;
 
@@ -19,14 +22,23 @@ public class StudyConsentServiceImpl implements StudyConsentService {
 
     @Override
     public StudyConsent addConsent(String studyKey, StudyConsentForm form) {
+        validate(form);
         return studyConsentDao.addConsent(studyKey, form.getPath(), form.getMinAge());
     }
 
+    private void validate(StudyConsentForm studyConsent) {
+        if (StringUtils.isBlank(studyConsent.getPath())) {
+            throw new InvalidEntityException(studyConsent, "Path field is null or blank.");
+        } else if (studyConsent.getMinAge() <= 0) {
+            throw new InvalidEntityException(studyConsent, "Minimum age must be a positive integer.");
+        }
+    }
+    
     @Override
     public StudyConsent getActiveConsent(String studyKey) {
         StudyConsent consent = studyConsentDao.getConsent(studyKey);
         if (consent == null) {
-            throw new BridgeServiceException("There is no active consent document.", SC_BAD_REQUEST);
+            throw new EntityNotFoundException(StudyConsent.class);
         }
         return consent;
     }
@@ -44,7 +56,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     public StudyConsent getConsent(String studyKey, long timestamp) {
         StudyConsent consent = studyConsentDao.getConsent(studyKey, timestamp);
         if (consent == null) {
-            throw new BridgeServiceException("No consent with that timestamp exists.", SC_BAD_REQUEST);
+            throw new EntityNotFoundException(StudyConsent.class);
         }
         return consent;
     }
@@ -53,7 +65,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     public StudyConsent activateConsent(String studyKey, long timestamp) {
         StudyConsent consent = studyConsentDao.getConsent(studyKey, timestamp);
         if (consent == null) {
-            throw new BridgeServiceException("No consent with that timestamp exists.", SC_BAD_REQUEST);
+            throw new EntityNotFoundException(StudyConsent.class);
         }
         return studyConsentDao.setActive(consent, true);
     }

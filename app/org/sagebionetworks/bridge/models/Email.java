@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
+import org.sagebionetworks.bridge.json.JsonUtils;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class Email {
@@ -13,10 +15,7 @@ public class Email {
     }
     
     public static final Email fromJson(JsonNode node) {
-        String email = null;
-        if (node != null && node.get(EMAIL_FIELD) != null) {
-            email = node.get(EMAIL_FIELD).asText();
-        }
+        String email = JsonUtils.asText(node, EMAIL_FIELD);
         return new Email(email);
     }
 

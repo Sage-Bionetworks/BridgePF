@@ -22,6 +22,20 @@ public class JsonUtils {
         return null;
     }
 
+    /**
+     * This method defaults to false if the value is not present or set to 
+     * null.
+     * @param parent
+     * @param property
+     * @return
+     */
+    public static boolean asBoolean(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            return parent.get(property).asBoolean();
+        }
+        return false;
+    }
+    
     public static Long asLong(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             return new Long(parent.get(property).asLong());    
