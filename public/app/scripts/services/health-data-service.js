@@ -60,7 +60,7 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q',
             throw new Error("Type of object not supported.");
          },
          /*
-         * Takes an object and convers all of its fields designated by dateFields and converts them according to the 
+         * Takes an object and converts all of its fields designated by dateFields and converts them according to the 
          * rules specified by fn.
          * param: object
          *      Javascript object to be copied.
@@ -69,7 +69,7 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q',
          * param: dateFields
          *      all fields on which fn will be executed.
          * returns:
-         *      object with all fields transformed.
+         *      nothing. All transformations are by reference on argument object.
          */
          convertObjDateFields: function(object, fn, dateFields) {
             if (typeof object !== 'object') {
