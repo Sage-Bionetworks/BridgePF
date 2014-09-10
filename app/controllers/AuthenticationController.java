@@ -18,20 +18,14 @@ public class AuthenticationController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
-    private StudyControllerService studyControllerService;
-
-    public void setStudyControllerService(StudyControllerService scs) {
-        this.studyControllerService = scs;
-    }
-
     public Result signIn() throws Exception {
         final long start = System.nanoTime();
-        UserSession session = checkForSession();
+        UserSession session = getSessionIfItExists();
         if (session != null) {
             setSessionToken(session.getSessionToken());
             return ok(constructJSON(new UserSessionInfo(session)));
         }
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         SignIn signIn = SignIn.fromJson(request().body().asJson());
         session = authenticationService.signIn(study, signIn);
         setSessionToken(session.getSessionToken());
@@ -42,7 +36,7 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result signOut() throws Exception {
-        UserSession session = checkForSession();
+        UserSession session = getSessionIfItExists();
         if (session != null) {
             authenticationService.signOut(session.getSessionToken());
         }
@@ -52,13 +46,13 @@ public class AuthenticationController extends BaseController {
 
     public Result signUp() throws Exception {
         SignUp signUp = SignUp.fromJson(request().body().asJson());
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         authenticationService.signUp(signUp, study);
         return okResult("Signed up.");
     }
 
     public Result verifyEmail() throws Exception {
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         EmailVerification ev = EmailVerification.fromJson(request().body().asJson());
         // In normal course of events (verify email, consent to research),
         // an exception is thrown. Code after this line will rarely execute

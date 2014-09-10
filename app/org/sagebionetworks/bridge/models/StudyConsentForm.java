@@ -1,27 +1,26 @@
 package org.sagebionetworks.bridge.models;
 
-import static org.apache.commons.httpclient.HttpStatus.SC_BAD_REQUEST;
-
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class StudyConsentForm {
+public class StudyConsentForm implements BridgeEntity {
 
     private final String path;
     private final int minAge;
 
-    private static final String PATH = "path";
-    private static final String MIN_AGE = "minAge";
+    private static final String PATH_FIELD = "path";
+    private static final String MIN_AGE_FIELD = "minAge";
 
     public StudyConsentForm(String path, int minAge) {
         this.path = path;
         this.minAge = minAge;
     }
 
-    public static final StudyConsentForm fromJson(JsonNode json) {
-        assertFieldsValid(json);
-        return new StudyConsentForm(json.get(PATH).asText(), json.get(MIN_AGE).asInt());
+    public static final StudyConsentForm fromJson(JsonNode node) {
+        String path = JsonUtils.asText(node, PATH_FIELD);
+        int minAge = JsonUtils.asIntPrimitive(node, MIN_AGE_FIELD); 
+        return new StudyConsentForm(path, minAge);
     }
 
     public String getPath() {
@@ -30,21 +29,5 @@ public class StudyConsentForm {
 
     public int getMinAge() {
         return minAge;
-    }
-
-    private static void assertFieldsValid(JsonNode json) {
-        if (json == null) {
-            throw new BridgeServiceException("StudyConsentForm JSON is null.", SC_BAD_REQUEST);
-        } else if (json.get("path") == null) {
-            throw new BridgeServiceException("Path field is null.", SC_BAD_REQUEST);
-        } else if (json.get("path").asText().isEmpty()) {
-            throw new BridgeServiceException("Path field is empty.", SC_BAD_REQUEST);
-        } else if (json.get("minAge") == null) {
-            throw new BridgeServiceException("minAge field is null.", SC_BAD_REQUEST);
-        } else if (json.get("minAge").asText().isEmpty()) {
-            throw new BridgeServiceException("minAge field is empty.", SC_BAD_REQUEST);
-        } else if (json.get("minAge").asInt() < 0) {
-            throw new BridgeServiceException("minAge field must be greater than 0.", SC_BAD_REQUEST);
-        }
     }
 }

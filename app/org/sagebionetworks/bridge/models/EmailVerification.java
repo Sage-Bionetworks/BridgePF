@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
+import org.sagebionetworks.bridge.json.JsonUtils;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class EmailVerification {
@@ -13,10 +15,7 @@ public class EmailVerification {
     }
 
     public static final EmailVerification fromJson(JsonNode node) {
-        String sptoken = null;
-        if (node != null && node.get(SPTOKEN_FIELD) != null) {
-            sptoken = node.get(SPTOKEN_FIELD).asText();
-        }
+        String sptoken = JsonUtils.asText(node, SPTOKEN_FIELD);
         return new EmailVerification(sptoken);
     }
 

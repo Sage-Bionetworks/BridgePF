@@ -58,9 +58,7 @@ public class ConsentServiceImpl implements ConsentService {
     public User consentToResearch(User caller, ConsentSignature consentSignature, final Study study, boolean sendEmail)
             throws BridgeServiceException {
 
-        if (caller == null) {
-            throw new BridgeServiceException("User is required.", SC_BAD_REQUEST);
-        } else if (study == null) {
+        if (study == null) {
             throw new BridgeServiceException("Study is required.", SC_BAD_REQUEST);
         } else if (consentSignature == null) {
             throw new BridgeServiceException("Consent signature is required.", SC_BAD_REQUEST);

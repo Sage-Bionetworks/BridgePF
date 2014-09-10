@@ -9,9 +9,9 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
-import org.sagebionetworks.bridge.exceptions.BridgeNotFoundException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
@@ -75,7 +75,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, BridgeNotFoundException,
+    public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException,
             BridgeServiceException {
 
         final long start = System.nanoTime();
@@ -106,7 +106,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             }
 
         } catch (ResourceException re) {
-            throw new BridgeNotFoundException(re.getDeveloperMessage());
+            throw new EntityNotFoundException(User.class, re.getDeveloperMessage());
         } finally {
             if (request != null) {
                 request.clear();

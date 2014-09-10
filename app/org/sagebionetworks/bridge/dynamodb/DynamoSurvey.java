@@ -23,17 +23,17 @@ import com.google.common.collect.Lists;
 @DynamoDBTable(tableName = "Survey")
 public class DynamoSurvey implements Survey, DynamoTable {
     
-    private static final String VERSION = "version";
-    private static final String NAME = "name";
-    private static final String IDENTIFIER = "identifier";
-    private static final String QUESTIONS = "questions";
+    private static final String VERSION_FIELD = "version";
+    private static final String NAME_FIELD = "name";
+    private static final String IDENTIFIER_FIELD = "identifier";
+    private static final String QUESTIONS_FIELD = "questions";
     
     public static final DynamoSurvey fromJson(JsonNode node) {
         DynamoSurvey survey = new DynamoSurvey();
-        survey.setVersion( JsonUtils.asLong(node, VERSION) );
-        survey.setName( JsonUtils.asText(node, NAME) );
-        survey.setIdentifier( JsonUtils.asText(node, IDENTIFIER) );
-        ArrayNode questionsNode = JsonUtils.asArrayNode(node,  QUESTIONS);
+        survey.setVersion( JsonUtils.asLong(node, VERSION_FIELD) );
+        survey.setName( JsonUtils.asText(node, NAME_FIELD) );
+        survey.setIdentifier( JsonUtils.asText(node, IDENTIFIER_FIELD) );
+        ArrayNode questionsNode = JsonUtils.asArrayNode(node,  QUESTIONS_FIELD);
         if (questionsNode != null) {
             for (JsonNode questionNode : questionsNode) {
                 SurveyQuestion question = DynamoSurveyQuestion.fromJson(questionNode);

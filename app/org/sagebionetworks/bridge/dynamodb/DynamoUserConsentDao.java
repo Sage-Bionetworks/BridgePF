@@ -2,9 +2,9 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.sagebionetworks.bridge.dao.ConsentAlreadyExistsException;
-import org.sagebionetworks.bridge.dao.ConsentNotFoundException;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.slf4j.Logger;
@@ -84,7 +84,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
         userConsent = mapper.load(userConsent);
         if (userConsent == null) {
-            throw new ConsentNotFoundException();
+            throw new EntityNotFoundException(DynamoUserConsent2.class);
         }
         userConsent.setDataSharing(true);
         mapper.save(userConsent);
@@ -95,7 +95,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
         userConsent = mapper.load(userConsent);
         if (userConsent == null) {
-            throw new ConsentNotFoundException();
+            throw new EntityNotFoundException(DynamoUserConsent2.class);
         }
         userConsent.setDataSharing(false);
         mapper.save(userConsent);
@@ -111,15 +111,16 @@ public class DynamoUserConsentDao implements UserConsentDao {
     // Old
 
     void giveConsentOld(String healthCode, StudyConsent studyConsent, ConsentSignature researchConsent) {
+        DynamoUserConsent consent = null;
         try {
-            DynamoUserConsent consent = new DynamoUserConsent(healthCode, studyConsent);
+            consent = new DynamoUserConsent(healthCode, studyConsent);
             consent.setName(researchConsent.getName());
             consent.setBirthdate(researchConsent.getBirthdate());
             consent.setGive(DateTime.now(DateTimeZone.UTC).getMillis());
             consent.setWithdraw(NOT_WITHDRAW_YET);
             mapperOld.save(consent);
         } catch (ConditionalCheckFailedException e) {
-            throw new ConsentAlreadyExistsException();
+            throw new EntityAlreadyExistsException(consent);
         }
     }
 
@@ -150,7 +151,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         consent.setWithdraw(NOT_WITHDRAW_YET);
         consent = mapperOld.load(consent);
         if (consent == null) {
-            throw new ConsentNotFoundException();
+            throw new EntityNotFoundException(DynamoUserConsent.class);
         }
         return new ConsentSignature(consent.getName(), consent.getBirthdate());
     }
@@ -158,8 +159,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
     // New
 
     void giveConsentNew(String healthCode, StudyConsent studyConsent, ConsentSignature researchConsent) {
+        DynamoUserConsent2 consent = null;
         try {
-            DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
+            consent = new DynamoUserConsent2(healthCode, studyConsent);
             consent = mapper.load(consent);
             if (consent == null) { // If the user has not consented yet
                 consent = new DynamoUserConsent2(healthCode, studyConsent);
@@ -170,7 +172,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
             consent.setDataSharing(true);
             mapper.save(consent);
         } catch (ConditionalCheckFailedException e) {
-            throw new ConsentAlreadyExistsException();
+            throw new EntityAlreadyExistsException(consent);
         }
     }
 
@@ -198,7 +200,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
         if (consent == null) {
-            throw new ConsentNotFoundException();
+            throw new EntityNotFoundException(DynamoUserConsent2.class);
         }
         return new ConsentSignature(consent.getName(), consent.getBirthdate());
     }
