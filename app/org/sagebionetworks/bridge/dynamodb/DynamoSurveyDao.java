@@ -31,6 +31,7 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -183,11 +184,8 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey createSurvey(Survey survey) {
-        if (!isNew(survey)) {
-            throw new EntityAlreadyExistsException(survey);
-        } else if (!isValid(survey)) {
-            throw new InvalidEntityException(survey);
-        }
+        checkForNew(survey);
+        checkForValidity(survey, true);
         survey.setGuid(generateId());
         
         long time = DateConverter.getCurrentMillisFromEpoch();
@@ -214,11 +212,7 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey updateSurvey(Survey survey) {
-        if (isNew(survey)) {
-            throw new EntityNotFoundException(Survey.class);
-        } else if (!isValid(survey)) {
-            throw new InvalidEntityException(survey);
-        }
+        checkForValidity(survey, false);
         Survey existing = getSurvey(survey.getGuid(), survey.getVersionedOn());
         if (existing.isPublished()) {
             throw new PublishedSurveyException(survey);
@@ -381,29 +375,50 @@ public class DynamoSurveyDao implements SurveyDao {
 
         surveyQuestionMapper.batchDelete(page.getResults());
     }
-
-    private boolean isNew(Survey survey) {
-        if (survey.getGuid() != null || survey.isPublished() || survey.getVersion() != null || survey.getVersionedOn() != 0L) {
-            return false;
+    
+    private void checkForNew(Survey survey) {
+        List<String> messages = Lists.newArrayList();
+        if (StringUtils.isNotBlank(survey.getGuid())) {
+            messages.add("should not have a GUID");
+        } else if (survey.isPublished()) {
+            messages.add("should not be marked as published");
+        } else if (survey.getVersion() != null) {
+            messages.add("should not have a lock version number");
+        } else if (survey.getVersionedOn() != 0L) {
+            messages.add("should not have a versionedOn date");
         }
-        for (SurveyQuestion question : survey.getQuestions()) {
-            if (question.getGuid() != null) {
-                return false;
+        for (int i=0; i < survey.getQuestions().size(); i++) {
+            SurveyQuestion question = survey.getQuestions().get(i);
+            if (StringUtils.isNotBlank(question.getGuid())) {
+                messages.add("question #"+i+" should not have a GUID");
             }
         }
-        return true;
+        if (!messages.isEmpty()) {
+            throw new EntityAlreadyExistsException(survey, "Survey does not appear to be new: " + Joiner.on("; ").join(messages));
+        }
     }
     
-    private boolean isValid(Survey survey) {
-        if (StringUtils.isBlank(survey.getIdentifier()) || StringUtils.isBlank(survey.getStudyKey())) {
-            return false;
+    private void checkForValidity(Survey survey, boolean isNew) {
+        List<String> messages = Lists.newArrayList();
+        if (StringUtils.isBlank(survey.getIdentifier())) {
+            messages.add("missing an identifier");
+        } else if (StringUtils.isBlank(survey.getStudyKey())) {
+            messages.add("missing a study key");
         }
-        for (SurveyQuestion question : survey.getQuestions()) {
-            if (StringUtils.isBlank(question.getIdentifier())) {
-                return false;
+        if (!isNew && StringUtils.isBlank(survey.getGuid())) {
+            messages.add("missing a GUID");
+        }
+        for (int i=0; i < survey.getQuestions().size(); i++) {
+            SurveyQuestion question = survey.getQuestions().get(i);
+            if (!isNew && StringUtils.isBlank(question.getGuid())) {
+                messages.add("question #"+i+" is missing a GUID");
+            }
+            if (isNew && StringUtils.isBlank(question.getIdentifier())) {
+                messages.add("question #"+i+" is missing an identifier");
             }
         }
-        return true;
+        if (!messages.isEmpty()) {
+            throw new InvalidEntityException(survey, "Survey is not valid: " + Joiner.on("; ").join(messages) + " - " + survey.toString());
+        }
     }
-
 }

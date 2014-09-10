@@ -99,7 +99,7 @@ public class SurveyController extends BaseController {
         // The parameters in the URL take precedence over anything declared in 
         // the object itself.
         long surveyVersion = DateConverter.convertMillisFromEpoch(versionString);
-        Survey survey = DynamoSurvey.fromJson(request().body().asJson());
+        Survey survey = DynamoSurvey.fromJson(requestToJSON(request()));
         survey.setGuid(surveyGuid);
         survey.setVersionedOn(surveyVersion);
         survey.setStudyKey(study.getKey());

@@ -35,4 +35,13 @@ public class TestUtils {
         }
         return request;
     }
+    
+    // Useful in tests because Play Framework seems to disable all logging of the server code 
+    // during integration tests. This is a quick and dirty way to ping what is happening from 
+    // the integration tests. Remove references before committing code.
+    public static void output(String tag, String output) {
+        String str = String.format("\033[31m%s: \033[0m%s", tag, output);
+        System.out.println(str);
+    }
+
  }
