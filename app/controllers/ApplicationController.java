@@ -1,6 +1,6 @@
 package controllers;
 
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
@@ -12,23 +12,18 @@ import play.mvc.Result;
 public class ApplicationController extends BaseController {
 
     private static final UserSession EMPTY_USER_SESSION = new UserSession();
-    private StudyControllerService studyControllerService;
-    
-    public void setStudyControllerService(StudyControllerService studyControllerService) {
-        this.studyControllerService = studyControllerService;
-    }
 
     public Result redirectToApp() {
         return redirect("/app/");
     }
 
     public Result loadApp() throws Exception {
-        UserSession session = checkForSession();
+        UserSession session = getSessionIfItExists();
         if (session == null) {
             session = new UserSession();
         }
         UserSessionInfo info = new UserSessionInfo(session);
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         return ok(views.html.index.render(Json.toJson(info).toString(), study.getName()));
     }
 
@@ -40,11 +35,11 @@ public class ApplicationController extends BaseController {
         UserSessionInfo info = new UserSessionInfo(new UserSession());
         
         // There's probably a non-crappy way of doing this in Play, but I couldn't find it.
-        Study study = studyControllerService.getStudyByHostname(request());
+        Study study = studyService.getStudyByHostname(getHostname());
         if (study == null || "neurod".equals(study.getKey())) {
             return ok(views.html.neurod.render(Json.toJson(info).toString()));    
         }
-        throw new BridgeServiceException("Cannot determine your study from the host name: " + studyControllerService.getHostname(request()), 400);
+        throw new EntityNotFoundException(Study.class, "Cannot determine study from the host name: " + getHostname());
     }
     
     public Result loadConsent(String sessionToken) throws Exception {

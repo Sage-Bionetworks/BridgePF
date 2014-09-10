@@ -4,12 +4,10 @@ import static org.junit.Assert.*;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.httpclient.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
@@ -23,8 +21,6 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import controllers.StudyControllerService;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -43,17 +39,15 @@ public class StormPathUserAdminServiceTest {
     BridgeConfig bridgeConfig;
     
     @Resource
-    StudyControllerService studyControllerService;
+    StudyServiceImpl studyService;
     
     @Resource
     StormPathUserAdminService userAdminService;
+    
     private Study study;
     
     private TestUser test2 = new TestUser("testUser2", "test2@sagebridge.org", "P4ssword");
-    private TestUser test3 = new TestUser("testUser3", "test3@sagebridge.org", "P4ssword");
-    private TestUser failedUser = new TestUser("failedUser", "failedUser@sagebridge.org", "P4ssword");
     
-    private User adminUser;
     private User test2User;
     private User test3User;
 
@@ -63,11 +57,11 @@ public class StormPathUserAdminServiceTest {
                 "version");
         DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
         
-        study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
+        study = studyService.getStudyByHostname("pd.sagebridge.org");
         
         SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         
-        adminUser = authService.signIn(study, signIn).getUser();
+        authService.signIn(study, signIn).getUser();
     }
 
     @After
@@ -77,63 +71,19 @@ public class StormPathUserAdminServiceTest {
         DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
         
         if (test2User != null) {
-            userAdminService.deleteUser(adminUser, test2User);
+            userAdminService.deleteUser(test2User);
             test2User = null;
         }
         if (test3User != null) {
-            userAdminService.deleteUser(adminUser, test3User);
+            userAdminService.deleteUser(test3User);
             test3User = null;
         }
     }
 
     @Test
-    public void nonAdminUserCannotCreateUser() {
-        try {
-            userAdminService.createUser(adminUser, test2.getSignUp(), null, study, false, true);
-            test2User = authService.signIn(study, test2.getSignIn()).getUser();
-            
-            service.createUser(test2User, failedUser.getSignUp(), null, study, true, true);
-            fail("Did not throw 403 exception");
-        } catch (BridgeServiceException e) {
-            assertEquals("Throws Forbidden (403) exception", HttpStatus.SC_FORBIDDEN, e.getStatusCode());
-        }
-    }
-
-    @Test
-    public void nonAdminUserCannotConsentUser() {
-        try {
-            userAdminService.createUser(adminUser, test2.getSignUp(), null, study, false, true);
-            userAdminService.createUser(adminUser, test3.getSignUp(), null, study, false, true);
-            
-            test2User = authService.signIn(study, test2.getSignIn()).getUser();
-            test3User = authService.signIn(study, test3.getSignIn()).getUser();
-            service.revokeAllConsentRecords(test2User, test3User, TestConstants.STUDY);
-            fail("Did not throw 403 exception");
-        } catch (BridgeServiceException e) {
-            assertEquals("Throws Forbidden (403) exception", HttpStatus.SC_FORBIDDEN, e.getStatusCode());
-        }
-    }
-
-    @Test
-    public void nonAdminUserCannotDeleteUser() {
-        try {
-            userAdminService.createUser(adminUser, test2.getSignUp(), null, study, false, true);
-            userAdminService.createUser(adminUser, test3.getSignUp(), null, study, false, true);
-            
-            test2User = authService.signIn(study, test2.getSignIn()).getUser();
-            test3User = authService.signIn(study, test3.getSignIn()).getUser();
-            service.deleteUser(test3User, test2User);
-            
-            fail("Did not throw 403 exception");
-        } catch (BridgeServiceException e) {
-            assertEquals("Throws Forbidden (403) exception", HttpStatus.SC_FORBIDDEN, e.getStatusCode());
-        }
-    }
-
-    @Test
     public void canCreateUserIdempotently() {
-        test2User = service.createUser(adminUser, test2.getSignUp(), null, study, true, true).getUser();
-        test2User = service.createUser(adminUser, test2.getSignUp(), null, study, true, true).getUser();
+        test2User = service.createUser(test2.getSignUp(), null, study, true, true).getUser();
+        test2User = service.createUser(test2.getSignUp(), null, study, true, true).getUser();
 
         assertEquals("Correct email", test2.getSignUp().getEmail(), test2User.getEmail());
         assertEquals("Correct username", test2.getSignUp().getUsername(), test2User.getUsername());
@@ -142,9 +92,9 @@ public class StormPathUserAdminServiceTest {
 
     @Test(expected = BridgeServiceException.class)
     public void deletedUserHasBeenDeleted() {
-        test2User = service.createUser(adminUser, test2.getSignUp(), null, study, true, true).getUser();
+        test2User = service.createUser(test2.getSignUp(), null, study, true, true).getUser();
         
-        service.deleteUser(adminUser, test2User);
+        service.deleteUser(test2User);
         
         // This should fail with a 404.
         authService.signIn(study, test2.getSignIn());
@@ -152,7 +102,7 @@ public class StormPathUserAdminServiceTest {
 
     @Test
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
-        UserSession session1 = service.createUser(adminUser, test2.getSignUp(), null, study, false, false);
+        UserSession session1 = service.createUser(test2.getSignUp(), null, study, false, false);
         assertNull("No session", session1);
         
         try {

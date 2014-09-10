@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -12,8 +12,8 @@ public class UserProfile {
     private String username;
     private String email;
     
-    private static final String FIRSTNAME = "firstName";
-    private static final String LASTNAME = "lastName";
+    private static final String FIRST_NAME_FIELD = "firstName";
+    private static final String LAST_NAME_FIELD = "lastName";
 
     public UserProfile(User user) {
         this.firstName = removeEmpty(user.getFirstName());
@@ -26,17 +26,12 @@ public class UserProfile {
     }
     
     public static UserProfile fromJson(JsonNode node) {
-        if (node == null) {
-            throw new BridgeServiceException("User JSON is null", 500);
-        }
-        UserProfile user = new UserProfile();
-        if (node.get(FIRSTNAME) != null) {
-            user.setFirstName(replaceWithEmpty(node.get(FIRSTNAME).asText()));
-        }
-        if (node.get(LASTNAME) != null) {
-            user.setLastName(replaceWithEmpty(node.get(LASTNAME).asText()));
-        }
-        return user;
+        UserProfile profile = new UserProfile();
+        String firstName = JsonUtils.asText(node, FIRST_NAME_FIELD);
+        String lastName = JsonUtils.asText(node, LAST_NAME_FIELD);
+        profile.setFirstName(replaceWithEmpty(firstName));
+        profile.setLastName(replaceWithEmpty(lastName));
+        return profile;
     }
     
     public String getFirstName() {

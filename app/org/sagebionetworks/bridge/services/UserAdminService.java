@@ -15,8 +15,6 @@ public interface UserAdminService {
      * research. The method is idempotent: no error occurs if the user exists,
      * or is already signed in, or has already consented.
      * 
-     * @param caller
-     *            Admin user making service call
      * @param signUp
      *            sign up information for the target user
      * @param roles
@@ -32,16 +30,13 @@ public interface UserAdminService {
      * 
      * @throws BridgeServiceException
      */
-    public UserSession createUser(User caller, SignUp signUp, List<String> roles, Study userStudy, boolean signUserIn,
+    public UserSession createUser(SignUp signUp, List<String> roles, Study userStudy, boolean signUserIn,
             boolean consentUser) throws BridgeServiceException;
 
-    // TODO: Do not expose this. Instead do it when deleting a user.
     /**
      * Remove all consent records from the target user. The user's session (if
      * the target user is signed in) will be updated to reflect this new state.
      * 
-     * @param caller
-     *            Admin user making service call
      * @param user
      *            target user
      * @param userStudy
@@ -50,17 +45,15 @@ public interface UserAdminService {
      * 
      * @throws BridgeServiceException
      */
-    public void revokeAllConsentRecords(User caller, User user, Study userStudy) throws BridgeServiceException;
+    public void revokeAllConsentRecords(User user, Study userStudy) throws BridgeServiceException;
 
     /**
      * Delete the target user.
      * 
-     * @param caller
-     *            Admin user making service call
      * @param user
      *            target user
      * @throws BridgeServiceException
      */
-    public void deleteUser(User caller, User user) throws BridgeServiceException;
+    public void deleteUser(User user) throws BridgeServiceException;
 
 }

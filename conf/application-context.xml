@@ -78,12 +78,11 @@
 
     <bean id="BaseController" class="controllers.BaseController" abstract="true">
         <property name="authenticationService" ref="authenticationService" />
+        <property name="studyService" ref="studyService" />
         <property name="cacheProvider" ref="cacheProvider" />
     </bean>
 
-    <bean id="AdminController" class="controllers.AdminController" abstract="true">
-        <property name="authenticationService" ref="authenticationService" />
-        <property name="cacheProvider" ref="cacheProvider" />
+    <bean id="AdminController" class="controllers.AdminController" abstract="true" parent="BaseController">
     </bean>
 
     <bean id="proxiedController" class="org.springframework.aop.framework.ProxyFactoryBean">
@@ -96,7 +95,6 @@
     <bean id="controllers.ApplicationController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.ApplicationController" parent="BaseController">
-                <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
     </bean>
@@ -104,7 +102,6 @@
     <bean id="controllers.AuthenticationController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.AuthenticationController" parent="BaseController">
-                <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
     </bean>
@@ -113,7 +110,6 @@
         <property name="target">
             <bean class="controllers.HealthDataController" parent="BaseController">
                 <property name="healthDataService" ref="healthDataService"/>
-                <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
     </bean>
@@ -124,7 +120,6 @@
                 <property name="jsonSchemaValidator">
                     <bean class="global.JsonSchemaValidator"/>
                 </property>
-                <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
     </bean>
@@ -140,7 +135,6 @@
     <bean id="controllers.ConsentController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.ConsentController" parent="BaseController">
-                <property name="studyControllerService" ref="studyControllerService" />
                 <property name="consentService" ref="consentService" />
             </bean>
         </property>
@@ -150,7 +144,6 @@
         <property name="target">
             <bean class="controllers.BackfillController" parent="AdminController">
                 <property name="backfillService" ref="backfillService" />
-                <property name="studyControllerService" ref="studyControllerService" />
             </bean>
         </property>
     </bean>
@@ -159,7 +152,6 @@
         <property name="target">
             <bean class="controllers.StudyConsentController" parent="AdminController">
                 <property name="studyConsentService" ref="studyConsentService" />
-                <property name="studyControllerService" ref="studyControllerService" />
             </bean>
         </property>
     </bean>
@@ -168,12 +160,11 @@
         <property name="target">
             <bean class="controllers.SurveyController" parent="BaseController">
                 <property name="surveyService" ref="surveyService" />
-                <property name="studyControllerService" ref="studyControllerService"/>
             </bean>
         </property>
     </bean>    
 
-    <bean id="studyControllerService" class="controllers.StudyControllerService">
+    <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
         <property name="studies">
             <list>
                 <bean class="org.sagebionetworks.bridge.models.Study">
@@ -291,7 +282,7 @@
         <property name="authenticationService" ref="authenticationService"/>
         <property name="consentService" ref="consentService"/>
         <property name="healthDataService" ref="healthDataService"/>
-        <property name="studyControllerService" ref="studyControllerService"/>
+        <property name="studyService" ref="studyService"/>
         <property name="stormpathClient" ref="stormpathClient"/>
         <property name="userLockDao" ref="userLockDao"/>
     </bean>

@@ -10,9 +10,8 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
-
-import controllers.StudyControllerService;
 
 /**
  * A support class that can be injected into any SpringJUnit4ClassRunner test that needs to create a test user before
@@ -25,7 +24,7 @@ public class TestUserAdminHelper {
     UserAdminService userAdminService;
     AuthenticationService authService;
     BridgeConfig bridgeConfig;
-    StudyControllerService studyControllerService;
+    StudyService studyService;
 
     private TestUser testUser = new TestUser("tester", "support@sagebase.org", "P4ssword");
     private Study study;
@@ -44,8 +43,8 @@ public class TestUserAdminHelper {
         this.bridgeConfig = bridgeConfig;
     }
 
-    public void setStudyControllerService(StudyControllerService studyControllerService) {
-        this.studyControllerService = studyControllerService;
+    public void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
 
     public void createOneUser() {
@@ -53,25 +52,25 @@ public class TestUserAdminHelper {
     }
 
     public void createOneUser(List<String> roles) {
-        study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
+        study = studyService.getStudyByHostname("pd.sagebridge.org");
         SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         adminSession = authService.signIn(study, admin);
 
-        userSession = userAdminService.createUser(adminSession.getUser(), testUser.getSignUp(), roles, study, true, true);
+        userSession = userAdminService.createUser(testUser.getSignUp(), roles, study, true, true);
     }
     
     public void deleteOneUser() {
-        userAdminService.deleteUser(adminSession.getUser(), userSession.getUser());
+        userAdminService.deleteUser(userSession.getUser());
 
         authService.signOut(adminSession.getSessionToken());
     }
 
     public UserSession createUser(TestUser user, List<String> roles, boolean signIn, boolean consent) {
-        return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), roles, study, signIn, consent);
+        return userAdminService.createUser(user.getSignUp(), roles, study, signIn, consent);
     }
 
     public void deleteUser(User user) {
-        userAdminService.deleteUser(adminSession.getUser(), user);
+        userAdminService.deleteUser(user);
     }
     
     public UserSession createUserWithoutConsentOrSignIn(TestUser user, List<String> roles) {
