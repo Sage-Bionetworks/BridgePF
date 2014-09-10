@@ -57,7 +57,6 @@ TimeSeries.prototype = {
         this.array = [];
         for (var time in this.originalData) {
             var series = this.originalData[time];
-            
             var entry = [time];
             this.fields.forEach(function(field) {
                 entry.push(average(series, field));
@@ -94,6 +93,15 @@ TimeSeries.prototype = {
                 var r = series[i];
                 if (r.recordId === record.recordId) {
                     series[i] = record;
+                    // time is a string, and series[i].startDate is a number.
+                    if (series[i].startDate != time) {
+                        this.add(record);
+
+                        // Need to delete if it is the only entry.
+                        if (series.length === 1) {
+                            delete this.originalData[time];
+                        }
+                    }
                     this.recompute();
                     this.changed = true;
                     return;

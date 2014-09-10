@@ -1,5 +1,5 @@
-bridge.controller('BloodPressureController', ['$scope', 'healthDataService', '$humane', 'dashboardService',  
-function($scope, healthDataService, $humane, dashboardService) {
+bridge.controller('BloodPressureController', ['$scope', 'healthDataService', '$humane',  
+function($scope, healthDataService, $humane) {
     
     if ($scope.recordToEdit) {
         $scope.systolic = $scope.recordToEdit.data.systolic;
@@ -45,13 +45,12 @@ function($scope, healthDataService, $humane, dashboardService) {
         return ($scope.bpForm && $scope.bpForm.$valid);
     };
     $scope.save = function() {
-        var payload = healthDataService.createPayload($scope.bpForm, ['date', 'date'], ['systolic', 'diastolic'], true);
+        var payload = healthDataService.createPayload($scope.bpForm, 
+                                    ['date', 'date'], ['systolic', 'diastolic'], true);
         var chartScope = $scope.$parent;
         healthDataService.create(chartScope.tracker.id, payload).then(function(response) {
             payload.recordId = response.data.items[0].id;
             payload.version = response.data.items[0].version;
-            payload.startDate = new Date(payload.startDate).getTime();
-            payload.endDate = new Date(payload.endDate).getTime();
             chartScope.dataset.convertOne(payload);
         }, $humane.status);
         $scope.cancel();
@@ -63,8 +62,6 @@ function($scope, healthDataService, $humane, dashboardService) {
         var chartScope = $scope.$parent;
         chartScope.dataset.update(payload);
 
-        payload.startDate = new Date(payload.startDate).toISOString();
-        payload.endDate = new Date(payload.endDate).toISOString();
         healthDataService.update(chartScope.tracker.id, payload).then(function(response) {
             $scope.recordToEdit.version = response.data.version;
         }, $humane.status);
