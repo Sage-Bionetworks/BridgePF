@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
+import org.sagebionetworks.bridge.json.JsonUtils;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class SignUp {
@@ -19,18 +21,9 @@ public class SignUp {
     }
     
     public static final SignUp fromJson(JsonNode node) {
-        String username = null;
-        String email = null;
-        String password = null;
-        if (node != null && node.get(USERNAME_FIELD) != null) {
-            username = node.get(USERNAME_FIELD).asText();
-        }
-        if (node != null && node.get(EMAIL_FIELD) != null) {
-            email = node.get(EMAIL_FIELD).asText();
-        }
-        if (node != null && node.get(PASSWORD_FIELD) != null) {
-            password = node.get(PASSWORD_FIELD).asText();
-        }
+        String username = JsonUtils.asText(node, USERNAME_FIELD);
+        String email = JsonUtils.asText(node, EMAIL_FIELD);
+        String password = JsonUtils.asText(node, PASSWORD_FIELD);;
         return new SignUp(username, email, password);
     }
 

@@ -11,10 +11,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.ConcurrentModificationException;
 import org.sagebionetworks.bridge.dao.PublishedSurveyException;
-import org.sagebionetworks.bridge.dao.SurveyNotFoundException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.springframework.test.context.ContextConfiguration;
@@ -124,9 +124,7 @@ public class DynamoSurveyDaoTest {
         try {
             survey = surveyDao.getSurvey(survey.getGuid(), survey.getVersionedOn());
             fail("Should have thrown an exception");
-        } catch(SurveyNotFoundException snfe) {
-            assertEquals("Correct survey GUID", survey.getGuid(), snfe.getSurvey().getGuid());
-            assertEquals("Correct versionedOn value", survey.getVersionedOn(), snfe.getSurvey().getVersionedOn());
+        } catch(EntityNotFoundException enfe) {
         }
     }
 

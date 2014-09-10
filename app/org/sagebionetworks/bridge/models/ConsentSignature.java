@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
+import org.sagebionetworks.bridge.json.JsonUtils;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class ConsentSignature {
@@ -23,19 +25,9 @@ public class ConsentSignature {
     }
 
     public static final ConsentSignature fromJson(JsonNode node) {
-        String name = null;
-        String birthdate = null;
-        boolean sendEmail = true;
-        
-        if (node != null && node.get(NAME_FIELD) != null) {
-            name = node.get(NAME_FIELD).asText();
-        }
-        if (node != null && node.get(BIRTHDATE_FIELD) != null) {
-            birthdate = node.get(BIRTHDATE_FIELD).asText();
-        }
-        if (node != null && node.get(SEND_EMAIL_FIELD) != null) {
-            sendEmail = node.get(SEND_EMAIL_FIELD).asBoolean();
-        }
+        String name = JsonUtils.asText(node, NAME_FIELD);
+        String birthdate = JsonUtils.asText(node, BIRTHDATE_FIELD);
+        boolean sendEmail = JsonUtils.asBoolean(node, SEND_EMAIL_FIELD);
         return new ConsentSignature(name, birthdate, sendEmail);
     }
 

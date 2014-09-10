@@ -33,7 +33,8 @@ public class ExceptionInterceptor implements MethodInterceptor {
             }
 
             // Don't log errors here. Log at the source with a level of detail that's useful for 
-            // developers, at the correct level of severity.
+            // developers, at the correct level of severity. That said, there are times when we 
+            // want to see an exception while developing and it is just rethrown or thrown out.
             Logger.debug(throwable.getMessage(), throwable);
             
             int status = 500;

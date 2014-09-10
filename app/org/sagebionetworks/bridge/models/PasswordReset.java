@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
+import org.sagebionetworks.bridge.json.JsonUtils;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class PasswordReset {
@@ -16,14 +18,8 @@ public class PasswordReset {
     }
     
     public static final PasswordReset fromJson(JsonNode node) {
-        String password = null;
-        String sptoken = null;
-        if (node != null && node.get(PASSWORD_FIELD) != null) {
-            password = node.get(PASSWORD_FIELD).asText();
-        }
-        if (node != null && node.get(SPTOKEN_FIELD) != null) {
-            sptoken = node.get(SPTOKEN_FIELD).asText();
-        }
+        String password = JsonUtils.asText(node, PASSWORD_FIELD);
+        String sptoken = JsonUtils.asText(node, SPTOKEN_FIELD);
         return new PasswordReset(password, sptoken);
     }
 
