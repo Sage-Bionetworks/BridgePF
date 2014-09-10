@@ -18,7 +18,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
@@ -35,7 +34,6 @@ import play.libs.WS.Response;
 public class ConsentControllerTest {
 
     private long timestamp;
-    private UserSession session;
 
     @Resource
     private TestUserAdminHelper helper;
@@ -45,8 +43,7 @@ public class ConsentControllerTest {
 
     @Before
     public void before() {
-        String[] roles = { "user" };
-        session = helper.createUserWithoutConsent(helper.getTestUser(), Arrays.asList(roles));
+        helper.createOneUser();
 
         // TODO need to remove the study consent dao - ideally this information is already there, and we don't need to
         // create it.
@@ -58,7 +55,7 @@ public class ConsentControllerTest {
 
     @After
     public void after() {
-        helper.deleteUser(session.getUser());
+        helper.deleteOneUser();
         studyConsentDao.deleteConsent(helper.getStudy().getKey(), timestamp);
     }
 
@@ -68,45 +65,48 @@ public class ConsentControllerTest {
 
             @Override
             public void testCode() throws Exception {
-                String name = "John Smith";
-                String birthdate = DateConverter.getCurrentISODateTime();
-                boolean sendEmail = false;
-                String consentSignature = "{\"name\":\"" + name + "" +
-                		"\",\"birthdate\":\"" + birthdate + 
-                		"\",\"sendEmail\":" + sendEmail + "}";
-
-                // Helper's user is not consented, so we need to give consent.
-                Response giveConsentSuccess = TestUtils.getURL(session.getSessionToken(), CONSENT_URL)
-                                                .post(consentSignature)
-                                                .get(TIMEOUT);
-                assertEquals("Give consent succeeds with 200", giveConsentSuccess.getStatus(), SC_OK);
-                
-                String sessionToken = giveConsentSuccess.getHeader(BridgeConstants.SESSION_TOKEN_HEADER);
-                System.out.println(sessionToken);
 
                 // Helper's user is already consented, so consenting again should fail.
-                Response giveConsentFail = TestUtils.getURL(sessionToken, CONSENT_URL)
+                Response giveConsentFail = TestUtils.getURL(helper.getUserSessionToken(), CONSENT_URL)
                                                 .post("")
                                                 .get(TIMEOUT);
                 assertEquals("give Consent fails with 500", giveConsentFail.getStatus(), SC_INTERNAL_SERVER_ERROR);
 
                 // Consenting turns data sharing on by default, so check that we can suspend sharing.
-                Response suspendDataSharing = TestUtils.getURL(sessionToken, SUSPEND_URL)
+                Response suspendDataSharing = TestUtils.getURL(helper.getUserSessionToken(), SUSPEND_URL)
                                                 .post("")
                                                 .get(TIMEOUT);
                 assertEquals("suspendDataSharing succeeds with 200", suspendDataSharing.getStatus(), SC_OK);
 
                 // We've suspended data sharing, now check to see if we can resume data sharing.
-                Response resumeDataSharing = TestUtils.getURL(sessionToken, RESUME_URL)
+                Response resumeDataSharing = TestUtils.getURL(helper.getUserSessionToken(), RESUME_URL)
                                                 .post("")
                                                 .get(TIMEOUT);
                 assertEquals("resumeDataSharing succeeds with 200", resumeDataSharing.getStatus(), SC_OK);
 
                 // Resume data sharing should be idempotent.
-                resumeDataSharing = TestUtils.getURL(sessionToken, RESUME_URL)
+                resumeDataSharing = TestUtils.getURL(helper.getUserSessionToken(), RESUME_URL)
                                                 .post("")
                                                 .get(TIMEOUT);
                 assertEquals("resumeDataSharing succeeds with 200", resumeDataSharing.getStatus(), SC_OK);
+                
+                // Consent new user.
+                String name = "John Smith";
+                String birthdate = DateConverter.getCurrentISODateTime();
+                boolean sendEmail = false;
+                String consentSignature = "{\"name\":\"" + name + "" +
+                                "\",\"birthdate\":\"" + birthdate + 
+                                "\",\"sendEmail\":" + sendEmail + "}";
+
+                String[] roles = { "user" };
+                UserSession session = helper.createUserWithoutConsent(helper.getTestUser(), Arrays.asList(roles));
+                
+                Response giveConsentSuccess = TestUtils.getURL(session.getSessionToken(), CONSENT_URL)
+                                                .post(consentSignature)
+                                                .get(TIMEOUT);
+                assertEquals("Give consent succeeds with 200", giveConsentSuccess.getStatus(), SC_OK);
+                
+                helper.deleteUser(session.getUser());
 
             }
 

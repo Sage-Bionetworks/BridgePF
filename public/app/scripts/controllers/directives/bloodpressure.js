@@ -1,4 +1,4 @@
-bridge.controller('BloodPressureController', ['$scope', 'healthDataService', '$humane',  
+bridge.controller('BloodPressureController', ['$scope', 'healthDataService', '$humane',
 function($scope, healthDataService, $humane) {
     
     if ($scope.recordToEdit) {
@@ -45,8 +45,8 @@ function($scope, healthDataService, $humane) {
         return ($scope.bpForm && $scope.bpForm.$valid);
     };
     $scope.save = function() {
-        var payload = healthDataService.createPayload($scope.bpForm, 
-                                    ['date', 'date'], ['systolic', 'diastolic'], true);
+        var payload = healthDataService.createPayload(
+                $scope.bpForm, ['date', 'date'], ['systolic', 'diastolic'], true);
         var chartScope = $scope.$parent;
         healthDataService.create(chartScope.tracker.id, payload).then(function(response) {
             payload.recordId = response.data.items[0].id;
