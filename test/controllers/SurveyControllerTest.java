@@ -224,12 +224,14 @@ public class SurveyControllerTest {
                     helper.createOneUser(roles);
                     
                     GuidVersionHolder keys = createSurvey("Name");
-                    JsonNode node = getSurvey(keys);
+                    ObjectNode node = (ObjectNode)getSurvey(keys);
+                    node.put("name", "Name Changed");
                     
-                    //node.put("name", "Name Changed");
-                    //keys = updateSurvey(survey);
+                    updateSurvey(keys, node);
                     
-                    
+                    node = (ObjectNode)getSurvey(keys);
+                    String finalName = node.get("name").asText();
+                    assertEquals("Name has been updated", "Name Changed", finalName);
                 } finally {
                     helper.deleteOneUser();    
                 }
@@ -249,6 +251,13 @@ public class SurveyControllerTest {
         public String toString() {
             return "GuidVersionHolder [guid=" + guid + ", versionedOn=" + versionedOn + "]";
         }
+    }
+    
+    private void updateSurvey(GuidVersionHolder keys, JsonNode survey) throws Exception {
+        String content = survey.toString();
+        String url = String.format(GET_SURVEY_URL, keys.guid, keys.versionedOn);
+        Response response = TestUtils.getURL(helper.getUserSessionToken(), url).post(content).get(TIMEOUT);
+        assertEquals("200 response [createSurvey]", SC_OK, response.getStatus());
     }
     
     private GuidVersionHolder createSurvey(String name) throws Exception {
