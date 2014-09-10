@@ -2,7 +2,7 @@
  * Represents all the shared state that creates a dashboard and interaction
  * between the individual charts, as well as creating the Dygraphs. 
  */
-bridge.service('dashboardService', ['$filter', '$q', 'healthDataService', function($filter, $q, healthDataService) {
+bridge.service('dashboardService', ['$filter', '$q', function($filter, $q) {
     
     function redrawAll(me, initial) {
         if (this.blockRedraw || initial) return;
