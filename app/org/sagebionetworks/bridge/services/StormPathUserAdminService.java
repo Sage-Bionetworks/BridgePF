@@ -67,7 +67,7 @@ public class StormPathUserAdminService implements UserAdminService {
         } else if (StringUtils.isBlank(signUp.getUsername())) {
             throw new BridgeServiceException("User's username cannot be null", 400);
         } else if (StringUtils.isBlank(signUp.getEmail())) {
-            throw new BridgeServiceException("User's meail cannot be null", 400);
+            throw new BridgeServiceException("User's email cannot be null", 400);
         } else if (StringUtils.isBlank(signUp.getPassword())) {
             throw new BridgeServiceException("User's password cannot be null", 400);
         } else if (userStudy == null) {
