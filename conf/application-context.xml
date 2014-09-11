@@ -49,6 +49,12 @@
         </constructor-arg>
     </bean>
 
+    <bean id="tokenServiceClient" class="com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient">
+        <constructor-arg index="0">
+            <ref bean="s3UploadCredentials" />
+        </constructor-arg>
+    </bean>
+
     <!-- DynamoDB -->
 
     <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient">
@@ -285,6 +291,7 @@
 
     <bean id="uploadService" class="org.sagebionetworks.bridge.services.UploadServiceImpl">
         <property name="s3UploadClient" ref="s3UploadClient" />
+        <property name="tokenServiceClient" ref="tokenServiceClient" />
     </bean>
 
     <!-- Backfill -->
