@@ -9,7 +9,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * Certain UI controls, such as pickers or select controls, require 
  * this. It is usually easier for users if all the values can be 
  * specified.
- *
+ * 
+ * When values are enumerated, than the min/max value or min/max length
+ * properties are of no use, ditto for scale and for precision. So I 
+ * don't think the class hierarchy is actually correct here.
  */
 public abstract class EnumerableConstraints extends Constraints {
 

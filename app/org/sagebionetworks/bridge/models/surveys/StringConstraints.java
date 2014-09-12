@@ -1,8 +1,14 @@
 package org.sagebionetworks.bridge.models.surveys;
 
+import java.util.EnumSet;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 public class StringConstraints extends EnumerableConstraints {
+
+    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.CHECKBOX, UIHint.COMBOBOX, UIHint.LIST, UIHint.MULTILINETEXT,
+            UIHint.RADIOBUTTON, UIHint.SELECT, UIHint.SLIDER, UIHint.TEXTFIELD);
     
     private int minLength = 0;
     private int maxLength = 255;
@@ -11,6 +17,11 @@ public class StringConstraints extends EnumerableConstraints {
     @Override
     public String getDataType() {
         return "string";
+    }
+    @Override
+    @JsonIgnore
+    public EnumSet<UIHint> getSuportedHints() {
+        return UI_HINTS;
     }
     public int getMinLength() {
         return minLength;

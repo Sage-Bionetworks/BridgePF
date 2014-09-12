@@ -7,10 +7,10 @@ public abstract class TimeBaseConstraints extends Constraints {
     protected boolean allowFuture = false;
     
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public boolean getEnumeration() {
+    public boolean getAllowFuture() {
         return allowFuture;
     }
-    public void setEnumeration(boolean allowFuture) {
+    public void setAllowFuture(boolean allowFuture) {
         this.allowFuture = allowFuture;
     }
     @Override

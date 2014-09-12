@@ -1,11 +1,12 @@
 package org.sagebionetworks.bridge.models.surveys;
 
+import java.util.EnumSet;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
 
 public abstract class Constraints {
-    
+
     public static Map<String,Class<? extends Constraints>> CLASSES = Maps.newHashMap();
     static {
         CLASSES.put("boolean", BooleanConstraints.class);
@@ -21,6 +22,8 @@ public abstract class Constraints {
     protected boolean allowMultiple;
     
     public abstract String getDataType();
+    
+    public abstract EnumSet<UIHint> getSuportedHints();
     
     public void setDataType(String type) {
         // noop. Jackson wants this to convert JSON constraint into an object.
