@@ -44,14 +44,26 @@ public class AuthenticationControllerTest {
     @Resource
     TestUserAdminHelper helper;
     
+    private static final int NUMBER_OF_TESTS = 5;
+    
+    private static boolean setUpComplete = false;
+    private static int testCount = 0;
+    
     @Before
     public void before() {
-        helper.createOneUser();
+        if (!setUpComplete) {
+            helper.createOneUser();
+            setUpComplete = true;
+        }
     }
     
     @After
     public void after() {
-        helper.deleteOneUser();
+        testCount++;
+        if (testCount == NUMBER_OF_TESTS) {
+            helper.deleteOneUser();
+        }
+        
     }
     
     @Test

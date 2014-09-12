@@ -52,8 +52,8 @@ public class AuthenticationServiceImplTest {
     
     private static final int NUMBER_OF_TESTS = 12;
     
-    private boolean setUpComplete = false;
-    private int testCount = 0;
+    private static boolean setUpComplete = false;
+    private static int testCount = 0;
     
     @Before
     public void before() {
