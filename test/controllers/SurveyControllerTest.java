@@ -58,25 +58,19 @@ public class SurveyControllerTest {
     StudyServiceImpl studyService;
     
     private ObjectMapper mapper = new ObjectMapper();
+
     private Study study;
     private List<String> roles;
-    
-    private boolean setUpComplete = false;
 
     @Before
     public void before() {
-        if (!setUpComplete) {
-            study = studyService.getStudyByHostname("localhost");
-            roles = Lists.newArrayList(study.getKey()+"_researcher");
-            List<Survey> surveys = surveyDao.getSurveys(study.getKey());
-            for (Survey survey : surveys) {
-                surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
-                surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
-            }
-            
-            setUpComplete = true;
+        study = studyService.getStudyByHostname("localhost");
+        roles = Lists.newArrayList(study.getKey()+"_researcher");
+        List<Survey> surveys = surveyDao.getSurveys(study.getKey());
+        for (Survey survey : surveys) {
+            surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
+            surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
         }
-
     }
     
     private String createSurveyObject(String name) throws Exception {

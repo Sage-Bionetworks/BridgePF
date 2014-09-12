@@ -33,8 +33,6 @@ import com.google.common.collect.Lists;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class UserProfileControllerTest {
-
-    private ObjectMapper mapper = new ObjectMapper();
     
     @Resource
     TestUserAdminHelper helper;
@@ -42,6 +40,8 @@ public class UserProfileControllerTest {
     public UserProfileControllerTest() {
         mapper.setSerializationInclusion(Include.NON_NULL);
     }
+
+    private ObjectMapper mapper = new ObjectMapper();
     
     @Before
     public void before() {

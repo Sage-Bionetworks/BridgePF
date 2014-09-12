@@ -49,14 +49,12 @@ public class StormPathUserAdminServiceTest {
     @Resource
     StormPathUserAdminService userAdminService;
     
-    private Study study;
-    
     private TestUser test2 = new TestUser("testUser2", "test2@sagebridge.org", "P4ssword");
     
     private User test2User;
     private User test3User;
     
-    private boolean setUpComplete = false;
+    private Study study;
 
     @BeforeClass
     public static void initialSetUp() {
@@ -74,16 +72,11 @@ public class StormPathUserAdminServiceTest {
     
     @Before
     public void before() {
-        if (!setUpComplete) {
-            study = studyService.getStudyByHostname("pd.sagebridge.org");
+        study = studyService.getStudyByHostname("pd.sagebridge.org");
             
-            SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
+        SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
             
-            authService.signIn(study, signIn).getUser();
-            
-            setUpComplete = true;
-        }
-
+        authService.signIn(study, signIn).getUser();
     }
 
     @After
