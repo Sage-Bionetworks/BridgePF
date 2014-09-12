@@ -75,25 +75,25 @@ public class TestUserAdminHelper {
     
     public UserSession createUserWithoutConsentOrSignIn(TestUser user, List<String> roles) {
         if (study == null) {
-            study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
+            study = studyService.getStudyByHostname("pd.sagebridge.org");
         }
         if (adminSession == null) {
             SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
             adminSession = authService.signIn(study, admin);
         }
-        return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), roles, study, false, false);
+        return userAdminService.createUser(user.getSignUp(), roles, study, false, false);
         
     }
     
     public UserSession createUserWithoutConsent(TestUser user, List<String> roles) {
         if (study == null) {
-            study = studyControllerService.getStudyByHostname("pd.sagebridge.org");
+            study = studyService.getStudyByHostname("pd.sagebridge.org");
         }
         if (adminSession == null) {
             SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
             adminSession = authService.signIn(study, admin);
         }
-        return userAdminService.createUser(adminSession.getUser(), user.getSignUp(), roles, study, true, false);
+        return userAdminService.createUser(user.getSignUp(), roles, study, true, false);
     }
 
     public Study getStudy() {

@@ -3,9 +3,12 @@ package org.sagebionetworks.bridge.json;
 import java.util.Collections;
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.DateConverter;
+import org.sagebionetworks.bridge.models.surveys.Constraints;
+import org.sagebionetworks.bridge.models.surveys.UIHint;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -18,26 +21,14 @@ import com.google.common.collect.Lists;
  * type casting as well. Hence these utility methods. 
  */
 public class JsonUtils {
+    
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     public static String asText(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             return parent.get(property).asText();
         }
         return null;
-    }
-
-    /**
-     * This method defaults to false if the value is not present or set to 
-     * null.
-     * @param parent
-     * @param property
-     * @return
-     */
-    public static boolean asBoolean(JsonNode parent, String property) {
-        if (parent != null && parent.hasNonNull(property)) {
-            return parent.get(property).asBoolean();
-        }
-        return false;
     }
     
     public static Long asLong(JsonNode parent, String property) {
@@ -70,7 +61,7 @@ public class JsonUtils {
     
     public static long asMillisSinceEpoch(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
-            return DateConverter.convertMillisFromEpoch(parent.get(property).asText());
+            return DateUtils.convertToMillisFromEpoch(parent.get(property).asText());
         }
         return 0L;
     }
@@ -82,7 +73,23 @@ public class JsonUtils {
         return null;
     }
     
+    public static Constraints asConstraints(JsonNode parent, String property) {
+        JsonNode constraints = JsonUtils.asJsonNode(parent, property);
+        if (constraints != null) {
+            String type = JsonUtils.asText(constraints, "dataType");
+            return mapper.convertValue(constraints, Constraints.CLASSES.get(type));
+        }
+        return null;
+     }
+    
     public static ObjectNode asObjectNode(JsonNode parent, String property) {
+        if (parent == null){
+            throw new IllegalArgumentException("(parent == null)");
+        } else if (!parent.hasNonNull(property)) {
+            throw new IllegalArgumentException("(!parent.hasNonNull(property))");
+        } else if (!parent.get(property).isObject()) {
+            throw new IllegalArgumentException("(!parent.get(property).isObject())");
+        }
         if (parent != null && parent.hasNonNull(property) && parent.get(property).isObject()) {
             return (ObjectNode)parent.get(property);
         }
@@ -96,12 +103,28 @@ public class JsonUtils {
         return null;
     }
     
+    /**
+     * This method defaults to false if the value is not present or set to 
+     * null.
+     * @param parent
+     * @param property
+     * @return
+     */
     public static boolean asBoolean(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             return parent.get(property).asBoolean();
         }
         return false;
     }
+    
+    public static UIHint toUIHint(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            String value = JsonUtils.asText(parent, property);
+            return UIHint.valueOf(value.toUpperCase());
+        }
+        return null;
+    }
+    
     
     public static List<String> toStringList(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
@@ -115,12 +138,20 @@ public class JsonUtils {
         return Collections.emptyList();
     }
     
-    public static ArrayNode toArrayNode(List<String> list) {
+    public static ArrayNode toArrayNode(List<UIHint> list) {
         ArrayNode array = JsonNodeFactory.instance.arrayNode();
-        for (String element : list) {
-            array.add(element);
+        for (UIHint element : list) {
+            array.add(element.name().toLowerCase());
         }
         return array;
+    }
+    
+    public static String toJSON(Object object) {
+        try {
+            return new ObjectMapper().writeValueAsString(object);
+        } catch(JsonProcessingException e) {
+            return e.getMessage();
+        }
     }
 
 }

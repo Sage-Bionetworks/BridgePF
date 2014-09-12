@@ -120,6 +120,7 @@ public class ConsentServiceImpl implements ConsentService {
             if (sendEmail) {
                 sendMailService.sendConsentAgreement(caller, consentSignature, study);
             }
+            caller.setConsent(true);
             return caller;
 
         } catch (Exception e) {
