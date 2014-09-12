@@ -7,8 +7,8 @@ import static org.junit.Assert.assertTrue;
 
 import javax.annotation.Resource;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -24,8 +24,8 @@ public class DynamoUserConsentDaoTest {
     @Resource
     private DynamoUserConsentDao userConsentDao;
 
-    @Before
-    public void before() {
+    @BeforeClass
+    public static void initialSetUp() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
@@ -33,8 +33,8 @@ public class DynamoUserConsentDaoTest {
                 "healthCode", "consentCreatedOn", "version");
     }
 
-    @After
-    public void after() {
+    @AfterClass
+    public static void finalCleanUp() {
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
         DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",

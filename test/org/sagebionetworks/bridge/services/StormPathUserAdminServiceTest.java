@@ -1,11 +1,16 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import javax.annotation.Resource;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
@@ -50,26 +55,39 @@ public class StormPathUserAdminServiceTest {
     
     private User test2User;
     private User test3User;
+    
+    private boolean setUpComplete = false;
 
-    @Before
-    public void before() {
+    @BeforeClass
+    public static void initialSetUp() {
         DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
         DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
-        
-        study = studyService.getStudyByHostname("pd.sagebridge.org");
-        
-        SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
-        
-        authService.signIn(study, signIn).getUser();
+    }
+    
+    @AfterClass
+    public static void finalCleanUp() {
+        DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
+                "version");
+        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
+    }
+    
+    @Before
+    public void before() {
+        if (!setUpComplete) {
+            study = studyService.getStudyByHostname("pd.sagebridge.org");
+            
+            SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
+            
+            authService.signIn(study, signIn).getUser();
+            
+            setUpComplete = true;
+        }
+
     }
 
     @After
     public void after() {
-        DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
-                "version");
-        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
-        
         if (test2User != null) {
             userAdminService.deleteUser(test2User);
             test2User = null;
