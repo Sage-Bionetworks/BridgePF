@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.models.surveys;
 
 public class IntegerConstraints extends EnumerableConstraints {
 
-    private int minValue;
-    private int maxValue;
+    private int minValue = 0;
+    private int maxValue = 100;
     private int step = 1;
     
     @Override

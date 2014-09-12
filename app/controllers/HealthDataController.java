@@ -13,8 +13,6 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.sagebionetworks.bridge.services.HealthDataService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import play.mvc.Result;
 
@@ -23,8 +21,6 @@ import com.google.common.collect.Lists;
 
 public class HealthDataController extends BaseController {
 
-    private static Logger logger = LoggerFactory.getLogger(HealthDataController.class);
-    
     private HealthDataService healthDataService;
 
     public void setHealthDataService(HealthDataService healthDataService) {
@@ -42,7 +38,6 @@ public class HealthDataController extends BaseController {
         List<HealthDataRecord> records = Lists.newArrayListWithCapacity(node.size());
         for (int i = 0; i < node.size(); i++) {
             JsonNode child = node.get(i);
-            logger.info(child.toString());
             validator.validate(tracker, child);
             records.add(HealthDataRecordImpl.fromJson(child));
         }

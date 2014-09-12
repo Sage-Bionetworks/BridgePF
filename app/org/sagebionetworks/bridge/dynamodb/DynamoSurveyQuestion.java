@@ -39,7 +39,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         // question.getData() is not serialized, access the individual values. They are written 
         // back to the data node.
         question.setPrompt(JsonUtils.asText(node, PROMPT_PROPERTY));
-        question.setUiHint(JsonUtils.toUIHint(node, UI_HINTS_PROPERTY));
+        question.setUiHint(JsonUtils.asUIHint(node, UI_HINTS_PROPERTY));
         question.setConstraints(JsonUtils.asConstraints(node, CONSTRAINTS_PROPERTY));
         return question;
     }
@@ -150,7 +150,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     @DynamoDBIgnore
     @JsonSerialize(using = UIHintJsonSerializer.class)
     public UIHint getUiHint() {
-        return JsonUtils.toUIHint(data, UI_HINTS_PROPERTY);
+        return JsonUtils.asUIHint(data, UI_HINTS_PROPERTY);
     }
     
     @Override

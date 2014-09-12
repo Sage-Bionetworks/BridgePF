@@ -3,17 +3,17 @@ package controllers;
 import static org.apache.http.HttpStatus.SC_FORBIDDEN;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
-import static org.sagebionetworks.bridge.TestConstants.SURVEYS_URL;
 import static org.sagebionetworks.bridge.TestConstants.GET_SURVEY_URL;
 import static org.sagebionetworks.bridge.TestConstants.GET_VERSIONS_OF_SURVEY_URL;
-import static org.sagebionetworks.bridge.TestConstants.RECENT_SURVEYS_URL;
-import static org.sagebionetworks.bridge.TestConstants.RECENT_PUBLISHED_SURVEYS_URL;
-import static org.sagebionetworks.bridge.TestConstants.VERSION_SURVEY_URL;
 import static org.sagebionetworks.bridge.TestConstants.PUBLISH_SURVEY_URL;
+import static org.sagebionetworks.bridge.TestConstants.RECENT_PUBLISHED_SURVEYS_URL;
+import static org.sagebionetworks.bridge.TestConstants.RECENT_SURVEYS_URL;
+import static org.sagebionetworks.bridge.TestConstants.SURVEYS_URL;
+import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
+import static org.sagebionetworks.bridge.TestConstants.VERSION_SURVEY_URL;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
@@ -21,7 +21,6 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -63,42 +62,49 @@ public class SurveyControllerTest {
     private ObjectMapper mapper = new ObjectMapper();
     private Study study;
     private List<String> roles;
-
-    @Before
-    public void before() {
-        study = studyService.getStudyByHostname("localhost");
-        roles = Lists.newArrayList(study.getKey()+"_researcher");
-        List<Survey> surveys = surveyDao.getSurveys(study.getKey());
-        for (Survey survey : surveys) {
-            surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
-            surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
+    
+    private boolean setUpComplete = false;
+    
+    private class GenderQuestion extends DynamoSurveyQuestion {
+        private GenderQuestion() {
+            setIdentifier("gender");
+            setPrompt("What is your gender?");
+            setUiHint(UIHint.TEXTFIELD);
+            setConstraints(new StringConstraints());
+        }
+    }
+    
+    private class AgeQuestion extends DynamoSurveyQuestion {
+        private AgeQuestion() {
+            setIdentifier("age");
+            setPrompt("What is your age?");
+            setUiHint(UIHint.NUMBERFIELD);
+            setConstraints(new IntegerConstraints());
         }
     }
 
-    @After
-    public void after() {
-        helper.deleteOneUser();
+    @Before
+    public void before() {
+        if (!setUpComplete) {
+            study = studyService.getStudyByHostname("localhost");
+            roles = Lists.newArrayList(study.getKey()+"_researcher");
+            List<Survey> surveys = surveyDao.getSurveys(study.getKey());
+            for (Survey survey : surveys) {
+                surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
+                surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
+            }
+            
+            setUpComplete = true;
+        }
+
     }
     
     private String createSurveyObject(String name) throws Exception {
         Survey survey = new DynamoSurvey();
         survey.setName(name);
         survey.setIdentifier("general");
-        
-        DynamoSurveyQuestion question = new DynamoSurveyQuestion();
-        question.setIdentifier("gender");
-        question.setPrompt("What is your gender?");
-        question.setUiHint(UIHint.TEXTFIELD);
-        question.setConstraints(new StringConstraints());
-        survey.getQuestions().add(question);
-        
-        question = new DynamoSurveyQuestion();
-        question.setIdentifier("age");
-        question.setPrompt("What is your age?");
-        question.setUiHint(UIHint.NUMBERFIELD);
-        question.setConstraints(new IntegerConstraints());
-        survey.getQuestions().add(question);
-        
+        survey.getQuestions().add(new GenderQuestion());
+        survey.getQuestions().add(new AgeQuestion());
         return mapper.writeValueAsString(survey);
     }
     

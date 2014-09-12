@@ -10,12 +10,11 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.models.StudyConsent;
-import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -26,13 +25,14 @@ public class DynamoStudyConsentDaoTest {
     @Resource
     private DynamoStudyConsentDao studyConsentDao;
 
-    @Before
-    public void before() {
+    @BeforeClass
+    public static void initialSetUp() {
+        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
     }
 
-    @After
-    public void after() {
+    @AfterClass
+    public static void finalCleanUp() {
         DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
     }
 

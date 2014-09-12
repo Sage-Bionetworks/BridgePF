@@ -2,10 +2,10 @@ package org.sagebionetworks.bridge.models.surveys;
 
 public class DecimalConstraints extends EnumerableConstraints {
 
-    private float minValue;
-    private float maxValue;
-    private float step;
-    private float precision;
+    private float minValue = 1.0f;
+    private float maxValue = 100.0f;
+    private float step = 1.0f;
+    private float precision = 1.0f;
     
     @Override
     public String getDataType() {

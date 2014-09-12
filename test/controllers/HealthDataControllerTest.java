@@ -260,7 +260,6 @@ public class HealthDataControllerTest {
     private String retrieveNewId(Response response) {
         JsonNode body = response.asJson();
         if (body.get("message") != null) {
-            System.out.println(response.getBody());
             fail(body.get("message").asText());
         }
         return body.get("items").get(0).get("id").asText();

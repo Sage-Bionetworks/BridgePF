@@ -110,11 +110,7 @@ public class DynamoSurveyTest {
         
         assertEquals("Name is correct", survey.getName(), newSurvey.getName());
         assertEquals("Identifier is correct", survey.getIdentifier(), newSurvey.getIdentifier());
-        assertEquals("guid is correct", survey.getGuid(), newSurvey.getGuid());
-        assertEquals("versionedOn is correct", survey.getVersionedOn(), newSurvey.getVersionedOn());
-        assertEquals("modifiedOn is correct", survey.getModifiedOn(), newSurvey.getModifiedOn());
         assertEquals("version is correct", survey.getVersion(), newSurvey.getVersion());
-        assertEquals("published is correct", survey.isPublished(), newSurvey.isPublished());
         
         DynamoSurveyQuestion newQ1 = (DynamoSurveyQuestion)newSurvey.getQuestions().get(0); // integer question
         assertEquals("Q1 guid is correct", q1.getGuid(), newQ1.getGuid());
