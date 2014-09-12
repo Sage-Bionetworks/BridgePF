@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.surveys;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 public interface SurveyQuestion {
     
     public String getSurveyCompoundKey();
@@ -18,9 +16,12 @@ public interface SurveyQuestion {
     public int getOrder();
     public void setOrder(int order);
     
-    // type, prompt, minValue, maxValue, options, etc.
-    public JsonNode getData();
-    public void setData(JsonNode data);
+    public String getPrompt();
+    public void setPrompt(String prompt);
     
-    public String getType();
+    public UIHint getUiHint();
+    public void setUiHint(UIHint hint);
+
+    public Constraints getConstraints();
+    public void setConstraints(Constraints constraints);
 }

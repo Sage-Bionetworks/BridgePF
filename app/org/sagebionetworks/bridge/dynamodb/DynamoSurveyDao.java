@@ -12,12 +12,11 @@ import org.sagebionetworks.bridge.dao.PublishedSurveyException;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.DateConverter;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.validators.SurveyValidator;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -31,11 +30,12 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
-import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class DynamoSurveyDao implements SurveyDao {
+    
+    private static final SurveyValidator VALIDATOR = new SurveyValidator();
     
     Comparator<DynamoSurvey> VERSIONED_ON_DESC_SORTER = new Comparator<DynamoSurvey>() {
         @Override public int compare(DynamoSurvey o1, DynamoSurvey o2) {
@@ -184,11 +184,10 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey createSurvey(Survey survey) {
-        checkForNew(survey);
-        checkForValidity(survey, true);
+        VALIDATOR.validateNew(survey);
         survey.setGuid(generateId());
         
-        long time = DateConverter.getCurrentMillisFromEpoch();
+        long time = DateUtils.getCurrentMillisFromEpoch();
         survey.setVersionedOn(time);
         survey.setModifiedOn(time);
         
@@ -200,7 +199,7 @@ public class DynamoSurveyDao implements SurveyDao {
         Survey survey = getSurvey(surveyGuid, versionedOn);
         if (!survey.isPublished()) {
             survey.setPublished(true);
-            survey.setModifiedOn(DateConverter.getCurrentMillisFromEpoch());
+            survey.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
             try {
                 surveyMapper.save(survey);
             } catch(ConditionalCheckFailedException e) {
@@ -212,7 +211,7 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey updateSurvey(Survey survey) {
-        checkForValidity(survey, false);
+        VALIDATOR.validateExisting(survey);
         Survey existing = getSurvey(survey.getGuid(), survey.getVersionedOn());
         if (existing.isPublished()) {
             throw new PublishedSurveyException(survey);
@@ -220,18 +219,18 @@ public class DynamoSurveyDao implements SurveyDao {
         existing.setIdentifier(survey.getIdentifier());
         existing.setName(survey.getName());
         existing.setQuestions(survey.getQuestions());
-        existing.setModifiedOn(DateConverter.getCurrentMillisFromEpoch());
+        existing.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         
         return saveSurvey(survey);
     }
     
     @Override
     public Survey versionSurvey(String surveyGuid, long versionedOn) {
-        Survey existing = getSurvey(surveyGuid, versionedOn);
-        Survey copy = new DynamoSurvey(existing);
+        DynamoSurvey existing = (DynamoSurvey)getSurvey(surveyGuid, versionedOn);
+        DynamoSurvey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
         copy.setVersion(null);
-        long time = DateConverter.getCurrentMillisFromEpoch();
+        long time = DateUtils.getCurrentMillisFromEpoch();
         copy.setVersionedOn(time);
         copy.setModifiedOn(time);
 
@@ -317,7 +316,7 @@ public class DynamoSurveyDao implements SurveyDao {
         // also close out any existing survey response records.
         Survey existing = getSurvey(surveyGuid, versionedOn);
         existing.setPublished(false);
-        existing.setModifiedOn(DateConverter.getCurrentMillisFromEpoch());
+        existing.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         try {
             surveyMapper.save(existing);
         } catch(ConditionalCheckFailedException e) {
@@ -374,51 +373,5 @@ public class DynamoSurveyDao implements SurveyDao {
         QueryResultPage<DynamoSurveyQuestion> page = surveyQuestionMapper.queryPage(DynamoSurveyQuestion.class, query);
 
         surveyQuestionMapper.batchDelete(page.getResults());
-    }
-    
-    private void checkForNew(Survey survey) {
-        List<String> messages = Lists.newArrayList();
-        if (StringUtils.isNotBlank(survey.getGuid())) {
-            messages.add("should not have a GUID");
-        } else if (survey.isPublished()) {
-            messages.add("should not be marked as published");
-        } else if (survey.getVersion() != null) {
-            messages.add("should not have a lock version number");
-        } else if (survey.getVersionedOn() != 0L) {
-            messages.add("should not have a versionedOn date");
-        }
-        for (int i=0; i < survey.getQuestions().size(); i++) {
-            SurveyQuestion question = survey.getQuestions().get(i);
-            if (StringUtils.isNotBlank(question.getGuid())) {
-                messages.add("question #"+i+" should not have a GUID");
-            }
-        }
-        if (!messages.isEmpty()) {
-            throw new EntityAlreadyExistsException(survey, "Survey does not appear to be new: " + Joiner.on("; ").join(messages));
-        }
-    }
-    
-    private void checkForValidity(Survey survey, boolean isNew) {
-        List<String> messages = Lists.newArrayList();
-        if (StringUtils.isBlank(survey.getIdentifier())) {
-            messages.add("missing an identifier");
-        } else if (StringUtils.isBlank(survey.getStudyKey())) {
-            messages.add("missing a study key");
-        }
-        if (!isNew && StringUtils.isBlank(survey.getGuid())) {
-            messages.add("missing a GUID");
-        }
-        for (int i=0; i < survey.getQuestions().size(); i++) {
-            SurveyQuestion question = survey.getQuestions().get(i);
-            if (!isNew && StringUtils.isBlank(question.getGuid())) {
-                messages.add("question #"+i+" is missing a GUID");
-            }
-            if (isNew && StringUtils.isBlank(question.getIdentifier())) {
-                messages.add("question #"+i+" is missing an identifier");
-            }
-        }
-        if (!messages.isEmpty()) {
-            throw new InvalidEntityException(survey, "Survey is not valid: " + Joiner.on("; ").join(messages) + " - " + survey.toString());
-        }
     }
 }

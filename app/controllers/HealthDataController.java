@@ -4,7 +4,7 @@ import global.JsonSchemaValidator;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.DateConverter;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.IdVersionHolder;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
@@ -56,12 +56,12 @@ public class HealthDataController extends BaseController {
         if (startDate == null) {
             start = -Long.MAX_VALUE;
         } else {
-            start = DateConverter.convertMillisFromEpoch(startDate);
+            start = DateUtils.convertToMillisFromEpoch(startDate);
         }
         if (endDate == null) {
             end = Long.MAX_VALUE;
         } else {
-            end = DateConverter.convertMillisFromEpoch(endDate);
+            end = DateUtils.convertToMillisFromEpoch(endDate);
         }
         return getHealthDataByDateRange(trackerId, start, end);
     }

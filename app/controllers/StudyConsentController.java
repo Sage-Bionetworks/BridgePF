@@ -2,7 +2,7 @@ package controllers;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.DateConverter;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.StudyConsentForm;
 import org.sagebionetworks.bridge.services.StudyConsentService;
@@ -34,7 +34,7 @@ public class StudyConsentController extends AdminController {
     public Result getConsent(String createdOn) throws Exception {
         getAuthenticatedAdminSession();
         String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
-	long timestamp = DateConverter.convertMillisFromEpoch(createdOn);
+	long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
         StudyConsent consent = studyConsentService.getConsent(studyKey, timestamp);
         return ok(constructJSON(consent));
     }
@@ -50,7 +50,7 @@ public class StudyConsentController extends AdminController {
     public Result setActiveConsent(String createdOn) throws Exception {
         getAuthenticatedAdminSession();
         String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
-	long timestamp = DateConverter.convertMillisFromEpoch(createdOn);
+	long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
         studyConsentService.activateConsent(studyKey, timestamp);
         return okResult("Consent document set as active.");
     }

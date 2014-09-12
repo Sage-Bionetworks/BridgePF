@@ -1,39 +1,34 @@
 package org.sagebionetworks.bridge.json;
 
-import org.sagebionetworks.bridge.models.DateConverter;
+import java.util.Collections;
+import java.util.List;
 
+import org.sagebionetworks.bridge.models.surveys.Constraints;
+import org.sagebionetworks.bridge.models.surveys.UIHint;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Lists;
 
+/**
+ * There are actually a number of ways to indicate a null value, 
+ * and we need to test for all of them to insure we don't accidentally
+ * get the string "null" or something similar. We also want to check 
+ * type casting as well. Hence these utility methods. 
+ */
 public class JsonUtils {
+    
+    private static final ObjectMapper mapper = new ObjectMapper();
 
-    /**
-     * There are actually a number of ways to indicate a null value, 
-     * and we need to test for all of them to insure we don't accidentally
-     * get the string "null" or something similar. 
-     * @param parent
-     * @param property
-     * @return
-     */
     public static String asText(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             return parent.get(property).asText();
         }
         return null;
-    }
-
-    /**
-     * This method defaults to false if the value is not present or set to 
-     * null.
-     * @param parent
-     * @param property
-     * @return
-     */
-    public static boolean asBoolean(JsonNode parent, String property) {
-        if (parent != null && parent.hasNonNull(property)) {
-            return parent.get(property).asBoolean();
-        }
-        return false;
     }
     
     public static Long asLong(JsonNode parent, String property) {
@@ -66,7 +61,7 @@ public class JsonUtils {
     
     public static long asMillisSinceEpoch(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
-            return DateConverter.convertMillisFromEpoch(parent.get(property).asText());
+            return DateUtils.convertToMillisFromEpoch(parent.get(property).asText());
         }
         return 0L;
     }
@@ -78,11 +73,85 @@ public class JsonUtils {
         return null;
     }
     
+    public static Constraints asConstraints(JsonNode parent, String property) {
+        JsonNode constraints = JsonUtils.asJsonNode(parent, property);
+        if (constraints != null) {
+            String type = JsonUtils.asText(constraints, "dataType");
+            return mapper.convertValue(constraints, Constraints.CLASSES.get(type));
+        }
+        return null;
+     }
+    
+    public static ObjectNode asObjectNode(JsonNode parent, String property) {
+        if (parent == null){
+            throw new IllegalArgumentException("(parent == null)");
+        } else if (!parent.hasNonNull(property)) {
+            throw new IllegalArgumentException("(!parent.hasNonNull(property))");
+        } else if (!parent.get(property).isObject()) {
+            throw new IllegalArgumentException("(!parent.get(property).isObject())");
+        }
+        if (parent != null && parent.hasNonNull(property) && parent.get(property).isObject()) {
+            return (ObjectNode)parent.get(property);
+        }
+        return null;
+    }
+    
     public static ArrayNode asArrayNode(JsonNode parent, String property) {
-        if (parent != null && parent.hasNonNull(property)) {
+        if (parent != null && parent.hasNonNull(property) && parent.get(property).isArray()) {
             return (ArrayNode)parent.get(property);
         }
         return null;
+    }
+    
+    /**
+     * This method defaults to false if the value is not present or set to 
+     * null.
+     * @param parent
+     * @param property
+     * @return
+     */
+    public static boolean asBoolean(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            return parent.get(property).asBoolean();
+        }
+        return false;
+    }
+    
+    public static UIHint asUIHint(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            String value = JsonUtils.asText(parent, property);
+            return UIHint.valueOf(value.toUpperCase());
+        }
+        return null;
+    }
+    
+    
+    public static List<String> asStringList(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            ArrayNode array = JsonUtils.asArrayNode(parent, property);
+            List<String> results = Lists.newArrayListWithCapacity(array.size());
+            for (int i=0; i < array.size(); i++) {
+                results.add(array.get(i).asText());
+            }
+            return results;
+        }
+        return Collections.emptyList();
+    }
+    
+    public static ArrayNode asArrayNode(List<UIHint> list) {
+        ArrayNode array = JsonNodeFactory.instance.arrayNode();
+        for (UIHint element : list) {
+            array.add(element.name().toLowerCase());
+        }
+        return array;
+    }
+    
+    public static String toJSON(Object object) {
+        try {
+            return new ObjectMapper().writeValueAsString(object);
+        } catch(JsonProcessingException e) {
+            return e.getMessage();
+        }
     }
 
 }

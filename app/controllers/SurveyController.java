@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.models.DateConverter;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -55,7 +55,7 @@ public class SurveyController extends BaseController {
         // Just need to be signed in, anyone can get a survey to look at it.
         getAuthenticatedSession();
         
-        long surveyVersion = DateConverter.convertMillisFromEpoch(versionString);
+        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         Survey survey = surveyService.getSurvey(surveyGuid, surveyVersion);
         return ok(constructJSON(survey));
     }
@@ -85,7 +85,7 @@ public class SurveyController extends BaseController {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
-        long surveyVersion = DateConverter.convertMillisFromEpoch(versionString);
+        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
 
         Survey survey = surveyService.versionSurvey(surveyGuid, surveyVersion);
         return ok(constructJSON(survey));
@@ -98,7 +98,7 @@ public class SurveyController extends BaseController {
         
         // The parameters in the URL take precedence over anything declared in 
         // the object itself.
-        long surveyVersion = DateConverter.convertMillisFromEpoch(versionString);
+        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         Survey survey = DynamoSurvey.fromJson(requestToJSON(request()));
         survey.setGuid(surveyGuid);
         survey.setVersionedOn(surveyVersion);
@@ -113,7 +113,7 @@ public class SurveyController extends BaseController {
         Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
         
-        long surveyVersion = DateConverter.convertMillisFromEpoch(versionString);
+        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         surveyService.publishSurvey(surveyGuid, surveyVersion);
         return okResult("Survey published.");
     }
@@ -123,7 +123,7 @@ public class SurveyController extends BaseController {
         Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
         
-        long surveyVersion = DateConverter.convertMillisFromEpoch(versionString);
+        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         surveyService.closeSurvey(surveyGuid, surveyVersion);
         return okResult("The survey has been closed.");
     }

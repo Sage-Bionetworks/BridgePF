@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.json;
 
 import java.io.IOException;
 
-import org.sagebionetworks.bridge.models.DateConverter;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -14,7 +12,12 @@ public final class DateTimeJsonDeserializer extends JsonDeserializer<Long> {
     @Override
     public Long deserialize(JsonParser jp, DeserializationContext dc) throws IOException, JsonProcessingException {
         String date = jp.getText();
-        return DateConverter.convertMillisFromEpoch(date);
+        return DateUtils.convertToMillisFromEpoch(date);
     }
-
+    
+    @Override
+    public Long getNullValue() {
+        return new Long(0L);
+    }
+    
 }

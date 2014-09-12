@@ -21,7 +21,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.models.DateConverter;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
@@ -92,7 +92,7 @@ public class ConsentControllerTest {
                 
                 // Consent new user.
                 String name = "John Smith";
-                String birthdate = DateConverter.getCurrentISODateTime();
+                String birthdate = DateUtils.getCurrentISODateTime();
                 boolean sendEmail = false;
                 String consentSignature = "{\"name\":\"" + name + "" +
                                 "\",\"birthdate\":\"" + birthdate + 
