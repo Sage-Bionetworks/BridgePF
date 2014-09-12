@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 public class StringConstraints extends EnumerableConstraints {
     
-    private int minLength;
-    private int maxLength;
+    private int minLength = 0;
+    private int maxLength = 255;
     private String pattern;
 
     @Override

@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.dao.UserLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 public class RedisUserLockDaoTest {
-    UserLockDao lock = new RedisUserLockDao();
+    private UserLockDao lock = new RedisUserLockDao();
     private String healthDataCode = "1234";
     private String uuid;
     

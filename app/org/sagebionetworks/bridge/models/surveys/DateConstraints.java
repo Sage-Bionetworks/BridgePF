@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.surveys;
 
-public class DateConstraints extends Constraints {
+public class DateConstraints extends TimeBaseConstraints {
 
     @Override
     public String getDataType() {

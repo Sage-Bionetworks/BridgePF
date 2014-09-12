@@ -1,6 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import javax.annotation.Resource;
 
@@ -46,14 +50,25 @@ public class AuthenticationServiceImplTest {
     @Resource
     Client stormpathClient;
     
+    private static final int NUMBER_OF_TESTS = 12;
+    
+    private boolean setUpComplete = false;
+    private int testCount = 0;
+    
     @Before
     public void before() {
-        helper.createOneUser();
+        if (!setUpComplete) {
+            helper.createOneUser();
+            setUpComplete = true;
+        }
     }
     
     @After
     public void after() {
-        helper.deleteOneUser();
+        testCount++;
+        if (testCount == NUMBER_OF_TESTS) {
+            helper.deleteOneUser();
+        }
     }
 
     @Test(expected = BridgeServiceException.class)

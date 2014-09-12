@@ -45,8 +45,4 @@ public abstract class EnumerableConstraints extends Constraints {
             return false;
         return true;
     }
-    @Override
-    public String toString() {
-        return "EnumerableConstraints [enumeration=" + enumeration + "]";
-    }
 }

@@ -58,14 +58,6 @@ public class SurveyValidator implements Validator<Survey> {
         for (int i=0; i < survey.getQuestions().size(); i++) {
             SurveyQuestion question = survey.getQuestions().get(i);
             doValidateQuestion(question, isNew, i, question.getUiHint(), messages);
-            /*
-            if (!isNew && StringUtils.isBlank(question.getGuid())) {
-                messages.add("question #"+i+" is missing a GUID");
-            }
-            if (isNew && StringUtils.isBlank(question.getIdentifier())) {
-                messages.add("question #"+i+" is missing an identifier");
-            }
-            */
         }
         if (!messages.isEmpty()) {
             throw new InvalidEntityException(survey, "Survey is not valid: " + Joiner.on("; ").join(messages) + " - " + survey.toString());
@@ -100,6 +92,11 @@ public class SurveyValidator implements Validator<Survey> {
         if (!messages.isEmpty()) {
             return;
         }
+        // TODO: Validate that a SurveyQuestionOption doesn't ask to skip to a question that is prior to the current
+        // question, in the list. That would create a loop.
+        
+        // TODO: Validate that the UI hint is appropriate for the data type constraint.
+        
         if (HINTS_REQUIRING_ENUMERATION.contains(question.getUiHint())) {
             Constraints con = question.getConstraints();
             boolean hasEnumeration = (con instanceof EnumerableConstraints);

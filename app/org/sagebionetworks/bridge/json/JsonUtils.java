@@ -117,7 +117,7 @@ public class JsonUtils {
         return false;
     }
     
-    public static UIHint toUIHint(JsonNode parent, String property) {
+    public static UIHint asUIHint(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             String value = JsonUtils.asText(parent, property);
             return UIHint.valueOf(value.toUpperCase());
@@ -126,7 +126,7 @@ public class JsonUtils {
     }
     
     
-    public static List<String> toStringList(JsonNode parent, String property) {
+    public static List<String> asStringList(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             ArrayNode array = JsonUtils.asArrayNode(parent, property);
             List<String> results = Lists.newArrayListWithCapacity(array.size());
@@ -138,7 +138,7 @@ public class JsonUtils {
         return Collections.emptyList();
     }
     
-    public static ArrayNode toArrayNode(List<UIHint> list) {
+    public static ArrayNode asArrayNode(List<UIHint> list) {
         ArrayNode array = JsonNodeFactory.instance.arrayNode();
         for (UIHint element : list) {
             array.add(element.name().toLowerCase());
