@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
@@ -14,6 +15,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -63,7 +65,7 @@ public class DynamoSurvey implements Survey, DynamoTable {
         setVersionedOn(versionedOn);
     }
     
-    public DynamoSurvey(Survey survey) {
+    public DynamoSurvey(DynamoSurvey survey) {
         this();
         setStudyKey(survey.getStudyKey());
         setGuid(survey.getGuid());
@@ -73,13 +75,15 @@ public class DynamoSurvey implements Survey, DynamoTable {
         setName(survey.getName());
         setIdentifier(survey.getIdentifier());
         setPublished(survey.isPublished());
-        for (SurveyQuestion question : survey.getQuestions()) {
-            questions.add( new DynamoSurveyQuestion(question) );
+        for (Iterator<SurveyQuestion> i = survey.getQuestions().iterator(); i.hasNext();){
+            DynamoSurveyQuestion q = (DynamoSurveyQuestion)i.next();
+            questions.add( new DynamoSurveyQuestion(q) );
         }
     }
 
     @Override
     @DynamoDBAttribute
+    @JsonIgnore
     public String getStudyKey() {
         return studyKey;
     }

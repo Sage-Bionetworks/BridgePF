@@ -7,8 +7,8 @@ import java.io.UnsupportedEncodingException;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ConsentSignature;
-import org.sagebionetworks.bridge.models.DateConverter;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 
@@ -60,8 +60,8 @@ public class SendMailViaAmazonService implements SendMailService {
         InputStreamReader isr = new InputStreamReader(study.getConsentAgreement().getInputStream(), "UTF-8");
         String consentAgreementHTML = CharStreams.toString(isr);
 
-        String signingDate = fmt.print(DateConverter.getCurrentMillisFromEpoch());
-        String birthdate = fmt.print(DateConverter.convertMillisFromEpoch(consent.getBirthdate()));
+        String signingDate = fmt.print(DateUtils.getCurrentMillisFromEpoch());
+        String birthdate = fmt.print(DateUtils.convertToMillisFromEpoch(consent.getBirthdate()));
 
         String html = consentAgreementHTML.replace("@@name@@", consent.getName());
         html = html.replace("@@birth.date@@", birthdate);

@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.models.DateConverter;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.springframework.test.context.ContextConfiguration;
@@ -120,7 +120,7 @@ public class HealthDataControllerTest {
 
                 long threeDays = (1000L * 60L * 60L * 24L * 3L);
 
-                long thousandDaysAgo = DateConverter.getCurrentMillisFromEpoch() - (1000 * 60 * 60 * 24 * 1000);
+                long thousandDaysAgo = DateUtils.getCurrentMillisFromEpoch() - (1000 * 60 * 60 * 24 * 1000);
                 long time1 = thousandDaysAgo + threeDays;
                 long time2 = thousandDaysAgo + threeDays * 2;
                 long time3 = thousandDaysAgo + threeDays * 3;
@@ -158,22 +158,22 @@ public class HealthDataControllerTest {
                         .post(mapper.writeValueAsString(records)).get(TIMEOUT);
                 String id6 = retrieveNewId(response);
 
-                Map<String, String> queryMap = ImmutableMap.of(START_DATE, DateConverter.convertISODateTime(time2),
-                        END_DATE, DateConverter.convertISODateTime(time5));
+                Map<String, String> queryMap = ImmutableMap.of(START_DATE, DateUtils.convertToISODateTime(time2),
+                        END_DATE, DateUtils.convertToISODateTime(time5));
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
                 List<String> ids = getIds(response);
                 assertTrue("Returns records 2, 3, 4, and 6", ids.containsAll(Lists.newArrayList(id2, id3, id4, id6)));
                 assertFalse("Does not contain records 1 or 5", ids.containsAll(Lists.newArrayList(id1, id5)));
 
-                queryMap = ImmutableMap.of(START_DATE, DateConverter.convertISODateTime(time1), END_DATE,
-                        DateConverter.convertISODateTime(time3));
+                queryMap = ImmutableMap.of(START_DATE, DateUtils.convertToISODateTime(time1), END_DATE,
+                        DateUtils.convertToISODateTime(time3));
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
                 ids = getIds(response);
                 assertTrue("Returns records 1, 2, 4, and 6", ids.containsAll(Lists.newArrayList(id1, id2, id4, id6)));
                 assertFalse("Does not contain records 3 or 5", ids.containsAll(Lists.newArrayList(id3, id5)));
 
-                queryMap = ImmutableMap.of(START_DATE, DateConverter.convertISODateTime(time4), END_DATE,
-                        DateConverter.convertISODateTime(time5));
+                queryMap = ImmutableMap.of(START_DATE, DateUtils.convertToISODateTime(time4), END_DATE,
+                        DateUtils.convertToISODateTime(time5));
                 response = TestUtils.getURL(helper.getUserSessionToken(), TRACKER_URL, queryMap).get().get(TIMEOUT);
                 ids = getIds(response);
                 assertTrue("Returns records 3, 4, and 6", ids.containsAll(Lists.newArrayList(id3, id4, id6)));

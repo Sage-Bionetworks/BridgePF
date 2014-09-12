@@ -30,8 +30,10 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
+import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.UIHint;
 import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -62,6 +64,24 @@ public class SurveyControllerTest {
     private List<String> roles;
     
     private boolean setUpComplete = false;
+    
+    private class GenderQuestion extends DynamoSurveyQuestion {
+        private GenderQuestion() {
+            setIdentifier("gender");
+            setPrompt("What is your gender?");
+            setUiHint(UIHint.TEXTFIELD);
+            setConstraints(new StringConstraints());
+        }
+    }
+    
+    private class AgeQuestion extends DynamoSurveyQuestion {
+        private AgeQuestion() {
+            setIdentifier("age");
+            setPrompt("What is your age?");
+            setUiHint(UIHint.NUMBERFIELD);
+            setConstraints(new IntegerConstraints());
+        }
+    }
 
     @Before
     public void before() {
@@ -83,18 +103,8 @@ public class SurveyControllerTest {
         Survey survey = new DynamoSurvey();
         survey.setName(name);
         survey.setIdentifier("general");
-        
-        SurveyQuestion question = new DynamoSurveyQuestion();
-        question.setIdentifier("gender");
-        survey.getQuestions().add(question);
-        
-        question = new DynamoSurveyQuestion();
-        question.setIdentifier("age");
-        ObjectNode node = mapper.createObjectNode();
-        node.put("value", 40);
-        question.setData(node);
-        survey.getQuestions().add(question);
-        
+        survey.getQuestions().add(new GenderQuestion());
+        survey.getQuestions().add(new AgeQuestion());
         return mapper.writeValueAsString(survey);
     }
     
@@ -126,8 +136,9 @@ public class SurveyControllerTest {
                     GuidVersionHolder keys = createSurvey("Name");
 
                     ArrayNode questions = (ArrayNode)keys.node.get("questions");
-                    int age = questions.get(1).get("data").get("value").asInt();
-                    assertEquals("Age is 40", 40, age);
+                    
+                    String prompt = questions.get(1).get("prompt").asText();
+                    assertEquals("Prompt is correct", "What is your age?", prompt);
                 } finally {
                     helper.deleteOneUser();    
                 }

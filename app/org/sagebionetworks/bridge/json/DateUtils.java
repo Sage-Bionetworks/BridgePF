@@ -1,42 +1,58 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.json;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
-public final class DateConverter {
+public final class DateUtils {
 
     private static final DateTimeFormatter dateFmt = ISODateTimeFormat.date();
     private static final DateTimeFormatter dateTimeFmt = ISODateTimeFormat.dateTime();
 
+    private static DateTime getDateTime() {
+        return DateTime.now(DateTimeZone.UTC);
+    }
+    
     /**
      * Get number of milliseconds from the epoch as a long at the current system time.
      * 
      * @return milliseconds from epoch.
      */
     public static long getCurrentMillisFromEpoch() {
-        return DateTime.now(DateTimeZone.UTC).getMillis();
+        return getDateTime().getMillis();
     }
 
+    public static long getMillisFromEpoch(DateTime date) {
+        return date.getMillis();
+    }
+    
     /**
      * Get the current system date in ISO 8601 format (e.g. yyyy-MM-dd).
      * 
      * @return date string
      */
     public static String getCurrentISODate() {
-        return dateFmt.print(DateTime.now(DateTimeZone.UTC).getMillis());
+        return dateFmt.withZone(DateTimeZone.UTC).print(getDateTime().getMillis());
     }
 
+    public static String getISODate(DateTime date) {
+        return dateFmt.withZone(DateTimeZone.UTC).print(date.getMillis());
+    }
+    
     /**
      * Get the current system date and time in ISO 8601 format (e.g. yyyy-MM-ddTHH:mm:ss.SSSZ).
      * 
      * @return
      */
     public static String getCurrentISODateTime() {
-        return dateTimeFmt.print(DateTime.now(DateTimeZone.UTC).getMillis());
+        return dateTimeFmt.withZone(DateTimeZone.UTC).print(getDateTime().getMillis());
     }
 
+    public static String getISODateTime(DateTime date) {
+        return dateTimeFmt.withZone(DateTimeZone.UTC).print(date.getMillis());
+    }
+    
     /**
      * Takes an ISO 8601 format compliant string, and returns only the date part (e.g. yyyy-MM-dd).
      * 
@@ -45,14 +61,14 @@ public final class DateConverter {
      * @throws exception
      *             if parameter d is in an incorrect format.
      */
-    public static String convertISODate(String d) {
+    public static String convertToISODate(String d) {
         DateTime date = null;
         if (d.length() == "yyyy-MM-dd".length()) {
             date = dateFmt.parseDateTime(d);
         } else {
             date = dateTimeFmt.parseDateTime(d);
         }
-        return dateFmt.print(date);
+        return dateFmt.withZone(DateTimeZone.UTC).print(date);
     }
 
     /**
@@ -63,14 +79,15 @@ public final class DateConverter {
      * @throws exception
      *             if parameter d is in an incorrect format.
      */
-    public static String convertISODateTime(String d) {
+    public static String convertToISODateTime(String d) {
         DateTime date = null;
         if (d.length() == "yyyy-MM-dd".length()) {
             date = dateFmt.parseDateTime(d);
+            return dateFmt.withZone(DateTimeZone.UTC).print(date);
         } else {
             date = dateTimeFmt.parseDateTime(d);
+            return dateTimeFmt.withZone(DateTimeZone.UTC).print(date);
         }
-        return dateTimeFmt.print(date);
     }
 
     /**
@@ -82,8 +99,8 @@ public final class DateConverter {
      * @throws exception
      *             if parameter d is in an incorrect format.
      */
-    public static String convertISODateTime(long millisFromEpoch) {
-        return dateTimeFmt.print(millisFromEpoch);
+    public static String convertToISODateTime(long millisFromEpoch) {
+        return dateTimeFmt.withZone(DateTimeZone.UTC).print(millisFromEpoch);
     }
 
     /**
@@ -94,7 +111,7 @@ public final class DateConverter {
      * @throws exception
      *             if parameter d is in an incorrect format.
      */
-    public static long convertMillisFromEpoch(String d) {
+    public static long convertToMillisFromEpoch(String d) {
         DateTime date = null;
         if (d.length() == "yyyy-MM-dd".length()) {
             date = dateFmt.parseDateTime(d);
