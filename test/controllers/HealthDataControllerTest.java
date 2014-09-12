@@ -48,11 +48,6 @@ public class HealthDataControllerTest {
     private static final String END_DATE = "endDate";
     private static final String START_DATE = "startDate";
 
-    private static final int NUMBER_OF_TESTS = 5;
-
-    private static boolean setUpComplete = false;
-    private static int testCount = 0;
-
     private ObjectMapper mapper = new ObjectMapper();
 
     @Resource
@@ -64,20 +59,12 @@ public class HealthDataControllerTest {
 
     @Before
     public void before() {
-        if (!setUpComplete) {
-            helper.createOneUser();
-            setUpComplete = true;
-        }
-
+        helper.createOneUser();
     }
 
     @After
     public void after() {
-        testCount++;
-        if (testCount == NUMBER_OF_TESTS) {
-            helper.deleteOneUser();
-        }
-
+        helper.deleteOneUser();
     }
 
     @Test

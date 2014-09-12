@@ -59,17 +59,13 @@ public class SurveyControllerTest {
     
     private ObjectMapper mapper = new ObjectMapper();
 
-    private static Study study;
-    private static List<String> roles;
-    private static boolean setUpComplete = false;
+    private Study study;
+    private List<String> roles;
 
     @Before
     public void before() {
-        if (!setUpComplete) {
-            study = studyService.getStudyByHostname("localhost");
-            roles = Lists.newArrayList(study.getKey()+"_researcher");
-            setUpComplete = true;
-        }
+        study = studyService.getStudyByHostname("localhost");
+        roles = Lists.newArrayList(study.getKey()+"_researcher");
         List<Survey> surveys = surveyDao.getSurveys(study.getKey());
         for (Survey survey : surveys) {
             surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());

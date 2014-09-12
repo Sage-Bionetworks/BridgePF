@@ -42,26 +42,15 @@ public class UserProfileControllerTest {
     }
 
     private ObjectMapper mapper = new ObjectMapper();
-
-    private static final int NUMBER_OF_TESTS = 4;
-    
-    private static boolean setUpComplete = false;
-    private static int testCount = 0;
     
     @Before
     public void before() {
-        if (!setUpComplete) {
-            helper.createOneUser();
-            setUpComplete = true;
-        }
+        helper.createOneUser();
     }
     
     @After
     public void after() {
-        testCount++;
-        if (testCount == NUMBER_OF_TESTS) {
-            helper.deleteOneUser();
-        }
+        helper.deleteOneUser();
     }
 
     @Test
