@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
@@ -14,6 +15,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -27,12 +29,20 @@ public class DynamoSurvey implements Survey, DynamoTable {
     private static final String NAME_FIELD = "name";
     private static final String IDENTIFIER_FIELD = "identifier";
     private static final String QUESTIONS_FIELD = "questions";
+    private static final String GUID_FIELD = "guid";
+    private static final String MODIFIED_ON_FIELD = "modifiedOn";
+    private static final String VERSIONED_ON_FIELD = "versionedOn";
+    private static final String PUBLISHED_FIELD = "published";
     
     public static final DynamoSurvey fromJson(JsonNode node) {
         DynamoSurvey survey = new DynamoSurvey();
         survey.setVersion( JsonUtils.asLong(node, VERSION_FIELD) );
+        survey.setGuid( JsonUtils.asText(node, GUID_FIELD) );
         survey.setName( JsonUtils.asText(node, NAME_FIELD) );
         survey.setIdentifier( JsonUtils.asText(node, IDENTIFIER_FIELD) );
+        survey.setModifiedOn( JsonUtils.asMillisSinceEpoch(node, MODIFIED_ON_FIELD) );
+        survey.setVersionedOn( JsonUtils.asMillisSinceEpoch(node, VERSIONED_ON_FIELD) );
+        survey.setPublished( JsonUtils.asBoolean(node, PUBLISHED_FIELD) );
         ArrayNode questionsNode = JsonUtils.asArrayNode(node,  QUESTIONS_FIELD);
         if (questionsNode != null) {
             for (JsonNode questionNode : questionsNode) {
@@ -63,7 +73,7 @@ public class DynamoSurvey implements Survey, DynamoTable {
         setVersionedOn(versionedOn);
     }
     
-    public DynamoSurvey(Survey survey) {
+    public DynamoSurvey(DynamoSurvey survey) {
         this();
         setStudyKey(survey.getStudyKey());
         setGuid(survey.getGuid());
@@ -73,13 +83,15 @@ public class DynamoSurvey implements Survey, DynamoTable {
         setName(survey.getName());
         setIdentifier(survey.getIdentifier());
         setPublished(survey.isPublished());
-        for (SurveyQuestion question : survey.getQuestions()) {
-            questions.add( new DynamoSurveyQuestion(question) );
+        for (Iterator<SurveyQuestion> i = survey.getQuestions().iterator(); i.hasNext();){
+            DynamoSurveyQuestion q = (DynamoSurveyQuestion)i.next();
+            questions.add( new DynamoSurveyQuestion(q) );
         }
     }
 
     @Override
     @DynamoDBAttribute
+    @JsonIgnore
     public String getStudyKey() {
         return studyKey;
     }

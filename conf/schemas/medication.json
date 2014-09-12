@@ -5,8 +5,8 @@
     "properties": {
         "key": {"type": "string"},
         "recordId": {"type": "string"},
-        "startDate": {"type": "string"},
-        "endDate": {"type": "string"},
+        "startDate": {"type": ["string","null"]},
+        "endDate": {"type": ["string","null"]},
         "version": {"type": "number"},
         "data": {
             "type": "object",

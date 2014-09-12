@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,7 +17,7 @@ public class ConsentSignature {
 
     public ConsentSignature(String name, String birthdate, boolean sendEmail) {
         this.name = name;
-        this.birthdate = DateConverter.convertISODateTime(birthdate);
+        this.birthdate = DateUtils.convertToISODateTime(birthdate);
         this.sendEmail = sendEmail;
     }
     

@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.json;
 
 import java.io.IOException;
 
-import org.sagebionetworks.bridge.models.DateConverter;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -14,7 +12,11 @@ public final class DateTimeJsonSerializer extends JsonSerializer<Long> {
     @Override
     public void serialize(Long millisFromEpoch, JsonGenerator jgen, SerializerProvider sp) throws IOException,
             JsonProcessingException {
-        jgen.writeString(DateConverter.convertISODateTime(millisFromEpoch));
+        if (millisFromEpoch != null && millisFromEpoch != 0L) {
+            jgen.writeString(DateUtils.convertToISODateTime(millisFromEpoch));
+        } else {
+            jgen.writeNull();
+        }
     }
 
 }

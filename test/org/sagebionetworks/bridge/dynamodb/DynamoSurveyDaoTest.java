@@ -6,8 +6,8 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
@@ -15,12 +15,16 @@ import org.sagebionetworks.bridge.dao.PublishedSurveyException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
+import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
+import org.sagebionetworks.bridge.models.surveys.UIHint;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -31,23 +35,48 @@ public class DynamoSurveyDaoTest {
     
     private static final String STUDY_KEY = TestConstants.SECOND_STUDY.getKey();
     
+    private class AgeQuestion extends DynamoSurveyQuestion {
+        IntegerConstraints constraints; 
+        private AgeQuestion() {
+            constraints = new IntegerConstraints();
+            constraints.setMinValue(17);
+            constraints.setMaxValue(114);
+            setIdentifier("age");
+            setConstraints(constraints);
+            setUiHint(UIHint.TEXTFIELD);
+            setPrompt("What's your age?");
+        }
+    }
+    
+    private class GenderQuestion extends DynamoSurveyQuestion {
+        List<SurveyQuestionOption> options;
+        private GenderQuestion() {
+            options = Lists.newArrayList(
+                new SurveyQuestionOption("male", "male", null), 
+                new SurveyQuestionOption("female", "female", null)
+            );
+            StringConstraints sc = new StringConstraints();
+            sc.setEnumeration(options);
+            setIdentifier("gender");
+            setUiHint(UIHint.SELECT);
+            setConstraints(sc);
+            setPrompt("What's your gender?");
+        }
+    }
+    
     @Before
     public void before() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoSurvey.class, 
             "studyKey", "modifiedOn", "identifier", "name", "published", "version");
         DynamoTestUtil.clearTable(DynamoSurveyQuestion.class, "guid", "identifier", "data");
-    }
-    
-    @After
-    public void after() {
         List<Survey> surveys = surveyDao.getSurveys(STUDY_KEY);
         for (Survey survey : surveys) {
             surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
             surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
         }
     }
-
+    
     private Survey constructTestSurvey() {
         return constructTestSurvey("Health Overview Test Survey");
     }
@@ -98,14 +127,8 @@ public class DynamoSurveyDaoTest {
     @Test
     public void crudSurvey() {
         Survey survey = constructTestSurvey();
-        
-        SurveyQuestion question = new DynamoSurveyQuestion();
-        question.setIdentifier("age");
-        survey.getQuestions().add(question);
-        
-        question = new DynamoSurveyQuestion();
-        question.setIdentifier("gender");
-        survey.getQuestions().add(question);
+        survey.getQuestions().add(new AgeQuestion());
+        survey.getQuestions().add(new GenderQuestion());
         
         survey = surveyDao.createSurvey(survey);
         
@@ -159,28 +182,27 @@ public class DynamoSurveyDaoTest {
     @Test
     public void crudSurveyQuestions() {
         Survey survey = constructTestSurvey();
-        
-        SurveyQuestion question = new DynamoSurveyQuestion();
-        question.setIdentifier("age");
-        question.setData(JsonNodeFactory.instance.objectNode());
-        survey.getQuestions().add(question);
-        
-        question = new DynamoSurveyQuestion();
-        question.setIdentifier("gender");
-        survey.getQuestions().add(question);
+        AgeQuestion aq = new AgeQuestion();
+        survey.getQuestions().add(aq);
+        survey.getQuestions().add(new GenderQuestion());
         
         survey = surveyDao.createSurvey(survey);
         
         // Now, alter these, and verify they are altered
-        survey.getQuestions().get(0).setIdentifier("new age");
-        survey.getQuestions().remove(1);
+        survey.getQuestions().remove(0);
+        survey.getQuestions().get(0).setIdentifier("new gender");
         surveyDao.updateSurvey(survey);
         
         survey = surveyDao.getSurvey(survey.getGuid(), survey.getVersionedOn());
 
         assertEquals("Survey only has one question", 1, survey.getQuestions().size());
-        assertEquals("Survey has updated the one question's identifier", "new age", survey.getQuestions().get(0)
-                .getIdentifier());
+        
+        SurveyQuestion restored = survey.getQuestions().get(0);
+        
+        assertEquals("Survey has updated the one question's identifier", "new gender", restored.getIdentifier());
+        StringConstraints sc = (StringConstraints)restored.getConstraints();
+        assertEquals("Constraints have correct enumeration", aq.constraints.getEnumeration(), sc.getEnumeration());
+        assertEquals("Question has the correct UIHint", UIHint.SELECT, restored.getUiHint());
     }
     
     @Test(expected=ConcurrentModificationException.class)
@@ -222,14 +244,8 @@ public class DynamoSurveyDaoTest {
     @Test
     public void versioningASurveyCopiesTheQuestions() {
         Survey survey = constructTestSurvey();
-        
-        SurveyQuestion question = new DynamoSurveyQuestion();
-        question.setIdentifier("question1");
-        survey.getQuestions().add(question);
-        
-        question = new DynamoSurveyQuestion();
-        question.setIdentifier("question2");
-        survey.getQuestions().add(question);
+        survey.getQuestions().add(new AgeQuestion());
+        survey.getQuestions().add(new GenderQuestion());
         
         survey = surveyDao.createSurvey(survey);
         String v1SurveyCompoundKey = survey.getQuestions().get(0).getSurveyCompoundKey();

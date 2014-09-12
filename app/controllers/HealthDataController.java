@@ -4,7 +4,7 @@ import global.JsonSchemaValidator;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.DateConverter;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.IdVersionHolder;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
@@ -13,6 +13,8 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.sagebionetworks.bridge.services.HealthDataService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import play.mvc.Result;
 
@@ -21,6 +23,8 @@ import com.google.common.collect.Lists;
 
 public class HealthDataController extends BaseController {
 
+    private static Logger logger = LoggerFactory.getLogger(HealthDataController.class);
+    
     private HealthDataService healthDataService;
 
     public void setHealthDataService(HealthDataService healthDataService) {
@@ -38,6 +42,7 @@ public class HealthDataController extends BaseController {
         List<HealthDataRecord> records = Lists.newArrayListWithCapacity(node.size());
         for (int i = 0; i < node.size(); i++) {
             JsonNode child = node.get(i);
+            logger.info(child.toString());
             validator.validate(tracker, child);
             records.add(HealthDataRecordImpl.fromJson(child));
         }
@@ -56,12 +61,12 @@ public class HealthDataController extends BaseController {
         if (startDate == null) {
             start = -Long.MAX_VALUE;
         } else {
-            start = DateConverter.convertMillisFromEpoch(startDate);
+            start = DateUtils.convertToMillisFromEpoch(startDate);
         }
         if (endDate == null) {
             end = Long.MAX_VALUE;
         } else {
-            end = DateConverter.convertMillisFromEpoch(endDate);
+            end = DateUtils.convertToMillisFromEpoch(endDate);
         }
         return getHealthDataByDateRange(trackerId, start, end);
     }
