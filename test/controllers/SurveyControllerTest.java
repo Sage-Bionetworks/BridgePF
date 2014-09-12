@@ -3,17 +3,17 @@ package controllers;
 import static org.apache.http.HttpStatus.SC_FORBIDDEN;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
-import static org.sagebionetworks.bridge.TestConstants.SURVEYS_URL;
 import static org.sagebionetworks.bridge.TestConstants.GET_SURVEY_URL;
 import static org.sagebionetworks.bridge.TestConstants.GET_VERSIONS_OF_SURVEY_URL;
-import static org.sagebionetworks.bridge.TestConstants.RECENT_SURVEYS_URL;
-import static org.sagebionetworks.bridge.TestConstants.RECENT_PUBLISHED_SURVEYS_URL;
-import static org.sagebionetworks.bridge.TestConstants.VERSION_SURVEY_URL;
 import static org.sagebionetworks.bridge.TestConstants.PUBLISH_SURVEY_URL;
+import static org.sagebionetworks.bridge.TestConstants.RECENT_PUBLISHED_SURVEYS_URL;
+import static org.sagebionetworks.bridge.TestConstants.RECENT_SURVEYS_URL;
+import static org.sagebionetworks.bridge.TestConstants.SURVEYS_URL;
+import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
+import static org.sagebionetworks.bridge.TestConstants.VERSION_SURVEY_URL;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
@@ -21,7 +21,6 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,21 +60,23 @@ public class SurveyControllerTest {
     private ObjectMapper mapper = new ObjectMapper();
     private Study study;
     private List<String> roles;
+    
+    private boolean setUpComplete = false;
 
     @Before
     public void before() {
-        study = studyService.getStudyByHostname("localhost");
-        roles = Lists.newArrayList(study.getKey()+"_researcher");
-        List<Survey> surveys = surveyDao.getSurveys(study.getKey());
-        for (Survey survey : surveys) {
-            surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
-            surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
+        if (!setUpComplete) {
+            study = studyService.getStudyByHostname("localhost");
+            roles = Lists.newArrayList(study.getKey()+"_researcher");
+            List<Survey> surveys = surveyDao.getSurveys(study.getKey());
+            for (Survey survey : surveys) {
+                surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
+                surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
+            }
+            
+            setUpComplete = true;
         }
-    }
 
-    @After
-    public void after() {
-        helper.deleteOneUser();
     }
     
     private String createSurveyObject(String name) throws Exception {

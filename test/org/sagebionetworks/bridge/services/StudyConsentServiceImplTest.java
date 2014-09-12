@@ -8,8 +8,8 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
@@ -31,13 +31,13 @@ public class StudyConsentServiceImplTest {
     @Resource
     private TestUserAdminHelper helper;
 
-    @Before
-    public void before() {
+    @BeforeClass
+    public static void initialSetUp() {
         DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
     }
 
-    @After
-    public void after() {
+    @AfterClass
+    public static void finalCleanUp() {
         DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
     }
 
