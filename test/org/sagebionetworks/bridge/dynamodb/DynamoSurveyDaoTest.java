@@ -45,7 +45,7 @@ public class DynamoSurveyDaoTest {
             constraints.setMaxValue(114);
             setIdentifier("age");
             setConstraints(constraints);
-            setUiHint(UIHint.TEXTFIELD);
+            setUiHint(UIHint.NUMBERFIELD);
             setPrompt("What's your age?");
         }
     }
