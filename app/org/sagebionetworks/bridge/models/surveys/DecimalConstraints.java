@@ -4,20 +4,19 @@ import java.util.EnumSet;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class DecimalConstraints extends EnumerableConstraints {
+public class DecimalConstraints extends Constraints {
     
-    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.CHECKBOX, UIHint.COMBOBOX, UIHint.LIST, UIHint.NUMBERFIELD,
-            UIHint.RADIOBUTTON, UIHint.SELECT, UIHint.SLIDER);
+    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.NUMBERFIELD, UIHint.SLIDER);
 
     private float minValue = 1.0f;
     private float maxValue = 100.0f;
     private float step = 1.0f;
     private float precision = 1.0f;
     
-    @Override
-    public String getDataType() {
-        return "decimal";
+    public DecimalConstraints() {
+        setDataType(DataType.DECIMAL);
     }
+    
     @Override
     @JsonIgnore
     public EnumSet<UIHint> getSuportedHints() {
@@ -79,7 +78,6 @@ public class DecimalConstraints extends EnumerableConstraints {
     @Override
     public String toString() {
         return "DecimalConstraints [minValue=" + minValue + ", maxValue=" + maxValue + ", step=" + step
-                + ", precision=" + precision + ", enumeration=" + enumeration + ", allowMultiple=" + allowMultiple
-                + "]";
+                + ", precision=" + precision + "]";
     }
 }

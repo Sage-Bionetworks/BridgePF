@@ -2,16 +2,13 @@ package org.sagebionetworks.bridge.validators;
 
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
-import org.sagebionetworks.bridge.models.surveys.EnumerableConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.google.common.base.Joiner;
@@ -101,29 +98,15 @@ public class SurveyValidator implements Validator<Survey> {
         if (!messages.isEmpty()) {
             return;
         }
-        
         Constraints con = question.getConstraints();
         UIHint hint = question.getUiHint();
         if (!con.getSuportedHints().contains(hint)) {
             messages.add("question #%s has a data type of '%s' that doesn't match the UI hint of %s", pos,
                     con.getDataType(), hint.name().toLowerCase());
         }
-        
-        if (con instanceof EnumerableConstraints) {
-            List<SurveyQuestionOption> options = ((EnumerableConstraints)con).getEnumeration();
-            
-            if (hint.requiresEnumeration(con.getDataType()) && isNullOrEmpty(options)) {
-                messages.add("question #%s should enumerate all values for UI hint of '%s', but it does not", pos,
-                        con.getDataType());
-            } else if (options != null && options.size() < 2) {
-                messages.add("question #%s enumerates less than two values; this should be modeled as a boolean", pos);
-            }
-            // TODO: Validate that a SurveyQuestionOption doesn't ask to skip to a question that is prior to the current
-            // question, in the list. That would create a loop.
-        }
     }
-    
+    /*
     private <T> boolean isNullOrEmpty(Collection<T> coll) {
         return (coll == null || coll.isEmpty());
-    }
+    }*/
 }

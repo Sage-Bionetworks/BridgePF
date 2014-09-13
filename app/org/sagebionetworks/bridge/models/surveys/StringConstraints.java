@@ -5,19 +5,18 @@ import java.util.EnumSet;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-public class StringConstraints extends EnumerableConstraints {
+public class StringConstraints extends Constraints {
 
-    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.CHECKBOX, UIHint.COMBOBOX, UIHint.LIST, UIHint.MULTILINETEXT,
-            UIHint.RADIOBUTTON, UIHint.SELECT, UIHint.SLIDER, UIHint.TEXTFIELD);
+    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.MULTILINETEXT, UIHint.TEXTFIELD);
     
     private int minLength = 0;
     private int maxLength = 255;
     private String pattern;
 
-    @Override
-    public String getDataType() {
-        return "string";
+    public StringConstraints() {
+        setDataType(DataType.STRING);
     }
+    
     @Override
     @JsonIgnore
     public EnumSet<UIHint> getSuportedHints() {
@@ -73,8 +72,7 @@ public class StringConstraints extends EnumerableConstraints {
     }
     @Override
     public String toString() {
-        return "StringConstraints [minLength=" + minLength + ", maxLength=" + maxLength + ", pattern=" + pattern
-                + ", enumeration=" + enumeration + ", allowMultiple=" + allowMultiple + "]";
+        return "StringConstraints [minLength=" + minLength + ", maxLength=" + maxLength + ", pattern=" + pattern + "]";
     }
     
 }

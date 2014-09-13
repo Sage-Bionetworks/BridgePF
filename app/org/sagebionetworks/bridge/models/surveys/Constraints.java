@@ -3,6 +3,11 @@ package org.sagebionetworks.bridge.models.surveys;
 import java.util.EnumSet;
 import java.util.Map;
 
+import org.sagebionetworks.bridge.json.DataTypeJsonDeserializer;
+import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Maps;
 
 public abstract class Constraints {
@@ -19,28 +24,23 @@ public abstract class Constraints {
         CLASSES.put("duration", DurationConstraints.class);
     }
     
-    protected boolean allowMultiple;
-    
-    public abstract String getDataType();
+    private DataType dataType;
     
     public abstract EnumSet<UIHint> getSuportedHints();
     
-    public void setDataType(String type) {
-        // noop. Jackson wants this to convert JSON constraint into an object.
-    }
-
-    public boolean isAllowMultiple() {
-        return allowMultiple;
-    }
-    public void setAllowMultiple(boolean allowMultiple) {
-        this.allowMultiple = allowMultiple;
+    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
+    public DataType getDataType() {
+        return dataType;
+    };
+    @JsonDeserialize(using = DataTypeJsonDeserializer.class)
+    public void setDataType(DataType dataType) {
+        this.dataType = dataType;
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + (allowMultiple ? 1231 : 1237);
         result = prime * result + getDataType().hashCode();
         return result;
     }
@@ -54,8 +54,6 @@ public abstract class Constraints {
         if (getClass() != obj.getClass())
             return false;
         Constraints other = (Constraints) obj;
-        if (allowMultiple != other.allowMultiple)
-            return false;
         if (!getDataType().equals(other.getDataType()))
             return false;
         return true;

@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-public abstract class TimeBaseConstraints extends Constraints {
+public abstract class TimeBasedConstraints extends Constraints {
     
     protected boolean allowFuture = false;
     
@@ -28,7 +28,7 @@ public abstract class TimeBaseConstraints extends Constraints {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        TimeBaseConstraints other = (TimeBaseConstraints) obj;
+        TimeBasedConstraints other = (TimeBasedConstraints) obj;
         if (allowFuture != other.allowFuture)
             return false;
         return true;

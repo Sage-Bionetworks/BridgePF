@@ -8,9 +8,8 @@ public class DurationConstraints extends Constraints {
 
     private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.TIMEPICKER);
 
-    @Override
-    public String getDataType() {
-        return "duration";
+    public DurationConstraints() {
+        setDataType(DataType.DURATION);
     }
 
     @Override

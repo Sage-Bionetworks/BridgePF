@@ -17,8 +17,9 @@ import org.sagebionetworks.bridge.dao.PublishedSurveyException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
-import org.sagebionetworks.bridge.models.surveys.StringConstraints;
+import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
@@ -52,13 +53,13 @@ public class DynamoSurveyDaoTest {
     
     private class GenderQuestion extends DynamoSurveyQuestion {
         List<SurveyQuestionOption> options;
-        StringConstraints constraints;
+        MultiValueConstraints constraints;
         private GenderQuestion() {
             options = Lists.newArrayList(
                 new SurveyQuestionOption("male", "male", null), 
                 new SurveyQuestionOption("female", "female", null)
             );
-            constraints = new StringConstraints();
+            constraints = new MultiValueConstraints(DataType.STRING);
             constraints.setEnumeration(options);
             setIdentifier("gender");
             setUiHint(UIHint.SELECT);
@@ -203,7 +204,7 @@ public class DynamoSurveyDaoTest {
         SurveyQuestion restored = survey.getQuestions().get(0);
         
         assertEquals("Survey has updated the one question's identifier", "new gender", restored.getIdentifier());
-        StringConstraints sc = (StringConstraints)restored.getConstraints();
+        MultiValueConstraints sc = (MultiValueConstraints)restored.getConstraints();
         assertEquals("Constraints have correct enumeration", genderQuestion.constraints.getEnumeration(), sc.getEnumeration());
         assertEquals("Question has the correct UIHint", UIHint.SELECT, restored.getUiHint());
     }
