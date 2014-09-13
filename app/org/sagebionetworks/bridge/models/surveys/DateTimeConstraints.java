@@ -4,15 +4,14 @@ import java.util.EnumSet;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class DateTimeConstraints extends TimeBaseConstraints {
+public class DateTimeConstraints extends TimeBasedConstraints {
 
     private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.DATETIMEPICKER);
     
-    @Override
-    public String getDataType() {
-        return "datetime";
+    public DateTimeConstraints() {
+        setDataType(DataType.DATETIME);
     }
-
+    
     @Override
     @JsonIgnore
     public EnumSet<UIHint> getSuportedHints() {

@@ -8,11 +8,10 @@ public class TimeConstraints extends Constraints {
     
     private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.TIMEPICKER);
     
-    @Override
-    public String getDataType() {
-        return "time";
+    public TimeConstraints() {
+        setDataType(DataType.TIME);
     }
-
+    
     @Override
     @JsonIgnore
     public EnumSet<UIHint> getSuportedHints() {

@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.surveys.Constraints;
+import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -77,7 +78,13 @@ public class JsonUtils {
         JsonNode constraints = JsonUtils.asJsonNode(parent, property);
         if (constraints != null) {
             String type = JsonUtils.asText(constraints, "dataType");
-            return mapper.convertValue(constraints, Constraints.CLASSES.get(type));
+            // If the constraints contain an enumeration, then actually, it's 
+            // MultiValueConstraint, with the type specified.
+            if (constraints.hasNonNull("enumeration")) {
+                return mapper.convertValue(constraints, MultiValueConstraints.class);
+            } else {
+                return mapper.convertValue(constraints, Constraints.CLASSES.get(type));    
+            }
         }
         return null;
      }

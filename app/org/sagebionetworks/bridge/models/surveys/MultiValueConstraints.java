@@ -1,30 +1,37 @@
 package org.sagebionetworks.bridge.models.surveys;
 
+import java.util.EnumSet;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
-/**
- * These are constraints that can have all their values enumerated. 
- * Certain UI controls, such as pickers or select controls, require 
- * this. It is usually easier for users if all the values can be 
- * specified.
- * 
- * When values are enumerated, than the min/max value or min/max length
- * properties are of no use, ditto for scale and for precision. So I 
- * don't think the class hierarchy is actually correct here.
- */
-public abstract class EnumerableConstraints extends Constraints {
+public class MultiValueConstraints extends Constraints {
 
-    protected List<SurveyQuestionOption> enumeration;
+    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.CHECKBOX, UIHint.COMBOBOX, UIHint.LIST,
+            UIHint.RADIOBUTTON, UIHint.SELECT, UIHint.SLIDER);
     
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private List<SurveyQuestionOption> enumeration;
+    
+    public MultiValueConstraints() {
+        setDataType(DataType.STRING);
+    }
+    
+    public MultiValueConstraints(DataType dataType) {
+        setDataType(dataType);
+    }
+    
+    @Override
+    @JsonIgnore
+    public EnumSet<UIHint> getSuportedHints() {
+        return UI_HINTS;
+    }
     public List<SurveyQuestionOption> getEnumeration() {
         return enumeration;
     }
     public void setEnumeration(List<SurveyQuestionOption> enumeration) {
         this.enumeration = enumeration;
     }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -32,6 +39,7 @@ public abstract class EnumerableConstraints extends Constraints {
         result = prime * result + ((enumeration == null) ? 0 : enumeration.hashCode());
         return result;
     }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -40,7 +48,7 @@ public abstract class EnumerableConstraints extends Constraints {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        EnumerableConstraints other = (EnumerableConstraints) obj;
+        MultiValueConstraints other = (MultiValueConstraints) obj;
         if (enumeration == null) {
             if (other.enumeration != null)
                 return false;
@@ -48,4 +56,10 @@ public abstract class EnumerableConstraints extends Constraints {
             return false;
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "MultiValueConstraints [dataType=" + getDataType().name() + ",  enumeration=" + enumeration + "]";
+    }
+    
 }

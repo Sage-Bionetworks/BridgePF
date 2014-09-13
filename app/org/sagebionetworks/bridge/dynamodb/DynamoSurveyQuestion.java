@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.json.UIHintJsonSerializer;
+import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 
@@ -148,7 +148,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     
     @Override
     @DynamoDBIgnore
-    @JsonSerialize(using = UIHintJsonSerializer.class)
+    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public UIHint getUiHint() {
         return JsonUtils.asUIHint(data, UI_HINTS_PROPERTY);
     }
