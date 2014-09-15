@@ -4,7 +4,6 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
@@ -171,6 +170,52 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         if (constraints != null) {
             data.put(CONSTRAINTS_PROPERTY, mapper.valueToTree(constraints));    
         }
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((data == null) ? 0 : data.hashCode());
+        result = prime * result + ((guid == null) ? 0 : guid.hashCode());
+        result = prime * result + ((identifier == null) ? 0 : identifier.hashCode());
+        result = prime * result + order;
+        result = prime * result + ((surveyCompoundKey == null) ? 0 : surveyCompoundKey.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        DynamoSurveyQuestion other = (DynamoSurveyQuestion) obj;
+        if (data == null) {
+            if (other.data != null)
+                return false;
+        } else if (!data.equals(other.data))
+            return false;
+        if (guid == null) {
+            if (other.guid != null)
+                return false;
+        } else if (!guid.equals(other.guid))
+            return false;
+        if (identifier == null) {
+            if (other.identifier != null)
+                return false;
+        } else if (!identifier.equals(other.identifier))
+            return false;
+        if (order != other.order)
+            return false;
+        if (surveyCompoundKey == null) {
+            if (other.surveyCompoundKey != null)
+                return false;
+        } else if (!surveyCompoundKey.equals(other.surveyCompoundKey))
+            return false;
+        return true;
     }
     
     @Override

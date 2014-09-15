@@ -1,8 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import java.util.Collection;
-import java.util.LinkedList;
-
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -11,20 +8,8 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
-import com.google.common.base.Joiner;
-
 public class SurveyValidator implements Validator<Survey> {
     
-    private class Messages extends LinkedList<String> {
-        private static final long serialVersionUID = -5357208558545390989L;
-        public void add(String message, Object... arguments) {
-            super.add(String.format(message, arguments));
-        }
-        public String join() {
-            return Joiner.on("; ").join(this);
-        }
-    }
-
     @Override
     public void validateNew(Survey survey) throws InvalidEntityException, EntityAlreadyExistsException {
         Messages messages = new Messages();
@@ -73,11 +58,6 @@ public class SurveyValidator implements Validator<Survey> {
         }
     }
     
-    /**
-     * @param question
-     * @param hint
-     * @param messages
-     */
     private void doValidateQuestion(SurveyQuestion question, boolean isNew, int pos, Messages messages) {
         if (!isNew && StringUtils.isBlank(question.getGuid())) {
             messages.add("question #%s is missing a GUID", pos);
@@ -105,8 +85,5 @@ public class SurveyValidator implements Validator<Survey> {
                     con.getDataType(), hint.name().toLowerCase());
         }
     }
-    /*
-    private <T> boolean isNullOrEmpty(Collection<T> coll) {
-        return (coll == null || coll.isEmpty());
-    }*/
+
 }
