@@ -1,10 +1,21 @@
 package org.sagebionetworks.bridge.models.surveys;
 
-public class BooleanConstraints extends EnumerableConstraints {
+import java.util.EnumSet;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+public class BooleanConstraints extends Constraints {
+    
+    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.CHECKBOX, UIHint.TOGGLE);
+    
+    public BooleanConstraints() {
+        setDataType(DataType.BOOLEAN);
+    }
     
     @Override
-    public String getDataType() {
-        return "boolean";
+    @JsonIgnore
+    public EnumSet<UIHint> getSuportedHints() {
+        return UI_HINTS;
     }
 
 }

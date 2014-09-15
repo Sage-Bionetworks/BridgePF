@@ -1,15 +1,26 @@
 package org.sagebionetworks.bridge.models.surveys;
 
-public class DecimalConstraints extends EnumerableConstraints {
+import java.util.EnumSet;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+public class DecimalConstraints extends Constraints {
+    
+    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.NUMBERFIELD, UIHint.SLIDER);
 
     private float minValue = 1.0f;
     private float maxValue = 100.0f;
     private float step = 1.0f;
     private float precision = 1.0f;
     
+    public DecimalConstraints() {
+        setDataType(DataType.DECIMAL);
+    }
+    
     @Override
-    public String getDataType() {
-        return "decimal";
+    @JsonIgnore
+    public EnumSet<UIHint> getSuportedHints() {
+        return UI_HINTS;
     }
     public float getMinValue() {
         return minValue;
@@ -67,7 +78,6 @@ public class DecimalConstraints extends EnumerableConstraints {
     @Override
     public String toString() {
         return "DecimalConstraints [minValue=" + minValue + ", maxValue=" + maxValue + ", step=" + step
-                + ", precision=" + precision + ", enumeration=" + enumeration + ", allowMultiple=" + allowMultiple
-                + "]";
+                + ", precision=" + precision + "]";
     }
 }

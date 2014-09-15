@@ -1,10 +1,21 @@
 package org.sagebionetworks.bridge.models.surveys;
 
-public class DateConstraints extends TimeBaseConstraints {
+import java.util.EnumSet;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+public class DateConstraints extends TimeBasedConstraints {
+    
+    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.DATEPICKER);
+
+    public DateConstraints() {
+        setDataType(DataType.DATE);
+    }
+    
     @Override
-    public String getDataType() {
-        return "date";
+    @JsonIgnore
+    public EnumSet<UIHint> getSuportedHints() {
+        return UI_HINTS;
     }
     
 }
