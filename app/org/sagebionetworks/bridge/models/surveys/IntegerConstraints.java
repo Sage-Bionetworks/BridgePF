@@ -1,14 +1,25 @@
 package org.sagebionetworks.bridge.models.surveys;
 
-public class IntegerConstraints extends EnumerableConstraints {
+import java.util.EnumSet;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+public class IntegerConstraints extends Constraints {
+
+    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.NUMBERFIELD, UIHint.SLIDER);
+    
     private int minValue = 0;
     private int maxValue = 100;
     private int step = 1;
     
+    public IntegerConstraints() {
+        setDataType(DataType.INTEGER);
+    }
+    
     @Override
-    public String getDataType() {
-        return "integer";
+    @JsonIgnore
+    public EnumSet<UIHint> getSuportedHints() {
+        return UI_HINTS;
     }
     public int getMinValue() {
         return minValue;
@@ -56,7 +67,6 @@ public class IntegerConstraints extends EnumerableConstraints {
     }
     @Override
     public String toString() {
-        return "IntegerConstraints [minValue=" + minValue + ", maxValue=" + maxValue + ", step=" + step
-                + ", enumeration=" + enumeration + ", allowMultiple=" + allowMultiple + "]";
+        return "IntegerConstraints [minValue=" + minValue + ", maxValue=" + maxValue + ", step=" + step + "]";
     }
 }
