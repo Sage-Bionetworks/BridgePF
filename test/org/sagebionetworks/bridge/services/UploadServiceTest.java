@@ -8,10 +8,13 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,6 +24,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -39,6 +44,16 @@ public class UploadServiceTest {
         assertNotNull(uploadService);
         assertNotNull(s3Client);
         objectsToRemove = new ArrayList<String>();
+        String bucket = BridgeConfigFactory.getConfig().getProperty("upload.bucket.pd");
+        // Clean objects older than an hour
+        ObjectListing objList = s3Client.listObjects(bucket);
+        for (S3ObjectSummary obj: objList.getObjectSummaries()) {
+            Date date = obj.getLastModified();
+            Date now = DateTime.now(DateTimeZone.UTC).minusHours(1).toDate();
+            if (now.after(date)) {
+                s3Client.deleteObject(bucket, obj.getKey());
+            }
+        }
     }
 
     @After
@@ -52,7 +67,8 @@ public class UploadServiceTest {
     @Test
     public void test() throws Exception {
         URL url = uploadService.createUpload();
-        assertEquals(200, upload(url));
+        int reponseCode = upload(url);
+        assertEquals(200, reponseCode);
         String uploadId = url.getPath();
         uploadId = uploadId.substring(1); // Remove the leading '/'
         uploadService.uploadComplete(uploadId);
