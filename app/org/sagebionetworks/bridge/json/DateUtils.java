@@ -114,9 +114,9 @@ public final class DateUtils {
     public static long convertToMillisFromEpoch(String d) {
         DateTime date = null;
         if (d.length() == "yyyy-MM-dd".length()) {
-            date = dateFmt.parseDateTime(d);
+            date = dateFmt.withZone(DateTimeZone.UTC).parseDateTime(d);
         } else {
-            date = dateTimeFmt.parseDateTime(d);
+            date = dateTimeFmt.withZone(DateTimeZone.UTC).parseDateTime(d);
         }
         return date.getMillis();
     }
