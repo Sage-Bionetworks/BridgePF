@@ -35,7 +35,7 @@ public class SurveyValidator implements Validator<Survey> {
     }
 
     @Override
-    public void validateExisting(Survey survey) throws InvalidEntityException {
+    public void validate(Survey survey) throws InvalidEntityException {
         doValidation(survey, false);
     }
 
@@ -80,7 +80,7 @@ public class SurveyValidator implements Validator<Survey> {
         }
         Constraints con = question.getConstraints();
         UIHint hint = question.getUiHint();
-        if (!con.getSuportedHints().contains(hint)) {
+        if (!con.getSupportedHints().contains(hint)) {
             messages.add("question #%s has a data type of '%s' that doesn't match the UI hint of %s", pos,
                     con.getDataType(), hint.name().toLowerCase());
         }

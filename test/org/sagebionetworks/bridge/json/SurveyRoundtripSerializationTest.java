@@ -33,11 +33,11 @@ public class SurveyRoundtripSerializationTest {
         private MultiValueQuestion() {
             MultiValueConstraints mvc = new MultiValueConstraints(DataType.INTEGER);
             List<SurveyQuestionOption> options = Lists.newArrayList(
-                new SurveyQuestionOption("Great", 5, null),
-                new SurveyQuestionOption("Good", 4, null),
-                new SurveyQuestionOption("OK", 3, null),
+                new SurveyQuestionOption("Terrible", 1, null),
                 new SurveyQuestionOption("Poor", 2, null),
-                new SurveyQuestionOption("Terrible", 1, null)
+                new SurveyQuestionOption("OK", 3, null),
+                new SurveyQuestionOption("Good", 4, null),
+                new SurveyQuestionOption("Great", 5, null)
             );
             mvc.setEnumeration(options);
             mvc.setAllowOther(true);
@@ -103,7 +103,7 @@ public class SurveyRoundtripSerializationTest {
             DurationConstraints c = new DurationConstraints();
             setPrompt("How log does your appointment take, on average?");
             setIdentifier("time_for_appt");
-            setUiHint(UIHint.SLIDER);
+            setUiHint(UIHint.TIMEPICKER);
             setConstraints(c);
             setGuid(UUID.randomUUID().toString());
         }
@@ -116,7 +116,7 @@ public class SurveyRoundtripSerializationTest {
             c.setMaxValue(4);
             setPrompt("How many times a day do you take your blood pressure?");
             setIdentifier("bp_x_day");
-            setUiHint(UIHint.RADIOBUTTON);
+            setUiHint(UIHint.NUMBERFIELD);
             setConstraints(c);
             setGuid(UUID.randomUUID().toString());
         }
@@ -133,8 +133,9 @@ public class SurveyRoundtripSerializationTest {
         }
     }
     
-    @Test
-    public void serializationIsCorrect() throws Exception {
+    // This is so complicated, we'll refer to it in other tests to get a 
+    // good example of a survey to work with (e.g. submitting answer tests).
+    public DynamoSurvey getCompleteSurvey() {
         DynamoSurvey survey = new DynamoSurvey();
         survey.setGuid(UUID.randomUUID().toString());
         survey.setName("General Blood Pressure Survey");
@@ -153,10 +154,14 @@ public class SurveyRoundtripSerializationTest {
         questions.add(new DurationQuestion());
         questions.add(new TimeQuestion());
         questions.add(new MultiValueQuestion());
+        return survey;
+    }
+    
+    @Test
+    public void serializationIsCorrect() throws Exception {
+        DynamoSurvey survey = getCompleteSurvey();
         
         String string = JsonUtils.toJSON(survey);
-        
-        System.out.println(string);
         
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(string);

@@ -26,7 +26,7 @@ public abstract class Constraints {
     
     private DataType dataType;
     
-    public abstract EnumSet<UIHint> getSuportedHints();
+    public abstract EnumSet<UIHint> getSupportedHints();
     
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public DataType getDataType() {

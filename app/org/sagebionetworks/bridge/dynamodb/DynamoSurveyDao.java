@@ -211,7 +211,6 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey updateSurvey(Survey survey) {
-        VALIDATOR.validateExisting(survey);
         Survey existing = getSurvey(survey.getGuid(), survey.getVersionedOn());
         if (existing.isPublished()) {
             throw new PublishedSurveyException(survey);
@@ -332,15 +331,20 @@ public class DynamoSurveyDao implements SurveyDao {
     private Survey saveSurvey(Survey survey) {
         deleteAllQuestions(survey.getGuid(), survey.getVersionedOn());
         List<SurveyQuestion> questions = survey.getQuestions();
-        Throwable error = null;
         for (int i=0; i < questions.size(); i++) {
             SurveyQuestion question = questions.get(i);
             question.setSurveyKeyComponents(survey.getGuid(), survey.getVersionedOn());
             question.setOrder(i);
-            // A new question was added to the survey.
             if (question.getGuid() == null) {
                 question.setGuid(generateId());
             }
+        }
+        // Now it should be valid, by jingo
+        VALIDATOR.validate(survey);
+        
+        Throwable error = null;
+        for (int i=0; i < questions.size(); i++) {
+            SurveyQuestion question = questions.get(i);
             try {
                 surveyQuestionMapper.save(question);    
             } catch(Throwable throwable) {
