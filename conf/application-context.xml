@@ -30,7 +30,7 @@
         </constructor-arg>
     </bean>
     
-    <!-- DynamoDB -->
+    <!-- DB -->
 
     <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient">
         <constructor-arg index="0">
@@ -56,6 +56,11 @@
 
     <bean id="surveyDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+    
+    <bean id="surveyResponseDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponseDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+        <property name="surveyDao" ref="surveyDao"/>
     </bean>
     
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
@@ -162,8 +167,16 @@
                 <property name="surveyService" ref="surveyService" />
             </bean>
         </property>
+    </bean>
+        
+    <bean id="controllers.SurveyResponseController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.SurveyResponseController" parent="BaseController">
+                <property name="surveyResponseDao" ref="surveyResponseDao" />
+            </bean>
+        </property>
     </bean>    
-
+    
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
         <property name="studies">
             <list>

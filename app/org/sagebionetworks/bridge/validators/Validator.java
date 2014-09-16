@@ -7,6 +7,6 @@ public interface Validator<T> {
 
     public void validateNew(T object) throws InvalidEntityException, EntityAlreadyExistsException;
     
-    public void validateExisting(T object) throws InvalidEntityException;
+    public void validate(T object) throws InvalidEntityException;
 
 }

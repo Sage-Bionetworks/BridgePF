@@ -19,7 +19,7 @@ public class StringConstraints extends Constraints {
     
     @Override
     @JsonIgnore
-    public EnumSet<UIHint> getSuportedHints() {
+    public EnumSet<UIHint> getSupportedHints() {
         return UI_HINTS;
     }
     public int getMinLength() {

@@ -18,7 +18,7 @@ public class IntegerConstraints extends Constraints {
     
     @Override
     @JsonIgnore
-    public EnumSet<UIHint> getSuportedHints() {
+    public EnumSet<UIHint> getSupportedHints() {
         return UI_HINTS;
     }
     public int getMinValue() {

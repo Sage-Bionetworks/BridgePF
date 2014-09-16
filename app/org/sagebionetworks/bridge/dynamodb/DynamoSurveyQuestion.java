@@ -25,6 +25,8 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private static final String CONSTRAINTS_PROPERTY = "constraints";
+    private static final String DATA_TYPE_PROPERTY = "dataType";
+    private static final String ENUM_PROPERTY = "enumeration";
     private static final String UI_HINTS_PROPERTY = "uiHint";
     private static final String PROMPT_PROPERTY = "prompt";
     
@@ -39,7 +41,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         // back to the data node.
         question.setPrompt(JsonUtils.asText(node, PROMPT_PROPERTY));
         question.setUiHint(JsonUtils.asUIHint(node, UI_HINTS_PROPERTY));
-        question.setConstraints(JsonUtils.asConstraints(node, CONSTRAINTS_PROPERTY));
+        question.setConstraints(JsonUtils.asConstraints(node, CONSTRAINTS_PROPERTY, DATA_TYPE_PROPERTY, ENUM_PROPERTY));
         return question;
     }
 
@@ -162,7 +164,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     @Override
     @DynamoDBIgnore
     public Constraints getConstraints() {
-        return JsonUtils.asConstraints(data, CONSTRAINTS_PROPERTY);
+        return JsonUtils.asConstraints(data, CONSTRAINTS_PROPERTY, DATA_TYPE_PROPERTY, ENUM_PROPERTY);
     }
     
     @Override

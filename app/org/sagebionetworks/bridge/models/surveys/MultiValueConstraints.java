@@ -31,7 +31,7 @@ public class MultiValueConstraints extends Constraints {
     
     @Override
     @JsonIgnore
-    public EnumSet<UIHint> getSuportedHints() {
+    public EnumSet<UIHint> getSupportedHints() {
         return UI_HINTS;
     }
     public List<SurveyQuestionOption> getEnumeration() {
