@@ -181,22 +181,21 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
             data.put(ANSWERS_PROPERTY, mapper.valueToTree(answers));    
         }
     }
-
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((getAnswers().isEmpty()) ? 0 : getAnswers().hashCode());
         result = prime * result + (int) (completedOn ^ (completedOn >>> 32));
+        result = prime * result + ((data == null) ? 0 : data.hashCode());
         result = prime * result + ((guid == null) ? 0 : guid.hashCode());
         result = prime * result + ((healthCode == null) ? 0 : healthCode.hashCode());
         result = prime * result + (int) (startedOn ^ (startedOn >>> 32));
+        result = prime * result + ((survey == null) ? 0 : survey.hashCode());
         result = prime * result + ((surveyGuid == null) ? 0 : surveyGuid.hashCode());
         result = prime * result + (int) (surveyVersionedOn ^ (surveyVersionedOn >>> 32));
         result = prime * result + ((version == null) ? 0 : version.hashCode());
         return result;
     }
-
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -206,12 +205,12 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         if (getClass() != obj.getClass())
             return false;
         DynamoSurveyResponse other = (DynamoSurveyResponse) obj;
+        if (completedOn != other.completedOn)
+            return false;
         if (data == null) {
             if (other.data != null)
                 return false;
         } else if (!data.equals(other.data))
-            return false;
-        if (completedOn != other.completedOn)
             return false;
         if (guid == null) {
             if (other.guid != null)
@@ -224,6 +223,11 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         } else if (!healthCode.equals(other.healthCode))
             return false;
         if (startedOn != other.startedOn)
+            return false;
+        if (survey == null) {
+            if (other.survey != null)
+                return false;
+        } else if (!survey.equals(other.survey))
             return false;
         if (surveyGuid == null) {
             if (other.surveyGuid != null)
@@ -238,5 +242,12 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         } else if (!version.equals(other.version))
             return false;
         return true;
+    }
+    @Override
+    public String toString() {
+        // but not the healthDataCode!
+        return "DynamoSurveyResponse [guid=" + guid + ", surveyGuid=" + surveyGuid + ", surveyVersionedOn="
+                + surveyVersionedOn + ", survey=" + survey + ", startedOn=" + startedOn + ", completedOn="
+                + completedOn + ", version=" + version + ", data=" + data + "]";
     }
 }

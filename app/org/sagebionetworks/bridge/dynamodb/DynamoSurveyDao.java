@@ -45,6 +45,10 @@ public class DynamoSurveyDao implements SurveyDao {
     
     class QueryBuilder {
         
+        private static final String PUBLISHED_PROPERTY = "published";
+        private static final String VERSIONED_ON_PROPERTY = "versionedOn";
+        private static final String STUDY_KEY_PROPERTY = "studyKey";
+        
         String surveyGuid;
         String studyKey;
         long versionedOn;
@@ -98,13 +102,13 @@ public class DynamoSurveyDao implements SurveyDao {
             query.withScanIndexForward(false);
             query.withHashKeyValues(new DynamoSurvey(surveyGuid, versionedOn));    
             if (studyKey != null) {
-                query.withQueryFilterEntry("studyKey", studyCondition());
+                query.withQueryFilterEntry(STUDY_KEY_PROPERTY, studyCondition());
             }
             if (versionedOn != 0L) {
-                query.withRangeKeyCondition("versionedOn", versionedOnCondition());
+                query.withRangeKeyCondition(VERSIONED_ON_PROPERTY, versionedOnCondition());
             }
             if (published) {
-                query.withQueryFilterEntry("published", publishedCondition());
+                query.withQueryFilterEntry(PUBLISHED_PROPERTY, publishedCondition());
             }
             return surveyMapper.queryPage(DynamoSurvey.class, query).getResults();
         }
@@ -112,13 +116,13 @@ public class DynamoSurveyDao implements SurveyDao {
         private List<DynamoSurvey> scan() {
             DynamoDBScanExpression scan = new DynamoDBScanExpression();
             if (studyKey != null) {
-                scan.addFilterCondition("studyKey", studyCondition());
+                scan.addFilterCondition(STUDY_KEY_PROPERTY, studyCondition());
             }
             if (versionedOn != 0L) {
-                scan.addFilterCondition("versionedOn", versionedOnCondition());
+                scan.addFilterCondition(VERSIONED_ON_PROPERTY, versionedOnCondition());
             }
             if (published) {
-                scan.addFilterCondition("published", publishedCondition());
+                scan.addFilterCondition(PUBLISHED_PROPERTY, publishedCondition());
             }
             // Scans will not sort as queries do. Sort Manually.
             List<DynamoSurvey> surveys = Lists.newArrayList(surveyMapper.scan(DynamoSurvey.class, scan));
@@ -305,7 +309,7 @@ public class DynamoSurveyDao implements SurveyDao {
         if (existing.isPublished()) {
             throw new PublishedSurveyException(existing);
         }
-        surveyMapper.batchDelete(existing.getQuestions());
+        deleteAllQuestions(existing.getGuid(), existing.getVersionedOn());
         surveyMapper.delete(existing);
     }
     
@@ -375,7 +379,6 @@ public class DynamoSurveyDao implements SurveyDao {
         query.withHashKeyValues(template);
         
         QueryResultPage<DynamoSurveyQuestion> page = surveyQuestionMapper.queryPage(DynamoSurveyQuestion.class, query);
-
         surveyQuestionMapper.batchDelete(page.getResults());
     }
 }

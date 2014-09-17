@@ -17,5 +17,4 @@ public class BooleanConstraints extends Constraints {
     public EnumSet<UIHint> getSupportedHints() {
         return UI_HINTS;
     }
-
 }

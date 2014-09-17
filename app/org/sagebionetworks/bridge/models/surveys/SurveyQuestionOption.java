@@ -17,6 +17,11 @@ public class SurveyQuestionOption {
         this.skipToQuestionIdentifier = skipToIdentifierQuestion;
     }
     
+    public SurveyQuestionOption(String label, Object value) {
+        this.label = label;
+        this.value = value;
+    }
+    
     public String getLabel() {
         return label;
     }
