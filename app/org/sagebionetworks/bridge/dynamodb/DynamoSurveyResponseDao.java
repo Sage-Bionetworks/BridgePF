@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.validators.SurveyAnswerValidator;
-import org.sagebionetworks.bridge.validators.SurveyResponseValidator;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -30,8 +29,6 @@ import com.google.common.collect.Maps;
 
 public class DynamoSurveyResponseDao implements SurveyResponseDao {
 
-    private static final SurveyResponseValidator VALIDATOR = new SurveyResponseValidator();
-    
     private DynamoDBMapper responseMapper;
     
     private DynamoSurveyDao surveyDao;
@@ -68,7 +65,6 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         response.setAnswers(unionOfAnswers);
         response.setHealthCode(healthCode);
         updateTimestamps(response);
-        VALIDATOR.validate(response);
         
         try {
             responseMapper.save(response);
@@ -99,11 +95,11 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     @Override
-    public void appendSurveyAnswers(SurveyResponse response, List<SurveyAnswer> answers) {
+    public SurveyResponse appendSurveyAnswers(SurveyResponse response, List<SurveyAnswer> answers) {
         List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(response.getSurvey(), response.getAnswers(), answers);
         response.setAnswers(unionOfAnswers);
         updateTimestamps(response);
-        VALIDATOR.validate(response);
+
         try {
             responseMapper.save(response);
         } catch(Throwable error) {
@@ -113,6 +109,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
                 throw new BridgeServiceException(error.getMessage(), 500);
             }
         }
+        return response;
     }
     
     @Override

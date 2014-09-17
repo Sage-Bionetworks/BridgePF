@@ -2,16 +2,17 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.EnumSet;
 
+import org.sagebionetworks.bridge.validators.Messages;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class DecimalConstraints extends Constraints {
     
     private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.NUMBERFIELD, UIHint.SLIDER);
 
-    private float minValue = 1.0f;
-    private float maxValue = 100.0f;
-    private float step = 1.0f;
-    private float precision = 1.0f;
+    private Double minValue;
+    private Double maxValue;
+    private Double step;
     
     public DecimalConstraints() {
         setDataType(DataType.DECIMAL);
@@ -22,40 +23,47 @@ public class DecimalConstraints extends Constraints {
     public EnumSet<UIHint> getSupportedHints() {
         return UI_HINTS;
     }
-    public float getMinValue() {
+    public Double getMinValue() {
         return minValue;
     }
-    public void setMinValue(float minValue) {
+    public void setMinValue(Double minValue) {
         this.minValue = minValue;
     }
-    public float getMaxValue() {
+    public Double getMaxValue() {
         return maxValue;
     }
-    public void setMaxValue(float maxValue) {
+    public void setMaxValue(Double maxValue) {
         this.maxValue = maxValue;
     }
-    public float getStep() {
+    public Double getStep() {
         return step;
     }
-    public void setStep(float step) {
+    public void setStep(Double step) {
         this.step = step;
     }
-    public float getPrecision() {
-        return precision;
+    public void validate(Messages messages, SurveyAnswer answer) {
+        double value = (Double)answer.getAnswer();
+        if (minValue != null && value < minValue) {
+            messages.add("it is lower than the minimum value of %s", minValue);
+        }
+        if (maxValue != null && value > maxValue) {
+            messages.add("it is higher than the maximum value of %s", maxValue);
+        }
+        if (step != null && value % step != 0) {
+            messages.add("it is not a step value of %s", step);
+        }
     }
-    public void setPrecision(float precision) {
-        this.precision = precision;
-    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = super.hashCode();
-        result = prime * result + Float.floatToIntBits(maxValue);
-        result = prime * result + Float.floatToIntBits(minValue);
-        result = prime * result + Float.floatToIntBits(precision);
-        result = prime * result + Float.floatToIntBits(step);
+        result = prime * result + ((maxValue == null) ? 0 : maxValue.hashCode());
+        result = prime * result + ((minValue == null) ? 0 : minValue.hashCode());
+        result = prime * result + ((step == null) ? 0 : step.hashCode());
         return result;
     }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -65,19 +73,27 @@ public class DecimalConstraints extends Constraints {
         if (getClass() != obj.getClass())
             return false;
         DecimalConstraints other = (DecimalConstraints) obj;
-        if (Float.floatToIntBits(maxValue) != Float.floatToIntBits(other.maxValue))
+        if (maxValue == null) {
+            if (other.maxValue != null)
+                return false;
+        } else if (!maxValue.equals(other.maxValue))
             return false;
-        if (Float.floatToIntBits(minValue) != Float.floatToIntBits(other.minValue))
+        if (minValue == null) {
+            if (other.minValue != null)
+                return false;
+        } else if (!minValue.equals(other.minValue))
             return false;
-        if (Float.floatToIntBits(precision) != Float.floatToIntBits(other.precision))
-            return false;
-        if (Float.floatToIntBits(step) != Float.floatToIntBits(other.step))
+        if (step == null) {
+            if (other.step != null)
+                return false;
+        } else if (!step.equals(other.step))
             return false;
         return true;
     }
+
     @Override
     public String toString() {
-        return "DecimalConstraints [minValue=" + minValue + ", maxValue=" + maxValue + ", step=" + step
-                + ", precision=" + precision + "]";
+        return "DecimalConstraints [minValue=" + minValue + ", maxValue=" + maxValue + ", step=" + step + "]";
     }
+
 }

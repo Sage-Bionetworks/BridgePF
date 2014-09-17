@@ -26,15 +26,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
-import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.UIHint;
 import org.sagebionetworks.bridge.services.StudyServiceImpl;
+import org.sagebionetworks.bridge.surveys.TestSurvey;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -64,24 +60,6 @@ public class SurveyControllerTest {
     private List<String> roles;
     
     private boolean setUpComplete = false;
-    
-    private class GenderQuestion extends DynamoSurveyQuestion {
-        private GenderQuestion() {
-            setIdentifier("gender");
-            setPrompt("What is your gender?");
-            setUiHint(UIHint.TEXTFIELD);
-            setConstraints(new StringConstraints());
-        }
-    }
-    
-    private class AgeQuestion extends DynamoSurveyQuestion {
-        private AgeQuestion() {
-            setIdentifier("age");
-            setPrompt("What is your age?");
-            setUiHint(UIHint.NUMBERFIELD);
-            setConstraints(new IntegerConstraints());
-        }
-    }
 
     @Before
     public void before() {
@@ -99,15 +77,6 @@ public class SurveyControllerTest {
 
     }
     
-    private String createSurveyObject(String name) throws Exception {
-        Survey survey = new DynamoSurvey();
-        survey.setName(name);
-        survey.setIdentifier("general");
-        survey.getQuestions().add(new GenderQuestion());
-        survey.getQuestions().add(new AgeQuestion());
-        return mapper.writeValueAsString(survey);
-    }
-    
     @Test
     public void mustSubmitAsAdminOrResearcher() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
@@ -115,7 +84,7 @@ public class SurveyControllerTest {
                 try {
                     helper.createOneUser();  
                     
-                    String content = createSurveyObject("Name");
+                    String content = new TestSurvey(true).toJSON(); // createSurveyObject("Name");
                     Response response = TestUtils.getURL(helper.getUserSessionToken(), SURVEYS_URL).post(content)
                             .get(TIMEOUT);
                     assertEquals("HTTP response indicates authorization error", SC_FORBIDDEN, response.getStatus());
@@ -138,7 +107,7 @@ public class SurveyControllerTest {
                     ArrayNode questions = (ArrayNode)keys.node.get("questions");
                     
                     String prompt = questions.get(1).get("prompt").asText();
-                    assertEquals("Prompt is correct", "What is your age?", prompt);
+                    assertEquals("Prompt is correct", "When did you last have a medical check-up?", prompt);
                 } finally {
                     helper.deleteOneUser();    
                 }
@@ -273,7 +242,7 @@ public class SurveyControllerTest {
     }
     
     private GuidVersionHolder createSurvey(String name) throws Exception {
-        String content = createSurveyObject(name);
+        String content = new TestSurvey(true).toJSON(); // createSurveyObject(name);
         Response response = TestUtils.getURL(helper.getUserSessionToken(), SURVEYS_URL).post(content).get(TIMEOUT);
         assertEquals("200 response [createSurvey]", SC_OK, response.getStatus());
         

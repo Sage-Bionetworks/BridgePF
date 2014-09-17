@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.json.DataTypeJsonDeserializer;
 import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
+import org.sagebionetworks.bridge.validators.Messages;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -27,6 +28,10 @@ public abstract class Constraints {
     private DataType dataType;
     
     public abstract EnumSet<UIHint> getSupportedHints();
+    
+    public void validate(Messages messages, SurveyAnswer answer) {
+        // noop
+    }
     
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public DataType getDataType() {

@@ -12,7 +12,7 @@ public interface SurveyResponseDao {
     
     public SurveyResponse getSurveyResponse(String guid);
     
-    public void appendSurveyAnswers(SurveyResponse response, List<SurveyAnswer> answers);
+    public SurveyResponse appendSurveyAnswers(SurveyResponse response, List<SurveyAnswer> answers);
     
     public void deleteSurveyResponse(SurveyResponse response);
     
