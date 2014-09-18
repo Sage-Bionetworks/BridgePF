@@ -26,7 +26,6 @@ public class SurveyRule {
     
     public SurveyRule() {
     }
-    
     public SurveyRule(Operator operator, Object value, String gotoTarget) {
         this.operator = operator;
         this.value = value;

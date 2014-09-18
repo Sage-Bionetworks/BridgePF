@@ -132,8 +132,8 @@ public class TestSurvey extends DynamoSurvey {
             IntegerConstraints c = new IntegerConstraints();
             c.setMinValue(0L);
             c.setMaxValue(4L);
-            c.getRules().add(new SurveyRule(Operator.LE, 2, "question_after_depth_questions"));
-            c.getRules().add(new SurveyRule(Operator.DE, null, "question_after_depth_questions"));
+            c.getRules().add(new SurveyRule(Operator.LE, 2, "name"));
+            c.getRules().add(new SurveyRule(Operator.DE, null, "name"));
             
             setPrompt("How many times a day do you take your blood pressure?");
             setIdentifier("bp_x_day");
