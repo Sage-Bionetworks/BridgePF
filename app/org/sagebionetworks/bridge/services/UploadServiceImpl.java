@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.amazonaws.services.s3.Headers.SERVER_SIDE_ENCRYPTION;
+import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
+
 import java.net.URL;
 import java.util.Date;
 import java.util.UUID;
@@ -12,6 +15,7 @@ import com.amazonaws.HttpMethod;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 
 public class UploadServiceImpl implements UploadService {
 
@@ -42,11 +46,16 @@ public class UploadServiceImpl implements UploadService {
         presignedUrlRequest.setMethod(HttpMethod.PUT); 
         presignedUrlRequest.setExpiration(expiration);
         presignedUrlRequest.setRequestCredentials(credentials);
+        presignedUrlRequest.addRequestParameter(SERVER_SIDE_ENCRYPTION, AES_256_SERVER_SIDE_ENCRYPTION);
         return s3UploadClient.generatePresignedUrl(presignedUrlRequest);
     }
 
     @Override
     public void uploadComplete(String key) {
-        s3Client.getObjectMetadata(BUCKET, key);
+        ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, key);
+        String sse = obj.getSSEAlgorithm();
+        if (!AES_256_SERVER_SIDE_ENCRYPTION.equals(sse)) {
+            throw new RuntimeException("Server-side encryption failure.");
+        }
     }
 }
