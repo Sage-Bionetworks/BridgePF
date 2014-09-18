@@ -12,7 +12,7 @@ public class BridgeEncryptor implements StringEncryptor {
     public BridgeEncryptor(String password) {
         StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
         encryptor.setProvider(new BouncyCastleProvider());
-        encryptor.setAlgorithm("PBEWITHSHAAND256BITAES-CBC-BC");
+        encryptor.setAlgorithm("PBEWITHSHA256AND256BITAES-CBC-BC");
         encryptor.setPassword(password);
         encryptor.setSaltGenerator(new RandomSaltGenerator());
         this.encryptor = encryptor;
