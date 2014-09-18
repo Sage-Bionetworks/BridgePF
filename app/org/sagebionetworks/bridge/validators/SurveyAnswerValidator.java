@@ -50,7 +50,7 @@ public class SurveyAnswerValidator implements Validator<SurveyAnswer> {
             }
         }
         if (!messages.isEmpty()) {
-            throw new InvalidEntityException(answer, "Answer for question '" + question.getGuid() + "' is invalid: "
+            throw new InvalidEntityException(answer, "Answer for question '" + question.getIdentifier() + "' is invalid: "
                     + messages.join());
         }
     }

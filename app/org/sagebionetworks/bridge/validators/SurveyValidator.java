@@ -129,6 +129,16 @@ public class SurveyValidator implements Validator<Survey> {
             }
             alreadySeenIdentifiers.add(question.getIdentifier());
         }
+        // Now verify that all gotoTarget identifiers actually exist
+        for (int i=0; i < questions.size(); i++) {
+            SurveyQuestion question = questions.get(i);
+            for (SurveyRule rule : question.getConstraints().getRules()) {
+                if (!alreadySeenIdentifiers.contains(rule.getGotoTarget())) {
+                    messages.add("question #%s has a rule with a goto target that doesn't exist (%s)", i, rule.getGotoTarget());
+                }
+            }
+        }
+        
     }
 
 }
