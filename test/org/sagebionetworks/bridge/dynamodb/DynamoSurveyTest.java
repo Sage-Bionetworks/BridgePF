@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -63,8 +64,8 @@ public class DynamoSurveyTest {
         question.setUiHint(UIHint.TEXTFIELD);
         
         List<SurveyQuestionOption> options = Lists.newArrayList(
-            new SurveyQuestionOption("1", "2", "3"),
-            new SurveyQuestionOption("4", "5", "6")
+            new SurveyQuestionOption("1", "2"),
+            new SurveyQuestionOption("4", "5")
         );
         
         MultiValueConstraints c = new MultiValueConstraints(DataType.STRING);
@@ -83,8 +84,10 @@ public class DynamoSurveyTest {
         question.setUiHint(UIHint.DATEPICKER);
 
         DateConstraints dc = new DateConstraints();
+        dc.getRules().add(new SurveyRule(SurveyRule.Operator.LT, 17L, "end_survey_question"));
+        dc.getRules().add(new SurveyRule(SurveyRule.Operator.DE, null, "end_survey_question"));
         question.setConstraints(dc);
-        
+
         return question;
     }
     

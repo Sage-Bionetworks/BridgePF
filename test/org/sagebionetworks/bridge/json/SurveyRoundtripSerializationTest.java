@@ -33,11 +33,11 @@ public class SurveyRoundtripSerializationTest {
         private MultiValueQuestion() {
             MultiValueConstraints mvc = new MultiValueConstraints(DataType.INTEGER);
             List<SurveyQuestionOption> options = Lists.newArrayList(
-                new SurveyQuestionOption("Great", 5, null),
-                new SurveyQuestionOption("Good", 4, null),
-                new SurveyQuestionOption("OK", 3, null),
-                new SurveyQuestionOption("Poor", 2, null),
-                new SurveyQuestionOption("Terrible", 1, null)
+                new SurveyQuestionOption("Great", 5),
+                new SurveyQuestionOption("Good", 4),
+                new SurveyQuestionOption("OK", 3),
+                new SurveyQuestionOption("Poor", 2),
+                new SurveyQuestionOption("Terrible", 1)
             );
             mvc.setEnumeration(options);
             mvc.setAllowOther(true);
