@@ -10,7 +10,7 @@ public class DateUtilsTest {
     
     // The test date is: either "2014-08-11T16:01:23.817Z" or 1407772883817 in milliseconds
     private static long MILLIS = 1407772883817L;
-    private static long MILLIS_TO_MIDNIGHT = 1407740400000L;
+    private static long MILLIS_TO_MIDNIGHT = 1407715200000L;
 
     private static String ISO_DATE_TIME = "2014-08-11T16:01:23.817Z";
     private static String ISO_DATE = "2014-08-11";
@@ -39,10 +39,10 @@ public class DateUtilsTest {
         // No problem converting the more specific datetime to a date only
         
         String dateString = DateUtils.convertToISODate(ISO_DATE);
-        assertEquals("Same date string", ISO_DATE, dateString);
+        assertEquals("Same date string [1]", ISO_DATE, dateString);
         
         dateString = DateUtils.convertToISODate(ISO_DATE_TIME);
-        assertEquals("Same date string", ISO_DATE, dateString);
+        assertEquals("Same date string [2]", ISO_DATE, dateString);
     }
     @Test
     public void convertToISODateTime() {
@@ -51,19 +51,19 @@ public class DateUtilsTest {
         // date only.
         
         String dateString = DateUtils.convertToISODateTime(ISO_DATE);
-        assertEquals("Same date time string", ISO_DATE, dateString);
+        assertEquals("Same date time string [1]", ISO_DATE, dateString);
         
         dateString = DateUtils.convertToISODateTime(ISO_DATE_TIME);
-        assertEquals("Same date time string", ISO_DATE_TIME, dateString);
+        assertEquals("Same date time string [2]", ISO_DATE_TIME, dateString);
     }
     @Test
     public void convertToMillisFromEpoch() {
         long millis = DateUtils.convertToMillisFromEpoch(ISO_DATE_TIME);
-        assertEquals("Same millis", MILLIS, millis);
+        assertEquals("Same millis [1]", MILLIS, millis);
         
         // We cannot avoid ambiguity here though, as long can't represent this.
         // So this is milliseconds to midnight UTC of the given date.
         millis = DateUtils.convertToMillisFromEpoch(ISO_DATE);
-        assertEquals("Same millis", MILLIS_TO_MIDNIGHT, millis);
+        assertEquals("Same millis [2]", MILLIS_TO_MIDNIGHT, millis);
     }
 }
