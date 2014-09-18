@@ -2,16 +2,15 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.List;
 
-public interface SurveyResponse {
+import org.sagebionetworks.bridge.models.BridgeEntity;
+
+public interface SurveyResponse extends BridgeEntity {
     
     public enum Status {
         UNSTARTED,
         IN_PROGRESS,
         FINISHED;
     }
-    
-    public String getUserId();
-    public void setUserId(String userId);
     
     public String getGuid();
     public void setGuid(String guid);

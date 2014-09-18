@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class DurationConstraints extends Constraints {
 
-    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.TIMEPICKER);
+    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.DATEPICKER, UIHint.DATETIMEPICKER, UIHint.TIMEPICKER);
 
     public DurationConstraints() {
         setDataType(DataType.DURATION);
@@ -14,7 +14,7 @@ public class DurationConstraints extends Constraints {
 
     @Override
     @JsonIgnore
-    public EnumSet<UIHint> getSuportedHints() {
+    public EnumSet<UIHint> getSupportedHints() {
         return UI_HINTS;
     }
     

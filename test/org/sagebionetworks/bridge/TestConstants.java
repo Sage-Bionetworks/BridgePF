@@ -74,6 +74,8 @@ public class TestConstants {
     public static final String RECENT_SURVEYS_URL = API_URL + "/researchers/surveys/recent";
     public static final String RECENT_PUBLISHED_SURVEYS_URL = API_URL + "/researchers/surveys/published";
     
+    public static final String NEW_SURVEY_RESPONSE = API_URL + "/users/surveys/%s/%s";
+    
     public static final String APPLICATION_JSON = "application/json";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
