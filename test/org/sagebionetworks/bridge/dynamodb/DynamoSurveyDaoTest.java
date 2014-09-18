@@ -56,8 +56,8 @@ public class DynamoSurveyDaoTest {
         MultiValueConstraints constraints;
         private GenderQuestion() {
             options = Lists.newArrayList(
-                new SurveyQuestionOption("male", "male", null), 
-                new SurveyQuestionOption("female", "female", null)
+                new SurveyQuestionOption("male", "male"), 
+                new SurveyQuestionOption("female", "female")
             );
             constraints = new MultiValueConstraints(DataType.STRING);
             constraints.setEnumeration(options);
