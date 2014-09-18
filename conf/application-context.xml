@@ -22,15 +22,40 @@
         <constructor-arg index="1" value="#{bridgeConfig.getProperty('aws.secret.key')}"/>
     </bean>
 
+    <bean id="s3UploadCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
+        <constructor-arg index="0" value="#{bridgeConfig.getProperty('aws.key.upload')}"/>
+        <constructor-arg index="1" value="#{bridgeConfig.getProperty('aws.secret.key.upload')}"/>
+    </bean>
+
     <!-- Simple Email Service -->
-    
+
     <bean id="sesClient" class="com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient">
         <constructor-arg index="0">
             <ref bean="awsCredentials" />
         </constructor-arg>
     </bean>
-    
-    <!-- DB -->
+
+    <!-- S3 -->
+
+    <bean id="s3Client" class="com.amazonaws.services.s3.AmazonS3Client">
+        <constructor-arg index="0">
+            <ref bean="awsCredentials" />
+        </constructor-arg>
+    </bean>
+
+    <bean id="s3UploadClient" class="com.amazonaws.services.s3.AmazonS3Client">
+        <constructor-arg index="0">
+            <ref bean="s3UploadCredentials" />
+        </constructor-arg>
+    </bean>
+
+    <bean id="uploadTokenServiceClient" class="com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient">
+        <constructor-arg index="0">
+            <ref bean="s3UploadCredentials" />
+        </constructor-arg>
+    </bean>
+
+    <!-- DynamoDB -->
 
     <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient">
         <constructor-arg index="0">
@@ -275,6 +300,16 @@
     
     <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">
         <property name="studyConsentDao" ref="studyConsentDao" />
+    </bean>
+
+    <bean id="uploadSessionCredentialsService" class="org.sagebionetworks.bridge.services.UploadSessionCredentialsService">
+        <constructor-arg ref="uploadTokenServiceClient" />
+    </bean>
+
+    <bean id="uploadService" class="org.sagebionetworks.bridge.services.UploadServiceImpl">
+        <property name="uploadSessionCredentialsService" ref="uploadSessionCredentialsService" />
+        <property name="s3UploadClient" ref="s3UploadClient" />
+        <property name="s3Client" ref="s3Client" />
     </bean>
 
     <!-- Backfill -->

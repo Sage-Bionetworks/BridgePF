@@ -312,15 +312,13 @@ public class DynamoSurveyDaoTest {
 
     @Test
     public void canRetrieveMostRecentPublishedSurveysWithManySurveys() {
-        Survey survey1 = surveyDao.createSurvey(testSurvey);
+        Survey survey1 = surveyDao.createSurvey(new TestSurvey(true));
         surveyDao.publishSurvey(survey1.getGuid(), survey1.getVersionedOn());
 
-        testSurvey.setName("Name 2");
-        Survey survey2 = surveyDao.createSurvey(testSurvey);
+        Survey survey2 = surveyDao.createSurvey(new TestSurvey(true));
         surveyDao.publishSurvey(survey2.getGuid(), survey2.getVersionedOn());
 
-        testSurvey.setName("Name 3");
-        Survey survey3 = surveyDao.createSurvey(testSurvey);
+        Survey survey3 = surveyDao.createSurvey(new TestSurvey(true));
         surveyDao.publishSurvey(survey3.getGuid(), survey3.getVersionedOn());
 
         List<Survey> published = surveyDao.getMostRecentlyPublishedSurveys(STUDY_KEY);
