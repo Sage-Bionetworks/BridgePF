@@ -25,6 +25,8 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private static final String CONSTRAINTS_PROPERTY = "constraints";
+    private static final String DATA_TYPE_PROPERTY = "dataType";
+    private static final String ENUM_PROPERTY = "enumeration";
     private static final String UI_HINTS_PROPERTY = "uiHint";
     private static final String PROMPT_PROPERTY = "prompt";
     
@@ -39,7 +41,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         // back to the data node.
         question.setPrompt(JsonUtils.asText(node, PROMPT_PROPERTY));
         question.setUiHint(JsonUtils.asUIHint(node, UI_HINTS_PROPERTY));
-        question.setConstraints(JsonUtils.asConstraints(node, CONSTRAINTS_PROPERTY));
+        question.setConstraints(JsonUtils.asConstraints(node, CONSTRAINTS_PROPERTY, DATA_TYPE_PROPERTY, ENUM_PROPERTY));
         return question;
     }
 
@@ -117,6 +119,9 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     @DynamoDBAttribute
     @JsonIgnore
     public ObjectNode getData() {
+        if (prompt != null) {
+            data.put(PROMPT_PROPERTY, prompt);    
+        }
         return data;
     }
 
@@ -127,56 +132,71 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     }
 
     // These are all "synthetic" properties. They look like properties of a question, but in 
-    // DynamoDB they are all stored as part of the JSON in the data column.
-    
-    // If you get UI Hints and add to it, the question is not updated. If you get the questions
-    // and add a new question, the survey is updated. It's confusing.
+    // DynamoDB they are all stored as part of the JSON in the data column. They are lazily
+    // converted to Java objects, and added back to the data JsonNode when it is retrieved
+    // from this object, this allows statements like the following to work as expected:
+    // survey.getIntegerQuestion().getConstraints().getRules().add(...);
+
+    private String prompt; 
     
     @Override
     @DynamoDBIgnore
     public String getPrompt() {
-        return JsonUtils.asText(data, PROMPT_PROPERTY);
+        if (prompt == null) {
+            prompt = JsonUtils.asText(data, PROMPT_PROPERTY);
+        }
+        if (hint != null) {
+            data.put(UI_HINTS_PROPERTY, hint.name().toLowerCase());    
+        }
+        if (constraints != null) {
+            data.put(CONSTRAINTS_PROPERTY, mapper.valueToTree(constraints));    
+        }
+        return prompt;
     }
     
     @Override
     public void setPrompt(String prompt) {
-        if (prompt != null) {
-            data.put(PROMPT_PROPERTY, prompt);    
-        }
+        this.prompt = prompt;
     }
+    
+    private UIHint hint;
     
     @Override
     @DynamoDBIgnore
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public UIHint getUiHint() {
-        return JsonUtils.asUIHint(data, UI_HINTS_PROPERTY);
+        if (hint == null) {
+            hint = JsonUtils.asUIHint(data, UI_HINTS_PROPERTY);
+        }
+        return hint;
     }
     
     @Override
     public void setUiHint(UIHint hint) {
-        if (hint != null) {
-            data.put(UI_HINTS_PROPERTY, hint.name().toLowerCase());    
-        }
+        this.hint = hint;
     }
+    
+    private Constraints constraints;
     
     @Override
     @DynamoDBIgnore
     public Constraints getConstraints() {
-        return JsonUtils.asConstraints(data, CONSTRAINTS_PROPERTY);
+        if (constraints == null) {
+            constraints = JsonUtils.asConstraints(data, CONSTRAINTS_PROPERTY, DATA_TYPE_PROPERTY, ENUM_PROPERTY);
+        }
+        return constraints;
     }
     
     @Override
     public void setConstraints(Constraints constraints) {
-        if (constraints != null) {
-            data.put(CONSTRAINTS_PROPERTY, mapper.valueToTree(constraints));    
-        }
+        this.constraints = constraints;
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((data == null) ? 0 : data.hashCode());
+        result = prime * result + ((getData() == null) ? 0 : getData().hashCode());
         result = prime * result + ((guid == null) ? 0 : guid.hashCode());
         result = prime * result + ((identifier == null) ? 0 : identifier.hashCode());
         result = prime * result + order;
@@ -193,10 +213,10 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         if (getClass() != obj.getClass())
             return false;
         DynamoSurveyQuestion other = (DynamoSurveyQuestion) obj;
-        if (data == null) {
-            if (other.data != null)
+        if (getData() == null) {
+            if (other.getData() != null)
                 return false;
-        } else if (!data.equals(other.data))
+        } else if (!getData().equals(other.getData()))
             return false;
         if (guid == null) {
             if (other.guid != null)
@@ -221,7 +241,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     @Override
     public String toString() {
         return "DynamoSurveyQuestion [surveyCompoundKey=" + surveyCompoundKey + ", guid=" + guid + ", identifier="
-                + identifier + ", order=" + order + ", data=" + data + "]";
+                + identifier + ", order=" + order + ", data=" + getData() + "]";
     }
 
 }
