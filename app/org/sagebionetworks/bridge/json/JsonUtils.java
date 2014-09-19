@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.json;
 import java.util.Collections;
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
@@ -88,6 +89,14 @@ public class JsonUtils {
         }
         return null;
      }
+    
+    public static Schedule asSchedule(JsonNode parent, String property) {
+        JsonNode schedule = JsonUtils.asJsonNode(parent, property);
+        if (schedule != null) {
+            return mapper.convertValue(schedule, Schedule.class);
+        }
+        return null;
+    }
     
     public static ObjectNode asObjectNode(JsonNode parent, String property) {
         if (parent == null){
