@@ -37,8 +37,6 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         DynamoSurveyQuestion question = new DynamoSurveyQuestion();
         question.setIdentifier( JsonUtils.asText(node, IDENTIFIER_FIELD) );
         question.setGuid( JsonUtils.asText(node, GUID_FIELD) );
-        // question.getData() is not serialized, access the individual values. They are written 
-        // back to the data node.
         question.setPrompt(JsonUtils.asText(node, PROMPT_PROPERTY));
         question.setUiHint(JsonUtils.asUIHint(node, UI_HINTS_PROPERTY));
         question.setConstraints(JsonUtils.asConstraints(node, CONSTRAINTS_PROPERTY, DATA_TYPE_PROPERTY, ENUM_PROPERTY));
@@ -49,10 +47,11 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     private String guid;
     private String identifier;
     private int order;
-    private ObjectNode data;
-    
+    private String prompt; 
+    private UIHint hint;
+    private Constraints constraints;
+
     public DynamoSurveyQuestion() {
-        this.data = JsonNodeFactory.instance.objectNode();
     }
     
     public DynamoSurveyQuestion(DynamoSurveyQuestion question) {
@@ -60,8 +59,9 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         setGuid(question.getGuid());
         setIdentifier(question.getIdentifier());
         setOrder(question.getOrder());
-        // It should be impossible for this to be null.
-        setData(question.getData().deepCopy());
+        setPrompt(question.getPrompt());
+        setUiHint(question.getUiHint());
+        setConstraints(question.getConstraints());
     }
 
     @Override
@@ -114,43 +114,10 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     public void setIdentifier(String identifier) {
         this.identifier = identifier;
     }
-
-    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
-    @DynamoDBAttribute
-    @JsonIgnore
-    public ObjectNode getData() {
-        if (prompt != null) {
-            data.put(PROMPT_PROPERTY, prompt);    
-        }
-        return data;
-    }
-
-    public void setData(ObjectNode data) {
-        if (data != null) {
-            this.data = data;    
-        }
-    }
-
-    // These are all "synthetic" properties. They look like properties of a question, but in 
-    // DynamoDB they are all stored as part of the JSON in the data column. They are lazily
-    // converted to Java objects, and added back to the data JsonNode when it is retrieved
-    // from this object, this allows statements like the following to work as expected:
-    // survey.getIntegerQuestion().getConstraints().getRules().add(...);
-
-    private String prompt; 
     
     @Override
     @DynamoDBIgnore
     public String getPrompt() {
-        if (prompt == null) {
-            prompt = JsonUtils.asText(data, PROMPT_PROPERTY);
-        }
-        if (hint != null) {
-            data.put(UI_HINTS_PROPERTY, hint.name().toLowerCase());    
-        }
-        if (constraints != null) {
-            data.put(CONSTRAINTS_PROPERTY, mapper.valueToTree(constraints));    
-        }
         return prompt;
     }
     
@@ -159,15 +126,10 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         this.prompt = prompt;
     }
     
-    private UIHint hint;
-    
     @Override
     @DynamoDBIgnore
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public UIHint getUiHint() {
-        if (hint == null) {
-            hint = JsonUtils.asUIHint(data, UI_HINTS_PROPERTY);
-        }
         return hint;
     }
     
@@ -176,14 +138,9 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         this.hint = hint;
     }
     
-    private Constraints constraints;
-    
     @Override
     @DynamoDBIgnore
     public Constraints getConstraints() {
-        if (constraints == null) {
-            constraints = JsonUtils.asConstraints(data, CONSTRAINTS_PROPERTY, DATA_TYPE_PROPERTY, ENUM_PROPERTY);
-        }
         return constraints;
     }
     
@@ -192,14 +149,33 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         this.constraints = constraints;
     }
 
+    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
+    @DynamoDBAttribute
+    @JsonIgnore
+    public ObjectNode getData() {
+        ObjectNode data = JsonNodeFactory.instance.objectNode();
+        data.put(PROMPT_PROPERTY, prompt);
+        data.put(UI_HINTS_PROPERTY, hint.name().toLowerCase());    
+        data.put(CONSTRAINTS_PROPERTY, mapper.valueToTree(constraints));    
+        return data;
+    }
+
+    public void setData(ObjectNode data) {
+        this.prompt = JsonUtils.asText(data, PROMPT_PROPERTY);
+        this.hint = JsonUtils.asUIHint(data, UI_HINTS_PROPERTY);
+        this.constraints = JsonUtils.asConstraints(data, CONSTRAINTS_PROPERTY, DATA_TYPE_PROPERTY, ENUM_PROPERTY);
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((getData() == null) ? 0 : getData().hashCode());
+        result = prime * result + ((constraints == null) ? 0 : constraints.hashCode());
         result = prime * result + ((guid == null) ? 0 : guid.hashCode());
+        result = prime * result + ((hint == null) ? 0 : hint.hashCode());
         result = prime * result + ((identifier == null) ? 0 : identifier.hashCode());
         result = prime * result + order;
+        result = prime * result + ((prompt == null) ? 0 : prompt.hashCode());
         result = prime * result + ((surveyCompoundKey == null) ? 0 : surveyCompoundKey.hashCode());
         return result;
     }
@@ -213,15 +189,17 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         if (getClass() != obj.getClass())
             return false;
         DynamoSurveyQuestion other = (DynamoSurveyQuestion) obj;
-        if (getData() == null) {
-            if (other.getData() != null)
+        if (constraints == null) {
+            if (other.constraints != null)
                 return false;
-        } else if (!getData().equals(other.getData()))
+        } else if (!constraints.equals(other.constraints))
             return false;
         if (guid == null) {
             if (other.guid != null)
                 return false;
         } else if (!guid.equals(other.guid))
+            return false;
+        if (hint != other.hint)
             return false;
         if (identifier == null) {
             if (other.identifier != null)
@@ -230,6 +208,11 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
             return false;
         if (order != other.order)
             return false;
+        if (prompt == null) {
+            if (other.prompt != null)
+                return false;
+        } else if (!prompt.equals(other.prompt))
+            return false;
         if (surveyCompoundKey == null) {
             if (other.surveyCompoundKey != null)
                 return false;
@@ -237,11 +220,12 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
             return false;
         return true;
     }
-    
+
     @Override
     public String toString() {
         return "DynamoSurveyQuestion [surveyCompoundKey=" + surveyCompoundKey + ", guid=" + guid + ", identifier="
-                + identifier + ", order=" + order + ", data=" + getData() + "]";
+                + identifier + ", order=" + order + ", prompt=" + prompt + ", hint=" + hint + ", constraints="
+                + constraints + "]";
     }
 
 }
