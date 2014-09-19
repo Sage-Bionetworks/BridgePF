@@ -32,7 +32,7 @@ GET     /api/v1/trackers/schema/:trackerId     @controllers.TrackerController.ge
 GET     /api/v1/users/profile      @controllers.UserProfileController.getUserProfile
 POST    /api/v1/users/profile      @controllers.UserProfileController.updateUserProfile
 
-# API - Surveys
+# API - surveys
 GET     /api/v1/researchers/surveys                                     @controllers.SurveyController.getAllSurveysAllVersions
 POST    /api/v1/researchers/surveys                                     @controllers.SurveyController.createSurvey
 GET     /api/v1/researchers/surveys/recent                              @controllers.SurveyController.getMostRecentSurveys
@@ -43,6 +43,12 @@ POST    /api/v1/researchers/surveys/:surveyGuid/:surveyVersion/publish  @control
 POST    /api/v1/researchers/surveys/:surveyGuid/:surveyVersion/close    @controllers.SurveyController.closeSurvey(surveyGuid: String, surveyVersion: String)
 GET     /api/v1/researchers/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.getSurvey(surveyGuid: String, surveyVersion: String)
 POST    /api/v1/researchers/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.updateSurvey(surveyGuid: String, surveyVersion: String)
+
+# API - survey responses
+POST   /api/v1/users/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, surveyVersion: Long)
+GET    /api/v1/users/surveys/response/:guid              @controllers.SurveyResponseController.getSurveyResponse(guid: String)
+POST   /api/v1/users/surveys/response/:guid              @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
+DELETE /api/v1/users/surveys/response/:guid              @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
 
 # API - consent
 POST    /api/v1/users/consent                       @controllers.ConsentController.give

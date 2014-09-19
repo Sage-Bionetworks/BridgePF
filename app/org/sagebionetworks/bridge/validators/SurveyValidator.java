@@ -1,9 +1,14 @@
 package org.sagebionetworks.bridge.validators;
 
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
+import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
+import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
@@ -35,7 +40,7 @@ public class SurveyValidator implements Validator<Survey> {
     }
 
     @Override
-    public void validateExisting(Survey survey) throws InvalidEntityException {
+    public void validate(Survey survey) throws InvalidEntityException {
         doValidation(survey, false);
     }
 
@@ -80,9 +85,29 @@ public class SurveyValidator implements Validator<Survey> {
         }
         Constraints con = question.getConstraints();
         UIHint hint = question.getUiHint();
-        if (!con.getSuportedHints().contains(hint)) {
+        if (!con.getSupportedHints().contains(hint)) {
             messages.add("question #%s has a data type of '%s' that doesn't match the UI hint of %s", pos,
                     con.getDataType(), hint.name().toLowerCase());
+        } else if (con instanceof MultiValueConstraints) {
+            // Multiple values have a few odd UI constraints
+            MultiValueConstraints mcon = (MultiValueConstraints)con;
+            if (hint == UIHint.COMBOBOX && (mcon.getAllowMultiple() || !mcon.getAllowOther())) {
+                messages.add("question #%s asks for combobox but that's only valid when multiple = false and other = true", pos);
+            } else if (mcon.getAllowMultiple() && hint != UIHint.CHECKBOX && hint != UIHint.LIST) {
+                messages.add("question #%s allows multiples but %s doesn't gather more than one answer", pos, hint.name().toLowerCase());
+            } else if (!mcon.getAllowMultiple() && (hint == UIHint.CHECKBOX || hint == UIHint.LIST)) {
+                messages.add("question #%s doesn't allow multiples but %s gathers more than one answer", pos, hint.name().toLowerCase());
+            }
+        } else if (con instanceof StringConstraints) {
+            // Validate the regular expression, if it exists
+            StringConstraints scon = (StringConstraints)con;
+            if (StringUtils.isNotBlank(scon.getPattern())) {
+                try {
+                    Pattern.compile(scon.getPattern());
+                } catch (PatternSyntaxException exception) {
+                    messages.add("Pattern is not a valid regular expression: " + scon.getPattern());
+                }
+            }
         }
     }
 
