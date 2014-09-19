@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
-import java.net.URL;
+import org.sagebionetworks.bridge.models.UploadRequest;
+import org.sagebionetworks.bridge.models.UploadSession;
+import org.sagebionetworks.bridge.models.User;
 
 public interface UploadService {
 
@@ -8,7 +10,7 @@ public interface UploadService {
      * Creates a upload session. Returns a presigned URL for the client
      * to use for upload.
      */
-    URL createUpload();
+    UploadSession createUpload(User user, UploadRequest uploadRequest);
 
     /**
      * Client calls back when the upload is complete.
