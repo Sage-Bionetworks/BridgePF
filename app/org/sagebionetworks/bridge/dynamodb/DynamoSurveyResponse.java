@@ -33,7 +33,6 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     private static final String COMPLETED_ON_PROPERTY = "completedOn";
     private static final String STARTED_ON_PROPERTY = "startedOn";
     private static final String VERSION_PROPERTY = "version";
-    private static final String DATA_PROPERTY = "data";
     private static final String ANSWERS_PROPERTY = "answers";
     
     public static final DynamoSurveyResponse fromJson(JsonNode node) {
@@ -42,7 +41,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         survey.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
         survey.setStartedOn(JsonUtils.asMillisSinceEpoch(node, STARTED_ON_PROPERTY));
         survey.setCompletedOn(JsonUtils.asMillisSinceEpoch(node, COMPLETED_ON_PROPERTY));
-        survey.setData(JsonUtils.asObjectNode(node, DATA_PROPERTY));
+        survey.setData(node);
         return survey;
     }
     
@@ -174,7 +173,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         data.put(ANSWERS_PROPERTY, mapper.valueToTree(answers));
         return data;
     }
-    public void setData(ObjectNode data) {
+    public void setData(JsonNode data) {
         this.answers = JsonUtils.asSurveyAnswers(data, ANSWERS_PROPERTY);
     }
 
