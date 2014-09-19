@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -11,7 +13,10 @@ import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+
+import com.google.common.collect.Sets;
 
 public class SurveyValidator implements Validator<Survey> {
     
@@ -58,6 +63,7 @@ public class SurveyValidator implements Validator<Survey> {
             SurveyQuestion question = survey.getQuestions().get(i);
             doValidateQuestion(question, isNew, i, messages);
         }
+        validateConstraintRules(messages, survey.getQuestions());
         if (!messages.isEmpty()) {
             throw new InvalidEntityException(survey, "Survey is not valid: " + messages.join());
         }
@@ -109,6 +115,30 @@ public class SurveyValidator implements Validator<Survey> {
                 }
             }
         }
+    }
+    
+    private void validateConstraintRules(Messages messages, List<SurveyQuestion> questions) {
+        // Should not try and back-track in the survey.
+        Set<String> alreadySeenIdentifiers = Sets.newHashSet();
+        for (int i=0; i < questions.size(); i++) {
+            SurveyQuestion question = questions.get(i);
+            for (SurveyRule rule : question.getConstraints().getRules()) {
+                if (alreadySeenIdentifiers.contains(rule.getGotoTarget())) {
+                    messages.add("question #%s has a rule that back references question %s: %s", i, rule.getGotoTarget(), rule.toString());
+                }
+            }
+            alreadySeenIdentifiers.add(question.getIdentifier());
+        }
+        // Now verify that all gotoTarget identifiers actually exist
+        for (int i=0; i < questions.size(); i++) {
+            SurveyQuestion question = questions.get(i);
+            for (SurveyRule rule : question.getConstraints().getRules()) {
+                if (!alreadySeenIdentifiers.contains(rule.getGotoTarget())) {
+                    messages.add("question #%s has a rule with a goto target that doesn't exist (%s)", i, rule.getGotoTarget());
+                }
+            }
+        }
+        
     }
 
 }

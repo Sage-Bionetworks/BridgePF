@@ -29,6 +29,7 @@ public class DynamoSurveyTest {
         }
         
         String string = JsonUtils.toJSON(survey);
+        
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(string);
         DynamoSurvey newSurvey = DynamoSurvey.fromJson(node);
@@ -46,5 +47,5 @@ public class DynamoSurveyTest {
         
         assertEquals("Correct serialize/deserialize survey", survey.hashCode(), newSurvey.hashCode());
     }
-
+    
 }
