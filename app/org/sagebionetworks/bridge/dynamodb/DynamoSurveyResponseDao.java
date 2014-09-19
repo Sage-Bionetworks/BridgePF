@@ -68,12 +68,8 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         
         try {
             responseMapper.save(response);
-        } catch(Throwable error) {
-            if (error.getClass() == ConditionalCheckFailedException.class) {
-                throw new ConcurrentModificationException(response);
-            } else if (error != null) {
-                throw new BridgeServiceException(error.getMessage(), 500);
-            }
+        } catch(ConditionalCheckFailedException e) {
+            throw new ConcurrentModificationException(response);
         }
         return response;
     }
@@ -102,12 +98,8 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
 
         try {
             responseMapper.save(response);
-        } catch(Throwable error) {
-            if (error.getClass() == ConditionalCheckFailedException.class) {
-                throw new ConcurrentModificationException(response);
-            } else if (error != null) {
-                throw new BridgeServiceException(error.getMessage(), 500);
-            }
+        } catch(ConditionalCheckFailedException e) {
+            throw new ConcurrentModificationException(response);
         }
         return response;
     }

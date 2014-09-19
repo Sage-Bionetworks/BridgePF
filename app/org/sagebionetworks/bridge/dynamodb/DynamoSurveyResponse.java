@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Lists;
 
 @DynamoDBTable(tableName = "SurveyResponse")
 public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
@@ -32,6 +33,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     private static final String COMPLETED_ON_PROPERTY = "completedOn";
     private static final String STARTED_ON_PROPERTY = "startedOn";
     private static final String VERSION_PROPERTY = "version";
+    private static final String DATA_PROPERTY = "data";
     private static final String ANSWERS_PROPERTY = "answers";
     
     public static final DynamoSurveyResponse fromJson(JsonNode node) {
@@ -40,7 +42,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         survey.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
         survey.setStartedOn(JsonUtils.asMillisSinceEpoch(node, STARTED_ON_PROPERTY));
         survey.setCompletedOn(JsonUtils.asMillisSinceEpoch(node, COMPLETED_ON_PROPERTY));
-        survey.setAnswers(JsonUtils.asSurveyAnswers(node, ANSWERS_PROPERTY));
+        survey.setData(JsonUtils.asObjectNode(node, DATA_PROPERTY));
         return survey;
     }
     
@@ -52,13 +54,12 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     private long startedOn;
     private long completedOn;
     private Long version;
-    private ObjectNode data;
+    private List<SurveyAnswer> answers = Lists.newArrayList();
     
     public DynamoSurveyResponse() {
-        this.data = JsonNodeFactory.instance.objectNode();
     }
+    
     public DynamoSurveyResponse(String guid) {
-        this();
         this.guid = guid;
     }
     
@@ -72,11 +73,9 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     }
     @DynamoDBAttribute
     @JsonIgnore
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getSurveyVersionedOn() {
         return surveyVersionedOn;
     }
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
     public void setSurveyVersionedOn(long surveyVersionedOn) {
         this.surveyVersionedOn = surveyVersionedOn;
     }
@@ -100,22 +99,6 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         this.guid = guid;
     }
     @Override
-    @DynamoDBIgnore
-    public Survey getSurvey() {
-        return survey;
-    }
-    @Override
-    public void setSurvey(Survey survey) {
-        this.survey = survey;
-        this.surveyGuid = null;
-        this.surveyVersionedOn = 0L;
-        if (survey != null) {
-            this.surveyGuid = survey.getGuid();
-            this.surveyVersionedOn = survey.getVersionedOn();
-        }
-    }
-    
-    @Override
     @DynamoDBVersionAttribute
     @JsonIgnore
     public Long getVersion() {
@@ -124,17 +107,6 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     @Override
     public void setVersion(Long version) {
         this.version = version;
-    }
-    @Override
-    @DynamoDBIgnore
-    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
-    public Status getStatus() {
-        if (startedOn == 0L && completedOn == 0L) {
-            return Status.UNSTARTED;
-        } else if (startedOn != 0L && completedOn == 0L) {
-            return Status.IN_PROGRESS;    
-        }
-        return Status.FINISHED;
     }
     @Override
     @DynamoDBAttribute
@@ -158,44 +130,69 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     public void setCompletedOn(long completedOn) {
         this.completedOn = completedOn;
     }
-    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
-    @DynamoDBAttribute
-    @JsonIgnore
-    public ObjectNode getData() {
-        return data;
-    }
-    public void setData(ObjectNode data) {
-        if (data != null) {
-            this.data = data;    
-        }
-    }
     @Override
     @DynamoDBIgnore
     public List<SurveyAnswer> getAnswers() {
-        return JsonUtils.asSurveyAnswers(data, ANSWERS_PROPERTY);
+        return answers;
     }
     
     @Override
     public void setAnswers(List<SurveyAnswer> answers) {
-        if (answers != null) {
-            data.put(ANSWERS_PROPERTY, mapper.valueToTree(answers));    
+        this.answers = answers;
+    }
+    @Override
+    @DynamoDBIgnore
+    public Survey getSurvey() {
+        return survey;
+    }
+    @Override
+    public void setSurvey(Survey survey) {
+        this.survey = survey;
+        this.surveyGuid = null;
+        this.surveyVersionedOn = 0L;
+        if (survey != null) {
+            this.surveyGuid = survey.getGuid();
+            this.surveyVersionedOn = survey.getVersionedOn();
         }
     }
+    @Override
+    @DynamoDBIgnore
+    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
+    public Status getStatus() {
+        if (startedOn == 0L && completedOn == 0L) {
+            return Status.UNSTARTED;
+        } else if (startedOn != 0L && completedOn == 0L) {
+            return Status.IN_PROGRESS;    
+        }
+        return Status.FINISHED;
+    }
+    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
+    @DynamoDBAttribute
+    @JsonIgnore
+    public ObjectNode getData() {
+        ObjectNode data = JsonNodeFactory.instance.objectNode();
+        data.put(ANSWERS_PROPERTY, mapper.valueToTree(answers));
+        return data;
+    }
+    public void setData(ObjectNode data) {
+        this.answers = JsonUtils.asSurveyAnswers(data, ANSWERS_PROPERTY);
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ((answers == null) ? 0 : answers.hashCode());
         result = prime * result + (int) (completedOn ^ (completedOn >>> 32));
-        result = prime * result + ((data == null) ? 0 : data.hashCode());
         result = prime * result + ((guid == null) ? 0 : guid.hashCode());
         result = prime * result + ((healthCode == null) ? 0 : healthCode.hashCode());
         result = prime * result + (int) (startedOn ^ (startedOn >>> 32));
-        result = prime * result + ((survey == null) ? 0 : survey.hashCode());
         result = prime * result + ((surveyGuid == null) ? 0 : surveyGuid.hashCode());
         result = prime * result + (int) (surveyVersionedOn ^ (surveyVersionedOn >>> 32));
         result = prime * result + ((version == null) ? 0 : version.hashCode());
         return result;
     }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -205,12 +202,12 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         if (getClass() != obj.getClass())
             return false;
         DynamoSurveyResponse other = (DynamoSurveyResponse) obj;
-        if (completedOn != other.completedOn)
-            return false;
-        if (data == null) {
-            if (other.data != null)
+        if (answers == null) {
+            if (other.answers != null)
                 return false;
-        } else if (!data.equals(other.data))
+        } else if (!answers.equals(other.answers))
+            return false;
+        if (completedOn != other.completedOn)
             return false;
         if (guid == null) {
             if (other.guid != null)
@@ -223,11 +220,6 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         } else if (!healthCode.equals(other.healthCode))
             return false;
         if (startedOn != other.startedOn)
-            return false;
-        if (survey == null) {
-            if (other.survey != null)
-                return false;
-        } else if (!survey.equals(other.survey))
             return false;
         if (surveyGuid == null) {
             if (other.surveyGuid != null)
@@ -243,11 +235,11 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
             return false;
         return true;
     }
+
     @Override
     public String toString() {
-        // but not the healthDataCode!
         return "DynamoSurveyResponse [guid=" + guid + ", surveyGuid=" + surveyGuid + ", surveyVersionedOn="
-                + surveyVersionedOn + ", survey=" + survey + ", startedOn=" + startedOn + ", completedOn="
-                + completedOn + ", version=" + version + ", data=" + data + "]";
+                + surveyVersionedOn + ", survey=" + survey + ", healthCode=" + healthCode + ", startedOn=" + startedOn
+                + ", completedOn=" + completedOn + ", version=" + version + ", answers=" + answers + "]";
     }
 }
