@@ -16,13 +16,14 @@ public class UploadController extends BaseController {
     }
 
     public Result upload() throws Exception {
-        UserSession session = getAuthenticatedSession();
+        UserSession session = getAuthenticatedAndConsentedSession();
         UploadRequest uploadRequest = UploadRequest.fromJson(requestToJSON(request()));
         UploadSession uploadSession = uploadService.createUpload(session.getUser(), uploadRequest);
         return ok(constructJSON(uploadSession));
     }
 
     public Result uploadComplete(String uploadId) throws Exception {
+        getAuthenticatedAndConsentedSession();
         uploadService.uploadComplete(uploadId);
         return ok("Upload " + uploadId + " complete!");
     }

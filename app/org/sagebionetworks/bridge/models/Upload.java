@@ -12,8 +12,6 @@ public interface Upload {
 
     boolean isComplete();
 
-    Long getVersion();
-
     String getName();
 
     int getContentLength();
