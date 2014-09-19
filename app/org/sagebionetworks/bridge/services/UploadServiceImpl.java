@@ -13,6 +13,8 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.UploadRequest;
 import org.sagebionetworks.bridge.models.UploadSession;
 import org.sagebionetworks.bridge.models.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
@@ -20,6 +22,8 @@ import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 public class UploadServiceImpl implements UploadService {
+
+    private final Logger logger = LoggerFactory.getLogger(UploadServiceImpl.class);
 
     private static final long EXPIRATION = 60 * 1000; // 1 minute
     private static final String BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket.pd");
@@ -69,7 +73,7 @@ public class UploadServiceImpl implements UploadService {
         ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, key);
         String sse = obj.getSSEAlgorithm();
         if (!AES_256_SERVER_SIDE_ENCRYPTION.equals(sse)) {
-            throw new RuntimeException("Server-side encryption failure.");
+            logger.error("Server-side encryption missing.");
         }
     }
 }

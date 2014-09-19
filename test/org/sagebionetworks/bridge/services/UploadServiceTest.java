@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -32,8 +33,10 @@ import org.sagebionetworks.bridge.models.UploadSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -76,8 +79,12 @@ public class UploadServiceTest {
 
     @After
     public void after() {
-        for (String obj : objectsToRemove) {
-            s3Client.deleteObject(BUCKET, obj);
+        try {
+            for (String obj : objectsToRemove) {
+                s3Client.deleteObject(BUCKET, obj);
+            }
+        } catch (AmazonClientException e) {
+            e.printStackTrace();
         }
         helper.deleteOneUser();
     }
@@ -86,12 +93,15 @@ public class UploadServiceTest {
     public void test() throws Exception {
         UploadRequest uploadRequest = createUploadRequest();
         UploadSession uploadSession = uploadService.createUpload(helper.getUser(), uploadRequest);
+        objectsToRemove.add(uploadSession.getId());
         int reponseCode = upload(uploadSession.getUrl(), uploadRequest);
         assertEquals(200, reponseCode);
         uploadService.uploadComplete(uploadSession.getId());
         long expiration = DateTime.now(DateTimeZone.UTC).plusMinutes(1).getMillis();
         assertTrue(expiration > uploadSession.getExpires());
-        objectsToRemove.add(uploadSession.getId());
+        ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, uploadSession.getId());
+        String sse = obj.getSSEAlgorithm();
+        assertTrue(AES_256_SERVER_SIDE_ENCRYPTION.equals(sse));
     }
 
     private UploadRequest createUploadRequest() throws Exception {
