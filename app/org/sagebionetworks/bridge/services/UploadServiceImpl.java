@@ -10,16 +10,18 @@ import java.util.UUID;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.models.UploadRequest;
+import org.sagebionetworks.bridge.models.UploadSession;
+import org.sagebionetworks.bridge.models.User;
 
 import com.amazonaws.HttpMethod;
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 public class UploadServiceImpl implements UploadService {
 
-    private static final long EXPIRATION = 60000 * 1000; // 1 minute
+    private static final long EXPIRATION = 60 * 1000; // 1 minute
     private static final String BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket.pd");
 
     private UploadSessionCredentialsService uploadCredentailsService;
@@ -37,17 +39,29 @@ public class UploadServiceImpl implements UploadService {
     }
 
     @Override
-    public URL createUpload() {
-        final AWSCredentials credentials = uploadCredentailsService.getSessionCredentials();
+    public UploadSession createUpload(User user, UploadRequest upload) {
+
+        final String id = UUID.randomUUID().toString();
+        GeneratePresignedUrlRequest presignedUrlRequest = 
+                new GeneratePresignedUrlRequest(BUCKET, id, HttpMethod.PUT);
+
+        // Expiration
         final Date expiration = DateTime.now(DateTimeZone.UTC).toDate();
         expiration.setTime(expiration.getTime() + EXPIRATION);
-        GeneratePresignedUrlRequest presignedUrlRequest = 
-                new GeneratePresignedUrlRequest(BUCKET, UUID.randomUUID().toString());
-        presignedUrlRequest.setMethod(HttpMethod.PUT); 
         presignedUrlRequest.setExpiration(expiration);
-        presignedUrlRequest.setRequestCredentials(credentials);
+
+        // Temporary session credentials
+        presignedUrlRequest.setRequestCredentials(uploadCredentailsService.getSessionCredentials());
+
+        // Ask for server-side encryption
         presignedUrlRequest.addRequestParameter(SERVER_SIDE_ENCRYPTION, AES_256_SERVER_SIDE_ENCRYPTION);
-        return s3UploadClient.generatePresignedUrl(presignedUrlRequest);
+
+        // Additional headers for signing
+        presignedUrlRequest.setContentMd5(upload.getContentMd5());
+        presignedUrlRequest.setContentType(upload.getContentType());
+
+        URL url = s3UploadClient.generatePresignedUrl(presignedUrlRequest);
+        return new UploadSession(id, url, expiration.getTime());
     }
 
     @Override
