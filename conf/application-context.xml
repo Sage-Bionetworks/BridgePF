@@ -180,14 +180,22 @@
             </bean>
         </property>
     </bean>
-    
+
     <bean id="controllers.SurveyController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.SurveyController" parent="BaseController">
                 <property name="surveyService" ref="surveyService" />
             </bean>
         </property>
-    </bean>    
+    </bean>
+
+    <bean id="controllers.UploadController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.UploadController" parent="BaseController">
+                <property name="uploadService" ref="uploadService" />
+            </bean>
+        </property>
+    </bean>
 
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
         <property name="studies">
