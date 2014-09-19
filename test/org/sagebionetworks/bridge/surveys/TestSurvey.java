@@ -18,6 +18,8 @@ import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 import org.sagebionetworks.bridge.models.surveys.TimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
@@ -35,11 +37,11 @@ public class TestSurvey extends DynamoSurvey {
         {
             MultiValueConstraints mvc = new MultiValueConstraints(DataType.INTEGER);
             List<SurveyQuestionOption> options = Lists.newArrayList(
-                new SurveyQuestionOption("Terrible", 1, null),
-                new SurveyQuestionOption("Poor", 2, null),
-                new SurveyQuestionOption("OK", 3, null),
-                new SurveyQuestionOption("Good", 4, null),
-                new SurveyQuestionOption("Great", 5, null)
+                new SurveyQuestionOption("Terrible", 1),
+                new SurveyQuestionOption("Poor", 2),
+                new SurveyQuestionOption("OK", 3),
+                new SurveyQuestionOption("Good", 4),
+                new SurveyQuestionOption("Great", 5)
             );
             mvc.setEnumeration(options);
             mvc.setAllowOther(false);
@@ -130,6 +132,9 @@ public class TestSurvey extends DynamoSurvey {
             IntegerConstraints c = new IntegerConstraints();
             c.setMinValue(0L);
             c.setMaxValue(4L);
+            c.getRules().add(new SurveyRule(Operator.LE, 2, "name"));
+            c.getRules().add(new SurveyRule(Operator.DE, null, "name"));
+            
             setPrompt("How many times a day do you take your blood pressure?");
             setIdentifier("bp_x_day");
             setUiHint(UIHint.NUMBERFIELD);

@@ -23,8 +23,10 @@ public class DateTimeConstraints extends TimeBasedConstraints {
     
     public void validate(Messages messages, SurveyAnswer answer) {
         long time = (Long)answer.getAnswer();
-        if (!allowFuture && time >= DateUtils.getCurrentMillisFromEpoch()) {
-            messages.add("it is not allowed to have a future datetime value");
+        long now = DateUtils.getCurrentMillisFromEpoch();
+        // This sometimes fails in tests and it's not clear why
+        if (!allowFuture && time >= now) {
+            messages.add("it is not allowed to have a future datetime value (%s >= %s)", time, now);
         }
     }
 }
