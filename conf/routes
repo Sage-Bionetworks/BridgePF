@@ -56,6 +56,10 @@ POST    /api/v1/users/consent/email                 @controllers.ConsentControll
 POST    /api/v1/users/consent/dataSharing/suspend   @controllers.ConsentController.suspendDataSharing
 POST    /api/v1/users/consent/dataSharing/resume    @controllers.ConsentController.resumeDataSharing
 
+# API - Upload
+POST    /api/v1/upload                  @controllers.UploadController.upload
+POST    /api/v1/upload/:id/complete     @controllers.UploadController.uploadComplete(id: String)
+
 # Admin - Consent
 GET     /admin/v1/consents                      @controllers.StudyConsentController.getAllConsents
 GET     /admin/v1/consents/active               @controllers.StudyConsentController.getActiveConsent
