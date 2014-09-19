@@ -41,7 +41,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         survey.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
         survey.setStartedOn(JsonUtils.asMillisSinceEpoch(node, STARTED_ON_PROPERTY));
         survey.setCompletedOn(JsonUtils.asMillisSinceEpoch(node, COMPLETED_ON_PROPERTY));
-        survey.setData(node);
+        survey.setData((ObjectNode)node);
         return survey;
     }
     
@@ -134,7 +134,6 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     public List<SurveyAnswer> getAnswers() {
         return answers;
     }
-    
     @Override
     public void setAnswers(List<SurveyAnswer> answers) {
         this.answers = answers;
@@ -165,15 +164,16 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         }
         return Status.FINISHED;
     }
-    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
-    @DynamoDBAttribute
+    
     @JsonIgnore
+    @DynamoDBAttribute
+    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
     public ObjectNode getData() {
         ObjectNode data = JsonNodeFactory.instance.objectNode();
         data.put(ANSWERS_PROPERTY, mapper.valueToTree(answers));
         return data;
     }
-    public void setData(JsonNode data) {
+    public void setData(ObjectNode data) {
         this.answers = JsonUtils.asSurveyAnswers(data, ANSWERS_PROPERTY);
     }
 
