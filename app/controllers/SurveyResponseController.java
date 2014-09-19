@@ -1,6 +1,7 @@
 package controllers;
 
 import java.io.IOException;
+
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
@@ -10,6 +11,8 @@ import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -18,6 +21,8 @@ import play.mvc.Result;
 
 public class SurveyResponseController extends BaseController {
 
+    private static Logger logger = LoggerFactory.getLogger(SurveyResponseController.class);
+    
     private SurveyResponseDao responseDao;
     
     public void setSurveyResponseDao(SurveyResponseDao responseDao) {
@@ -63,6 +68,7 @@ public class SurveyResponseController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         SurveyResponse response = responseDao.getSurveyResponse(guid);
         if (!response.getHealthCode().equals(session.getUser().getHealthDataCode())) {
+            logger.error("Blocked attempt to access survey response (mismatched health data codes) from user " + session.getUser().getId());
             throw new UnauthorizedException();
         }
         return response;

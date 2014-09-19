@@ -54,9 +54,9 @@ public class DynamoSurveyResponseTest {
         newResponse.setSurveyGuid(response.getSurveyGuid());
         newResponse.setSurveyVersionedOn(response.getSurveyVersionedOn());
         newResponse.setVersion(response.getVersion());
+        newResponse.setHealthCode(response.getHealthCode());
 
-        // They are not hashCode equal, and I cannot find the place where object rather than value
-        // hashCodes() are being used.
+        // TODO: These should be hashCode equal, but they are not
         assertEquals("Survey response serialized/deserialized correctly", response.toString(), newResponse.toString());
     }
     
