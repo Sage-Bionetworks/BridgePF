@@ -83,6 +83,11 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
     
+    <bean id="surveyResponseDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponseDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+        <property name="surveyDao" ref="surveyDao"/>
+    </bean>
+    
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
 
     <!-- Redis -->
@@ -196,6 +201,14 @@
             </bean>
         </property>
     </bean>
+
+    <bean id="controllers.SurveyResponseController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.SurveyResponseController" parent="BaseController">
+                <property name="surveyResponseDao" ref="surveyResponseDao" />
+            </bean>
+        </property>
+    </bean>    
 
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
         <property name="studies">
