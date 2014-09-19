@@ -56,6 +56,7 @@ public class DynamoSurveyResponseTest {
         newResponse.setVersion(response.getVersion());
         newResponse.setHealthCode(response.getHealthCode());
 
+        // TODO: These should be hashCode equal, but they are not
         assertEquals("Survey response serialized/deserialized correctly", response.toString(), newResponse.toString());
     }
     
