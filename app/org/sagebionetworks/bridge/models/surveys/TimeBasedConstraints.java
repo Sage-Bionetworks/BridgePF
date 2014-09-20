@@ -24,8 +24,9 @@ public abstract class TimeBasedConstraints extends Constraints {
         // add 5 minutes of leniency to this test because different machines may 
         // report different times, we're really trying to catch user input at a 
         // coarser level of time reporting than milliseconds.
-        if (!allowFuture && time > (DateUtils.getCurrentMillisFromEpoch()+FIVE_MINUTES)) {
-            messages.add("it is not allowed to have a future date value");
+        long now = (DateUtils.getCurrentMillisFromEpoch()+FIVE_MINUTES);
+        if (!allowFuture && time > now) {
+            messages.add("it is not allowed to have a future date value: time %s, current %s", time, now);
         }
     }
     
