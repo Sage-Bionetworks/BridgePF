@@ -33,7 +33,6 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     private static final String COMPLETED_ON_PROPERTY = "completedOn";
     private static final String STARTED_ON_PROPERTY = "startedOn";
     private static final String VERSION_PROPERTY = "version";
-    private static final String DATA_PROPERTY = "data";
     private static final String ANSWERS_PROPERTY = "answers";
     
     public static final DynamoSurveyResponse fromJson(JsonNode node) {
@@ -42,7 +41,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         survey.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
         survey.setStartedOn(JsonUtils.asMillisSinceEpoch(node, STARTED_ON_PROPERTY));
         survey.setCompletedOn(JsonUtils.asMillisSinceEpoch(node, COMPLETED_ON_PROPERTY));
-        survey.setData(JsonUtils.asObjectNode(node, DATA_PROPERTY));
+        survey.setData((ObjectNode)node);
         return survey;
     }
     
@@ -135,7 +134,6 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     public List<SurveyAnswer> getAnswers() {
         return answers;
     }
-    
     @Override
     public void setAnswers(List<SurveyAnswer> answers) {
         this.answers = answers;
@@ -166,9 +164,10 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         }
         return Status.FINISHED;
     }
-    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
-    @DynamoDBAttribute
+    
     @JsonIgnore
+    @DynamoDBAttribute
+    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
     public ObjectNode getData() {
         ObjectNode data = JsonNodeFactory.instance.objectNode();
         data.put(ANSWERS_PROPERTY, mapper.valueToTree(answers));
