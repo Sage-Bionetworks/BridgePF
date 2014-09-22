@@ -85,8 +85,10 @@ public class SurveyControllerTest {
                     helper.createOneUser();  
                     
                     String content = new TestSurvey(true).toJSON(); // createSurveyObject("Name");
+                    
                     Response response = TestUtils.getURL(helper.getUserSessionToken(), SURVEYS_URL).post(content)
                             .get(TIMEOUT);
+                    
                     assertEquals("HTTP response indicates authorization error", SC_FORBIDDEN, response.getStatus());
                 } finally {
                     helper.deleteOneUser();    
