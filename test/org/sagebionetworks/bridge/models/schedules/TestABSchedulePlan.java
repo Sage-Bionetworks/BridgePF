@@ -49,6 +49,6 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
         strategy.addGroup(40, schedule1);
         strategy.addGroup(40, schedule2);
         strategy.addGroup(20, schedule3);
-        setScheduleStrategy(strategy);
+        setStrategy(strategy);
     }
 }

@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 
 public interface SchedulePlanDao {
 
-    public List<? extends SchedulePlan> getSchedulePlans(Study study);
+    public List<SchedulePlan> getSchedulePlans(Study study);
     
     public SchedulePlan getSchedulePlan(Study study, String guid);
     

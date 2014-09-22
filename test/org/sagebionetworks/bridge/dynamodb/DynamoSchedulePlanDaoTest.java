@@ -10,7 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.TestABSchedulePlan;
@@ -18,10 +18,14 @@ import org.sagebionetworks.bridge.models.schedules.TestSimpleSchedulePlan;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoSchedulePlanDaoTest {
 
+    ObjectMapper mapping = new ObjectMapper();
+    
     @Resource
     DynamoSchedulePlanDao schedulePlanDao;
     
@@ -37,6 +41,15 @@ public class DynamoSchedulePlanDaoTest {
     }
     
     @Test
+    public void canSerializeAndDeserializeSchedulePlan() throws Exception {
+        TestABSchedulePlan abPlan = new TestABSchedulePlan();
+        String output = mapping.writeValueAsString(abPlan);
+        TestABSchedulePlan newPlan = mapping.readValue(output, TestABSchedulePlan.class);
+        
+        assertEquals("Schedule plans are equal", abPlan.hashCode(), newPlan.hashCode());
+    }
+    
+    @Test
     public void canCrudOneSchedulePlan() {
         TestABSchedulePlan abPlan = new TestABSchedulePlan();
         
@@ -46,17 +59,32 @@ public class DynamoSchedulePlanDaoTest {
         
         // Update the plan... to a simple strategy
         TestSimpleSchedulePlan simplePlan = new TestSimpleSchedulePlan();
-        
-        abPlan.setScheduleStrategy(simplePlan.getScheduleStrategy());
-        System.out.println("AB Test plan: " + abPlan.toString()); // this should have changed type as well. That's crucial.
-        
+        abPlan.setStrategy(simplePlan.getStrategy());
         schedulePlanDao.updateSchedulePlan(abPlan);
         
+        // Get it from DynamoDB
         SchedulePlan newPlan = schedulePlanDao.getSchedulePlan(TestConstants.SECOND_STUDY, abPlan.getGuid());
+        assertEquals("The strategy has been updated", simplePlan.getStrategy().hashCode(), newPlan.getStrategy().hashCode());
         
-        System.out.println("New plan: " + newPlan.toString()); // this should have changed type as well. That's crucial.
+        // delete, throws exception
+        schedulePlanDao.deleteSchedulePlan(TestConstants.SECOND_STUDY, newPlan.getGuid());
+        try {
+            schedulePlanDao.getSchedulePlan(TestConstants.SECOND_STUDY, newPlan.getGuid());
+            fail("Should have thrown an entity not found exception");
+        } catch(EntityNotFoundException e) {
+        }
+    }
+    
+    @Test
+    public void getAllSchedulePlans() {
+        TestABSchedulePlan abPlan = new TestABSchedulePlan();
+        TestSimpleSchedulePlan simplePlan = new TestSimpleSchedulePlan();
         
-        assertEquals("The strategy has been updated", simplePlan.getScheduleStrategy(), newPlan.getScheduleStrategy());
+        schedulePlanDao.createSchedulePlan(abPlan);
+        schedulePlanDao.createSchedulePlan(simplePlan);
+        
+        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(TestConstants.SECOND_STUDY);
+        assertEquals("2 plans exist", 2, plans.size());
     }
 
 }

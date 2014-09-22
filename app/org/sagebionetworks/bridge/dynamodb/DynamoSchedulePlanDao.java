@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.Study;
@@ -67,7 +68,11 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         query.withHashKeyValues(plan);
         query.withRangeKeyCondition("guid", condition);
         
-        return mapper.queryPage(DynamoSchedulePlan.class, query).getResults().get(0);
+        List<DynamoSchedulePlan> plans = mapper.queryPage(DynamoSchedulePlan.class, query).getResults();
+        if (plans.isEmpty()) {
+            throw new EntityNotFoundException(SchedulePlan.class);
+        }
+        return plans.get(0);
     }
 
     @Override

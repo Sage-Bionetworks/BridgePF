@@ -23,7 +23,7 @@ public class SchedulePlanValidator implements Validator<SchedulePlan> {
         if (StringUtils.isBlank(plan.getStrategyType())) {
             messages.add("missing a strategy type class name");
         }
-        if (plan.getScheduleStrategy() == null) {
+        if (plan.getStrategy() == null) {
             messages.add("requires a strategy object");
         }
         if (!messages.isEmpty()) {
