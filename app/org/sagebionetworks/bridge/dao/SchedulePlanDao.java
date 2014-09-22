@@ -12,7 +12,7 @@ public interface SchedulePlanDao {
     
     public SchedulePlan getSchedulePlan(Study study, String guid);
     
-    public GuidHolder addSchedulePlan(SchedulePlan plan);
+    public GuidHolder createSchedulePlan(SchedulePlan plan);
     
     public void updateSchedulePlan(SchedulePlan plan);
     

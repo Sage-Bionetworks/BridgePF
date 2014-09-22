@@ -17,16 +17,13 @@ public class SchedulePlanValidator implements Validator<SchedulePlan> {
     @Override
     public void validate(SchedulePlan plan) throws InvalidEntityException {
         Messages messages = new Messages();
-        if (StringUtils.isBlank(plan.getGuid())) {
-            messages.add("missing a GUID");
-        }
         if (StringUtils.isBlank(plan.getStudyKey())) {
             messages.add("missing a study key");
         }
         if (StringUtils.isBlank(plan.getStrategyType())) {
             messages.add("missing a strategy type class name");
         }
-        if (plan.getStrategy() == null) {
+        if (plan.getScheduleStrategy() == null) {
             messages.add("requires a strategy object");
         }
         if (!messages.isEmpty()) {

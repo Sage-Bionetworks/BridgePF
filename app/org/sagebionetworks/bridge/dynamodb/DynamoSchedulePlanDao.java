@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -18,10 +19,17 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveB
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 public class DynamoSchedulePlanDao implements SchedulePlanDao {
 
     private static final SchedulePlanValidator VALIDATOR = new SchedulePlanValidator();
+    private static Function<DynamoSchedulePlan,SchedulePlan> DOWNCASTER = new Function<DynamoSchedulePlan,SchedulePlan>() {
+        @Override public SchedulePlan apply(DynamoSchedulePlan plan) {
+            return (SchedulePlan)plan;
+        }
+    };
     private DynamoDBMapper mapper;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
@@ -33,7 +41,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
     
     @Override
-    public List<? extends SchedulePlan> getSchedulePlans(Study study) {
+    public List<SchedulePlan> getSchedulePlans(Study study) {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setStudyKey(study.getKey());
         
@@ -41,9 +49,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         query.withScanIndexForward(false);
         query.withHashKeyValues(plan);
         
-        // TODO: This seems like a better way than how I cast this using surveys 
-        // (maybe even looping through and downcasting or something crazy like that).
-        return (List<? extends SchedulePlan>)mapper.queryPage(DynamoSchedulePlan.class, query).getResults();
+        List<DynamoSchedulePlan> plans = mapper.queryPage(DynamoSchedulePlan.class, query).getResults();
+        return Lists.transform(plans, DOWNCASTER);
     }
     
     @Override
@@ -64,9 +71,10 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public GuidHolder addSchedulePlan(SchedulePlan plan) {
-        plan.setGuid(BridgeUtils.generateGuid());
+    public GuidHolder createSchedulePlan(SchedulePlan plan) {
         VALIDATOR.validate(plan);
+        plan.setGuid(BridgeUtils.generateGuid());
+        plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
         return new GuidHolder(plan.getGuid());
     }
@@ -74,6 +82,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     @Override
     public void updateSchedulePlan(SchedulePlan plan) {
         VALIDATOR.validate(plan);
+        plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
     }
 
