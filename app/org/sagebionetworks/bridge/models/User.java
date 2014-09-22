@@ -34,6 +34,11 @@ public class User implements BridgeEntity {
             roles.add(i.next().getName());
         }
     }
+    
+    public User(String id, String email) {
+        setId(id);
+        setEmail(email);
+    }
 
     public String getEmail() {
         return email;

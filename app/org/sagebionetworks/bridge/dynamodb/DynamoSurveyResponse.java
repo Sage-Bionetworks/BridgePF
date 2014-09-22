@@ -174,7 +174,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         return data;
     }
     public void setData(ObjectNode data) {
-        this.answers = JsonUtils.asSurveyAnswers(data, ANSWERS_PROPERTY);
+        this.answers = JsonUtils.asEntityList(data, ANSWERS_PROPERTY, SurveyAnswer.class);
     }
 
     @Override

@@ -7,9 +7,9 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
+import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
-import org.sagebionetworks.bridge.surveys.TestSurvey;
 
 public class SurveyValidatorTest {
 

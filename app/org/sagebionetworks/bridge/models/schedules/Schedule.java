@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.User;
+
 public class Schedule {
     
     public enum Type {
@@ -42,6 +45,9 @@ public class Schedule {
     public void setStudyUserCompoundKey(String studyUserCompoundKey) {
         this.studyUserCompoundKey = studyUserCompoundKey;
     }
+    public void setStudyAndUser(Study study, User user) {
+        setStudyUserCompoundKey(study.getKey()+":"+user.getId());
+    }
     public String getGuid() {
         return guid;
     }
@@ -83,6 +89,74 @@ public class Schedule {
     }
     public void setExpires(Long expires) {
         this.expires = expires;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((activityRef == null) ? 0 : activityRef.hashCode());
+        result = prime * result + ((activityType == null) ? 0 : activityType.hashCode());
+        result = prime * result + ((expires == null) ? 0 : expires.hashCode());
+        result = prime * result + ((guid == null) ? 0 : guid.hashCode());
+        result = prime * result + ((label == null) ? 0 : label.hashCode());
+        result = prime * result + ((schedule == null) ? 0 : schedule.hashCode());
+        result = prime * result + ((scheduleType == null) ? 0 : scheduleType.hashCode());
+        result = prime * result + ((studyUserCompoundKey == null) ? 0 : studyUserCompoundKey.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Schedule other = (Schedule) obj;
+        if (activityRef == null) {
+            if (other.activityRef != null)
+                return false;
+        } else if (!activityRef.equals(other.activityRef))
+            return false;
+        if (activityType != other.activityType)
+            return false;
+        if (expires == null) {
+            if (other.expires != null)
+                return false;
+        } else if (!expires.equals(other.expires))
+            return false;
+        if (guid == null) {
+            if (other.guid != null)
+                return false;
+        } else if (!guid.equals(other.guid))
+            return false;
+        if (label == null) {
+            if (other.label != null)
+                return false;
+        } else if (!label.equals(other.label))
+            return false;
+        if (schedule == null) {
+            if (other.schedule != null)
+                return false;
+        } else if (!schedule.equals(other.schedule))
+            return false;
+        if (scheduleType != other.scheduleType)
+            return false;
+        if (studyUserCompoundKey == null) {
+            if (other.studyUserCompoundKey != null)
+                return false;
+        } else if (!studyUserCompoundKey.equals(other.studyUserCompoundKey))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Schedule [studyUserCompoundKey=" + studyUserCompoundKey + ", guid=" + guid + ", label=" + label
+                + ", activityType=" + activityType + ", activityRef=" + activityRef + ", scheduleType=" + scheduleType
+                + ", schedule=" + schedule + ", expires=" + expires + "]";
     }
     
 }
