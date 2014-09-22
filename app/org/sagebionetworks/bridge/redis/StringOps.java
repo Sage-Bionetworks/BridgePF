@@ -15,7 +15,7 @@ public interface StringOps {
      * @return
      */
     RedisOp<String> expire(String key, int seconds);
-
+    
     /**
      * Sets the value of the key and makes it expire after the specified
      * seconds.

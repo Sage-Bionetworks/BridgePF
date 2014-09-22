@@ -12,7 +12,8 @@ public class BridgeConstants {
 
     public static final String ADMIN_GROUP = "admin";
 
-    public static final int BRIDGE_SESSION_EXPIRE_IN_SECONDS = 20 * 60;
+    // 24 hrs after last activity
+    public static final int BRIDGE_SESSION_EXPIRE_IN_SECONDS = 24 * 60 * 60;
 
     public static final int BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS = 5 * 60;
 
