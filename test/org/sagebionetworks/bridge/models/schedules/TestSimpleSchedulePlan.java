@@ -25,7 +25,7 @@ public class TestSimpleSchedulePlan extends DynamoSchedulePlan {
         setGuid("GGG");
         setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         setStudyKey(TestConstants.SECOND_STUDY.getKey());
-        setScheduleStrategy(strategy);
+        setStrategy(strategy);
     }
 
 }

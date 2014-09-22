@@ -10,7 +10,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.User;
@@ -61,7 +60,7 @@ public class ScheduleStrategyTest {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         plan.setStudyKey(TestConstants.SECOND_STUDY.getKey());
-        plan.setScheduleStrategy(strategy);
+        plan.setStrategy(strategy);
         
         String output = JsonUtils.toJSON(plan);
         JsonNode node = mapper.readTree(output);
@@ -69,7 +68,7 @@ public class ScheduleStrategyTest {
         
         assertEquals("Plan with simple strategy was serialized/deserialized", plan, newPlan);
         
-        SimpleScheduleStrategy newStrategy = (SimpleScheduleStrategy)newPlan.getScheduleStrategy();
+        SimpleScheduleStrategy newStrategy = (SimpleScheduleStrategy)newPlan.getStrategy();
         assertEquals("Deserialized simple testing strategy is complete", strategy.getSchedule(), newStrategy.getSchedule());
     }
 
@@ -82,8 +81,8 @@ public class ScheduleStrategyTest {
         
         assertEquals("Plan with AB testing strategy was serialized/deserialized", plan, newPlan);
         
-        ABTestScheduleStrategy strategy = (ABTestScheduleStrategy)plan.getScheduleStrategy();
-        ABTestScheduleStrategy newStrategy = (ABTestScheduleStrategy)newPlan.getScheduleStrategy();
+        ABTestScheduleStrategy strategy = (ABTestScheduleStrategy)plan.getStrategy();
+        ABTestScheduleStrategy newStrategy = (ABTestScheduleStrategy)newPlan.getStrategy();
         assertEquals("Deserialized AB testing strategy is complete", strategy.getScheduleGroups().get(0).getSchedule(),
                 newStrategy.getScheduleGroups().get(0).getSchedule());
     }
@@ -92,7 +91,7 @@ public class ScheduleStrategyTest {
     public void verifyABTestingStrategyWorks() {
         DynamoSchedulePlan plan = createABSchedulePlan();
 
-        List<Schedule> schedules = plan.getScheduleStrategy().generateSchedules(context);
+        List<Schedule> schedules = plan.getStrategy().generateSchedules(context);
         
         // We want 4 in A, 4 in B and 2 in C
         // and they should not be in order...
@@ -122,7 +121,7 @@ public class ScheduleStrategyTest {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         plan.setStudyKey(TestConstants.SECOND_STUDY.getKey());
-        plan.setScheduleStrategy(createABTestStrategy());
+        plan.setStrategy(createABTestStrategy());
         return plan;
     }
 

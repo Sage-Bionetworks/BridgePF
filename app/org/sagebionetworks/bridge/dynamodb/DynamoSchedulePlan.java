@@ -21,9 +21,9 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * This object represents the row in DynamoDB, but subclasses with parse the JSON data 
- * node for data specific to their strategy for creating schedules. They all also 
- * implement a functional generateSchedules() method.
+ * This object represents the row in DynamoDB, but also passes the data column to a 
+ * strategy object (the strategyType class) that implements a generateSchedules() method 
+ * using the data persisted in that column.
  */
 @DynamoDBTable(tableName = "SchedulePlan")
 public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
@@ -102,28 +102,28 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
     @Override
     @DynamoDBIgnore
     @JsonIgnore
-    public ScheduleStrategy getScheduleStrategy() {
+    public ScheduleStrategy getStrategy() {
         return strategy;
     }
     @Override
-    public void setScheduleStrategy(ScheduleStrategy strategy) {
-        if (strategy != null) {
-            this.strategyType = strategy.getClass().getSimpleName();    
-        }
+    public void setStrategy(ScheduleStrategy strategy) {
+        this.strategyType = (strategy == null) ? null : strategy.getClass().getSimpleName();
         this.strategy = strategy;
     }
     @DynamoDBAttribute
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
     public ObjectNode getData() {
         ObjectNode data = JsonNodeFactory.instance.objectNode();
-        if (this.strategy != null) {
-            this.strategy.persist(data);
+        if (strategy != null) {
+            strategy.persist(data);
         }
         return data;
     }
     public void setData(ObjectNode data) {
-        this.strategy = JsonUtils.asScheduleStrategy(data, this.strategyType);
-        this.strategy.initialize(data);
+        strategy = JsonUtils.asScheduleStrategy(data, this.strategyType);
+        if (strategy != null) {
+            strategy.initialize(data);    
+        }
     }
 
     @Override
