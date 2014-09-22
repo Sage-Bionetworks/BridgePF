@@ -14,7 +14,7 @@ public class JedisStringOps implements StringOps {
             }
         };
     }
-    
+
     @Override
     public RedisOp<String> setex(final String key, final int seconds, final String value) {
         return new AbstractJedisTemplate<String>() {
@@ -35,7 +35,7 @@ public class JedisStringOps implements StringOps {
             }
         };
     }
-    
+
     @Override
     public RedisOp<String> get(final String key) {
         return new AbstractJedisTemplate<String>() {
@@ -45,7 +45,7 @@ public class JedisStringOps implements StringOps {
             }
         };
     }
-    
+
     @Override
     public RedisOp<String> delete(final String key) {
         return new AbstractJedisTemplate<String>() {
@@ -67,5 +67,4 @@ public class JedisStringOps implements StringOps {
             }
         };
     }
-
 }
