@@ -38,6 +38,7 @@ public class CacheProvider {
             String redisKey = RedisKey.SESSION.getRedisKey(key);
             String ser = stringOps.get(redisKey).execute();
             if (ser != null) {
+                stringOps.expire(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
                 return mapper.readValue(ser, UserSession.class);  
             }
         } catch (Throwable e) {

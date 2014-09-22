@@ -87,7 +87,6 @@ public class SurveyResponseControllerTest {
                 answer = new SurveyAnswer();
                 answer.setQuestionGuid(question2.getGuid());
                 answer.setAnswer(null);
-                answer.setAnswer(Boolean.TRUE);
                 answer.setDeclined(true);
                 answer.setClient("test");
                 answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());

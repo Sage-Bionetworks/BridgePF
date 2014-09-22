@@ -24,6 +24,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -110,17 +111,27 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     private Map<String,SurveyQuestion> getQuestionsMap(Survey survey) {
-        Map<String,SurveyQuestion> map = Maps.newHashMap();
-        for (SurveyQuestion question : survey.getQuestions()) {
-            map.put(question.getGuid(), question);
-        }
-        return map;
+        return asMap(survey.getQuestions(), new Function<SurveyQuestion,String>() {
+            public String apply(SurveyQuestion question) {
+                return question.getGuid();
+            }
+        });
     }
     
     private Map<String,SurveyAnswer> getAnswerMap(List<SurveyAnswer> answers) {
-        Map<String,SurveyAnswer> map = Maps.newHashMap();
-        for (SurveyAnswer answer : answers) {
-            map.put(answer.getQuestionGuid(), answer);
+        return asMap(answers, new Function<SurveyAnswer,String>() {
+            public String apply(SurveyAnswer answer) {
+                return answer.getQuestionGuid();
+            }
+        });
+    }
+    
+    private <S,T> Map<S,T> asMap(List<T> list, Function<T,S> function) {
+        Map<S,T> map = Maps.newHashMap();
+        if (list != null && function != null) {
+            for (T item : list) {
+                map.put(function.apply(item), item);
+            }
         }
         return map;
     }
