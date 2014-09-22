@@ -14,8 +14,7 @@ public class DateTimeConstraints extends TimeBasedConstraints {
     
     @Override
     @JsonIgnore
-    public EnumSet<UIHint> getSuportedHints() {
+    public EnumSet<UIHint> getSupportedHints() {
         return UI_HINTS;
     }
-    
 }

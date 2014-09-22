@@ -1,11 +1,13 @@
 package org.sagebionetworks.bridge.json;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
+import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -75,20 +77,20 @@ public class JsonUtils {
         return null;
     }
     
-    public static Constraints asConstraints(JsonNode parent, String property) {
+    public static Constraints asConstraints(JsonNode parent, String property, String dataTypeProperty, String enumProperty) {
         JsonNode constraints = JsonUtils.asJsonNode(parent, property);
         if (constraints != null) {
-            String type = JsonUtils.asText(constraints, "dataType");
+            String type = JsonUtils.asText(constraints, dataTypeProperty);
             // If the constraints contain an enumeration, then actually, it's 
             // MultiValueConstraint, with the type specified.
-            if (constraints.hasNonNull("enumeration")) {
+            if (constraints.hasNonNull(enumProperty)) {
                 return mapper.convertValue(constraints, MultiValueConstraints.class);
             } else {
                 return mapper.convertValue(constraints, Constraints.CLASSES.get(type));    
             }
         }
         return null;
-     }
+    }
     
     public static Schedule asSchedule(JsonNode parent, String property) {
         JsonNode schedule = JsonUtils.asJsonNode(parent, property);
@@ -98,14 +100,26 @@ public class JsonUtils {
         return null;
     }
     
-    public static ObjectNode asObjectNode(JsonNode parent, String property) {
-        if (parent == null){
-            throw new IllegalArgumentException("(parent == null)");
-        } else if (!parent.hasNonNull(property)) {
-            throw new IllegalArgumentException("(!parent.hasNonNull(property))");
-        } else if (!parent.get(property).isObject()) {
-            throw new IllegalArgumentException("(!parent.get(property).isObject())");
+    @SuppressWarnings("unchecked")
+    public static List<SurveyAnswer> asSurveyAnswers(JsonNode parent, String property) {
+        JsonNode answers = JsonUtils.asJsonNode(parent, property);
+        if (answers != null) {
+            return (List<SurveyAnswer>) mapper.convertValue(answers,
+                    mapper.getTypeFactory().constructCollectionType(ArrayList.class, SurveyAnswer.class));
         }
+        return Lists.newLinkedList();
+    }
+    
+    @SuppressWarnings("unchecked")
+    public static List<SurveyAnswer> asSurveyAnswers(JsonNode node) {
+        if (node != null && node.isArray()) {
+            return (List<SurveyAnswer>) mapper.convertValue(node,
+                    mapper.getTypeFactory().constructCollectionType(ArrayList.class, SurveyAnswer.class));
+        }
+        return Lists.newLinkedList();
+    }
+    
+    public static ObjectNode asObjectNode(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property) && parent.get(property).isObject()) {
             return (ObjectNode)parent.get(property);
         }

@@ -1,13 +1,16 @@
 package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.json.DataTypeJsonDeserializer;
 import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
+import org.sagebionetworks.bridge.validators.Messages;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public abstract class Constraints {
@@ -24,9 +27,14 @@ public abstract class Constraints {
         CLASSES.put("duration", DurationConstraints.class);
     }
     
+    private List<SurveyRule> rules = Lists.newArrayList();
     private DataType dataType;
     
-    public abstract EnumSet<UIHint> getSuportedHints();
+    public abstract EnumSet<UIHint> getSupportedHints();
+
+    public void validate(Messages messages, SurveyAnswer answer) {
+        // noop
+    }
     
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public DataType getDataType() {
@@ -36,15 +44,20 @@ public abstract class Constraints {
     public void setDataType(DataType dataType) {
         this.dataType = dataType;
     }
-
+    public List<SurveyRule> getRules() {
+        return rules;
+    }
+    public void setRules(List<SurveyRule> rules) {
+        this.rules = rules;
+    }
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + getDataType().hashCode();
+        result = prime * result + ((dataType == null) ? 0 : dataType.hashCode());
+        result = prime * result + ((rules == null) ? 0 : rules.hashCode());
         return result;
     }
-
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -54,7 +67,12 @@ public abstract class Constraints {
         if (getClass() != obj.getClass())
             return false;
         Constraints other = (Constraints) obj;
-        if (!getDataType().equals(other.getDataType()))
+        if (dataType != other.dataType)
+            return false;
+        if (rules == null) {
+            if (other.rules != null)
+                return false;
+        } else if (!rules.equals(other.rules))
             return false;
         return true;
     }
