@@ -111,7 +111,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     private Map<String,SurveyQuestion> getQuestionsMap(Survey survey) {
-        return Maps.uniqueIndex(survey.getQuestions(), new Function<SurveyQuestion,String>() {
+        return asMap(survey.getQuestions(), new Function<SurveyQuestion,String>() {
             public String apply(SurveyQuestion question) {
                 return question.getGuid();
             }
@@ -119,11 +119,21 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     private Map<String,SurveyAnswer> getAnswerMap(List<SurveyAnswer> answers) {
-        return Maps.uniqueIndex(answers, new Function<SurveyAnswer,String>() {
+        return asMap(answers, new Function<SurveyAnswer,String>() {
             public String apply(SurveyAnswer answer) {
                 return answer.getQuestionGuid();
             }
         });
+    }
+    
+    private <S,T> Map<S,T> asMap(List<T> list, Function<T,S> function) {
+        Map<S,T> map = Maps.newHashMap();
+        if (list != null && function != null) {
+            for (T item : list) {
+                map.put(function.apply(item), item);
+            }
+        }
+        return map;
     }
     
     private String generateId() {
