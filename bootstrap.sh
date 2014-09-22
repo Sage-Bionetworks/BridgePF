@@ -30,7 +30,6 @@ apt-get -q -y install fontconfig freetype2-demos
 su - vagrant -c "wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-1.9.7-linux-x86_64.tar.bz2"
 su - vagrant -c "bunzip2 phantomjs-1.9.7-linux-x86_64.tar.bz2"
 su - vagrant -c "tar xvf phantomjs-1.9.7-linux-x86_64.tar"
-su
 rm phantomjs-1.9.7-linux-x86_64.tar
 echo 'export PATH=$PATH:/home/vagrant/phantomjs-1.9.7-linux-x86_64/bin' >> /home/vagrant/.profile
 
@@ -53,7 +52,6 @@ apt-get -q -y install openjdk-7-jdk
 # Play
 su - vagrant -c "wget http://downloads.typesafe.com/play/2.2.4/play-2.2.4.zip"
 su - vagrant -c "unzip play-2.2.4.zip"
-su
 rm play-2.2.4.zip
 echo 'export PATH=$PATH:/home/vagrant/play-2.2.4' >> /home/vagrant/.profile
 
