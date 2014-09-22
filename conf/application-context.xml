@@ -88,6 +88,10 @@
         <property name="surveyDao" ref="surveyDao"/>
     </bean>
     
+    <bean id="schedulePlanDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlanDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+    
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
 
     <!-- Redis -->

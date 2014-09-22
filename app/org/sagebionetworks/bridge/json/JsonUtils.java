@@ -2,12 +2,13 @@ package org.sagebionetworks.bridge.json;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
-import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -101,20 +102,25 @@ public class JsonUtils {
     }
     
     @SuppressWarnings("unchecked")
-    public static List<SurveyAnswer> asSurveyAnswers(JsonNode parent, String property) {
-        JsonNode answers = JsonUtils.asJsonNode(parent, property);
-        if (answers != null) {
-            return (List<SurveyAnswer>) mapper.convertValue(answers,
-                    mapper.getTypeFactory().constructCollectionType(ArrayList.class, SurveyAnswer.class));
+    public static Map<Integer,Schedule> asSchedulesByPercentMap(JsonNode parent, String property) {
+        JsonNode map = JsonUtils.asJsonNode(parent, property);
+        if (map != null) {
+            return (Map<Integer, Schedule>) mapper.convertValue(map,
+                    mapper.getTypeFactory().constructMapLikeType(HashMap.class, Integer.class, Schedule.class));
         }
-        return Lists.newLinkedList();
+        return null;
+    }
+    
+    public static <T> List<T> asEntityList(JsonNode parent, String property, Class<T> clazz) {
+        JsonNode list = JsonUtils.asJsonNode(parent, property);
+        return JsonUtils.asEntityList(list, clazz);
     }
     
     @SuppressWarnings("unchecked")
-    public static List<SurveyAnswer> asSurveyAnswers(JsonNode node) {
-        if (node != null && node.isArray()) {
-            return (List<SurveyAnswer>) mapper.convertValue(node,
-                    mapper.getTypeFactory().constructCollectionType(ArrayList.class, SurveyAnswer.class));
+    public static <T> List<T> asEntityList(JsonNode list, Class<T> clazz) {
+        if (list != null && list.isArray()) {
+            return (List<T>) mapper.convertValue(list,
+                    mapper.getTypeFactory().constructCollectionType(ArrayList.class, clazz));
         }
         return Lists.newLinkedList();
     }
