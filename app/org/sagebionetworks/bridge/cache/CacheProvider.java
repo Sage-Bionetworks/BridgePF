@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.cache;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -22,7 +23,7 @@ public class CacheProvider {
         try {
             String ser = mapper.writeValueAsString(session);
             String redisKey = RedisKey.SESSION.getRedisKey(key);
-            String result = stringOps.set(redisKey, ser).execute();
+            String result = stringOps.setex(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser).execute();
             if (!"OK".equals(result)) {
                 throw new BridgeServiceException("Session storage error", 500);
             }
@@ -37,6 +38,7 @@ public class CacheProvider {
             String redisKey = RedisKey.SESSION.getRedisKey(key);
             String ser = stringOps.get(redisKey).execute();
             if (ser != null) {
+                stringOps.expire(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
                 return mapper.readValue(ser, UserSession.class);  
             }
         } catch (Throwable e) {

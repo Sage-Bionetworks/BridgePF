@@ -17,16 +17,6 @@ public interface StringOps {
     RedisOp<String> expire(String key, int seconds);
     
     /**
-     * Sets the value of the key with no expiration.
-     * 
-     * @param key
-     *            key of the key-value pair.
-     * @param value
-     *            value of the key-value pair.
-     */
-    RedisOp<String> set(String key, String value);
-
-    /**
      * Sets the value of the key and makes it expire after the specified
      * seconds.
      * 
