@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -30,10 +29,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
 
     private static final String GUID_PROPERTY = "guid";
-    private static final String STRATEGY_PROPERTY = "strategy";
     private static final String STRATEGY_TYPE_PROPERTY = "strategyType";
     private static final String STUDY_KEY_PROPERTY = "studyKey";
     private static final String MODIFIED_ON_PROPERTY = "modifiedOn";
+    private static final String DATA_PROPERTY = "data";
     
     private String guid;
     private String studyKey;
@@ -48,7 +47,7 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
         plan.setModifiedOn(JsonUtils.asMillisSinceEpoch(node, MODIFIED_ON_PROPERTY));
         plan.setStudyKey(JsonUtils.asText(node, STUDY_KEY_PROPERTY));
         plan.setStrategyType(JsonUtils.asText(node, STRATEGY_TYPE_PROPERTY));
-        plan.setData((ObjectNode)node);
+        plan.setData(JsonUtils.asObjectNode(node, DATA_PROPERTY));
         return plan;
     }
     
@@ -102,32 +101,29 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
     }
     @Override
     @DynamoDBIgnore
-    public ScheduleStrategy getStrategy() {
+    @JsonIgnore
+    public ScheduleStrategy getScheduleStrategy() {
         return strategy;
     }
     @Override
     public void setScheduleStrategy(ScheduleStrategy strategy) {
         if (strategy != null) {
-            this.strategyType = strategy.getClass().getName();    
+            this.strategyType = strategy.getClass().getSimpleName();    
         }
         this.strategy = strategy;
     }
-    @JsonIgnore
     @DynamoDBAttribute
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
     public ObjectNode getData() {
         ObjectNode data = JsonNodeFactory.instance.objectNode();
-        this.strategy.persist(data);
+        if (this.strategy != null) {
+            this.strategy.persist(data);
+        }
         return data;
     }
     public void setData(ObjectNode data) {
-        try {
-            ObjectNode strat = JsonUtils.asObjectNode(data, STRATEGY_PROPERTY);
-            this.strategy = (ScheduleStrategy)Class.forName(this.strategyType).newInstance();
-            this.strategy.initialize(strat);
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            throw new BridgeServiceException(e, 500);
-        }
+        this.strategy = JsonUtils.asScheduleStrategy(data, this.strategyType);
+        this.strategy.initialize(data);
     }
 
     @Override

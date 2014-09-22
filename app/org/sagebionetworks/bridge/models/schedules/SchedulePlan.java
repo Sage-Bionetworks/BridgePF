@@ -19,7 +19,7 @@ public interface SchedulePlan extends BridgeEntity {
     public String getStrategyType();
     public void setStrategyType(String strategyType);
     
-    public ScheduleStrategy getStrategy();
+    public ScheduleStrategy getScheduleStrategy();
     public void setScheduleStrategy(ScheduleStrategy strategy);
     
 }

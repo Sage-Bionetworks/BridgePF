@@ -32,9 +32,7 @@ public class ScheduleStrategyTest {
         for (int i=0; i < 10; i++) {
             users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
         }
-        
         this.context = new ScheduleContext(TestConstants.SECOND_STUDY, users);
-        
     }
     
     @Test
@@ -71,7 +69,7 @@ public class ScheduleStrategyTest {
         
         assertEquals("Plan with simple strategy was serialized/deserialized", plan, newPlan);
         
-        SimpleScheduleStrategy newStrategy = (SimpleScheduleStrategy)newPlan.getStrategy();
+        SimpleScheduleStrategy newStrategy = (SimpleScheduleStrategy)newPlan.getScheduleStrategy();
         assertEquals("Deserialized simple testing strategy is complete", strategy.getSchedule(), newStrategy.getSchedule());
     }
 
@@ -79,31 +77,22 @@ public class ScheduleStrategyTest {
     public void canRountripABTestingPlan() throws Exception {
         DynamoSchedulePlan plan = createABSchedulePlan();
         String output = JsonUtils.toJSON(plan);
-        
         JsonNode node = mapper.readTree(output);
         DynamoSchedulePlan newPlan = DynamoSchedulePlan.fromJson(node);
         
         assertEquals("Plan with AB testing strategy was serialized/deserialized", plan, newPlan);
         
-        ABTestScheduleStrategy strategy = (ABTestScheduleStrategy)plan.getStrategy();
-        ABTestScheduleStrategy newStrategy = (ABTestScheduleStrategy)newPlan.getStrategy();
+        ABTestScheduleStrategy strategy = (ABTestScheduleStrategy)plan.getScheduleStrategy();
+        ABTestScheduleStrategy newStrategy = (ABTestScheduleStrategy)newPlan.getScheduleStrategy();
         assertEquals("Deserialized AB testing strategy is complete", strategy.getScheduleGroups().get(0).getSchedule(),
                 newStrategy.getScheduleGroups().get(0).getSchedule());
-    }
-    
-    @Test(expected = BridgeServiceException.class)
-    public void verifyABTestingStrategyEnforces100PercentGroupDistribution() {
-        DynamoSchedulePlan plan = createABSchedulePlan();
-        ((ABTestScheduleStrategy)plan.getStrategy()).getScheduleGroups().remove(0);
-        
-        plan.getStrategy().generateSchedules(context);
     }
     
     @Test
     public void verifyABTestingStrategyWorks() {
         DynamoSchedulePlan plan = createABSchedulePlan();
 
-        List<Schedule> schedules = plan.getStrategy().generateSchedules(context);
+        List<Schedule> schedules = plan.getScheduleStrategy().generateSchedules(context);
         
         // We want 4 in A, 4 in B and 2 in C
         // and they should not be in order...
@@ -128,7 +117,6 @@ public class ScheduleStrategyTest {
         assertNotEquals("C has random users", schedules.get(2), newSchedules.get(2));
         */
     }
-    
 
     private DynamoSchedulePlan createABSchedulePlan() {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();

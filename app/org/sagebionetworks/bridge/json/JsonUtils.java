@@ -6,7 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
@@ -91,6 +94,15 @@ public class JsonUtils {
             }
         }
         return null;
+    }
+    
+    public static ScheduleStrategy asScheduleStrategy(ObjectNode node, String type) {
+        try {
+            return (ScheduleStrategy) Class.forName(
+                    BridgeConstants.SCHEDULE_STRATEGY_PACKAGE + type).newInstance();
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            throw new BridgeServiceException(e, 500);
+        }
     }
     
     public static Schedule asSchedule(JsonNode parent, String property) {
