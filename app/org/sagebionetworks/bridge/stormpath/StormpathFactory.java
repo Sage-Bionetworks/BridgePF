@@ -4,8 +4,8 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 
 import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.client.ApiKey;
-import com.stormpath.sdk.client.ApiKeys;
+import com.stormpath.sdk.api.ApiKey;
+import com.stormpath.sdk.api.ApiKeys;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.client.Clients;
 
