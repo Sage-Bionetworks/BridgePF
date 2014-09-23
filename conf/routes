@@ -45,6 +45,7 @@ GET     /api/v1/researchers/surveys/:surveyGuid/:surveyVersion          @control
 POST    /api/v1/researchers/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.updateSurvey(surveyGuid: String, surveyVersion: String)
 
 # API - survey responses
+GET    /api/v1/users/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyController.getSurveyForUser(surveyGuid: String, surveyVersion: String)
 POST   /api/v1/users/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, surveyVersion: Long)
 GET    /api/v1/users/surveys/response/:guid              @controllers.SurveyResponseController.getSurveyResponse(guid: String)
 POST   /api/v1/users/surveys/response/:guid              @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
