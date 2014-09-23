@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -120,12 +122,22 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
         return data;
     }
     public void setData(ObjectNode data) {
-        strategy = JsonUtils.asScheduleStrategy(data, this.strategyType);
+        strategy = createStrategy(data, this.strategyType);
         if (strategy != null) {
             strategy.initialize(data);    
         }
     }
 
+    private ScheduleStrategy createStrategy(ObjectNode node, String type) {
+        try {
+            String className = BridgeConstants.SCHEDULE_STRATEGY_PACKAGE + type;
+            return (ScheduleStrategy) Class.forName(className).newInstance();
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            throw new BridgeServiceException(e, 500);
+        }
+    }
+
+    
     @Override
     public int hashCode() {
         final int prime = 31;
