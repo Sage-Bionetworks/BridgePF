@@ -3,7 +3,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
 
         formService.initScope($scope, 'settings');
 
-        $http.get('/api/v1/users/profile')
+        $http.get('/api/v1/profile')
             .success(function(data, status, headers, config) {
                 $scope.profile = {
                     // TODO Eventually need to add other fields, such as avatar image, 
@@ -25,7 +25,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
         $scope.submit = function() {
             // Only two items possible to update are first name and last name.
             var update = formService.formToJSON($scope.settings, ['firstName', 'lastName']);
-            $http.post('/api/v1/users/profile', update)
+            $http.post('/api/v1/profile', update)
                 .success(function(data) {
                     $modalInstance.close('success');
                     $humane.confirm('Your information has been successfully updated.');
@@ -39,7 +39,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
         };
 
         $scope.withdrawStudy = function() {
-            $http.delete('/api/v1/users/consent')
+            $http.delete('/api/v1/consent')
                 .success(function(data, status, headers, config) {
                     $scope.setMessage('You have successfully withdrawn from the study.');
                     $scope.session.consented = false;
@@ -49,7 +49,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
 
         // Resume data sharing and suspend data sharing will work properly as soon as study consent is fixed.
         $scope.resumeDataSharing = function() {
-            $http.post('/api/v1/users/consent/dataSharing/resume')
+            $http.post('/api/v1/consent/dataSharing/resume')
                 .success(function(data, status, headers, config) {
                     $scope.setMessage('Data sharing is now activated.');
                     $scope.session.dataSharing = true;
@@ -58,7 +58,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
         };
 
         $scope.suspendDataSharing = function() {
-            $http.post('/api/v1/users/consent/dataSharing/suspend')
+            $http.post('/api/v1/consent/dataSharing/suspend')
                 .success(function(data, status, headers, config) {
                     $scope.setMessage('Data sharing is now suspended.');
                     $scope.session.dataSharing = false;
@@ -67,7 +67,7 @@ bridge.controller('SettingsModalController', ['$http', '$humane', '$log', '$moda
         };
 
         $scope.emailConsent = function() {
-            $http.post('/api/v1/users/consent/email')
+            $http.post('/api/v1/consent/email')
                 .success(function(data, status, headers, config) {
                     $scope.setMessage('Check your email! You should be receiving a copy of the consent document shortly.');
                 })
