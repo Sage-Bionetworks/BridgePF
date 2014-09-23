@@ -90,7 +90,9 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
     }
     /**
      * Will divide users into the groups by a percentage (randomly), with any rounding 
-     * fractions dropped, so there may be a very few users who are not in the study at all.
+     * fractions dropped, so there may be a very few users who are not in the study. 
+     * This API loads all the users; we expect there may be thousands, but not tens 
+     * of thousands or more.
      */
     @Override
     public List<Schedule> generateSchedules(ScheduleContext context) {

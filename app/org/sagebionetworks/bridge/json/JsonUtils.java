@@ -2,14 +2,9 @@ package org.sagebionetworks.bridge.json;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
@@ -96,29 +91,10 @@ public class JsonUtils {
         return null;
     }
     
-    public static ScheduleStrategy asScheduleStrategy(ObjectNode node, String type) {
-        try {
-            return (ScheduleStrategy) Class.forName(
-                    BridgeConstants.SCHEDULE_STRATEGY_PACKAGE + type).newInstance();
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            throw new BridgeServiceException(e, 500);
-        }
-    }
-    
     public static Schedule asSchedule(JsonNode parent, String property) {
         JsonNode schedule = JsonUtils.asJsonNode(parent, property);
         if (schedule != null) {
             return mapper.convertValue(schedule, Schedule.class);
-        }
-        return null;
-    }
-    
-    @SuppressWarnings("unchecked")
-    public static Map<Integer,Schedule> asSchedulesByPercentMap(JsonNode parent, String property) {
-        JsonNode map = JsonUtils.asJsonNode(parent, property);
-        if (map != null) {
-            return (Map<Integer, Schedule>) mapper.convertValue(map,
-                    mapper.getTypeFactory().constructMapLikeType(HashMap.class, Integer.class, Schedule.class));
         }
         return null;
     }
