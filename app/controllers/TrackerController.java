@@ -22,6 +22,7 @@ public class TrackerController extends BaseController {
     }
     
     public Result getTrackers() throws Exception {
+        getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         List<TrackerInfo> infos = Lists.newArrayList();
         for (Tracker tracker : study.getTrackers()) {
@@ -32,6 +33,7 @@ public class TrackerController extends BaseController {
     
     
     public Result getTrackerSchema(Long trackerId) throws Exception {
+        getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         Tracker tracker = study.getTrackerById(trackerId);
         JsonNode node = jsonSchemaValidator.getSchemaAsNode(tracker);

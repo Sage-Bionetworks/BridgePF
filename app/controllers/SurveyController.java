@@ -51,9 +51,20 @@ public class SurveyController extends BaseController {
         return ok(constructJSON(surveys));
     }
     
+    // User must have consent, that's all
+    public Result getSurveyForUser(String surveyGuid, String versionString) throws Exception {
+        getAuthenticatedAndConsentedSession();
+        
+        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
+        Survey survey = surveyService.getSurvey(surveyGuid, surveyVersion);
+        return ok(constructJSON(survey));
+    }
+    
+    // Otherwise you don't need consent but you must be a researcher or an administrator
     public Result getSurvey(String surveyGuid, String versionString) throws Exception {
-        // Just need to be signed in, anyone can get a survey to look at it.
-        getAuthenticatedSession();
+        UserSession session = getAuthenticatedSession();
+        Study study = studyService.getStudyByHostname(getHostname());
+        assertResearcherOrAdminUser(study, session.getUser());
         
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         Survey survey = surveyService.getSurvey(surveyGuid, surveyVersion);
