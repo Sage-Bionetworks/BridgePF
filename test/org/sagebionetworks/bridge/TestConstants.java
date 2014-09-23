@@ -50,6 +50,7 @@ public class TestConstants {
     public static final String TEST_BASE_URL = "http://localhost:3333";
     public static final String API_URL = "/api/v1";
     public static final String ADMIN_URL = "/admin/v1";
+    public static final String RESEARCHERS_URL = "/researchers/v1";
     public static final String CONSENT_TEST_URL = "/consent/asdf";
     public static final String SIGN_OUT_URL = API_URL + "/auth/signOut";
     public static final String SIGN_IN_URL = API_URL + "/auth/signIn";
@@ -57,24 +58,24 @@ public class TestConstants {
     public static final String TRACKER_URL = API_URL + "/healthdata/2";
     public static final String RECORD_URL = API_URL + "/healthdata/2/record/";
 
-    public static final String PROFILE_URL = API_URL + "/users/profile";
+    public static final String PROFILE_URL = API_URL + "/profile";
     
     public static final String STUDYCONSENT_URL = ADMIN_URL + "/consents";
     public static final String STUDYCONSENT_ACTIVE_URL = STUDYCONSENT_URL + "/active";
     
-    public static final String CONSENT_URL = API_URL + "/users/consent";
+    public static final String CONSENT_URL = API_URL + "/consent";
     public static final String SUSPEND_URL = CONSENT_URL + "/dataSharing/suspend";
     public static final String RESUME_URL = CONSENT_URL + "/dataSharing/resume";
     
-    public static final String SURVEYS_URL = API_URL + "/researchers/surveys";
-    public static final String GET_SURVEY_URL = API_URL + "/researchers/surveys/%s/%s";
-    public static final String GET_VERSIONS_OF_SURVEY_URL = API_URL + "/researchers/surveys/%s/versions";
+    public static final String SURVEYS_URL = RESEARCHERS_URL + "/surveys";
+    public static final String GET_SURVEY_URL = RESEARCHERS_URL + "/surveys/%s/%s";
+    public static final String GET_VERSIONS_OF_SURVEY_URL = RESEARCHERS_URL + "/surveys/%s/versions";
     public static final String VERSION_SURVEY_URL = GET_SURVEY_URL + "/version";
     public static final String PUBLISH_SURVEY_URL = GET_SURVEY_URL + "/publish";
-    public static final String RECENT_SURVEYS_URL = API_URL + "/researchers/surveys/recent";
-    public static final String RECENT_PUBLISHED_SURVEYS_URL = API_URL + "/researchers/surveys/published";
+    public static final String RECENT_SURVEYS_URL = RESEARCHERS_URL + "/surveys/recent";
+    public static final String RECENT_PUBLISHED_SURVEYS_URL = RESEARCHERS_URL + "/surveys/published";
     
-    public static final String NEW_SURVEY_RESPONSE = API_URL + "/users/surveys/%s/%s";
+    public static final String NEW_SURVEY_RESPONSE = API_URL + "/surveys/%s/%s";
     
     public static final String APPLICATION_JSON = "application/json";
     public static final String USERNAME = "username";
