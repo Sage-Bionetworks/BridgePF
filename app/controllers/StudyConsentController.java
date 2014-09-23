@@ -34,7 +34,7 @@ public class StudyConsentController extends AdminController {
     public Result getConsent(String createdOn) throws Exception {
         getAuthenticatedAdminSession();
         String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
-	long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
+        long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
         StudyConsent consent = studyConsentService.getConsent(studyKey, timestamp);
         return ok(constructJSON(consent));
     }
@@ -50,7 +50,7 @@ public class StudyConsentController extends AdminController {
     public Result setActiveConsent(String createdOn) throws Exception {
         getAuthenticatedAdminSession();
         String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
-	long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
+        long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
         studyConsentService.activateConsent(studyKey, timestamp);
         return okResult("Consent document set as active.");
     }
