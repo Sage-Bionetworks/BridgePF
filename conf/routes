@@ -1,76 +1,76 @@
 # Redirect to application
 
 # These routes won't support an URL that maps to an internal AngularJS state (those would all be routed to /public/app")
-GET     /app/                       @controllers.ApplicationController.loadApp
-GET     /app/index.html             @controllers.ApplicationController.redirectToApp
-GET     /                           @controllers.ApplicationController.loadPublicApp
-GET     /index.html                 @controllers.ApplicationController.redirectToPublicApp
-GET     /consent/:sessionToken      @controllers.ApplicationController.loadConsent(sessionToken: String)
+GET    /app/                       @controllers.ApplicationController.loadApp
+GET    /app/index.html             @controllers.ApplicationController.redirectToApp
+GET    /                           @controllers.ApplicationController.loadPublicApp
+GET    /index.html                 @controllers.ApplicationController.redirectToPublicApp
+GET    /consent/:sessionToken      @controllers.ApplicationController.loadConsent(sessionToken: String)
 
 # API - Authentication
-POST    /api/v1/auth/signIn                @controllers.AuthenticationController.signIn
-GET     /api/v1/auth/signOut               @controllers.AuthenticationController.signOut
-POST    /api/v1/auth/requestResetPassword  @controllers.AuthenticationController.requestResetPassword
-POST    /api/v1/auth/resetPassword         @controllers.AuthenticationController.resetPassword
-POST    /api/v1/auth/signUp                @controllers.AuthenticationController.signUp
-POST    /api/v1/auth/verifyEmail           @controllers.AuthenticationController.verifyEmail
+POST   /api/v1/auth/signIn                @controllers.AuthenticationController.signIn
+GET    /api/v1/auth/signOut               @controllers.AuthenticationController.signOut
+POST   /api/v1/auth/requestResetPassword  @controllers.AuthenticationController.requestResetPassword
+POST   /api/v1/auth/resetPassword         @controllers.AuthenticationController.resetPassword
+POST   /api/v1/auth/signUp                @controllers.AuthenticationController.signUp
+POST   /api/v1/auth/verifyEmail           @controllers.AuthenticationController.verifyEmail
 
-# API - Individual health data record
-GET     /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(trackerId: Long, recordId: String)
-POST    /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.updateHealthDataRecord(trackerId: Long, recordId: String)
-DELETE  /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(trackerId: Long, recordId: String)
+# API - Individual Health Data Record
+GET    /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(trackerId: Long, recordId: String)
+POST   /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.updateHealthDataRecord(trackerId: Long, recordId: String)
+DELETE /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(trackerId: Long, recordId: String)
 
 # API - Health Data
-GET     /api/v1/healthdata/:trackerId      @controllers.HealthDataController.getHealthData(trackerId: Long, startDate: java.lang.String ?= null, endDate: java.lang.String ?= null)
-POST    /api/v1/healthdata/:trackerId      @controllers.HealthDataController.appendHealthData(trackerId: Long)
+GET    /api/v1/healthdata/:trackerId      @controllers.HealthDataController.getHealthData(trackerId: Long, startDate: java.lang.String ?= null, endDate: java.lang.String ?= null)
+POST   /api/v1/healthdata/:trackerId      @controllers.HealthDataController.appendHealthData(trackerId: Long)
 
-# API - trackers
-GET     /api/v1/trackers                       @controllers.TrackerController.getTrackers
-GET     /api/v1/trackers/schema/:trackerId     @controllers.TrackerController.getTrackerSchema(trackerId: Long)
+# API - Trackers
+GET    /api/v1/trackers                       @controllers.TrackerController.getTrackers
+GET    /api/v1/trackers/schema/:trackerId     @controllers.TrackerController.getTrackerSchema(trackerId: Long)
 
-# API - users
-GET     /api/v1/users/profile      @controllers.UserProfileController.getUserProfile
-POST    /api/v1/users/profile      @controllers.UserProfileController.updateUserProfile
+# API - Users
+GET    /api/v1/profile      @controllers.UserProfileController.getUserProfile
+POST   /api/v1/profile      @controllers.UserProfileController.updateUserProfile
 
-# API - surveys
-GET     /api/v1/researchers/surveys                                     @controllers.SurveyController.getAllSurveysAllVersions
-POST    /api/v1/researchers/surveys                                     @controllers.SurveyController.createSurvey
-GET     /api/v1/researchers/surveys/recent                              @controllers.SurveyController.getMostRecentSurveys
-GET     /api/v1/researchers/surveys/published                           @controllers.SurveyController.getMostRecentlyPublishedSurveys
-GET     /api/v1/researchers/surveys/:surveyGuid/versions                @controllers.SurveyController.getAllVersionsOfASurvey(surveyGuid: String)
-POST    /api/v1/researchers/surveys/:surveyGuid/:surveyVersion/version  @controllers.SurveyController.versionSurvey(surveyGuid: String, surveyVersion: String)
-POST    /api/v1/researchers/surveys/:surveyGuid/:surveyVersion/publish  @controllers.SurveyController.publishSurvey(surveyGuid: String, surveyVersion: String)
-POST    /api/v1/researchers/surveys/:surveyGuid/:surveyVersion/close    @controllers.SurveyController.closeSurvey(surveyGuid: String, surveyVersion: String)
-GET     /api/v1/researchers/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.getSurvey(surveyGuid: String, surveyVersion: String)
-POST    /api/v1/researchers/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.updateSurvey(surveyGuid: String, surveyVersion: String)
+# API - Survey Responses
+GET    /api/v1/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyController.getSurveyForUser(surveyGuid: String, surveyVersion: String)
+POST   /api/v1/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, surveyVersion: Long)
+GET    /api/v1/surveys/response/:guid              @controllers.SurveyResponseController.getSurveyResponse(guid: String)
+POST   /api/v1/surveys/response/:guid              @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
+DELETE /api/v1/surveys/response/:guid              @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
 
-# API - survey responses
-GET    /api/v1/users/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyController.getSurveyForUser(surveyGuid: String, surveyVersion: String)
-POST   /api/v1/users/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, surveyVersion: Long)
-GET    /api/v1/users/surveys/response/:guid              @controllers.SurveyResponseController.getSurveyResponse(guid: String)
-POST   /api/v1/users/surveys/response/:guid              @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
-DELETE /api/v1/users/surveys/response/:guid              @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
-
-# API - consent
-POST    /api/v1/users/consent                       @controllers.ConsentController.give
-POST    /api/v1/users/consent/email                 @controllers.ConsentController.emailCopy
-POST    /api/v1/users/consent/dataSharing/suspend   @controllers.ConsentController.suspendDataSharing
-POST    /api/v1/users/consent/dataSharing/resume    @controllers.ConsentController.resumeDataSharing
+# API - Consent
+POST   /api/v1/consent                       @controllers.ConsentController.give
+POST   /api/v1/consent/email                 @controllers.ConsentController.emailCopy
+POST   /api/v1/consent/dataSharing/suspend   @controllers.ConsentController.suspendDataSharing
+POST   /api/v1/consent/dataSharing/resume    @controllers.ConsentController.resumeDataSharing
 
 # API - Upload
-POST    /api/v1/upload                  @controllers.UploadController.upload
-POST    /api/v1/upload/:id/complete     @controllers.UploadController.uploadComplete(id: String)
+POST   /api/v1/upload                  @controllers.UploadController.upload
+POST   /api/v1/upload/:id/complete     @controllers.UploadController.uploadComplete(id: String)
+
+# Researchers - Surveys
+GET    /researchers/v1/surveys                                     @controllers.SurveyController.getAllSurveysAllVersions
+POST   /researchers/v1/surveys                                     @controllers.SurveyController.createSurvey
+GET    /researchers/v1/surveys/recent                              @controllers.SurveyController.getMostRecentSurveys
+GET    /researchers/v1/surveys/published                           @controllers.SurveyController.getMostRecentlyPublishedSurveys
+GET    /researchers/v1/surveys/:surveyGuid/versions                @controllers.SurveyController.getAllVersionsOfASurvey(surveyGuid: String)
+POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion/version  @controllers.SurveyController.versionSurvey(surveyGuid: String, surveyVersion: String)
+POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion/publish  @controllers.SurveyController.publishSurvey(surveyGuid: String, surveyVersion: String)
+POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion/close    @controllers.SurveyController.closeSurvey(surveyGuid: String, surveyVersion: String)
+GET    /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.getSurvey(surveyGuid: String, surveyVersion: String)
+POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.updateSurvey(surveyGuid: String, surveyVersion: String)
 
 # Admin - Consent
-GET     /admin/v1/consents                      @controllers.StudyConsentController.getAllConsents
-GET     /admin/v1/consents/active               @controllers.StudyConsentController.getActiveConsent
-GET     /admin/v1/consents/:timestamp           @controllers.StudyConsentController.getConsent(timestamp: String)
-POST    /admin/v1/consents                      @controllers.StudyConsentController.addConsent
-POST    /admin/v1/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: String)
+GET    /admin/v1/consents                      @controllers.StudyConsentController.getAllConsents
+GET    /admin/v1/consents/active               @controllers.StudyConsentController.getActiveConsent
+GET    /admin/v1/consents/:timestamp           @controllers.StudyConsentController.getConsent(timestamp: String)
+POST   /admin/v1/consents                      @controllers.StudyConsentController.addConsent
+POST   /admin/v1/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: String)
 
 # Admin - Backfill
-GET     /admin/v1/backfill/stormpathUserConsent     @controllers.BackfillController.stormpathUserConsent
+GET    /admin/v1/backfill/stormpathUserConsent     @controllers.BackfillController.stormpathUserConsent
 
 # AngularJS application
-GET     /*file      controllers.Assets.at(path="/public", file)
-HEAD    /*file      controllers.Assets.at(path="/public", file)
+GET    /*file      controllers.Assets.at(path="/public", file)
+HEAD   /*file      controllers.Assets.at(path="/public", file)
