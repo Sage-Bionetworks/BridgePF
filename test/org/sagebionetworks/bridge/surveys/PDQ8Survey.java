@@ -26,15 +26,15 @@ public class PDQ8Survey extends DynamoSurvey {
         setName("Parkinson’s Disease Quality of Life Questionnaire");
         setIdentifier("PDQ8");
         setStudyKey("neurod");
-        questions.add(question1);
-        questions.add(question2);
-        questions.add(question3);
-        questions.add(question4);
-        questions.add(question5);
-        questions.add(question6);
-        questions.add(question7);
-        questions.add(question8);
         setQuestions(questions);
+        makeQuestion("had difficulty getting around in public?", "mobility");
+        makeQuestion("had difficulty dressing yourself?","dressing");
+        makeQuestion("felt depressed?", "depression");
+        makeQuestion("had problems with your close personal relationships?", "relationships");
+        makeQuestion("had problems with your concentration, e.g. when reading or watching TV?", "concentration");
+        makeQuestion("felt unable to communicate with people properly?", "communication");
+        makeQuestion("had painful muscle cramps or spasms?", "pain");
+        makeQuestion("felt embarrassed in public due to having Parkinson’s disease?", "embarassment");
     }
     
     private static final String PREAMBLE = "Due to having Parkinson’s disease, how often during the last month have you ";
@@ -51,68 +51,12 @@ public class PDQ8Survey extends DynamoSurvey {
             setEnumeration(options);
         }
     };
-    private SurveyQuestion question1 = new DynamoSurveyQuestion() {
-        {
-            setPrompt(PREAMBLE + "had difficulty getting around in public?");
-            setIdentifier("mobility");
+    private void makeQuestion(final String prompt, final String id) {
+        questions.add(new DynamoSurveyQuestion() {{
+            setPrompt(PREAMBLE + prompt);
+            setIdentifier(id);
             setConstraints(constraints);
-            setUiHint(UIHint.RADIOBUTTON);
-        }
-    };
-    private SurveyQuestion question2 = new DynamoSurveyQuestion() {
-        {
-            setPrompt(PREAMBLE + "had difficulty dressing yourself?");
-            setIdentifier("dressing");
-            setConstraints(constraints);
-            setUiHint(UIHint.RADIOBUTTON);
-        }
-    };
-    private SurveyQuestion question3 = new DynamoSurveyQuestion() {
-        {
-            setPrompt(PREAMBLE + "felt depressed?");
-            setIdentifier("depression");
-            setConstraints(constraints);
-            setUiHint(UIHint.RADIOBUTTON);
-        }
-    };
-    private SurveyQuestion question4 = new DynamoSurveyQuestion() {
-        {
-            setPrompt(PREAMBLE + "had problems with your close personal relationships?");
-            setIdentifier("relationships");
-            setConstraints(constraints);
-            setUiHint(UIHint.RADIOBUTTON);
-        }
-    };
-    private SurveyQuestion question5 = new DynamoSurveyQuestion() {
-        {
-            setPrompt(PREAMBLE + "had problems with your concentration, e.g. when reading or watching TV?");
-            setIdentifier("concentration");
-            setConstraints(constraints);
-            setUiHint(UIHint.RADIOBUTTON);
-        }
-    };
-    private SurveyQuestion question6 = new DynamoSurveyQuestion() {
-        {
-            setPrompt(PREAMBLE + "felt unable to communicate with people properly?");
-            setIdentifier("communication");
-            setConstraints(constraints);
-            setUiHint(UIHint.RADIOBUTTON);
-        }
-    };
-    private SurveyQuestion question7 = new DynamoSurveyQuestion() {
-        {
-            setPrompt(PREAMBLE + "had painful muscle cramps or spasms?");
-            setIdentifier("pain");
-            setConstraints(constraints);
-            setUiHint(UIHint.RADIOBUTTON);
-        }
-    };
-    private SurveyQuestion question8 = new DynamoSurveyQuestion() {
-        {
-            setPrompt(PREAMBLE + "felt embarrassed in public due to having Parkinson’s disease?");
-            setIdentifier("embarassment");
-            setConstraints(constraints);
-            setUiHint(UIHint.RADIOBUTTON);
-        }
-    };
+            setUiHint(UIHint.SLIDER);
+        }});
+    }
 }
