@@ -23,7 +23,6 @@ public class TestUtils {
     }
 
     public static WSRequestHolder getURL(String sessionToken, String path) {
-        System.out.println("**** " + path);
         return getURL(sessionToken, path, null);
     }
     
