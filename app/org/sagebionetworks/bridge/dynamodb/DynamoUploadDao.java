@@ -36,4 +36,12 @@ public class DynamoUploadDao implements UploadDao {
         upload.setComplete(true);
         mapper.save(upload);
     }
+
+    @Override
+    public boolean isComplete(String uploadId) {
+        DynamoUpload upload = new DynamoUpload();
+        upload.setUploadId(uploadId);
+        upload = mapper.load(upload);
+        return upload != null && upload.isComplete();
+    }
 }
