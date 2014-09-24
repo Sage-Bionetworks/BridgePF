@@ -14,7 +14,7 @@ public interface Upload {
 
     String getName();
 
-    int getContentLength();
+    long getContentLength();
 
     String getContentType();
 
