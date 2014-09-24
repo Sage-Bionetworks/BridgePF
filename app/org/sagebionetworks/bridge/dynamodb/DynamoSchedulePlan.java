@@ -94,7 +94,6 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
     }
     @Override
     @DynamoDBIgnore
-    @JsonIgnore
     public ScheduleStrategy getStrategy() {
         return strategy;
     }
@@ -104,6 +103,7 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
     }
     @DynamoDBAttribute(attributeName="strategy")
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
+    @JsonIgnore
     public ObjectNode getData() {
         ObjectNode node = mapper.valueToTree(strategy);
         node.put("type", strategy.getClass().getSimpleName());
@@ -112,7 +112,6 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
     public void setData(ObjectNode data) {
         try {
             String typeName = JsonUtils.asText(data, "type");
-            data.remove("type");
             String className = BridgeConstants.SCHEDULE_STRATEGY_PACKAGE + typeName;
             Class<?> clazz = Class.forName(className);
             strategy = (ScheduleStrategy)mapper.treeToValue(data, clazz);
