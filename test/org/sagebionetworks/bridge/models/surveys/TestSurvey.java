@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.surveys;
+package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.List;
 import java.util.UUID;

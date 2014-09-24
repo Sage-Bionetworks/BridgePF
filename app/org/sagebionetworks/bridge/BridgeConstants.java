@@ -17,5 +17,6 @@ public class BridgeConstants {
 
     public static final int BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS = 5 * 60;
 
-    public static final String CONSENT_REQUIRED_MESSAGE = "Before you may continue, we require you to consent to participate in this study.";
+    public static final String SCHEDULE_STRATEGY_PACKAGE = "org.sagebionetworks.bridge.models.schedules.";
+    
 }
