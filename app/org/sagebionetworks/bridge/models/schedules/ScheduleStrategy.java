@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.validators.Messages;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -15,7 +16,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 })
 public interface ScheduleStrategy {
     
-    public List<Schedule> generateSchedules(ScheduleContext context);
+    public Schedule scheduleNewUser(ScheduleContext context, User user);
+    
+    public List<Schedule> scheduleExistingUsers(ScheduleContext context);
     
     public void validate(Messages messages);
 

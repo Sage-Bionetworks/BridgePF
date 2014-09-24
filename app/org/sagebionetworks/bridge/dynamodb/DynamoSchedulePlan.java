@@ -24,9 +24,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * This object represents the row in DynamoDB, but also passes the data column to a 
- * strategy object (the strategyType class) that implements a generateSchedules() method 
- * using the data persisted in that column.
+ * This object represents the row in DynamoDB, but also converts the strategy JSON column 
+ * in DynamoDB into a sub-class of the ScheduleStrategy object, which implements specific 
+ * algorithms for assigning users their schedules.
  */
 @DynamoDBTable(tableName = "SchedulePlan")
 public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {

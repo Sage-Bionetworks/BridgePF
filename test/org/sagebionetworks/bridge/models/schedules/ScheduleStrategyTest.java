@@ -40,7 +40,7 @@ public class ScheduleStrategyTest {
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
         
-        List<Schedule> schedules = strategy.generateSchedules(context);
+        List<Schedule> schedules = strategy.scheduleExistingUsers(context);
         
         Set<String> identifiers = Sets.newHashSet();
         for (Schedule sch : schedules) {
@@ -91,7 +91,7 @@ public class ScheduleStrategyTest {
     public void verifyABTestingStrategyWorks() {
         DynamoSchedulePlan plan = createABSchedulePlan();
 
-        List<Schedule> schedules = plan.getStrategy().generateSchedules(context);
+        List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(context);
         
         // We want 4 in A, 4 in B and 2 in C
         // and they should not be in order...
