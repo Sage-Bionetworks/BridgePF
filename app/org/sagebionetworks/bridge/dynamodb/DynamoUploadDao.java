@@ -29,6 +29,14 @@ public class DynamoUploadDao implements UploadDao {
     }
 
     @Override
+    public String getObjectId(String uploadId) {
+        DynamoUpload upload = new DynamoUpload();
+        upload.setUploadId(uploadId);
+        upload = mapper.load(upload);
+        return upload.getObjectId();
+    }
+
+    @Override
     public void uploadComplete(String uploadId) {
         DynamoUpload upload = new DynamoUpload();
         upload.setUploadId(uploadId);
