@@ -12,6 +12,11 @@ public interface UploadDao {
     String createUpload(UploadRequest upload, String healthCode);
 
     /**
+     * Gets the object associated with this upload.
+     */
+    String getObjectId(String uploadId);
+
+    /**
      * Marks the specified upload as complete.
      *
      * @param uploadId
