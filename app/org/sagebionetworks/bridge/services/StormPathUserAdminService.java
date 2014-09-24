@@ -5,6 +5,8 @@ import java.util.List;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.UserLockDao;
+import org.sagebionetworks.bridge.events.UserCreatedEvent;
+import org.sagebionetworks.bridge.events.UserDeletedEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
@@ -16,6 +18,8 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountCriteria;
@@ -26,7 +30,7 @@ import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupList;
 
-public class StormPathUserAdminService implements UserAdminService {
+public class StormPathUserAdminService implements UserAdminService, ApplicationEventPublisherAware {
 
     private AuthenticationService authenticationService;
     private ConsentService consentService;
@@ -34,6 +38,7 @@ public class StormPathUserAdminService implements UserAdminService {
     private StudyService studyService;
     private Client stormpathClient;
     private UserLockDao userLockDao;
+    private ApplicationEventPublisher publisher;
 
     public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
@@ -57,6 +62,11 @@ public class StormPathUserAdminService implements UserAdminService {
     
     public void setUserLockDao(UserLockDao userLockDao) {
         this.userLockDao = userLockDao;
+    }
+
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
+        this.publisher = publisher;
     }
 
     @Override
@@ -104,7 +114,10 @@ public class StormPathUserAdminService implements UserAdminService {
                 newUserSession = authenticationService.signIn(userStudy, signIn);
             }
         }
-        if (!signUserIn && newUserSession != null) {
+        // This skips email verification, so at this point we want to fire the UserCreatedEvent
+        // (that is normally done when a user verifies email)
+        publisher.publishEvent(new UserCreatedEvent(newUserSession.getUser()));
+        if (!signUserIn) {
             authenticationService.signOut(newUserSession.getSessionToken());
             newUserSession = null;
         }
@@ -128,6 +141,7 @@ public class StormPathUserAdminService implements UserAdminService {
         }
         for (Study study : studyService.getStudies()) {
             deleteUserInStudy(user, study);
+            publisher.publishEvent(new UserDeletedEvent(user));
         }
     }
     
@@ -212,5 +226,4 @@ public class StormPathUserAdminService implements UserAdminService {
         AccountList accounts = directory.getAccounts(criteria);
         return (accounts.iterator().hasNext()) ? accounts.iterator().next() : null;
     }
-
 }

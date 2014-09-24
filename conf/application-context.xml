@@ -93,6 +93,8 @@
     </bean>
     
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
+    
+    <bean id="scheduleChangeListener" class="org.sagebionetworks.bridge.services.ScheduleChangeListener"/>
 
     <!-- Redis -->
     
