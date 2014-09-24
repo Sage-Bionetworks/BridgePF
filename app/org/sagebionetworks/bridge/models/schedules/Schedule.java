@@ -1,7 +1,16 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import org.sagebionetworks.bridge.json.ActivityTypeDeserializer;
+import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
+import org.sagebionetworks.bridge.json.PeriodJsonDeserializer;
+import org.sagebionetworks.bridge.json.PeriodJsonSerializer;
+import org.sagebionetworks.bridge.json.ScheduleTypeDeserializer;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 public class Schedule {
     
@@ -16,7 +25,6 @@ public class Schedule {
     }
     
     private String studyUserCompoundKey;
-    private String guid;
     private String label;
     private ActivityType activityType;
     private String activityRef;
@@ -30,7 +38,6 @@ public class Schedule {
     
     public Schedule(Schedule schedule) {
         setStudyUserCompoundKey(schedule.getStudyUserCompoundKey());
-        setGuid(schedule.getGuid());
         setLabel(schedule.getLabel());
         setActivityType(schedule.getActivityType());
         setActivityRef(schedule.getActivityRef());
@@ -39,6 +46,7 @@ public class Schedule {
         setExpires(schedule.getExpires());
     }
     
+    @JsonIgnore
     public String getStudyUserCompoundKey() {
         return studyUserCompoundKey;
     }
@@ -48,21 +56,17 @@ public class Schedule {
     public void setStudyAndUser(Study study, User user) {
         setStudyUserCompoundKey(study.getKey()+":"+user.getId());
     }
-    public String getGuid() {
-        return guid;
-    }
-    public void setGuid(String guid) {
-        this.guid = guid;
-    }
     public String getLabel() {
         return label;
     }
     public void setLabel(String label) {
         this.label = label;
     }
+    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public ActivityType getActivityType() {
         return activityType;
     }
+    @JsonDeserialize(using = ActivityTypeDeserializer.class)
     public void setActivityType(ActivityType activityType) {
         this.activityType = activityType;
     }
@@ -72,9 +76,11 @@ public class Schedule {
     public void setActivityRef(String activityRef) {
         this.activityRef = activityRef;
     }
+    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public Schedule.Type getScheduleType() {
         return scheduleType;
     }
+    @JsonDeserialize(using = ScheduleTypeDeserializer.class)
     public void setScheduleType(Schedule.Type scheduleType) {
         this.scheduleType = scheduleType;
     }
@@ -84,9 +90,11 @@ public class Schedule {
     public void setSchedule(String schedule) {
         this.schedule = schedule;
     }
+    @JsonSerialize(using = PeriodJsonSerializer.class)
     public Long getExpires() {
         return expires;
     }
+    @JsonDeserialize(using = PeriodJsonDeserializer.class)
     public void setExpires(Long expires) {
         this.expires = expires;
     }
@@ -98,7 +106,6 @@ public class Schedule {
         result = prime * result + ((activityRef == null) ? 0 : activityRef.hashCode());
         result = prime * result + ((activityType == null) ? 0 : activityType.hashCode());
         result = prime * result + ((expires == null) ? 0 : expires.hashCode());
-        result = prime * result + ((guid == null) ? 0 : guid.hashCode());
         result = prime * result + ((label == null) ? 0 : label.hashCode());
         result = prime * result + ((schedule == null) ? 0 : schedule.hashCode());
         result = prime * result + ((scheduleType == null) ? 0 : scheduleType.hashCode());
@@ -127,11 +134,6 @@ public class Schedule {
                 return false;
         } else if (!expires.equals(other.expires))
             return false;
-        if (guid == null) {
-            if (other.guid != null)
-                return false;
-        } else if (!guid.equals(other.guid))
-            return false;
         if (label == null) {
             if (other.label != null)
                 return false;
@@ -154,9 +156,9 @@ public class Schedule {
 
     @Override
     public String toString() {
-        return "Schedule [studyUserCompoundKey=" + studyUserCompoundKey + ", guid=" + guid + ", label=" + label
-                + ", activityType=" + activityType + ", activityRef=" + activityRef + ", scheduleType=" + scheduleType
-                + ", schedule=" + schedule + ", expires=" + expires + "]";
+        return "Schedule [studyUserCompoundKey=" + studyUserCompoundKey + ", label=" + label + ", activityType="
+                + activityType + ", activityRef=" + activityRef + ", scheduleType=" + scheduleType + ", schedule="
+                + schedule + ", expires=" + expires + "]";
     }
     
 }

@@ -14,6 +14,7 @@ bridgeShared.service('$humane', ['$window', function($window) {
     }
     
     function status(response) {
+        console.log(response);
         if (arguments.length > 1) {
             // directly handling an $http error callback, assemble to something like a response object
             // 0 = data, 1 = status, 2 = headers, 3 = config, 4 = statusText

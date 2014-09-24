@@ -16,9 +16,6 @@ public interface SchedulePlan extends BridgeEntity {
     public Long getVersion();
     public void setVersion(Long version);
     
-    public String getStrategyType();
-    public void setStrategyType(String strategyType);
-    
     public ScheduleStrategy getStrategy();
     public void setStrategy(ScheduleStrategy strategy);
     

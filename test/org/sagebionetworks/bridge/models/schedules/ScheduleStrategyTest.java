@@ -95,18 +95,18 @@ public class ScheduleStrategyTest {
         
         // We want 4 in A, 4 in B and 2 in C
         // and they should not be in order...
-        Map<String,Integer> countsByGuid = Maps.newHashMap();
+        Map<String,Integer> countsByLabel = Maps.newHashMap();
         for (Schedule schedule : schedules) {
-            Integer count = countsByGuid.get(schedule.getGuid());
+            Integer count = countsByLabel.get(schedule.getLabel());
             if (count == null) {
-                countsByGuid.put(schedule.getGuid(), 1);
+                countsByLabel.put(schedule.getLabel(), 1);
             } else {
-                countsByGuid.put(schedule.getGuid(), ++count);
+                countsByLabel.put(schedule.getLabel(), ++count);
             }
         }
-        assertEquals("Four users assigned to A", 4, countsByGuid.get("A").intValue());
-        assertEquals("Four users assigned to B", 4, countsByGuid.get("B").intValue());
-        assertEquals("Four users assigned to C", 2, countsByGuid.get("C").intValue());
+        assertEquals("Four users assigned to A", 4, countsByLabel.get("A").intValue());
+        assertEquals("Four users assigned to B", 4, countsByLabel.get("B").intValue());
+        assertEquals("Four users assigned to C", 2, countsByLabel.get("C").intValue());
 
         // This fails, not all that rarely, due to actual randomness.
         /*
@@ -133,12 +133,11 @@ public class ScheduleStrategyTest {
         return strategy;
     }
     
-    private Schedule createSchedule(String guid) {
+    private Schedule createSchedule(String label) {
         Schedule schedule = new Schedule();
         schedule.setActivityType(Schedule.ActivityType.SURVEY);
+        schedule.setLabel(label);
         schedule.setActivityRef("http://sagebridge.org/survey1");
-        schedule.setGuid(guid);
-        schedule.setLabel("Test Schedule");
         schedule.setScheduleType(Schedule.Type.CRON);
         schedule.setSchedule("0 */2 * * *");
         return schedule;
