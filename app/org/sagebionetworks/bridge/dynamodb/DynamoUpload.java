@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import java.util.UUID;
-
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Upload;
 import org.sagebionetworks.bridge.models.UploadRequest;
