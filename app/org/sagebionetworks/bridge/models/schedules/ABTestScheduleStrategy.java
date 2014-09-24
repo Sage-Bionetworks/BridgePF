@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.validators.Messages;
@@ -9,6 +10,8 @@ import org.sagebionetworks.bridge.validators.Messages;
 import com.google.common.collect.Lists;
 
 public class ABTestScheduleStrategy implements ScheduleStrategy {
+    
+    private static final Random rand = new Random();
     
     public static class ScheduleGroup {
         private int percentage;
@@ -76,30 +79,46 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
     
     @Override
     public Schedule scheduleNewUser(ScheduleContext context, User user) {
-        return null;
+        // Randomly assign to a group, weighted based on the percentage representation of the group.
+        ScheduleGroup group = null;
+        int i = 0;
+        int perc = rand.nextInt(100)+1; // 1-100
+        while (perc > 0) {
+            group = groups.get(i++);
+            perc -= group.getPercentage();
+        }
+        Schedule schedule = new Schedule(group.getSchedule());
+        schedule.setStudyAndUser(context.getStudy(), user);
+        return schedule;
     }
     
     /**
-     * Will divide users into the groups by a percentage (randomly), with any rounding 
-     * fractions dropped, so there may be a very few users who are not in the study. 
      * This API loads all the users; we expect there may be thousands, but not tens 
-     * of thousands or more.
+     * of thousands or more, but this may have to change eventually.
      */
     @Override
     public List<Schedule> scheduleExistingUsers(ScheduleContext context) {
+        // linear time, as you'd expect
+        Collections.shuffle(context.getUsers());
         int size = context.getUsers().size();
         List<Schedule> list = Lists.newArrayListWithCapacity(size);
-        Collections.shuffle(context.getUsers());
-
+        Schedule schedule = null;
+        
+        // Again iterate through list of users, swapping group by proportion
         int i = 0;
         for (ScheduleGroup group : groups) {
             int number = (int)Math.floor((group.getPercentage()*size)/100);
             for (int j=0; j < number; j++) {
                 User user = context.getUsers().get(i++);
-                Schedule schedule = new Schedule(group.getSchedule());
+                schedule = new Schedule(group.getSchedule());
                 schedule.setStudyAndUser(context.getStudy(), user);
                 list.add(schedule);
             }
+        }
+        // Assign remainders. They are assigned as new users.
+        for (int j=i; j < size; j++) {
+            schedule = scheduleNewUser(context, context.getUsers().get(j));
+            list.add(schedule);
         }
         return list;
     }
