@@ -87,11 +87,15 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
         <property name="surveyDao" ref="surveyDao"/>
     </bean>
-    
+
+    <bean id="uploadDao" class="org.sagebionetworks.bridge.dynamodb.DynamoUploadDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+
     <bean id="schedulePlanDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlanDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
-    
+ 
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
 
     <!-- Redis -->
@@ -322,6 +326,7 @@
         <property name="uploadSessionCredentialsService" ref="uploadSessionCredentialsService" />
         <property name="s3UploadClient" ref="s3UploadClient" />
         <property name="s3Client" ref="s3Client" />
+        <property name="uploadDao" ref="uploadDao" />
     </bean>
 
     <!-- Backfill -->
