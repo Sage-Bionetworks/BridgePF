@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.UploadRequest;
 import org.sagebionetworks.bridge.models.UploadSession;
 import org.springframework.test.context.ContextConfiguration;
@@ -49,6 +50,9 @@ public class UploadServiceTest {
 
     @Resource
     private UploadService uploadService;
+
+    @Resource
+    private UploadDao uploadDao;
 
     @Resource
     private AmazonS3 s3Client;
@@ -93,13 +97,15 @@ public class UploadServiceTest {
     public void test() throws Exception {
         UploadRequest uploadRequest = createUploadRequest();
         UploadSession uploadSession = uploadService.createUpload(helper.getUser(), uploadRequest);
-        objectsToRemove.add(uploadSession.getId());
+        final String uploadId = uploadSession.getId();
+        final String objectId = uploadDao.getObjectId(uploadId);
+        objectsToRemove.add(objectId);
         int reponseCode = upload(uploadSession.getUrl(), uploadRequest);
         assertEquals(200, reponseCode);
-        uploadService.uploadComplete(uploadSession.getId());
+        uploadService.uploadComplete(uploadId);
         long expiration = DateTime.now(DateTimeZone.UTC).plusMinutes(1).getMillis();
         assertTrue(expiration > uploadSession.getExpires());
-        ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, uploadSession.getId());
+        ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, objectId);
         String sse = obj.getSSEAlgorithm();
         assertTrue(AES_256_SERVER_SIDE_ENCRYPTION.equals(sse));
     }
