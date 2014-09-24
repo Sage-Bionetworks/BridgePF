@@ -25,6 +25,10 @@ public class Schedule {
     }
     
     private String studyUserCompoundKey;
+    // The schedule plan GUID is needed when the schedule is persisted separately from
+    // the plan, so that changes to the plan can be propagated to the schedules, but is 
+    // never needed in the external-facing JSON.
+    private String schedulePlanGuid; 
     private String label;
     private ActivityType activityType;
     private String activityRef;
@@ -33,11 +37,11 @@ public class Schedule {
     private Long expires;
     
     public Schedule() {
-        
     }
     
     public Schedule(Schedule schedule) {
         setStudyUserCompoundKey(schedule.getStudyUserCompoundKey());
+        setSchedulePlanGuid(schedule.getSchedulePlanGuid());
         setLabel(schedule.getLabel());
         setActivityType(schedule.getActivityType());
         setActivityRef(schedule.getActivityRef());
@@ -55,6 +59,13 @@ public class Schedule {
     }
     public void setStudyAndUser(Study study, User user) {
         setStudyUserCompoundKey(study.getKey()+":"+user.getId());
+    }
+    @JsonIgnore
+    public void setSchedulePlanGuid(String schedulePlanGuid) {
+        this.schedulePlanGuid = schedulePlanGuid;
+    }
+    public String getSchedulePlanGuid() { 
+        return this.schedulePlanGuid;
     }
     public String getLabel() {
         return label;
@@ -108,6 +119,7 @@ public class Schedule {
         result = prime * result + ((expires == null) ? 0 : expires.hashCode());
         result = prime * result + ((label == null) ? 0 : label.hashCode());
         result = prime * result + ((schedule == null) ? 0 : schedule.hashCode());
+        result = prime * result + ((schedulePlanGuid == null) ? 0 : schedulePlanGuid.hashCode());
         result = prime * result + ((scheduleType == null) ? 0 : scheduleType.hashCode());
         result = prime * result + ((studyUserCompoundKey == null) ? 0 : studyUserCompoundKey.hashCode());
         return result;
@@ -144,6 +156,11 @@ public class Schedule {
                 return false;
         } else if (!schedule.equals(other.schedule))
             return false;
+        if (schedulePlanGuid == null) {
+            if (other.schedulePlanGuid != null)
+                return false;
+        } else if (!schedulePlanGuid.equals(other.schedulePlanGuid))
+            return false;
         if (scheduleType != other.scheduleType)
             return false;
         if (studyUserCompoundKey == null) {
@@ -156,9 +173,9 @@ public class Schedule {
 
     @Override
     public String toString() {
-        return "Schedule [studyUserCompoundKey=" + studyUserCompoundKey + ", label=" + label + ", activityType="
-                + activityType + ", activityRef=" + activityRef + ", scheduleType=" + scheduleType + ", schedule="
-                + schedule + ", expires=" + expires + "]";
+        return "Schedule [studyUserCompoundKey=" + studyUserCompoundKey + ", schedulePlanGuid=" + schedulePlanGuid
+                + ", label=" + label + ", activityType=" + activityType + ", activityRef=" + activityRef
+                + ", scheduleType=" + scheduleType + ", schedule=" + schedule + ", expires=" + expires + "]";
     }
     
 }
