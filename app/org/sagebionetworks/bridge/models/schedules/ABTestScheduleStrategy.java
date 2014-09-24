@@ -74,6 +74,11 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
         this.groups.add(new ScheduleGroup(percent, schedule)); 
     }
     
+    @Override
+    public Schedule scheduleNewUser(ScheduleContext context, User user) {
+        return null;
+    }
+    
     /**
      * Will divide users into the groups by a percentage (randomly), with any rounding 
      * fractions dropped, so there may be a very few users who are not in the study. 
@@ -81,7 +86,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
      * of thousands or more.
      */
     @Override
-    public List<Schedule> generateSchedules(ScheduleContext context) {
+    public List<Schedule> scheduleExistingUsers(ScheduleContext context) {
         int size = context.getUsers().size();
         List<Schedule> list = Lists.newArrayListWithCapacity(size);
         Collections.shuffle(context.getUsers());

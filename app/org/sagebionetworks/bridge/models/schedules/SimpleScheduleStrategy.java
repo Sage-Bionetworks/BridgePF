@@ -23,9 +23,14 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
     public void setSchedule(Schedule schedule) {
         this.schedule = schedule;
     }
+    
+    @Override
+    public Schedule scheduleNewUser(ScheduleContext context, User user) {
+        return null;
+    }
 
     @Override
-    public List<Schedule> generateSchedules(ScheduleContext context) {
+    public List<Schedule> scheduleExistingUsers(ScheduleContext context) {
         List<Schedule> schedules = Lists.newArrayListWithCapacity(context.getUsers().size());
         for (User user : context.getUsers()) {
             Schedule sch = new Schedule(schedule);
