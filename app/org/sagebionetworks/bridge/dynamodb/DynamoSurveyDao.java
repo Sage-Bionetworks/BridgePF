@@ -5,9 +5,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.PublishedSurveyException;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -189,7 +189,7 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey createSurvey(Survey survey) {
         VALIDATOR.validateNew(survey);
-        survey.setGuid(generateId());
+        survey.setGuid(BridgeUtils.generateGuid());
         
         long time = DateUtils.getCurrentMillisFromEpoch();
         survey.setVersionedOn(time);
@@ -328,10 +328,6 @@ public class DynamoSurveyDao implements SurveyDao {
         return existing;
     }
     
-    private String generateId() {
-        return UUID.randomUUID().toString();
-    }
-    
     private Survey saveSurvey(Survey survey) {
         deleteAllQuestions(survey.getGuid(), survey.getVersionedOn());
         List<SurveyQuestion> questions = survey.getQuestions();
@@ -340,7 +336,7 @@ public class DynamoSurveyDao implements SurveyDao {
             question.setSurveyKeyComponents(survey.getGuid(), survey.getVersionedOn());
             question.setOrder(i);
             if (question.getGuid() == null) {
-                question.setGuid(generateId());
+                question.setGuid(BridgeUtils.generateGuid());
             }
         }
         // Now it should be valid, by jingo

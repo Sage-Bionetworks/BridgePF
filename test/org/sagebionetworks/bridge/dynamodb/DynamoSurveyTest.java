@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.surveys.TestSurvey;
+import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.validators.SurveyValidator;
 
 import com.fasterxml.jackson.databind.JsonNode;
