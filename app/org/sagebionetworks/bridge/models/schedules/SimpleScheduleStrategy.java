@@ -26,7 +26,9 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
     
     @Override
     public Schedule scheduleNewUser(ScheduleContext context, User user) {
-        return null;
+        Schedule sch = new Schedule(schedule);
+        sch.setStudyAndUser(context.getStudy(), user);
+        return sch;
     }
 
     @Override

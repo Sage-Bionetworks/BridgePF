@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,8 +28,16 @@ public class ScheduleStrategyTest {
     
     @Before
     public void before() {
-        List<User> users = Lists.newArrayList();
+        ArrayList<User> users = Lists.newArrayList();
         for (int i=0; i < 10; i++) {
+            users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
+        }
+        this.context = new ScheduleContext(TestConstants.SECOND_STUDY, users);
+    }
+    
+    public void createContextWithRemainderUsers() {
+        ArrayList<User> users = Lists.newArrayList();
+        for (int i=0; i < 14; i++) {
             users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
         }
         this.context = new ScheduleContext(TestConstants.SECOND_STUDY, users);
@@ -115,6 +124,15 @@ public class ScheduleStrategyTest {
         assertNotEquals("B has random users", schedules.get(1), newSchedules.get(1));
         assertNotEquals("C has random users", schedules.get(2), newSchedules.get(2));
         */
+    }
+    
+    @Test
+    public void abScheduleStrategyAssignsRemainders() {
+        DynamoSchedulePlan plan = createABSchedulePlan();
+        createContextWithRemainderUsers();
+        
+        List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(context);
+        assertEquals("All users have schedules", 14, schedules.size());
     }
 
     private DynamoSchedulePlan createABSchedulePlan() {
