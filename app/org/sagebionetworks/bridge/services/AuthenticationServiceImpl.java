@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
+import org.sagebionetworks.bridge.events.UserCreatedEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -23,6 +24,8 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 
 import play.mvc.Http;
 
@@ -35,7 +38,7 @@ import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.resource.ResourceException;
 
-public class AuthenticationServiceImpl implements AuthenticationService {
+public class AuthenticationServiceImpl implements AuthenticationService, ApplicationEventPublisherAware {
 
     private final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 
@@ -45,6 +48,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private BridgeEncryptor healthCodeEncryptor;
     private HealthCodeService healthCodeService;
     private EmailValidator emailValidator = EmailValidator.getInstance();
+    private ApplicationEventPublisher publisher;
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
@@ -64,6 +68,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     public void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
+    }
+    
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
+        this.publisher = publisher;
     }
     
     @Override
@@ -167,9 +176,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         UserSession session = null;
         try {
             Account account = stormpathClient.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
-
+            
             session = createSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
+            publisher.publishEvent(new UserCreatedEvent(session.getUser()));
+            
             if (!session.getUser().doesConsent()) {
                 throw new ConsentRequiredException(session);
             }
