@@ -12,7 +12,9 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.GuidHolder;
+import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.TestABSchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.TestSimpleSchedulePlan;
 import org.springframework.test.context.ContextConfiguration;
@@ -32,18 +34,19 @@ public class DynamoSchedulePlanDaoTest {
     @Before
     public void before() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
-        DynamoTestUtil.clearTable(DynamoSchedulePlan.class, "modifiedOn", "version", "strategyType", "data");
-        
+        DynamoTestUtil.clearTable(DynamoSchedulePlan.class, "modifiedOn", "version", "strategy");
+        /*
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(TestConstants.SECOND_STUDY);
         for (SchedulePlan plan : plans) {
             schedulePlanDao.deleteSchedulePlan(TestConstants.SECOND_STUDY, plan.getGuid());
-        }
+        }*/
     }
     
     @Test
     public void canSerializeAndDeserializeSchedulePlan() throws Exception {
         TestABSchedulePlan abPlan = new TestABSchedulePlan();
         String output = mapping.writeValueAsString(abPlan);
+        
         TestABSchedulePlan newPlan = mapping.readValue(output, TestABSchedulePlan.class);
         
         assertEquals("Schedule plans are equal", abPlan.hashCode(), newPlan.hashCode());
@@ -64,6 +67,7 @@ public class DynamoSchedulePlanDaoTest {
         
         // Get it from DynamoDB
         SchedulePlan newPlan = schedulePlanDao.getSchedulePlan(TestConstants.SECOND_STUDY, abPlan.getGuid());
+        assertEquals("Schedule plan contains correct strategy class type", SimpleScheduleStrategy.class, newPlan.getStrategy().getClass());
         assertEquals("The strategy has been updated", simplePlan.getStrategy().hashCode(), newPlan.getStrategy().hashCode());
         
         // delete, throws exception
@@ -84,6 +88,7 @@ public class DynamoSchedulePlanDaoTest {
         schedulePlanDao.createSchedulePlan(simplePlan);
         
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(TestConstants.SECOND_STUDY);
+        
         assertEquals("2 plans exist", 2, plans.size());
     }
 

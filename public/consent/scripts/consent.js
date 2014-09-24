@@ -221,7 +221,7 @@ function($scope, $humane, $window, $http, formService, learnMoreService, authSer
         var consent = formService.formToJSON($scope.consentForm, ['name', 'birthdate']);
         consent.birthdate = consent.birthdate.toISOString().split('T')[0];
 
-        $http.post('/api/v1/users/consent', consent).then(function(response) {
+        $http.post('/api/v1/consent', consent).then(function(response) {
             $scope.nextStep();
         }, $humane.status);
     };

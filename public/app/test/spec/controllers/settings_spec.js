@@ -14,13 +14,13 @@ describe('SettingsModalController', function() {
         modalService = jasmine.createSpyObj( 'modalService', ['openModal'] );
 
         $httpBackend = $injector.get('$httpBackend');
-        $httpBackend.when('GET', '/api/v1/users/profile').respond({
+        $httpBackend.when('GET', '/api/v1/profile').respond({
             firstName: 'first name',
             lastName: 'last name',
             username: 'username',
             email: 'username@email.com'
         });
-        $httpBackend.expect('GET', '/api/v1/users/profile');
+        $httpBackend.expect('GET', '/api/v1/profile');
 
         $controller = $injector.get('$controller');
         controller = $controller('SettingsModalController', {
@@ -57,17 +57,17 @@ describe('SettingsModalController', function() {
     });
 
     it('should POST when we submit the form.', function() {
-        $httpBackend.when('POST', '/api/v1/users/profile').respond({
+        $httpBackend.when('POST', '/api/v1/profile').respond({
             message: 'Profile updated.'
         });
-        $httpBackend.expect('POST', '/api/v1/users/profile');
+        $httpBackend.expect('POST', '/api/v1/profile');
 
         scope.submit();
     });
 
     it('should POST when we submit the form and leave the modal instance open if an error occurred.', function() {
-        $httpBackend.when('POST', '/api/v1/users/profile').respond(500);
-        $httpBackend.expect('POST', '/api/v1/users/profile');
+        $httpBackend.when('POST', '/api/v1/profile').respond(500);
+        $httpBackend.expect('POST', '/api/v1/profile');
 
         scope.submit();
 
@@ -76,15 +76,15 @@ describe('SettingsModalController', function() {
     });
 
     it('should POST when we call suspend or resume data sharing.', function() {
-        $httpBackend.when('POST', '/api/v1/users/consent/dataSharing/resume').respond({
+        $httpBackend.when('POST', '/api/v1/consent/dataSharing/resume').respond({
             message: 'Resuming data sharing.'
         });
-        $httpBackend.when('POST', '/api/v1/users/consent/dataSharing/suspend').respond({
+        $httpBackend.when('POST', '/api/v1/consent/dataSharing/suspend').respond({
             message: 'Suspended data sharing.'
         });
 
-        $httpBackend.expect('POST', '/api/v1/users/consent/dataSharing/resume');
-        $httpBackend.expect('POST', '/api/v1/users/consent/dataSharing/suspend');
+        $httpBackend.expect('POST', '/api/v1/consent/dataSharing/resume');
+        $httpBackend.expect('POST', '/api/v1/consent/dataSharing/suspend');
 
         scope.resumeDataSharing();
         scope.suspendDataSharing();

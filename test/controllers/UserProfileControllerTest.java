@@ -56,7 +56,6 @@ public class UserProfileControllerTest {
     @Test
     public void getUserProfileWithNullSessionFails401() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
-
             @Override
             public void testCode() throws Exception {
                 Response response = TestUtils.getURL(null, PROFILE_URL).get().get(TIMEOUT);

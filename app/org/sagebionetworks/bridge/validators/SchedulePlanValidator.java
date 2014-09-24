@@ -20,9 +20,6 @@ public class SchedulePlanValidator implements Validator<SchedulePlan> {
         if (StringUtils.isBlank(plan.getStudyKey())) {
             messages.add("missing a study key");
         }
-        if (StringUtils.isBlank(plan.getStrategyType())) {
-            messages.add("missing a strategy type class name");
-        }
         if (plan.getStrategy() == null) {
             messages.add("requires a strategy object");
         }
