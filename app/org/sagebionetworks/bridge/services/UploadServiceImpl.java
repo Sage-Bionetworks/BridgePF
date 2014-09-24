@@ -5,11 +5,11 @@ import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE
 
 import java.net.URL;
 import java.util.Date;
-import java.util.UUID;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.UploadRequest;
 import org.sagebionetworks.bridge.models.UploadSession;
 import org.sagebionetworks.bridge.models.User;
@@ -31,6 +31,7 @@ public class UploadServiceImpl implements UploadService {
     private UploadSessionCredentialsService uploadCredentailsService;
     private AmazonS3 s3UploadClient;
     private AmazonS3 s3Client;
+    private UploadDao uploadDao;
 
     public void setUploadSessionCredentialsService(UploadSessionCredentialsService uploadCredentialsService) {
         this.uploadCredentailsService = uploadCredentialsService;
@@ -41,13 +42,17 @@ public class UploadServiceImpl implements UploadService {
     public void setS3Client(AmazonS3 s3Client) {
         this.s3Client = s3Client;
     }
+    public void setUploadDao(UploadDao uploadDao) {
+        this.uploadDao = uploadDao;
+    }
 
     @Override
-    public UploadSession createUpload(User user, UploadRequest upload) {
+    public UploadSession createUpload(User user, UploadRequest uploadRequest) {
 
-        final String id = UUID.randomUUID().toString();
+        final String uploadId = uploadDao.createUpload(uploadRequest, user.getHealthDataCode());
+        final String objectId = uploadDao.getObjectId(uploadId);
         GeneratePresignedUrlRequest presignedUrlRequest = 
-                new GeneratePresignedUrlRequest(BUCKET, id, HttpMethod.PUT);
+                new GeneratePresignedUrlRequest(BUCKET, objectId, HttpMethod.PUT);
 
         // Expiration
         final Date expiration = DateTime.now(DateTimeZone.UTC).toDate();
@@ -61,19 +66,21 @@ public class UploadServiceImpl implements UploadService {
         presignedUrlRequest.addRequestParameter(SERVER_SIDE_ENCRYPTION, AES_256_SERVER_SIDE_ENCRYPTION);
 
         // Additional headers for signing
-        presignedUrlRequest.setContentMd5(upload.getContentMd5());
-        presignedUrlRequest.setContentType(upload.getContentType());
+        presignedUrlRequest.setContentMd5(uploadRequest.getContentMd5());
+        presignedUrlRequest.setContentType(uploadRequest.getContentType());
 
         URL url = s3UploadClient.generatePresignedUrl(presignedUrlRequest);
-        return new UploadSession(id, url, expiration.getTime());
+        return new UploadSession(uploadId, url, expiration.getTime());
     }
 
     @Override
-    public void uploadComplete(String key) {
-        ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, key);
+    public void uploadComplete(final String uploadId) {
+        final String objectId = uploadDao.getObjectId(uploadId);
+        ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, objectId);
         String sse = obj.getSSEAlgorithm();
         if (!AES_256_SERVER_SIDE_ENCRYPTION.equals(sse)) {
             logger.error("Server-side encryption missing.");
         }
+        uploadDao.uploadComplete(uploadId);
     }
 }

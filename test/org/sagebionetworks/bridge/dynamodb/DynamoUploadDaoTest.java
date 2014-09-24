@@ -44,6 +44,9 @@ public class DynamoUploadDaoTest {
         String uploadId = uploadDao.createUpload(uploadRequest, healthCode);
         assertNotNull(uploadId);
         assertFalse(uploadDao.isComplete(uploadId));
+        String objectId = uploadDao.getObjectId(uploadId);
+        assertNotNull(objectId);
+        assertFalse(uploadId.equals(objectId));
         uploadDao.uploadComplete(uploadId);
         assertTrue(uploadDao.isComplete(uploadId));
     }
