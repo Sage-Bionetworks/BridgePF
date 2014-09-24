@@ -2,8 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.UUID;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Upload;
 import org.sagebionetworks.bridge.models.UploadRequest;
 
@@ -29,9 +28,9 @@ public class DynamoUpload implements Upload, DynamoTable {
     public DynamoUpload() {}
 
     public DynamoUpload(UploadRequest uploadRequest, String healthCode) {
-        uploadId = UUID.randomUUID().toString();
-        timestamp = DateTime.now(DateTimeZone.UTC).getMillis();
-        objectId = UUID.randomUUID().toString();
+        uploadId = BridgeUtils.generateGuid();
+        timestamp = DateUtils.getCurrentMillisFromEpoch();
+        objectId = BridgeUtils.generateGuid();
         this.healthCode = healthCode;
         complete = false;
         name = uploadRequest.getName();

@@ -79,7 +79,7 @@ public class UploadServiceImpl implements UploadService {
         ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, objectId);
         String sse = obj.getSSEAlgorithm();
         if (!AES_256_SERVER_SIDE_ENCRYPTION.equals(sse)) {
-            logger.error("Server-side encryption missing.");
+            logger.error("Missing S3 server-side encryption (SSE) for presigned upload " + uploadId + ".");
         }
         uploadDao.uploadComplete(uploadId);
     }
