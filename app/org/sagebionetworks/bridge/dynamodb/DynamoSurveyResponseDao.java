@@ -4,9 +4,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -61,7 +61,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, Collections.<SurveyAnswer>emptyList(), answers);
         
         SurveyResponse response = new DynamoSurveyResponse();
-        response.setGuid(generateId());
+        response.setGuid(BridgeUtils.generateGuid());
         response.setSurvey(survey);
         response.setAnswers(unionOfAnswers);
         response.setHealthCode(healthCode);
@@ -134,10 +134,6 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
             }
         }
         return map;
-    }
-    
-    private String generateId() {
-        return UUID.randomUUID().toString();
     }
     
     private List<SurveyAnswer> getUnionOfValidMostRecentAnswers(Survey survey, List<SurveyAnswer> existingAnswers,

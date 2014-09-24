@@ -3,9 +3,9 @@ package org.sagebionetworks.bridge.services;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.IdVersionHolder;
@@ -34,10 +34,6 @@ public class HealthDataServiceImpl implements HealthDataService {
         this.updateMapper = updateMapper;
     }
     
-    private String generateId() {
-        return UUID.randomUUID().toString();
-    }
-    
     private List<HealthDataRecord> toHealthDataEntries(Collection<DynamoHealthDataRecord> records) {
         List<HealthDataRecord> entries = new ArrayList<HealthDataRecord>(records.size());
         for (DynamoHealthDataRecord r : records) {
@@ -64,7 +60,7 @@ public class HealthDataServiceImpl implements HealthDataService {
                     throw new BridgeServiceException("New health data record instance does not have a startDate", HttpStatus.SC_BAD_REQUEST);
                 }
                 
-                String recordId = generateId();
+                String recordId = BridgeUtils.generateGuid();
                 record.setRecordId(recordId);
                 recordsToSave.add( new DynamoHealthDataRecord(key.toString(), record) );
             }
