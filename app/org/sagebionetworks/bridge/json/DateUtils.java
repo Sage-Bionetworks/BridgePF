@@ -1,14 +1,20 @@
 package org.sagebionetworks.bridge.json;
 
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
+import org.joda.time.format.ISOPeriodFormat;
+import org.joda.time.format.PeriodFormatter;
 
 public final class DateUtils {
 
     private static final DateTimeFormatter dateFmt = ISODateTimeFormat.date();
     private static final DateTimeFormatter dateTimeFmt = ISODateTimeFormat.dateTime();
+    private static final PeriodFormatter periodFmt = ISOPeriodFormat.standard();
 
     private static DateTime getDateTime() {
         return DateTime.now(DateTimeZone.UTC);
@@ -119,6 +125,35 @@ public final class DateUtils {
             date = dateTimeFmt.withZone(DateTimeZone.UTC).parseDateTime(d);
         }
         return date.getMillis();
+    }
+
+    /**
+     * Convert a duration in milliseconds to an ISO 8601 Duration value. This is 
+     * not necessarily 100% accurate when the durations are very large (e.g. 
+     * hours in a day may not be 24 due to daylight savings time, days in a year 
+     * may not be 365 due to leap years, etc.) but they will be accurate enough
+     * for our purposes.
+     * @param millis
+     * @return an ISO 8601 Duration value
+     */
+    public static String convertToDuration(long millis) {
+        Period period = new Period(millis);
+        return periodFmt.print(period);
+    }
+    
+    /**
+     * Convert an 8601 Duration string to a duration in milliseconds.
+     * @param duration
+     * @return the duration in milliseconds
+     */
+    public static Long convertToMillisFromDuration(String duration) {
+        if (StringUtils.isNotBlank(duration)) {
+            Period period = periodFmt.parsePeriod(duration);
+            if (period != null) {
+                return new Long(period.normalizedStandard(PeriodType.millis()).getMillis());    
+            }
+        }
+        return null;
     }
 
 }

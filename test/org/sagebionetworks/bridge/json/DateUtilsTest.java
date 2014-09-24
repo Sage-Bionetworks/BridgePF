@@ -14,11 +14,25 @@ public class DateUtilsTest {
 
     private static String ISO_DATE_TIME = "2014-08-11T16:01:23.817Z";
     private static String ISO_DATE = "2014-08-11";
+    private static final long SIX_DAYS_IN_MILLIS = 6*24*60*60*1000;
     
     private DateTime getDateTime() {
         return new DateTime(MILLIS, DateTimeZone.UTC);
     }
 
+    @Test
+    public void getDurationFromMillis() {
+        String duration = DateUtils.convertToDuration(SIX_DAYS_IN_MILLIS);
+        assertEquals("Comes out as 144 hrs", "PT144H", duration);
+    }
+    
+    @Test
+    public void getMillisFromDuration() {
+        long millis = DateUtils.convertToMillisFromDuration("PT144H");
+        assertEquals("Comes out as six days", SIX_DAYS_IN_MILLIS, millis);
+    }
+    
+    
     @Test
     public void getMillisFromEpoch() {
         long millis = DateUtils.getMillisFromEpoch(getDateTime());
