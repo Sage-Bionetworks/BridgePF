@@ -3,18 +3,12 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.Collections;
 import java.util.List;
 
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.validators.Messages;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 
 public class ABTestScheduleStrategy implements ScheduleStrategy {
-    
-    private static ObjectMapper mapper = new ObjectMapper();
-    private static final String SCHEDULE_GROUPS = "scheduleGroups";
     
     public static class ScheduleGroup {
         private int percentage;
@@ -80,14 +74,6 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
         this.groups.add(new ScheduleGroup(percent, schedule)); 
     }
     
-    @Override
-    public void initialize(ObjectNode node) {
-        this.groups = JsonUtils.asEntityList(node, SCHEDULE_GROUPS, ScheduleGroup.class);
-    }
-    @Override
-    public void persist(ObjectNode node) {
-        node.put(SCHEDULE_GROUPS, mapper.valueToTree(groups));
-    }
     /**
      * Will divide users into the groups by a percentage (randomly), with any rounding 
      * fractions dropped, so there may be a very few users who are not in the study. 

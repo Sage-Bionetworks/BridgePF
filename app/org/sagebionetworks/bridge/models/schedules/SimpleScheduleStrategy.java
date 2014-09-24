@@ -2,12 +2,9 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.validators.Messages;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 
 /**
@@ -17,8 +14,6 @@ import com.google.common.collect.Lists;
  */
 public class SimpleScheduleStrategy implements ScheduleStrategy {
 
-    private static ObjectMapper mapper = new ObjectMapper();
-    
     private Schedule schedule;
 
     public Schedule getSchedule() {
@@ -29,14 +24,6 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
         this.schedule = schedule;
     }
 
-    @Override
-    public void initialize(ObjectNode node) {
-        this.schedule = JsonUtils.asSchedule(node, "schedule");
-    }
-    @Override
-    public void persist(ObjectNode node) {
-        node.put("schedule", mapper.valueToTree(schedule));
-    }
     @Override
     public List<Schedule> generateSchedules(ScheduleContext context) {
         List<Schedule> schedules = Lists.newArrayListWithCapacity(context.getUsers().size());

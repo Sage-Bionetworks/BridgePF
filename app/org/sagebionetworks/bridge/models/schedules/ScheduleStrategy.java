@@ -4,13 +4,16 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.validators.Messages;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+@JsonTypeInfo( use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes({
+    @Type(name="SimpleScheduleStrategy", value=SimpleScheduleStrategy.class),
+    @Type(name="ABTestScheduleStrategy", value=ABTestScheduleStrategy.class)
+})
 public interface ScheduleStrategy {
-
-    public void initialize(ObjectNode node);
-    
-    public void persist(ObjectNode node);
     
     public List<Schedule> generateSchedules(ScheduleContext context);
     

@@ -12,7 +12,6 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.GuidHolder;
-import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.TestABSchedulePlan;
@@ -35,11 +34,10 @@ public class DynamoSchedulePlanDaoTest {
     public void before() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class, "modifiedOn", "version", "strategy");
-        /*
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(TestConstants.SECOND_STUDY);
         for (SchedulePlan plan : plans) {
             schedulePlanDao.deleteSchedulePlan(TestConstants.SECOND_STUDY, plan.getGuid());
-        }*/
+        }
     }
     
     @Test
@@ -88,7 +86,6 @@ public class DynamoSchedulePlanDaoTest {
         schedulePlanDao.createSchedulePlan(simplePlan);
         
         List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(TestConstants.SECOND_STUDY);
-        
         assertEquals("2 plans exist", 2, plans.size());
     }
 
