@@ -30,7 +30,6 @@ public class UploadControllerTest {
             controller.validateRequest(uploadRequest);
         }
 
-        // Name missing
         try {
             ObjectNode node = JsonNodeFactory.instance.objectNode();
             node.put("contentType", "text/plain");
@@ -40,10 +39,9 @@ public class UploadControllerTest {
             UploadController controller = new UploadController();
             controller.validateRequest(uploadRequest);
         } catch (BridgeServiceException e) {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+            assertEquals("Name missing", HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
         }
 
-        // Content type missing
         try {
             ObjectNode node = JsonNodeFactory.instance.objectNode();
             node.put("name", this.getClass().getSimpleName());
@@ -53,10 +51,9 @@ public class UploadControllerTest {
             UploadController controller = new UploadController();
             controller.validateRequest(uploadRequest);
         } catch (BridgeServiceException e) {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+            assertEquals("Content type missing", HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
         }
 
-        // Content length missing
         try {
             ObjectNode node = JsonNodeFactory.instance.objectNode();
             node.put("name", this.getClass().getSimpleName());
@@ -66,10 +63,9 @@ public class UploadControllerTest {
             UploadController controller = new UploadController();
             controller.validateRequest(uploadRequest);
         } catch (BridgeServiceException e) {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+            assertEquals("Content length missing", HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
         }
 
-        // Content length > 10 MB
         try {
             ObjectNode node = JsonNodeFactory.instance.objectNode();
             node.put("name", this.getClass().getSimpleName());
@@ -80,10 +76,9 @@ public class UploadControllerTest {
             UploadController controller = new UploadController();
             controller.validateRequest(uploadRequest);
         } catch (BridgeServiceException e) {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+            assertEquals("Content length > 10 MB", HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
         }
 
-        // MD5 not base64 encode
         try {
             ObjectNode node = JsonNodeFactory.instance.objectNode();
             node.put("name", this.getClass().getSimpleName());
@@ -94,7 +89,7 @@ public class UploadControllerTest {
             UploadController controller = new UploadController();
             controller.validateRequest(uploadRequest);
         } catch (BridgeServiceException e) {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+            assertEquals("MD5 not base64 encoded", HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
         }
     }
 }
