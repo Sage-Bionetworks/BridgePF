@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 
@@ -12,7 +11,7 @@ public interface SchedulePlanDao {
     
     public SchedulePlan getSchedulePlan(Study study, String guid);
     
-    public GuidHolder createSchedulePlan(SchedulePlan plan);
+    public SchedulePlan createSchedulePlan(SchedulePlan plan);
     
     public void updateSchedulePlan(SchedulePlan plan);
     
