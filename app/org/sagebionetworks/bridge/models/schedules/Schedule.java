@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoTable;
 import org.sagebionetworks.bridge.json.ActivityTypeDeserializer;
 import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 import org.sagebionetworks.bridge.json.PeriodJsonDeserializer;
@@ -8,11 +9,15 @@ import org.sagebionetworks.bridge.json.ScheduleTypeDeserializer;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-public class Schedule {
+@DynamoDBTable(tableName = "Schedule")
+public class Schedule implements DynamoTable {
     
     public enum Type {
         DATE,
@@ -25,9 +30,6 @@ public class Schedule {
     }
     
     private String studyUserCompoundKey;
-    // The schedule plan GUID is needed when the schedule is persisted separately from
-    // the plan, so that changes to the plan can be propagated to the schedules, but is 
-    // never needed in the external-facing JSON.
     private String schedulePlanGuid; 
     private String label;
     private ActivityType activityType;
@@ -51,6 +53,7 @@ public class Schedule {
     }
     
     @JsonIgnore
+    @DynamoDBHashKey
     public String getStudyUserCompoundKey() {
         return studyUserCompoundKey;
     }
@@ -64,9 +67,11 @@ public class Schedule {
     public void setSchedulePlanGuid(String schedulePlanGuid) {
         this.schedulePlanGuid = schedulePlanGuid;
     }
+    @DynamoDBAttribute
     public String getSchedulePlanGuid() { 
         return this.schedulePlanGuid;
     }
+    @DynamoDBAttribute
     public String getLabel() {
         return label;
     }
@@ -74,6 +79,7 @@ public class Schedule {
         this.label = label;
     }
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
+    @DynamoDBAttribute
     public ActivityType getActivityType() {
         return activityType;
     }
@@ -81,6 +87,7 @@ public class Schedule {
     public void setActivityType(ActivityType activityType) {
         this.activityType = activityType;
     }
+    @DynamoDBAttribute
     public String getActivityRef() {
         return activityRef;
     }
@@ -88,6 +95,7 @@ public class Schedule {
         this.activityRef = activityRef;
     }
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
+    @DynamoDBAttribute
     public Schedule.Type getScheduleType() {
         return scheduleType;
     }
@@ -95,6 +103,7 @@ public class Schedule {
     public void setScheduleType(Schedule.Type scheduleType) {
         this.scheduleType = scheduleType;
     }
+    @DynamoDBAttribute
     public String getSchedule() {
         return schedule;
     }
@@ -102,6 +111,7 @@ public class Schedule {
         this.schedule = schedule;
     }
     @JsonSerialize(using = PeriodJsonSerializer.class)
+    @DynamoDBAttribute
     public Long getExpires() {
         return expires;
     }
