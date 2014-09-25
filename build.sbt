@@ -5,9 +5,7 @@ version := "0.1-SNAPSHOT"
 scalaVersion := "2.10.3"
 
 libraryDependencies ++= Seq(
-  javaJdbc,
-  javaEbean,
-  cache,
+  filters,
   "com.amazonaws" % "aws-java-sdk" % "1.8.10",
   "org.springframework" % "spring-context" % "4.0.5.RELEASE",
   "org.springframework" % "spring-test" % "4.0.5.RELEASE",
