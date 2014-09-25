@@ -42,11 +42,6 @@ public class DynamoSurveyDaoTest {
         DynamoTestUtil.clearTable(DynamoSurvey.class, "studyKey", "modifiedOn", "identifier", "name", "published",
                 "version");
         DynamoTestUtil.clearTable(DynamoSurveyQuestion.class, "guid", "identifier", "data");
-        List<Survey> surveys = surveyDao.getSurveys(STUDY_KEY);
-        for (Survey survey : surveys) {
-            surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
-            surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
-        }
     }
 
     // CREATE SURVEY
