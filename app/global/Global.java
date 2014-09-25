@@ -11,6 +11,8 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import play.Application;
 import play.GlobalSettings;
 import play.Logger;
+import play.api.mvc.EssentialFilter;
+import play.filters.gzip.GzipFilter;
 import play.libs.F.Promise;
 import play.libs.Json;
 import play.mvc.Http.RequestHeader;
@@ -28,17 +30,6 @@ public class Global extends GlobalSettings {
         applicationContext = new ClassPathXmlApplicationContext("application-context.xml");
     }
 
-    /* Don't work because the /* route handles all misses
-    @Override
-    public Promise<SimpleResult> onHandlerNotFound(RequestHeader header) {
-        return Promise.<SimpleResult>pure(redirect("/404.html"));
-    }
-    
-    @Override
-    public Promise<SimpleResult> onError(RequestHeader request, Throwable throwable) {
-        return Promise.<SimpleResult>pure(redirect("/500.html"));
-    } */
-
     /**
      * Must be handled in Global handler. It can happen during binding, before a controller is called.
      */
@@ -53,5 +44,12 @@ public class Global extends GlobalSettings {
             throw new IllegalStateException("application-context.xml is not initialized");
         }
         return applicationContext.getBean(clazz);
+    }
+
+    @Override
+    public <T extends EssentialFilter> Class<T>[] filters() {
+        return new Class[] {
+                GzipFilter.class
+        };
     }
 }
