@@ -1,22 +1,26 @@
 package global
 
-import models.StatusMessage;
+import filters._
+import models.StatusMessage
 
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory
+import org.sagebionetworks.bridge.dynamodb.DynamoInitializer
 
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.context.ApplicationContext
+import org.springframework.context.support.ClassPathXmlApplicationContext
 
 import play.api._
 import play.api.mvc._
 import play.api.mvc.Results._
 import play.filters.gzip.GzipFilter
-import play.libs.Json;
+import play.libs.Json
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import scala.concurrent.Future
 
 object GlobalWithFilters extends WithFilters(
+
+  HerokuHttpRedirectFilter,
 
   new GzipFilter(shouldGzip = (request, response) =>
     response.headers.get("Content-Type").exists(_.startsWith("text/html"))
@@ -44,6 +48,18 @@ object GlobalWithFilters extends WithFilters(
     val page = views.html.defaultpages.badRequest(request, Json.toJson(new StatusMessage(error)).toString())
     val results = BadRequest(page)
     Future.successful(results)
+  }
+
+  override def onRouteRequest(request: RequestHeader): Option[Handler] = {
+    // Heroku redirect HTTP to HTTPS
+    request.headers.get("x-forwarded-proto") match {
+      case Some("http") => Some(Action {
+          val path = "https://" + request.host + request.path
+          Redirect(path, 301)
+      })
+      case Some("https") => super.onRouteRequest(request)
+      case None => super.onRouteRequest(request)
+    }
   }
 }
 
