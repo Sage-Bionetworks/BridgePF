@@ -21,8 +21,6 @@ import scala.concurrent.Future
 
 object GlobalWithFilters extends WithFilters(
 
-  new CSRFFilter,
-
   new GzipFilter(shouldGzip = (request, response) =>
     response.headers.get("Content-Type").exists(_.startsWith("text/html"))
   )
