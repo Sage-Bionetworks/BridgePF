@@ -11,8 +11,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import play.Application;
 import play.GlobalSettings;
 import play.Logger;
-import play.api.mvc.EssentialFilter;
-import play.filters.gzip.GzipFilter;
 import play.libs.F.Promise;
 import play.libs.Json;
 import play.mvc.Http.RequestHeader;
@@ -44,12 +42,5 @@ public class Global extends GlobalSettings {
             throw new IllegalStateException("application-context.xml is not initialized");
         }
         return applicationContext.getBean(clazz);
-    }
-
-    @Override
-    public <T extends EssentialFilter> Class<T>[] filters() {
-        return new Class[] {
-                GzipFilter.class
-        };
     }
 }
