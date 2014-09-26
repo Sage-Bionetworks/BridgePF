@@ -10,6 +10,7 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -152,11 +153,11 @@ public class ScheduleStrategyTest {
     }
     
     private Schedule createSchedule(String label) {
-        Schedule schedule = new Schedule();
-        schedule.setActivityType(Schedule.ActivityType.SURVEY);
+        Schedule schedule = new DynamoSchedule();
+        schedule.setActivityType(ActivityType.SURVEY);
         schedule.setLabel(label);
         schedule.setActivityRef("http://sagebridge.org/survey1");
-        schedule.setScheduleType(Schedule.Type.CRON);
+        schedule.setScheduleType(ScheduleType.CRON);
         schedule.setSchedule("0 */2 * * *");
         return schedule;
     }

@@ -95,8 +95,14 @@
     <bean id="schedulePlanDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlanDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
+    
+    <bean id="scheduleDao" class="org.sagebionetworks.bridge.dynamodb.DynamoScheduleDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
  
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
+    
+    <bean id="scheduleChangeListener" class="org.sagebionetworks.bridge.services.ScheduleChangeListener"/>
 
     <!-- Redis -->
     
