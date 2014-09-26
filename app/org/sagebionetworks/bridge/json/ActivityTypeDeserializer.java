@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.json;
 
 import java.io.IOException;
 
-import org.sagebionetworks.bridge.models.schedules.Schedule.ActivityType;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;

@@ -1,15 +1,16 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.DateUtils;
 
 public class TestABSchedulePlan extends DynamoSchedulePlan {
 
-    private Schedule schedule1 = new Schedule() {
+    private Schedule schedule1 = new DynamoSchedule() {
         {
             setGuid("AAA");
-            setScheduleType(Type.CRON);
+            setScheduleType(ScheduleType.CRON);
             setSchedule("* * *");
             setActivityType(ActivityType.TASK);
             setActivityRef("task:AAA");
@@ -17,10 +18,10 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
             setLabel("Test label for the user");
         }
     };
-    private Schedule schedule2 = new Schedule() {
+    private Schedule schedule2 = new DynamoSchedule() {
         {
             setGuid("BBB");
-            setScheduleType(Type.CRON);
+            setScheduleType(ScheduleType.CRON);
             setSchedule("* * *");
             setActivityType(ActivityType.TASK);
             setActivityRef("task:BBB");
@@ -28,10 +29,10 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
             setLabel("Test label for the user");
         }
     };
-    private Schedule schedule3 = new Schedule() {
+    private Schedule schedule3 = new DynamoSchedule() {
         {
             setGuid("CCC");
-            setScheduleType(Type.CRON);
+            setScheduleType(ScheduleType.CRON);
             setSchedule("* * *");
             setActivityType(ActivityType.TASK);
             setActivityRef("task:CCC");
