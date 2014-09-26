@@ -12,6 +12,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext
 import play.api._
 import play.api.mvc._
 import play.api.mvc.Results._
+import play.filters.csrf.CSRFFilter
 import play.filters.gzip.GzipFilter
 import play.libs.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -20,7 +21,7 @@ import scala.concurrent.Future
 
 object GlobalWithFilters extends WithFilters(
 
-  HerokuHttpRedirectFilter,
+  new CSRFFilter,
 
   new GzipFilter(shouldGzip = (request, response) =>
     response.headers.get("Content-Type").exists(_.startsWith("text/html"))
