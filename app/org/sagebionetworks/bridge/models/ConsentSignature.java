@@ -9,27 +9,19 @@ public class ConsentSignature {
 
     private static final String NAME_FIELD = "name";
     private static final String BIRTHDATE_FIELD = "birthdate";
-    private static final String SEND_EMAIL_FIELD = "sendEmail";
 
     private String name;
     private String birthdate;
-    private boolean sendEmail;
 
-    public ConsentSignature(String name, String birthdate, boolean sendEmail) {
+    public ConsentSignature(String name, String birthdate) {
         this.name = name;
         this.birthdate = DateUtils.convertToISODateTime(birthdate);
-        this.sendEmail = sendEmail;
     }
     
-    public ConsentSignature(String name, String birthdate) {
-        this(name, birthdate, true);
-    }
-
     public static final ConsentSignature fromJson(JsonNode node) {
         String name = JsonUtils.asText(node, NAME_FIELD);
         String birthdate = JsonUtils.asText(node, BIRTHDATE_FIELD);
-        boolean sendEmail = JsonUtils.asBoolean(node, SEND_EMAIL_FIELD);
-        return new ConsentSignature(name, birthdate, sendEmail);
+        return new ConsentSignature(name, birthdate);
     }
 
     public String getName() {
@@ -40,10 +32,6 @@ public class ConsentSignature {
         return birthdate;
     }
     
-    public boolean isSendEmail() {
-        return sendEmail;
-    }
-
     @Override
     public int hashCode() {
         final int prime = 31;
