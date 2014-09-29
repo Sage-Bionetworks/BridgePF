@@ -5,7 +5,6 @@ import org.sagebionetworks.bridge.dynamodb.JsonNodeMarshaller;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -52,10 +51,6 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
         this.endDate = record.getEndDate();
         this.version = record.getVersion();
         this.data = record.getData();
-    }
-
-    public HealthDataRecord toHealthDataRecord() {
-        return new HealthDataRecordImpl(recordId, startDate, endDate, version, data);
     }
 
     @DynamoDBHashKey

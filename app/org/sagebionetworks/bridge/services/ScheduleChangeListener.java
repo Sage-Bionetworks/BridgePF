@@ -63,11 +63,11 @@ public class ScheduleChangeListener implements ApplicationListener<ApplicationEv
     }
     private void userEnrolled(UserEnrolledEvent event) {
         logger.info("EVENT: User enrolled: " + event.getUser().getId() + ", study: " + event.getStudy().getKey());
-        // Find all schedules for this user, delete them
+        // Find all the plans, assemble a list of schedules for this user, save
     }
     private void userUnenrolled(UserUnenrolledEvent event) {
         logger.info("EVENT: User withdrawn from study: " + event.getUser().getId() + ", study: " + event.getStudy().getKey());
-        // Find all the plans, assemble a list of schedules for this user, save
+        // Find all schedules for this user, delete them
     }
 
 }

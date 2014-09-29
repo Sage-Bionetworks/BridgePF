@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.validators.Messages;
 
@@ -88,7 +87,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
             group = groups.get(i++);
             perc -= group.getPercentage();
         }
-        Schedule schedule = new DynamoSchedule(group.getSchedule());
+        Schedule schedule = group.getSchedule().copy();
         schedule.setStudyAndUser(context.getStudy(), user);
         return schedule;
     }
@@ -111,7 +110,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
             int number = (int)Math.floor((group.getPercentage()*size)/100);
             for (int j=0; j < number; j++) {
                 User user = context.getUsers().get(i++);
-                schedule = new DynamoSchedule(group.getSchedule());
+                schedule = group.getSchedule().copy();
                 schedule.setStudyAndUser(context.getStudy(), user);
                 list.add(schedule);
             }
