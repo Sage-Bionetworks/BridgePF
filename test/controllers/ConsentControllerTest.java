@@ -16,6 +16,7 @@ import javax.annotation.Resource;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
@@ -58,11 +59,10 @@ public class ConsentControllerTest {
         helper.deleteOneUser();
         studyConsentDao.deleteConsent(helper.getStudy().getKey(), timestamp);
     }
-
+    
     @Test
     public void test() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
-
             @Override
             public void testCode() throws Exception {
 
@@ -109,7 +109,6 @@ public class ConsentControllerTest {
                 helper.deleteUser(session.getUser());
 
             }
-
         });
     }
 }

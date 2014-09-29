@@ -1,11 +1,15 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 
-public interface Schedule extends BridgeEntity {
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+@JsonDeserialize(as=DynamoSchedule.class)
+public interface Schedule extends BridgeEntity {
+    
     public String getGuid();
     public void setGuid(String guid);
     
@@ -33,5 +37,6 @@ public interface Schedule extends BridgeEntity {
     
     public Long getExpires();
     public void setExpires(Long expires);
-        
+
+    public Schedule copy();
 }

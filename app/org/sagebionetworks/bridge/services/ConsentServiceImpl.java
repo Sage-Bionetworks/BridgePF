@@ -132,6 +132,8 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
                 sendMailService.sendConsentAgreement(caller, consentSignature, study);
             }
             caller.setConsent(true);
+            caller.setHealthDataCode(healthId.getCode());
+            
             return caller;
 
         } catch (Exception e) {

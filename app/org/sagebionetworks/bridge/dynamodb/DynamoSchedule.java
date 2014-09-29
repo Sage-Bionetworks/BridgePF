@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.ActivityTypeDeserializer;
+import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 import org.sagebionetworks.bridge.json.PeriodJsonDeserializer;
 import org.sagebionetworks.bridge.json.PeriodJsonSerializer;
@@ -13,19 +14,23 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @DynamoDBTable(tableName = "Schedule")
 public class DynamoSchedule implements DynamoTable, Schedule {
 
     private String guid;
     private String studyUserCompoundKey;
-    private String schedulePlanGuid; 
+    private String schedulePlanGuid;
     private String label;
     private ActivityType activityType;
     private String activityRef;
@@ -33,18 +38,17 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     private String schedule;
     private Long expires;
     
-    public DynamoSchedule() {
-    }
-    
-    public DynamoSchedule(Schedule schedule) {
-        setStudyUserCompoundKey(schedule.getStudyUserCompoundKey());
-        setSchedulePlanGuid(schedule.getSchedulePlanGuid());
-        setLabel(schedule.getLabel());
-        setActivityType(schedule.getActivityType());
-        setActivityRef(schedule.getActivityRef());
-        setScheduleType(schedule.getScheduleType());
-        setSchedule(schedule.getSchedule());
-        setExpires(schedule.getExpires());
+    public Schedule copy() {
+        DynamoSchedule schedule = new DynamoSchedule();
+        schedule.setStudyUserCompoundKey(schedule.getStudyUserCompoundKey());
+        schedule.setSchedulePlanGuid(schedule.getSchedulePlanGuid());
+        schedule.setLabel(schedule.getLabel());
+        schedule.setActivityType(schedule.getActivityType());
+        schedule.setActivityRef(schedule.getActivityRef());
+        schedule.setScheduleType(schedule.getScheduleType());
+        schedule.setSchedule(schedule.getSchedule());
+        schedule.setExpires(schedule.getExpires());
+        return schedule;
     }
     
     @JsonIgnore
@@ -77,7 +81,28 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     public void setSchedulePlanGuid(String schedulePlanGuid) {
         this.schedulePlanGuid = schedulePlanGuid;
     }
+    @JsonIgnore
     @DynamoDBAttribute
+    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
+    public JsonNode getData() {
+        ObjectNode data = JsonNodeFactory.instance.objectNode();
+        JsonUtils.write(data, "label", label);
+        JsonUtils.write(data, "activityType", activityType);
+        JsonUtils.write(data, "activityRef", activityRef);
+        JsonUtils.write(data, "scheduleType", scheduleType);
+        JsonUtils.write(data, "schedule", schedule);
+        JsonUtils.write(data, "expires", expires);
+        return data;
+    }
+    public void setData(JsonNode data) {
+        this.label = JsonUtils.asText(data, "label");
+        this.activityType = JsonUtils.asActivityType(data, "activityType");
+        this.activityRef = JsonUtils.asText(data, "activityRef");
+        this.scheduleType = JsonUtils.asScheduleType(data, "scheduleType");
+        this.schedule = JsonUtils.asText(data, "schedule");
+        this.expires = JsonUtils.asLong(data, "expires");
+    }
+    @DynamoDBIgnore
     public String getLabel() {
         return label;
     }
@@ -85,8 +110,7 @@ public class DynamoSchedule implements DynamoTable, Schedule {
         this.label = label;
     }
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
-    @DynamoDBAttribute
-    @DynamoDBMarshalling(marshallerClass = ActivityTypeMarshaller.class)
+    @DynamoDBIgnore
     public ActivityType getActivityType() {
         return activityType;
     }
@@ -94,7 +118,7 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     public void setActivityType(ActivityType activityType) {
         this.activityType = activityType;
     }
-    @DynamoDBAttribute
+    @DynamoDBIgnore
     public String getActivityRef() {
         return activityRef;
     }
@@ -102,8 +126,7 @@ public class DynamoSchedule implements DynamoTable, Schedule {
         this.activityRef = activityRef;
     }
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
-    @DynamoDBAttribute
-    @DynamoDBMarshalling(marshallerClass = ScheduleTypeMarshaller.class) 
+    @DynamoDBIgnore
     public ScheduleType getScheduleType() {
         return scheduleType;
     }
@@ -111,7 +134,7 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     public void setScheduleType(ScheduleType scheduleType) {
         this.scheduleType = scheduleType;
     }
-    @DynamoDBAttribute
+    @DynamoDBIgnore
     public String getSchedule() {
         return schedule;
     }
@@ -119,7 +142,7 @@ public class DynamoSchedule implements DynamoTable, Schedule {
         this.schedule = schedule;
     }
     @JsonSerialize(using = PeriodJsonSerializer.class)
-    @DynamoDBAttribute
+    @DynamoDBIgnore
     public Long getExpires() {
         return expires;
     }
