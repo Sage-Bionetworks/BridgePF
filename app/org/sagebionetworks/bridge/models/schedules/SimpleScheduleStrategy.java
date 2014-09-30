@@ -26,7 +26,7 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
     
     @Override
     public Schedule scheduleNewUser(ScheduleContext context, User user) {
-        Schedule sch = new Schedule(schedule);
+        Schedule sch = schedule.copy();
         sch.setStudyAndUser(context.getStudy(), user);
         return sch;
     }
@@ -35,7 +35,7 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
     public List<Schedule> scheduleExistingUsers(ScheduleContext context) {
         List<Schedule> schedules = Lists.newArrayListWithCapacity(context.getUsers().size());
         for (User user : context.getUsers()) {
-            Schedule sch = new Schedule(schedule);
+            Schedule sch = schedule.copy();
             sch.setStudyAndUser(context.getStudy(), user);
             schedules.add(sch);
         }

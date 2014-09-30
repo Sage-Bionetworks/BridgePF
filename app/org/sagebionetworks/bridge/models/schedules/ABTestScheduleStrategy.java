@@ -87,7 +87,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
             group = groups.get(i++);
             perc -= group.getPercentage();
         }
-        Schedule schedule = new Schedule(group.getSchedule());
+        Schedule schedule = group.getSchedule().copy();
         schedule.setStudyAndUser(context.getStudy(), user);
         return schedule;
     }
@@ -110,7 +110,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
             int number = (int)Math.floor((group.getPercentage()*size)/100);
             for (int j=0; j < number; j++) {
                 User user = context.getUsers().get(i++);
-                schedule = new Schedule(group.getSchedule());
+                schedule = group.getSchedule().copy();
                 schedule.setStudyAndUser(context.getStudy(), user);
                 list.add(schedule);
             }

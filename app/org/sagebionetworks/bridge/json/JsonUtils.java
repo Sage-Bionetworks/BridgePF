@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
@@ -149,6 +152,21 @@ public class JsonUtils {
         return null;
     }
     
+    public static ActivityType asActivityType(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            String value = JsonUtils.asText(parent, property);
+            return ActivityType.valueOf(value.toUpperCase());
+        }
+        return null;
+    }
+    
+    public static ScheduleType asScheduleType(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            String value = JsonUtils.asText(parent, property);
+            return ScheduleType.valueOf(value.toUpperCase());
+        }
+        return null;
+    }
     
     public static List<String> asStringList(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
@@ -168,6 +186,24 @@ public class JsonUtils {
             array.add(element.name().toLowerCase());
         }
         return array;
+    }
+    
+    public static void write(ObjectNode node, String propertyName, Enum<?> e) {
+        if (e != null) {
+            node.put(propertyName, e.name().toLowerCase());
+        }
+    }
+    
+    public static void write(ObjectNode node, String propertyName, String string) {
+        if (StringUtils.isNotBlank(string)) {
+            node.put(propertyName, string);
+        }
+    }
+    
+    public static void write(ObjectNode node, String propertyName, Long l) {
+        if (l != null) {
+            node.put(propertyName, l);
+        }
     }
     
     public static String toJSON(Object object) {

@@ -104,7 +104,7 @@ public class StormPathUserAdminService implements UserAdminService {
                 newUserSession = authenticationService.signIn(userStudy, signIn);
             }
         }
-        if (!signUserIn && newUserSession != null) {
+        if (!signUserIn) {
             authenticationService.signOut(newUserSession.getSessionToken());
             newUserSession = null;
         }
@@ -212,5 +212,4 @@ public class StormPathUserAdminService implements UserAdminService {
         AccountList accounts = directory.getAccounts(criteria);
         return (accounts.iterator().hasNext()) ? accounts.iterator().next() : null;
     }
-
 }

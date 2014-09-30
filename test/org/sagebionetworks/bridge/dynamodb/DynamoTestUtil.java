@@ -15,7 +15,7 @@ import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 
 public class DynamoTestUtil {
-
+    
     private static final AmazonDynamoDB DYNAMO;
     static {
         BridgeConfig config = BridgeConfigFactory.getConfig();

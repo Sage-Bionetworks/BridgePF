@@ -25,9 +25,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -243,7 +243,7 @@ public class HealthDataControllerTest {
     // duration (no end date), which makes it important for the date-based
     // query methods of the service.
     private List<HealthDataRecord> getTestRecords(long startDate, long endDate) throws Exception {
-        HealthDataRecord record = new HealthDataRecordImpl();
+        HealthDataRecord record = new DynamoHealthDataRecord();
         record.setStartDate(startDate);
         if (endDate > 0) {
             record.setEndDate(endDate);

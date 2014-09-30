@@ -167,9 +167,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         UserSession session = null;
         try {
             Account account = stormpathClient.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
-
+            
             session = createSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
+            
             if (!session.getUser().doesConsent()) {
                 throw new ConsentRequiredException(session);
             }
