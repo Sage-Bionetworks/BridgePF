@@ -10,14 +10,13 @@ import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
-import java.util.Arrays;
-
 import javax.annotation.Resource;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
@@ -26,6 +25,9 @@ import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import play.libs.WS.Response;
 
@@ -70,44 +72,44 @@ public class ConsentControllerTest {
                 Response giveConsentFail = TestUtils.getURL(helper.getUserSessionToken(), CONSENT_URL)
                                                 .post("")
                                                 .get(TIMEOUT);
-                assertEquals("give Consent fails with 500", giveConsentFail.getStatus(), SC_INTERNAL_SERVER_ERROR);
+                assertEquals("give Consent fails with 500", SC_INTERNAL_SERVER_ERROR, giveConsentFail.getStatus());
 
                 // Consenting turns data sharing on by default, so check that we can suspend sharing.
                 Response suspendDataSharing = TestUtils.getURL(helper.getUserSessionToken(), SUSPEND_URL)
                                                 .post("")
                                                 .get(TIMEOUT);
-                assertEquals("suspendDataSharing succeeds with 200", suspendDataSharing.getStatus(), SC_OK);
+                assertEquals("suspendDataSharing succeeds with 200", SC_OK, suspendDataSharing.getStatus());
 
                 // We've suspended data sharing, now check to see if we can resume data sharing.
                 Response resumeDataSharing = TestUtils.getURL(helper.getUserSessionToken(), RESUME_URL)
                                                 .post("")
                                                 .get(TIMEOUT);
-                assertEquals("resumeDataSharing succeeds with 200", resumeDataSharing.getStatus(), SC_OK);
+                assertEquals("resumeDataSharing succeeds with 200", SC_OK, resumeDataSharing.getStatus());
 
                 // Resume data sharing should be idempotent.
                 resumeDataSharing = TestUtils.getURL(helper.getUserSessionToken(), RESUME_URL)
                                                 .post("")
                                                 .get(TIMEOUT);
-                assertEquals("resumeDataSharing succeeds with 200", resumeDataSharing.getStatus(), SC_OK);
+                assertEquals("resumeDataSharing succeeds with 200", SC_OK, resumeDataSharing.getStatus());
                 
-                // Consent new user.
-                String name = "John Smith";
-                String birthdate = DateUtils.getCurrentISODateTime();
-                boolean sendEmail = false;
-                String consentSignature = "{\"name\":\"" + name + "" +
-                                "\",\"birthdate\":\"" + birthdate + 
-                                "\",\"sendEmail\":" + sendEmail + "}";
+                
+                UserSession session = null;
+                try {
+                    TestUser user = new TestUser("johnsmith", "johnsmith@sagebridge.org", "password");
+                    session = helper.createUser(user, null, true, false);
+                    
+                    // Consent new user again
+                    ObjectNode node = JsonNodeFactory.instance.objectNode();
+                    node.put("name", "John Smith");
+                    node.put("birthdate", DateUtils.getCurrentISODate()); // date only, no time.
 
-                String[] roles = { "user" };
-                UserSession session = helper.createUserWithoutConsent(helper.getTestUser(), Arrays.asList(roles));
-                
-                Response giveConsentSuccess = TestUtils.getURL(session.getSessionToken(), CONSENT_URL)
-                                                .post(consentSignature)
-                                                .get(TIMEOUT);
-                assertEquals("Give consent succeeds with 200", giveConsentSuccess.getStatus(), SC_OK);
-                
-                helper.deleteUser(session.getUser());
-
+                    Response giveConsentSuccess = TestUtils.getURL(session.getSessionToken(), CONSENT_URL)
+                                                    .post(node.toString())
+                                                    .get(TIMEOUT);
+                    assertEquals("Give consent succeeds with 200", SC_OK, giveConsentSuccess.getStatus());
+                } finally {
+                    helper.deleteUser(session.getSessionToken(), session.getUser());
+                }
             }
 
         });
