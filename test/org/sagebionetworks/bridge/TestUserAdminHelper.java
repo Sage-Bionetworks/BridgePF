@@ -21,13 +21,13 @@ import org.sagebionetworks.bridge.services.UserAdminService;
  */
 public class TestUserAdminHelper {
 
+    private static final String STUDY_HOST = "pd.sagebridge.org";
     UserAdminService userAdminService;
     AuthenticationService authService;
     BridgeConfig bridgeConfig;
     StudyService studyService;
 
     private TestUser testUser = new TestUser("tester", "support@sagebase.org", "P4ssword");
-    private Study study;
     private UserSession adminSession;
     private UserSession userSession;
 
@@ -52,7 +52,7 @@ public class TestUserAdminHelper {
     }
 
     public void createOneUser(List<String> roles) {
-        study = studyService.getStudyByHostname("pd.sagebridge.org");
+        Study study = studyService.getStudyByHostname(STUDY_HOST);
         SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         adminSession = authService.signIn(study, admin);
 
@@ -65,7 +65,7 @@ public class TestUserAdminHelper {
         authService.signOut(adminSession.getSessionToken());
     }
 
-    public UserSession createUser(TestUser user, List<String> roles, boolean signIn, boolean consent) {
+    public UserSession createUser(TestUser user, List<String> roles, Study study, boolean signIn, boolean consent) {
         return userAdminService.createUser(user.getSignUp(), roles, study, signIn, consent);
     }
 
@@ -77,10 +77,7 @@ public class TestUserAdminHelper {
         userAdminService.deleteUser(user);
     }
     
-    public UserSession createUserWithoutConsentOrSignIn(TestUser user, List<String> roles) {
-        if (study == null) {
-            study = studyService.getStudyByHostname("pd.sagebridge.org");
-        }
+    public UserSession createUserWithoutConsentOrSignIn(TestUser user, List<String> roles, Study study) {
         if (adminSession == null) {
             SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
             adminSession = authService.signIn(study, admin);
@@ -90,9 +87,7 @@ public class TestUserAdminHelper {
     }
     
     public UserSession createUserWithoutConsent(TestUser user, List<String> roles) {
-        if (study == null) {
-            study = studyService.getStudyByHostname("pd.sagebridge.org");
-        }
+        Study study = studyService.getStudyByHostname(STUDY_HOST);
         if (adminSession == null) {
             SignIn admin = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
             adminSession = authService.signIn(study, admin);
@@ -101,7 +96,7 @@ public class TestUserAdminHelper {
     }
 
     public Study getStudy() {
-        return study;
+        return studyService.getStudyByHostname(STUDY_HOST);
     }
 
     public User getAdminUser() {

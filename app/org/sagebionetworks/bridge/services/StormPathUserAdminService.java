@@ -160,8 +160,6 @@ public class StormPathUserAdminService implements UserAdminService {
                 removeAllHealthDataRecords(user, userStudy);
                 deleteUserAccount(userStudy, user.getEmail());
             }
-        } catch (Throwable t) {
-            throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         } finally {
             if (uuid != null) {
                 userLockDao.releaseLock(user.getId(), uuid);

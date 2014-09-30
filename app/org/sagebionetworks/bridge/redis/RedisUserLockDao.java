@@ -31,7 +31,6 @@ public class RedisUserLockDao implements UserLockDao {
         } catch (Throwable e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
-
     }
 
     @Override
