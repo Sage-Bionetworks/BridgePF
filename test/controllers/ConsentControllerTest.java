@@ -60,11 +60,10 @@ public class ConsentControllerTest {
         helper.deleteOneUser();
         studyConsentDao.deleteConsent(helper.getStudy().getKey(), timestamp);
     }
-
+    
     @Test
     public void test() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
-
             @Override
             public void testCode() throws Exception {
 
@@ -111,7 +110,6 @@ public class ConsentControllerTest {
                     helper.deleteUser(session.getSessionToken(), session.getUser());
                 }
             }
-
         });
     }
 }
