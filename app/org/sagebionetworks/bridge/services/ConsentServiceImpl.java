@@ -10,18 +10,22 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.events.UserEnrolledEvent;
+import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.CustomData;
 
-public class ConsentServiceImpl implements ConsentService {
+public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
 
     private Client stormpathClient;
     private BridgeEncryptor healthCodeEncryptor;
@@ -29,6 +33,7 @@ public class ConsentServiceImpl implements ConsentService {
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
+    private ApplicationEventPublisher publisher;
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
@@ -53,12 +58,19 @@ public class ConsentServiceImpl implements ConsentService {
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
+    
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
+        this.publisher = publisher;
+    }
 
     @Override
     public User consentToResearch(User caller, ConsentSignature consentSignature, final Study study, boolean sendEmail)
             throws BridgeServiceException {
-
-        if (study == null) {
+        
+        if (caller.isConsent()) {
+            throw new BridgeServiceException("User has already consented", 500);
+        } else if (study == null) {
             throw new BridgeServiceException("Study is required.", SC_BAD_REQUEST);
         } else if (consentSignature == null) {
             throw new BridgeServiceException("Consent signature is required.", SC_BAD_REQUEST);
@@ -67,7 +79,6 @@ public class ConsentServiceImpl implements ConsentService {
         } else if (consentSignature.getBirthdate() == null) {
             throw new BridgeServiceException("Consent birth date  is required.", SC_BAD_REQUEST);
         }
-
         try {
             // Stormpath account
             final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
@@ -115,12 +126,15 @@ public class ConsentServiceImpl implements ConsentService {
                     };
                 }
                 userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
+                publisher.publishEvent(new UserEnrolledEvent(caller, study));
             }
 
             if (sendEmail) {
                 sendMailService.sendConsentAgreement(caller, consentSignature, study);
             }
             caller.setConsent(true);
+            caller.setHealthDataCode(healthId.getCode());
+            
             return caller;
 
         } catch (Exception e) {
@@ -154,27 +168,22 @@ public class ConsentServiceImpl implements ConsentService {
         } else if (study == null) {
             throw new BridgeServiceException("Study is required.", SC_BAD_REQUEST);
         }
-        try {
-            // TODO: Old
-            final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
-            final CustomData customData = account.getCustomData();
-            customData.remove(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX);
-            customData.save();
-            // TODO: New
-            String healthCode = caller.getHealthDataCode();
-            List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
-            for (StudyConsent consent : consents) {
-                if (userConsentDao.hasConsented(healthCode, consent)) {
-                    userConsentDao.withdrawConsent(healthCode, consent);
-                }
+        // TODO: Old
+        final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+        final CustomData customData = account.getCustomData();
+        customData.remove(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX);
+        customData.save();
+        // TODO: New
+        String healthCode = caller.getHealthDataCode();
+        List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
+        for (StudyConsent consent : consents) {
+            if (userConsentDao.hasConsented(healthCode, consent)) {
+                userConsentDao.withdrawConsent(healthCode, consent);
+                publisher.publishEvent(new UserUnenrolledEvent(caller, study));
             }
-
-            caller.setConsent(false);
-            return caller;
-
-        } catch (Exception e) {
-            throw new BridgeServiceException(e, SC_INTERNAL_SERVER_ERROR);
         }
+        caller.setConsent(false);
+        return caller;
     }
 
     @Override

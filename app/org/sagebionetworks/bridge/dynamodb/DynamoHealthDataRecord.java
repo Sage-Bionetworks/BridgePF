@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -16,28 +16,31 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-/**
- * Used by the services to join a HealthDataKey to a HealthDataRecord, into a complete 
- * DynamoDB record. Not exposed to consumers.
- *
- * Table structure:
- *  Hash Key: String key
- *  Range Key: String recordId
- *  
- * Indexes (local secondary indexes):
- *  endDate-index (key String + endDate Number)
- *  startDate-index (key String + startDate Number)
- *
- */
 @DynamoDBTable(tableName = "HealthDataRecord2")
 public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
 
+    private static final String RECORD_ID_FIELD = "recordId";
+    private static final String START_DATE_FIELD = "startDate";
+    private static final String END_DATE_FIELD = "endDate";
+    private static final String VERSION_FIELD = "version";
+    private static final String DATA_FIELD = "data";
+    
     private String key;
     private String recordId;
     private long startDate;
     private long endDate;
     private JsonNode data;
     private Long version;
+    
+    public static final DynamoHealthDataRecord fromJson(JsonNode node) {
+        DynamoHealthDataRecord record = new DynamoHealthDataRecord();
+        record.setRecordId(JsonUtils.asText(node, RECORD_ID_FIELD));
+        record.setStartDate(JsonUtils.asMillisSinceEpoch(node, START_DATE_FIELD));
+        record.setEndDate(JsonUtils.asMillisSinceEpoch(node, END_DATE_FIELD));
+        record.setVersion(JsonUtils.asLongPrimitive(node, VERSION_FIELD));
+        record.setData(JsonUtils.asJsonNode(node, DATA_FIELD));
+        return record;
+    }
 
     public DynamoHealthDataRecord() {
     }
@@ -62,10 +65,6 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
         this.endDate = record.getEndDate();
         this.data = record.getData();
         this.version = record.getVersion();
-    }
-    
-    public HealthDataRecord toHealthDataRecord() {
-        return new HealthDataRecordImpl(recordId, startDate, endDate, version, data);
     }
     
     @DynamoDBHashKey

@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.TestABSchedulePlan;
@@ -34,10 +33,6 @@ public class DynamoSchedulePlanDaoTest {
     public void before() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class, "modifiedOn", "version", "strategy");
-        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(TestConstants.SECOND_STUDY);
-        for (SchedulePlan plan : plans) {
-            schedulePlanDao.deleteSchedulePlan(TestConstants.SECOND_STUDY, plan.getGuid());
-        }
     }
     
     @Test
@@ -54,9 +49,9 @@ public class DynamoSchedulePlanDaoTest {
     public void canCrudOneSchedulePlan() {
         TestABSchedulePlan abPlan = new TestABSchedulePlan();
         
-        GuidHolder holder = schedulePlanDao.createSchedulePlan(abPlan);
+        SchedulePlan savedPlan = schedulePlanDao.createSchedulePlan(abPlan);
         assertNotNull("Creates and returns a GUID", abPlan.getGuid());
-        assertEquals("GUID is the same", holder.getGuid(), abPlan.getGuid());
+        assertEquals("GUID is the same", savedPlan.getGuid(), abPlan.getGuid());
         
         // Update the plan... to a simple strategy
         TestSimpleSchedulePlan simplePlan = new TestSimpleSchedulePlan();

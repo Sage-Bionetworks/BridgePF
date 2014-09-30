@@ -4,6 +4,7 @@ import global.JsonSchemaValidator;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.IdVersionHolder;
 import org.sagebionetworks.bridge.models.Study;
@@ -11,7 +12,6 @@ import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordImpl;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
 import play.mvc.Result;
@@ -39,7 +39,7 @@ public class HealthDataController extends BaseController {
         for (int i = 0; i < node.size(); i++) {
             JsonNode child = node.get(i);
             validator.validate(tracker, child);
-            records.add(HealthDataRecordImpl.fromJson(child));
+            records.add(DynamoHealthDataRecord.fromJson(child));
         }
 
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
@@ -105,7 +105,7 @@ public class HealthDataController extends BaseController {
 
         JsonNode node = requestToJSON(request());
         new JsonSchemaValidator().validate(tracker, node);
-        HealthDataRecord record = HealthDataRecordImpl.fromJson(node);
+        HealthDataRecord record = DynamoHealthDataRecord.fromJson(node);
 
         IdVersionHolder holder = healthDataService.updateHealthDataRecord(key, record);
         return ok(constructJSON(holder));
