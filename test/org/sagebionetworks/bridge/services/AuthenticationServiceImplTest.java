@@ -142,7 +142,7 @@ public class AuthenticationServiceImplTest {
             authService.signIn(helper.getStudy(), user.getSignIn());
             fail("Should have thrown consent exception");
         } catch(ConsentRequiredException e) {
-            helper.deleteUser(e.getUserSession().getUser());
+            helper.deleteUser(e.getUserSession().getSessionToken(), e.getUserSession().getUser());
         }
     }
     
