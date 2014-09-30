@@ -40,14 +40,14 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     
     public Schedule copy() {
         DynamoSchedule schedule = new DynamoSchedule();
-        schedule.setStudyUserCompoundKey(schedule.getStudyUserCompoundKey());
-        schedule.setSchedulePlanGuid(schedule.getSchedulePlanGuid());
-        schedule.setLabel(schedule.getLabel());
-        schedule.setActivityType(schedule.getActivityType());
-        schedule.setActivityRef(schedule.getActivityRef());
-        schedule.setScheduleType(schedule.getScheduleType());
-        schedule.setSchedule(schedule.getSchedule());
-        schedule.setExpires(schedule.getExpires());
+        schedule.setStudyUserCompoundKey(getStudyUserCompoundKey());
+        schedule.setSchedulePlanGuid(getSchedulePlanGuid());
+        schedule.setLabel(getLabel());
+        schedule.setActivityType(getActivityType());
+        schedule.setActivityRef(getActivityRef());
+        schedule.setScheduleType(getScheduleType());
+        schedule.setSchedule(getSchedule());
+        schedule.setExpires(getExpires());
         return schedule;
     }
     

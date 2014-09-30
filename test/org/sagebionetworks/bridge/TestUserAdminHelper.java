@@ -69,7 +69,11 @@ public class TestUserAdminHelper {
         return userAdminService.createUser(user.getSignUp(), roles, study, signIn, consent);
     }
 
-    public void deleteUser(User user) {
+    public void deleteUser(String sessionToken, User user) {
+        if (user.getHealthDataCode() == null) {
+            // Which happens in some wacky tests
+            user = authService.getSession(sessionToken).getUser();
+        }
         userAdminService.deleteUser(user);
     }
     

@@ -47,26 +47,26 @@ public class ScheduleChangeListener implements ApplicationListener<ApplicationEv
     }
 
     private void schedulePlanCreated(SchedulePlanCreatedEvent event) {
-        logger.info("EVENT: Schedule plan created: " + event.getSchedulePlan().getGuid());
+        logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" created");
         // Find all users, create schedules for them as a group
     }
     private void schedulePlanDeleted(SchedulePlanDeletedEvent event) {
-        logger.info("EVENT: Schedule plan deleted: " + event.getSchedulePlan().getGuid());
+        logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" deleted");
         // Find all schedules for this plan, delete them
     }
     private void schedulePlanUpdated(SchedulePlanUpdatedEvent event) {
-        logger.info("EVENT: Schedule plan updated: " + event.getSchedulePlan().getGuid());
+        logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" updated");
         // Find all schedules for this plan, delete them
         // Find all users, create schedules for them as a group
         // schedulePlanDeleted(event);
         // schedulePlanCreated(event);
     }
     private void userEnrolled(UserEnrolledEvent event) {
-        logger.info("EVENT: User enrolled: " + event.getUser().getId() + ", study: " + event.getStudy().getKey());
+        logger.info("EVENT: User " + event.getUser().getId() + " enrolled in study " + event.getStudy().getKey());
         // Find all the plans, assemble a list of schedules for this user, save
     }
     private void userUnenrolled(UserUnenrolledEvent event) {
-        logger.info("EVENT: User withdrawn from study: " + event.getUser().getId() + ", study: " + event.getStudy().getKey());
+        logger.info("EVENT: User " + event.getUser().getId() + " withdrawn from study " + event.getStudy().getKey());
         // Find all schedules for this user, delete them
     }
 
