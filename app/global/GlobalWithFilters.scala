@@ -10,6 +10,9 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
 import play.api._
+import play.api.http.ContentTypes._
+import play.api.http.HeaderNames._
+import play.api.http.Status._
 import play.api.mvc._
 import play.api.mvc.Results._
 import play.filters.csrf.CSRFFilter
@@ -22,7 +25,7 @@ import scala.concurrent.Future
 object GlobalWithFilters extends WithFilters(
 
   new GzipFilter(shouldGzip = (request, response) =>
-    response.headers.get("Content-Type").exists(_.startsWith("text/html"))
+    response.headers.get(CONTENT_TYPE).exists(_.startsWith(JSON))
   )
 
 ) with GlobalSettings {
@@ -51,13 +54,12 @@ object GlobalWithFilters extends WithFilters(
 
   override def onRouteRequest(request: RequestHeader): Option[Handler] = {
     // Heroku redirect HTTP to HTTPS
-    request.headers.get("x-forwarded-proto") match {
+    request.headers.get(X_FORWARDED_PROTO) match {
       case Some("http") => Some(Action {
           val path = "https://" + request.host + request.path
-          Redirect(path, 301)
+          Redirect(path, MOVED_PERMANENTLY)
       })
-      case Some("https") => super.onRouteRequest(request)
-      case None => super.onRouteRequest(request)
+      case _ => super.onRouteRequest(request)
     }
   }
 }
