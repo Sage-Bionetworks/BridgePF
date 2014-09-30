@@ -10,18 +10,22 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.events.UserEnrolledEvent;
+import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.CustomData;
 
-public class ConsentServiceImpl implements ConsentService {
+public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
 
     private Client stormpathClient;
     private BridgeEncryptor healthCodeEncryptor;
@@ -29,6 +33,7 @@ public class ConsentServiceImpl implements ConsentService {
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
+    private ApplicationEventPublisher publisher;
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
@@ -52,6 +57,11 @@ public class ConsentServiceImpl implements ConsentService {
 
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
+    }
+    
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
+        this.publisher = publisher;
     }
 
     @Override
@@ -116,6 +126,7 @@ public class ConsentServiceImpl implements ConsentService {
                     };
                 }
                 userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
+                publisher.publishEvent(new UserEnrolledEvent(caller, study));
             }
 
             if (sendEmail) {
@@ -168,6 +179,7 @@ public class ConsentServiceImpl implements ConsentService {
         for (StudyConsent consent : consents) {
             if (userConsentDao.hasConsented(healthCode, consent)) {
                 userConsentDao.withdrawConsent(healthCode, consent);
+                publisher.publishEvent(new UserUnenrolledEvent(caller, study));
             }
         }
         caller.setConsent(false);

@@ -5,11 +5,16 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
+import org.sagebionetworks.bridge.events.SchedulePlanCreatedEvent;
+import org.sagebionetworks.bridge.events.SchedulePlanDeletedEvent;
+import org.sagebionetworks.bridge.events.SchedulePlanUpdatedEvent;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -21,10 +26,11 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 
-public class DynamoSchedulePlanDao implements SchedulePlanDao {
+public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventPublisherAware {
 
     private static final SchedulePlanValidator VALIDATOR = new SchedulePlanValidator();
     private DynamoDBMapper mapper;
+    private ApplicationEventPublisher publisher;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
@@ -32,6 +38,11 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
                 ConsistentReads.CONSISTENT,
                 TableNameOverrideFactory.getTableNameOverride(DynamoSchedulePlan.class));
         mapper = new DynamoDBMapper(client, mapperConfig);
+    }
+
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
+        this.publisher = publisher;
     }
     
     @Override
@@ -73,6 +84,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
+        publisher.publishEvent(new SchedulePlanCreatedEvent(plan));
         return plan;
     }
 
@@ -81,12 +93,14 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         VALIDATOR.validate(plan);
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
+        publisher.publishEvent(new SchedulePlanUpdatedEvent(plan));
     }
 
     @Override
     public void deleteSchedulePlan(Study study, String guid) {
         SchedulePlan plan = getSchedulePlan(study, guid);
         mapper.delete(plan);
+        publisher.publishEvent(new SchedulePlanDeletedEvent(plan));
     }
 
 }
