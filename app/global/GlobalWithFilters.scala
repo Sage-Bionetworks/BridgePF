@@ -22,13 +22,14 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import scala.concurrent.Future
 
-object GlobalWithFilters extends WithFilters(
+object GlobalWithFilters extends WithFilters (
 
-  new GzipFilter(shouldGzip = (request, response) =>
-    response.headers.get(CONTENT_TYPE).exists(_.startsWith(JSON))
-  )
+    // TODO: CSRF filter
 
-) with GlobalSettings {
+    new GzipFilter(shouldGzip = (request, response) =>
+        response.headers.get(CONTENT_TYPE).exists(_.startsWith(JSON)))
+
+  ) with GlobalSettings {
 
   override def beforeStart(app: Application) {
     Logger.info("Environment: " + BridgeConfigFactory.getConfig().getEnvironment().getEnvName())
@@ -56,9 +57,9 @@ object GlobalWithFilters extends WithFilters(
     // Heroku redirect HTTP to HTTPS
     request.headers.get(X_FORWARDED_PROTO) match {
       case Some("http") => Some(Action {
-          val path = "https://" + request.host + request.path
+          val path = "https://" + request.host + request.uri
           Redirect(path, MOVED_PERMANENTLY)
-      })
+        })
       case _ => super.onRouteRequest(request)
     }
   }
