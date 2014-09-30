@@ -61,7 +61,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         boolean hasConsented = hasConsentedNew(healthCode, consent);
         boolean hasConsentedOld = hasConsentedOld(healthCode, consent);
         if (hasConsentedOld != hasConsented) {
-            logger.error("Old, new consent inconsistent.");
+            logger.error("Old, new consent inconsistent. [1]");
         }
         return hasConsented;
     }
@@ -74,7 +74,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
             logger.error("Old, new consent signature inconsistent.");
         }
         if (signature == null && signatureOld != null) {
-            logger.error("Old, new consent inconsistent.");
+            logger.error("Old, new consent inconsistent. [2]");
         }
         return signature;
     }

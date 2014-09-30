@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -25,23 +26,22 @@ import com.google.common.collect.Sets;
 public class ScheduleStrategyTest {
 
     private ObjectMapper mapper = new ObjectMapper();
-    private ScheduleContext context;
+    private ArrayList<User> users;
+    private Study study = TestConstants.SECOND_STUDY;
     
     @Before
     public void before() {
-        ArrayList<User> users = Lists.newArrayList();
+        users = Lists.newArrayList();
         for (int i=0; i < 10; i++) {
             users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
         }
-        this.context = new ScheduleContext(TestConstants.SECOND_STUDY, users);
     }
     
     public void createContextWithRemainderUsers() {
-        ArrayList<User> users = Lists.newArrayList();
+        users = Lists.newArrayList();
         for (int i=0; i < 14; i++) {
             users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
         }
-        this.context = new ScheduleContext(TestConstants.SECOND_STUDY, users);
     }
     
     @Test
@@ -50,7 +50,7 @@ public class ScheduleStrategyTest {
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
         
-        List<Schedule> schedules = strategy.scheduleExistingUsers(context);
+        List<Schedule> schedules = strategy.scheduleExistingUsers(study, users);
         
         Set<String> identifiers = Sets.newHashSet();
         for (Schedule sch : schedules) {
@@ -101,7 +101,7 @@ public class ScheduleStrategyTest {
     public void verifyABTestingStrategyWorks() {
         DynamoSchedulePlan plan = createABSchedulePlan();
 
-        List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(context);
+        List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
         
         // We want 4 in A, 4 in B and 2 in C
         // and they should not be in order...
@@ -132,7 +132,7 @@ public class ScheduleStrategyTest {
         DynamoSchedulePlan plan = createABSchedulePlan();
         createContextWithRemainderUsers();
         
-        List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(context);
+        List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
         assertEquals("All users have schedules", 14, schedules.size());
     }
 
