@@ -9,12 +9,17 @@ import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
+import java.util.List;
+
 import javax.annotation.Resource;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -46,8 +51,13 @@ public class StudyConsentControllerTest {
 
     @Before
     public void before() {
-        adminSession = helper.createUser(Lists.newArrayList("admin"));
-        userSession = helper.createUser();
+        List<String> roles = Lists.newArrayList(BridgeConstants.ADMIN_GROUP);
+        // TODO: When you create two users, they need different email/names. Randomize this in the helper 
+        // so you don't have to spell this out. 
+        adminSession = helper.createUser(new TestUser("admin-user", "admin-user@sagebridge.org", "P4ssword"), roles,
+                helper.getStudy(), true, true);
+        userSession = helper.createUser(new TestUser("normal-user", "normal-user@sagebridge.org", "P4ssword"), null,
+                helper.getStudy(), true, true);
     }
 
     @After
