@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import java.util.concurrent.Callable;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
 
@@ -43,7 +44,13 @@ public class RetryingFutureTask extends FutureTask<Boolean> {
                 logger.error("Task did not complete after " + maxRetries + " retries, giving up.");
             } else {
                 logger.error("Task was not successful, resubmitting (num retries: " + numRetries + ")");
-                retry();
+                try {
+                    long interval = (long)(3 * Math.pow(numRetries, 2));
+                    Thread.sleep(interval);
+                    retry();
+                } catch(InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
         } else {
             set(true);

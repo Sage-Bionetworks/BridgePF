@@ -18,12 +18,14 @@ public class RedisDistributedLockDao implements DistributedLockDao {
         String key = createKey(clazz, identifier);
         String id = BridgeUtils.generateGuid();
         // We'd really lke a setnxex command... apparently we're not alone
-        String setResult = stringOps.setnx(key, id).execute();
-        if (setResult == null) {
+        Long result = stringOps.setnx(key, id).execute();
+        if (result != 1L) {
             throw new BridgeServiceException("Lock already set.");
         }
-        String expResult = stringOps.expire(key, LOCK_EXPIRATION_IN_SECONDS).execute();
-        if (expResult == null) {
+        result = stringOps.expire(key, LOCK_EXPIRATION_IN_SECONDS).execute();
+        if (result != 1L) {
+            // Try to recover by deleting the key
+            stringOps.delete(key).execute();
             throw new BridgeServiceException("Lock expiration not set.");
         }
         return id;
@@ -37,9 +39,9 @@ public class RedisDistributedLockDao implements DistributedLockDao {
             if (getResult != null && !getResult.equals(lockId)) {
                 throw new BridgeServiceException("Must be lock owner to release lock.");
             }
-            String delResult = stringOps.delete(key).execute();
-            if (delResult == null) {
-                // Try to expire it as a last ditch effort
+            Long result = stringOps.delete(key).execute();
+            if (result == 0L) {
+                // Try to recover by expiring the key
                 stringOps.expire(key, 2);
                 throw new BridgeServiceException("Lock not released (attempting to expire)");
             }

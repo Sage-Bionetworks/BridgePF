@@ -12,9 +12,10 @@ public interface StringOps {
      *            target key.
      * @param seconds
      *            number of seconds until expiration.
-     * @return
+     * @return success code
+     *          1 if successful, 0 if key doesn't exist or timeout could not be set
      */
-    RedisOp<String> expire(String key, int seconds);
+    RedisOp<Long> expire(String key, int seconds);
     
     /**
      * Sets the value of the key and makes it expire after the specified
@@ -37,9 +38,10 @@ public interface StringOps {
      *            key of the key-value pair.
      * @param value
      *            value of the key-value pair.
-     * @return
+     * @return success code
+     *          1 if the key was set, 0 if not
      */
-    RedisOp<String> setnx(String key, String value);
+    RedisOp<Long> setnx(String key, String value);
 
     /**
      * Gets the value of the specified key. If the key does not exist null is
@@ -52,10 +54,10 @@ public interface StringOps {
      * 
      * @param key
      *            key of the key-value pair
-     * @return "OK" if at least one key is deleted, or null if the key does not
-     *         exist.
+     * @return numKeysDeleted
+     *          the number of keys deleted
      */
-    RedisOp<String> delete(String key);
+    RedisOp<Long> delete(String key);
 
     /**
      * Determines the time until expiration for a key (time-to-live).
