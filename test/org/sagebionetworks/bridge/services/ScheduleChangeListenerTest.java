@@ -93,7 +93,7 @@ public class ScheduleChangeListenerTest {
     }
     
     @Test
-    public void addUserThenCrudPlan() {
+    public void addUserThenCrudPlan() throws Exception {
         try {
             helper.createOneUser();
             
@@ -101,14 +101,11 @@ public class ScheduleChangeListenerTest {
             assertEquals("No schedules because there's no plan", 0, schedules.size());
             
             SchedulePlan plan = createSchedulePlan(helper.getUser());
-            listener.onApplicationEvent(new SchedulePlanCreatedEvent(plan));
+            listener.onTestEvent(new SchedulePlanCreatedEvent(plan));
 
             // Now there is a schedule for our dude(tte)
             schedules = scheduleDao.getSchedules(study, helper.getUser());
             assertEquals("There is now one schedule for the user", 1, schedules.size());
-            
-            System.out.println(schedules);
-            
         } finally {
             helper.deleteOneUser();
         }

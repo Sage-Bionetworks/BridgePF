@@ -10,7 +10,7 @@ public interface DistributedLockDao {
     public String createLock(Class<?> clazz, String identifier);
 
     public void releaseLock(Class<?> clazz, String identifier, String lockId);
-
+    
     public boolean isLocked(Class<?> clazz, String identifier);
 
 }

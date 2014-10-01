@@ -106,7 +106,10 @@
  
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
     
-    <bean id="scheduleChangeListener" class="org.sagebionetworks.bridge.services.ScheduleChangeListener">
+    <bean id="scheduleChangeListener" class="org.sagebionetworks.bridge.services.ScheduleChangeListener" destroy-method="destroy">
+    </bean>
+    
+    <bean id="scheduleChangeWorker" class="org.sagebionetworks.bridge.services.ScheduleChangeWorker" scope="prototype">
         <property name="stormpathClient" ref="stormpathClient"/>
         <property name="distributedLockDao" ref="distributedLockDao"/>
         <property name="schedulePlanDao" ref="schedulePlanDao"/>

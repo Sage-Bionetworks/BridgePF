@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.redis;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 public class RedisDistributedLockDao implements DistributedLockDao {
     
+    private static final int LOCK_EXPIRATION_IN_SECONDS = 3 * 60;
     private JedisStringOps stringOps = new JedisStringOps();
     
     private String createKey(Class<?> clazz, String identifier) {
@@ -17,12 +17,12 @@ public class RedisDistributedLockDao implements DistributedLockDao {
     public String createLock(Class<?> clazz, String identifier) {
         String key = createKey(clazz, identifier);
         String id = BridgeUtils.generateGuid();
+        // We'd really lke a setnxex command... apparently we're not alone
         String setResult = stringOps.setnx(key, id).execute();
         if (setResult == null) {
             throw new BridgeServiceException("Lock already set.");
         }
-
-        String expResult = stringOps.expire(key, BridgeConstants.BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS).execute();
+        String expResult = stringOps.expire(key, LOCK_EXPIRATION_IN_SECONDS).execute();
         if (expResult == null) {
             throw new BridgeServiceException("Lock expiration not set.");
         }
@@ -34,14 +34,14 @@ public class RedisDistributedLockDao implements DistributedLockDao {
         if (lockId != null) {
             String key = createKey(clazz, identifier);
             String getResult = stringOps.get(key).execute();
-            if (getResult == null) {
-                throw new BridgeServiceException("Either lock expired or lock was never set.");
-            } else if (!getResult.equals(lockId)) {
+            if (getResult != null && !getResult.equals(lockId)) {
                 throw new BridgeServiceException("Must be lock owner to release lock.");
             }
             String delResult = stringOps.delete(key).execute();
             if (delResult == null) {
-                throw new BridgeServiceException("Lock not released.");
+                // Try to expire it as a last ditch effort
+                stringOps.expire(key, 2);
+                throw new BridgeServiceException("Lock not released (attempting to expire)");
             }
         }
     }
@@ -49,13 +49,6 @@ public class RedisDistributedLockDao implements DistributedLockDao {
     @Override
     public boolean isLocked(Class<?> clazz, String identifier) {
         String key = createKey(clazz, identifier);
-
-        // For safety, set expiration if expiration not set.
-        // Alx: Does this happen?!?
-        if (stringOps.ttl(key) == null) {
-            stringOps.expire(key, BridgeConstants.BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS);
-        }
-
         String getResult = stringOps.get(key).execute();
         return (getResult == null) ? false : true;
     }
