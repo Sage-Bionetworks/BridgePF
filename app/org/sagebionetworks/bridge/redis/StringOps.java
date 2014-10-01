@@ -64,9 +64,9 @@ public interface StringOps {
      * 
      * @param key
      *            key of the key-value pair.
-     * @return ttl if key's expiration is set, and null if key doesn't exist or no
-     *         expiration is set.
+     * @return ttl 
+     *      positive value if ttl is set, zero if not, negative if there was an error
      */
-    RedisOp<String> ttl(String key);
+    RedisOp<Long> ttl(String key);
 
 }

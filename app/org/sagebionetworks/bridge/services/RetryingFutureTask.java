@@ -45,7 +45,7 @@ public class RetryingFutureTask extends FutureTask<Boolean> {
             } else {
                 logger.error("Task was not successful, resubmitting (num retries: " + numRetries + ")");
                 try {
-                    long interval = (long)(3 * Math.pow(numRetries, 2));
+                    long interval = (long)(3 * (numRetries ^ 2));
                     Thread.sleep(interval);
                     retry();
                 } catch(InterruptedException e) {

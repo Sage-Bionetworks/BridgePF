@@ -21,6 +21,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.events.SchedulePlanCreatedEvent;
+import org.sagebionetworks.bridge.events.SchedulePlanDeletedEvent;
+import org.sagebionetworks.bridge.events.SchedulePlanUpdatedEvent;
 import org.sagebionetworks.bridge.events.UserEnrolledEvent;
 import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -106,9 +108,28 @@ public class ScheduleChangeListenerTest {
             // Now there is a schedule for our dude(tte)
             schedules = scheduleDao.getSchedules(study, helper.getUser());
             assertEquals("There is now one schedule for the user", 1, schedules.size());
+            
+            updateSchedulePlan(plan);
+            listener.onTestEvent(new SchedulePlanUpdatedEvent(plan));
+            
+            schedules = scheduleDao.getSchedules(study, helper.getUser());
+            assertEquals("There is still one schedule for the user", 1, schedules.size());
+            assertEquals("That schedule shows an update", "* * * * * *", schedules.get(0).getSchedule());
+            
+            listener.onTestEvent(new SchedulePlanDeletedEvent(plan));
+            schedules = scheduleDao.getSchedules(study, helper.getUser());
+            assertEquals("Now there is no schedule after the one plan was deleted", 0, schedules.size());
+            
         } finally {
             helper.deleteOneUser();
         }
+    }
+    
+    private void updateSchedulePlan(SchedulePlan plan) {
+        SimpleScheduleStrategy strategy = (SimpleScheduleStrategy)plan.getStrategy();
+        Schedule schedule = strategy.getSchedule();
+        schedule.setSchedule("* * * * * *");
+        plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
     }
     
     private SchedulePlan createSchedulePlan(User user) {
@@ -123,8 +144,10 @@ public class ScheduleChangeListenerTest {
         schedule.setScheduleType(ScheduleType.CRON);
         schedule.setSchedule("0 0 6 ? * MON-FRI *");
         schedule.setExpires(DateUtils.getCurrentMillisFromEpoch() + (24 * 60 * 60 * 1000));
+        
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
+        
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid(planGuid);
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
