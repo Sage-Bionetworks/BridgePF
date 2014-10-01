@@ -39,7 +39,7 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     private Long expires;
     
     public Schedule copy() {
-        DynamoSchedule schedule = new DynamoSchedule();
+        Schedule schedule = new DynamoSchedule();
         schedule.setStudyUserCompoundKey(getStudyUserCompoundKey());
         schedule.setSchedulePlanGuid(getSchedulePlanGuid());
         schedule.setLabel(getLabel());
