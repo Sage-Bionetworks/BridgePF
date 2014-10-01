@@ -88,26 +88,27 @@ public class ScheduleChangeListenerTest {
             schedules = scheduleDao.getSchedules(study, user);
             assertEquals("User left study and has no schedules", 0, schedules.size());
         } finally {
-            helper.deleteUser(session.getSessionToken(), user);
+            helper.deleteUser(session);
         }
     }
     
     @Test
     public void addUserThenCrudPlan() throws Exception {
+        UserSession session = null;
         try {
-            helper.createOneUser();
+            session = helper.createUser();
             
-            List<Schedule> schedules = scheduleDao.getSchedules(study, helper.getUser());
+            List<Schedule> schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("No schedules because there's no plan", 0, schedules.size());
             
-            SchedulePlan plan = createSchedulePlan(helper.getUser());
+            SchedulePlan plan = createSchedulePlan(session.getUser());
             listener.onTestEvent(new SchedulePlanCreatedEvent(plan));
 
             // Now there is a schedule for our dude(tte)
-            schedules = scheduleDao.getSchedules(study, helper.getUser());
+            schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("There is now one schedule for the user", 1, schedules.size());
         } finally {
-            helper.deleteOneUser();
+            helper.deleteUser(session);
         }
     }
     
