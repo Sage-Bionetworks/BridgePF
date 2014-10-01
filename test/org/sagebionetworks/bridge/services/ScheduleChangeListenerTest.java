@@ -65,7 +65,7 @@ public class ScheduleChangeListenerTest {
     // change the list of users for the study.
     @Test
     @Ignore
-    public void addPlanThenEnrollUnenrollUser() {
+    public void addPlanThenEnrollUnenrollUser() throws Exception {
         UserSession session = null;
         User user = null;
         try {
@@ -78,12 +78,12 @@ public class ScheduleChangeListenerTest {
             List<Schedule> schedules = scheduleDao.getSchedules(study, user);
             assertEquals("No schedules because the user hasn't joined the study", 0, schedules.size());
             
-            listener.onApplicationEvent(new UserEnrolledEvent(user, study));
+            listener.onTestEvent(new UserEnrolledEvent(user, study));
             
             schedules = scheduleDao.getSchedules(study, user);
             assertEquals("User joined study and has a schedule", 1, schedules.size());
             
-            listener.onApplicationEvent(new UserUnenrolledEvent(user, study));
+            listener.onTestEvent(new UserUnenrolledEvent(user, study));
             
             schedules = scheduleDao.getSchedules(study, user);
             assertEquals("User left study and has no schedules", 0, schedules.size());
