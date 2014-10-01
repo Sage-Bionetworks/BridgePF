@@ -59,7 +59,7 @@ public class AuthenticationServiceImplTest {
     @Before
     public void before() {
         if (!setUpComplete) {
-            
+            session = helper.createUser();
             setUpComplete = true;
         }
     }
