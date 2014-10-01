@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponseDao;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
@@ -48,10 +49,11 @@ public class SurveyResponseControllerTest {
     private ObjectMapper mapper = new ObjectMapper();
     private TestSurvey survey;
     private String responseGuid;
+    private UserSession session;
     
     @Before
     public void before() {
-        helper.createOneUser(Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
+        session = helper.createUser(Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
         survey = new TestSurvey(true);
         surveyDao.createSurvey(survey);
     }
@@ -64,7 +66,7 @@ public class SurveyResponseControllerTest {
         if (survey != null) {
             surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());    
         }
-        helper.deleteOneUser();
+        helper.deleteUser(session);
     }
     
     @Test
@@ -95,7 +97,7 @@ public class SurveyResponseControllerTest {
                 String body = mapper.writeValueAsString(list);
                 
                 String url = String.format(NEW_SURVEY_RESPONSE, survey.getGuid(), survey.getVersionedOn());
-                Response response = TestUtils.getURL(helper.getUserSessionToken(), url).post(body).get(TIMEOUT);
+                Response response = TestUtils.getURL(session.getSessionToken(), url).post(body).get(TIMEOUT);
                 assertEquals("Create new record returns 200", 200, response.getStatus());
                 
                 responseGuid = getGuid(response.getBody());

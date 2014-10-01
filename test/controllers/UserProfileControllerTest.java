@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -38,6 +39,8 @@ public class UserProfileControllerTest {
     
     @Resource
     TestUserAdminHelper helper;
+    
+    private UserSession session;
 
     public UserProfileControllerTest() {
         mapper.setSerializationInclusion(Include.NON_NULL);
@@ -45,12 +48,12 @@ public class UserProfileControllerTest {
     
     @Before
     public void before() {
-        helper.createOneUser();
+        session = helper.createUser();
     }
     
     @After
     public void after() {
-        helper.deleteOneUser();
+        helper.deleteUser(session);
     }
 
     @Test
@@ -70,7 +73,7 @@ public class UserProfileControllerTest {
 
             @Override
             public void testCode() throws Exception {
-                Response response = TestUtils.getURL(helper.getUserSessionToken(), PROFILE_URL).get().get(TIMEOUT);
+                Response response = TestUtils.getURL(session.getSessionToken(), PROFILE_URL).get().get(TIMEOUT);
 
                 int count = 0;
                 
@@ -93,7 +96,7 @@ public class UserProfileControllerTest {
             @Override
             public void testCode() throws Exception {
                 Response response = TestUtils.getURL("", PROFILE_URL)
-                        .post(mapper.writeValueAsString(helper.getUserSessionToken())).get(TIMEOUT);
+                        .post(mapper.writeValueAsString(session.getSessionToken())).get(TIMEOUT);
 
                 assertEquals("HTTP Status should be 401", SC_UNAUTHORIZED, response.getStatus());
             }
@@ -106,8 +109,8 @@ public class UserProfileControllerTest {
 
             @Override
             public void testCode() throws Exception {
-                Response response = TestUtils.getURL(helper.getUserSessionToken(), PROFILE_URL)
-                        .post(mapper.writeValueAsString(helper.getUser())).get(TIMEOUT);
+                Response response = TestUtils.getURL(session.getSessionToken(), PROFILE_URL)
+                        .post(mapper.writeValueAsString(session.getUser())).get(TIMEOUT);
 
                 assertEquals("HTTP Status should be 200 OK", SC_OK, response.getStatus());
             }
