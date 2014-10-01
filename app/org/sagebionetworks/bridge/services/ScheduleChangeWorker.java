@@ -151,10 +151,10 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         String lockId = null;
         try {
             // Find all the plans, assemble a list of schedules for this user, save
-            lockId = lockDao.createLock(Study.class, study.getKey());
+            lockId = lockDao.createLock(User.class, user.getId());
             scheduleDao.createSchedules(schedules);
         } finally {
-            lockDao.releaseLock(Study.class, study.getKey(), lockId);
+            lockDao.releaseLock(User.class, user.getId(), lockId);
         }
     }
     private void userUnenrolled(UserUnenrolledEvent event) {
@@ -166,10 +166,10 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         String lockId = null;
         try {
             // Find all schedules for this user, delete them
-            lockId = lockDao.createLock(Study.class, study.getKey());
+            lockId = lockDao.createLock(User.class, user.getId());
             scheduleDao.deleteSchedules(study, user);
         } finally {
-            lockDao.releaseLock(Study.class, study.getKey(), lockId);
+            lockDao.releaseLock(User.class, user.getId(), lockId);
         }
         
     }

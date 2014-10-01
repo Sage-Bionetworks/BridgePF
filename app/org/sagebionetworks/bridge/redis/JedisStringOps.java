@@ -55,12 +55,11 @@ public class JedisStringOps implements StringOps {
     }
 
     @Override
-    public RedisOp<String> ttl(final String key) {
-        return new AbstractJedisTemplate<String>() {
+    public RedisOp<Long> ttl(final String key) {
+        return new AbstractJedisTemplate<Long>() {
             @Override
-            String execute(Jedis jedis) {
-                Long ttl = jedis.ttl(key);
-                return (ttl > 0) ? Long.toString(ttl) : null;
+            Long execute(Jedis jedis) {
+                return jedis.ttl(key);
             }
         };
     }

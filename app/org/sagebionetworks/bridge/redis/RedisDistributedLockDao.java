@@ -51,6 +51,11 @@ public class RedisDistributedLockDao implements DistributedLockDao {
     @Override
     public boolean isLocked(Class<?> clazz, String identifier) {
         String key = createKey(clazz, identifier);
+        
+        if ( stringOps.ttl(key).execute() <= 1L) {
+            stringOps.expire(key, LOCK_EXPIRATION_IN_SECONDS);
+        }
+        
         String getResult = stringOps.get(key).execute();
         return (getResult == null) ? false : true;
     }
