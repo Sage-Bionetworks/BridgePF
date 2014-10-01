@@ -9,6 +9,11 @@ public class BridgeServiceException extends RuntimeException {
         this.statusCode = statusCode;
     }
 
+    // If no status code is specified, it's a 500 error.
+    public BridgeServiceException(String message) {
+        this(message, 500);
+    }
+    
     public BridgeServiceException(String message, int statusCode) {
         super(message);
         this.statusCode = statusCode;

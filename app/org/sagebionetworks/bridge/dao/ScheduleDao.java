@@ -15,4 +15,5 @@ public interface ScheduleDao {
     
     public void deleteSchedules(SchedulePlan plan);
     
+    public void deleteSchedules(Study study, User user);
 }

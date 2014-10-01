@@ -39,6 +39,9 @@ GET    /api/v1/surveys/response/:guid              @controllers.SurveyResponseCo
 POST   /api/v1/surveys/response/:guid              @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
 DELETE /api/v1/surveys/response/:guid              @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
 
+# API - Schedules
+GET    /api/v1/schedules   @controllers.ScheduleController.getSchedules
+
 # API - Consent
 POST   /api/v1/consent                       @controllers.ConsentController.give
 POST   /api/v1/consent/email                 @controllers.ConsentController.emailCopy

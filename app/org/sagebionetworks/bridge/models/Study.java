@@ -81,4 +81,11 @@ public class Study implements BridgeEntity {
         String message = String.format("Tracker %s not available for study '%s'", id.toString(), key);
         throw new EntityNotFoundException(Tracker.class, message);
     }
+
+    @Override
+    public String toString() {
+        return "Study [name=" + name + ", key=" + key + ", minAge=" + minAge + ", stormpathDirectoryHref="
+                + stormpathDirectoryHref + ", consentAgreement=" + consentAgreement + ", hostnames=" + hostnames
+                + ", trackers=" + trackers + ", researcherRole=" + researcherRole + "]";
+    }
 }

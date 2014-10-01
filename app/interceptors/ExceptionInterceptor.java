@@ -9,14 +9,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import play.Logger;
 import play.libs.Json;
 import play.mvc.Results;
 
 import com.google.common.base.Throwables;
 
 public class ExceptionInterceptor implements MethodInterceptor {
+
+    private static Logger logger = LoggerFactory.getLogger(ExceptionInterceptor.class);
     
     @Override
     public Object invoke(MethodInvocation method) throws Throwable {
@@ -35,7 +38,7 @@ public class ExceptionInterceptor implements MethodInterceptor {
             // Don't log errors here. Log at the source with a level of detail that's useful for 
             // developers, at the correct level of severity. That said, there are times when we 
             // want to see an exception while developing and it is just rethrown or thrown out.
-            Logger.debug(throwable.getMessage(), throwable);
+            logger.debug(throwable.getMessage(), throwable);
             
             int status = 500;
             if (throwable instanceof BridgeServiceException) {
