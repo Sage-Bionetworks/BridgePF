@@ -113,12 +113,12 @@ public class ScheduleChangeListenerTest {
             updateSchedulePlan(plan);
             listener.onTestEvent(new SchedulePlanUpdatedEvent(plan));
             
-            schedules = scheduleDao.getSchedules(study, helper.getUser());
+            schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("There is still one schedule for the user", 1, schedules.size());
             assertEquals("That schedule shows an update", "* * * * * *", schedules.get(0).getSchedule());
             
             listener.onTestEvent(new SchedulePlanDeletedEvent(plan));
-            schedules = scheduleDao.getSchedules(study, helper.getUser());
+            schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("Now there is no schedule after the one plan was deleted", 0, schedules.size());
             
         } finally {
