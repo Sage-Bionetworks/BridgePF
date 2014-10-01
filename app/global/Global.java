@@ -28,17 +28,6 @@ public class Global extends GlobalSettings {
         applicationContext = new ClassPathXmlApplicationContext("application-context.xml");
     }
 
-    /* Don't work because the /* route handles all misses
-    @Override
-    public Promise<SimpleResult> onHandlerNotFound(RequestHeader header) {
-        return Promise.<SimpleResult>pure(redirect("/404.html"));
-    }
-    
-    @Override
-    public Promise<SimpleResult> onError(RequestHeader request, Throwable throwable) {
-        return Promise.<SimpleResult>pure(redirect("/500.html"));
-    } */
-
     /**
      * Must be handled in Global handler. It can happen during binding, before a controller is called.
      */
