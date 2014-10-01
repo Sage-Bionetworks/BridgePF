@@ -20,6 +20,14 @@ public class StudyServiceImpl implements StudyService {
             }
         }
     }
+    public Study getStudyByKey(String key) {
+        for (Study study : studies.values()) {
+            if (study.getKey().equals(key)) {
+                return study;
+            }
+        }
+        return null;
+    }
 
     public Study getStudyByHostname(String hostname) {
         return studies.get(hostname);

@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.validators.Messages;
 
@@ -25,18 +27,18 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
     }
     
     @Override
-    public Schedule scheduleNewUser(ScheduleContext context, User user) {
+    public Schedule scheduleNewUser(Study study, User user) {
         Schedule sch = schedule.copy();
-        sch.setStudyAndUser(context.getStudy(), user);
+        sch.setStudyAndUser(study, user);
         return sch;
     }
 
     @Override
-    public List<Schedule> scheduleExistingUsers(ScheduleContext context) {
-        List<Schedule> schedules = Lists.newArrayListWithCapacity(context.getUsers().size());
-        for (User user : context.getUsers()) {
+    public List<Schedule> scheduleExistingUsers(Study study, ArrayList<User> users) {
+        List<Schedule> schedules = Lists.newArrayListWithCapacity(users.size());
+        for (User user : users) {
             Schedule sch = schedule.copy();
-            sch.setStudyAndUser(context.getStudy(), user);
+            sch.setStudyAndUser(study, user);
             schedules.add(sch);
         }
         return schedules;
