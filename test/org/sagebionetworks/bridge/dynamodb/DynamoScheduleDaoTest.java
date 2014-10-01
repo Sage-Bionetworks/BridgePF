@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -34,8 +35,7 @@ public class DynamoScheduleDaoTest {
     @Before
     public void before() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
-        DynamoTestUtil.clearTable(DynamoSchedule.class, "schedulePlanGuid", "label", "activityType", "activityRef",
-                "scheduleType", "schedule", "expires");
+        DynamoTestUtil.clearTable(DynamoSchedule.class, "schedulePlanGuid", "data");
     }
 
     @Test
