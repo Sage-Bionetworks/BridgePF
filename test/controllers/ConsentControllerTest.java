@@ -43,10 +43,12 @@ public class ConsentControllerTest {
 
     @Resource
     private StudyConsentDao studyConsentDao;
+    
+    private UserSession session;
 
     @Before
     public void before() {
-        helper.createOneUser();
+        session = helper.createUser();
 
         // TODO need to remove the study consent dao - ideally this information is already there, and we don't need to
         // create it.
@@ -58,7 +60,7 @@ public class ConsentControllerTest {
 
     @After
     public void after() {
-        helper.deleteOneUser();
+        helper.deleteUser(session);
         studyConsentDao.deleteConsent(helper.getStudy().getKey(), timestamp);
     }
     
@@ -69,25 +71,25 @@ public class ConsentControllerTest {
             public void testCode() throws Exception {
 
                 // Helper's user is already consented, so consenting again should fail.
-                Response giveConsentFail = TestUtils.getURL(helper.getUserSessionToken(), CONSENT_URL)
+                Response giveConsentFail = TestUtils.getURL(session.getSessionToken(), CONSENT_URL)
                                                 .post("")
                                                 .get(TIMEOUT);
                 assertEquals("give Consent fails with 500", SC_INTERNAL_SERVER_ERROR, giveConsentFail.getStatus());
 
                 // Consenting turns data sharing on by default, so check that we can suspend sharing.
-                Response suspendDataSharing = TestUtils.getURL(helper.getUserSessionToken(), SUSPEND_URL)
+                Response suspendDataSharing = TestUtils.getURL(session.getSessionToken(), SUSPEND_URL)
                                                 .post("")
                                                 .get(TIMEOUT);
                 assertEquals("suspendDataSharing succeeds with 200", SC_OK, suspendDataSharing.getStatus());
 
                 // We've suspended data sharing, now check to see if we can resume data sharing.
-                Response resumeDataSharing = TestUtils.getURL(helper.getUserSessionToken(), RESUME_URL)
+                Response resumeDataSharing = TestUtils.getURL(session.getSessionToken(), RESUME_URL)
                                                 .post("")
                                                 .get(TIMEOUT);
                 assertEquals("resumeDataSharing succeeds with 200", SC_OK, resumeDataSharing.getStatus());
 
                 // Resume data sharing should be idempotent.
-                resumeDataSharing = TestUtils.getURL(helper.getUserSessionToken(), RESUME_URL)
+                resumeDataSharing = TestUtils.getURL(session.getSessionToken(), RESUME_URL)
                                                 .post("")
                                                 .get(TIMEOUT);
                 assertEquals("resumeDataSharing succeeds with 200", SC_OK, resumeDataSharing.getStatus());
@@ -107,7 +109,7 @@ public class ConsentControllerTest {
                                                     .get(TIMEOUT);
                     assertEquals("Give consent succeeds with 200", SC_OK, giveConsentSuccess.getStatus());
                 } finally {
-                    helper.deleteUser(session.getSessionToken(), session.getUser());
+                    helper.deleteUser(session);
                 }
             }
         });

@@ -26,6 +26,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -44,14 +45,16 @@ public class AuthenticationControllerTest {
     @Resource
     TestUserAdminHelper helper;
     
+    private UserSession session;
+    
     @Before
     public void before() {
-        helper.createOneUser();
+        session = helper.createUser();
     }
     
     @After
     public void after() {
-        helper.deleteOneUser();
+        helper.deleteUser(session);
     }
     
     @Test

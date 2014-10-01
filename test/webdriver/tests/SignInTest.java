@@ -5,6 +5,7 @@ import javax.annotation.Resource;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -23,15 +24,16 @@ public class SignInTest extends BaseIntegrationTest {
     public void signIn() {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
+                UserSession session = null;
                 try {
-                    helper.createOneUser();
+                    session = helper.createUser();
                     AppPage page = new AppPage(browser);
                     AppPage.SignInDialog signInDialog = page.openSignInDialog();
 
                     signInDialog.signIn(helper.getUserSignIn().getUsername(), helper.getUserSignIn().getPassword());
                     page.signOut();
                 } finally {
-                    helper.deleteOneUser();
+                    helper.deleteUser(session);
                 }
             }
         });
