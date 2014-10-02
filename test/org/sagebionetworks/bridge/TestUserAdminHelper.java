@@ -40,9 +40,14 @@ public class TestUserAdminHelper {
     }
 
     public UserSession createUser() {
-        return createUser(null);
+        return createUser(testUser);
     }
 
+    public UserSession createUser(TestUser user) {
+        Study study = studyService.getStudyByHostname(STUDY_HOST);
+        return userAdminService.createUser(testUser.getSignUp(), null, study, true, true);
+    }
+    
     public UserSession createUser(List<String> roles) {
         Study study = studyService.getStudyByHostname(STUDY_HOST);
         return userAdminService.createUser(testUser.getSignUp(), roles, study, true, true);
