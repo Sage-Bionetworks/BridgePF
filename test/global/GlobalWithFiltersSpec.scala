@@ -23,6 +23,17 @@ object GlobalWithFiltersSpec extends PlaySpecification {
     }
   }
 
+  "gzip filter" should {
+    "not do gzip if gzip encoding is not accepted by the client" in new WithApplication {
+      val jsonAction = GlobalWithFilters.doFilter(Action {
+          Results.Ok(Json.obj("name" -> "bob", "age" -> 31))
+        })
+      val request = FakeRequest()
+      val result = jsonAction(request).run
+      header(CONTENT_ENCODING, result) must not beSome("gzip")
+    }
+  }
+
   "HTTP" should {
     "redirect HTTP to HTTPS for Heroku" in new WithApplication {
       val uri = "/fakePath?fakeQuery=fake&p=q"
