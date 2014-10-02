@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
@@ -35,6 +36,25 @@ public class DynamoScheduleDaoTest {
     public void before() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoSchedule.class, "schedulePlanGuid", "data");
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void testInvalidScheduleIsRejected() {
+        Study study = TestConstants.SECOND_STUDY;
+
+        User user = new User();
+        user.setId("test-user");
+        
+        DynamoSchedulePlan plan = new DynamoSchedulePlan();
+        plan.setGuid("test-plan-id");
+
+        Schedule schedule = createSchedule(study, user, plan, "Patient Assessment of Chronic Illness Care Survey",
+                "http://bridge-uat.herokuapp.com/api/v1/surveys/ecf7e761-c7e9-4bb6-b6e7-d6d15c53b209/2014-09-25T20:07:49.186Z");
+        schedule.setScheduleType(ScheduleType.ONCE); // invalid to have a schedule string with a type of once
+        
+        List<Schedule> list = Lists.newArrayList(schedule);
+        
+        scheduleDao.createSchedules(list);
     }
 
     @Test
