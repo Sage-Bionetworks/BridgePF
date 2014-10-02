@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.services.StudyServiceImpl;
@@ -81,17 +82,18 @@ public class SurveyControllerTest {
     public void mustSubmitAsAdminOrResearcher() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
+                UserSession session = null;
                 try {
-                    helper.createOneUser();  
+                    session = helper.createUser();  
                     
                     String content = new TestSurvey(true).toJSON(); // createSurveyObject("Name");
                     
-                    Response response = TestUtils.getURL(helper.getUserSessionToken(), SURVEYS_URL).post(content)
+                    Response response = TestUtils.getURL(session.getSessionToken(), SURVEYS_URL).post(content)
                             .get(TIMEOUT);
                     
                     assertEquals("HTTP response indicates authorization error", SC_FORBIDDEN, response.getStatus());
                 } finally {
-                    helper.deleteOneUser();    
+                    helper.deleteUser(session);    
                 }
             }
         });
@@ -101,17 +103,18 @@ public class SurveyControllerTest {
     public void saveAndRetrieveASurvey() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
+                UserSession session = null;
                 try {
-                    helper.createOneUser(roles);
+                    session = helper.createUser(roles);
                     
-                    GuidVersionHolder keys = createSurvey("Name");
+                    GuidVersionHolder keys = createSurvey(session.getSessionToken(), "Name");
 
                     ArrayNode questions = (ArrayNode)keys.node.get("questions");
                     
                     String prompt = questions.get(1).get("prompt").asText();
                     assertEquals("Prompt is correct", "When did you last have a medical check-up?", prompt);
                 } finally {
-                    helper.deleteOneUser();    
+                    helper.deleteUser(session);    
                 }
             }
         });
@@ -121,20 +124,21 @@ public class SurveyControllerTest {
     public void createVersionPublish() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
+                UserSession session = null;
                 try {
-                    helper.createOneUser(roles);
+                    session = helper.createUser(roles);
 
-                    GuidVersionHolder keys = createSurvey("Name");
+                    GuidVersionHolder keys = createSurvey(session.getSessionToken(), "Name");
 
-                    GuidVersionHolder laterKeys = versionSurvey(keys);
+                    GuidVersionHolder laterKeys = versionSurvey(session.getSessionToken(), keys);
                     boolean isPublished = laterKeys.node.get("published").asBoolean();
                     assertNotEquals("versionedOn has been updated", keys.versionedOn, laterKeys.versionedOn);
                     assertFalse("New survey is not published", isPublished);
 
-                    isPublished = publishSurvey(laterKeys);
+                    isPublished = publishSurvey(session.getSessionToken(), laterKeys);
                     assertTrue("New survey is published", isPublished);
                 } finally {
-                    helper.deleteOneUser();    
+                    helper.deleteUser(session);    
                 }
             }
         });
@@ -145,17 +149,18 @@ public class SurveyControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 GuidVersionHolder keys = null;
+                UserSession session = null;
                 try {
-                    helper.createOneUser(roles);
+                    session = helper.createUser(roles);
                     
-                    keys = createSurvey("Name");
+                    keys = createSurvey(session.getSessionToken(), "Name");
 
-                    keys = versionSurvey(keys);
+                    keys = versionSurvey(session.getSessionToken(), keys);
 
-                    int count = getAllVersionsOfSurveysCount(keys);
+                    int count = getAllVersionsOfSurveysCount(session.getSessionToken(), keys);
                     assertEquals("There are two versions for this survey", 2, count);
                 } finally {
-                    helper.deleteOneUser();    
+                    helper.deleteUser(session);    
                 }
             }
         });        
@@ -165,35 +170,36 @@ public class SurveyControllerTest {
     public void canGetMostRecentOrRecentlyPublishedSurveys() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
+                UserSession session = null;
                 try {
-                    helper.createOneUser(roles);
+                    session = helper.createUser(roles);
                     
-                    GuidVersionHolder keys = createSurvey("Name 1");
-                    keys = versionSurvey(keys);
-                    keys = versionSurvey(keys);
+                    GuidVersionHolder keys = createSurvey(session.getSessionToken(), "Name 1");
+                    keys = versionSurvey(session.getSessionToken(), keys);
+                    keys = versionSurvey(session.getSessionToken(), keys);
 
-                    GuidVersionHolder keys2 = createSurvey("Name 2");
-                    keys2 = versionSurvey(keys2);
-                    keys2 = versionSurvey(keys2);
+                    GuidVersionHolder keys2 = createSurvey(session.getSessionToken(), "Name 2");
+                    keys2 = versionSurvey(session.getSessionToken(), keys2);
+                    keys2 = versionSurvey(session.getSessionToken(), keys2);
                     
-                    GuidVersionHolder keys3 = createSurvey("Name 3");
-                    keys3 = versionSurvey(keys3);
-                    keys3 = versionSurvey(keys3);
+                    GuidVersionHolder keys3 = createSurvey(session.getSessionToken(), "Name 3");
+                    keys3 = versionSurvey(session.getSessionToken(), keys3);
+                    keys3 = versionSurvey(session.getSessionToken(), keys3);
 
-                    List<GuidVersionHolder> versions = getMostRecentSurveys();
+                    List<GuidVersionHolder> versions = getMostRecentSurveys(session.getSessionToken());
                     assertEquals("There are two items", 3, versions.size());
                     assertEquals("Last version in list", keys3.versionedOn, versions.get(0).versionedOn);
                     assertEquals("Last version in list", keys2.versionedOn, versions.get(1).versionedOn);
                     
-                    publishSurvey(keys);
-                    publishSurvey(keys3);
-                    versions = getMostRecentlyPublishedSurveys();
+                    publishSurvey(session.getSessionToken(), keys);
+                    publishSurvey(session.getSessionToken(), keys3);
+                    versions = getMostRecentlyPublishedSurveys(session.getSessionToken());
                     assertEquals("One published item", 2, versions.size());
                     assertEquals("Published version", keys3.versionedOn, versions.get(0).versionedOn);
                     assertEquals("Published version", keys.versionedOn, versions.get(1).versionedOn);
                     
                 } finally {
-                    helper.deleteOneUser();    
+                    helper.deleteUser(session);    
                 }
             }
         });        
@@ -203,20 +209,21 @@ public class SurveyControllerTest {
     public void canUpdateASurvey() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
+                UserSession session = null;
                 try {
-                    helper.createOneUser(roles);
+                    session = helper.createUser(roles);
                     
-                    GuidVersionHolder keys = createSurvey("Name");
-                    ObjectNode node = (ObjectNode)getSurvey(keys);
+                    GuidVersionHolder keys = createSurvey(session.getSessionToken(), "Name");
+                    ObjectNode node = (ObjectNode)getSurvey(session.getSessionToken(), keys);
                     node.put("name", "Name Changed");
                     
-                    updateSurvey(keys, node);
+                    updateSurvey(session.getSessionToken(), keys, node);
                     
-                    node = (ObjectNode)getSurvey(keys);
+                    node = (ObjectNode)getSurvey(session.getSessionToken(), keys);
                     String finalName = node.get("name").asText();
                     assertEquals("Name has been updated", "Name Changed", finalName);
                 } finally {
-                    helper.deleteOneUser();    
+                    helper.deleteUser(session);    
                 }
             }
         });          
@@ -236,16 +243,16 @@ public class SurveyControllerTest {
         }
     }
     
-    private void updateSurvey(GuidVersionHolder keys, JsonNode survey) throws Exception {
+    private void updateSurvey(String sessionKey, GuidVersionHolder keys, JsonNode survey) throws Exception {
         String content = survey.toString();
         String url = String.format(GET_SURVEY_URL, keys.guid, keys.versionedOn);
-        Response response = TestUtils.getURL(helper.getUserSessionToken(), url).post(content).get(TIMEOUT);
+        Response response = TestUtils.getURL(sessionKey, url).post(content).get(TIMEOUT);
         assertEquals("200 response [createSurvey]", SC_OK, response.getStatus());
     }
     
-    private GuidVersionHolder createSurvey(String name) throws Exception {
+    private GuidVersionHolder createSurvey(String sessionKey, String name) throws Exception {
         String content = new TestSurvey(true).toJSON(); // createSurveyObject(name);
-        Response response = TestUtils.getURL(helper.getUserSessionToken(), SURVEYS_URL).post(content).get(TIMEOUT);
+        Response response = TestUtils.getURL(sessionKey, SURVEYS_URL).post(content).get(TIMEOUT);
         assertEquals("200 response [createSurvey]", SC_OK, response.getStatus());
         
         JsonNode node = mapper.readTree(response.getBody());
@@ -254,9 +261,9 @@ public class SurveyControllerTest {
         return new GuidVersionHolder(surveyGuid, timestamp, node);
     }
     
-    private GuidVersionHolder versionSurvey(GuidVersionHolder keys) throws Exception {
+    private GuidVersionHolder versionSurvey(String sessionKey, GuidVersionHolder keys) throws Exception {
         String url = String.format(VERSION_SURVEY_URL, keys.guid, keys.versionedOn); 
-        Response response = TestUtils.getURL(helper.getUserSessionToken(), url).post("").get(TIMEOUT);
+        Response response = TestUtils.getURL(sessionKey, url).post("").get(TIMEOUT);
         assertEquals("200 response [versionSurvey]", SC_OK, response.getStatus());
 
         JsonNode node = mapper.readTree(response.getBody());
@@ -265,30 +272,30 @@ public class SurveyControllerTest {
         return new GuidVersionHolder(surveyGuid, versionedOn, node);
     }
     
-    private boolean publishSurvey(GuidVersionHolder keys) throws Exception {
+    private boolean publishSurvey(String sessionKey, GuidVersionHolder keys) throws Exception {
         String url = String.format(PUBLISH_SURVEY_URL, keys.guid, keys.versionedOn);
-        Response response = TestUtils.getURL(helper.getUserSessionToken(), url).post("").get(TIMEOUT);
+        Response response = TestUtils.getURL(sessionKey, url).post("").get(TIMEOUT);
         assertEquals("200 response [publishSurvey]", SC_OK, response.getStatus());
         
         // Get it. It should be published
         url = String.format(GET_SURVEY_URL, keys.guid, keys.versionedOn);
-        response = TestUtils.getURL(helper.getUserSessionToken(), url).get().get(TIMEOUT);
+        response = TestUtils.getURL(sessionKey, url).get().get(TIMEOUT);
         JsonNode node = mapper.readTree(response.getBody());
         
         return node.get("published").asBoolean();
     }
     
-    private int getAllVersionsOfSurveysCount(GuidVersionHolder keys) throws Exception {
+    private int getAllVersionsOfSurveysCount(String sessionKey, GuidVersionHolder keys) throws Exception {
         String url = String.format(GET_VERSIONS_OF_SURVEY_URL, keys.guid);
-        Response response = TestUtils.getURL(helper.getUserSessionToken(), url).get().get(TIMEOUT);
+        Response response = TestUtils.getURL(sessionKey, url).get().get(TIMEOUT);
         assertEquals("200 response [allVersionsOfSurveysCount]", SC_OK, response.getStatus());
         
         JsonNode node = mapper.readTree(response.getBody());
         return node.get("total").asInt();                    
     }
     
-    private List<GuidVersionHolder> getMostRecentSurveys() throws Exception {
-        Response response = TestUtils.getURL(helper.getUserSessionToken(), RECENT_SURVEYS_URL).get().get(TIMEOUT);
+    private List<GuidVersionHolder> getMostRecentSurveys(String sessionKey) throws Exception {
+        Response response = TestUtils.getURL(sessionKey, RECENT_SURVEYS_URL).get().get(TIMEOUT);
         assertEquals("200 response [mostRecentSurveys]", SC_OK, response.getStatus());
         
         JsonNode node = mapper.readTree(response.getBody());
@@ -302,15 +309,15 @@ public class SurveyControllerTest {
         return list;
     }
     
-    private JsonNode getSurvey(GuidVersionHolder keys) throws Exception {
+    private JsonNode getSurvey(String sessionKey, GuidVersionHolder keys) throws Exception {
         String url = String.format(GET_SURVEY_URL, keys.guid, keys.versionedOn);
-        Response response = TestUtils.getURL(helper.getUserSessionToken(), url).get().get(TIMEOUT);
+        Response response = TestUtils.getURL(sessionKey, url).get().get(TIMEOUT);
         
         return mapper.readTree(response.getBody());
     }
 
-    private List<GuidVersionHolder> getMostRecentlyPublishedSurveys() throws Exception {
-        Response response = TestUtils.getURL(helper.getUserSessionToken(), RECENT_PUBLISHED_SURVEYS_URL).get().get(TIMEOUT);
+    private List<GuidVersionHolder> getMostRecentlyPublishedSurveys(String sessionKey) throws Exception {
+        Response response = TestUtils.getURL(sessionKey, RECENT_PUBLISHED_SURVEYS_URL).get().get(TIMEOUT);
         assertEquals("200 response [mostRecentSurveys]", SC_OK, response.getStatus());
         
         JsonNode node = mapper.readTree(response.getBody());

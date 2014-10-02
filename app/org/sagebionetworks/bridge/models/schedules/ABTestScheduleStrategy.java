@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.validators.Messages;
 
@@ -78,7 +80,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
     }
     
     @Override
-    public Schedule scheduleNewUser(ScheduleContext context, User user) {
+    public Schedule scheduleNewUser(Study study, User user) {
         // Randomly assign to a group, weighted based on the percentage representation of the group.
         ScheduleGroup group = null;
         int i = 0;
@@ -88,7 +90,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
             perc -= group.getPercentage();
         }
         Schedule schedule = group.getSchedule().copy();
-        schedule.setStudyAndUser(context.getStudy(), user);
+        schedule.setStudyAndUser(study, user);
         return schedule;
     }
     
@@ -97,10 +99,10 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
      * of thousands or more, but this may have to change eventually.
      */
     @Override
-    public List<Schedule> scheduleExistingUsers(ScheduleContext context) {
+    public List<Schedule> scheduleExistingUsers(Study study, ArrayList<User> users) {
         // linear time, as you'd expect
-        Collections.shuffle(context.getUsers());
-        int size = context.getUsers().size();
+        Collections.shuffle(users);
+        int size = users.size();
         List<Schedule> list = Lists.newArrayListWithCapacity(size);
         Schedule schedule = null;
         
@@ -109,15 +111,15 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
         for (ScheduleGroup group : groups) {
             int number = (int)Math.floor((group.getPercentage()*size)/100);
             for (int j=0; j < number; j++) {
-                User user = context.getUsers().get(i++);
+                User user = users.get(i++);
                 schedule = group.getSchedule().copy();
-                schedule.setStudyAndUser(context.getStudy(), user);
+                schedule.setStudyAndUser(study, user);
                 list.add(schedule);
             }
         }
         // Assign remainders. They are assigned as new users.
         for (int j=i; j < size; j++) {
-            schedule = scheduleNewUser(context, context.getUsers().get(j));
+            schedule = scheduleNewUser(study, users.get(j));
             list.add(schedule);
         }
         return list;

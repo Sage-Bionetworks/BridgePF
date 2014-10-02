@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.StudyConsent;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -39,10 +40,12 @@ public class ConsentServiceImplTest {
 
     @Resource
     private TestUserAdminHelper helper;
+    
+    private UserSession session;
 
     @Before
     public void before() {
-        helper.createOneUser();
+        session = helper.createUser();
         studyConsent = studyConsentDao
                 .addConsent(helper.getStudy().getKey(), "/path/to", helper.getStudy().getMinAge());
         studyConsentDao.setActive(studyConsent, true);
@@ -50,7 +53,7 @@ public class ConsentServiceImplTest {
 
     @After
     public void after() {
-        helper.deleteOneUser();
+        helper.deleteUser(session);
         studyConsentDao.setActive(studyConsent, false);
         studyConsentDao.deleteConsent(helper.getStudy().getKey(), studyConsent.getCreatedOn());
     }
@@ -61,19 +64,19 @@ public class ConsentServiceImplTest {
         boolean sendEmail = false;
 
         // Withdrawing and consenting again should return to original state.
-        consentService.withdrawConsent(helper.getUser(), helper.getStudy());
-        consentService.consentToResearch(helper.getUser(), researchConsent, helper.getStudy(), sendEmail);
-        boolean hasConsented = consentService.hasUserConsentedToResearch(helper.getUser(), helper.getStudy());
+        consentService.withdrawConsent(session.getUser(), helper.getStudy());
+        consentService.consentToResearch(session.getUser(), researchConsent, helper.getStudy(), sendEmail);
+        boolean hasConsented = consentService.hasUserConsentedToResearch(session.getUser(), helper.getStudy());
         assertTrue(hasConsented);
 
         // Suspend sharing should make isSharingData return false.
-        consentService.suspendDataSharing(helper.getUser(), helper.getStudy());
-        boolean isSharing = consentService.isSharingData(helper.getUser(), helper.getStudy());
+        consentService.suspendDataSharing(session.getUser(), helper.getStudy());
+        boolean isSharing = consentService.isSharingData(session.getUser(), helper.getStudy());
         assertFalse(isSharing);
 
         // Resume sharing should make isSharingData return true.
-        consentService.resumeDataSharing(helper.getUser(), helper.getStudy());
-        isSharing = consentService.isSharingData(helper.getUser(), helper.getStudy());
+        consentService.resumeDataSharing(session.getUser(), helper.getStudy());
+        isSharing = consentService.isSharingData(session.getUser(), helper.getStudy());
 
     }
 }

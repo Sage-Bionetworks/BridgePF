@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.validators.Messages;
 
@@ -16,9 +18,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 })
 public interface ScheduleStrategy {
     
-    public Schedule scheduleNewUser(ScheduleContext context, User user);
+    public Schedule scheduleNewUser(Study study, User user);
     
-    public List<Schedule> scheduleExistingUsers(ScheduleContext context);
+    public List<Schedule> scheduleExistingUsers(Study study, ArrayList<User> users);
     
     public void validate(Messages messages);
 

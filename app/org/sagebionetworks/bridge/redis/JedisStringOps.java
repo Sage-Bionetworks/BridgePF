@@ -5,12 +5,11 @@ import redis.clients.jedis.Jedis;
 public class JedisStringOps implements StringOps {
 
     @Override
-    public RedisOp<String> expire(final String key, final int seconds) {
-        return new AbstractJedisTemplate<String>() {
+    public RedisOp<Long> expire(final String key, final int seconds) {
+        return new AbstractJedisTemplate<Long>() {
             @Override
-            String execute(Jedis jedis) {
-                Long success = jedis.expire(key, seconds);
-                return (success == 1) ? "OK" : null;
+            Long execute(Jedis jedis) {
+                return jedis.expire(key, seconds);
             }
         };
     }
@@ -26,12 +25,11 @@ public class JedisStringOps implements StringOps {
     }
 
     @Override
-    public RedisOp<String> setnx(final String key, final String value) {
-        return new AbstractJedisTemplate<String>() {
+    public RedisOp<Long> setnx(final String key, final String value) {
+        return new AbstractJedisTemplate<Long>() {
             @Override
-            String execute(Jedis jedis) {
-                Long success = jedis.setnx(key, value);
-                return (success == 1) ? "OK" : null;
+            Long execute(Jedis jedis) {
+                return jedis.setnx(key, value);
             }
         };
     }
@@ -47,23 +45,21 @@ public class JedisStringOps implements StringOps {
     }
 
     @Override
-    public RedisOp<String> delete(final String key) {
-        return new AbstractJedisTemplate<String>() {
+    public RedisOp<Long> delete(final String key) {
+        return new AbstractJedisTemplate<Long>() {
             @Override
-            String execute(Jedis jedis) {
-                Long keysRemoved = jedis.del(key);
-                return (keysRemoved > 0L) ? "OK" : null;
+            Long execute(Jedis jedis) {
+                return jedis.del(key);
             }
         };
     }
 
     @Override
-    public RedisOp<String> ttl(final String key) {
-        return new AbstractJedisTemplate<String>() {
+    public RedisOp<Long> ttl(final String key) {
+        return new AbstractJedisTemplate<Long>() {
             @Override
-            String execute(Jedis jedis) {
-                Long ttl = jedis.ttl(key);
-                return (ttl > 0) ? Long.toString(ttl) : null;
+            Long execute(Jedis jedis) {
+                return jedis.ttl(key);
             }
         };
     }

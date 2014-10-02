@@ -2,12 +2,12 @@ package org.sagebionetworks.bridge.services;
 
 import javax.annotation.Resource;
 
-
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -23,23 +23,25 @@ public class UserProfileServiceImplTest {
     @Resource
     TestUserAdminHelper helper;
     
+    private UserSession session;
+    
     @Before
     public void before() {
-        helper.createOneUser();
+        session = helper.createUser();
     }
     
     @After
     public void after() {
-        helper.deleteOneUser();
+        helper.deleteUser(session);
     }
     
     @Test
     public void canUpdateUserProfile() {
-        UserProfile userProfile = helper.getUserProfile();
+        UserProfile userProfile = helper.getUserProfile(session);
         userProfile.setFirstName("Test");
         userProfile.setLastName("Powers");
         
-        User updatedUser = service.updateProfile(helper.getUser(), userProfile);
+        User updatedUser = service.updateProfile(session.getUser(), userProfile);
         
         assertEquals("Test", updatedUser.getFirstName());
         assertEquals("Powers", updatedUser.getLastName());
