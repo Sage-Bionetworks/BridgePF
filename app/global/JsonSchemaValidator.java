@@ -2,8 +2,7 @@ package global;
 
 import java.io.IOException;
 
-import org.apache.commons.httpclient.HttpStatus;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.Tracker;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -49,7 +48,7 @@ public class JsonSchemaValidator {
                 sb.append(message.getMessage());
                 sb.append(". ");
             }
-            throw new BridgeServiceException(sb.toString(), HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException(sb.toString());
         }
     }
 

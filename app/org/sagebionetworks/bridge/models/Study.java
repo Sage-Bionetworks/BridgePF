@@ -4,8 +4,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.springframework.core.io.Resource;
 
+@BridgeTypeName("Study")
 public class Study implements BridgeEntity {
 
     private final String name;
@@ -81,7 +83,6 @@ public class Study implements BridgeEntity {
         String message = String.format("Tracker %s not available for study '%s'", id.toString(), key);
         throw new EntityNotFoundException(Tracker.class, message);
     }
-
     @Override
     public String toString() {
         return "Study [name=" + name + ", key=" + key + ", minAge=" + minAge + ", stormpathDirectoryHref="

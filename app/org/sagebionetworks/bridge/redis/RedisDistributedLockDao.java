@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.redis;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 
 public class RedisDistributedLockDao implements DistributedLockDao {
     
@@ -20,7 +21,7 @@ public class RedisDistributedLockDao implements DistributedLockDao {
         // We'd really lke a setnxex command... apparently we're not alone
         Long result = stringOps.setnx(key, id).execute();
         if (result != 1L) {
-            throw new BridgeServiceException("Lock already set.");
+            throw new ConcurrentModificationException("Lock already set.");
         }
         result = stringOps.expire(key, LOCK_EXPIRATION_IN_SECONDS).execute();
         if (result != 1L) {

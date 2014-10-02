@@ -8,13 +8,13 @@ public class EntityAlreadyExistsException extends BridgeServiceException {
 
     private BridgeEntity entity;
     
+    public EntityAlreadyExistsException(BridgeEntity entity) {
+        this(entity, entity.getClass().getSimpleName() + " already exists.");
+    }
+    
     public EntityAlreadyExistsException(BridgeEntity entity, String message) {
         super(message, HttpStatus.SC_BAD_REQUEST);
         this.entity = entity;
-    }
-    
-    public EntityAlreadyExistsException(BridgeEntity entity) {
-        this(entity, entity.getClass().getSimpleName() + " already exists.");
     }
     
     public Class<? extends BridgeEntity> getEntityClass() {

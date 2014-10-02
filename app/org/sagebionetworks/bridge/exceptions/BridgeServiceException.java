@@ -1,36 +1,28 @@
 package org.sagebionetworks.bridge.exceptions;
 
+import org.apache.commons.httpclient.HttpStatus;
+
 public class BridgeServiceException extends RuntimeException {
     private static final long serialVersionUID = -4425097573703184608L;
     
-    private int statusCode;
+    private final int statusCode;
     
-    public BridgeServiceException(int statusCode) {
-        this.statusCode = statusCode;
-    }
-
-    // If no status code is specified, it's a 500 error.
     public BridgeServiceException(String message) {
-        this(message, 500);
+        super(message);
+        this.statusCode = HttpStatus.SC_INTERNAL_SERVER_ERROR;
     }
     
-    public BridgeServiceException(String message, int statusCode) {
+    public BridgeServiceException(Throwable throwable) {
+        this(throwable, HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    }
+    
+    protected BridgeServiceException(String message, int statusCode) {
         super(message);
         this.statusCode = statusCode;
     }
-
-    public BridgeServiceException(Throwable cause, int statusCode) {
-        super(cause);
-        this.statusCode = statusCode;
-    }
-
-    public BridgeServiceException(String message, Throwable cause, int statusCode) {
-        super(message, cause);
-        this.statusCode = statusCode;
-    }
-
-    public BridgeServiceException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace, int statusCode) {
-        super(message, cause, enableSuppression, writableStackTrace);
+    
+    protected BridgeServiceException(Throwable throwable, int statusCode) {
+        super(throwable);
         this.statusCode = statusCode;
     }
     

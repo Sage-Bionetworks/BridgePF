@@ -1,8 +1,12 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.BridgeEntity;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
-public interface HealthDataRecord {
+@BridgeTypeName("HealthData")
+public interface HealthDataRecord extends BridgeEntity {
 
     public String getRecordId();
     public void setRecordId(String recordId);

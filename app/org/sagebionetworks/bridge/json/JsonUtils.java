@@ -213,5 +213,18 @@ public class JsonUtils {
             return e.getMessage();
         }
     }
+    
+
+    public static void annotateNodeWithObjectType(ObjectNode node, Object item) {
+        if (!node.has("type")) {
+            BridgeTypeName att = (BridgeTypeName)item.getClass().getAnnotation(BridgeTypeName.class);
+            if (att != null) {
+                node.put("type", att.value());
+            } else {
+                node.put("type", item.getClass().getSimpleName());    
+            }
+        }
+    }
+ 
 
 }

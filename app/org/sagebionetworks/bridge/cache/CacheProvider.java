@@ -25,11 +25,11 @@ public class CacheProvider {
             String redisKey = RedisKey.SESSION.getRedisKey(key);
             String result = stringOps.setex(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser).execute();
             if (!"OK".equals(result)) {
-                throw new BridgeServiceException("Session storage error", 500);
+                throw new BridgeServiceException("Session storage error");
             }
         } catch (Throwable e) {
             promptToStartRedisIfLocalEnv(e);
-            throw new BridgeServiceException(e, 500);
+            throw new BridgeServiceException(e);
         }
     }
     
@@ -43,7 +43,7 @@ public class CacheProvider {
             }
         } catch (Throwable e) {
             promptToStartRedisIfLocalEnv(e);
-            throw new BridgeServiceException(e, 500);
+            throw new BridgeServiceException(e);
         }
         return null;
     }
@@ -54,13 +54,13 @@ public class CacheProvider {
             stringOps.delete(redisKey).execute();
         } catch(Throwable e) {
             promptToStartRedisIfLocalEnv(e);
-            throw new BridgeServiceException(e, 500);
+            throw new BridgeServiceException(e);
         }
     }
     
     private void promptToStartRedisIfLocalEnv(Throwable e) {
         if (BridgeConfigFactory.getConfig().isLocal()) {
-            throw new BridgeServiceException("Cannot find cache service, have you started a Redis server? (original message: "+e.getMessage()+")", 500);
+            throw new BridgeServiceException("Cannot find cache service, have you started a Redis server? (original message: "+e.getMessage()+")");
         }
     }
 
