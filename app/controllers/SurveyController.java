@@ -6,6 +6,7 @@ import java.util.Set;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Study;
@@ -51,12 +52,14 @@ public class SurveyController extends BaseController {
         return ok(constructJSON(surveys));
     }
     
-    // User must have consent, that's all
     public Result getSurveyForUser(String surveyGuid, String versionString) throws Exception {
         getAuthenticatedAndConsentedSession();
         
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         Survey survey = surveyService.getSurvey(surveyGuid, surveyVersion);
+        if (!survey.isPublished()) {
+            throw new EntityNotFoundException(Survey.class);
+        }
         return ok(constructJSON(survey));
     }
     
@@ -96,8 +99,8 @@ public class SurveyController extends BaseController {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         assertResearcherOrAdminUser(study, session.getUser());
+        
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
-
         Survey survey = surveyService.versionSurvey(surveyGuid, surveyVersion);
         return ok(constructJSON(survey));
     }

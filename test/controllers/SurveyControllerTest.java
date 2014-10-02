@@ -6,14 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.sagebionetworks.bridge.TestConstants.GET_SURVEY_URL;
-import static org.sagebionetworks.bridge.TestConstants.GET_VERSIONS_OF_SURVEY_URL;
-import static org.sagebionetworks.bridge.TestConstants.PUBLISH_SURVEY_URL;
-import static org.sagebionetworks.bridge.TestConstants.RECENT_PUBLISHED_SURVEYS_URL;
-import static org.sagebionetworks.bridge.TestConstants.RECENT_SURVEYS_URL;
-import static org.sagebionetworks.bridge.TestConstants.SURVEYS_URL;
-import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
-import static org.sagebionetworks.bridge.TestConstants.VERSION_SURVEY_URL;
+import static org.sagebionetworks.bridge.TestConstants.*;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
@@ -24,6 +17,7 @@ import javax.annotation.Resource;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
@@ -75,7 +69,6 @@ public class SurveyControllerTest {
             
             setUpComplete = true;
         }
-
     }
     
     @Test
@@ -224,6 +217,31 @@ public class SurveyControllerTest {
                     assertEquals("Name has been updated", "Name Changed", finalName);
                 } finally {
                     helper.deleteUser(session);    
+                }
+            }
+        });          
+    }
+    
+    // This would be hard to do, hopefully, since the information is not published, but we prevent it.
+    @Test
+    public void participantCannotRetrieveUnpublishedSurvey() {
+        running(testServer(3333), new TestUtils.FailableRunnable() {
+            public void testCode() throws Exception {
+                UserSession adminSession = null;
+                UserSession userSession = null;
+                try {
+                    adminSession = helper.createUser(roles);
+                    userSession = helper.createUser(new TestUser("joe-test", "joe-test@sagebridge.org", "P4ssword"));
+                    
+                    GuidVersionHolder keys = createSurvey(adminSession.getSessionToken(), "Name");
+                    
+                    // Get survey using the user's api, the survey is not published
+                    String url = String.format(GET_USER_SURVEY_URL, keys.guid, keys.versionedOn);
+                    Response response = TestUtils.getURL(userSession.getSessionToken(), url).get().get(TIMEOUT);
+                    assertEquals("Survey not found because it is not published", 404, response.getStatus());
+                } finally {
+                    helper.deleteUser(adminSession);
+                    helper.deleteUser(userSession);
                 }
             }
         });          
