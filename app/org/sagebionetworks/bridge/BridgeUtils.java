@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.validators.Messages;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -13,6 +15,17 @@ public class BridgeUtils {
 
     public static String generateGuid() {
         return UUID.randomUUID().toString();
+    }
+    
+    public static String getTypeName(Class<? extends BridgeEntity> clazz) {
+        try {
+            BridgeTypeName name = (BridgeTypeName)clazz.newInstance().getClass().getAnnotation(BridgeTypeName.class);
+            if (name != null) {
+                return name.value();
+            }
+        } catch(Throwable t) {
+        }
+        return clazz.getSimpleName();
     }
     
     /**
@@ -31,7 +44,7 @@ public class BridgeUtils {
                 String ids = Joiner.on("; ").join(failure.getUnprocessedItems().keySet());
                 messages.add(ids);
             }
-            throw new BridgeServiceException(messages.join(), 500);
+            throw new BridgeServiceException(messages.join());
         }
     }
     

@@ -53,7 +53,7 @@ public class SendMailViaAmazonService implements SendMailService {
             emailClient.setRegion(region);
             emailClient.sendEmail(request);
         } catch (Throwable t) {
-            throw new BridgeServiceException(t, 500);
+            throw new BridgeServiceException(t);
         }
     }
     

@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.models;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+@BridgeTypeName("User profile")
 public class UserProfile {
     
     private String firstName;

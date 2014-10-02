@@ -123,7 +123,7 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
     public void setVersion(Long version) {
         this.version = version;
     }
-
+    
     @Override
     public int hashCode() {
         final int prime = 31;

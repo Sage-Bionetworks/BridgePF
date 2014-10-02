@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.exceptions;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 public class EntityNotFoundException extends BridgeServiceException {
@@ -9,7 +10,7 @@ public class EntityNotFoundException extends BridgeServiceException {
     private Class<? extends BridgeEntity> clazz; 
     
     public EntityNotFoundException(Class<? extends BridgeEntity> clazz) {
-        this(clazz, clazz.getSimpleName() + " not found.");
+        this(clazz, BridgeUtils.getTypeName(clazz) + " not found.");
     }
     
     public EntityNotFoundException(Class<? extends BridgeEntity> clazz, String message) {

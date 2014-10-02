@@ -2,9 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.List;
 
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.UserLockDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
@@ -63,15 +63,15 @@ public class StormPathUserAdminService implements UserAdminService {
     public UserSession createUser(SignUp signUp, List<String> roles, Study userStudy, boolean signUserIn,
             boolean consentUser) throws BridgeServiceException {
         if (signUp == null) {
-            throw new BridgeServiceException("User cannot be null", 400);
+            throw new BridgeServiceException("User cannot be null");
         } else if (StringUtils.isBlank(signUp.getUsername())) {
-            throw new BridgeServiceException("User's username cannot be null", 400);
+            throw new BadRequestException("User's username cannot be null");
         } else if (StringUtils.isBlank(signUp.getEmail())) {
-            throw new BridgeServiceException("User's email cannot be null", 400);
+            throw new BadRequestException("User's email cannot be null");
         } else if (StringUtils.isBlank(signUp.getPassword())) {
-            throw new BridgeServiceException("User's password cannot be null", 400);
+            throw new BadRequestException("User's password cannot be null");
         } else if (userStudy == null) {
-            throw new BridgeServiceException("User study cannot be null", 400);
+            throw new BridgeServiceException("User study cannot be null");
         }
         try {
             Directory directory = getDirectory(userStudy);
@@ -87,7 +87,7 @@ public class StormPathUserAdminService implements UserAdminService {
                 addAccountToGroups(directory, account, roles);
             }
         } catch (Throwable t) {
-            throw new BridgeServiceException(t, HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            throw new BridgeServiceException(t);
         }
         SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
         UserSession newUserSession = null;
@@ -114,9 +114,9 @@ public class StormPathUserAdminService implements UserAdminService {
     @Override
     public void revokeAllConsentRecords(User user, Study userStudy) throws BridgeServiceException {
         if (user == null) {
-            throw new BridgeServiceException("User cannot be null", 400);
+            throw new BadRequestException("User cannot be null");
         } else if (userStudy == null) {
-            throw new BridgeServiceException("User study cannot be null", 400);
+            throw new BadRequestException("User study cannot be null");
         }
         consentService.withdrawConsent(user, userStudy);
     }
@@ -124,7 +124,7 @@ public class StormPathUserAdminService implements UserAdminService {
     @Override
     public void deleteUser(User user) throws BridgeServiceException {
         if (user == null) {
-            throw new BridgeServiceException("User cannot be null", 400);
+            throw new BadRequestException("User cannot be null");
         }
         for (Study study : studyService.getStudies()) {
             deleteUserInStudy(user, study);
@@ -144,9 +144,9 @@ public class StormPathUserAdminService implements UserAdminService {
 
     private void deleteUserInStudy(User user, Study userStudy) throws BridgeServiceException {
         if (user == null) {
-            throw new BridgeServiceException("User cannot be null", 400);
+            throw new BadRequestException("User cannot be null");
         } else if (userStudy == null) {
-            throw new BridgeServiceException("User study cannot be null", 400);
+            throw new BadRequestException("User study cannot be null");
         }
         String uuid = null;
         try {
@@ -184,7 +184,7 @@ public class StormPathUserAdminService implements UserAdminService {
 
     private void deleteUserAccount(Study userStudy, String userEmail) throws BridgeServiceException {
         if (StringUtils.isBlank(userEmail)) {
-            throw new BridgeServiceException("User email cannot be blank", 400);
+            throw new BadRequestException("User email cannot be blank");
         }
         try {
             Directory directory = getDirectory(userStudy);
@@ -193,7 +193,7 @@ public class StormPathUserAdminService implements UserAdminService {
                 account.delete();
             }
         } catch (Exception e) {
-            throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            throw new BridgeServiceException(e);
         }
     }
 

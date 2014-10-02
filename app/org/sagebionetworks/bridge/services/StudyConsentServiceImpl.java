@@ -1,12 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.apache.commons.httpclient.HttpStatus.SC_BAD_REQUEST;
-
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.StudyConsent;
@@ -47,7 +45,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     public List<StudyConsent> getAllConsents(String studyKey) {
         List<StudyConsent> consents = studyConsentDao.getConsents(studyKey);
         if (consents == null || consents.isEmpty()) {
-            throw new BridgeServiceException("There are no consent records.", SC_BAD_REQUEST);
+            throw new BadRequestException("There are no consent records.");
         }
         return consents;
     }
@@ -73,7 +71,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     @Override
     public void deleteConsent(String studyKey, long timestamp) {
         if (studyConsentDao.getConsent(studyKey, timestamp).getActive()) {
-            throw new BridgeServiceException("Cannot delete active consent document.", SC_BAD_REQUEST);
+            throw new BadRequestException("Cannot delete active consent document.");
         }
         studyConsentDao.deleteConsent(studyKey, timestamp);
     }

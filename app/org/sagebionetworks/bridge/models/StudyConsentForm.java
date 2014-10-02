@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.models;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+@BridgeTypeName("StudyConsent")
 public class StudyConsentForm implements BridgeEntity {
 
     private final String path;

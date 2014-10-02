@@ -29,7 +29,7 @@ public class UserProfileServiceImpl implements UserProfileService {
             user.setLastName(profile.getLastName());
             return user;
         } catch (ResourceException re) {
-            throw new BridgeServiceException(re.getDeveloperMessage(), re.getStatus());
+            throw new BridgeServiceException(re.getDeveloperMessage());
         }
     }
 
