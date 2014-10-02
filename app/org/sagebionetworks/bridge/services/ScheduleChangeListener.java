@@ -1,73 +1,37 @@
 package org.sagebionetworks.bridge.services;
 
-import org.sagebionetworks.bridge.events.SchedulePlanCreatedEvent;
-import org.sagebionetworks.bridge.events.SchedulePlanDeletedEvent;
-import org.sagebionetworks.bridge.events.SchedulePlanUpdatedEvent;
-import org.sagebionetworks.bridge.events.UserEnrolledEvent;
-import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 
-/**
- * Note that this is synchronous: these changes occur as part of the requests to create 
- * schedule plans or manipulate users. This can be made asynchronous, but ultimately 
- * these events could be queued and a worker thread could periodically process them, 
- * this would be best I think. That would allow for error recovery (retrying queue 
- * items), right now there is none. 
- */
-public class ScheduleChangeListener implements ApplicationListener<ApplicationEvent> {
+public class ScheduleChangeListener implements ApplicationListener<ApplicationEvent>, BeanFactoryAware {
     
-    private static Logger logger = LoggerFactory.getLogger(ScheduleChangeListener.class);
-
-    // scheduleDao
-    // userConsentDao
-    // userLockDao
-    // schedulePlanLockDao
-
+    private ExecutorService executor = Executors.newFixedThreadPool(3);
+    private BeanFactory beanFactory;
+    
+    public void setBeanFactory(BeanFactory beanFactory) {
+        this.beanFactory = beanFactory;
+    }
+    
+    public void destroy() {
+        executor.shutdown();
+    }
+    
+    public void onTestEvent(ApplicationEvent event) throws Exception {
+        ScheduleChangeWorker worker = beanFactory.getBean("scheduleChangeWorker", ScheduleChangeWorker.class);
+        worker.setApplicationEvent(event);
+        // Wait for response, no retries, that's all.
+        worker.call();
+    }
+    
     @Override
     public void onApplicationEvent(ApplicationEvent event) {
-        // It's annoying, but not as annoying as created 5 listeners for each specific event type
-        if (event instanceof SchedulePlanCreatedEvent) {
-            schedulePlanCreated((SchedulePlanCreatedEvent)event);
-        } 
-        else if (event instanceof SchedulePlanUpdatedEvent) {
-            schedulePlanUpdated((SchedulePlanUpdatedEvent)event);
-        } 
-        else if (event instanceof SchedulePlanDeletedEvent) {
-            schedulePlanDeleted((SchedulePlanDeletedEvent)event);
-        } 
-        else if (event instanceof UserEnrolledEvent) {
-            userEnrolled((UserEnrolledEvent)event);
-        } 
-        else if (event instanceof UserUnenrolledEvent) {
-            userUnenrolled((UserUnenrolledEvent)event);
-        }
+        ScheduleChangeWorker worker = beanFactory.getBean("scheduleChangeWorker", ScheduleChangeWorker.class);
+        worker.setApplicationEvent(event);
+        executor.submit(new RetryingFutureTask(executor, worker, 5));
     }
-
-    private void schedulePlanCreated(SchedulePlanCreatedEvent event) {
-        logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" created");
-        // Find all users, create schedules for them as a group
-    }
-    private void schedulePlanDeleted(SchedulePlanDeletedEvent event) {
-        logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" deleted");
-        // Find all schedules for this plan, delete them
-    }
-    private void schedulePlanUpdated(SchedulePlanUpdatedEvent event) {
-        logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" updated");
-        // Find all schedules for this plan, delete them
-        // Find all users, create schedules for them as a group
-        // schedulePlanDeleted(event);
-        // schedulePlanCreated(event);
-    }
-    private void userEnrolled(UserEnrolledEvent event) {
-        logger.info("EVENT: User " + event.getUser().getId() + " enrolled in study " + event.getStudy().getKey());
-        // Find all the plans, assemble a list of schedules for this user, save
-    }
-    private void userUnenrolled(UserUnenrolledEvent event) {
-        logger.info("EVENT: User " + event.getUser().getId() + " withdrawn from study " + event.getStudy().getKey());
-        // Find all schedules for this user, delete them
-    }
-
 }

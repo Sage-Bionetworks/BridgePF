@@ -17,13 +17,13 @@ public class RedisUserLockDao implements UserLockDao {
             String redisKey = RedisKey.LOCK.getRedisKey(stormpathID);
             String uuid = UUID.randomUUID().toString();
 
-            String setResult = stringOps.setnx(redisKey, uuid).execute();
-            if (setResult == null) {
+            Long result = stringOps.setnx(redisKey, uuid).execute();
+            if (result != 1L) {
                 throw new BridgeServiceException("Lock already set.", HttpStatus.SC_CONFLICT);
             }
 
-            String expResult = stringOps.expire(redisKey, BridgeConstants.BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS).execute();
-            if (expResult == null) {
+            result = stringOps.expire(redisKey, BridgeConstants.BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS).execute();
+            if (result != 1L) {
                 throw new BridgeServiceException("Lock expiration not set.", HttpStatus.SC_INTERNAL_SERVER_ERROR);
             }
 
@@ -31,7 +31,6 @@ public class RedisUserLockDao implements UserLockDao {
         } catch (Throwable e) {
             throw new BridgeServiceException(e, HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
-
     }
 
     @Override
@@ -46,9 +45,8 @@ public class RedisUserLockDao implements UserLockDao {
             } else if (!getResult.equals(uuid)) {
                 throw new BridgeServiceException("Must be lock owner to release lock.", HttpStatus.SC_BAD_REQUEST);
             }
-
-            String delResult = stringOps.delete(redisKey).execute();
-            if (delResult == null) {
+            Long result = stringOps.delete(redisKey).execute();
+            if (result == 0L) {
                 throw new BridgeServiceException("Lock not released.", HttpStatus.SC_INTERNAL_SERVER_ERROR);
             }
         } catch (Throwable e) {

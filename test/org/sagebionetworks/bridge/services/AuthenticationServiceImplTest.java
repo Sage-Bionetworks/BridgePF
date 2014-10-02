@@ -54,11 +54,12 @@ public class AuthenticationServiceImplTest {
     
     private boolean setUpComplete = false;
     private int testCount = 0;
+    private UserSession session;
     
     @Before
     public void before() {
         if (!setUpComplete) {
-            helper.createOneUser();
+            session = helper.createUser();
             setUpComplete = true;
         }
     }
@@ -67,7 +68,7 @@ public class AuthenticationServiceImplTest {
     public void after() {
         testCount++;
         if (testCount == NUMBER_OF_TESTS) {
-            helper.deleteOneUser();
+            helper.deleteUser(session);
         }
     }
 
@@ -88,9 +89,9 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void signInCorrectCredentials() throws Exception {
-        UserSession session = authService.getSession(helper.getUserSessionToken());
+        UserSession newSession = authService.getSession(session.getSessionToken());
 
-        assertEquals("Username is for test2 user", helper.getUser().getUsername(), session.getUser().getUsername());
+        assertEquals("Username is for test2 user", newSession.getUser().getUsername(), session.getUser().getUsername());
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(session.getSessionToken()));
     }
 
@@ -111,10 +112,10 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void getSessionWhenAuthenticated() throws Exception {
-        UserSession session = authService.getSession(helper.getUserSessionToken());
+        UserSession newSession = authService.getSession(session.getSessionToken());
 
-        assertEquals("Username is for test2 user", helper.getTestUser().getUsername(), session.getUser().getUsername());
-        assertTrue("Session token has been assigned", StringUtils.isNotBlank(session.getSessionToken()));
+        assertEquals("Username is for test2 user", helper.getTestUser().getUsername(), newSession.getUser().getUsername());
+        assertTrue("Session token has been assigned", StringUtils.isNotBlank(newSession.getSessionToken()));
     }
 
     @Test(expected = BridgeServiceException.class)
@@ -135,14 +136,15 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void unconsentedUserMustSignTOU() throws Exception {
+        UserSession aSession = null;
         try {
             // Create a user who has not consented.
             TestUser user = new TestUser("authTestUser", "authTestUser@sagebridge.org", "P4ssword");
-            helper.createUser(user, null, false, false);
+            aSession = helper.createUser(user, null, TestConstants.SECOND_STUDY, false, false);
             authService.signIn(helper.getStudy(), user.getSignIn());
             fail("Should have thrown consent exception");
         } catch(ConsentRequiredException e) {
-            helper.deleteUser(e.getUserSession().getSessionToken(), e.getUserSession().getUser());
+            helper.deleteUser(aSession);
         }
     }
     

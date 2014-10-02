@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Tracker;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.springframework.test.context.ContextConfiguration;
@@ -33,16 +34,18 @@ public class DynamoHealthDataDaoTest {
     @Resource
     private TestUserAdminHelper helper;
     
+    private UserSession session;
+    
     @Before
     public void before() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoHealthDataRecord.class, "startDate", "endDate", "data", "version");
-        helper.createOneUser();
+        session = helper.createUser();
     }
     
     @After
     public void after() {
-        helper.deleteOneUser();
+        helper.deleteUser(session);
     }
     
     private HealthDataRecord createHealthDataRecord() {
@@ -56,7 +59,7 @@ public class DynamoHealthDataDaoTest {
     private HealthDataKey createKey() {
         Tracker tracker = new Tracker();
         tracker.setId(1L);
-        return new HealthDataKey(TestConstants.SECOND_STUDY, tracker, helper.getUser());
+        return new HealthDataKey(TestConstants.SECOND_STUDY, tracker, session.getUser());
     }
 
     @Test

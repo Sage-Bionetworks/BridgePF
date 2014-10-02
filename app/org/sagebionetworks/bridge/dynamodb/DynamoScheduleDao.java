@@ -36,23 +36,17 @@ public class DynamoScheduleDao implements ScheduleDao {
                 TableNameOverrideFactory.getTableNameOverride(DynamoSchedule.class));
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
-
+    
     @Override
     public List<Schedule> getSchedules(Study study, User user) {
-        DynamoSchedule schedule = new DynamoSchedule();
-        schedule.setStudyAndUser(study, user);
-        
-        DynamoDBQueryExpression<DynamoSchedule> query = new DynamoDBQueryExpression<DynamoSchedule>();
-        query.withHashKeyValues(schedule);
-        
-        return new ArrayList<Schedule>(mapper.queryPage(DynamoSchedule.class, query).getResults());
+        return new ArrayList<Schedule>(getDynamoSchedules(study, user));
     }
 
     @Override
     public List<Schedule> createSchedules(List<Schedule> schedules) {
         for (Schedule schedule : schedules) {
-            VALIDATOR.validate(schedule);
             schedule.setGuid(BridgeUtils.generateGuid());
+            VALIDATOR.validate(schedule);
         }
         List<FailedBatch> failures = mapper.batchSave(schedules);
         BridgeUtils.ifFailuresThrowException(failures);
@@ -72,5 +66,22 @@ public class DynamoScheduleDao implements ScheduleDao {
         List<FailedBatch> failures = mapper.batchDelete(schedules);
         BridgeUtils.ifFailuresThrowException(failures);
     }
+    
+    @Override
+    public void deleteSchedules(Study study, User user) {
+        // If this works... I'll be quite happy.
+        List<DynamoSchedule> schedules = getDynamoSchedules(study, user);
+        List<FailedBatch> failures = mapper.batchDelete(schedules);
+        BridgeUtils.ifFailuresThrowException(failures);
+    }
 
+    private List<DynamoSchedule> getDynamoSchedules(Study study, User user) {
+        DynamoSchedule schedule = new DynamoSchedule();
+        schedule.setStudyAndUser(study, user);
+        
+        DynamoDBQueryExpression<DynamoSchedule> query = new DynamoDBQueryExpression<DynamoSchedule>();
+        query.withHashKeyValues(schedule);
+        
+        return mapper.queryPage(DynamoSchedule.class, query).getResults();
+    }
 }

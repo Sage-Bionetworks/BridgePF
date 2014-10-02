@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.UploadRequest;
 import org.sagebionetworks.bridge.models.UploadSession;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -59,6 +60,8 @@ public class UploadServiceTest {
 
     @Resource
     private TestUserAdminHelper helper;
+    
+    private UserSession session;
 
     private List<String> objectsToRemove;
 
@@ -78,7 +81,7 @@ public class UploadServiceTest {
             }
         }
         objectsToRemove = new ArrayList<String>();
-        helper.createOneUser();
+        session = helper.createUser();
     }
 
     @After
@@ -90,13 +93,13 @@ public class UploadServiceTest {
         } catch (AmazonClientException e) {
             e.printStackTrace();
         }
-        helper.deleteOneUser();
+        helper.deleteUser(session);
     }
 
     @Test
     public void test() throws Exception {
         UploadRequest uploadRequest = createUploadRequest();
-        UploadSession uploadSession = uploadService.createUpload(helper.getUser(), uploadRequest);
+        UploadSession uploadSession = uploadService.createUpload(session.getUser(), uploadRequest);
         final String uploadId = uploadSession.getId();
         final String objectId = uploadDao.getObjectId(uploadId);
         objectsToRemove.add(objectId);
