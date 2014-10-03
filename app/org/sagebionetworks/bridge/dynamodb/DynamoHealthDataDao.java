@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
@@ -55,8 +56,8 @@ public class DynamoHealthDataDao implements HealthDataDao {
         DynamoTransformer transformer = new DynamoTransformer(key.toString());
         List<DynamoHealthDataRecord> dynamoRecords = Lists.transform(records, transformer);
         
-        /*List<FailedBatch> failures = */mapper.batchSave(dynamoRecords);
-        // TODO
+        List<FailedBatch> failures = mapper.batchSave(dynamoRecords);
+        BridgeUtils.ifFailuresThrowException(failures);
         return records;
     }
 
