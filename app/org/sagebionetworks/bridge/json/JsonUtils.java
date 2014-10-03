@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.json;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -217,7 +218,15 @@ public class JsonUtils {
 
     public static void annotateNodeWithObjectType(ObjectNode node, Object item) {
         if (!node.has("type")) {
-            BridgeTypeName att = (BridgeTypeName)item.getClass().getAnnotation(BridgeTypeName.class);
+            BridgeTypeName att = item.getClass().getAnnotation(BridgeTypeName.class);
+            if (att == null) {
+                Class<?>[] ifcs = item.getClass().getInterfaces();
+                for (Class<?> ifc : ifcs) {
+                    if (att == null) {
+                        att = ifc.getAnnotation(BridgeTypeName.class);    
+                    }
+                }
+            }
             if (att != null) {
                 node.put("type", att.value());
             } else {
