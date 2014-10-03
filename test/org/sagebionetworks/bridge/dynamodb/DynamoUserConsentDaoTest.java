@@ -27,16 +27,12 @@ public class DynamoUserConsentDaoTest {
     @BeforeClass
     public static void initialSetUp() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
-        DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
-                "version");
         DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
                 "healthCode", "consentCreatedOn", "version");
     }
 
     @AfterClass
     public static void finalCleanUp() {
-        DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
-                "version");
         DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
                 "healthCode", "consentCreatedOn", "version");
     }
