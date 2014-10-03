@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.validators.SurveyValidator;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -376,6 +377,7 @@ public class DynamoSurveyDao implements SurveyDao {
         query.withHashKeyValues(template);
         
         QueryResultPage<DynamoSurveyQuestion> page = surveyQuestionMapper.queryPage(DynamoSurveyQuestion.class, query);
-        surveyQuestionMapper.batchDelete(page.getResults());
+        List<FailedBatch> failures = surveyQuestionMapper.batchDelete(page.getResults());
+        BridgeUtils.ifFailuresThrowException(failures);
     }
 }
