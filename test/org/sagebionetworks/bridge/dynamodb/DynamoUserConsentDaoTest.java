@@ -50,14 +50,14 @@ public class DynamoUserConsentDaoTest {
         consent.setStudyKey("study123");
         consent.setCreatedOn(123L);
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
-        assertFalse(userConsentDao.hasConsentedNew(healthCode, consent));
+        assertFalse(userConsentDao.hasConsented2(healthCode, consent));
         assertNull(userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
 
         // Give consent
         final ConsentSignature consentSignature = new ConsentSignature("John Smith", "1999-12-01");
         userConsentDao.giveConsent(healthCode, consent, consentSignature);
         assertTrue(userConsentDao.hasConsented(healthCode, consent));
-        assertTrue(userConsentDao.hasConsentedNew(healthCode, consent));
+        assertTrue(userConsentDao.hasConsented2(healthCode, consent));
         assertEquals(Long.valueOf(123), userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
         ConsentSignature cs = userConsentDao.getConsentSignature(healthCode, consent);
         assertEquals(consentSignature.getName(), cs.getName());
@@ -69,7 +69,7 @@ public class DynamoUserConsentDaoTest {
             assertTrue(true); // Expected
         }
         try {
-            userConsentDao.giveConsentNew(healthCode, consent, consentSignature);
+            userConsentDao.giveConsent2(healthCode, consent, consentSignature);
         } catch (EntityAlreadyExistsException e) {
             assertTrue(true); // Expected
         }
@@ -77,17 +77,17 @@ public class DynamoUserConsentDaoTest {
         // Withdraw
         userConsentDao.withdrawConsent(healthCode, consent);
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
-        assertFalse(userConsentDao.hasConsentedNew(healthCode, consent));
+        assertFalse(userConsentDao.hasConsented2(healthCode, consent));
 
         // Can give consent again if the previous consent is withdrawn
         userConsentDao.giveConsent(healthCode, consent, consentSignature);
         assertTrue(userConsentDao.hasConsented(healthCode, consent));
-        assertTrue(userConsentDao.hasConsentedNew(healthCode, consent));
+        assertTrue(userConsentDao.hasConsented2(healthCode, consent));
 
         // Withdraw again
         userConsentDao.withdrawConsent(healthCode, consent);
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
-        assertFalse(userConsentDao.hasConsentedNew(healthCode, consent));
+        assertFalse(userConsentDao.hasConsented2(healthCode, consent));
 
     }
 
