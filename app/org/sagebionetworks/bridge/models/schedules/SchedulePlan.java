@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+@BridgeTypeName("SchedulePlan")
 public interface SchedulePlan extends BridgeEntity {
 
     public String getGuid();

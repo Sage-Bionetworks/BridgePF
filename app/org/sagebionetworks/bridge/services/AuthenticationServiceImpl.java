@@ -2,13 +2,13 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.UUID;
 
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -23,8 +23,6 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import play.mvc.Http;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
@@ -81,13 +79,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final long start = System.nanoTime();
 
         if (signIn == null) {
-            throw new BridgeServiceException("SignIn object is required", Http.Status.NOT_FOUND);
+            throw new EntityNotFoundException(User.class, "SignIn object is required");
         } else if (StringUtils.isBlank(signIn.getUsername())) {
-            throw new BridgeServiceException("Username/email must not be null", Http.Status.NOT_FOUND);
+            throw new EntityNotFoundException(User.class, "Username/email must not be null");
         } else if (StringUtils.isBlank(signIn.getPassword())) {
-            throw new BridgeServiceException("Password must not be null", Http.Status.NOT_FOUND);
+            throw new EntityNotFoundException(User.class, "Password must not be null");
         } else if (study == null) {
-            throw new BridgeServiceException("Study is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Study is required");
         }
 
         AuthenticationRequest<?, ?> request = null;
@@ -129,17 +127,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public void signUp(SignUp signUp, Study study) throws BridgeServiceException {
         if (study == null) {
-            throw new BridgeServiceException("Study object is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Study object is required");
         } else if (StringUtils.isBlank(study.getStormpathDirectoryHref())) {
-            throw new BridgeServiceException("Study's StormPath directory HREF is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Study's StormPath directory HREF is required");
         } else if (signUp == null) {
-            throw new BridgeServiceException("SignUp object is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("SignUp object is required");
         } else if (StringUtils.isBlank(signUp.getEmail())) {
-            throw new BridgeServiceException("Email is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Email is required");
         } else if (StringUtils.isBlank(signUp.getPassword())) {
-            throw new BridgeServiceException("Password is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Password is required");
         } else if (!emailValidator.isValid(signUp.getEmail())) {
-            throw new BridgeServiceException("Email address does not appear to be valid", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Email address does not appear to be valid");
         }
         try {
             Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
@@ -152,7 +150,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             account.setPassword(signUp.getPassword());
             directory.createAccount(account);
         } catch (ResourceException re) {
-            throw new BridgeServiceException(re.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException(re.getDeveloperMessage());
         }
     }
 
@@ -160,9 +158,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public UserSession verifyEmail(Study study, EmailVerification verification) throws BridgeServiceException,
             ConsentRequiredException {
         if (verification == null) {
-            throw new BridgeServiceException("Verification object is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Verification object is required");
         } else if (verification.getSptoken() == null) {
-            throw new BridgeServiceException("Email verification token is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Email verification token is required");
         }
         UserSession session = null;
         try {
@@ -176,34 +174,34 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             }
             return session;
         } catch (ResourceException re) {
-            throw new BridgeServiceException(re.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException(re.getDeveloperMessage());
         }
     }
 
     @Override
     public void requestResetPassword(Email email) throws BridgeServiceException {
         if (email == null) {
-            throw new BridgeServiceException("Email object is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Email object is required");
         }
         if (StringUtils.isBlank(email.getEmail())) {
-            throw new BridgeServiceException("Email is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Email is required");
         }
         try {
             Application application = StormpathFactory.createStormpathApplication(stormpathClient);
             application.sendPasswordResetEmail(email.getEmail());
         } catch (ResourceException re) {
-            throw new BridgeServiceException(re.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException(re.getDeveloperMessage());
         }
     }
 
     @Override
     public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException {
         if (passwordReset == null) {
-            throw new BridgeServiceException("Password reset object is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Password reset object is required");
         } else if (StringUtils.isBlank(passwordReset.getSptoken())) {
-            throw new BridgeServiceException("Password reset token is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Password reset token is required");
         } else if (StringUtils.isBlank(passwordReset.getPassword())) {
-            throw new BridgeServiceException("Password is required", HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException("Password is required");
         }
         try {
             Application application = StormpathFactory.createStormpathApplication(stormpathClient);
@@ -211,7 +209,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             account.setPassword(passwordReset.getPassword());
             account.save();
         } catch (ResourceException e) {
-            throw new BridgeServiceException(e.getDeveloperMessage(), HttpStatus.SC_BAD_REQUEST);
+            throw new BadRequestException(e.getDeveloperMessage());
         }
     }
 

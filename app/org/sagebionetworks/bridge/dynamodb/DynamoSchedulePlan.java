@@ -116,10 +116,9 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
             Class<?> clazz = Class.forName(className);
             strategy = (ScheduleStrategy)mapper.treeToValue(data, clazz);
         } catch (JsonProcessingException | ClassNotFoundException e) {
-            throw new BridgeServiceException(e, 500);
+            throw new BridgeServiceException(e);
         }
     }
-    
     @Override
     public int hashCode() {
         final int prime = 31;

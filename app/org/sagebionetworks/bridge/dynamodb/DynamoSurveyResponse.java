@@ -176,7 +176,6 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     public void setData(ObjectNode data) {
         this.answers = JsonUtils.asEntityList(data, ANSWERS_PROPERTY, SurveyAnswer.class);
     }
-
     @Override
     public int hashCode() {
         final int prime = 31;

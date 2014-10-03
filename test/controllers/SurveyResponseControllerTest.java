@@ -98,6 +98,7 @@ public class SurveyResponseControllerTest {
                 
                 String url = String.format(NEW_SURVEY_RESPONSE, survey.getGuid(), survey.getVersionedOn());
                 Response response = TestUtils.getURL(session.getSessionToken(), url).post(body).get(TIMEOUT);
+
                 assertEquals("Create new record returns 200", 200, response.getStatus());
                 
                 responseGuid = getGuid(response.getBody());

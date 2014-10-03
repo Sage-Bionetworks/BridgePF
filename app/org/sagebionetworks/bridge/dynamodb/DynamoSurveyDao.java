@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.PublishedSurveyException;
 import org.sagebionetworks.bridge.dao.SurveyDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -246,7 +247,7 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public List<Survey> getSurveys(String studyKey) {
         if (StringUtils.isBlank(studyKey)) {
-            throw new BridgeServiceException("Study key is required", 400);
+            throw new BadRequestException("Study key is required");
         }
         return new QueryBuilder().setStudy(studyKey).getAll(false);
     }
@@ -254,7 +255,7 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public List<Survey> getSurveyVersions(String surveyGuid) {
         if (StringUtils.isBlank(surveyGuid)) {
-            throw new BridgeServiceException("Survey GUID is required", 400);
+            throw new BadRequestException("Survey GUID is required");
         }
         return new QueryBuilder().setSurvey(surveyGuid).getAll(true);
     }
@@ -262,9 +263,9 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey getSurvey(String surveyGuid, long versionedOn) {
         if (StringUtils.isBlank(surveyGuid)) {
-            throw new BridgeServiceException("Survey GUID cannot be null/blank", 400);
+            throw new BadRequestException("Survey GUID cannot be null/blank");
         } else if (versionedOn == 0L) {
-            throw new BridgeServiceException("Survey must have versionedOn date", 400);
+            throw new BadRequestException("Survey must have versionedOn date");
         }
         return new QueryBuilder().setSurvey(surveyGuid).setVersionedOn(versionedOn).getOne(true);
     }
@@ -361,7 +362,7 @@ public class DynamoSurveyDao implements SurveyDao {
             if (error.getClass() == ConditionalCheckFailedException.class) {
                 throw new ConcurrentModificationException(survey);
             } else if (error != null) {
-                throw new BridgeServiceException(error.getMessage(), 500);
+                throw new BridgeServiceException(error);
             }
         }
         return survey;
