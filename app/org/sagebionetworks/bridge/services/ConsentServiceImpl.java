@@ -56,7 +56,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
-    
+
     @Override
     public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
         this.publisher = publisher;
@@ -147,12 +147,14 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             throw new BadRequestException("Study is required.");
         }
         try {
-            // TODO: Old. To be removed
-            final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
-            final CustomData customData = account.getCustomData();
-            boolean consented = ("true".equals(customData.get(study.getKey()
-                    + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX)));
-            return consented;
+            final String healthCode = caller.getHealthDataCode();
+            List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
+            for (StudyConsent consent : consents) {
+                if (userConsentDao.hasConsented(healthCode, consent)) {
+                    return true;
+                }
+            }
+            return false;
         } catch (Exception e) {
             throw new BridgeServiceException(e);
         }
@@ -215,7 +217,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         try {
             StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
             userConsentDao.suspendSharing(caller.getHealthDataCode(), studyConsent);
-
             caller.setDataSharing(false);
         } catch (Exception e) {
             throw new BridgeServiceException(e);

@@ -42,6 +42,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private BridgeConfig config;
     private BridgeEncryptor healthCodeEncryptor;
     private HealthCodeService healthCodeService;
+    private ConsentService consentService;
     private EmailValidator emailValidator = EmailValidator.getInstance();
 
     public void setStormpathClient(Client client) {
@@ -63,7 +64,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
-    
+
+    public void setConsentService(ConsentService consentService) {
+        this.consentService = consentService;
+    }
+
     @Override
     public UserSession getSession(String sessionToken) {
         if (sessionToken == null) {
@@ -222,36 +227,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         User user = new User(account);
         user.setStudyKey(study.getKey());
 
-        CustomData data = account.getCustomData();
-        String consentKey = study.getKey()+BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX;
-        // TODO: Read from ConsentService
-        user.setConsent( "true".equals(data.get(consentKey)) );
-        
+        boolean hasConsented = consentService.hasUserConsentedToResearch(user, study);
+        user.setConsent(hasConsented);
+
         // New users will not yet have consented and generated a health ID, so skip this if it doesn't exist.
         if (user.isConsent()) {
+            CustomData data = account.getCustomData();
             final String hdcKey = study.getKey()+BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
             final String encryptedId = (String)data.get(hdcKey);
             String healthId = healthCodeEncryptor.decrypt(encryptedId);
             String healthCode = healthCodeService.getHealthCode(healthId);
             user.setHealthDataCode(healthCode);
         }        
-        // Generating the health data key has to be done regardless of consent, because we can't 
-        // check consent until we have a health data code
-        /*
-        CustomData data = account.getCustomData();
-        final String hdcKey = study.getKey()+BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-        final String encryptedId = (String)data.get(hdcKey);
-        
-        if (encryptedId != null) {
-            String healthId = healthCodeEncryptor.decrypt(encryptedId);
-            logger.info("The healthId: " + healthId);
-            String healthDataCode = healthCodeService.getHealthCode(healthId);
-            logger.info("The health data code: " + healthDataCode);
-            user.setHealthDataCode(healthDataCode);
-            boolean hasConsented = consentService.hasUserConsentedToResearch(user, study);
-            user.setConsent(hasConsented);
-        }
-        */
+
         session.setUser(user);
         return session;
     }
