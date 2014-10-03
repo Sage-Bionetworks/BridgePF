@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.ActivityTypeDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 import org.sagebionetworks.bridge.json.PeriodJsonDeserializer;
@@ -35,7 +37,9 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     private ActivityType activityType;
     private String activityRef;
     private ScheduleType scheduleType;
-    private String schedule;
+    private String cronTrigger;
+    private Long startsOn;
+    private Long endsOn;
     private Long expires;
     
     public Schedule copy() {
@@ -46,7 +50,7 @@ public class DynamoSchedule implements DynamoTable, Schedule {
         schedule.setActivityType(getActivityType());
         schedule.setActivityRef(getActivityRef());
         schedule.setScheduleType(getScheduleType());
-        schedule.setSchedule(getSchedule());
+        schedule.setCronTrigger(getCronTrigger());
         schedule.setExpires(getExpires());
         return schedule;
     }
@@ -65,7 +69,7 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     @DynamoDBRangeKey
     @JsonIgnore
     // This is only needed for DynamoDB to differentiate the records: consumers
-    // don't actually need this information, they need the IDs in the schedule 
+    // don't actually need this information, they need the IDs in the cronTrigger 
     // for the tasks they are to perform.
     public String getGuid() {
         return guid;
@@ -90,7 +94,9 @@ public class DynamoSchedule implements DynamoTable, Schedule {
         JsonUtils.write(data, "activityType", activityType);
         JsonUtils.write(data, "activityRef", activityRef);
         JsonUtils.write(data, "scheduleType", scheduleType);
-        JsonUtils.write(data, "schedule", schedule);
+        JsonUtils.write(data, "cronTrigger", cronTrigger);
+        JsonUtils.write(data, "startsOn", startsOn);
+        JsonUtils.write(data, "endsOn", endsOn);
         JsonUtils.write(data, "expires", expires);
         return data;
     }
@@ -99,7 +105,9 @@ public class DynamoSchedule implements DynamoTable, Schedule {
         this.activityType = JsonUtils.asActivityType(data, "activityType");
         this.activityRef = JsonUtils.asText(data, "activityRef");
         this.scheduleType = JsonUtils.asScheduleType(data, "scheduleType");
-        this.schedule = JsonUtils.asText(data, "schedule");
+        this.cronTrigger = JsonUtils.asText(data, "cronTrigger");
+        this.startsOn = JsonUtils.asLong(data, "startsOn");
+        this.endsOn = JsonUtils.asLong(data, "endsOn");
         this.expires = JsonUtils.asLong(data, "expires");
     }
     @DynamoDBIgnore
@@ -135,11 +143,29 @@ public class DynamoSchedule implements DynamoTable, Schedule {
         this.scheduleType = scheduleType;
     }
     @DynamoDBIgnore
-    public String getSchedule() {
-        return schedule;
+    public String getCronTrigger() {
+        return cronTrigger;
     }
-    public void setSchedule(String schedule) {
-        this.schedule = schedule;
+    public void setCronTrigger(String cronTrigger) {
+        this.cronTrigger = cronTrigger;
+    }
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @DynamoDBIgnore
+    public Long getStartsOn() {
+        return startsOn;
+    }
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    public void setStartsOn(Long startsOn) {
+        this.startsOn = startsOn;
+    }
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @DynamoDBIgnore
+    public Long getEndsOn() {
+        return endsOn;
+    }
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    public void setEndsOn(Long endsOn) {
+        this.endsOn = endsOn;
     }
     @JsonSerialize(using = PeriodJsonSerializer.class)
     @DynamoDBIgnore
@@ -150,17 +176,20 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     public void setExpires(Long expires) {
         this.expires = expires;
     }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((activityRef == null) ? 0 : activityRef.hashCode());
         result = prime * result + ((activityType == null) ? 0 : activityType.hashCode());
+        result = prime * result + ((cronTrigger == null) ? 0 : cronTrigger.hashCode());
+        result = prime * result + ((endsOn == null) ? 0 : endsOn.hashCode());
         result = prime * result + ((expires == null) ? 0 : expires.hashCode());
         result = prime * result + ((label == null) ? 0 : label.hashCode());
-        result = prime * result + ((schedule == null) ? 0 : schedule.hashCode());
         result = prime * result + ((schedulePlanGuid == null) ? 0 : schedulePlanGuid.hashCode());
         result = prime * result + ((scheduleType == null) ? 0 : scheduleType.hashCode());
+        result = prime * result + ((startsOn == null) ? 0 : startsOn.hashCode());
         result = prime * result + ((studyUserCompoundKey == null) ? 0 : studyUserCompoundKey.hashCode());
         return result;
     }
@@ -181,6 +210,16 @@ public class DynamoSchedule implements DynamoTable, Schedule {
             return false;
         if (activityType != other.activityType)
             return false;
+        if (cronTrigger == null) {
+            if (other.cronTrigger != null)
+                return false;
+        } else if (!cronTrigger.equals(other.cronTrigger))
+            return false;
+        if (endsOn == null) {
+            if (other.endsOn != null)
+                return false;
+        } else if (!endsOn.equals(other.endsOn))
+            return false;
         if (expires == null) {
             if (other.expires != null)
                 return false;
@@ -191,17 +230,17 @@ public class DynamoSchedule implements DynamoTable, Schedule {
                 return false;
         } else if (!label.equals(other.label))
             return false;
-        if (schedule == null) {
-            if (other.schedule != null)
-                return false;
-        } else if (!schedule.equals(other.schedule))
-            return false;
         if (schedulePlanGuid == null) {
             if (other.schedulePlanGuid != null)
                 return false;
         } else if (!schedulePlanGuid.equals(other.schedulePlanGuid))
             return false;
         if (scheduleType != other.scheduleType)
+            return false;
+        if (startsOn == null) {
+            if (other.startsOn != null)
+                return false;
+        } else if (!startsOn.equals(other.startsOn))
             return false;
         if (studyUserCompoundKey == null) {
             if (other.studyUserCompoundKey != null)
@@ -213,10 +252,9 @@ public class DynamoSchedule implements DynamoTable, Schedule {
 
     @Override
     public String toString() {
-        return "DynamoSchedule [studyUserCompoundKey=" + studyUserCompoundKey + ", schedulePlanGuid="
-                + schedulePlanGuid + ", label=" + label + ", activityType=" + activityType + ", activityRef="
-                + activityRef + ", scheduleType=" + scheduleType + ", schedule=" + schedule + ", expires=" + expires
-                + "]";
+        return "DynamoSchedule [studyUserCompoundKey=" + studyUserCompoundKey
+                + ", schedulePlanGuid=" + schedulePlanGuid + ", label=" + label + ", activityType=" + activityType
+                + ", activityRef=" + activityRef + ", scheduleType=" + scheduleType + ", cronTrigger=" + cronTrigger
+                + ", startsOn=" + startsOn + ", endsOn=" + endsOn + ", expires=" + expires + "]";
     }
-    
 }

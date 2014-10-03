@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.models.User;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(as=DynamoSchedule.class)
+
 @BridgeTypeName("Schedule")
 public interface Schedule extends BridgeEntity {
     
@@ -34,8 +35,14 @@ public interface Schedule extends BridgeEntity {
     public ScheduleType getScheduleType();
     public void setScheduleType(ScheduleType scheduleType);
     
-    public String getSchedule();
-    public void setSchedule(String schedule);
+    public Long getStartsOn();
+    public void setStartsOn(Long startsOn);
+    
+    public Long getEndsOn();
+    public void setEndsOn(Long endsOn);
+    
+    public String getCronTrigger();
+    public void setCronTrigger(String cronTrigger);
     
     public Long getExpires();
     public void setExpires(Long expires);

@@ -15,8 +15,8 @@ public final class DateTimeJsonSerializer extends JsonSerializer<Long> {
         if (millisFromEpoch != null && millisFromEpoch != 0L) {
             jgen.writeString(DateUtils.convertToISODateTime(millisFromEpoch));
         } else {
-            jgen.writeNull();
+            jgen.writeNull(); // without this errors.
         }
     }
-
+    
 }
