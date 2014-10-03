@@ -8,11 +8,12 @@ import org.sagebionetworks.bridge.services.StudyService;
 public class StudyConsentBootstrapper {
     public StudyConsentBootstrapper(StudyService studyService, StudyConsentDao studyConsentDao) {
         for (Study study : studyService.getStudies()) {
-            String path = "";
+            String path = "fake/path";
             int minAge = 17;
             StudyConsent consent = studyConsentDao.getConsent(study.getKey());
             if (consent == null) {
-                studyConsentDao.addConsent(study.getKey(), path, minAge);
+                consent = studyConsentDao.addConsent(study.getKey(), path, minAge);
+                studyConsentDao.setActive(consent, true);
             }
         }
     }

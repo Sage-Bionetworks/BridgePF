@@ -12,7 +12,7 @@
 
     <import resource="file:conf/application-context.xml"/>
 
-    <bean id="testUserAdminHelper" class="org.sagebionetworks.bridge.TestUserAdminHelper">
+    <bean id="testUserAdminHelper" class="org.sagebionetworks.bridge.TestUserAdminHelper" depends-on="studyConsentBootstrapper">
         <property name="userAdminService" ref="userAdminService"/>
         <property name="authService" ref="authenticationService"/>
         <property name="studyService" ref="studyService"/>
