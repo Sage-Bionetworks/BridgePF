@@ -2,8 +2,10 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+@BridgeTypeName("SurveyResponse")
 public interface SurveyResponse extends BridgeEntity {
     
     public enum Status {

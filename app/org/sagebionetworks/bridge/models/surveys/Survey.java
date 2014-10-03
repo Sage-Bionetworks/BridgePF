@@ -2,8 +2,10 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+@BridgeTypeName("Survey")
 public interface Survey extends BridgeEntity {
 
     public String getStudyKey();
@@ -32,6 +34,4 @@ public interface Survey extends BridgeEntity {
     
     public List<SurveyQuestion> getQuestions();
     public void setQuestions(List<SurveyQuestion> questions);
-    
-    public String getType();
 }

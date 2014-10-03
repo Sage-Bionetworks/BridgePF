@@ -3,10 +3,9 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.httpclient.HttpStatus;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
@@ -133,7 +132,7 @@ public class DynamoHealthDataDao implements HealthDataDao {
         dynamoRecord.setRecordId(recordId);
         dynamoRecord = mapper.load(dynamoRecord);
         if (dynamoRecord == null) {
-            throw new BridgeServiceException("Health data record cannot be found", HttpStatus.SC_NOT_FOUND);
+            throw new EntityNotFoundException(HealthDataRecord.class);
         }
         return dynamoRecord;
     }

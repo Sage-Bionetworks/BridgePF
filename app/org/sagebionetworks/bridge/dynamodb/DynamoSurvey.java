@@ -184,12 +184,6 @@ public class DynamoSurvey implements Survey, DynamoTable {
     public void setQuestions(List<SurveyQuestion> questions) {
         this.questions = questions;
     }
-    
-    @Override
-    @DynamoDBIgnore
-    public String getType() {
-        return "Survey";
-    }
 
     @Override
     public int hashCode() {

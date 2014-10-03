@@ -1,6 +1,7 @@
 package controllers;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.util.Collection;
 
 import models.StatusMessage;
@@ -10,6 +11,8 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -157,12 +160,9 @@ public abstract class BaseController extends Controller {
         ArrayNode itemsNode = mapper.createArrayNode();
         for (Object item : items) {
             ObjectNode node = (ObjectNode) Json.toJson(item);
-            if (!node.has("type")) {
-                node.put("type", item.getClass().getSimpleName());
-            }
+            JsonUtils.annotateNodeWithObjectType(node, item);
             itemsNode.add(node);
         }
-
         ObjectNode json = mapper.createObjectNode();
         json.put("items", itemsNode);
         json.put("total", items.size());
@@ -171,9 +171,7 @@ public abstract class BaseController extends Controller {
 
     protected <T> JsonNode constructJSON(T item) {
         ObjectNode node = (ObjectNode) Json.toJson(item);
-        if (!node.has("type")) {
-            node.put("type", item.getClass().getSimpleName());
-        }
+        JsonUtils.annotateNodeWithObjectType(node, item);
         return node;
     }
 }

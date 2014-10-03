@@ -150,7 +150,6 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     public void setExpires(Long expires) {
         this.expires = expires;
     }
-
     @Override
     public int hashCode() {
         final int prime = 31;

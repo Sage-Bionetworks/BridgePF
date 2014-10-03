@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.surveys;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -7,6 +8,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+@BridgeTypeName("SurveyAnswer")
 public class SurveyAnswer implements BridgeEntity {
 
     private String questionGuid;
@@ -47,7 +49,6 @@ public class SurveyAnswer implements BridgeEntity {
     public void setDeclined(boolean declined) {
         this.declined = declined;
     }
-    
     @Override
     public int hashCode() {
         final int prime = 31;

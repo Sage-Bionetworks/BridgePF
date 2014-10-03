@@ -12,6 +12,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -68,6 +69,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     }
     
     @DynamoDBHashKey
+    @JsonIgnore
     public String getKey() { 
         return key; 
     }
@@ -132,7 +134,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     public void setVersion(Long version) {
         this.version = version;
     }
-
+    
     @Override
     public int hashCode() {
         final int prime = 31;

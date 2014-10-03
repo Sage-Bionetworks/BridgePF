@@ -78,5 +78,4 @@ public class DynamoStudyConsent1 implements StudyConsent, DynamoTable {
     public void setVersion(Long version) {
         this.version = version;
     }
-
 }

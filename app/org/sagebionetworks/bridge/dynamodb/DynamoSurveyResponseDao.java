@@ -8,7 +8,7 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -49,13 +49,13 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     @Override
     public SurveyResponse createSurveyResponse(String surveyGuid, long surveyVersionedOn, String healthCode, List<SurveyAnswer> answers) {
         if (StringUtils.isBlank(surveyGuid)) {
-            throw new BridgeServiceException("Survey guid cannot be null/blank", 400);
+            throw new BadRequestException("Survey guid cannot be null/blank");
         } else if (surveyVersionedOn == 0L) {
-            throw new BridgeServiceException("Survey versionedOn cannot be 0", 400);
+            throw new BadRequestException("Survey versionedOn cannot be 0");
         } else if (answers == null) {
-            throw new BridgeServiceException("Survey answers cannot be null", 400);
+            throw new BadRequestException("Survey answers cannot be null");
         } else if (StringUtils.isBlank(healthCode)) {
-            throw new BridgeServiceException("Health code cannot be null/blank", 400);
+            throw new BadRequestException("Health code cannot be null/blank");
         }
         Survey survey = surveyDao.getSurvey(surveyGuid, surveyVersionedOn);
         List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, Collections.<SurveyAnswer>emptyList(), answers);
