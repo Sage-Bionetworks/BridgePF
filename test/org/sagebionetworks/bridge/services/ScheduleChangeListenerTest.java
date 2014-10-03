@@ -115,7 +115,7 @@ public class ScheduleChangeListenerTest {
             
             schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("There is still one schedule for the user", 1, schedules.size());
-            assertEquals("That schedule shows an update", "* * * * * *", schedules.get(0).getSchedule());
+            assertEquals("That schedule shows an update", "* * * * * *", schedules.get(0).getCronTrigger());
             
             listener.onTestEvent(new SchedulePlanDeletedEvent(plan));
             schedules = scheduleDao.getSchedules(study, session.getUser());
@@ -129,7 +129,7 @@ public class ScheduleChangeListenerTest {
     private void updateSchedulePlan(SchedulePlan plan) {
         SimpleScheduleStrategy strategy = (SimpleScheduleStrategy)plan.getStrategy();
         Schedule schedule = strategy.getSchedule();
-        schedule.setSchedule("* * * * * *");
+        schedule.setCronTrigger("* * * * * *");
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
     }
     
@@ -142,8 +142,8 @@ public class ScheduleChangeListenerTest {
         schedule.setLabel("Task AAA");
         schedule.setActivityType(ActivityType.TASK);
         schedule.setActivityRef("task:AAA");
-        schedule.setScheduleType(ScheduleType.CRON);
-        schedule.setSchedule("0 0 6 ? * MON-FRI *");
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setCronTrigger("0 0 6 ? * MON-FRI *");
         schedule.setExpires(DateUtils.getCurrentMillisFromEpoch() + (24 * 60 * 60 * 1000));
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();

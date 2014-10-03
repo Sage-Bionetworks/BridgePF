@@ -10,8 +10,8 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
     private Schedule schedule1 = new DynamoSchedule() {
         {
             setGuid("AAA");
-            setScheduleType(ScheduleType.CRON);
-            setSchedule("* * *");
+            setScheduleType(ScheduleType.RECURRING);
+            setCronTrigger("* * *");
             setActivityType(ActivityType.TASK);
             setActivityRef("task:AAA");
             setExpires(new Long(60000));
@@ -21,8 +21,8 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
     private Schedule schedule2 = new DynamoSchedule() {
         {
             setGuid("BBB");
-            setScheduleType(ScheduleType.CRON);
-            setSchedule("* * *");
+            setScheduleType(ScheduleType.RECURRING);
+            setCronTrigger("* * *");
             setActivityType(ActivityType.TASK);
             setActivityRef("task:BBB");
             setExpires(new Long(60000));
@@ -32,8 +32,8 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
     private Schedule schedule3 = new DynamoSchedule() {
         {
             setGuid("CCC");
-            setScheduleType(ScheduleType.CRON);
-            setSchedule("* * *");
+            setScheduleType(ScheduleType.RECURRING);
+            setCronTrigger("* * *");
             setActivityType(ActivityType.TASK);
             setActivityRef("task:CCC");
             setExpires(new Long(60000));
@@ -52,4 +52,5 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
         strategy.addGroup(20, schedule3);
         setStrategy(strategy);
     }
+    
 }

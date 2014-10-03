@@ -33,8 +33,8 @@ public class User implements BridgeEntity {
         this.firstName = account.getGivenName();
         this.lastName = account.getSurname();
         this.id = account.getHref().split("/accounts/")[1];
-        for (Iterator<Group> i = account.getGroups().iterator(); i.hasNext();) {
-            roles.add(i.next().getName());
+        for (Group group : account.getGroups()) {
+            roles.add(group.getName());
         }
     }
     

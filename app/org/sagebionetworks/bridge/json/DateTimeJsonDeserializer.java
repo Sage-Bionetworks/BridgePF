@@ -17,7 +17,12 @@ public final class DateTimeJsonDeserializer extends JsonDeserializer<Long> {
     
     @Override
     public Long getNullValue() {
-        return new Long(0L);
+        return null;
+    }
+    
+    @Override
+    public Long getEmptyValue() {
+        return null;
     }
     
 }
