@@ -19,9 +19,17 @@ public class BridgeUtils {
     
     public static String getTypeName(Class<? extends BridgeEntity> clazz) {
         try {
-            BridgeTypeName name = (BridgeTypeName)clazz.newInstance().getClass().getAnnotation(BridgeTypeName.class);
-            if (name != null) {
-                return name.value();
+            BridgeTypeName att = (BridgeTypeName)clazz.getAnnotation(BridgeTypeName.class);
+            if (att == null) {
+                Class<?>[] ifcs = clazz.getInterfaces();
+                for (Class<?> ifc : ifcs) {
+                    if (att == null) {
+                        att = ifc.getAnnotation(BridgeTypeName.class);    
+                    }
+                }
+            }
+            if (att != null) {
+                return att.value();
             }
         } catch(Throwable t) {
         }
