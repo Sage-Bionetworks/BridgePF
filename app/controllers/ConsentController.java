@@ -22,6 +22,7 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudyByHostname(getHostname());
         final User user = consentService.consentToResearch(session.getUser(), consent, study, true);
         updateSessionUser(session, user);
+        setSessionToken(session.getSessionToken());
         return okResult("Consent to research has been recorded.");
     }
 
