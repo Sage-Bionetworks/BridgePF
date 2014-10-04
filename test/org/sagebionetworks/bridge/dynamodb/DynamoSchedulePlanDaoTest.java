@@ -32,7 +32,7 @@ public class DynamoSchedulePlanDaoTest {
     @Before
     public void before() {
         DynamoInitializer.init(DynamoSchedulePlan.class);
-        DynamoTestUtil.clearTable(DynamoSchedulePlan.class, "modifiedOn", "version", "strategy");
+        DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
     }
     
     @Test
