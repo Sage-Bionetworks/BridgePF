@@ -4,16 +4,20 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsentDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.StudyConsent;
@@ -31,14 +35,22 @@ public class StudyConsentServiceImplTest {
     @Resource
     private TestUserAdminHelper helper;
 
-    @BeforeClass
-    public static void initialSetUp() {
-        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
+    @Resource
+    private DynamoStudyConsentDao studyConsentDao;
+ 
+    private List<StudyConsent> toDelete;
+
+    @Before
+    public void before() {
+        toDelete = new ArrayList<StudyConsent>();
     }
 
-    @AfterClass
-    public static void finalCleanUp() {
-        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
+    @After
+    public void after() {
+        for (StudyConsent sc : toDelete) {
+            studyConsentDao.deleteConsent(sc.getStudyKey(), sc.getCreatedOn());
+        }
+        toDelete.clear();
     }
 
     @Test
@@ -52,6 +64,7 @@ public class StudyConsentServiceImplTest {
         // addConsent should return a non-null consent object.
         StudyConsent addedConsent1 = studyConsentService.addConsent(studyKey, form);
         assertNotNull(addedConsent1);
+        toDelete.add(addedConsent1);
 
         try {
             studyConsentService.getActiveConsent(studyKey);
