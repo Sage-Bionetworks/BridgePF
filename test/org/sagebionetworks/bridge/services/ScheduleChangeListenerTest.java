@@ -57,7 +57,7 @@ public class ScheduleChangeListenerTest {
     
     @Before
     public void before() {
-        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
+        DynamoInitializer.init(DynamoSchedule.class, DynamoSchedulePlan.class);
         DynamoTestUtil.clearTable(DynamoSchedule.class, "schedulePlanGuid", "data", "expires");
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class, "version", "modifiedOn", "strategy");
     }

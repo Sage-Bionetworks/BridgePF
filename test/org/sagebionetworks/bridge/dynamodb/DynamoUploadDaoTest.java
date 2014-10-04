@@ -28,7 +28,7 @@ public class DynamoUploadDaoTest {
 
     @Before
     public void before() {
-        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
+        DynamoInitializer.init(DynamoUpload.class);
         clear();
     }
 

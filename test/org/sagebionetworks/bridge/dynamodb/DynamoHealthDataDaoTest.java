@@ -38,7 +38,7 @@ public class DynamoHealthDataDaoTest {
     
     @Before
     public void before() {
-        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
+        DynamoInitializer.init(DynamoHealthDataRecord.class);
         DynamoTestUtil.clearTable(DynamoHealthDataRecord.class, "startDate", "endDate", "data", "version");
         session = helper.createUser();
     }
