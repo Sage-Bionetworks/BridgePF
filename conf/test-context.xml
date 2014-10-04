@@ -11,13 +11,13 @@
         http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
     <import resource="file:conf/application-context.xml"/>
-    
-    <bean id="testUserAdminHelper" class="org.sagebionetworks.bridge.TestUserAdminHelper">
+
+    <bean id="testUserAdminHelper" class="org.sagebionetworks.bridge.TestUserAdminHelper" depends-on="studyConsentBootstrapper">
         <property name="userAdminService" ref="userAdminService"/>
         <property name="authService" ref="authenticationService"/>
         <property name="studyService" ref="studyService"/>
     </bean>
-    
+ 
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
         <property name="studies">
             <list>
@@ -64,5 +64,10 @@
             </list>
         </property>
     </bean>
-    
+
+    <bean id="studyConsentBootstrapper" class="org.sagebionetworks.bridge.StudyConsentBootstrapper">
+        <constructor-arg index="0" ref="studyService" />
+        <constructor-arg index="1" ref="studyConsentDao" />
+    </bean>
+
 </beans>
