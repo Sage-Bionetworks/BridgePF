@@ -101,6 +101,8 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         consent.setStudyKey(studyKey);
         consent.setCreatedOn(timestamp);
         consent = mapper.load(consent);
-        mapper.delete(consent);
+        if (consent != null) {
+            mapper.delete(consent);
+        }
     }
 }
