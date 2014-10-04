@@ -27,14 +27,12 @@ public class DynamoUserConsentDaoTest {
     @BeforeClass
     public static void initialSetUp() {
         DynamoInitializer.init(DynamoUserConsent2.class);
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
-                "healthCode", "consentCreatedOn", "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class);
     }
 
     @AfterClass
     public static void finalCleanUp() {
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
-                "healthCode", "consentCreatedOn", "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class);
     }
 
     @Test
