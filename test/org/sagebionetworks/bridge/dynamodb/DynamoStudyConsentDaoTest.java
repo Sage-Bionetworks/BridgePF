@@ -6,12 +6,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.models.StudyConsent;
@@ -24,23 +25,29 @@ public class DynamoStudyConsentDaoTest {
 
     @Resource
     private DynamoStudyConsentDao studyConsentDao;
+ 
+    private List<StudyConsent> toDelete;
 
-    @BeforeClass
-    public static void initialSetUp() {
+    @Before
+    public void before() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
-        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
+        toDelete = new ArrayList<StudyConsent>();
     }
 
-    @AfterClass
-    public static void finalCleanUp() {
-        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
+    @After
+    public void after() {
+        for (StudyConsent sc : toDelete) {
+            studyConsentDao.deleteConsent(sc.getStudyKey(), sc.getCreatedOn());
+        }
+        toDelete.clear();
     }
 
     @Test
     public void test() {
         // Add consent version 1, inactive
-        StudyConsent consent1 = studyConsentDao.addConsent("fake-study", "fake-path1", 17);
+        final StudyConsent consent1 = studyConsentDao.addConsent("fake-study", "fake-path1", 17);
         assertNotNull(consent1);
+        toDelete.add(consent1);
         assertFalse(consent1.getActive());
         assertNull(studyConsentDao.getConsent(consent1.getStudyKey()));
         // Make version1 active
@@ -52,7 +59,9 @@ public class DynamoStudyConsentDaoTest {
         assertEquals(consent1.getMinAge(), consent.getMinAge());
         assertTrue(consent.getCreatedOn() > 0);
         // Add version 2
-        StudyConsent consent2 = studyConsentDao.addConsent("fake-study", "fake-path2", 18);
+        final StudyConsent consent2 = studyConsentDao.addConsent("fake-study", "fake-path2", 18);
+        assertNotNull(consent2);
+        toDelete.add(consent2);
         studyConsentDao.setActive(consent1, false);
         studyConsentDao.setActive(consent2, true);
         // The latest should be version 2
@@ -68,7 +77,9 @@ public class DynamoStudyConsentDaoTest {
         assertEquals(consent1.getPath(), consent.getPath());
         assertEquals(consent1.getMinAge(), consent.getMinAge());
         // All consents
-        StudyConsent consent3 = studyConsentDao.addConsent("fake-study", "fake-path3", 19);
+        final StudyConsent consent3 = studyConsentDao.addConsent("fake-study", "fake-path3", 19);
+        assertNotNull(consent3);
+        toDelete.add(consent3);
         List<StudyConsent> all = studyConsentDao.getConsents("fake-study");
         assertEquals(3, all.size());
         // In reverse order

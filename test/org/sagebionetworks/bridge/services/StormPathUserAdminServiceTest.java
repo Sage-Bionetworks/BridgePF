@@ -15,7 +15,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -60,18 +59,16 @@ public class StormPathUserAdminServiceTest {
 
     @BeforeClass
     public static void initialSetUp() {
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
-                "version");
-        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
+                "healthCode", "consentCreatedOn", "version");
     }
-    
+
     @AfterClass
     public static void finalCleanUp() {
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
-                "version");
-        DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
+                "healthCode", "consentCreatedOn", "version");
     }
-    
+
     @Before
     public void before() {
         if (!setUpComplete) {
@@ -83,7 +80,6 @@ public class StormPathUserAdminServiceTest {
             
             setUpComplete = true;
         }
-
     }
 
     @After
