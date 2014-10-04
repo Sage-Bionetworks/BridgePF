@@ -50,7 +50,7 @@ public class DynamoScheduleDaoTest {
 
         Schedule schedule = createSchedule(study, user, plan, "Patient Assessment of Chronic Illness Care Survey",
                 "http://bridge-uat.herokuapp.com/api/v1/surveys/ecf7e761-c7e9-4bb6-b6e7-d6d15c53b209/2014-09-25T20:07:49.186Z");
-        schedule.setScheduleType(ScheduleType.ONCE); // invalid to have a schedule string with a type of once
+        schedule.setScheduleType(ScheduleType.ONCE);
         
         List<Schedule> list = Lists.newArrayList(schedule);
         
@@ -81,7 +81,7 @@ public class DynamoScheduleDaoTest {
         scheduleDao.deleteSchedules(plan);
         
         newList = scheduleDao.getSchedules(study, user);
-        assertEquals("Both schedules are delete", 0, newList.size());
+        assertEquals("Both schedules are deleted", 0, newList.size());
     }
     
     private Schedule createSchedule(Study study, User user, DynamoSchedulePlan plan, String name, String url) {
@@ -91,9 +91,10 @@ public class DynamoScheduleDaoTest {
         schedule.setLabel(name);
         schedule.setActivityType(ActivityType.SURVEY);
         schedule.setActivityRef(url);
-        schedule.setScheduleType(ScheduleType.DATE);
-        schedule.setSchedule(DateUtils.convertToISODateTime(DateUtils.getCurrentMillisFromEpoch()));
-        schedule.setExpires(DateUtils.getCurrentMillisFromEpoch() + (3 * 24 * 60 * 60 * 1000));
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setCronTrigger("* * * * * *");
+        schedule.setStartsOn(DateUtils.getCurrentMillisFromEpoch());
+        schedule.setEndsOn(DateUtils.getCurrentMillisFromEpoch() + (3 * 24 * 60 * 60 * 1000));
         return schedule;
     }
     

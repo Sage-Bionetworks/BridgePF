@@ -21,9 +21,6 @@ public class ScheduleValidator implements Validator<Schedule> {
         if (StringUtils.isBlank(schedule.getActivityRef())) {
             messages.add("Activity ref cannot be empty");
         }
-        if (StringUtils.isBlank(schedule.getSchedule())) {
-            messages.add("Schedule cannot be empty");
-        }
         if (StringUtils.isBlank(schedule.getSchedulePlanGuid())) {
             messages.add("The schedule plan GUID cannot be empty");
         }
@@ -37,12 +34,14 @@ public class ScheduleValidator implements Validator<Schedule> {
             messages.add("Schedule type cannot be null");
         }
         if (schedule.getScheduleType() == ScheduleType.ONCE) {
-            if (StringUtils.isNotBlank(schedule.getSchedule())) {
-                messages.add("Schedule should not be set when the schedule type is 'once'");
+            if (StringUtils.isNotBlank(schedule.getCronTrigger())) {
+                messages.add("One-time schedule should not have a cron trigger");
             }
-        } else {
-            if (StringUtils.isBlank(schedule.getSchedule())) {
-                messages.add("Schedule cannot be empty");
+        }
+        if (schedule.getScheduleType() == ScheduleType.RECURRING) {
+            // Pretty much everything is valid
+            if (StringUtils.isBlank(schedule.getCronTrigger())) {
+                messages.add("Recurring schedule must have a cron trigger");
             }
         }
         if (!messages.isEmpty()) {

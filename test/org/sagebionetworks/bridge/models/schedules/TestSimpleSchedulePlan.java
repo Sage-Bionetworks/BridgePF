@@ -10,8 +10,8 @@ public class TestSimpleSchedulePlan extends DynamoSchedulePlan {
     private Schedule schedule = new DynamoSchedule() {
         {
             setGuid("DDD");
-            setScheduleType(ScheduleType.CRON);
-            setSchedule("* * *");
+            setScheduleType(ScheduleType.RECURRING);
+            setCronTrigger("* * *");
             setActivityType(ActivityType.TASK);
             setActivityRef("task:CCC");
             setExpires(new Long(60000));
@@ -28,5 +28,5 @@ public class TestSimpleSchedulePlan extends DynamoSchedulePlan {
         setStudyKey(TestConstants.SECOND_STUDY.getKey());
         setStrategy(strategy);
     }
-
+    
 }
