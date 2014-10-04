@@ -157,8 +157,8 @@ public class ScheduleStrategyTest {
         schedule.setActivityType(ActivityType.SURVEY);
         schedule.setLabel(label);
         schedule.setActivityRef("http://sagebridge.org/survey1");
-        schedule.setScheduleType(ScheduleType.CRON);
-        schedule.setSchedule("0 */2 * * *");
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setCronTrigger("0 */2 * * *");
         return schedule;
     }
 

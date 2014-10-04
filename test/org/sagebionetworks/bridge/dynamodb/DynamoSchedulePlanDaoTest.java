@@ -61,6 +61,7 @@ public class DynamoSchedulePlanDaoTest {
         // Get it from DynamoDB
         SchedulePlan newPlan = schedulePlanDao.getSchedulePlan(TestConstants.SECOND_STUDY, abPlan.getGuid());
         assertEquals("Schedule plan contains correct strategy class type", SimpleScheduleStrategy.class, newPlan.getStrategy().getClass());
+        
         assertEquals("The strategy has been updated", simplePlan.getStrategy().hashCode(), newPlan.getStrategy().hashCode());
         
         // delete, throws exception
