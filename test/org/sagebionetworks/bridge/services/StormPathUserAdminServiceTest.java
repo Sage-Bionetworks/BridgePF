@@ -17,7 +17,7 @@ import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
-import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent;
+import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.SignIn;
@@ -60,14 +60,14 @@ public class StormPathUserAdminServiceTest {
 
     @BeforeClass
     public static void initialSetUp() {
-        DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
         DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
     }
     
     @AfterClass
     public static void finalCleanUp() {
-        DynamoTestUtil.clearTable(DynamoUserConsent.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "name", "birthdate", "give", "studyKey", "consentTimestamp",
                 "version");
         DynamoTestUtil.clearTable(DynamoStudyConsent1.class, "active", "path", "minAge", "version");
     }

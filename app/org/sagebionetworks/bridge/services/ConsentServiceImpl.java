@@ -56,7 +56,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
-    
+
     @Override
     public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
         this.publisher = publisher;
@@ -92,36 +92,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
                 customData.save();
                 // TODO: New
                 StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
-                if (studyConsent == null) {
-                    // TODO: To be removed once DynamoDB's study consent is ready.
-                    //       This is kept here for testing purpose
-                    studyConsent = new StudyConsent() {
-                        @Override
-                        public String getStudyKey() {
-                            return study.getKey();
-                        }
-
-                        @Override
-                        public long getCreatedOn() {
-                            return 1406325157000L; // July 25, 2014
-                        }
-
-                        @Override
-                        public boolean getActive() {
-                            return true;
-                        }
-
-                        @Override
-                        public String getPath() {
-                            return "conf/email-templates/neurod-consent.html";
-                        }
-
-                        @Override
-                        public int getMinAge() {
-                            return 17;
-                        }
-                    };
-                }
                 userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
                 publisher.publishEvent(new UserEnrolledEvent(caller, study));
             }
@@ -147,12 +117,14 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             throw new BadRequestException("Study is required.");
         }
         try {
-            // TODO: Old. To be removed
-            final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
-            final CustomData customData = account.getCustomData();
-            boolean consented = ("true".equals(customData.get(study.getKey()
-                    + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX)));
-            return consented;
+            final String healthCode = caller.getHealthDataCode();
+            List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
+            for (StudyConsent consent : consents) {
+                if (userConsentDao.hasConsented(healthCode, consent)) {
+                    return true;
+                }
+            }
+            return false;
         } catch (Exception e) {
             throw new BridgeServiceException(e);
         }
@@ -215,7 +187,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         try {
             StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
             userConsentDao.suspendSharing(caller.getHealthDataCode(), studyConsent);
-
             caller.setDataSharing(false);
         } catch (Exception e) {
             throw new BridgeServiceException(e);
