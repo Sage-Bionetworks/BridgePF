@@ -56,7 +56,6 @@ public class DynamoTestUtil {
         for (Method method : methods) {
             if (method.getAnnotation(DynamoDBHashKey.class) != null 
                     || method.getAnnotation(DynamoDBRangeKey.class) != null) {
-
                 String name = method.getName();
                 // Remove 'get', 'set', or 'is'
                 if (name.startsWith("get") || name.startsWith("set")) {
@@ -66,11 +65,8 @@ public class DynamoTestUtil {
                 }
                 // Make sure the first letter is lower case
                 char[] chars = name.toCharArray();
-                char c = chars[0];
-                c = Character.toLowerCase(c);
-                chars[0] = c;
-                name = new String(chars);
-                keyAttrs.add(name);
+                chars[0] = Character.toLowerCase(chars[0]);
+                keyAttrs.add(new String(chars));
             }
         }
         return keyAttrs;
