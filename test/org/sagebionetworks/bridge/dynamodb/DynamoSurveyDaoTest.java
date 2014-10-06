@@ -38,10 +38,9 @@ public class DynamoSurveyDaoTest {
     @Before
     public void before() {
         testSurvey = new TestSurvey(true);
-        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
-        DynamoTestUtil.clearTable(DynamoSurvey.class, "studyKey", "modifiedOn", "identifier", "name", "published",
-                "version");
-        DynamoTestUtil.clearTable(DynamoSurveyQuestion.class, "guid", "identifier", "data");
+        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyQuestion.class);
+        DynamoTestUtil.clearTable(DynamoSurvey.class);
+        DynamoTestUtil.clearTable(DynamoSurveyQuestion.class);
     }
 
     // CREATE SURVEY

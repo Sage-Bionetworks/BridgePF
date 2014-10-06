@@ -30,7 +30,7 @@ public class DynamoStudyConsentDaoTest {
 
     @Before
     public void before() {
-        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
+        DynamoInitializer.init(DynamoStudyConsent1.class);
         toDelete = new ArrayList<StudyConsent>();
     }
 

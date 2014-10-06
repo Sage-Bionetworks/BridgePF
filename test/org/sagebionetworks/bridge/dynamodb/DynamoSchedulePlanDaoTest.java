@@ -31,8 +31,8 @@ public class DynamoSchedulePlanDaoTest {
     
     @Before
     public void before() {
-        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
-        DynamoTestUtil.clearTable(DynamoSchedulePlan.class, "modifiedOn", "version", "strategy");
+        DynamoInitializer.init(DynamoSchedulePlan.class);
+        DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
     }
     
     @Test

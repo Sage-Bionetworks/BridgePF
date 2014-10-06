@@ -21,12 +21,12 @@ public class DynamoHealthCodeDaoTest {
 
     @Before
     public void before() {
-        DynamoTestUtil.clearTable(DynamoHealthCode.class, "version");
+        DynamoTestUtil.clearTable(DynamoHealthCode.class);
     }
 
     @After
     public void after() {
-        DynamoTestUtil.clearTable(DynamoHealthCode.class, "version");
+        DynamoTestUtil.clearTable(DynamoHealthCode.class);
     }
 
     @Test
