@@ -57,9 +57,9 @@ public class ScheduleChangeListenerTest {
     
     @Before
     public void before() {
-        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
-        DynamoTestUtil.clearTable(DynamoSchedule.class, "schedulePlanGuid", "data", "expires");
-        DynamoTestUtil.clearTable(DynamoSchedulePlan.class, "version", "modifiedOn", "strategy");
+        DynamoInitializer.init(DynamoSchedule.class, DynamoSchedulePlan.class);
+        DynamoTestUtil.clearTable(DynamoSchedule.class);
+        DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
     }
     
     // This won't fully work until we're gathering a list of users who are enrolled in the study,

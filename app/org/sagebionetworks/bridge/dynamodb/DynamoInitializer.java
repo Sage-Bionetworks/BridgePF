@@ -69,7 +69,18 @@ public class DynamoInitializer {
      */
     public static void init(String dynamoPackage) {
         beforeInit();
-        List<TableDescription> tables = getAnnotatedTables(dynamoPackage);
+        List<Class<?>> classes = loadDynamoTableClasses(dynamoPackage);
+        List<TableDescription> tables = getAnnotatedTables(classes);
+        initTables(tables);
+    }
+
+    @SafeVarargs
+    public static void init(Class<? extends DynamoTable>... dynamoTables) {
+        List<Class<?>> classes = new ArrayList<Class<?>>();
+        for (Class<?> dynamoTable : dynamoTables) {
+            classes.add(dynamoTable);
+        }
+        List<TableDescription> tables = getAnnotatedTables(classes);
         initTables(tables);
     }
 
@@ -110,9 +121,8 @@ public class DynamoInitializer {
     /**
      * Converts the annotated DynamoDBTable types to a list of TableDescription.
      */
-    static List<TableDescription> getAnnotatedTables(final String dynamoPackage) {
+    static List<TableDescription> getAnnotatedTables(final List<Class<?>> classes) {
         List<TableDescription> tables = new ArrayList<TableDescription>();
-        List<Class<?>> classes = loadDynamoTableClasses(dynamoPackage);
         for (Class<?> clazz : classes) {
             final List<KeySchemaElement> keySchema = new ArrayList<KeySchemaElement>();
             final List<AttributeDefinition> attributes = new ArrayList<AttributeDefinition>();
@@ -191,10 +201,11 @@ public class DynamoInitializer {
      * Uses reflection to get all the annotated DynamoDBTable.
      */
     static List<Class<?>> loadDynamoTableClasses(final String dynamoPackage) {
-        List<Class<?>> classes = new ArrayList<Class<?>>();
+        final List<Class<?>> classes = new ArrayList<Class<?>>();
+        final ClassLoader classLoader = DynamoTable.class.getClassLoader();
         try {
             ImmutableSet<ClassInfo> classSet = ClassPath
-                    .from(DynamoTable.class.getClassLoader())
+                    .from(classLoader)
                     .getTopLevelClasses(dynamoPackage);
             for (ClassInfo classInfo : classSet) {
                 Class<?> clazz = classInfo.load();
@@ -259,7 +270,7 @@ public class DynamoInitializer {
             }
             waitForActive(table);
         }
-        logger.info("All DynamoDB tables are ready.");
+        logger.info("DynamoDB tables are ready.");
     }
 
     static Map<String, TableDescription> getExistingTables() {
