@@ -51,6 +51,7 @@ apt-get -q -y install openjdk-7-jdk
 
 # Play
 su - vagrant -c "wget http://downloads.typesafe.com/play/2.2.4/play-2.2.4.zip"
+su - vagrant -c "rm -rf play-2.2.4"
 su - vagrant -c "unzip play-2.2.4.zip"
 rm play-2.2.4.zip
 echo 'export PATH=$PATH:/home/vagrant/play-2.2.4' >> /home/vagrant/.profile
