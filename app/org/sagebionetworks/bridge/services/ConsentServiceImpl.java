@@ -63,9 +63,8 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     }
 
     @Override
-    public User consentToResearch(User caller, ConsentSignature consentSignature, final Study study, boolean sendEmail)
-            throws BridgeServiceException {
-        
+    public User consentToResearch(final User caller, final ConsentSignature consentSignature, final Study study,
+            final boolean sendEmail) throws BridgeServiceException {
         if (caller.isConsent()) {
             throw new BridgeServiceException("User has already consented");
         } else if (study == null) {
@@ -81,29 +80,22 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             // Stormpath account
             final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
             final CustomData customData = account.getCustomData();
-
             // HealthID
             final String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            HealthId healthId = getHealthId(healthIdKey, customData); // This sets the ID, which we will need when fully
-
-            {
-                // TODO: Old. To be removed.
-                customData.put(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX, "true");
-                customData.save();
-                // TODO: New
-                StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
-                userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
-                publisher.publishEvent(new UserEnrolledEvent(caller, study));
-            }
-
+            final HealthId healthId = getHealthId(healthIdKey, customData); // This sets the ID, which we will need when fully
+            // Give consent
+            final StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
+            userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
+            // Publish event
+            publisher.publishEvent(new UserEnrolledEvent(caller, study));
+            // Sent email
             if (sendEmail) {
-                sendMailService.sendConsentAgreement(caller, consentSignature, study);
+                sendMailService.sendConsentAgreement(caller, consentSignature, studyConsent);
             }
+            // Update user
             caller.setConsent(true);
             caller.setHealthDataCode(healthId.getCode());
-            
             return caller;
-
         } catch (Exception e) {
             throw new BridgeServiceException(e);
         }
@@ -137,12 +129,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         } else if (study == null) {
             throw new BadRequestException("Study is required.");
         }
-        // TODO: Old
-        final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
-        final CustomData customData = account.getCustomData();
-        customData.remove(study.getKey() + BridgeConstants.CUSTOM_DATA_CONSENT_SUFFIX);
-        customData.save();
-        // TODO: New
         String healthCode = caller.getHealthDataCode();
         List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
         for (StudyConsent consent : consents) {
@@ -156,14 +142,14 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     }
 
     @Override
-    public void emailConsentAgreement(User caller, Study study) {
+    public void emailConsentAgreement(final User caller, final Study study) {
         if (caller == null) {
             throw new BadRequestException("User is required.");
         } else if (study == null) {
             throw new BadRequestException("Study is required.");
         }
         try {
-            StudyConsent consent = studyConsentDao.getConsent(study.getKey());
+            final StudyConsent consent = studyConsentDao.getConsent(study.getKey());
             if (consent == null) {
                 throw new BridgeServiceException("Consent not found.");
             }
@@ -171,7 +157,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             if (consentSignature == null) {
                 throw new BridgeServiceException("Consent signature not found.");
             }
-            sendMailService.sendConsentAgreement(caller, consentSignature, study);
+            sendMailService.sendConsentAgreement(caller, consentSignature, consent);
         } catch (Exception e) {
             throw new BridgeServiceException(e);
         }

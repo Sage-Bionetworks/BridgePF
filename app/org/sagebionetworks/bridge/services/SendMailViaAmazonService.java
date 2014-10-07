@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 
@@ -11,7 +12,9 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
+import org.springframework.core.io.FileSystemResource;
 
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
@@ -26,41 +29,48 @@ import com.google.common.io.CharStreams;
 public class SendMailViaAmazonService implements SendMailService {
 
     private static Region region = Region.getRegion(Regions.US_EAST_1);
-    
+
     private static DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
-    
+
     private String fromEmail;
     private AmazonSimpleEmailServiceClient emailClient;
-    
+    private StudyService studyService;
+
     public void setFromEmail(String fromEmail) {
         this.fromEmail = fromEmail;
     }
-    
+
     public void setEmailClient(AmazonSimpleEmailServiceClient emailClient) {
         this.emailClient = emailClient;
     }
-    
+
+    public void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
+
     @Override
-    public void sendConsentAgreement(User user, ConsentSignature consent, Study study) {
+    public void sendConsentAgreement(User user, ConsentSignature consentSignature, StudyConsent studyConsent) {
         try {
+            Study study = studyService.getStudyByKey(studyConsent.getStudyKey());
             Content subject = new Content().withData("Consent Agreement for " + study.getName());
-            Body body = createSignedDocument(consent, study);
+            Body body = createSignedDocument(consentSignature, studyConsent);
             Message message = new Message().withSubject(subject).withBody(body);
-            
             Destination destination = new Destination().withToAddresses(new String[]{user.getEmail()});
             SendEmailRequest request = new SendEmailRequest(fromEmail, destination, message);
-            
             emailClient.setRegion(region);
             emailClient.sendEmail(request);
         } catch (Throwable t) {
             throw new BridgeServiceException(t);
         }
     }
-    
-    private Body createSignedDocument(ConsentSignature consent, Study study) throws UnsupportedEncodingException, IOException {
-        InputStreamReader isr = new InputStreamReader(study.getConsentAgreement().getInputStream(), "UTF-8");
+
+    private Body createSignedDocument(ConsentSignature consent, StudyConsent studyConsent) throws UnsupportedEncodingException, IOException {
+
+        String filePath = studyConsent.getPath();
+        FileSystemResource resource = new FileSystemResource(filePath);
+        InputStreamReader isr = new InputStreamReader(resource.getInputStream(), "UTF-8");
         String consentAgreementHTML = CharStreams.toString(isr);
-        
+
         String signingDate = fmt.print(DateUtils.getCurrentMillisFromEpoch());
         // The dates we're showing are internally stored as UTC dates, so convert to 
         // LocalDate which will show the date the user entered.
@@ -73,5 +83,4 @@ public class SendMailViaAmazonService implements SendMailService {
         Content textBody = new Content().withData(html); 
         return new Body().withHtml(textBody);
     }
-
 }

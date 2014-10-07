@@ -40,11 +40,11 @@ public class TestConstants {
         }
     }
 
-    public static final Study STUDY = new Study("Neuro-Degenerative Diseases Study", "neurod", 17, null, null, null, null, "neurod_researcher");
-    
-    public static final Resource secondStudyConsent = new FileSystemResource("test/conf/secondstudy-consent.html");
+    public static final Study STUDY = new Study("Neuro-Degenerative Diseases Study", "neurod", 17, null, null, null, "neurod_researcher");
+
+    public static final String SECOND_STUDY_CONSENT ="test/conf/secondstudy-consent.html";
     public static final Study SECOND_STUDY = new Study("Second Study", "secondstudy", 17,
-            "https://api.stormpath.com/v1/directories/5RfWcEwOK0l7goGe4ZX9cz", null, null, secondStudyConsent, "secondstudy_researcher");
+            "https://api.stormpath.com/v1/directories/5RfWcEwOK0l7goGe4ZX9cz", null, null, "secondstudy_researcher");
     
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";
