@@ -1,7 +1,25 @@
 package webdriver.pages;
 
-import static org.sagebionetworks.bridge.TestConstants.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.sagebionetworks.bridge.TestConstants.CANCEL_ACTION;
+import static org.sagebionetworks.bridge.TestConstants.CLOSE_ACTION;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL_INPUT;
+import static org.sagebionetworks.bridge.TestConstants.JOIN_LINK;
+import static org.sagebionetworks.bridge.TestConstants.JOIN_PAGE;
+import static org.sagebionetworks.bridge.TestConstants.MENU_LINK;
+import static org.sagebionetworks.bridge.TestConstants.PASSWORD_INPUT;
+import static org.sagebionetworks.bridge.TestConstants.RESET_PASSWORD_DIALOG;
+import static org.sagebionetworks.bridge.TestConstants.RESET_PASSWORD_LINK;
+import static org.sagebionetworks.bridge.TestConstants.SEND_ACTION;
+import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_ACT;
+import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_DIALOG;
+import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_LINK;
+import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_MESSAGE;
+import static org.sagebionetworks.bridge.TestConstants.SIGN_OUT_LINK;
+import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
+import static org.sagebionetworks.bridge.TestConstants.USERNAME_INPUT;
+import static org.sagebionetworks.bridge.TestConstants.USERNAME_LABEL;
 
 import org.fluentlenium.core.domain.FluentWebElement;
 import org.sagebionetworks.bridge.TestConstants;

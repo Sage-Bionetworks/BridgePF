@@ -112,6 +112,11 @@ public abstract class BaseController extends Controller {
     }
 
     protected String getHostname() {
+        // For testing.
+        String[] hosts = request().queryString().get("Bridge-Host");
+        if (hosts != null && hosts.length > 0) {
+            return hosts[0];
+        }
         String host = request().host();
         if (host.indexOf(":") > -1) {
             host = host.split(":")[0];

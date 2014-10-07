@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 
 import javax.annotation.Resource;
 
@@ -13,7 +14,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -45,6 +45,9 @@ public class AuthenticationServiceImplTest {
     AuthenticationServiceImpl authService;
     
     @Resource
+    StudyServiceImpl studyService;
+    
+    @Resource
     TestUserAdminHelper helper;
 
     @Resource
@@ -55,12 +58,14 @@ public class AuthenticationServiceImplTest {
     private boolean setUpComplete = false;
     private int testCount = 0;
     private UserSession session;
+    private Study study;
     
     @Before
     public void before() {
         if (!setUpComplete) {
             session = helper.createUser();
             setUpComplete = true;
+            study = studyService.getStudyByKey(TEST_STUDY_KEY);
         }
     }
     
@@ -74,17 +79,17 @@ public class AuthenticationServiceImplTest {
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoUsername() throws Exception {
-        authService.signIn(helper.getStudy(), new SignIn(null, "bar"));
+        authService.signIn(helper.getTestStudy(), new SignIn(null, "bar"));
     }
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoPassword() throws Exception {
-        authService.signIn(helper.getStudy(), new SignIn("foo", null));
+        authService.signIn(helper.getTestStudy(), new SignIn("foo", null));
     }
 
     @Test(expected = EntityNotFoundException.class)
     public void signInInvalidCredentials() throws Exception {
-        authService.signIn(helper.getStudy(), new SignIn("foo", "bar"));
+        authService.signIn(helper.getTestStudy(), new SignIn("foo", "bar"));
     }
 
     @Test
@@ -97,7 +102,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void signInWhenSignedIn() throws Exception {
-        UserSession session = authService.signIn(helper.getStudy(), helper.getUserSignIn());
+        UserSession session = authService.signIn(helper.getTestStudy(), helper.getUserSignIn());
         assertEquals("Username is for test2 user", helper.getTestUser().getUsername(), session.getUser().getUsername());
     }
 
@@ -140,8 +145,8 @@ public class AuthenticationServiceImplTest {
         try {
             // Create a user who has not consented.
             TestUser user = new TestUser("authTestUser", "authTestUser@sagebridge.org", "P4ssword");
-            aSession = helper.createUser(user, null, TestConstants.SECOND_STUDY, false, false);
-            authService.signIn(helper.getStudy(), user.getSignIn());
+            aSession = helper.createUser(user, null, study, false, false);
+            authService.signIn(helper.getTestStudy(), user.getSignIn());
             fail("Should have thrown consent exception");
         } catch(ConsentRequiredException e) {
             helper.deleteUser(aSession);
@@ -152,11 +157,11 @@ public class AuthenticationServiceImplTest {
     public void createUserInNonDefaultAccountStore() {
         TestUser nonDefaultUser = new TestUser("secondStudyUser", "secondStudyUser@sagebridge.org", "P4ssword");
         try {
-            Study defaultStudy = helper.getStudy();
-            authService.signUp(nonDefaultUser.getSignUp(), TestConstants.SECOND_STUDY);
+            Study defaultStudy = helper.getTestStudy();
+            authService.signUp(nonDefaultUser.getSignUp(), study);
 
             // Should have been saved to this account store, not the default account store.
-            Directory directory = stormpathClient.getResource(TestConstants.SECOND_STUDY.getStormpathDirectoryHref(),
+            Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(),
                     Directory.class);
             assertTrue("Account is in store", isInStore(directory, nonDefaultUser.getSignUp()));
             

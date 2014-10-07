@@ -1,0 +1,38 @@
+<div class="jumbotron">
+    <div class="panel-body">
+        <h3>Bridge Evaluation Study</h3>
+
+        <p>This is a study for partners to evaluate the 
+        <a href="https://sagebionetworks.jira.com/wiki/display/BRIDGE/Bridge+REST+API">Bridge Server APIs.</a> 
+        Join this study to use the API as a study participant. To use researcher APIs, 
+        <a href="mailto:bridgeit@@sagebase.org">contact the Bridge development team</a> from the email 
+        address you've used to register, and we'll convert your account to a researcher account. </p>
+        
+        <p class="field-error">{{message}}</p>
+    </div>
+    <form style="margin: 20px" role="form" name="signUpForm" bg-compare="password,passwordConfirm" novalidate>
+        <div class="form-group">
+            <label for="username">Username</label> 
+            <input type="text" class="form-control" name="username" required ng-model="username" placeholder="Enter username" bg-focus="true"/>
+            <p id="usernameRequiredError" class="field-error" ng-show="hasFieldError(signUpForm['username'], 'required')">Username is required.</p>
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label> 
+            <input type="email" class="form-control" name="email" required ng-model="email" placeholder="Enter email"/>
+            <p id="emailEmailError" class="field-error" ng-show="hasFieldError(signUpForm['email'], 'email')">Is this a valid email address?</p>
+            <p id="emailRequiredError" class="field-error" ng-show="hasFieldError(signUpForm['email'], 'required')">An email address is required.</p>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label> 
+            <input type="password" class="form-control" name="password" required ng-model="password" placeholder="Enter password"/>
+        </div>
+        <div class="form-group">
+            <input type="password" class="form-control" name="confirmPassword" required ng-model="passwordConfirm" placeholder="Re-enter your password"/>
+            <p id="passwordConfirmEqualError" class="field-error" ng-show="hasFieldError(signUpForm, 'equal')">Passwords do not match.</p>
+        </div>
+        <p>
+            <button class="btn btn-large btn-primary" ng-disabled="!canSubmit()" ng-click="submit()">Join</button>
+            <button ng-click="signIn()" class="btn btn-large btn-link">Sign In</button>
+        </p>
+    </form>
+</div>

@@ -1,7 +1,6 @@
 package webdriver.tests;
 
 import static play.test.Helpers.fakeApplication;
-
 import static play.test.Helpers.inMemoryDatabase;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;

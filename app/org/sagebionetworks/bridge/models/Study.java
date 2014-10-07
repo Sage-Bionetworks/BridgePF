@@ -1,11 +1,12 @@
 package org.sagebionetworks.bridge.models;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.springframework.core.io.Resource;
+
+import com.google.common.collect.ImmutableList;
 
 @BridgeTypeName("Study")
 public class Study implements BridgeEntity {
@@ -20,14 +21,14 @@ public class Study implements BridgeEntity {
      */
     private final String stormpathDirectoryHref;
     private final Resource consentAgreement;
-    private List<String> hostnames = Collections.emptyList();
-    private List<Tracker> trackers = Collections.emptyList();
+    private final List<String> hostnames;
+    private final List<Tracker> trackers;
     /**
      * The name of the role assigned to researchers for this study, who have 
      * permissions to engage in a wider range of activities vis-a-vis the API
      * than study participants.
      */
-    private String researcherRole;
+    private final String researcherRole;
     
     public Study(String name, String key, int minAge, String stormpathDirectoryHref, List<String> hostnames,
             List<Tracker> trackers, Resource consentAgreement, String researcherRole) {
@@ -36,12 +37,8 @@ public class Study implements BridgeEntity {
         this.minAge = minAge;
         this.stormpathDirectoryHref = stormpathDirectoryHref;
         this.consentAgreement = consentAgreement;
-        if (hostnames != null) {
-            this.hostnames = Collections.unmodifiableList(hostnames);
-        }
-        if (trackers != null) {
-            this.trackers = Collections.unmodifiableList(trackers);
-        }
+        this.hostnames = ImmutableList.copyOf(hostnames); // Collections.unmodifiableList(hostnames);
+        this.trackers = ImmutableList.copyOf(trackers); // Collections.unmodifiableList(trackers);
         this.researcherRole = researcherRole;
     }
     

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.exceptions;
 
 import org.apache.commons.httpclient.HttpStatus;
-
 import org.sagebionetworks.bridge.models.UserSession;
 
 public class ConsentRequiredException extends BridgeServiceException {

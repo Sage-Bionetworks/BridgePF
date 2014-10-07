@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.events.UserEnrolledEvent;
 import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.Study;
@@ -63,11 +64,11 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     }
 
     @Override
-    public User consentToResearch(User caller, ConsentSignature consentSignature, final Study study, boolean sendEmail)
+    public User consentToResearch(User caller, ConsentSignature consentSignature, Study study, boolean sendEmail)
             throws BridgeServiceException {
         
         if (caller.isConsent()) {
-            throw new BridgeServiceException("User has already consented");
+            throw new BridgeServiceException("User has already consented.");
         } else if (study == null) {
             throw new BadRequestException("Study is required.");
         } else if (consentSignature == null) {
@@ -84,7 +85,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
 
             // HealthID
             final String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            HealthId healthId = getHealthId(healthIdKey, customData); // This sets the ID, which we will need when fully
+            final HealthId healthId = getHealthId(healthIdKey, customData); // This sets the ID, which we will need when fully
 
             {
                 // TODO: Old. To be removed.
