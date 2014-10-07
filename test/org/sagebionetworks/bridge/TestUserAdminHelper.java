@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
+
 import java.util.List;
 
 import org.sagebionetworks.bridge.TestConstants.TestUser;
@@ -18,8 +20,6 @@ import org.sagebionetworks.bridge.services.UserAdminService;
  * exists in the local and dev environments; you can get the credentials from Alx).
  */
 public class TestUserAdminHelper {
-
-    private static final String STUDY_HOST = "pd.sagebridge.org";
 
     UserAdminService userAdminService;
     AuthenticationService authService;
@@ -44,12 +44,12 @@ public class TestUserAdminHelper {
     }
 
     public UserSession createUser(TestUser user) {
-        Study study = studyService.getStudyByHostname(STUDY_HOST);
+        Study study = studyService.getStudyByKey(TEST_STUDY_KEY);
         return userAdminService.createUser(testUser.getSignUp(), null, study, true, true);
     }
     
     public UserSession createUser(List<String> roles) {
-        Study study = studyService.getStudyByHostname(STUDY_HOST);
+        Study study = studyService.getStudyByKey(TEST_STUDY_KEY);
         return userAdminService.createUser(testUser.getSignUp(), roles, study, true, true);
     }
     
@@ -64,8 +64,8 @@ public class TestUserAdminHelper {
         }
     }
 
-    public Study getStudy() {
-        return studyService.getStudyByHostname(STUDY_HOST);
+    public Study getTestStudy() {
+        return studyService.getStudyByKey(TEST_STUDY_KEY);
     }
 
     public SignIn getUserSignIn() {

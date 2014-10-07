@@ -6,13 +6,18 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.util.Collections;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.User;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 
 import com.amazonaws.regions.Region;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
@@ -39,8 +44,10 @@ public class SendMailViaAmazonServiceTest {
         service.setFromEmail(recipientEmail);
         service.setEmailClient(emailClient);
         
+        Resource secondStudyConsent = new FileSystemResource("test/conf/secondstudy-consent.html");
         consent = new ConsentSignature("Test 2", "1950-05-05");
-        study = new Study("Second Study", "secondstudy", 17, null, null, null, TestConstants.secondStudyConsent, "secondstudy_researcher");
+        study = new Study("Test Study", TestConstants.TEST_STUDY_KEY, 17, null, Collections.<String> emptyList(),
+                Collections.<Tracker> emptyList(), secondStudyConsent, "secondstudy_researcher");
     }
     
     @Test

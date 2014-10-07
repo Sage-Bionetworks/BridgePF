@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models;
 
-import java.util.Iterator;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -117,7 +116,7 @@ public class User implements BridgeEntity {
     }
 
     public void setConsent(boolean consent) {
-        this.consent = consent;
+        //this.consent = consent;
     }
     
     public boolean isDataSharing() {

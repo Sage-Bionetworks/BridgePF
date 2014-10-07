@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 
 import javax.annotation.Resource;
 
@@ -72,7 +73,7 @@ public class StormPathUserAdminServiceTest {
     @Before
     public void before() {
         if (!setUpComplete) {
-            study = studyService.getStudyByHostname("pd.sagebridge.org");
+            study = studyService.getStudyByKey(TEST_STUDY_KEY);
             
             SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
             

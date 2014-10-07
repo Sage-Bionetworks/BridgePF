@@ -6,7 +6,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.sagebionetworks.bridge.TestConstants.*;
+import static org.sagebionetworks.bridge.TestConstants.GET_SURVEY_URL;
+import static org.sagebionetworks.bridge.TestConstants.GET_USER_SURVEY_URL;
+import static org.sagebionetworks.bridge.TestConstants.GET_VERSIONS_OF_SURVEY_URL;
+import static org.sagebionetworks.bridge.TestConstants.PUBLISH_SURVEY_URL;
+import static org.sagebionetworks.bridge.TestConstants.RECENT_PUBLISHED_SURVEYS_URL;
+import static org.sagebionetworks.bridge.TestConstants.RECENT_SURVEYS_URL;
+import static org.sagebionetworks.bridge.TestConstants.SURVEYS_URL;
+import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
+import static org.sagebionetworks.bridge.TestConstants.VERSION_SURVEY_URL;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 

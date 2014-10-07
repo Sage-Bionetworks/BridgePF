@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 
 import java.util.List;
 
@@ -9,16 +12,18 @@ import javax.annotation.Resource;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.TestABSchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.TestSimpleSchedulePlan;
+import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -29,10 +34,17 @@ public class DynamoSchedulePlanDaoTest {
     @Resource
     DynamoSchedulePlanDao schedulePlanDao;
     
+    @Resource
+    StudyServiceImpl studyService;
+    
+    private Study study;
+    
     @Before
     public void before() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class, "modifiedOn", "version", "strategy");
+        study = studyService.getStudyByKey(TEST_STUDY_KEY);
+        Preconditions.checkNotNull(study);
     }
     
     @Test
@@ -59,15 +71,15 @@ public class DynamoSchedulePlanDaoTest {
         schedulePlanDao.updateSchedulePlan(abPlan);
         
         // Get it from DynamoDB
-        SchedulePlan newPlan = schedulePlanDao.getSchedulePlan(TestConstants.SECOND_STUDY, abPlan.getGuid());
+        SchedulePlan newPlan = schedulePlanDao.getSchedulePlan(study, abPlan.getGuid());
         assertEquals("Schedule plan contains correct strategy class type", SimpleScheduleStrategy.class, newPlan.getStrategy().getClass());
         
         assertEquals("The strategy has been updated", simplePlan.getStrategy().hashCode(), newPlan.getStrategy().hashCode());
         
         // delete, throws exception
-        schedulePlanDao.deleteSchedulePlan(TestConstants.SECOND_STUDY, newPlan.getGuid());
+        schedulePlanDao.deleteSchedulePlan(study, newPlan.getGuid());
         try {
-            schedulePlanDao.getSchedulePlan(TestConstants.SECOND_STUDY, newPlan.getGuid());
+            schedulePlanDao.getSchedulePlan(study, newPlan.getGuid());
             fail("Should have thrown an entity not found exception");
         } catch(EntityNotFoundException e) {
         }
@@ -81,7 +93,7 @@ public class DynamoSchedulePlanDaoTest {
         schedulePlanDao.createSchedulePlan(abPlan);
         schedulePlanDao.createSchedulePlan(simplePlan);
         
-        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(TestConstants.SECOND_STUDY);
+        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(study);
         assertEquals("2 plans exist", 2, plans.size());
     }
 

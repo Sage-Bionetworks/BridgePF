@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.CONSENT_URL;
 import static org.sagebionetworks.bridge.TestConstants.RESUME_URL;
 import static org.sagebionetworks.bridge.TestConstants.SUSPEND_URL;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
@@ -17,20 +18,21 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import play.libs.WS.Response;
+
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import play.libs.WS.Response;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -40,11 +42,16 @@ public class ConsentControllerTest {
 
     @Resource
     private TestUserAdminHelper helper;
+    
+    @Resource
+    private StudyServiceImpl studyService;
 
     @Resource
     private StudyConsentDao studyConsentDao;
     
     private UserSession session;
+    
+    private Study study;
 
     @Before
     public void before() {
@@ -52,16 +59,17 @@ public class ConsentControllerTest {
 
         // TODO need to remove the study consent dao - ideally this information is already there, and we don't need to
         // create it.
-        StudyConsent consent = studyConsentDao.addConsent(helper.getStudy().getKey(), "fake-path", helper.getStudy()
+        StudyConsent consent = studyConsentDao.addConsent(helper.getTestStudy().getKey(), "fake-path", helper.getTestStudy()
                 .getMinAge());
         studyConsentDao.setActive(consent, true);
         timestamp = consent.getCreatedOn();
+        study = studyService.getStudyByKey(TEST_STUDY_KEY);
     }
 
     @After
     public void after() {
         helper.deleteUser(session);
-        studyConsentDao.deleteConsent(helper.getStudy().getKey(), timestamp);
+        studyConsentDao.deleteConsent(helper.getTestStudy().getKey(), timestamp);
     }
     
     @Test
@@ -97,7 +105,7 @@ public class ConsentControllerTest {
                 UserSession session = null;
                 try {
                     TestUser user = new TestUser("johnsmith", "johnsmith@sagebridge.org", "password");
-                    session = helper.createUser(user, null, TestConstants.SECOND_STUDY, true, false);
+                    session = helper.createUser(user, null, study, true, false);
                     
                     // Consent new user again
                     ObjectNode node = JsonNodeFactory.instance.objectNode();

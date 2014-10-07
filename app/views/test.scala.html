@@ -1,0 +1,168 @@
+@(auth: String)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Bridge Evaluation Study - Sage Bionetworks</title>
+<meta name="viewport" content="width=device-width" />
+<base href="/" />
+<script>window._session = @Html(auth);</script>
+<link rel="stylesheet" href="../shared/build/bridge-shared.min.aabcc93c.css" />
+<style>
+html, body {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url(../test/images/cubes.png);
+}
+.jumbotron { 
+    border: 1px solid #3D92C6;
+    max-width: 600px; 
+    margin: 0 auto;
+}
+.view-holder {
+    width: 100%; 
+    height: 100%; 
+    padding-top: 20px;
+}
+.field-error {
+    font-size: 16px ! important;
+    font-weight: bold ! important;
+    color: rgb(169, 68, 66) ! important;
+}
+</style>
+</head>
+<body ng-app="test" ng-controller="MainController">
+
+<div class="view-holder" ng-view></div>
+    
+<script src="shared/build/bridge-shared.min.5491fd67.js"></script>
+<script>
+bridgeShared.factory('interceptAuth', ['$q', '$injector', '$window', function($q, $injector, $window) {
+    return {
+        'responseError': function(rejection) {
+            if (rejection.status === 401) {
+                var signInService = $injector.get('signInService');
+                signInService.open(rejection.config);
+            } else if (rejection.status === 412) {
+                var authService = $injector.get('authService');
+                authService.initSession(rejection.data);
+                $window.location.replace("#/consent");
+            }
+            return $q.reject(rejection);
+        }
+    };
+}]);
+bridgeShared.config(['$httpProvider', function($httpProvider) {
+    $httpProvider.interceptors.push('interceptAuth');
+}]);
+
+var test = angular.module('test', ['bridge.shared']);
+
+test.config(['$routeProvider', function($routeProvider) {
+    $routeProvider.when('/joined/:email', {
+        templateUrl: '/test/views/joined.html',
+        controller: 'JoinedController'
+    })
+    .when('/verifyEmail', {
+        templateUrl: '/test/views/verify-email.html',
+        controller: 'VerifyEmailController'
+    })
+    .when('/consent', {
+        templateUrl: '/test/views/consent.html',
+        controller: "ConsentController"
+    })
+    .otherwise({
+        templateUrl: '/test/views/main.html',
+        controller: 'MainController'
+    });
+}])
+.controller('MainController', function($scope, $location, formService, authService, signInService) {
+
+    formService.initScope($scope, 'signUpForm');
+
+    $scope.submit = function() {
+        if ($scope.signUpForm.$valid) {
+            var credentials = formService.formToJSON($scope.signUpForm, ['username', 'email', 'password']);
+            $scope.message = '';
+            authService.signUp(credentials).then(function() {
+                $location.path('/joined/'+credentials.email);
+            }, function(response) {
+                $scope.message = response.data.message;
+            });
+        }
+    };
+    
+    $scope.signIn = function() {
+        signInService.open();
+    };
+    
+    $scope.requestResetPassword = function() {
+        $location.path('/requestResetPassword');
+    };
+
+})
+.controller('JoinedController', function($scope, $routeParams) {
+    $scope.email = $routeParams.email;
+})
+.controller('VerifyEmailController', function($scope, $route, $location, $http, $humane, authService, formService) {
+
+    $scope.setMessage("Verifying...");
+    
+    var sptoken = formService.retrieveSpToken($route);
+    authService.verifyEmail({sptoken: sptoken}).then(function(response) {
+        $scope.setMessage("Your email address has been verified. Thank you!");
+    }, function(response) {
+        if (response.status === 412) {
+            $location.path("#/consent");
+        } else {
+            $scope.setMessage(response.data.message, "danger");
+        }
+    });
+    
+})
+.controller('ConsentController', function($scope, $http, $humane, formService) {
+    formService.initScope($scope, 'consentForm');
+    
+    $scope.showConsented = false;
+    $scope.date = new Date();
+
+    function focusName() {
+        setTimeout(function() {
+            document.querySelector("input[name='name']").focus();    
+        }, 200);
+    }
+    
+    $scope.disabled = function(date, mode) {
+        return date.getTime() > $scope.date.getTime();
+    };
+
+    $scope.open = function($event) {
+        $event.preventDefault();
+        $event.stopPropagation();
+        $scope.opened = true;
+    };
+
+    $scope.dateOptions = {
+        formatYear : 'yyyy',
+        startingDay : 1
+    };
+    
+    $scope.maxDate = 18;
+
+    $scope.submit = function() {
+        var consent = formService.formToJSON($scope.consentForm, ['name', 'birthdate']);
+        consent.birthdate = consent.birthdate.toISOString().split('T')[0];
+
+        $http.post('/api/v1/consent', consent).then(function(response) {
+            $scope.showConsented = true;
+        }, $humane.status);
+    };
+   
+});
+
+</script>
+</body>
+</html>
+

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 
 import java.util.Date;
 import java.util.List;
@@ -12,13 +13,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -32,15 +34,20 @@ public class DynamoHealthDataDaoTest {
     private DynamoHealthDataDao healthDataDao;
     
     @Resource
+    private StudyServiceImpl studyService;
+    
+    @Resource
     private TestUserAdminHelper helper;
     
     private UserSession session;
+    private Study study;
     
     @Before
     public void before() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         DynamoTestUtil.clearTable(DynamoHealthDataRecord.class, "startDate", "endDate", "data", "version");
         session = helper.createUser();
+        study = studyService.getStudyByKey(TEST_STUDY_KEY);
     }
     
     @After
@@ -59,7 +66,7 @@ public class DynamoHealthDataDaoTest {
     private HealthDataKey createKey() {
         Tracker tracker = new Tracker();
         tracker.setId(1L);
-        return new HealthDataKey(TestConstants.SECOND_STUDY, tracker, session.getUser());
+        return new HealthDataKey(study, tracker, session.getUser());
     }
 
     @Test
