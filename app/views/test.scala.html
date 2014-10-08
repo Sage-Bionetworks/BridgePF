@@ -14,7 +14,18 @@ html, body {
     margin: 0;
     width: 100%;
     height: 100%;
-    background-image: url(../test/images/cubes.png);
+    background-image: -moz-linear-gradient(45deg, #cbb359, #438fad);
+    background-image: -webkit-linear-gradient(45deg, #cbb359, #438fad);
+    background-image: -o-linear-gradient(45deg, #cbb359, #438fad);
+    background-image: linear-gradient(45deg, #cbb359, #438fad);    
+}
+.inner-body {
+    background-image: url(../test/images/gplaypattern_alpha.png);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 .jumbotron { 
     border: 1px solid #3D92C6;
@@ -25,6 +36,7 @@ html, body {
     width: 100%; 
     height: 100%; 
     padding-top: 20px;
+    position: relative;
 }
 .field-error {
     font-size: 16px ! important;
@@ -34,9 +46,8 @@ html, body {
 </style>
 </head>
 <body ng-app="test" ng-controller="MainController">
-
+<div class="inner-body"></div>
 <div class="view-holder" ng-view></div>
-    
 <script src="shared/build/bridge-shared.min.f9f3db72.js"></script>
 <script>
 angular.module('bridge.shared').factory('interceptAuth', function($q, $injector, $window) {

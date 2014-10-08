@@ -12,6 +12,7 @@ import static play.test.Helpers.testServer;
 
 import javax.annotation.Resource;
 
+import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,9 +20,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -35,32 +34,19 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ConsentControllerTest {
 
-    private long timestamp;
-
     @Resource
     private TestUserAdminHelper helper;
-    
-    @Resource
-    private StudyConsentDao studyConsentDao;
-    
+
     private UserSession session;
     
     @Before
     public void before() {
         session = helper.createUser();
-
-        // TODO need to remove the study consent dao - ideally this information is already there, and we don't need to
-        // create it.
-        StudyConsent consent = studyConsentDao.addConsent(helper.getTestStudy().getKey(),
-                "conf/email-templates/teststudy-consent.html", helper.getTestStudy().getMinAge());
-        studyConsentDao.setActive(consent, true);
-        timestamp = consent.getCreatedOn();
     }
 
     @After
     public void after() {
         helper.deleteUser(session);
-        studyConsentDao.deleteConsent(helper.getTestStudy().getKey(), timestamp);
     }
     
     @Test
@@ -101,7 +87,7 @@ public class ConsentControllerTest {
                     // Consent new user again
                     ObjectNode node = JsonNodeFactory.instance.objectNode();
                     node.put("name", "John Smith");
-                    node.put("birthdate", DateUtils.getCurrentISODate()); // date only, no time.
+                    node.put("birthdate", DateUtils.getISODate((new DateTime()).minusYears(20)));
 
                     Response giveConsentSuccess = TestUtils.getURL(session.getSessionToken(), CONSENT_URL)
                                                     .post(node.toString())
