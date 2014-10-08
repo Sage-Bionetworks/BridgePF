@@ -270,8 +270,7 @@
                             <ref bean="med-tracker"/>
                         </list>
                     </constructor-arg>
-                    <constructor-arg index="6" value="file:conf/email-templates/neurod-consent.html"/>
-                    <constructor-arg index="7" value="neurod_researcher"/>                       
+                    <constructor-arg index="6" value="neurod_researcher"/>                       
                 </bean>
             </list>
         </property>
@@ -355,6 +354,7 @@
     <bean id="sendEmailViaAmazonService" class="org.sagebionetworks.bridge.services.SendMailViaAmazonService">
         <property name="fromEmail" value="support@sagebridge.org"/>
         <property name="emailClient" ref="sesClient" />
+        <property name="studyService" ref="studyService" />
     </bean>
     
     <bean id="userAdminService" class="org.sagebionetworks.bridge.services.StormPathUserAdminService">

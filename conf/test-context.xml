@@ -42,8 +42,7 @@
                             <ref bean="med-tracker"/>
                         </list>
                     </constructor-arg>
-                    <constructor-arg index="6" value="file:conf/email-templates/neurod-consent.html"/>
-                    <constructor-arg index="7" value="neurod_researcher"/>                       
+                    <constructor-arg index="6" value="neurod_researcher"/>                       
                 </bean>
                 <bean class="org.sagebionetworks.bridge.models.Study">
                     <constructor-arg index="0" value="Second Study"/>
@@ -58,8 +57,7 @@
                     <constructor-arg index="5">
                         <list></list>
                     </constructor-arg>
-                    <constructor-arg index="6" value="file:conf/email-templates/secondstudy-consent.html"/>
-                    <constructor-arg index="7" value="secondstudy_researcher"/>
+                    <constructor-arg index="6" value="secondstudy_researcher"/>
                 </bean>
             </list>
         </property>
