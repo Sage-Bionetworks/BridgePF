@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
@@ -18,6 +17,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
+import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
@@ -160,7 +160,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         try {
             Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
-
+            // Create Stormpath account
             account = stormpathClient.instantiate(Account.class);
             account.setGivenName("<EMPTY>");
             account.setSurname("<EMPTY>");
@@ -168,6 +168,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             account.setUsername(signUp.getUsername());
             account.setPassword(signUp.getPassword());
             directory.createAccount(account);
+            // Assign a health code
+            CustomData customData = account.getCustomData();
+            HealthId healthId = healthCodeService.create();
+            String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+            customData.put(healthIdKey, healthCodeEncryptor.encrypt(healthId.getId()));
+            customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
+            customData.save();
         } catch (ResourceException re) {
             throw new BadRequestException(re.getDeveloperMessage());
         }

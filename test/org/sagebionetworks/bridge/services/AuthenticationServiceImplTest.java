@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 
 import javax.annotation.Resource;
 
@@ -14,8 +13,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -35,6 +36,7 @@ import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -44,6 +46,12 @@ public class AuthenticationServiceImplTest {
     @Resource
     private AuthenticationServiceImpl authService;
     
+    @Resource
+    private BridgeEncryptor healthCodeEncryptor;
+
+    @Resource
+    private HealthCodeService healthCodeService;
+
     @Resource
     private StudyServiceImpl studyService;
     
@@ -163,7 +171,7 @@ public class AuthenticationServiceImplTest {
             // Should have been saved to this account store, not the default account store.
             Directory directory = stormpathClient.getResource(otherStudy.getStormpathDirectoryHref(), Directory.class);
             assertTrue("Account is in store", isInStore(directory, nonDefaultUser.getSignUp()));
-
+            assertTrue("Account has health code", hasHealthCode(otherStudy, directory, nonDefaultUser.getSignUp()));
             directory = stormpathClient.getResource(defaultStudy.getStormpathDirectoryHref(), Directory.class);
             assertFalse("Account is not in store", isInStore(directory, nonDefaultUser.getSignUp()));
         } finally {
@@ -179,7 +187,7 @@ public class AuthenticationServiceImplTest {
             account.delete();
         }
     }
-    
+
     private boolean isInStore(Directory directory, SignUp signUp) {
         for (Account account : directory.getAccounts()) {
             if (account.getEmail().equals(signUp.getEmail())) {
@@ -187,5 +195,32 @@ public class AuthenticationServiceImplTest {
             }
         }
         return false;
+    }
+
+    private boolean hasHealthCode(Study study, Directory directory, SignUp signUp) {
+        for (Account account : directory.getAccounts()) {
+            if (account.getEmail().equals(signUp.getEmail())) {
+                return hasHealthCode(study, account);
+            }
+        }
+        return false;
+    }
+
+    private boolean hasHealthCode(Study study, Account account) {
+        final CustomData customData = account.getCustomData();
+        final String hdcKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+        final String encryptedId = (String)customData.get(hdcKey);
+        if (encryptedId == null) {
+            return false;
+        }
+        String healthId = healthCodeEncryptor.decrypt(encryptedId);
+        if (healthId == null) {
+            return false;
+        }
+        String healthCode = healthCodeService.getHealthCode(healthId);
+        if (healthCode == null) {
+            return false;
+        }
+        return true;
     }
 }

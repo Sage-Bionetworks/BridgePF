@@ -6,7 +6,6 @@ import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.CONSENT_URL;
 import static org.sagebionetworks.bridge.TestConstants.RESUME_URL;
 import static org.sagebionetworks.bridge.TestConstants.SUSPEND_URL;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
@@ -22,10 +21,8 @@ import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -54,8 +51,8 @@ public class ConsentControllerTest {
 
         // TODO need to remove the study consent dao - ideally this information is already there, and we don't need to
         // create it.
-        StudyConsent consent = studyConsentDao.addConsent(helper.getTestStudy().getKey(), "fake-path", helper.getTestStudy()
-                .getMinAge());
+        StudyConsent consent = studyConsentDao.addConsent(helper.getTestStudy().getKey(),
+                "conf/email-templates/teststudy-consent.html", helper.getTestStudy().getMinAge());
         studyConsentDao.setActive(consent, true);
         timestamp = consent.getCreatedOn();
     }

@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.models;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.springframework.core.io.Resource;
 
 import com.google.common.collect.ImmutableList;
 
@@ -20,9 +20,9 @@ public class Study implements BridgeEntity {
      * study, linking back to the correct host name for that study.
      */
     private final String stormpathDirectoryHref;
-    private final Resource consentAgreement;
     private final List<String> hostnames;
     private final List<Tracker> trackers;
+    
     /**
      * The name of the role assigned to researchers for this study, who have 
      * permissions to engage in a wider range of activities vis-a-vis the API
@@ -31,20 +31,19 @@ public class Study implements BridgeEntity {
     private final String researcherRole;
     
     public Study(String name, String key, int minAge, String stormpathDirectoryHref, List<String> hostnames,
-            List<Tracker> trackers, Resource consentAgreement, String researcherRole) {
+            List<Tracker> trackers, String researcherRole) {
         this.name = name;
         this.key = key; 
         this.minAge = minAge;
         this.stormpathDirectoryHref = stormpathDirectoryHref;
-        this.consentAgreement = consentAgreement;
-        this.hostnames = ImmutableList.copyOf(hostnames); // Collections.unmodifiableList(hostnames);
-        this.trackers = ImmutableList.copyOf(trackers); // Collections.unmodifiableList(trackers);
+        this.hostnames = (hostnames == null) ? Collections.<String>emptyList() : ImmutableList.copyOf(hostnames);
+        this.trackers = (trackers == null) ? Collections.<Tracker>emptyList() : ImmutableList.copyOf(trackers);
         this.researcherRole = researcherRole;
     }
     
     public Study(Study study) {
         this(study.getName(), study.getKey(), study.getMinAge(), study.getStormpathDirectoryHref(), study.getHostnames(), 
-            study.getTrackers(), study.getConsentAgreement(), study.getResearcherRole());
+            study.getTrackers(), study.getResearcherRole());
     }
     
     public List<String> getHostnames() {
@@ -65,9 +64,6 @@ public class Study implements BridgeEntity {
     public List<Tracker> getTrackers() {
         return trackers;
     }
-    public Resource getConsentAgreement() {
-        return consentAgreement;
-    }
     public String getResearcherRole() {
         return researcherRole;
     }
@@ -83,7 +79,7 @@ public class Study implements BridgeEntity {
     @Override
     public String toString() {
         return "Study [name=" + name + ", key=" + key + ", minAge=" + minAge + ", stormpathDirectoryHref="
-                + stormpathDirectoryHref + ", consentAgreement=" + consentAgreement + ", hostnames=" + hostnames
+                + stormpathDirectoryHref + ", hostnames=" + hostnames
                 + ", trackers=" + trackers + ", researcherRole=" + researcherRole + "]";
     }
 }

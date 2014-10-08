@@ -17,10 +17,5 @@
         <property name="authService" ref="authenticationService"/>
         <property name="studyService" ref="studyService"/>
     </bean>
- 
-    <bean id="studyConsentBootstrapper" class="org.sagebionetworks.bridge.StudyConsentBootstrapper">
-        <constructor-arg index="0" ref="studyService" />
-        <constructor-arg index="1" ref="studyConsentDao" />
-    </bean>
 
 </beans>

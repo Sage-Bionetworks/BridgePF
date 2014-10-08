@@ -1,7 +1,6 @@
 package webdriver.tests;
 
 import static play.test.Helpers.fakeApplication;
-
 import static play.test.Helpers.inMemoryDatabase;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
@@ -10,9 +9,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver.Window;
+import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.sagebionetworks.bridge.TestConstants;
-import org.openqa.selenium.phantomjs.PhantomJSDriver;
 
 import play.libs.F.Callback;
 import play.test.TestBrowser;
