@@ -1,14 +1,10 @@
 package org.sagebionetworks.bridge;
 
 import org.openqa.selenium.firefox.FirefoxDriver;
-
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.Study;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 
 public class TestConstants {
     
@@ -40,12 +36,7 @@ public class TestConstants {
         }
     }
 
-    public static final Study STUDY = new Study("Neuro-Degenerative Diseases Study", "neurod", 17, null, null, null, "neurod_researcher");
-
-    public static final String SECOND_STUDY_CONSENT ="test/conf/secondstudy-consent.html";
-    public static final Study SECOND_STUDY = new Study("Second Study", "secondstudy", 17,
-            "https://api.stormpath.com/v1/directories/5RfWcEwOK0l7goGe4ZX9cz", null, null, "secondstudy_researcher");
-    
+    public static final String TEST_STUDY_KEY = "teststudy";
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";
     public static final String API_URL = "/api/v1";

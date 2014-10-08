@@ -6,7 +6,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.sagebionetworks.bridge.TestConstants.*;
+import static org.sagebionetworks.bridge.TestConstants.GET_SURVEY_URL;
+import static org.sagebionetworks.bridge.TestConstants.GET_USER_SURVEY_URL;
+import static org.sagebionetworks.bridge.TestConstants.GET_VERSIONS_OF_SURVEY_URL;
+import static org.sagebionetworks.bridge.TestConstants.PUBLISH_SURVEY_URL;
+import static org.sagebionetworks.bridge.TestConstants.RECENT_PUBLISHED_SURVEYS_URL;
+import static org.sagebionetworks.bridge.TestConstants.RECENT_SURVEYS_URL;
+import static org.sagebionetworks.bridge.TestConstants.SURVEYS_URL;
+import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
+import static org.sagebionetworks.bridge.TestConstants.VERSION_SURVEY_URL;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
@@ -21,11 +29,9 @@ import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
-import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -42,26 +48,20 @@ import com.google.common.collect.Lists;
 public class SurveyControllerTest {
 
     @Resource
-    TestUserAdminHelper helper;
+    private TestUserAdminHelper helper;
     
     @Resource
-    DynamoSurveyDao surveyDao;
-    
-    @Resource
-    StudyServiceImpl studyService;
+    private DynamoSurveyDao surveyDao;
     
     private ObjectMapper mapper = new ObjectMapper();
-    private Study study;
     private List<String> roles;
-    
     private boolean setUpComplete = false;
 
     @Before
     public void before() {
         if (!setUpComplete) {
-            study = studyService.getStudyByHostname("localhost");
-            roles = Lists.newArrayList(study.getKey()+"_researcher");
-            List<Survey> surveys = surveyDao.getSurveys(study.getKey());
+            roles = Lists.newArrayList(helper.getTestStudy().getKey()+"_researcher");
+            List<Survey> surveys = surveyDao.getSurveys(helper.getTestStudy().getKey());
             for (Survey survey : surveys) {
                 surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
                 surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());

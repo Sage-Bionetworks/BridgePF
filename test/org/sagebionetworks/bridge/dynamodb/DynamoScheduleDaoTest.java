@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 
 import java.util.List;
 
@@ -9,14 +10,14 @@ import javax.annotation.Resource;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
+import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -32,16 +33,20 @@ public class DynamoScheduleDaoTest {
     @Resource
     DynamoScheduleDao scheduleDao;
     
+    @Resource
+    StudyServiceImpl studyService;
+    
+    private Study study;
+    
     @Before
     public void before() {
         DynamoInitializer.init(DynamoSchedule.class);
         DynamoTestUtil.clearTable(DynamoSchedule.class);
+        study = studyService.getStudyByKey(TEST_STUDY_KEY);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void testInvalidScheduleIsRejected() {
-        Study study = TestConstants.SECOND_STUDY;
-
         User user = new User();
         user.setId("test-user");
         
@@ -59,8 +64,6 @@ public class DynamoScheduleDaoTest {
 
     @Test
     public void crudSchedules() {
-        Study study = TestConstants.SECOND_STUDY;
-
         User user = new User();
         user.setId("test-user");
         

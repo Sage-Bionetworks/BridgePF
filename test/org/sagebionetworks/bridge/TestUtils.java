@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge;
 
-import static org.sagebionetworks.bridge.TestConstants.*;
+import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 
 import java.util.Map;
 

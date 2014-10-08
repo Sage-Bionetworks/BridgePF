@@ -15,6 +15,8 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import play.libs.Json;
 import play.mvc.Controller;
@@ -31,6 +33,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @org.springframework.stereotype.Controller
 public abstract class BaseController extends Controller {
 
+    private static Logger logger = LoggerFactory.getLogger(BaseController.class);
+    
     protected AuthenticationService authenticationService;
     protected StudyService studyService;
     protected CacheProvider cacheProvider;
@@ -112,6 +116,14 @@ public abstract class BaseController extends Controller {
     }
 
     protected String getHostname() {
+        // For testing, we check a few places for a forced host value.
+        String[] hosts = request().queryString().get("Bridge-Host");
+        if (hosts != null && hosts.length > 0) {
+            return hosts[0];
+        }
+        if (request().getHeader("Bridge-Host") != null) {
+            return request().getHeader("Bridge-Host");
+        }
         String host = request().host();
         if (host.indexOf(":") > -1) {
             host = host.split(":")[0];
@@ -120,12 +132,13 @@ public abstract class BaseController extends Controller {
     }
     
     private String getSessionToken() {
-        Cookie sessionCookie = request().cookie(BridgeConstants.SESSION_TOKEN_HEADER);
-        if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
-            return sessionCookie.value();
-        }
         String[] session = request().headers().get(BridgeConstants.SESSION_TOKEN_HEADER);
         if (session == null || session.length == 0 || session[0].isEmpty()) {
+            Cookie sessionCookie = request().cookie(BridgeConstants.SESSION_TOKEN_HEADER);
+            if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
+                logger.info("Found session in cookie: " + sessionCookie.value());
+                return sessionCookie.value();
+            }
             return null;
         }
         return session[0];

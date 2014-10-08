@@ -1,9 +1,10 @@
 package controllers;
 
+import static org.junit.Assert.assertEquals;
+import static org.sagebionetworks.bridge.TestConstants.NEW_SURVEY_RESPONSE;
+import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
-import static org.junit.Assert.*;
-import static org.sagebionetworks.bridge.TestConstants.*;
 
 import java.util.List;
 
@@ -38,13 +39,13 @@ import com.google.common.collect.Lists;
 public class SurveyResponseControllerTest {
     
     @Resource
-    TestUserAdminHelper helper;
+    private TestUserAdminHelper helper;
     
     @Resource
-    DynamoSurveyResponseDao responseDao;
+    private DynamoSurveyResponseDao responseDao;
     
     @Resource
-    DynamoSurveyDao surveyDao;
+    private DynamoSurveyDao surveyDao;
     
     private ObjectMapper mapper = new ObjectMapper();
     private TestSurvey survey;

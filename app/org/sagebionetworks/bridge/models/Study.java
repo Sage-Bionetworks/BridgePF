@@ -6,6 +6,8 @@ import java.util.List;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 
+import com.google.common.collect.ImmutableList;
+
 @BridgeTypeName("Study")
 public class Study implements BridgeEntity {
 
@@ -18,14 +20,15 @@ public class Study implements BridgeEntity {
      * study, linking back to the correct host name for that study.
      */
     private final String stormpathDirectoryHref;
-    private List<String> hostnames = Collections.emptyList();
-    private List<Tracker> trackers = Collections.emptyList();
+    private final List<String> hostnames;
+    private final List<Tracker> trackers;
+    
     /**
      * The name of the role assigned to researchers for this study, who have 
      * permissions to engage in a wider range of activities vis-a-vis the API
      * than study participants.
      */
-    private String researcherRole;
+    private final String researcherRole;
     
     public Study(String name, String key, int minAge, String stormpathDirectoryHref, List<String> hostnames,
             List<Tracker> trackers, String researcherRole) {
@@ -33,12 +36,8 @@ public class Study implements BridgeEntity {
         this.key = key; 
         this.minAge = minAge;
         this.stormpathDirectoryHref = stormpathDirectoryHref;
-        if (hostnames != null) {
-            this.hostnames = Collections.unmodifiableList(hostnames);
-        }
-        if (trackers != null) {
-            this.trackers = Collections.unmodifiableList(trackers);
-        }
+        this.hostnames = (hostnames == null) ? Collections.<String>emptyList() : ImmutableList.copyOf(hostnames);
+        this.trackers = (trackers == null) ? Collections.<Tracker>emptyList() : ImmutableList.copyOf(trackers);
         this.researcherRole = researcherRole;
     }
     

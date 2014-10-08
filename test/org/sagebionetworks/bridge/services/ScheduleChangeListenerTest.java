@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
@@ -11,7 +11,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
@@ -42,24 +41,25 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class ScheduleChangeListenerTest {
     
     @Resource
-    TestUserAdminHelper helper;
+    private TestUserAdminHelper helper;
     
     @Resource
-    ScheduleChangeListener listener;
+    private ScheduleChangeListener listener;
     
     @Resource
-    DynamoScheduleDao scheduleDao;
+    private DynamoScheduleDao scheduleDao;
     
     @Resource
-    DynamoSchedulePlanDao schedulePlanDao;
+    private DynamoSchedulePlanDao schedulePlanDao;
     
-    private Study study = TestConstants.SECOND_STUDY;
+    private Study study;
     
     @Before
     public void before() {
         DynamoInitializer.init(DynamoSchedule.class, DynamoSchedulePlan.class);
         DynamoTestUtil.clearTable(DynamoSchedule.class);
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
+        study = helper.getTestStudy();
     }
     
     // This won't fully work until we're gathering a list of users who are enrolled in the study,
@@ -153,7 +153,7 @@ public class ScheduleChangeListenerTest {
         plan.setGuid(planGuid);
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         plan.setStrategy(strategy);
-        plan.setStudyKey(TestConstants.SECOND_STUDY.getKey());
+        plan.setStudyKey(study.getKey());
         return plan;
     }
 

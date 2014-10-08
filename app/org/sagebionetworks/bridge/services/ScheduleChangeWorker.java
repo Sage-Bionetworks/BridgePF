@@ -178,14 +178,12 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
             schedule.setSchedulePlanGuid(plan.getGuid());
         }
     }
-    // TEMPORARY. This is all users who signed up for a study, not all who are, at this moment, consented to 
-    // participate. They'll certainly be very close in the alpha, so this is fine for now.
-    // Also, I would just return IDs here, but it seems that requirements will eventually require something
-    // more complex that this... not necessarily a user though. E.g. cohort codes.
+    
+    // TODO: Go back to the user consents to verify the user is in the study. 
+    // This will be slow, but accurate, if/until/when we have better.
     private ArrayList<User> getStudyUsers() {
         ArrayList<User> users = Lists.newArrayList();
         Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-        // TODO: Don't see a way to only retrieve the ID, is this paginated?!?
         AccountList accounts = application.getAccounts(); 
         for (Account account : accounts) {
             users.add(new User(account));

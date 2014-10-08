@@ -66,7 +66,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public User consentToResearch(final User caller, final ConsentSignature consentSignature, final Study study,
             final boolean sendEmail) throws BridgeServiceException {
         if (caller.isConsent()) {
-            throw new BridgeServiceException("User has already consented");
+            throw new BridgeServiceException("User has already consented.");
         } else if (study == null) {
             throw new BadRequestException("Study is required.");
         } else if (consentSignature == null) {
