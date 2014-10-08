@@ -20,7 +20,7 @@ import webdriver.pages.AppPage.RequestResetPasswordDialog;
 public class ResetPasswordTest extends BaseIntegrationTest {
     
     @Resource
-    public TestUserAdminHelper helper;
+    private TestUserAdminHelper helper;
     
     @Test
     public void resetPasswordCanBeCancelled() {

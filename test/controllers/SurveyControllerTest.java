@@ -50,26 +50,20 @@ import com.google.common.collect.Lists;
 public class SurveyControllerTest {
 
     @Resource
-    TestUserAdminHelper helper;
+    private TestUserAdminHelper helper;
     
     @Resource
-    DynamoSurveyDao surveyDao;
-    
-    @Resource
-    StudyServiceImpl studyService;
+    private DynamoSurveyDao surveyDao;
     
     private ObjectMapper mapper = new ObjectMapper();
-    private Study study;
     private List<String> roles;
-    
     private boolean setUpComplete = false;
 
     @Before
     public void before() {
         if (!setUpComplete) {
-            study = studyService.getStudyByHostname("localhost");
-            roles = Lists.newArrayList(study.getKey()+"_researcher");
-            List<Survey> surveys = surveyDao.getSurveys(study.getKey());
+            roles = Lists.newArrayList(helper.getTestStudy().getKey()+"_researcher");
+            List<Survey> surveys = surveyDao.getSurveys(helper.getTestStudy().getKey());
             for (Survey survey : surveys) {
                 surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
                 surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());

@@ -44,15 +44,10 @@ public class ConsentControllerTest {
     private TestUserAdminHelper helper;
     
     @Resource
-    private StudyServiceImpl studyService;
-
-    @Resource
     private StudyConsentDao studyConsentDao;
     
     private UserSession session;
     
-    private Study study;
-
     @Before
     public void before() {
         session = helper.createUser();
@@ -63,7 +58,6 @@ public class ConsentControllerTest {
                 .getMinAge());
         studyConsentDao.setActive(consent, true);
         timestamp = consent.getCreatedOn();
-        study = studyService.getStudyByKey(TEST_STUDY_KEY);
     }
 
     @After
@@ -105,7 +99,7 @@ public class ConsentControllerTest {
                 UserSession session = null;
                 try {
                     TestUser user = new TestUser("johnsmith", "johnsmith@sagebridge.org", "password");
-                    session = helper.createUser(user, null, study, true, false);
+                    session = helper.createUser(user, null, helper.getTestStudy(), true, false);
                     
                     // Consent new user again
                     ObjectNode node = JsonNodeFactory.instance.objectNode();

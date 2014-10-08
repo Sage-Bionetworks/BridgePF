@@ -27,8 +27,7 @@ public class SignUpTest extends BaseIntegrationTest {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
                 JoinPage join = page.getJoinPage();
-                join.enterInvalidData("bridge", "bridgeit", "P4ssword",
-                        "P4ssword");
+                join.enterInvalidData("bridge", "bridgeit", "P4ssword", "P4ssword");
                 join.assertEmailEmailError();
             }
         });
@@ -41,8 +40,7 @@ public class SignUpTest extends BaseIntegrationTest {
                 AppPage page = new AppPage(browser);
                 JoinPage join = page.getJoinPage();
                 join.enterValidData();
-                join.enterInvalidDataAfterValidData("bridge", "", "P4ssword",
-                        "P4ssword");
+                join.enterInvalidDataAfterValidData("bridge", "", "P4ssword", "P4ssword");
                 join.assertEmailRequiredError();
             }
         });
@@ -54,8 +52,7 @@ public class SignUpTest extends BaseIntegrationTest {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
                 JoinPage join = page.getJoinPage();
-                join.enterInvalidData("bridge", "bridgeit@sagebase.org",
-                        "P4ssword", "P4ssword2");
+                join.enterInvalidData("bridge", "bridgeit@sagebase.org", "P4ssword", "P4ssword2");
                 join.assertPasswordConfirmEqualError();
             }
         });
@@ -67,8 +64,7 @@ public class SignUpTest extends BaseIntegrationTest {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
                 JoinPage join = page.getJoinPage();
-                join.enterInvalidData("", "bridgeit@sagebase.org", "P4ssword",
-                        "P4ssword");
+                join.enterInvalidData("", "bridgeit@sagebase.org", "P4ssword", "P4ssword");
             }
         });
     }
@@ -102,8 +98,7 @@ public class SignUpTest extends BaseIntegrationTest {
             public void invoke(TestBrowser browser) {
                 AppPage page = new AppPage(browser);
                 JoinPage join = page.getJoinPage();
-                join.enterInvalidData("bridge", "bridgeit@sagebase.org",
-                        "P4ssword", "");
+                join.enterInvalidData("bridge", "bridgeit@sagebase.org", "P4ssword", "");
             }
         });
     }

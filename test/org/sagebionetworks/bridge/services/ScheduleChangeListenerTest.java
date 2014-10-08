@@ -42,28 +42,25 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class ScheduleChangeListenerTest {
     
     @Resource
-    TestUserAdminHelper helper;
+    private TestUserAdminHelper helper;
     
     @Resource
-    ScheduleChangeListener listener;
+    private ScheduleChangeListener listener;
     
     @Resource
-    DynamoScheduleDao scheduleDao;
+    private DynamoScheduleDao scheduleDao;
     
     @Resource
-    DynamoSchedulePlanDao schedulePlanDao;
-    
-    @Resource
-    StudyServiceImpl studyService;
+    private DynamoSchedulePlanDao schedulePlanDao;
     
     private Study study;
     
     @Before
     public void before() {
-        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
-        DynamoTestUtil.clearTable(DynamoSchedule.class, "schedulePlanGuid", "data", "expires");
-        DynamoTestUtil.clearTable(DynamoSchedulePlan.class, "version", "modifiedOn", "strategy");
-        study = studyService.getStudyByKey(TEST_STUDY_KEY);
+        DynamoInitializer.init(DynamoSchedule.class, DynamoSchedulePlan.class);
+        DynamoTestUtil.clearTable(DynamoSchedule.class);
+        DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
+        study = helper.getTestStudy();
     }
     
     // This won't fully work until we're gathering a list of users who are enrolled in the study,

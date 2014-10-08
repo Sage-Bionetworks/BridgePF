@@ -42,30 +42,28 @@ import com.stormpath.sdk.directory.Directory;
 public class AuthenticationServiceImplTest {
 
     @Resource
-    AuthenticationServiceImpl authService;
+    private AuthenticationServiceImpl authService;
     
     @Resource
-    StudyServiceImpl studyService;
+    private StudyServiceImpl studyService;
     
     @Resource
-    TestUserAdminHelper helper;
+    private TestUserAdminHelper helper;
 
     @Resource
-    Client stormpathClient;
+    private Client stormpathClient;
     
     private static final int NUMBER_OF_TESTS = 12;
     
     private boolean setUpComplete = false;
     private int testCount = 0;
     private UserSession session;
-    private Study study;
     
     @Before
     public void before() {
         if (!setUpComplete) {
             session = helper.createUser();
             setUpComplete = true;
-            study = studyService.getStudyByKey(TEST_STUDY_KEY);
         }
     }
     
@@ -145,7 +143,7 @@ public class AuthenticationServiceImplTest {
         try {
             // Create a user who has not consented.
             TestUser user = new TestUser("authTestUser", "authTestUser@sagebridge.org", "P4ssword");
-            aSession = helper.createUser(user, null, study, false, false);
+            aSession = helper.createUser(user, null, helper.getTestStudy(), false, false);
             authService.signIn(helper.getTestStudy(), user.getSignIn());
             fail("Should have thrown consent exception");
         } catch(ConsentRequiredException e) {
@@ -157,14 +155,15 @@ public class AuthenticationServiceImplTest {
     public void createUserInNonDefaultAccountStore() {
         TestUser nonDefaultUser = new TestUser("secondStudyUser", "secondStudyUser@sagebridge.org", "P4ssword");
         try {
+             
             Study defaultStudy = helper.getTestStudy();
-            authService.signUp(nonDefaultUser.getSignUp(), study);
+            Study otherStudy = studyService.getStudyByKey("neurod");
+            authService.signUp(nonDefaultUser.getSignUp(), otherStudy);
 
             // Should have been saved to this account store, not the default account store.
-            Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(),
-                    Directory.class);
+            Directory directory = stormpathClient.getResource(otherStudy.getStormpathDirectoryHref(), Directory.class);
             assertTrue("Account is in store", isInStore(directory, nonDefaultUser.getSignUp()));
-            
+
             directory = stormpathClient.getResource(defaultStudy.getStormpathDirectoryHref(), Directory.class);
             assertFalse("Account is not in store", isInStore(directory, nonDefaultUser.getSignUp()));
         } finally {

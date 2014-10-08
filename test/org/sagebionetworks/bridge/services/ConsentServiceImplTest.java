@@ -46,8 +46,8 @@ public class ConsentServiceImplTest {
     @Before
     public void before() {
         session = helper.createUser();
-        studyConsent = studyConsentDao
-                .addConsent(helper.getTestStudy().getKey(), "/path/to", helper.getTestStudy().getMinAge());
+        studyConsent = studyConsentDao.addConsent(helper.getTestStudy().getKey(), "/path/to", helper.getTestStudy()
+                .getMinAge());
         studyConsentDao.setActive(studyConsent, true);
     }
 

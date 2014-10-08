@@ -116,7 +116,7 @@ public class User implements BridgeEntity {
     }
 
     public void setConsent(boolean consent) {
-        //this.consent = consent;
+        this.consent = consent;
     }
     
     public boolean isDataSharing() {

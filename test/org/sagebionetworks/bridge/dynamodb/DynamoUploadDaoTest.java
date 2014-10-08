@@ -28,13 +28,13 @@ public class DynamoUploadDaoTest {
 
     @Before
     public void before() {
-        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
-        clear();
+        DynamoInitializer.init(DynamoUpload.class);
+        DynamoTestUtil.clearTable(DynamoUpload.class);
     }
 
     @After
     public void after() {
-        clear();
+        DynamoTestUtil.clearTable(DynamoUpload.class);
     }
 
     @Test
@@ -59,18 +59,5 @@ public class DynamoUploadDaoTest {
         node.put("contentLength", text.getBytes().length);
         node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(text)));
         return UploadRequest.fromJson(node);
-    }
-
-    private void clear() {
-        DynamoTestUtil.clearTable(DynamoUpload.class,
-                "timestamp",
-                "objectId",
-                "healthCode",
-                "complete",
-                "version",
-                "name",
-                "contentLength",
-                "contentType",
-                "contentMd5");
     }
 }

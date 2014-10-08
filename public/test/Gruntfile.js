@@ -22,4 +22,5 @@ module.exports = function(grunt) {
     });
 
     grunt.registerTask('watch', ['hashres']);
+    grunt.registerTask('default', ['hashres']);
 };
