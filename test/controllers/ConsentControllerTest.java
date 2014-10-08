@@ -36,8 +36,6 @@ import play.libs.WS.Response;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ConsentControllerTest {
 
-    private long timestamp;
-
     @Resource
     private TestUserAdminHelper helper;
 
@@ -51,7 +49,6 @@ public class ConsentControllerTest {
     @After
     public void after() {
         helper.deleteUser(session);
-        studyConsentDao.deleteConsent(helper.getStudy().getKey(), timestamp);
     }
     
     @Test
