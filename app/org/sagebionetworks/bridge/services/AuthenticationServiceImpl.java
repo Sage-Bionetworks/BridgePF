@@ -28,7 +28,6 @@ import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountList;

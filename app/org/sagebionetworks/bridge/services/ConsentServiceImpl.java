@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.List;
 
+
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
@@ -11,12 +12,13 @@ import org.sagebionetworks.bridge.events.UserEnrolledEvent;
 import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
@@ -25,6 +27,8 @@ import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.CustomData;
 
 public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
+
+    private static Logger logger = LoggerFactory.getLogger(ConsentServiceImpl.class);
 
     private Client stormpathClient;
     private BridgeEncryptor healthCodeEncryptor;

@@ -256,9 +256,6 @@
                     <constructor-arg index="3" value="#{bridgeConfig.getProperty('stormpath.neurod.directory.href')}"/>
                     <constructor-arg index="4">
                         <list>
-                            <!-- HTTP endpoints -->
-                            <value>bridge-develop.herokuapp.com</value>
-                            <value>bridge-uat.herokuapp.com</value>
                             <!-- SSL endpoints -->
                             <value>pd-develop.herokuapp.com</value>
                             <value>pd-staging.sagebridge.org</value>
@@ -267,8 +264,6 @@
                     </constructor-arg>
                     <constructor-arg index="5">
                         <list>
-                            <ref bean="pb-tracker"/>
-                            <ref bean="med-tracker"/>
                         </list>
                     </constructor-arg>
                     <constructor-arg index="6" value="file:conf/email-templates/neurod-consent.html"/>
@@ -284,6 +279,10 @@
                             <!-- Local development endpoints -->
                             <value>10.0.2.2</value> <!-- IE VirtualBox Machine, local development -->
                             <value>localhost</value>
+                            <!-- HTTP endpoints -->
+                            <value>bridge-develop.herokuapp.com</value>
+                            <value>bridge-uat.herokuapp.com</value>
+                            <value>bridge-prod.herokuapp.com</value>
                             <!-- SSL endpoints -->
                             <value>test-develop.sagebridge.org</value>
                             <value>test-staging.sagebridge.org</value>
@@ -293,6 +292,7 @@
                     <constructor-arg index="5">
                         <list>
                             <ref bean="pb-tracker"/>
+                            <ref bean="med-tracker"/>
                         </list>
                     </constructor-arg>
                     <constructor-arg index="6" value="file:conf/email-templates/teststudy-consent.html"/>

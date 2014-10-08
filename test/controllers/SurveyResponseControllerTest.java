@@ -39,13 +39,13 @@ import com.google.common.collect.Lists;
 public class SurveyResponseControllerTest {
     
     @Resource
-    TestUserAdminHelper helper;
+    private TestUserAdminHelper helper;
     
     @Resource
-    DynamoSurveyResponseDao responseDao;
+    private DynamoSurveyResponseDao responseDao;
     
     @Resource
-    DynamoSurveyDao surveyDao;
+    private DynamoSurveyDao surveyDao;
     
     private ObjectMapper mapper = new ObjectMapper();
     private TestSurvey survey;

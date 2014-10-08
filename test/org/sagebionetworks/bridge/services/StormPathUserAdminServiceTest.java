@@ -60,14 +60,12 @@ public class StormPathUserAdminServiceTest {
 
     @BeforeClass
     public static void initialSetUp() {
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
-                "healthCode", "consentCreatedOn", "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class);
     }
 
     @AfterClass
     public static void finalCleanUp() {
-        DynamoTestUtil.clearTable(DynamoUserConsent2.class, "signedOn", "dataSharing", "name", "birthdate", "studyKey",
-                "healthCode", "consentCreatedOn", "version");
+        DynamoTestUtil.clearTable(DynamoUserConsent2.class);
     }
 
     @Before
@@ -76,7 +74,6 @@ public class StormPathUserAdminServiceTest {
             study = studyService.getStudyByKey(TEST_STUDY_KEY);
             
             SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
-            
             authService.signIn(study, signIn).getUser();
             
             setUpComplete = true;

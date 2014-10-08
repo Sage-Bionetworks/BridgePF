@@ -5,7 +5,9 @@ import javax.annotation.Resource;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -18,7 +20,10 @@ import webdriver.pages.AppPage;
 public class SignInTest extends BaseIntegrationTest {
     
     @Resource
-    TestUserAdminHelper helper;
+    private TestUserAdminHelper helper;
+    
+    @Resource
+    private StudyServiceImpl studyService;
     
     @Test
     public void signIn() {
@@ -26,7 +31,9 @@ public class SignInTest extends BaseIntegrationTest {
             public void invoke(TestBrowser browser) {
                 UserSession session = null;
                 try {
-                    session = helper.createUser();
+                    Study study = studyService.getStudyByKey("neurod");
+                    session = helper.createUser(helper.getTestUser(), null, study, true, true);
+                    
                     AppPage page = new AppPage(browser);
                     AppPage.SignInDialog signInDialog = page.openSignInDialog();
 

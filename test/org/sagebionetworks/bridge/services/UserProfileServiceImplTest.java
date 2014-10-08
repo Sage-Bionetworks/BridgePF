@@ -20,10 +20,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class UserProfileServiceImplTest {
     
     @Resource
-    UserProfileServiceImpl service;
+    private UserProfileServiceImpl service;
     
     @Resource
-    TestUserAdminHelper helper;
+    private TestUserAdminHelper helper;
     
     private UserSession session;
     

@@ -2,7 +2,7 @@
     <div class="panel-body">
         <h3>Bridge Evaluation Study</h3>
         
-        <div ng-hide="showConsented">
+        <div ng-hide="consented">
             <p>The final step for study participants will be to consent to participate
             in the study, after reading a multi-step and interactive consent agreement. </p>
             
@@ -37,7 +37,7 @@
                 </div>
             </form>
         </div>
-        <div ng-show="showConsented">
+        <div ng-show="consented">
             <p>Thank you, you're set to explore the Bridge Server API. <p>
         </div>
     </div>

@@ -34,20 +34,15 @@ public class DynamoHealthDataDaoTest {
     private DynamoHealthDataDao healthDataDao;
     
     @Resource
-    private StudyServiceImpl studyService;
-    
-    @Resource
     private TestUserAdminHelper helper;
     
     private UserSession session;
-    private Study study;
     
     @Before
     public void before() {
-        DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
-        DynamoTestUtil.clearTable(DynamoHealthDataRecord.class, "startDate", "endDate", "data", "version");
+        DynamoInitializer.init(DynamoHealthDataRecord.class);
+        DynamoTestUtil.clearTable(DynamoHealthDataRecord.class);
         session = helper.createUser();
-        study = studyService.getStudyByKey(TEST_STUDY_KEY);
     }
     
     @After
@@ -66,7 +61,7 @@ public class DynamoHealthDataDaoTest {
     private HealthDataKey createKey() {
         Tracker tracker = new Tracker();
         tracker.setId(1L);
-        return new HealthDataKey(study, tracker, session.getUser());
+        return new HealthDataKey(helper.getTestStudy(), tracker, session.getUser());
     }
 
     @Test

@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class AuthenticationControllerTest {
 
     @Resource
-    TestUserAdminHelper helper;
+    private TestUserAdminHelper helper;
     
     private UserSession session;
     

@@ -44,10 +44,10 @@ public class SendMailViaAmazonServiceTest {
         service.setFromEmail(recipientEmail);
         service.setEmailClient(emailClient);
         
-        Resource secondStudyConsent = new FileSystemResource("test/conf/secondstudy-consent.html");
+        Resource secondStudyConsent = new FileSystemResource("conf/email-templates/teststudy-consent.html");
         consent = new ConsentSignature("Test 2", "1950-05-05");
         study = new Study("Test Study", TestConstants.TEST_STUDY_KEY, 17, null, Collections.<String> emptyList(),
-                Collections.<Tracker> emptyList(), secondStudyConsent, "secondstudy_researcher");
+                Collections.<Tracker> emptyList(), secondStudyConsent, "teststudy_researcher");
     }
     
     @Test
@@ -64,9 +64,9 @@ public class SendMailViaAmazonServiceTest {
         String html = message.getBody().getHtml().getData();
         
         assertEquals("Correct sender", recipientEmail, destination.getToAddresses().get(0));
-        assertTrue("Contains consent content", html.startsWith("This is a test study consent."));
-        assertTrue("Date transposed to document", html.indexOf("|May 5, 1950|") > -1);
-        assertTrue("Name transposed to document", html.indexOf("|Test 2|") > -1);
+        assertTrue("Contains consent content", html.indexOf("Had this been a real study") > -1);
+        assertTrue("Date transposed to document", html.indexOf("May 5, 1950") > -1);
+        assertTrue("Name transposed to document", html.indexOf("Test 2") > -1);
     }
     
 }
