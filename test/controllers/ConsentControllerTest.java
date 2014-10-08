@@ -21,7 +21,6 @@ import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -42,21 +41,11 @@ public class ConsentControllerTest {
     @Resource
     private TestUserAdminHelper helper;
 
-    @Resource
-    private StudyConsentDao studyConsentDao;
-    
     private UserSession session;
 
     @Before
     public void before() {
         session = helper.createUser();
-
-        // TODO need to remove the study consent dao - ideally this information is already there, and we don't need to
-        // create it.
-        StudyConsent consent = studyConsentDao.addConsent(helper.getStudy().getKey(), "fake-path", helper.getStudy()
-                .getMinAge());
-        studyConsentDao.setActive(consent, true);
-        timestamp = consent.getCreatedOn();
     }
 
     @After
