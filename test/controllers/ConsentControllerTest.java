@@ -12,6 +12,7 @@ import static play.test.Helpers.testServer;
 
 import javax.annotation.Resource;
 
+import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -102,7 +103,7 @@ public class ConsentControllerTest {
                     // Consent new user again
                     ObjectNode node = JsonNodeFactory.instance.objectNode();
                     node.put("name", "John Smith");
-                    node.put("birthdate", DateUtils.getCurrentISODate()); // date only, no time.
+                    node.put("birthdate", DateUtils.getISODate((new DateTime()).minusYears(20)));
 
                     Response giveConsentSuccess = TestUtils.getURL(session.getSessionToken(), CONSENT_URL)
                                                     .post(node.toString())
