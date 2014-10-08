@@ -72,7 +72,7 @@ public class StudyConsentControllerTest {
             @Override
             public void testCode() throws Exception {
                 // Fields are order independent.
-                String consent = "{\"minAge\":17,\"path\":\"fake-path\"}";
+                String consent = "{\"minAge\":17,\"path\":\"fake-path\to\StudyConsentControllerTest\"}";
 
                 Response addConsentFail = TestUtils.getURL(userSession.getSessionToken(), STUDYCONSENT_URL)
                         .post(consent).get(TIMEOUT);
