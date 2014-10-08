@@ -5,8 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
-import java.util.Collections;
+import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -14,10 +13,8 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.Tracker;
+import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 
 import com.amazonaws.regions.Region;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
@@ -31,30 +28,55 @@ public class SendMailViaAmazonServiceTest {
     
     private SendMailViaAmazonService service;
     private AmazonSimpleEmailServiceClient emailClient;
+    private StudyService studyService;
     private ConsentSignature consent;
-    private Study study;
+    private StudyConsent studyConsent;
     private ArgumentCaptor<SendEmailRequest> argument;
 
     @Before
     public void setUp() throws Exception {
+        Study study = new Study(null, "teststudy", 17, null, null, null, null);
+        
+        studyService = mock(StudyService.class);
+        when(studyService.getStudyByKey(TestConstants.TEST_STUDY_KEY)).thenReturn(study);
         emailClient = mock(AmazonSimpleEmailServiceClient.class);
         argument = ArgumentCaptor.forClass(SendEmailRequest.class);
         
         service = new SendMailViaAmazonService();
         service.setFromEmail(recipientEmail);
         service.setEmailClient(emailClient);
+        service.setStudyService(studyService);
         
-        Resource secondStudyConsent = new FileSystemResource("conf/email-templates/teststudy-consent.html");
         consent = new ConsentSignature("Test 2", "1950-05-05");
-        study = new Study("Test Study", TestConstants.TEST_STUDY_KEY, 17, null, Collections.<String> emptyList(),
-                Collections.<Tracker> emptyList(), secondStudyConsent, "teststudy_researcher");
+        studyConsent = new StudyConsent() {
+            @Override
+            public String getStudyKey() {
+                return TestConstants.TEST_STUDY_KEY;
+            }
+            @Override
+            public long getCreatedOn() {
+                return 0;
+            }
+            @Override
+            public boolean getActive() {
+                return true;
+            }
+            @Override
+            public String getPath() {
+                return "conf/email-templates/teststudy-consent.html";
+            }
+            @Override
+            public int getMinAge() {
+                return 17;
+            }
+        };
     }
     
     @Test
     public void sendConsentEmail() {
         User user = new User();
         user.setEmail(recipientEmail);
-        service.sendConsentAgreement(user, consent, study);
+        service.sendConsentAgreement(user, consent, studyConsent);
         
         verify(emailClient).setRegion(any(Region.class));
         verify(emailClient).sendEmail(argument.capture());

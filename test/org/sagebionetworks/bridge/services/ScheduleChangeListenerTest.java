@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 
 import java.util.List;
 

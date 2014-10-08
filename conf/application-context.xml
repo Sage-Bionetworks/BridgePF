@@ -266,8 +266,8 @@
                         <list>
                         </list>
                     </constructor-arg>
-                    <constructor-arg index="6" value="file:conf/email-templates/neurod-consent.html"/>
-                    <constructor-arg index="7" value="neurod_researcher"/>                       
+                    <!-- <constructor-arg index="6" value="file:conf/email-templates/neurod-consent.html"/> -->
+                    <constructor-arg index="6" value="neurod_researcher"/>                       
                 </bean>
                 <bean class="org.sagebionetworks.bridge.models.Study">
                     <constructor-arg index="0" value="Test Study"/>
@@ -295,8 +295,8 @@
                             <ref bean="med-tracker"/>
                         </list>
                     </constructor-arg>
-                    <constructor-arg index="6" value="file:conf/email-templates/teststudy-consent.html"/>
-                    <constructor-arg index="7" value="teststudy_researcher"/>
+                    <!-- <constructor-arg index="6" value="file:conf/email-templates/teststudy-consent.html"/> -->
+                    <constructor-arg index="6" value="teststudy_researcher"/>
                 </bean>
             </list>
         </property>
@@ -378,20 +378,29 @@
     </bean>
 
     <bean id="sendEmailViaAmazonService" class="org.sagebionetworks.bridge.services.SendMailViaAmazonService">
-        <property name="fromEmail" value="support@sagebridge.org"/>
+        <property name="fromEmail" value="support@sagebridge.org" />
         <property name="emailClient" ref="sesClient" />
+        <property name="studyService" ref="studyService" />
     </bean>
     
     <bean id="userAdminService" class="org.sagebionetworks.bridge.services.StormPathUserAdminService">
-        <property name="authenticationService" ref="authenticationService"/>
-        <property name="consentService" ref="consentService"/>
-        <property name="healthDataService" ref="healthDataService"/>
-        <property name="studyService" ref="studyService"/>
-        <property name="stormpathClient" ref="stormpathClient"/>
-        <property name="userLockDao" ref="userLockDao"/>
+        <property name="authenticationService" ref="authenticationService" />
+        <property name="consentService" ref="consentService" />
+        <property name="healthDataService" ref="healthDataService" />
+        <property name="studyService" ref="studyService" />
+        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
+        <property name="healthCodeService" ref="healthCodeService" />
+        <property name="stormpathClient" ref="stormpathClient" />
+        <property name="userLockDao" ref="userLockDao" />
     </bean>
     
     <bean id="surveyService" class="org.sagebionetworks.bridge.services.SurveyServiceImpl">
         <property name="surveyDao" ref="surveyDao"/>
-    </bean>    
+    </bean> 
+    
+    <bean id="studyConsentBootstrapper" class="org.sagebionetworks.bridge.StudyConsentBootstrapper">
+        <constructor-arg index="0" ref="studyService" />
+        <constructor-arg index="1" ref="studyConsentDao" />
+    </bean>
+    
 </beans>
