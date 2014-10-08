@@ -1,7 +1,6 @@
 package controllers;
 
 import java.io.IOException;
-
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
@@ -14,10 +13,10 @@ import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import play.mvc.Result;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-
-import play.mvc.Result;
 
 public class SurveyResponseController extends BaseController {
 

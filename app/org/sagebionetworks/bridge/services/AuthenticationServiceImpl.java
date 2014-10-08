@@ -1,10 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
-import java.util.UUID;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -12,6 +13,7 @@ import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
@@ -26,7 +28,9 @@ import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Maps;
 import com.stormpath.sdk.account.Account;
+import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
@@ -146,10 +150,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         } else if (!emailValidator.isValid(signUp.getEmail())) {
             throw new BadRequestException("Email address does not appear to be valid");
         }
+        // It's possible to sign up for two different studies. We need to avoid this by checking if the 
+        // application as a whole has an email address, before creating that address in a specific 
+        // study. If it exists anywhere, it cannot be used again.
+        Account account = findExistingEmailAddress(signUp);
+        if (account != null) {
+            throw new EntityAlreadyExistsException(new User(account));
+        };
+        
         try {
             Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
             // Create Stormpath account
-            Account account = stormpathClient.instantiate(Account.class);
+            account = stormpathClient.instantiate(Account.class);
             account.setGivenName("<EMPTY>");
             account.setSurname("<EMPTY>");
             account.setEmail(signUp.getEmail());
@@ -227,13 +239,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
+    // We also want to verify that the username hasn't been taken in another study...
+    private Account findExistingEmailAddress(SignUp signUp) {
+        Map<String, Object> queryParams = Maps.newHashMap();
+        queryParams.put("email", signUp.getEmail());
+        Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+        AccountList accounts = application.getAccounts(queryParams);
+        
+        return (accounts.iterator().hasNext()) ? accounts.iterator().next() : null;
+    }
+
     private UserSession createSessionFromAccount(Study study, Account account) {
 
-        final UserSession session;
-        session = new UserSession();
+        final UserSession session = new UserSession();
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment().getEnvName());
-        session.setSessionToken(UUID.randomUUID().toString());
+        session.setSessionToken(BridgeUtils.generateGuid());
         final User user = new User(account);
         user.setStudyKey(study.getKey());
 
@@ -252,7 +273,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (adminUser != null && adminUser.equals(account.getEmail())) {
             user.setConsent(true);
         }
-
+        
         session.setUser(user);
         return session;
     }

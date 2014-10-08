@@ -52,7 +52,7 @@ public class HealthDataControllerTest {
     private ObjectMapper mapper = new ObjectMapper();
 
     @Resource
-    TestUserAdminHelper helper;
+    private TestUserAdminHelper helper;
     
     private UserSession session;
 

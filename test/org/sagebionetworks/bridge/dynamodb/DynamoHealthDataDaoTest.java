@@ -12,7 +12,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Tracker;
@@ -59,7 +58,7 @@ public class DynamoHealthDataDaoTest {
     private HealthDataKey createKey() {
         Tracker tracker = new Tracker();
         tracker.setId(1L);
-        return new HealthDataKey(TestConstants.SECOND_STUDY, tracker, session.getUser());
+        return new HealthDataKey(helper.getTestStudy(), tracker, session.getUser());
     }
 
     @Test

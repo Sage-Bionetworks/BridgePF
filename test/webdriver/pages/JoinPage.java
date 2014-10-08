@@ -1,7 +1,12 @@
 package webdriver.pages;
 
-import static org.junit.Assert.*;
-import static org.sagebionetworks.bridge.TestConstants.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL_INPUT;
+import static org.sagebionetworks.bridge.TestConstants.JOIN_ACT;
+import static org.sagebionetworks.bridge.TestConstants.PASSWORD_CONFIRM_INPUT;
+import static org.sagebionetworks.bridge.TestConstants.PASSWORD_INPUT;
+import static org.sagebionetworks.bridge.TestConstants.USERNAME_INPUT;
 
 import org.fluentlenium.core.domain.FluentWebElement;
 

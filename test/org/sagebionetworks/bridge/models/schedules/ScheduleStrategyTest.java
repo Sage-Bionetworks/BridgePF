@@ -1,8 +1,9 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +16,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.User;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,7 +29,7 @@ public class ScheduleStrategyTest {
 
     private ObjectMapper mapper = new ObjectMapper();
     private ArrayList<User> users;
-    private Study study = TestConstants.SECOND_STUDY;
+    private Study study;
     
     @Before
     public void before() {
@@ -35,6 +37,7 @@ public class ScheduleStrategyTest {
         for (int i=0; i < 10; i++) {
             users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
         }
+        study = new Study("name", TestConstants.TEST_STUDY_KEY, 18, null, Collections.<String>emptyList(), Collections.<Tracker>emptyList(), null);
     }
     
     public void createContextWithRemainderUsers() {
@@ -69,7 +72,7 @@ public class ScheduleStrategyTest {
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(TestConstants.SECOND_STUDY.getKey());
+        plan.setStudyKey(study.getKey());
         plan.setStrategy(strategy);
         
         String output = JsonUtils.toJSON(plan);
@@ -139,7 +142,7 @@ public class ScheduleStrategyTest {
     private DynamoSchedulePlan createABSchedulePlan() {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(TestConstants.SECOND_STUDY.getKey());
+        plan.setStudyKey(study.getKey());
         plan.setStrategy(createABTestStrategy());
         return plan;
     }

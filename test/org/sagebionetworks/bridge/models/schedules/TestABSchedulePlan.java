@@ -44,7 +44,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
     public TestABSchedulePlan() {
         setGuid("AAA");
         setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        setStudyKey(TestConstants.SECOND_STUDY.getKey());
+        setStudyKey(TestConstants.TEST_STUDY_KEY);
         
         ABTestScheduleStrategy strategy = new ABTestScheduleStrategy();
         strategy.addGroup(40, schedule1);

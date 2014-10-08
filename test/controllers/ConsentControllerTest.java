@@ -18,19 +18,17 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import play.libs.WS.Response;
+
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import play.libs.WS.Response;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -40,7 +38,7 @@ public class ConsentControllerTest {
     private TestUserAdminHelper helper;
 
     private UserSession session;
-
+    
     @Before
     public void before() {
         session = helper.createUser();
@@ -84,7 +82,7 @@ public class ConsentControllerTest {
                 UserSession session = null;
                 try {
                     TestUser user = new TestUser("johnsmith", "johnsmith@sagebridge.org", "password");
-                    session = helper.createUser(user, null, TestConstants.SECOND_STUDY, true, false);
+                    session = helper.createUser(user, null, helper.getTestStudy(), true, false);
                     
                     // Consent new user again
                     ObjectNode node = JsonNodeFactory.instance.objectNode();

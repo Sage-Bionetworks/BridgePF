@@ -1,0 +1,43 @@
+<div class="jumbotron">
+    <div class="panel-body">
+        <h3>Bridge Evaluation Study</h3>
+        
+        <div ng-hide="consented">
+            <p>The final step for study participants will be to consent to participate
+            in the study, after reading a multi-step and interactive consent agreement. </p>
+            
+            <p>To use the participant APIs, you must also sign the test study consent (otherwise, 
+            the APIs will throw an HTTP response error). This doesn't mean you are participating 
+            in an actual study. </p>
+            
+            <form style="padding: 20px" name="consentForm" novalidate>
+                <div align="center">
+                    <div class="form-group">
+                        <input class="form-control" placeholder="Enter your first and last name" 
+                            name="name" required ng-model="name"/>
+                    </div>
+                    <div class="form-group">
+                        <p class="input-group">
+                            <input type="text" class="form-control" datepicker-popup="MM/dd/yyyy" is-open="opened" 
+                                name="birthdate" ng-model="birthdate" datepicker-options="dateOptions" 
+                                date-disabled="disabled(date, mode)" placeholder="Enter your birth date MM/DD/YYYY"
+                                max-date="maxDate" show-button-bar="false" show-weeks="false" 
+                                close-text="Close" ng-required="true" />
+                            <span class="input-group-btn">
+                                <button type="button" class="btn btn-default" ng-click="open($event)">
+                                    <i class="glyphicon glyphicon-calendar"></i>
+                                </button>
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <div class="more_info">
+                    <button ng-disabled="!canSubmit()" class="btn btn-large btn-primary" ng-click="submit()">Agree</button>
+                </div>
+            </form>
+        </div>
+        <div ng-show="consented">
+            <p>Thank you, you're set to explore the Bridge Server API. <p>
+        </div>
+    </div>
+</div>

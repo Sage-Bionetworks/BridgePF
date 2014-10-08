@@ -4,10 +4,10 @@ module.exports = function(grunt) {
     grunt.initConfig({
         hub: {
             options: {
-                concurrent: 4 // as many as there are projects.
+                concurrent: 5 // as many as there are projects.
             },
             all: {
-                src: ['shared/Gruntfile.js', 'app/Gruntfile.js', 'neurod/Gruntfile.js', 'consent/Gruntfile.js'],
+                src: ['shared/Gruntfile.js', 'app/Gruntfile.js', 'neurod/Gruntfile.js', 'consent/Gruntfile.js', 'test/Gruntfile.js'],
                 tasks: ['test','build','default','release','watch','clean']
             }
         },

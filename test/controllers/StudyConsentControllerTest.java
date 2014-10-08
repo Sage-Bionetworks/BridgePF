@@ -54,9 +54,9 @@ public class StudyConsentControllerTest {
         // TODO: When you create two users, they need different email/names. Randomize this in the helper 
         // so you don't have to spell this out. 
         adminSession = helper.createUser(new TestUser("admin-user", "admin-user@sagebridge.org", "P4ssword"), roles,
-                helper.getStudy(), true, true);
+                helper.getTestStudy(), true, true);
         userSession = helper.createUser(new TestUser("normal-user", "normal-user@sagebridge.org", "P4ssword"), null,
-                helper.getStudy(), true, true);
+                helper.getTestStudy(), true, true);
     }
 
     @After
