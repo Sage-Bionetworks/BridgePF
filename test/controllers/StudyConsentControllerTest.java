@@ -28,7 +28,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import play.libs.WS.Response;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
