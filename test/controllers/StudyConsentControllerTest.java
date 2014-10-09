@@ -28,7 +28,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import play.libs.WS.Response;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -72,14 +75,17 @@ public class StudyConsentControllerTest {
             @Override
             public void testCode() throws Exception {
                 // Fields are order independent.
-                String consent = "{\"minAge\":17,\"path\":\"fake-path\\to\\StudyConsentControllerTest\"}";
+                ObjectNode consent = JsonNodeFactory.instance.objectNode();
+                consent.put("minAge", 17);
+                consent.put("path", "conf/email-templates/teststudy-consent.html");
+                // String consent = "{\"minAge\":17,\"path\":\"fake-path\\to\\StudyConsentControllerTest\"}";
 
                 Response addConsentFail = TestUtils.getURL(userSession.getSessionToken(), STUDYCONSENT_URL)
-                        .post(consent).get(TIMEOUT);
+                        .post(consent.toString()).get(TIMEOUT);
                 assertEquals("Must be admin to access consent.", SC_FORBIDDEN, addConsentFail.getStatus());
 
-                Response addConsent = TestUtils.getURL(adminSession.getSessionToken(), STUDYCONSENT_URL).post(consent)
-                        .get(TIMEOUT);
+                Response addConsent = TestUtils.getURL(adminSession.getSessionToken(), STUDYCONSENT_URL)
+                        .post(consent.toString()).get(TIMEOUT);
                 assertEquals("Successfully add consent.", SC_OK, addConsent.getStatus());
 
                 // Get timeout to access this consent later.
