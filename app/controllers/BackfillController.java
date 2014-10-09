@@ -17,8 +17,11 @@ public class BackfillController extends AdminController {
     
     public Result stormpathUserConsent() throws Exception {
         checkUser();
-        Study study = studyService.getStudyByHostname(getHostname());
-        int total = backfillService.stormpathUserConsent(study);
+        int total = 0;
+        for (Study study : studyService.getStudies()) {
+            Study study = studyService.getStudyByHostname(getHostname());
+            total += backfillService.stormpathUserConsent(study);
+        }
         return okResult("Done. " + total + " accounts backfilled.");
     }
 
