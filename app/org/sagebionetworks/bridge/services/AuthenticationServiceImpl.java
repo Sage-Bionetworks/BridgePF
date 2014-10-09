@@ -153,15 +153,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         // It's possible to sign up for two different studies. We need to avoid this by checking if the 
         // application as a whole has an email address, before creating that address in a specific 
         // study. If it exists anywhere, it cannot be used again.
+        /*
         Account account = findExistingEmailAddress(signUp);
         if (account != null) {
             throw new EntityAlreadyExistsException(new User(account));
         };
+        */
         
         try {
             Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
             // Create Stormpath account
-            account = stormpathClient.instantiate(Account.class);
+            Account account = stormpathClient.instantiate(Account.class);
             account.setGivenName("<EMPTY>");
             account.setSurname("<EMPTY>");
             account.setEmail(signUp.getEmail());
@@ -240,6 +242,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     // We also want to verify that the username hasn't been taken in another study...
+    /*
     private Account findExistingEmailAddress(SignUp signUp) {
         Map<String, Object> queryParams = Maps.newHashMap();
         queryParams.put("email", signUp.getEmail());
@@ -247,7 +250,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         AccountList accounts = application.getAccounts(queryParams);
         
         return (accounts.iterator().hasNext()) ? accounts.iterator().next() : null;
-    }
+    }*/
 
     private UserSession createSessionFromAccount(Study study, Account account) {
 
