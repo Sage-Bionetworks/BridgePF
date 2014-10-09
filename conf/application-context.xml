@@ -257,7 +257,7 @@
                     <constructor-arg index="4">
                         <list>
                             <!-- SSL endpoints -->
-                            <value>pd-develop.herokuapp.com</value>
+                            <value>pd-develop.sagebridge.org</value>
                             <value>pd-staging.sagebridge.org</value>
                             <value>pd.sagebridge.org</value>
                         </list>
@@ -275,8 +275,8 @@
                     <constructor-arg index="3" value="#{bridgeConfig.getProperty('stormpath.teststudy.directory.href')}"/>
                     <constructor-arg index="4">
                         <list>
-                            <!-- Local development endpoints -->
-                            <value>10.0.2.2</value> <!-- IE VirtualBox Machine, local development -->
+                            <!-- IE VirtualBox Machine, local development -->
+                            <value>10.0.2.2</value> 
                             <value>localhost</value>
                             <!-- HTTP endpoints -->
                             <value>bridge-develop.herokuapp.com</value>
@@ -286,7 +286,10 @@
                             <value>test-develop.sagebridge.org</value>
                             <value>test-staging.sagebridge.org</value>
                             <value>test.sagebridge.org</value>
-                        </list>
+                            <value>api-develop.sagebridge.org</value>
+                            <value>api-staging.sagebridge.org</value>
+                            <value>api.sagebridge.org</value>
+                            </list>
                     </constructor-arg>
                     <constructor-arg index="5">
                         <list>
