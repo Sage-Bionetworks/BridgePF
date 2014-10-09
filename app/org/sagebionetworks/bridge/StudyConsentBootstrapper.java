@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 public class StudyConsentBootstrapper {
     public StudyConsentBootstrapper(StudyService studyService, StudyConsentDao studyConsentDao) {
         for (Study study : studyService.getStudies()) {
-            String path = "test/conf/secondstudy-consent.html";
+            String path = String.format("conf/email-templates/%s-consent.html", study.getKey());
             int minAge = 17;
             StudyConsent consent = studyConsentDao.getConsent(study.getKey());
             if (consent == null) {
