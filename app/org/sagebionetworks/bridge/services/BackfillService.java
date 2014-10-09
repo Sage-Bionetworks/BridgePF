@@ -58,6 +58,7 @@ public class BackfillService {
                     +", Stormpath consented: " + consentedObj + "]");
             if (consentedObj != null) {
                 customData.remove(consentedKey);
+                customData.save();
                 count++;
             }
         }
