@@ -50,42 +50,21 @@ html, body {
 <div class="view-holder" ng-view></div>
 <script src="shared/build/bridge-shared.min.f9f3db72.js"></script>
 <script>
-angular.module('bridge.shared').factory('interceptAuth', function($q, $injector, $window) {
+angular.module('bridge.shared').factory('interceptAuth', function($q, $injector, $location) {
     return {
         'responseError': function(rejection) {
             if (rejection.status === 401) {
                 var signInService = $injector.get('signInService');
                 signInService.open(rejection.config);
             } else if (rejection.status === 412) {
-                var authService = $injector.get('authService');
-                authService.initSession(rejection.data);
-                //$window.location.reload();
-            }
-            return $q.reject(rejection);
-        }
-    };
-})
-.config(function($httpProvider) {
-    $httpProvider.interceptors.push('interceptAuth');
-});
-
-var test = angular.module('test', ['bridge.shared']);
-
-test.factory('interceptAuth2', function($q, $injector, $location) {
-    return {
-        'responseError': function(rejection) {
-            console.log("interceptAuth2", rejection);
-            if (rejection.status === 412) {
                 $location.path("/consent");
             }
             return $q.reject(rejection);
         }
     };
-})
-.config(function($httpProvider) {
-    $httpProvider.interceptors.push('interceptAuth2');
 });
 
+var test = angular.module('test', ['bridge.shared']);
 
 test.config(['$routeProvider', function($routeProvider) {
     $routeProvider.when('/joined/:email', {
