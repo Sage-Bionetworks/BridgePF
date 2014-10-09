@@ -30,7 +30,8 @@ public class StudyServiceImpl implements StudyService {
     }
 
     public Study getStudyByHostname(String hostname) {
-        return studies.get(hostname);
+        Study study = studies.get(hostname);
+        return (study == null) ? getStudyByKey("teststudy") : study;
     }
     
     public Collection<Study> getStudies() {
