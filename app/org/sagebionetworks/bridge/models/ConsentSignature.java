@@ -1,11 +1,9 @@
 package org.sagebionetworks.bridge.models;
 
-import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-@BridgeTypeName("ResearchConsent")
 public class ConsentSignature {
 
     private static final String NAME_FIELD = "name";
