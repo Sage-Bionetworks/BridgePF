@@ -2,6 +2,7 @@ package controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.NEW_SURVEY_RESPONSE;
+import static org.sagebionetworks.bridge.TestConstants.SURVEY_RESPONSE_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
@@ -106,6 +107,16 @@ public class SurveyResponseControllerTest {
                 
                 SurveyResponse surveyResponse = responseDao.getSurveyResponse(responseGuid);
                 assertEquals("There should be two answers", 2, surveyResponse.getAnswers().size());
+                
+                // Check the types of this response object
+                
+                url = String.format(SURVEY_RESPONSE_URL, responseGuid);
+                response = TestUtils.getURL(session.getSessionToken(), url).get().get(TIMEOUT);
+                JsonNode node = response.asJson();
+                assertEquals("Type is SurveyResponse", "SurveyResponse", node.get("type").asText());
+
+                JsonNode answerNode = node.get("answers").get(0);
+                assertEquals("Type is SurveyAnswer", "SurveyAnswer", answerNode.get("type").asText());
             }
         });
     }

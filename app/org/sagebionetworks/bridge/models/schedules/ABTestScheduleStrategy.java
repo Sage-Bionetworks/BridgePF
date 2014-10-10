@@ -5,12 +5,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.validators.Messages;
 
 import com.google.common.collect.Lists;
 
+@BridgeTypeName("ABTestScheduleStrategy")
 public class ABTestScheduleStrategy implements ScheduleStrategy {
     
     private static final Random rand = new Random();

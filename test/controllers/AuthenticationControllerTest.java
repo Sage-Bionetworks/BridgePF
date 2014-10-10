@@ -33,8 +33,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import play.libs.WS;
 import play.libs.WS.Response;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -62,9 +60,7 @@ public class AuthenticationControllerTest {
         running(testServer(3333), new Runnable() {
             public void run() {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL)
-                        .post(node)
-                        .get(TIMEOUT);
+                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
                 assertEquals("HTTP response indicates user not found", SC_NOT_FOUND, response.getStatus());
             }
         });
@@ -74,9 +70,7 @@ public class AuthenticationControllerTest {
     public void signInGarbageCredentialsFailsWith404() {
         running(testServer(3333), new Runnable() {
             public void run() {
-                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL)
-                        .post("username=bob&password=foo")
-                        .get(TIMEOUT);
+                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post("username=bob&password=foo").get(TIMEOUT);
                 assertEquals("HTTP response indicates user not found", SC_NOT_FOUND, response.getStatus());
             }
         });
@@ -86,10 +80,8 @@ public class AuthenticationControllerTest {
     public void signInBadCredentialsFailsWith404() {
         running(testServer(3333), new Runnable() {
             public void run() {
-                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL)
-                        .setContentType(APPLICATION_JSON)
-                        .post("{\"username\":\"bob\",\"password\":\"foo\"}")
-                        .get(TIMEOUT);
+                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).setContentType(APPLICATION_JSON)
+                        .post("{\"username\":\"bob\",\"password\":\"foo\"}").get(TIMEOUT);
                 assertEquals("HTTP response indicates user not found", SC_NOT_FOUND, response.getStatus());
             }
         });
@@ -103,16 +95,13 @@ public class AuthenticationControllerTest {
                 node.put(USERNAME, helper.getTestUser().getUsername());
                 node.put(PASSWORD, helper.getTestUser().getPassword());
 
-                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL)
-                        .post(node)
-                        .get(TIMEOUT);
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode responseNode = mapper.readTree(response.getBody());
-
+                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
                 assertEquals("HTTP response indicates request OK", SC_OK, response.getStatus());
-                String sessionToken = responseNode.get(SESSION_TOKEN).asText();
-                assertNotNull("Session token is assigned", sessionToken);
-                String username = responseNode.get(USERNAME).asText();
+                
+                node = (ObjectNode)response.asJson();
+                assertEquals("Type is UserSession", "UserSessionInfo", node.get("type").asText());
+                assertNotNull("Session token is assigned", node.get(SESSION_TOKEN).asText());
+                String username = node.get(USERNAME).asText();
                 assertEquals("Username is for test2 user", helper.getTestUser().getUsername(), username);
             }
         });
