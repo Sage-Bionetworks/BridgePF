@@ -3,11 +3,11 @@ package global;
 import java.io.IOException;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Tracker;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonschema.core.report.ProcessingMessage;
 import com.github.fge.jsonschema.core.report.ProcessingReport;
 import com.github.fge.jsonschema.main.JsonSchema;
@@ -20,8 +20,7 @@ public class JsonSchemaValidator {
     
     private CacheLoader<Tracker, JsonNode> loader = new CacheLoader<Tracker, JsonNode>() {
         public JsonNode load(Tracker tracker) throws JsonProcessingException, IOException {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.readTree(tracker.getSchemaFile().getInputStream());
+            return BridgeObjectMapper.get().readTree(tracker.getSchemaFile().getInputStream());
         }
     };
 

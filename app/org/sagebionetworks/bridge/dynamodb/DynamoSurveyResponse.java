@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -18,7 +19,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -28,7 +28,6 @@ import com.google.common.collect.Lists;
 @DynamoDBTable(tableName = "SurveyResponse")
 public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
     private static final String HEALTH_CODE_PROPERTY = "healthCode";
     private static final String COMPLETED_ON_PROPERTY = "completedOn";
     private static final String STARTED_ON_PROPERTY = "startedOn";
@@ -170,7 +169,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
     public ObjectNode getData() {
         ObjectNode data = JsonNodeFactory.instance.objectNode();
-        data.put(ANSWERS_PROPERTY, mapper.valueToTree(answers));
+        data.put(ANSWERS_PROPERTY, BridgeObjectMapper.get().valueToTree(answers));
         return data;
     }
     public void setData(ObjectNode data) {

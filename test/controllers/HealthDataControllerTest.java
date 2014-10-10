@@ -101,6 +101,10 @@ public class HealthDataControllerTest {
 
                 JsonNode body = response.asJson().get("items");
                 assertEquals("Returns 3 records", 3, body.size());
+                
+                // Verify the type properties
+                JsonNode node = body.get(0);
+                assertEquals("Type is HealthData", "HealthData", node.get("type").asText());
             }
         });
     }
