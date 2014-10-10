@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.json;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 
@@ -25,14 +26,13 @@ import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
  *
  */
 public class BridgeObjectMapper extends ObjectMapper {
+   private static final long serialVersionUID = 7329223290649069703L;
     
     private static final BridgeObjectMapper INSTANCE = new BridgeObjectMapper();
     
     public static final BridgeObjectMapper get() {
         return INSTANCE;
     }
-    
-    private static final long serialVersionUID = 7329223290649069703L;
 
     public BridgeObjectMapper() {
         this.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -70,13 +70,17 @@ public class BridgeObjectMapper extends ObjectMapper {
         protected BeanSerializerBase withIgnorals(String[] toIgnore) {
             return new ExtraFieldSerializer(this, toIgnore);
         }
-        public void serialize(Object bean, JsonGenerator jgen, SerializerProvider provider) 
-            throws IOException, JsonGenerationException {
+
+        public void serialize(Object bean, JsonGenerator jgen, SerializerProvider provider) throws IOException,
+                JsonGenerationException {
             jgen.writeStartObject();
             serializeFields(bean, jgen, provider);
-            String typeName = BridgeUtils.getTypeName(bean.getClass());
-            if (typeName != null) {
-                jgen.writeStringField("type", typeName);    
+            // We only want to do this if there is not a getType() method
+            if (noTypeProperty(bean)) {
+                String typeName = BridgeUtils.getTypeName(bean.getClass());
+                if (typeName != null) {
+                    jgen.writeStringField("type", typeName);    
+                }
             }
             jgen.writeEndObject();
         }
@@ -84,5 +88,13 @@ public class BridgeObjectMapper extends ObjectMapper {
         protected BeanSerializerBase asArraySerializer() {
             return null;
         }
+        private boolean noTypeProperty(Object bean) {
+            for (Method method : bean.getClass().getMethods()) {
+                if ("getType".equals(method.getName())) {
+                    return false;
+                }
+            }
+            return true;
+         }
     }
 }
