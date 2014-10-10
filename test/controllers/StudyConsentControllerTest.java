@@ -28,6 +28,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import play.libs.WS.Response;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -98,6 +99,10 @@ public class StudyConsentControllerTest {
                 Response getActive = TestUtils.getURL(adminSession.getSessionToken(), STUDYCONSENT_ACTIVE_URL).get()
                         .get(TIMEOUT);
                 assertEquals("Successfully get active consent.", SC_OK, getActive.getStatus());
+                
+                // Test the types on the consent
+                JsonNode node = getActive.asJson();
+                assertEquals("Type is StudyConsent", "StudyConsent", node.get("type").asText());
 
                 Response getAll = TestUtils.getURL(adminSession.getSessionToken(), STUDYCONSENT_URL).get().get(TIMEOUT);
                 assertEquals("Successfully get all consents.", SC_OK, getAll.getStatus());

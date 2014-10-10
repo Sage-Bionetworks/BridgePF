@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.validators.Messages;
@@ -14,6 +15,7 @@ import com.google.common.collect.Lists;
  * information, like the total set of users. This allows for the implementation of 
  * schedules that perform A/B tests, and probably other strategies.
  */
+@BridgeTypeName("SimpleScheduleStrategy")
 public class SimpleScheduleStrategy implements ScheduleStrategy {
 
     private Schedule schedule;
