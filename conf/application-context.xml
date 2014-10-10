@@ -289,7 +289,7 @@
                             <value>api-develop.sagebridge.org</value>
                             <value>api-staging.sagebridge.org</value>
                             <value>api.sagebridge.org</value>
-                            </list>
+                        </list>
                     </constructor-arg>
                     <constructor-arg index="5">
                         <list>

@@ -2,18 +2,18 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.io.IOException;
 
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshaller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class JsonNodeMarshaller implements DynamoDBMarshaller<JsonNode> {
 
     @Override
     public String marshall(JsonNode node) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.writeValueAsString(node);
+            return BridgeObjectMapper.get().writeValueAsString(node);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
@@ -23,8 +23,7 @@ public class JsonNodeMarshaller implements DynamoDBMarshaller<JsonNode> {
     @Override
     public JsonNode unmarshall(Class<JsonNode> node, String data) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.readTree(data);
+            return BridgeObjectMapper.get().readTree(data);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         } catch (IOException e) {
