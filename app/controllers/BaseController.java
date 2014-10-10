@@ -151,6 +151,14 @@ public abstract class BaseController extends Controller {
     protected Result errorResult(String message) {
         return internalServerError(Json.toJson(new StatusMessage(message)));
     }
+    
+    protected Result okResult(Object obj) {
+        return ok(constructJSON(obj));
+    }
+    
+    protected Result createdResult(Object obj) {
+        return created(constructJSON(obj));
+    }
 
     // This is needed or tests fail. It appears to be a bug in Play Framework,
     // that the asJson() method doesn't return a node in that context, possibly

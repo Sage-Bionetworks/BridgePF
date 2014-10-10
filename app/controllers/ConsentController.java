@@ -23,7 +23,7 @@ public class ConsentController extends BaseController {
         final User user = consentService.consentToResearch(session.getUser(), consent, study, true);
         updateSessionUser(session, user);
         setSessionToken(session.getSessionToken());
-        return okResult("Consent to research has been recorded.");
+        return createdResult("Consent to research has been recorded.");
     }
 
     public Result emailCopy() throws Exception {

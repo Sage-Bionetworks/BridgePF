@@ -48,7 +48,7 @@ public class AuthenticationController extends BaseController {
         SignUp signUp = SignUp.fromJson(request().body().asJson());
         Study study = studyService.getStudyByHostname(getHostname());
         authenticationService.signUp(signUp, study);
-        return okResult("Signed up.");
+        return createdResult("Signed up.");
     }
 
     public Result verifyEmail() throws Exception {
