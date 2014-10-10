@@ -46,6 +46,7 @@ public class TestConstants {
     public static final String SIGN_OUT_URL = API_URL + "/auth/signOut";
     public static final String SIGN_IN_URL = API_URL + "/auth/signIn";
 
+    public static final String TRACKERS_URL = API_URL + "/trackers";
     public static final String TRACKER_URL = API_URL + "/healthdata/2";
     public static final String RECORD_URL = API_URL + "/healthdata/2/record/";
 
@@ -68,6 +69,9 @@ public class TestConstants {
     public static final String RECENT_PUBLISHED_SURVEYS_URL = RESEARCHERS_URL + "/surveys/published";
 
     public static final String NEW_SURVEY_RESPONSE = API_URL + "/surveys/%s/%s";
+    public static final String SURVEY_RESPONSE_URL = API_URL + "/surveys/response/%s";
+    
+    public static final String USER_SCHEDULES_URL = API_URL + "/schedules";
 
     public static final String USER_URL = ADMIN_URL + "/users";
     public static final String REVOKE_CONSENT_URL = USER_URL + "/consent";

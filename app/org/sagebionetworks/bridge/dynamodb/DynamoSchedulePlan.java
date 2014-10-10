@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -18,7 +19,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -31,8 +31,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @DynamoDBTable(tableName = "SchedulePlan")
 public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
-    
     private static final String GUID_PROPERTY = "guid";
     private static final String STUDY_KEY_PROPERTY = "studyKey";
     private static final String MODIFIED_ON_PROPERTY = "modifiedOn";
@@ -105,7 +103,7 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
     @JsonIgnore
     public ObjectNode getData() {
-        ObjectNode node = mapper.valueToTree(strategy);
+        ObjectNode node = BridgeObjectMapper.get().valueToTree(strategy);
         node.put("type", strategy.getClass().getSimpleName());
         return node;
     }
@@ -114,7 +112,7 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
             String typeName = JsonUtils.asText(data, "type");
             String className = BridgeConstants.SCHEDULE_STRATEGY_PACKAGE + typeName;
             Class<?> clazz = Class.forName(className);
-            strategy = (ScheduleStrategy)mapper.treeToValue(data, clazz);
+            strategy = (ScheduleStrategy)BridgeObjectMapper.get().treeToValue(data, clazz);
         } catch (JsonProcessingException | ClassNotFoundException e) {
             throw new BridgeServiceException(e);
         }
