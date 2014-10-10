@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.validators.Messages;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -17,7 +16,7 @@ public class BridgeUtils {
         return UUID.randomUUID().toString();
     }
     
-    public static String getTypeName(Class<? extends BridgeEntity> clazz) {
+    public static String getTypeName(Class<?> clazz) {
         try {
             BridgeTypeName att = (BridgeTypeName)clazz.getAnnotation(BridgeTypeName.class);
             if (att == null) {
