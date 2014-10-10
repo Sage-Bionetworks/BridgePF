@@ -72,7 +72,12 @@ POST   /admin/v1/consents                      @controllers.StudyConsentControll
 POST   /admin/v1/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: String)
 
 # Admin - Backfill
-GET    /admin/v1/backfill/stormpathUserConsent     @controllers.BackfillController.stormpathUserConsent
+GET    /admin/v1/backfill/:name    @controllers.BackfillController.backfill(name: String)
+
+# Admin - User Management
+POST      /admin/v1/users           @controllers.AdminUserMgmtController.createUser
+DELETE    /admin/v1/users           @controllers.AdminUserMgmtController.deleteUser(email: java.lang.String ?= null)
+DELETE    /admin/v1/users/consent   @controllers.AdminUserMgmtController.revokeAllConsentRecords
 
 # AngularJS application
 GET    /*file      controllers.Assets.at(path="/public", file)
