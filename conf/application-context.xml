@@ -244,6 +244,15 @@
                 <property name="surveyResponseDao" ref="surveyResponseDao" />
             </bean>
         </property>
+    </bean>
+    
+    <bean id="controllers.AdminUserMgmtControler" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.AdminUserMgmtController" parent="AdminController">
+                <property name="stormpathClient" ref="stormpathClient" />
+                <property name="userAdminService" ref="userAdminService" />
+            </bean>
+        </property>
     </bean>    
 
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">

@@ -7,12 +7,12 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 
 public class TestConstants {
-    
+
     public static class TestUser {
         private final String username;
         private final String email;
         private final String password;
-        
+
         public TestUser(String username, String email, String password) {
             String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
             this.username = prefix + username;
@@ -50,14 +50,14 @@ public class TestConstants {
     public static final String RECORD_URL = API_URL + "/healthdata/2/record/";
 
     public static final String PROFILE_URL = API_URL + "/profile";
-    
+
     public static final String STUDYCONSENT_URL = ADMIN_URL + "/consents";
     public static final String STUDYCONSENT_ACTIVE_URL = STUDYCONSENT_URL + "/active";
-    
+
     public static final String CONSENT_URL = API_URL + "/consent";
     public static final String SUSPEND_URL = CONSENT_URL + "/dataSharing/suspend";
     public static final String RESUME_URL = CONSENT_URL + "/dataSharing/resume";
-    
+
     public static final String SURVEYS_URL = RESEARCHERS_URL + "/surveys";
     public static final String GET_USER_SURVEY_URL = API_URL + "/surveys/%s/%s";
     public static final String GET_SURVEY_URL = RESEARCHERS_URL + "/surveys/%s/%s";
@@ -66,9 +66,12 @@ public class TestConstants {
     public static final String PUBLISH_SURVEY_URL = GET_SURVEY_URL + "/publish";
     public static final String RECENT_SURVEYS_URL = RESEARCHERS_URL + "/surveys/recent";
     public static final String RECENT_PUBLISHED_SURVEYS_URL = RESEARCHERS_URL + "/surveys/published";
-    
+
     public static final String NEW_SURVEY_RESPONSE = API_URL + "/surveys/%s/%s";
-    
+
+    public static final String USER_URL = ADMIN_URL + "/users";
+    public static final String REVOKE_CONSENT_URL = USER_URL + "/consent";
+
     public static final String APPLICATION_JSON = "application/json";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
