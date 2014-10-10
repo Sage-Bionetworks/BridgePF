@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
@@ -14,16 +16,14 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @DynamoDBTable(tableName = "SurveyQuestion")
+@BridgeTypeName("SurveyQuestion")
 public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     
-    private static final ObjectMapper mapper = new ObjectMapper();
-
     private static final String CONSTRAINTS_PROPERTY = "constraints";
     private static final String DATA_TYPE_PROPERTY = "dataType";
     private static final String ENUM_PROPERTY = "enumeration";
@@ -156,7 +156,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         ObjectNode data = JsonNodeFactory.instance.objectNode();
         data.put(PROMPT_PROPERTY, prompt);
         data.put(UI_HINTS_PROPERTY, hint.name().toLowerCase());    
-        data.put(CONSTRAINTS_PROPERTY, mapper.valueToTree(constraints));    
+        data.put(CONSTRAINTS_PROPERTY, BridgeObjectMapper.get().valueToTree(constraints));    
         return data;
     }
 

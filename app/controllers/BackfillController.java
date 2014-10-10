@@ -1,7 +1,8 @@
 package controllers;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.Backfill;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.services.BackfillService;
 
@@ -10,23 +11,19 @@ import play.mvc.Result;
 public class BackfillController extends AdminController {
 
     private BackfillService backfillService;
-
     public void setBackfillService(BackfillService backfillService) {
         this.backfillService = backfillService;
     }
-    
-    public Result stormpathUserConsent() throws Exception {
+
+    public Result backfill(String name) throws Exception {
         checkUser();
-        int total = 0;
-        for (Study study : studyService.getStudies()) {
-            total += backfillService.stormpathUserConsent(study);
-        }
-        return okResult("Done. " + total + " accounts backfilled.");
+        Backfill backfill = backfillService.backfill(name);
+        return ok(constructJSON(backfill));
     }
 
     private void checkUser() throws Exception {
         User user = getAuthenticatedAdminSession().getUser();
-        if (!user.getRoles().contains("backfill")) {
+        if (!user.isInRole(BridgeConstants.BACKFILL_GROUP)) {
             throw new UnauthorizedException();
         }
     }

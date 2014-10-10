@@ -199,7 +199,7 @@ public class SurveyControllerTest {
     }
     
     @Test
-    public void canUpdateASurvey() {
+    public void canUpdateASurveyAndTypesAreCorrect() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 UserSession session = null;
@@ -209,6 +209,21 @@ public class SurveyControllerTest {
                     GuidVersionHolder keys = createSurvey(session.getSessionToken(), "Name");
                     ObjectNode node = (ObjectNode)getSurvey(session.getSessionToken(), keys);
                     node.put("name", "Name Changed");
+                    
+                    // Check all the types while we have a complete survey
+                    assertEquals("Type is Survey", "Survey", node.get("type").asText());
+                    JsonNode questions = node.get("questions"); 
+                    assertEquals("Type is SurveyQuestion", "SurveyQuestion", questions.get(0).get("type").asText());
+                    assertEquals("Type is BooleanConstraints", "BooleanConstraints", constraintTypeForQuestion(questions, 0));
+                    assertEquals("Type is DateConstraints", "DateConstraints", constraintTypeForQuestion(questions, 1));
+                    assertEquals("Type is DateTimeConstraints", "DateTimeConstraints", constraintTypeForQuestion(questions, 2));
+                    assertEquals("Type is DecimalConstraints", "DecimalConstraints", constraintTypeForQuestion(questions, 3));
+                    assertEquals("Type is IntegerConstraints", "IntegerConstraints", constraintTypeForQuestion(questions, 4));
+                    assertEquals("Type is IntegerConstraints", "SurveyRule", questions.get(4).get("constraints").get("rules").get(0).get("type").asText());
+                    assertEquals("Type is DurationConstraints", "DurationConstraints", constraintTypeForQuestion(questions, 5));
+                    assertEquals("Type is TimeConstraints", "TimeConstraints", constraintTypeForQuestion(questions, 6));
+                    assertEquals("Type is MultiValueConstraints", "MultiValueConstraints", constraintTypeForQuestion(questions, 7));
+                    assertEquals("Type is SurveyQuestionOption", "SurveyQuestionOption", questions.get(7).get("constraints").get("enumeration").get(0).get("type").asText());
                     
                     updateSurvey(session.getSessionToken(), keys, node);
                     
@@ -220,6 +235,10 @@ public class SurveyControllerTest {
                 }
             }
         });          
+    }
+    
+    private String constraintTypeForQuestion(JsonNode questions, int index) {
+        return questions.get(index).get("constraints").get("type").asText();
     }
     
     // This would be hard to do, hopefully, since the information is not published, but we prevent it.

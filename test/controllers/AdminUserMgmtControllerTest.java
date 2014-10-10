@@ -2,7 +2,6 @@ package controllers;
 
 import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
-import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static org.sagebionetworks.bridge.TestConstants.USER_URL;
@@ -24,8 +23,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.TestUtils.FailableRunnable;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthId;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -50,15 +47,11 @@ public class AdminUserMgmtControllerTest {
     @BeforeClass
     public static void initialSetUp() {
         DynamoTestUtil.clearTable(DynamoUserConsent2.class);
-        DynamoTestUtil.clearTable(DynamoHealthCode.class);
-        DynamoTestUtil.clearTable(DynamoHealthId.class);
     }
 
     @AfterClass
     public static void finalCleanUp() {
         DynamoTestUtil.clearTable(DynamoUserConsent2.class);
-        DynamoTestUtil.clearTable(DynamoHealthCode.class);
-        DynamoTestUtil.clearTable(DynamoHealthId.class);
     }
 
     @Before
@@ -77,7 +70,7 @@ public class AdminUserMgmtControllerTest {
 
             @Override
             public void testCode() throws Exception {
-                String email = "testtesttesttesttest@sagebase.org";
+                String email = "testtestingggggg@sagebridge.org";
 
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 node.put("email", email);
@@ -85,7 +78,7 @@ public class AdminUserMgmtControllerTest {
                 node.put("password", "1234");
                 node.put("consent", true);
 
-                Response response = TestUtils.getURL(session.getSessionToken(), TEST_BASE_URL + USER_URL)
+                Response response = TestUtils.getURL(session.getSessionToken(), USER_URL)
                         .setHeader("Bridge-Host", TEST_STUDY_KEY)
                         .post(node)
                         .get(TIMEOUT);
@@ -94,7 +87,7 @@ public class AdminUserMgmtControllerTest {
                 Map<String,String> queryParams = new HashMap<String,String>();
                 queryParams.put("email", email);
 
-                response = TestUtils.getURL(session.getSessionToken(), TEST_BASE_URL + USER_URL, queryParams)
+                response = TestUtils.getURL(session.getSessionToken(), USER_URL, queryParams)
                         .delete()
                         .get(TIMEOUT);
                 assertEquals("Response status is OK.", SC_OK, response.getStatus());

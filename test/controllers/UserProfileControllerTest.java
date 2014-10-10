@@ -3,14 +3,11 @@ package controllers;
 import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.apache.commons.httpclient.HttpStatus.SC_UNAUTHORIZED;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.sagebionetworks.bridge.TestConstants.PROFILE_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
-
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map.Entry;
 
 import javax.annotation.Resource;
 
@@ -29,7 +26,6 @@ import play.libs.WS.Response;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -75,17 +71,12 @@ public class UserProfileControllerTest {
             public void testCode() throws Exception {
                 Response response = TestUtils.getURL(session.getSessionToken(), PROFILE_URL).get().get(TIMEOUT);
 
-                int count = 0;
-                
-                List<String> profileFieldNames = Lists.newArrayList("firstName", "lastName", "username", "email");
-                Iterator<Entry<String, JsonNode>> fields = response.asJson().fields();
-                while (fields.hasNext()) {
-                    String fieldName = fields.next().getKey();
-                    if (profileFieldNames.contains(fieldName)) {
-                        count++;
-                    }
-                }
-                assertEquals("User profile has all required fields.", count, profileFieldNames.size());
+                JsonNode node = response.asJson();
+                assertNotNull("First name exists", node.get("firstName"));
+                assertNotNull("First name exists", node.get("lastName"));
+                assertNotNull("First name exists", node.get("username"));
+                assertNotNull("First name exists", node.get("email"));
+                assertEquals("Is type UserProfile", "UserProfile", node.get("type").asText());
             }
         });
     }
