@@ -2,11 +2,13 @@ package org.sagebionetworks.bridge.models;
 
 import java.net.URL;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-public class UploadSession {
+@BridgeTypeName("UploadSession")
+public class UploadSession implements BridgeEntity {
 
     public UploadSession(String id, URL url, long expires) {
         this.id = id;

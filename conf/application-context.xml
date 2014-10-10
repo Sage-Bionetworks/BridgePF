@@ -378,14 +378,7 @@
         <property name="uploadDao" ref="uploadDao" />
     </bean>
 
-    <!-- Backfill -->
-    <bean id="backfillService" class="org.sagebionetworks.bridge.services.BackfillService">
-        <property name="stormpathClient" ref="stormpathClient"/>
-        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
-        <property name="healthCodeService" ref="healthCodeService" />
-        <property name="studyConsentDao" ref="studyConsentDao" />
-        <property name="userConsentDao" ref="userConsentDao" />
-    </bean>
+    <bean id="backfillService" class="org.sagebionetworks.bridge.services.BackfillService" />
 
     <bean id="sendEmailViaAmazonService" class="org.sagebionetworks.bridge.services.SendMailViaAmazonService">
         <property name="fromEmail" value="support@sagebridge.org" />
