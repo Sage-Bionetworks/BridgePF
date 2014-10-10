@@ -192,7 +192,7 @@ public class DynamoInitializer {
                     .withProvisionedThroughput((new ProvisionedThroughputDescription())
                             .withReadCapacityUnits(READ_CAPACITY)
                             .withWriteCapacityUnits(WRITE_CAPACITY));
-            tables.add(table);            
+            tables.add(table);
         }
         return tables;
     }
