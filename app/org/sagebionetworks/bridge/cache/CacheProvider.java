@@ -3,11 +3,10 @@ package org.sagebionetworks.bridge.cache;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * A wrapper around whatever cache provider we ultimately decide to go with (probably Redis). 
@@ -17,11 +16,9 @@ public class CacheProvider {
     
     private JedisStringOps stringOps = new JedisStringOps();
     
-    private ObjectMapper mapper = new ObjectMapper();
-            
     public void setUserSession(String key, UserSession session) {
         try {
-            String ser = mapper.writeValueAsString(session);
+            String ser = BridgeObjectMapper.get().writeValueAsString(session);
             String redisKey = RedisKey.SESSION.getRedisKey(key);
             String result = stringOps.setex(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser).execute();
             if (!"OK".equals(result)) {
@@ -39,7 +36,7 @@ public class CacheProvider {
             String ser = stringOps.get(redisKey).execute();
             if (ser != null) {
                 stringOps.expire(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-                return mapper.readValue(ser, UserSession.class);  
+                return BridgeObjectMapper.get().readValue(ser, UserSession.class);  
             }
         } catch (Throwable e) {
             promptToStartRedisIfLocalEnv(e);

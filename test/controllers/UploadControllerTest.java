@@ -7,12 +7,25 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.UploadRequest;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class UploadControllerTest {
+    
+    // The other tests in this class don't go through the controller; we want to do that
+    // because we want to verify that we get the right type back. This could easily
+    // be broken since there's no external test and we could switch the object internally.
+    @Test
+    public void uploadRequestHasCorrectType() {
+        BridgeObjectMapper mapper = new BridgeObjectMapper();
+        
+        JsonNode node = mapper.valueToTree(new UploadRequest());
+        assertEquals("Type is UploadRequest", "UploadRequest", node.get("type").asText());
+    }
 
     @Test
     public void testValidateRequest() {

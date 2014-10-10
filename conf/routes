@@ -33,11 +33,11 @@ GET    /api/v1/profile      @controllers.UserProfileController.getUserProfile
 POST   /api/v1/profile      @controllers.UserProfileController.updateUserProfile
 
 # API - Survey Responses
-GET    /api/v1/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyController.getSurveyForUser(surveyGuid: String, surveyVersion: String)
-POST   /api/v1/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, surveyVersion: Long)
 GET    /api/v1/surveys/response/:guid              @controllers.SurveyResponseController.getSurveyResponse(guid: String)
 POST   /api/v1/surveys/response/:guid              @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
 DELETE /api/v1/surveys/response/:guid              @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
+GET    /api/v1/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyController.getSurveyForUser(surveyGuid: String, surveyVersion: String)
+POST   /api/v1/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, surveyVersion: Long)
 
 # API - Schedules
 GET    /api/v1/schedules   @controllers.ScheduleController.getSchedules
@@ -72,7 +72,7 @@ POST   /admin/v1/consents                      @controllers.StudyConsentControll
 POST   /admin/v1/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: String)
 
 # Admin - Backfill
-GET    /admin/v1/backfill/stormpathUserConsent     @controllers.BackfillController.stormpathUserConsent
+GET    /admin/v1/backfill/:name    @controllers.BackfillController.backfill(name: String)
 
 # Admin - User Management
 POST      /admin/v1/users           @controllers.AdminUserMgmtController.createUser

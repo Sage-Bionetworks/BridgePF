@@ -47,6 +47,7 @@ public class AdminUserMgmtController extends AdminController {
 
         JsonNode node = requestToJSON(request());
         String email = JsonUtils.asText(node, EMAIL_FIELD);
+        System.out.println("Email: \"" + email + "\"");
         String username = JsonUtils.asText(node, USERNAME_FIELD);
         String password = JsonUtils.asText(node, PASSWORD_FIELD);
         List<String> roles = JsonUtils.asStringList(node, ROLES_FIELD);

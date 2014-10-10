@@ -28,8 +28,6 @@ import com.google.common.collect.Lists;
  */
 public class JsonUtils {
     
-    private static final ObjectMapper mapper = new ObjectMapper();
-
     public static String asText(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             return parent.get(property).asText();
@@ -86,9 +84,9 @@ public class JsonUtils {
             // If the constraints contain an enumeration, then actually, it's 
             // MultiValueConstraint, with the type specified.
             if (constraints.hasNonNull(enumProperty)) {
-                return mapper.convertValue(constraints, MultiValueConstraints.class);
+                return BridgeObjectMapper.get().convertValue(constraints, MultiValueConstraints.class);
             } else {
-                return mapper.convertValue(constraints, Constraints.CLASSES.get(type));    
+                return BridgeObjectMapper.get().convertValue(constraints, Constraints.CLASSES.get(type));    
             }
         }
         return null;
@@ -97,7 +95,7 @@ public class JsonUtils {
     public static Schedule asSchedule(JsonNode parent, String property) {
         JsonNode schedule = JsonUtils.asJsonNode(parent, property);
         if (schedule != null) {
-            return mapper.convertValue(schedule, Schedule.class);
+            return BridgeObjectMapper.get().convertValue(schedule, Schedule.class);
         }
         return null;
     }
@@ -109,6 +107,7 @@ public class JsonUtils {
     
     @SuppressWarnings("unchecked")
     public static <T> List<T> asEntityList(JsonNode list, Class<T> clazz) {
+        ObjectMapper mapper = BridgeObjectMapper.get();
         if (list != null && list.isArray()) {
             return (List<T>) mapper.convertValue(list,
                     mapper.getTypeFactory().constructCollectionType(ArrayList.class, clazz));
@@ -208,31 +207,10 @@ public class JsonUtils {
     
     public static String toJSON(Object object) {
         try {
-            return new ObjectMapper().writeValueAsString(object);
+            return new BridgeObjectMapper().writeValueAsString(object);
         } catch(JsonProcessingException e) {
             return e.getMessage();
         }
     }
-    
-
-    public static void annotateNodeWithObjectType(ObjectNode node, Object item) {
-        if (!node.has("type")) {
-            BridgeTypeName att = item.getClass().getAnnotation(BridgeTypeName.class);
-            if (att == null) {
-                Class<?>[] ifcs = item.getClass().getInterfaces();
-                for (Class<?> ifc : ifcs) {
-                    if (att == null) {
-                        att = ifc.getAnnotation(BridgeTypeName.class);    
-                    }
-                }
-            }
-            if (att != null) {
-                node.put("type", att.value());
-            } else {
-                node.put("type", item.getClass().getSimpleName());    
-            }
-        }
-    }
- 
 
 }

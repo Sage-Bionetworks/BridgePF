@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
-import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -34,6 +34,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public abstract class BaseController extends Controller {
 
     private static Logger logger = LoggerFactory.getLogger(BaseController.class);
+
+    private static ObjectMapper mapper = new BridgeObjectMapper();
     
     protected AuthenticationService authenticationService;
     protected StudyService studyService;
@@ -168,18 +170,15 @@ public abstract class BaseController extends Controller {
     protected JsonNode requestToJSON(Request request) throws JsonProcessingException, IOException {
         JsonNode node = request().body().asJson();
         if (node == null) {
-            ObjectMapper mapper = new ObjectMapper();
             node = mapper.readTree(request().body().asText());
         }
         return node;
     }
-
+    
     protected <T> JsonNode constructJSON(Collection<T> items) {
-        ObjectMapper mapper = new ObjectMapper();
         ArrayNode itemsNode = mapper.createArrayNode();
         for (Object item : items) {
-            ObjectNode node = (ObjectNode) Json.toJson(item);
-            JsonUtils.annotateNodeWithObjectType(node, item);
+            ObjectNode node = (ObjectNode) mapper.valueToTree(item);
             itemsNode.add(node);
         }
         ObjectNode json = mapper.createObjectNode();
@@ -188,9 +187,7 @@ public abstract class BaseController extends Controller {
         return json;
     }
 
-    protected <T> JsonNode constructJSON(T item) {
-        ObjectNode node = (ObjectNode) Json.toJson(item);
-        JsonUtils.annotateNodeWithObjectType(node, item);
-        return node;
+    protected <T> JsonNode constructJSON(T item) throws Exception {
+        return mapper.valueToTree(item);
     }
 }
