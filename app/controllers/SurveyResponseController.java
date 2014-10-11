@@ -34,12 +34,12 @@ public class SurveyResponseController extends BaseController {
         
         SurveyResponse response = responseDao.createSurveyResponse(
             surveyGuid, surveyVersion, session.getUser().getHealthDataCode(), answers);
-        return ok(constructJSON(new GuidHolder(response.getGuid())));
+        return createdResult(new GuidHolder(response.getGuid()));
     }
     
     public Result getSurveyResponse(String guid) throws Exception {
         SurveyResponse response = getSurveyResponseIfAuthorized(guid);
-        return ok(constructJSON(response));
+        return okResult(response);
     }
     
     public Result appendSurveyAnswers(String guid) throws Exception {

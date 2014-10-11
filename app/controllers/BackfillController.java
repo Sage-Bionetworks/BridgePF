@@ -18,7 +18,7 @@ public class BackfillController extends AdminController {
     public Result backfill(String name) throws Exception {
         checkUser();
         Backfill backfill = backfillService.backfill(name);
-        return ok(constructJSON(backfill));
+        return okResult(backfill);
     }
 
     private void checkUser() throws Exception {

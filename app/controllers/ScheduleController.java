@@ -17,13 +17,13 @@ public class ScheduleController extends BaseController {
         this.scheduleService = scheduleService;
     }
     
-    public Result getSchedules() {
+    public Result getSchedules() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         
         List<Schedule> schedules = scheduleService.getSchedules(study, session.getUser());
                 
-        return ok(constructJSON(schedules));
+        return okResult(schedules);
     }
     
 }
