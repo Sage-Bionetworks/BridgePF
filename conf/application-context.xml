@@ -255,6 +255,14 @@
         </property>
     </bean>    
 
+    <bean id="controllers.SchedulePlanController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.SchedulePlanController" parent="BaseController">
+                <property name="schedulePlanService" ref="schedulePlanService" />
+            </bean>
+        </property>
+    </bean>
+    
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
         <property name="studies">
             <list>
@@ -400,6 +408,10 @@
     <bean id="surveyService" class="org.sagebionetworks.bridge.services.SurveyServiceImpl">
         <property name="surveyDao" ref="surveyDao"/>
     </bean> 
+    
+    <bean id="schedulePlanService" class="org.sagebionetworks.bridge.services.SchedulePlanServiceImpl">
+        <property name="schedulePlanDao" ref="schedulePlanDao"/>
+    </bean>
     
     <bean id="studyConsentBootstrapper" class="org.sagebionetworks.bridge.StudyConsentBootstrapper">
         <constructor-arg index="0" ref="studyService" />

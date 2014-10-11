@@ -89,11 +89,12 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
     }
 
     @Override
-    public void updateSchedulePlan(SchedulePlan plan) {
+    public SchedulePlan updateSchedulePlan(SchedulePlan plan) {
         VALIDATOR.validate(plan);
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
         publisher.publishEvent(new SchedulePlanUpdatedEvent(plan));
+        return plan;
     }
 
     @Override
