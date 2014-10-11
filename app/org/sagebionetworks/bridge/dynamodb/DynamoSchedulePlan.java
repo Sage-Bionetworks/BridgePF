@@ -35,6 +35,7 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
     private static final String STUDY_KEY_PROPERTY = "studyKey";
     private static final String MODIFIED_ON_PROPERTY = "modifiedOn";
     private static final String STRATEGY_PROPERTY = "strategy";
+    private static final String VERSION_PROPERTY = "version";
     
     private String guid;
     private String studyKey;
@@ -48,6 +49,7 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
         plan.setModifiedOn(JsonUtils.asMillisSinceEpoch(node, MODIFIED_ON_PROPERTY));
         plan.setStudyKey(JsonUtils.asText(node, STUDY_KEY_PROPERTY));
         plan.setData(JsonUtils.asObjectNode(node, STRATEGY_PROPERTY));
+        plan.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
         return plan;
     }
     
