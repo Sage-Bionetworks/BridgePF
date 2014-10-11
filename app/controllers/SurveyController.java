@@ -31,7 +31,7 @@ public class SurveyController extends BaseController {
         assertResearcherOrAdminUser(study, session.getUser());
         
         List<Survey> surveys = surveyService.getSurveys(study);
-        return ok(constructJSON(surveys));
+        return okResult(surveys);
     }
     
     public Result getMostRecentSurveys() throws Exception {
@@ -40,7 +40,7 @@ public class SurveyController extends BaseController {
         assertResearcherOrAdminUser(study, session.getUser());
 
         List<Survey> surveys = surveyService.getMostRecentSurveys(study);
-        return ok(constructJSON(surveys));
+        return okResult(surveys);
     }
     
     public Result getMostRecentlyPublishedSurveys() throws Exception {
@@ -49,7 +49,7 @@ public class SurveyController extends BaseController {
         assertResearcherOrAdminUser(study, session.getUser());
 
         List<Survey> surveys = surveyService.getMostRecentlyPublishedSurveys(study);
-        return ok(constructJSON(surveys));
+        return okResult(surveys);
     }
     
     public Result getSurveyForUser(String surveyGuid, String versionString) throws Exception {
@@ -60,7 +60,7 @@ public class SurveyController extends BaseController {
         if (!survey.isPublished()) {
             throw new EntityNotFoundException(Survey.class);
         }
-        return ok(constructJSON(survey));
+        return okResult(survey);
     }
     
     // Otherwise you don't need consent but you must be a researcher or an administrator
@@ -71,7 +71,7 @@ public class SurveyController extends BaseController {
         
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         Survey survey = surveyService.getSurvey(surveyGuid, surveyVersion);
-        return ok(constructJSON(survey));
+        return okResult(survey);
     }
     
     public Result getAllVersionsOfASurvey(String surveyGuid) throws Exception {
@@ -80,7 +80,7 @@ public class SurveyController extends BaseController {
         assertResearcherOrAdminUser(study, session.getUser());
         
         List<Survey> surveys = surveyService.getAllVersionsOfSurvey(surveyGuid);
-        return ok(constructJSON(surveys));
+        return okResult(surveys);
     }
     
     public Result createSurvey() throws Exception {
@@ -92,7 +92,7 @@ public class SurveyController extends BaseController {
         survey.setStudyKey(study.getKey());
         
         survey = surveyService.createSurvey(survey);
-        return ok(constructJSON(survey));
+        return createdResult(survey);
     }
     
     public Result versionSurvey(String surveyGuid, String versionString) throws Exception {
@@ -102,7 +102,7 @@ public class SurveyController extends BaseController {
         
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         Survey survey = surveyService.versionSurvey(surveyGuid, surveyVersion);
-        return ok(constructJSON(survey));
+        return createdResult(survey);
     }
     
     public Result updateSurvey(String surveyGuid, String versionString) throws Exception {

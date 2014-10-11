@@ -21,14 +21,14 @@ public class StudyConsentController extends AdminController {
         getAuthenticatedAdminSession();
         String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
         List<StudyConsent> consents = studyConsentService.getAllConsents(studyKey);
-        return ok(constructJSON(consents));
+        return okResult(consents);
     }
 
     public Result getActiveConsent() throws Exception {
         getAuthenticatedAdminSession();
         String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
         StudyConsent consent = studyConsentService.getActiveConsent(studyKey);
-        return ok(constructJSON(consent));
+        return okResult(consent);
     }
 
     public Result getConsent(String createdOn) throws Exception {
@@ -36,7 +36,7 @@ public class StudyConsentController extends AdminController {
         String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
         StudyConsent consent = studyConsentService.getConsent(studyKey, timestamp);
-        return ok(constructJSON(consent));
+        return okResult(consent);
     }
 
     public Result addConsent() throws Exception {
@@ -44,7 +44,7 @@ public class StudyConsentController extends AdminController {
         String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
         StudyConsentForm form = StudyConsentForm.fromJson(requestToJSON(request()));
         StudyConsent studyConsent = studyConsentService.addConsent(studyKey, form);
-        return ok(constructJSON(studyConsent));
+        return createdResult(studyConsent);
     }
 
     public Result setActiveConsent(String createdOn) throws Exception {
