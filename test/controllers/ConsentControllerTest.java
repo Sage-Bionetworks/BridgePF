@@ -1,6 +1,7 @@
 package controllers;
 
 import static org.apache.commons.httpclient.HttpStatus.SC_INTERNAL_SERVER_ERROR;
+import static org.apache.commons.httpclient.HttpStatus.SC_CREATED;
 import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.CONSENT_URL;
@@ -92,7 +93,7 @@ public class ConsentControllerTest {
                     Response giveConsentSuccess = TestUtils.getURL(session.getSessionToken(), CONSENT_URL)
                                                     .post(node.toString())
                                                     .get(TIMEOUT);
-                    assertEquals("Give consent succeeds with 200", SC_OK, giveConsentSuccess.getStatus());
+                    assertEquals("Give consent succeeds with 201", SC_CREATED, giveConsentSuccess.getStatus());
                 } finally {
                     helper.deleteUser(session);
                 }

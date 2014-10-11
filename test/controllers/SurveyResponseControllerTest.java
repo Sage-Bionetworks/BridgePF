@@ -1,5 +1,6 @@
 package controllers;
 
+import static org.apache.commons.httpclient.HttpStatus.SC_CREATED;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.NEW_SURVEY_RESPONSE;
 import static org.sagebionetworks.bridge.TestConstants.SURVEY_RESPONSE_URL;
@@ -101,7 +102,7 @@ public class SurveyResponseControllerTest {
                 String url = String.format(NEW_SURVEY_RESPONSE, survey.getGuid(), survey.getVersionedOn());
                 Response response = TestUtils.getURL(session.getSessionToken(), url).post(body).get(TIMEOUT);
 
-                assertEquals("Create new record returns 200", 200, response.getStatus());
+                assertEquals("Create new record returns 201", SC_CREATED, response.getStatus());
                 
                 responseGuid = getGuid(response.getBody());
                 
