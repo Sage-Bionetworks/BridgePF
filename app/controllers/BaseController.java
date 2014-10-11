@@ -1,6 +1,7 @@
 package controllers;
 
 import java.io.IOException;
+
 import java.util.Collection;
 
 import models.StatusMessage;
@@ -15,8 +16,6 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import play.libs.Json;
 import play.mvc.Controller;
@@ -33,9 +32,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @org.springframework.stereotype.Controller
 public abstract class BaseController extends Controller {
 
-    private static Logger logger = LoggerFactory.getLogger(BaseController.class);
-
-    private static ObjectMapper mapper = new BridgeObjectMapper();
+    private static ObjectMapper mapper = BridgeObjectMapper.get();
     
     protected AuthenticationService authenticationService;
     protected StudyService studyService;
@@ -52,8 +49,6 @@ public abstract class BaseController extends Controller {
     public void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
-    
-    // TODO: Clean up these session retrieval methods and name them more clearly.
     
     /**
      * Retrieve a user's session or throw an exception if the user is not authenticated. 
@@ -138,7 +133,6 @@ public abstract class BaseController extends Controller {
         if (session == null || session.length == 0 || session[0].isEmpty()) {
             Cookie sessionCookie = request().cookie(BridgeConstants.SESSION_TOKEN_HEADER);
             if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
-                logger.info("Found session in cookie: " + sessionCookie.value());
                 return sessionCookie.value();
             }
             return null;
@@ -149,17 +143,29 @@ public abstract class BaseController extends Controller {
     protected Result okResult(String message) {
         return ok(Json.toJson(new StatusMessage(message)));
     }
+    
+    protected Result okResult(Object obj) throws Exception {
+        return ok(mapper.valueToTree(obj));
+    }
+    
+    protected Result okResult(Collection<?> items) throws Exception {
+        ArrayNode itemsNode = mapper.createArrayNode();
+        for (Object item : items) {
+            ObjectNode node = (ObjectNode) mapper.valueToTree(item);
+            itemsNode.add(node);
+        }
+        ObjectNode json = mapper.createObjectNode();
+        json.put("items", itemsNode);
+        json.put("total", items.size());
+        return ok(json);        
+    }
 
     protected Result errorResult(String message) {
         return internalServerError(Json.toJson(new StatusMessage(message)));
     }
     
-    protected Result okResult(Object obj) {
-        return ok(constructJSON(obj));
-    }
-    
-    protected Result createdResult(Object obj) {
-        return created(constructJSON(obj));
+    protected Result createdResult(Object obj) throws Exception {
+        return created(mapper.valueToTree(obj));
     }
 
     // This is needed or tests fail. It appears to be a bug in Play Framework,
@@ -175,19 +181,4 @@ public abstract class BaseController extends Controller {
         return node;
     }
     
-    protected <T> JsonNode constructJSON(Collection<T> items) {
-        ArrayNode itemsNode = mapper.createArrayNode();
-        for (Object item : items) {
-            ObjectNode node = (ObjectNode) mapper.valueToTree(item);
-            itemsNode.add(node);
-        }
-        ObjectNode json = mapper.createObjectNode();
-        json.put("items", itemsNode);
-        json.put("total", items.size());
-        return json;
-    }
-
-    protected <T> JsonNode constructJSON(T item) throws Exception {
-        return mapper.valueToTree(item);
-    }
 }

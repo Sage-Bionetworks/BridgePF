@@ -92,7 +92,7 @@ public class SurveyController extends BaseController {
         survey.setStudyKey(study.getKey());
         
         survey = surveyService.createSurvey(survey);
-        return okResult(survey);
+        return createdResult(survey);
     }
     
     public Result versionSurvey(String surveyGuid, String versionString) throws Exception {
@@ -102,7 +102,7 @@ public class SurveyController extends BaseController {
         
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         Survey survey = surveyService.versionSurvey(surveyGuid, surveyVersion);
-        return okResult(survey);
+        return createdResult(survey);
     }
     
     public Result updateSurvey(String surveyGuid, String versionString) throws Exception {

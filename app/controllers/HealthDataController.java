@@ -45,7 +45,7 @@ public class HealthDataController extends BaseController {
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
         List<IdVersionHolder> ids = healthDataService.appendHealthData(key, records);
-        return ok(constructJSON(ids));
+        return okResult(ids);
     }
 
     public Result getHealthData(Long trackerId, String startDate, String endDate) throws Exception {
@@ -74,7 +74,7 @@ public class HealthDataController extends BaseController {
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
         List<HealthDataRecord> entries = healthDataService.getAllHealthData(key);
-        return ok(constructJSON(entries));
+        return okResult(entries);
     }
 
     private Result getHealthDataByDateRange(Long trackerId, long startDate, long endDate) throws Exception {
@@ -84,7 +84,7 @@ public class HealthDataController extends BaseController {
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
         List<HealthDataRecord> entries = healthDataService.getHealthDataByDateRange(key, startDate, endDate);
-        return ok(constructJSON(entries));
+        return okResult(entries);
     }
 
     public Result getHealthDataRecord(Long trackerId, String recordId) throws Exception {
@@ -94,7 +94,7 @@ public class HealthDataController extends BaseController {
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
         HealthDataRecord record = healthDataService.getHealthDataRecord(key, recordId);
-        return ok(constructJSON(record));
+        return okResult(record);
     }
 
     public Result updateHealthDataRecord(Long trackerId, String recordId) throws Exception {
@@ -108,7 +108,7 @@ public class HealthDataController extends BaseController {
         HealthDataRecord record = DynamoHealthDataRecord.fromJson(node);
 
         IdVersionHolder holder = healthDataService.updateHealthDataRecord(key, record);
-        return ok(constructJSON(holder));
+        return okResult(holder);
     }
 
     public Result deleteHealthDataRecord(Long trackerId, String recordId) throws Exception {

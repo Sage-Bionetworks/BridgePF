@@ -19,7 +19,7 @@ public class UserProfileController extends BaseController {
         UserSession session = getAuthenticatedSession();
         UserProfile profile = new UserProfile(session.getUser());
 
-        return ok(constructJSON(profile));
+        return okResult(profile);
     }
 
     public Result updateUserProfile() throws Exception {
