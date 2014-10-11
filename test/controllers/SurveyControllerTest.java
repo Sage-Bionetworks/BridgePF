@@ -1,6 +1,7 @@
 package controllers;
 
 import static org.apache.http.HttpStatus.SC_FORBIDDEN;
+import static org.apache.http.HttpStatus.SC_CREATED;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -290,7 +291,7 @@ public class SurveyControllerTest {
     private GuidVersionHolder createSurvey(String sessionKey, String name) throws Exception {
         String content = new TestSurvey(true).toJSON(); // createSurveyObject(name);
         Response response = TestUtils.getURL(sessionKey, SURVEYS_URL).post(content).get(TIMEOUT);
-        assertEquals("200 response [createSurvey]", SC_OK, response.getStatus());
+        assertEquals("201 response [createSurvey]", SC_CREATED, response.getStatus());
         
         JsonNode node = mapper.readTree(response.getBody());
         String surveyGuid = node.get("guid").asText();
@@ -301,7 +302,7 @@ public class SurveyControllerTest {
     private GuidVersionHolder versionSurvey(String sessionKey, GuidVersionHolder keys) throws Exception {
         String url = String.format(VERSION_SURVEY_URL, keys.guid, keys.versionedOn); 
         Response response = TestUtils.getURL(sessionKey, url).post("").get(TIMEOUT);
-        assertEquals("200 response [versionSurvey]", SC_OK, response.getStatus());
+        assertEquals("201 response [versionSurvey]", SC_CREATED, response.getStatus());
 
         JsonNode node = mapper.readTree(response.getBody());
         String surveyGuid = node.get("guid").asText();
