@@ -23,13 +23,13 @@ public class AuthenticationController extends BaseController {
         UserSession session = getSessionIfItExists();
         if (session != null) {
             setSessionToken(session.getSessionToken());
-            return ok(constructJSON(new UserSessionInfo(session)));
+            return okResult(new UserSessionInfo(session));
         }
         Study study = studyService.getStudyByHostname(getHostname());
         SignIn signIn = SignIn.fromJson(request().body().asJson());
         session = authenticationService.signIn(study, signIn);
         setSessionToken(session.getSessionToken());
-        Result result = ok(constructJSON(new UserSessionInfo(session)));
+        Result result = okResult(new UserSessionInfo(session));
         final long end = System.nanoTime();
         logger.info("sign in controller " + (end - start));
         return result;
@@ -48,7 +48,7 @@ public class AuthenticationController extends BaseController {
         SignUp signUp = SignUp.fromJson(request().body().asJson());
         Study study = studyService.getStudyByHostname(getHostname());
         authenticationService.signUp(signUp, study);
-        return okResult("Signed up.");
+        return createdResult("Signed up.");
     }
 
     public Result verifyEmail() throws Exception {
@@ -58,7 +58,7 @@ public class AuthenticationController extends BaseController {
         // an exception is thrown. Code after this line will rarely execute
         UserSession session = authenticationService.verifyEmail(study, ev);
         setSessionToken(session.getSessionToken());
-        return ok(constructJSON((new UserSessionInfo(session))));
+        return okResult(new UserSessionInfo(session));
     }
 
     public Result requestResetPassword() throws Exception {

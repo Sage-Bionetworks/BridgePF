@@ -24,7 +24,7 @@ public class UploadController extends BaseController {
         UploadRequest uploadRequest = UploadRequest.fromJson(requestToJSON(request()));
         validateRequest(uploadRequest);
         UploadSession uploadSession = uploadService.createUpload(session.getUser(), uploadRequest);
-        return ok(constructJSON(uploadSession));
+        return okResult(uploadSession);
     }
 
     public Result uploadComplete(String uploadId) throws Exception {

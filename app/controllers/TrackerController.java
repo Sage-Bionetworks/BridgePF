@@ -28,7 +28,7 @@ public class TrackerController extends BaseController {
         for (Tracker tracker : study.getTrackers()) {
             infos.add(new TrackerInfo(tracker));
         }
-        return ok(constructJSON(infos));
+        return okResult(infos);
     }
     
     
@@ -37,7 +37,7 @@ public class TrackerController extends BaseController {
         Study study = studyService.getStudyByHostname(getHostname());
         Tracker tracker = study.getTrackerById(trackerId);
         JsonNode node = jsonSchemaValidator.getSchemaAsNode(tracker);
-        return ok(constructJSON(node));
+        return okResult(node);
     }
 
 }
