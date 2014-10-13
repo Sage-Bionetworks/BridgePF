@@ -50,7 +50,6 @@ public class TrackerControllerTest {
                 assertEquals("HTTP response OK", 200, response.getStatus());
                 
                 JsonNode node = response.asJson().get("items").get(0);
-                System.out.println(node.toString());
                 assertEquals("Type is BloodPressure", "BloodPressure", node.get("type").asText());
             }
         });

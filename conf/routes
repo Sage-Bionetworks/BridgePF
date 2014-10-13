@@ -64,6 +64,13 @@ POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion/close    @controllers.
 GET    /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.getSurvey(surveyGuid: String, surveyVersion: String)
 POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.updateSurvey(surveyGuid: String, surveyVersion: String)
 
+# Researchers - Schedule Plans
+GET    /researchers/v1/scheduleplans           @controllers.SchedulePlanController.getSchedulePlans
+POST   /researchers/v1/scheduleplans           @controllers.SchedulePlanController.createSchedulePlan
+GET    /researchers/v1/scheduleplans/:guid     @controllers.SchedulePlanController.getSchedulePlan(guid: String)
+POST   /researchers/v1/scheduleplans/:guid     @controllers.SchedulePlanController.updateSchedulePlan(guid: String)
+DELETE /researchers/v1/scheduleplans/:guid     @controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
+
 # Admin - Consent
 GET    /admin/v1/consents                      @controllers.StudyConsentController.getAllConsents
 GET    /admin/v1/consents/active               @controllers.StudyConsentController.getActiveConsent

@@ -73,6 +73,9 @@ public class TestConstants {
     
     public static final String USER_SCHEDULES_URL = API_URL + "/schedules";
 
+    public static final String SCHEDULE_PLANS_URL = RESEARCHERS_URL + "/scheduleplans";
+    public static final String SCHEDULE_PLAN_URL = RESEARCHERS_URL + "/scheduleplans/%s";
+    
     public static final String USER_URL = ADMIN_URL + "/users";
     public static final String REVOKE_CONSENT_URL = USER_URL + "/consent";
 

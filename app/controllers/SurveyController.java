@@ -1,23 +1,18 @@
 package controllers;
 
 import java.util.List;
-import java.util.Set;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.GuidVersionedOnHolder;
 import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.services.SurveyService;
 
 import play.mvc.Result;
 
-public class SurveyController extends BaseController {
+public class SurveyController extends ResearcherController {
 
     private SurveyService surveyService;
     
@@ -26,34 +21,32 @@ public class SurveyController extends BaseController {
     }
     
     public Result getAllSurveysAllVersions() throws Exception {
-        UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
-        assertResearcherOrAdminUser(study, session.getUser());
+        getAuthenticatedResearcherOrAdminSession(study);
         
         List<Survey> surveys = surveyService.getSurveys(study);
         return okResult(surveys);
     }
     
     public Result getMostRecentSurveys() throws Exception {
-        UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
-        assertResearcherOrAdminUser(study, session.getUser());
+        getAuthenticatedResearcherOrAdminSession(study);
 
         List<Survey> surveys = surveyService.getMostRecentSurveys(study);
         return okResult(surveys);
     }
     
     public Result getMostRecentlyPublishedSurveys() throws Exception {
-        UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
-        assertResearcherOrAdminUser(study, session.getUser());
+        getAuthenticatedResearcherOrAdminSession(study);
 
         List<Survey> surveys = surveyService.getMostRecentlyPublishedSurveys(study);
         return okResult(surveys);
     }
     
     public Result getSurveyForUser(String surveyGuid, String versionString) throws Exception {
-        getAuthenticatedAndConsentedSession();
+        Study study = studyService.getStudyByHostname(getHostname());
+        getAuthenticatedResearcherOrAdminSession(study);
         
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         Survey survey = surveyService.getSurvey(surveyGuid, surveyVersion);
@@ -65,9 +58,8 @@ public class SurveyController extends BaseController {
     
     // Otherwise you don't need consent but you must be a researcher or an administrator
     public Result getSurvey(String surveyGuid, String versionString) throws Exception {
-        UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
-        assertResearcherOrAdminUser(study, session.getUser());
+        getAuthenticatedResearcherOrAdminSession(study);
         
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         Survey survey = surveyService.getSurvey(surveyGuid, surveyVersion);
@@ -75,40 +67,36 @@ public class SurveyController extends BaseController {
     }
     
     public Result getAllVersionsOfASurvey(String surveyGuid) throws Exception {
-        UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
-        assertResearcherOrAdminUser(study, session.getUser());
+        getAuthenticatedResearcherOrAdminSession(study);
         
         List<Survey> surveys = surveyService.getAllVersionsOfSurvey(surveyGuid);
         return okResult(surveys);
     }
     
     public Result createSurvey() throws Exception {
-        UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
-        assertResearcherOrAdminUser(study, session.getUser());
+        getAuthenticatedResearcherOrAdminSession(study);
         
         Survey survey = DynamoSurvey.fromJson(requestToJSON(request()));
         survey.setStudyKey(study.getKey());
         
         survey = surveyService.createSurvey(survey);
-        return createdResult(survey);
+        return createdResult(new GuidVersionedOnHolder(survey.getGuid(), survey.getVersionedOn()));
     }
     
     public Result versionSurvey(String surveyGuid, String versionString) throws Exception {
-        UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
-        assertResearcherOrAdminUser(study, session.getUser());
+        getAuthenticatedResearcherOrAdminSession(study);
         
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         Survey survey = surveyService.versionSurvey(surveyGuid, surveyVersion);
-        return createdResult(survey);
+        return createdResult(new GuidVersionedOnHolder(survey.getGuid(), survey.getVersionedOn()));
     }
     
     public Result updateSurvey(String surveyGuid, String versionString) throws Exception {
-        UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
-        assertResearcherOrAdminUser(study, session.getUser());
+        getAuthenticatedResearcherOrAdminSession(study);
         
         // The parameters in the URL take precedence over anything declared in 
         // the object itself.
@@ -119,13 +107,12 @@ public class SurveyController extends BaseController {
         survey.setStudyKey(study.getKey());
         
         survey = surveyService.updateSurvey(survey);
-        return okResult("Survey updated.");
+        return okResult(new GuidVersionedOnHolder(survey.getGuid(), survey.getVersionedOn()));
     }
     
     public Result publishSurvey(String surveyGuid, String versionString) throws Exception {
-        UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
-        assertResearcherOrAdminUser(study, session.getUser());
+        getAuthenticatedResearcherOrAdminSession(study);
         
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         surveyService.publishSurvey(surveyGuid, surveyVersion);
@@ -133,19 +120,11 @@ public class SurveyController extends BaseController {
     }
     
     public Result closeSurvey(String surveyGuid, String versionString) throws Exception {
-        UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
-        assertResearcherOrAdminUser(study, session.getUser());
+        getAuthenticatedResearcherOrAdminSession(study);
         
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         surveyService.closeSurvey(surveyGuid, surveyVersion);
         return okResult("The survey has been closed.");
-    }
-    
-    private void assertResearcherOrAdminUser(Study study, User user) throws BridgeServiceException {
-        Set<String> roles = user.getRoles();
-        if (!roles.contains(BridgeConstants.ADMIN_GROUP) && !roles.contains(study.getResearcherRole())) {
-            throw new UnauthorizedException();
-        }
     }
 }
