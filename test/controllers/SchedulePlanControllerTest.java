@@ -52,6 +52,8 @@ public class SchedulePlanControllerTest {
         helper.deleteUser(session);
     }
 
+    // Test: only researchers or admins can access service
+    
     @Test
     public void crudSchedulePlan() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
