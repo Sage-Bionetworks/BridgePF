@@ -90,7 +90,6 @@ public class StormPathUserAdminService implements UserAdminService {
         try {
             Directory directory = getDirectory(userStudy);
             // Search for email and skip creation if it already exists.
-            System.out.println("email: \"" + signUp.getEmail() + "\"");
             if (userDoesNotExist(directory, signUp.getEmail())) {
                 Account account = stormpathClient.instantiate(Account.class);
                 account.setGivenName("<EMPTY>");
