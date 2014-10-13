@@ -246,9 +246,9 @@
         </property>
     </bean>
     
-    <bean id="controllers.AdminUserMgmtControler" parent="proxiedController">
+    <bean id="controllers.UserManagementControler" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.AdminUserMgmtController" parent="AdminController">
+            <bean class="controllers.UserManagementController" parent="AdminController">
                 <property name="stormpathClient" ref="stormpathClient" />
                 <property name="userAdminService" ref="userAdminService" />
             </bean>
