@@ -8,7 +8,9 @@ function($scope, $route, $humane, $window, authService, formService) {
     
     $scope.submit = function() {
         authService.resetPassword($scope.password, $scope.sptoken).then(function() {
-            $window.location.replace("/#/?msg=passwordChanged");
+            console.log(window.location);
+            console.log("/#/?msg=passwordChanged");
+            // $window.location.replace("/#/?msg=passwordChanged");
         }, $humane.status);
     };
     
