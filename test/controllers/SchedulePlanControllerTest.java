@@ -1,5 +1,6 @@
 package controllers;
 
+import static org.apache.commons.httpclient.HttpStatus.SC_CREATED;
 import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -60,9 +61,10 @@ public class SchedulePlanControllerTest {
                 
                 // Create
                 Response response = TestUtils.getURL(session.getSessionToken(), SCHEDULE_PLANS_URL).post(json).get(TIMEOUT);
-                assertEquals("Returns 200", SC_OK, response.getStatus());
+                assertEquals("Returns 201", SC_CREATED, response.getStatus());
                 JsonNode node = response.asJson();
                 assertNotNull("Returned plan has a guid", node.get("guid").asText());
+                assertEquals("Type is SchedulePlan", "GuidVersionHolder", node.get("type").asText());
                 
                 // Update
                 TestSimpleSchedulePlan simplePlan = new TestSimpleSchedulePlan();
@@ -79,7 +81,8 @@ public class SchedulePlanControllerTest {
                 response = TestUtils.getURL(session.getSessionToken(), url).get().get(TIMEOUT); 
                 node = response.asJson();
                 assertEquals("Returns 200", SC_OK, response.getStatus());
-                assertEquals("Type has been changed", "SimpleScheduleStrategy", node.get("strategy").get("type").asText());
+                assertEquals("Type is SchedulePlan", "SchedulePlan", node.get("type").asText());
+                assertEquals("Strategy type has been changed", "SimpleScheduleStrategy", node.get("strategy").get("type").asText());
                 
                 // Delete
                 response = TestUtils.getURL(session.getSessionToken(), url).delete().get(TIMEOUT);
