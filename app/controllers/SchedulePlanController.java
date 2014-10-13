@@ -33,7 +33,7 @@ public class SchedulePlanController extends ResearcherController {
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
         SchedulePlan plan = schedulePlanService.createSchedulePlan(planForm);
         plan.setStudyKey(study.getKey());
-        return okResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
+        return createdResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
     }
 
     public Result getSchedulePlan(String guid) throws Exception {
