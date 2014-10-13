@@ -102,8 +102,10 @@ public class SurveyControllerTest {
                     session = helper.createUser(roles);
                     
                     GuidVersionHolder keys = createSurvey(session.getSessionToken(), "Name");
+                    
+                    JsonNode node = getSurvey(session.getSessionToken(), keys);
 
-                    ArrayNode questions = (ArrayNode)keys.node.get("questions");
+                    ArrayNode questions = (ArrayNode)node.get("questions");
                     
                     String prompt = questions.get(1).get("prompt").asText();
                     assertEquals("Prompt is correct", "When did you last have a medical check-up?", prompt);
@@ -125,7 +127,10 @@ public class SurveyControllerTest {
                     GuidVersionHolder keys = createSurvey(session.getSessionToken(), "Name");
 
                     GuidVersionHolder laterKeys = versionSurvey(session.getSessionToken(), keys);
-                    boolean isPublished = laterKeys.node.get("published").asBoolean();
+                    
+                    JsonNode node = getSurvey(session.getSessionToken(), laterKeys);
+                    
+                    boolean isPublished = node.get("published").asBoolean();
                     assertNotEquals("versionedOn has been updated", keys.versionedOn, laterKeys.versionedOn);
                     assertFalse("New survey is not published", isPublished);
 
