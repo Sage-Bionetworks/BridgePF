@@ -68,7 +68,7 @@ public class StormPathUserAdminService implements UserAdminService {
     public void setStormpathClient(Client stormpathClient) {
         this.stormpathClient = stormpathClient;
     }
-    
+
     public void setUserLockDao(UserLockDao userLockDao) {
         this.userLockDao = userLockDao;
     }
@@ -90,6 +90,7 @@ public class StormPathUserAdminService implements UserAdminService {
         try {
             Directory directory = getDirectory(userStudy);
             // Search for email and skip creation if it already exists.
+            System.out.println("email: \"" + signUp.getEmail() + "\"");
             if (userDoesNotExist(directory, signUp.getEmail())) {
                 Account account = stormpathClient.instantiate(Account.class);
                 account.setGivenName("<EMPTY>");
@@ -151,7 +152,7 @@ public class StormPathUserAdminService implements UserAdminService {
             deleteUserInStudy(user, study);
         }
     }
-    
+
     private void addAccountToGroups(Directory directory, Account account, List<String> roles) {
         if (roles != null) {
             GroupList groups = directory.getGroups();
@@ -172,7 +173,7 @@ public class StormPathUserAdminService implements UserAdminService {
         String uuid = null;
         try {
             uuid = userLockDao.createLock(user.getId());
-            
+
             // Verify the user exists before doing this work. Otherwise, it just throws errors.
             Directory directory = getDirectory(userStudy);
             Account account = getUserAccountByEmail(directory, user.getEmail());

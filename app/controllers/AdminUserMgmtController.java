@@ -55,7 +55,7 @@ public class AdminUserMgmtController extends AdminController {
         Study userStudy = studyService.getStudyByHostname(getHostname());
         boolean signUserIn = false; // can't sign user in because admin is signed in.
 
-        UserSession session = userAdminService.createUser(new SignUp(email, username, password), roles, userStudy,
+        UserSession session = userAdminService.createUser(new SignUp(username, email, password), roles, userStudy,
                 signUserIn, consent);
 
         return okResult(mapper.writeValueAsString(session));
