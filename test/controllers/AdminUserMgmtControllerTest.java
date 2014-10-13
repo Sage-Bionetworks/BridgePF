@@ -17,7 +17,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -66,7 +65,6 @@ public class AdminUserMgmtControllerTest {
     }
 
     @Test
-    @Ignore
     public void canCreateAndDeleteUser() {
         running(testServer(3333), new FailableRunnable() {
 
