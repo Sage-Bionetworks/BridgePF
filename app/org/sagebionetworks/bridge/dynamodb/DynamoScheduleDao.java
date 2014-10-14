@@ -69,7 +69,6 @@ public class DynamoScheduleDao implements ScheduleDao {
     
     @Override
     public void deleteSchedules(Study study, User user) {
-        // If this works... I'll be quite happy.
         List<DynamoSchedule> schedules = getDynamoSchedules(study, user);
         List<FailedBatch> failures = mapper.batchDelete(schedules);
         BridgeUtils.ifFailuresThrowException(failures);
