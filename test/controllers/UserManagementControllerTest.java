@@ -1,5 +1,6 @@
 package controllers;
 
+import static org.apache.commons.httpclient.HttpStatus.SC_CREATED;
 import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
@@ -37,7 +38,7 @@ import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-public class AdminUserMgmtControllerTest {
+public class UserManagementControllerTest {
 
     @Resource
     private TestUserAdminHelper helper;
@@ -82,7 +83,7 @@ public class AdminUserMgmtControllerTest {
                         .setHeader("Bridge-Host", TEST_STUDY_KEY)
                         .post(node)
                         .get(TIMEOUT);
-                assertEquals("Response status is OK.", SC_OK, response.getStatus());
+                assertEquals("Response status is created.", SC_CREATED, response.getStatus());
 
                 Map<String,String> queryParams = new HashMap<String,String>();
                 queryParams.put("email", email);

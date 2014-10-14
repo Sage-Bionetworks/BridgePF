@@ -82,9 +82,9 @@ POST   /admin/v1/consents/active/:timestamp    @controllers.StudyConsentControll
 GET    /admin/v1/backfill/:name    @controllers.BackfillController.backfill(name: String)
 
 # Admin - User Management
-POST      /admin/v1/users           @controllers.AdminUserMgmtController.createUser
-DELETE    /admin/v1/users           @controllers.AdminUserMgmtController.deleteUser(email: java.lang.String ?= null)
-DELETE    /admin/v1/users/consent   @controllers.AdminUserMgmtController.revokeAllConsentRecords
+POST      /admin/v1/users           @controllers.UserManagementController.createUser
+DELETE    /admin/v1/users           @controllers.UserManagementController.deleteUser(email: java.lang.String ?= null)
+DELETE    /admin/v1/users/consent   @controllers.UserManagementController.revokeAllConsentRecords
 
 # AngularJS application
 GET    /*file      controllers.Assets.at(path="/public", file)

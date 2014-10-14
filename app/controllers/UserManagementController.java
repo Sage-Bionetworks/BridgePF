@@ -21,7 +21,7 @@ import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
 
-public class AdminUserMgmtController extends AdminController {
+public class UserManagementController extends AdminController {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
@@ -58,7 +58,7 @@ public class AdminUserMgmtController extends AdminController {
         UserSession session = userAdminService.createUser(new SignUp(username, email, password), roles, userStudy,
                 signUserIn, consent);
 
-        return okResult(mapper.writeValueAsString(session));
+        return createdResult(mapper.writeValueAsString(session));
     }
 
     public Result deleteUser(String email) throws Exception {
