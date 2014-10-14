@@ -11,7 +11,7 @@ import org.springframework.context.ApplicationListener;
 
 public class ScheduleChangeListener implements ApplicationListener<ApplicationEvent>, BeanFactoryAware {
     
-    private ExecutorService executor = Executors.newSingleThreadExecutor(); //.newFixedThreadPool(3);
+    private ExecutorService executor = Executors.newFixedThreadPool(3); //.newSingleThreadExecutor();
     private BeanFactory beanFactory;
     
     public void setBeanFactory(BeanFactory beanFactory) {
