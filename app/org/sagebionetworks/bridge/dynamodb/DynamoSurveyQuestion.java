@@ -156,7 +156,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         ObjectNode data = JsonNodeFactory.instance.objectNode();
         data.put(PROMPT_PROPERTY, prompt);
         data.put(UI_HINTS_PROPERTY, hint.name().toLowerCase());    
-        data.put(CONSTRAINTS_PROPERTY, BridgeObjectMapper.get().valueToTree(constraints));    
+        data.set(CONSTRAINTS_PROPERTY, BridgeObjectMapper.get().valueToTree(constraints));    
         return data;
     }
 

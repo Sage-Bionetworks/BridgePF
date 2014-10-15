@@ -12,11 +12,14 @@ public final class DateTimeJsonSerializer extends JsonSerializer<Long> {
     @Override
     public void serialize(Long millisFromEpoch, JsonGenerator jgen, SerializerProvider sp) throws IOException,
             JsonProcessingException {
-        if (millisFromEpoch != null && millisFromEpoch != 0L) {
-            jgen.writeString(DateUtils.convertToISODateTime(millisFromEpoch));
-        } else {
-            jgen.writeNull(); // without this errors.
-        }
+        jgen.writeString(DateUtils.convertToISODateTime(millisFromEpoch));
     }
+    
+    @Override
+    public boolean isEmpty(Long millisFromEpoch) {
+        return (millisFromEpoch == null || millisFromEpoch == 0L);
+    }
+    
+    
     
 }

@@ -83,6 +83,9 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
     
     @Override
     public Schedule scheduleNewUser(Study study, User user) {
+        if (groups.isEmpty()) {
+            return null;
+        }
         // Randomly assign to a group, weighted based on the percentage representation of the group.
         ScheduleGroup group = null;
         int i = 0;
