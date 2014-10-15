@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Callable;
 
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
@@ -12,6 +13,8 @@ import org.sagebionetworks.bridge.events.SchedulePlanDeletedEvent;
 import org.sagebionetworks.bridge.events.SchedulePlanUpdatedEvent;
 import org.sagebionetworks.bridge.events.UserEnrolledEvent;
 import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -21,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEvent;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountList;
@@ -30,6 +34,12 @@ import com.stormpath.sdk.client.Client;
 public class ScheduleChangeWorker implements Callable<Boolean> {
     
     private static Logger logger = LoggerFactory.getLogger(ScheduleChangeWorker.class);
+    
+    private static final Random rand = new Random();
+    
+    private interface Command {
+        void execute();
+    }
 
     private ApplicationEvent event;
     private Client stormpathClient;
@@ -77,102 +87,125 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
             }        
         } catch(Throwable throwable) {
             logger.error(throwable.getMessage(), throwable);
+            Throwables.propagateIfInstanceOf(throwable,  InterruptedException.class);
             return false;
         }
         return true;
     }
 
-    private void schedulePlanCreated(SchedulePlanCreatedEvent event) {
+    private void schedulePlanCreated(SchedulePlanCreatedEvent event) throws InterruptedException {
         logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" created");
         
-        SchedulePlan plan = event.getSchedulePlan();
-        Study study = studyService.getStudyByKey(plan.getStudyKey());
-        ArrayList<User> users = getStudyUsers();
-        List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
+        final SchedulePlan plan = event.getSchedulePlan();
+        final Study study = studyService.getStudyByKey(plan.getStudyKey());
+        final ArrayList<User> users = getStudyUsers();
+        final List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
         setSchedulePlan(schedules, plan);
         
-        String lockId = null;
-        try {
-            // Find all users, create schedules for them as a group
-            lockId = lockDao.createLock(Study.class, study.getKey());
-            scheduleDao.createSchedules(schedules);
-        } finally {
-            lockDao.releaseLock(Study.class, study.getKey(), lockId);
-        }
+        runWithLock(plan.getClass(), plan.getGuid(), new Command() {
+            public void execute() {
+                scheduleDao.createSchedules(schedules);
+            }
+        });
     }
-    private void schedulePlanDeleted(SchedulePlanDeletedEvent event) {
+    private void schedulePlanDeleted(SchedulePlanDeletedEvent event) throws InterruptedException {
         logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" deleted");
         
-        SchedulePlan plan = event.getSchedulePlan();
-        Study study = studyService.getStudyByKey(plan.getStudyKey());
+        final SchedulePlan plan = event.getSchedulePlan();
+        final Study study = studyService.getStudyByKey(plan.getStudyKey());
         
-        String lockId = null;
-        try {
-            // Find all schedules for this plan, delete them
-            lockId = lockDao.createLock(Study.class, study.getKey());
-            scheduleDao.deleteSchedules(plan);
-        } finally {
-            lockDao.releaseLock(Study.class, study.getKey(), lockId);
-        }
+        runWithLock(plan.getClass(), plan.getGuid(), new Command() {
+            public void execute() {
+                scheduleDao.deleteSchedules(plan);
+            }
+        });
     }
-    private void schedulePlanUpdated(SchedulePlanUpdatedEvent event) {
+    private void schedulePlanUpdated(SchedulePlanUpdatedEvent event) throws InterruptedException {
         logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" updated");
         
-        SchedulePlan plan = event.getSchedulePlan();
-        Study study = studyService.getStudyByKey(plan.getStudyKey());
-        ArrayList<User> users = getStudyUsers();
-        List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
+        final SchedulePlan plan = event.getSchedulePlan();
+        final Study study = studyService.getStudyByKey(plan.getStudyKey());
+        final ArrayList<User> users = getStudyUsers();
+        final List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
         setSchedulePlan(schedules, plan);
         
-        String lockId = null;
-        try {
-            // Find all schedules for this plan, delete them
-            // Find all users, create schedules for them as a group
-            lockId = lockDao.createLock(Study.class, study.getKey());
-            scheduleDao.deleteSchedules(plan);
-            scheduleDao.createSchedules(schedules);
-        } finally {
-            lockDao.releaseLock(Study.class, study.getKey(), lockId);
-        }
+        runWithLock(plan.getClass(), plan.getGuid(), new Command() {
+            public void execute() {
+                scheduleDao.deleteSchedules(plan);
+                scheduleDao.createSchedules(schedules);
+            }
+        });
     }
-    private void userEnrolled(UserEnrolledEvent event) {
+    private void userEnrolled(UserEnrolledEvent event) throws InterruptedException {
         logger.info("EVENT: User " + event.getUser().getId() + " enrolled in study " + event.getStudy().getKey());
         
-        Study study = event.getStudy();
-        User user = event.getUser();
-        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(event.getStudy());
-        List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size()); 
+        final Study study = event.getStudy();
+        final User user = event.getUser();
+        final List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(event.getStudy());
+        final List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size()); 
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().scheduleNewUser(study, user);
-            schedule.setSchedulePlanGuid(plan.getGuid());
-            schedules.add(schedule);
+            if (schedule != null) {
+                schedule.setSchedulePlanGuid(plan.getGuid());
+                schedules.add(schedule);
+            }
         }
-        
-        String lockId = null;
-        try {
-            // Find all the plans, assemble a list of schedules for this user, save
-            lockId = lockDao.createLock(User.class, user.getId());
-            scheduleDao.createSchedules(schedules);
-        } finally {
-            lockDao.releaseLock(User.class, user.getId(), lockId);
-        }
+        runWithLock(user.getClass(), user.getId(), new Command() {
+            public void execute() {
+                scheduleDao.createSchedules(schedules);
+            }
+        });
     }
-    private void userUnenrolled(UserUnenrolledEvent event) {
+    private void userUnenrolled(UserUnenrolledEvent event) throws InterruptedException {
         logger.info("EVENT: User " + event.getUser().getId() + " withdrawn from study " + event.getStudy().getKey());
-        
-        Study study = event.getStudy();
-        User user = event.getUser();
-        
-        String lockId = null;
-        try {
-            // Find all schedules for this user, delete them
-            lockId = lockDao.createLock(User.class, user.getId());
-            scheduleDao.deleteSchedules(study, user);
-        } finally {
-            lockDao.releaseLock(User.class, user.getId(), lockId);
-        }
-        
+
+        final Study study = event.getStudy();
+        final User user = event.getUser();
+        runWithLock(user.getClass(), user.getId(), new Command() {
+            public void execute() {
+                scheduleDao.deleteSchedules(study, user);
+            }
+        });
     }
+    
+    private void runWithLock(Class<? extends BridgeEntity> clazz, String id, Command command) throws InterruptedException {
+        String lockId = null;
+        while (true) {
+            try {
+                lockId = lockDao.createLock(clazz, id);
+                command.execute();
+                return;
+            } catch(ConcurrentModificationException e) {
+                logger.info("Lock held, waiting to retry");
+                Thread.sleep(300 + rand.nextInt(400));
+            } catch(Throwable t) {
+                logger.info(t.getMessage());
+            } finally {
+                lockDao.releaseLock(clazz, id, lockId);
+            }
+        }
+    }
+    
+    /*
+    private void runWithLock(Study study, Command command) throws InterruptedException {
+        String lockId = null;
+        while (true) {
+            try {
+                lockId = lockDao.createLock(Study.class, study.getKey());
+                command.execute();
+                return;
+            } catch(ConcurrentModificationException e) {
+                logger.info("Lock held, waiting to retry");
+                Thread.sleep(300 + rand.nextInt(400));
+            } catch(Throwable t) {
+                logger.info(t.getMessage());
+            } finally {
+                lockDao.releaseLock(Study.class, study.getKey(), lockId);
+            }
+        }
+    }
+    */
+    
     private void setSchedulePlan(List<Schedule> schedules, SchedulePlan plan) {
         for (Schedule schedule : schedules) {
             schedule.setSchedulePlanGuid(plan.getGuid());

@@ -38,7 +38,7 @@ public class RedisDistributedLockDao implements DistributedLockDao {
             String key = createKey(clazz, identifier);
             String getResult = stringOps.get(key).execute();
             if (getResult != null && !getResult.equals(lockId)) {
-                throw new BridgeServiceException("Must be lock owner to release lock.");
+                return;
             }
             Long result = stringOps.delete(key).execute();
             if (result == 0L) {

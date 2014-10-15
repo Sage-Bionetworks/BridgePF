@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
@@ -10,7 +11,7 @@ import org.springframework.context.ApplicationListener;
 
 public class ScheduleChangeListener implements ApplicationListener<ApplicationEvent>, BeanFactoryAware {
     
-    private ExecutorService executor = Executors.newFixedThreadPool(3);
+    private ExecutorService executor = Executors.newFixedThreadPool(3); //.newSingleThreadExecutor();
     private BeanFactory beanFactory;
     
     public void setBeanFactory(BeanFactory beanFactory) {
@@ -32,6 +33,7 @@ public class ScheduleChangeListener implements ApplicationListener<ApplicationEv
     public void onApplicationEvent(ApplicationEvent event) {
         ScheduleChangeWorker worker = beanFactory.getBean("scheduleChangeWorker", ScheduleChangeWorker.class);
         worker.setApplicationEvent(event);
-        executor.submit(new RetryingFutureTask(executor, worker, 5));
+        
+        executor.submit(new FutureTask<Boolean>(worker));
     }
 }
