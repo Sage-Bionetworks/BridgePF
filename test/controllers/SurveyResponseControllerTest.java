@@ -99,7 +99,7 @@ public class SurveyResponseControllerTest {
                 
                 String body = mapper.writeValueAsString(list);
                 
-                String url = String.format(NEW_SURVEY_RESPONSE, survey.getGuid(), survey.getVersionedOn());
+                String url = String.format(NEW_SURVEY_RESPONSE, survey.getGuid(), DateUtils.convertToISODateTime(survey.getVersionedOn()));
                 Response response = TestUtils.getURL(session.getSessionToken(), url).post(body).get(TIMEOUT);
 
                 assertEquals("Create new record returns 201", SC_CREATED, response.getStatus());
