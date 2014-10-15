@@ -64,19 +64,16 @@ public class UserManagementController extends AdminController {
     public Result deleteUser(String email) throws Exception {
         getAuthenticatedAdminSession();
 
-
         User user = getUser(email);
         userAdminService.deleteUser(user);
 
         return okResult("Deleted user successfully.");
     }
 
-    public Result revokeAllConsentRecords() throws Exception {
+    public Result revokeAllConsentRecords(String email) throws Exception {
         getAuthenticatedAdminSession();
 
         Study study = studyService.getStudyByHostname(getHostname());
-        JsonNode node = requestToJSON(request());
-        String email = JsonUtils.asText(node, EMAIL_FIELD);
 
         User user = getUser(email);
         userAdminService.revokeAllConsentRecords(user, study);
