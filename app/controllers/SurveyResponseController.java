@@ -1,13 +1,14 @@
 package controllers;
 
 import java.io.IOException;
+
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidHolder;
-import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
@@ -29,9 +30,10 @@ public class SurveyResponseController extends BaseController {
         this.responseDao = responseDao;
     }
     
-    public Result createSurveyResponse(String surveyGuid, Long surveyVersion) throws Exception {
+    public Result createSurveyResponse(String surveyGuid, String surveyVersionString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         List<SurveyAnswer> answers = deserializeSurveyAnswers();
+        Long surveyVersion = DateUtils.convertToMillisFromEpoch(surveyVersionString);
         
         SurveyResponse response = responseDao.createSurveyResponse(
             surveyGuid, surveyVersion, session.getUser().getHealthDataCode(), answers);
