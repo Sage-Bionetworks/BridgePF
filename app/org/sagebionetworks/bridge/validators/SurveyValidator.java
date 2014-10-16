@@ -123,18 +123,18 @@ public class SurveyValidator implements Validator<Survey> {
         for (int i=0; i < questions.size(); i++) {
             SurveyQuestion question = questions.get(i);
             for (SurveyRule rule : question.getConstraints().getRules()) {
-                if (alreadySeenIdentifiers.contains(rule.getGotoTarget())) {
-                    messages.add("question #%s has a rule that back references question %s: %s", i, rule.getGotoTarget(), rule.toString());
+                if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+                    messages.add("question #%s has a rule that back references question %s: %s", i, rule.getSkipToTarget(), rule.toString());
                 }
             }
             alreadySeenIdentifiers.add(question.getIdentifier());
         }
-        // Now verify that all gotoTarget identifiers actually exist
+        // Now verify that all skipToTarget identifiers actually exist
         for (int i=0; i < questions.size(); i++) {
             SurveyQuestion question = questions.get(i);
             for (SurveyRule rule : question.getConstraints().getRules()) {
-                if (!alreadySeenIdentifiers.contains(rule.getGotoTarget())) {
-                    messages.add("question #%s has a rule with a goto target that doesn't exist (%s)", i, rule.getGotoTarget());
+                if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+                    messages.add("question #%s has a rule with a skipTo target that doesn't exist (%s)", i, rule.getSkipToTarget());
                 }
             }
         }

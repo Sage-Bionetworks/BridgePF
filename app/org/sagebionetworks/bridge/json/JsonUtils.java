@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
-import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
+import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -27,6 +27,10 @@ import com.google.common.collect.Lists;
  * type casting as well. Hence these utility methods. 
  */
 public class JsonUtils {
+    
+    private static final String DATA_TYPE_PROPERTY = "dataType";
+    private static final String ENUM_PROPERTY = "enumeration";
+    private static final String MULTIVALUE_PROPERTY = "multivalue";
     
     public static String asText(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
@@ -77,17 +81,18 @@ public class JsonUtils {
         return null;
     }
     
-    public static Constraints asConstraints(JsonNode parent, String property, String dataTypeProperty, String enumProperty) {
-        JsonNode constraints = JsonUtils.asJsonNode(parent, property);
-        if (constraints != null) {
-            String type = JsonUtils.asText(constraints, dataTypeProperty);
-            // If the constraints contain an enumeration, then actually, it's 
-            // MultiValueConstraint, with the type specified.
-            if (constraints.hasNonNull(enumProperty)) {
-                return BridgeObjectMapper.get().convertValue(constraints, MultiValueConstraints.class);
-            } else {
-                return BridgeObjectMapper.get().convertValue(constraints, Constraints.CLASSES.get(type));    
+    public static Constraints asConstraints(JsonNode parent, String property) {
+        ObjectNode node = (ObjectNode)JsonUtils.asJsonNode(parent, property);
+        if (node != null) {
+            String dataType = node.get(DATA_TYPE_PROPERTY).asText();
+            // If the constraints contain an enumeration, then it's a MultiValueConstraint,
+            // deserialize it as such and then replace the type
+            if (node.hasNonNull(ENUM_PROPERTY)) {
+                node.put(DATA_TYPE_PROPERTY, MULTIVALUE_PROPERTY);
             }
+            Constraints constraint = BridgeObjectMapper.get().convertValue(node, Constraints.class);
+            constraint.setDataType(DataType.valueOf(dataType.toUpperCase()));
+            return constraint;
         }
         return null;
     }

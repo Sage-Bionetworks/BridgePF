@@ -22,14 +22,14 @@ public class SurveyRule {
     
     private Operator operator;
     private Object value;
-    private String gotoTarget;
+    private String skipToTarget;
     
     public SurveyRule() {
     }
-    public SurveyRule(Operator operator, Object value, String gotoTarget) {
+    public SurveyRule(Operator operator, Object value, String skipToTarget) {
         this.operator = operator;
         this.value = value;
-        this.gotoTarget = gotoTarget;
+        this.skipToTarget = skipToTarget;
     }
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public Operator getOperator() {
@@ -46,19 +46,19 @@ public class SurveyRule {
     public void setValue(Object value) {
         this.value = value;
     }
-    @JsonProperty("goto")
-    public String getGotoTarget() {
-        return gotoTarget;
+    @JsonProperty("skipTo")
+    public String getSkipToTarget() {
+        return skipToTarget;
     }
-    public void setGotoTarget(String gotoTarget) {
-        this.gotoTarget = gotoTarget;
+    public void setSkipToTarget(String skipToTarget) {
+        this.skipToTarget = skipToTarget;
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((gotoTarget == null) ? 0 : gotoTarget.hashCode());
+        result = prime * result + ((skipToTarget == null) ? 0 : skipToTarget.hashCode());
         result = prime * result + ((operator == null) ? 0 : operator.hashCode());
         result = prime * result + ((value == null) ? 0 : value.hashCode());
         return result;
@@ -73,10 +73,10 @@ public class SurveyRule {
         if (getClass() != obj.getClass())
             return false;
         SurveyRule other = (SurveyRule) obj;
-        if (gotoTarget == null) {
-            if (other.gotoTarget != null)
+        if (skipToTarget == null) {
+            if (other.skipToTarget != null)
                 return false;
-        } else if (!gotoTarget.equals(other.gotoTarget))
+        } else if (!skipToTarget.equals(other.skipToTarget))
             return false;
         if (operator != other.operator)
             return false;
@@ -90,7 +90,7 @@ public class SurveyRule {
 
     @Override
     public String toString() {
-        return "SurveyRule [operator=" + operator + ", value=" + value + ", gotoTarget=" + gotoTarget + "]";
+        return "SurveyRule [operator=" + operator + ", value=" + value + ", skipToTarget=" + skipToTarget + "]";
     }
     
 }

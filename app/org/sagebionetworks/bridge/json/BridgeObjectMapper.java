@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanDescription;
@@ -36,6 +37,7 @@ public class BridgeObjectMapper extends ObjectMapper {
 
     public BridgeObjectMapper() {
         this.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         this.registerModule(new SimpleModule() {
             private static final long serialVersionUID = 8900953081295761099L;
             public void setupModule(SetupContext context) {
@@ -70,7 +72,9 @@ public class BridgeObjectMapper extends ObjectMapper {
         protected BeanSerializerBase withIgnorals(String[] toIgnore) {
             return new ExtraFieldSerializer(this, toIgnore);
         }
-
+        public BeanSerializerBase withFilterId(Object object) {
+            return null;
+        }
         public void serialize(Object bean, JsonGenerator jgen, SerializerProvider provider) throws IOException,
                 JsonGenerationException {
             jgen.writeStartObject();
@@ -86,7 +90,7 @@ public class BridgeObjectMapper extends ObjectMapper {
         }
         @Override
         protected BeanSerializerBase asArraySerializer() {
-            return null;
+            return this;
         }
         private boolean noTypeProperty(Object bean) {
             for (Method method : bean.getClass().getMethods()) {

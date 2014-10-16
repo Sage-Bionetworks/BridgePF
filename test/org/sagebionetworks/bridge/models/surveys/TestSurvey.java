@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
@@ -45,7 +46,7 @@ public class TestSurvey extends DynamoSurvey {
             StringConstraints c = new StringConstraints();
             c.setMinLength(2);
             c.setMaxLength(255);
-            c.setPattern("\\d{3}-\\d{3}-\\{d}4");
+            c.setPattern("\\d{3}-\\d{3}-\\d{4}");
             setPrompt("Please enter an emergency phone number (###-###-####)?");
             setIdentifier("name");
             setUiHint(UIHint.TEXTFIELD);
@@ -172,46 +173,55 @@ public class TestSurvey extends DynamoSurvey {
     }
 
     @DynamoDBIgnore
+    @JsonIgnore
     public DynamoSurveyQuestion getBooleanQuestion() {
         return booleanQuestion;
     }
 
     @DynamoDBIgnore
+    @JsonIgnore
     public DynamoSurveyQuestion getDateQuestion() {
         return dateQuestion;
     }
 
     @DynamoDBIgnore
+    @JsonIgnore
     public DynamoSurveyQuestion getDateTimeQuestion() {
         return dateTimeQuestion;
     }
 
     @DynamoDBIgnore
+    @JsonIgnore
     public DynamoSurveyQuestion getDecimalQuestion() {
         return decimalQuestion;
     }
 
     @DynamoDBIgnore
+    @JsonIgnore
     public DynamoSurveyQuestion getIntegerQuestion() {
         return integerQuestion;
     }
 
     @DynamoDBIgnore
+    @JsonIgnore
     public DynamoSurveyQuestion getDurationQuestion() {
         return durationQuestion;
     }
 
     @DynamoDBIgnore
+    @JsonIgnore
     public DynamoSurveyQuestion getTimeQuestion() {
         return timeQuestion;
     }
 
     @DynamoDBIgnore
+    @JsonIgnore
     public DynamoSurveyQuestion getMultiValueQuestion() {
         return multiValueQuestion;
     }
 
     @DynamoDBIgnore
+    @JsonIgnore
     public DynamoSurveyQuestion getStringQuestion() {
         return stringQuestion;
     }

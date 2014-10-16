@@ -2,27 +2,17 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.EnumSet;
 
-import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.validators.Messages;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 public class StringConstraints extends Constraints {
 
-    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.MULTILINETEXT, UIHint.TEXTFIELD);
-    
     private Integer minLength;
     private Integer maxLength;
     private String pattern;
 
     public StringConstraints() {
         setDataType(DataType.STRING);
-    }
-    @Override
-    @JsonIgnore
-    public EnumSet<UIHint> getSupportedHints() {
-        return UI_HINTS;
+        setSupportedHints(EnumSet.of(UIHint.MULTILINETEXT, UIHint.TEXTFIELD));
     }
     public Integer getMinLength() {
         return minLength;
@@ -42,17 +32,6 @@ public class StringConstraints extends Constraints {
     }
     public void setPattern(String pattern) {
         this.pattern = pattern;
-    }
-    public void validate(Messages messages, SurveyAnswer answer) {
-        String value = (String)answer.getAnswer();
-        if (minLength != null && value.length() < minLength) {
-            messages.add("it is shorter than %s characters", minLength);
-        } else if (maxLength != null && value.length() > maxLength) {
-            messages.add("it is longer than %s characters", maxLength);
-        }
-        if (StringUtils.isNotBlank(pattern) && !value.matches(pattern)) {
-            messages.add("it does not match the regular expression /%s/", pattern);
-        }
     }
     @Override
     public int hashCode() {
@@ -88,9 +67,5 @@ public class StringConstraints extends Constraints {
         } else if (!pattern.equals(other.pattern))
             return false;
         return true;
-    }
-    @Override
-    public String toString() {
-        return "StringConstraints [minLength=" + minLength + ", maxLength=" + maxLength + ", pattern=" + pattern + "]";
     }
 }
