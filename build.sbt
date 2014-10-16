@@ -18,6 +18,7 @@ libraryDependencies ++= Seq(
   "com.google.guava" % "guava" % "18.0",
   "org.mockito" % "mockito-all" % "1.9.5",
   "org.jasypt" % "jasypt" % "1.9.2",
+  "org.apache.shiro" % "shiro-core" % "1.2.3",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.51",
   "com.github.fge" % "json-schema-validator" % "2.2.5",
   "commons-httpclient" % "commons-httpclient" % "3.1",
