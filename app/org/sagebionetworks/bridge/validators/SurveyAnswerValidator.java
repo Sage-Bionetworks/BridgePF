@@ -80,8 +80,8 @@ public class SurveyAnswerValidator implements Validator<SurveyAnswer> {
             }
         }
         if (!messages.isEmpty()) {
-            throw new InvalidEntityException(answer, "Answer for question '" + question.getIdentifier()
-                    + "' is invalid: " + messages.join());
+            String message = String.format("Answer for question '%s' is invalid: %s", question.getIdentifier(), messages.join());
+            throw new InvalidEntityException(answer, message);
         }
     }
     
