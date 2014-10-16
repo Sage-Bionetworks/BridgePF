@@ -31,8 +31,6 @@ public class DynamoSurveyTest {
         
         String string = JsonUtils.toJSON(survey);
         
-        System.out.println(string);
-        
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(string);
         DynamoSurvey newSurvey = DynamoSurvey.fromJson(node);
