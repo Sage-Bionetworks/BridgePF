@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class UserProfile {
@@ -37,6 +38,7 @@ public class UserProfile {
     public String getFirstName() {
         return this.firstName;
     }
+    @JsonIgnore
     public String getFirstNameWithEmptyString() {
         return replaceWithEmpty(this.firstName);
     }
@@ -47,6 +49,7 @@ public class UserProfile {
     public String getLastName() {
         return this.lastName;
     }
+    @JsonIgnore
     public String getLastNameWithEmptyString() {
         return replaceWithEmpty(this.lastName);
     }
