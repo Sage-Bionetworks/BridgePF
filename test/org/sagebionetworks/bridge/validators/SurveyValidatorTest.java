@@ -32,7 +32,7 @@ public class SurveyValidatorTest {
     }
     
     @Test(expected=InvalidEntityException.class)
-    public void detectsOrphanedGotoReferences() {
+    public void detectsOrphanedSkipToReferences() {
         TestSurvey survey = new TestSurvey(false);
         
         survey.getIntegerQuestion().getConstraints().getRules().add(new SurveyRule(Operator.EQ, 3, "notARealIdentifier"));
