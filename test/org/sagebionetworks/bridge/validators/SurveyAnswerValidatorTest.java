@@ -49,9 +49,9 @@ public class SurveyAnswerValidatorTest {
     
     private List<SurveyQuestionOption> getOptions() {
         return Lists.<SurveyQuestionOption>newArrayList(
-            new SurveyQuestionOption("label 1", 1),
-            new SurveyQuestionOption("label 2", 2),
-            new SurveyQuestionOption("label 3", 3)
+            new SurveyQuestionOption("label 1", 1, null),
+            new SurveyQuestionOption("label 2", 2, null),
+            new SurveyQuestionOption("label 3", 3, null)
         );        
     }
     
