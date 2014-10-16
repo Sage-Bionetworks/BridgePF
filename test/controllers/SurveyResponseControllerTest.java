@@ -2,9 +2,11 @@ package controllers;
 
 import static org.apache.commons.httpclient.HttpStatus.SC_CREATED;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.NEW_SURVEY_RESPONSE;
 import static org.sagebionetworks.bridge.TestConstants.SURVEY_RESPONSE_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
+import static org.sagebionetworks.bridge.TestConstants.USER_SURVEY_URL;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
@@ -19,10 +21,14 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponseDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
@@ -34,6 +40,8 @@ import play.libs.WS.Response;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -59,6 +67,8 @@ public class SurveyResponseControllerTest {
         session = helper.createUser(Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
         survey = new TestSurvey(true);
         surveyDao.createSurvey(survey);
+        DynamoInitializer.init(DynamoSurveyResponse.class);
+        DynamoTestUtil.clearTable(DynamoSurveyResponse.class);
     }
     
     @After
@@ -118,6 +128,95 @@ public class SurveyResponseControllerTest {
 
                 JsonNode answerNode = node.get("answers").get(0);
                 assertEquals("Type is SurveyAnswer", "SurveyAnswer", answerNode.get("type").asText());
+            }
+        });
+    }
+    
+    @Test
+    public void canSubmitEveryKindOfAnswerType() throws Exception {
+        running(testServer(3333), new TestUtils.FailableRunnable() {
+            public void testCode() throws Exception {
+                ArrayNode array = JsonNodeFactory.instance.arrayNode();
+                
+                SurveyQuestion question = survey.getQuestions().get(0); // boolean
+                SurveyAnswer answer = new SurveyAnswer();
+                answer.setAnswer(true);
+                answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
+                answer.setClient("mobile");
+                answer.setQuestionGuid(question.getGuid());
+                array.add(mapper.valueToTree(answer));
+                
+                question = survey.getQuestions().get(1); // datetime
+                answer = new SurveyAnswer();
+                answer.setAnswer(DateUtils.getCurrentISODateTime());
+                answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
+                answer.setClient("mobile");
+                answer.setQuestionGuid(question.getGuid());
+                array.add(mapper.valueToTree(answer));
+                
+                question = survey.getQuestions().get(2); // datetime
+                answer = new SurveyAnswer();
+                answer.setAnswer(DateUtils.getCurrentISODateTime());
+                answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
+                answer.setClient("mobile");
+                answer.setQuestionGuid(question.getGuid());
+                array.add(mapper.valueToTree(answer));
+                
+                question = survey.getQuestions().get(3); // decimal
+                answer = new SurveyAnswer();
+                answer.setAnswer(4.6f);
+                answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
+                answer.setClient("mobile");
+                answer.setQuestionGuid(question.getGuid());
+                array.add(mapper.valueToTree(answer));
+                
+                question = survey.getQuestions().get(4); // integer
+                answer = new SurveyAnswer();
+                answer.setAnswer(4);
+                answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
+                answer.setClient("mobile");
+                answer.setQuestionGuid(question.getGuid());
+                array.add(mapper.valueToTree(answer));
+                
+                question = survey.getQuestions().get(5); // duration
+                answer = new SurveyAnswer();
+                answer.setAnswer("PT4H");
+                answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
+                answer.setClient("mobile");
+                answer.setQuestionGuid(question.getGuid());
+                array.add(mapper.valueToTree(answer));
+                
+                question = survey.getQuestions().get(6); // time
+                answer = new SurveyAnswer();
+                // "14:45:15.357Z" doesn't work because it has a time zone. They should be able 
+                // to enter a time zone if they want though, right? This is *too* restrictive.
+                answer.setAnswer("14:45:15.357");
+                answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
+                answer.setClient("mobile");
+                answer.setQuestionGuid(question.getGuid());
+                array.add(mapper.valueToTree(answer));
+                
+                question = survey.getQuestions().get(7); // multichoice integer
+                assertTrue("Question is multi-choice", question.getConstraints() instanceof MultiValueConstraints);
+                answer = new SurveyAnswer();
+                answer.setAnswer(Lists.newArrayList(3));
+                answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
+                answer.setClient("mobile");
+                answer.setQuestionGuid(question.getGuid());
+                array.add(mapper.valueToTree(answer));
+                
+                question = survey.getQuestions().get(8); // multichoice integer
+                answer = new SurveyAnswer();
+                answer.setAnswer("123-456-7890");
+                answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
+                answer.setClient("mobile");
+                answer.setQuestionGuid(question.getGuid());
+                array.add(mapper.valueToTree(answer));
+                
+                // Submit all these tricky examples of answers through the API.
+                String url = String.format(USER_SURVEY_URL, survey.getGuid(), DateUtils.convertToISODateTime(survey.getVersionedOn()));
+                Response response = TestUtils.getURL(session.getSessionToken(), url).post(array.toString()).get(TIMEOUT);
+                assertEquals("Response successful", SC_CREATED, response.getStatus());
             }
         });
     }
