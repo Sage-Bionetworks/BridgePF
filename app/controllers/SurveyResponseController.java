@@ -1,7 +1,6 @@
 package controllers;
 
 import java.io.IOException;
-
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;

@@ -60,7 +60,7 @@ public class TestConstants {
     public static final String RESUME_URL = CONSENT_URL + "/dataSharing/resume";
 
     public static final String SURVEYS_URL = RESEARCHERS_URL + "/surveys";
-    public static final String GET_USER_SURVEY_URL = API_URL + "/surveys/%s/%s";
+    public static final String USER_SURVEY_URL = API_URL + "/surveys/%s/%s";
     public static final String GET_SURVEY_URL = RESEARCHERS_URL + "/surveys/%s/%s";
     public static final String GET_VERSIONS_OF_SURVEY_URL = RESEARCHERS_URL + "/surveys/%s/versions";
     public static final String VERSION_SURVEY_URL = GET_SURVEY_URL + "/version";
