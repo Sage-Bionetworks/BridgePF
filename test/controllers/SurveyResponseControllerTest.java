@@ -133,7 +133,7 @@ public class SurveyResponseControllerTest {
     }
     
     @Test
-    public void canSubmitNumericalAnswers() throws Exception {
+    public void canSubmitEveryKindOfAnswerType() throws Exception {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 ArrayNode array = JsonNodeFactory.instance.arrayNode();
