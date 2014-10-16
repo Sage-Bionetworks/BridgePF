@@ -25,8 +25,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     
     private static final String CONSTRAINTS_PROPERTY = "constraints";
-    private static final String DATA_TYPE_PROPERTY = "dataType";
-    private static final String ENUM_PROPERTY = "enumeration";
     private static final String UI_HINTS_PROPERTY = "uiHint";
     private static final String PROMPT_PROPERTY = "prompt";
     
@@ -39,7 +37,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
         question.setGuid( JsonUtils.asText(node, GUID_FIELD) );
         question.setPrompt(JsonUtils.asText(node, PROMPT_PROPERTY));
         question.setUiHint(JsonUtils.asUIHint(node, UI_HINTS_PROPERTY));
-        question.setConstraints(JsonUtils.asConstraints(node, CONSTRAINTS_PROPERTY, DATA_TYPE_PROPERTY, ENUM_PROPERTY));
+        question.setConstraints(JsonUtils.asConstraints(node, CONSTRAINTS_PROPERTY));
         return question;
     }
 
@@ -163,7 +161,7 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     public void setData(ObjectNode data) {
         this.prompt = JsonUtils.asText(data, PROMPT_PROPERTY);
         this.hint = JsonUtils.asUIHint(data, UI_HINTS_PROPERTY);
-        this.constraints = JsonUtils.asConstraints(data, CONSTRAINTS_PROPERTY, DATA_TYPE_PROPERTY, ENUM_PROPERTY);
+        this.constraints = JsonUtils.asConstraints(data, CONSTRAINTS_PROPERTY);
     }
 
     @Override
