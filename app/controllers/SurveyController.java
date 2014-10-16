@@ -45,7 +45,7 @@ public class SurveyController extends ResearcherController {
     }
     
     public Result getSurveyForUser(String surveyGuid, String versionString) throws Exception {
-        getAuthenticatedSession();
+        getAuthenticatedAndConsentedSession();
         
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         Survey survey = surveyService.getSurvey(surveyGuid, surveyVersion);
