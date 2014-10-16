@@ -1,7 +1,7 @@
 package controllers;
 
-import static org.apache.commons.httpclient.HttpStatus.SC_FORBIDDEN;
 import static org.apache.commons.httpclient.HttpStatus.SC_CREATED;
+import static org.apache.commons.httpclient.HttpStatus.SC_FORBIDDEN;
 import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.STUDYCONSENT_ACTIVE_URL;

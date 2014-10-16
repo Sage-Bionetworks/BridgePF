@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.events.UserEnrolledEvent;
 import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.Study;
@@ -65,8 +66,8 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     @Override
     public User consentToResearch(final User caller, final ConsentSignature consentSignature, final Study study,
             final boolean sendEmail) throws BridgeServiceException {
-        if (caller.isConsent()) {
-            throw new BridgeServiceException("User has already consented.");
+        if (caller.doesConsent()) {
+            throw new EntityAlreadyExistsException(consentSignature);
         } else if (study == null) {
             throw new BadRequestException("Study is required.");
         } else if (consentSignature == null) {
