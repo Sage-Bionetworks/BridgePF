@@ -112,7 +112,6 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" deleted");
         
         final SchedulePlan plan = event.getSchedulePlan();
-        final Study study = studyService.getStudyByKey(plan.getStudyKey());
         
         runWithLock(plan.getClass(), plan.getGuid(), new Command() {
             public void execute() {

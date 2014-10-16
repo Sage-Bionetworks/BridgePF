@@ -45,7 +45,7 @@ public class TestSurvey extends DynamoSurvey {
             StringConstraints c = new StringConstraints();
             c.setMinLength(2);
             c.setMaxLength(255);
-            c.setPattern("\\d{3}-\\d{3}-\\{d}4");
+            c.setPattern("\\d{3}-\\d{3}-\\d{4}");
             setPrompt("Please enter an emergency phone number (###-###-####)?");
             setIdentifier("name");
             setUiHint(UIHint.TEXTFIELD);

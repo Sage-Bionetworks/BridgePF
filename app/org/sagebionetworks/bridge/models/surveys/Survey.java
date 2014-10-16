@@ -2,9 +2,13 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+@JsonDeserialize(as=DynamoSurvey.class)
 @BridgeTypeName("Survey")
 public interface Survey extends BridgeEntity {
 
