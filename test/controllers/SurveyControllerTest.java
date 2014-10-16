@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
@@ -40,7 +41,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import play.libs.WS.Response;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
@@ -55,7 +55,7 @@ public class SurveyControllerTest {
     @Resource
     private DynamoSurveyDao surveyDao;
     
-    private ObjectMapper mapper = new ObjectMapper();
+    private BridgeObjectMapper mapper = new BridgeObjectMapper();
 
     private UserSession userSession;
     private UserSession researcherSession;
@@ -187,7 +187,7 @@ public class SurveyControllerTest {
                 
                 // Check all the types while we have a complete survey
                 assertEquals("Type is Survey", "Survey", node.get("type").asText());
-                JsonNode questions = node.get("questions"); 
+                JsonNode questions = node.get("questions");
                 assertEquals("Type is SurveyQuestion", "SurveyQuestion", questions.get(0).get("type").asText());
                 assertEquals("Type is BooleanConstraints", "BooleanConstraints", constraintTypeForQuestion(questions, 0));
                 assertEquals("Type is DateConstraints", "DateConstraints", constraintTypeForQuestion(questions, 1));
@@ -207,10 +207,6 @@ public class SurveyControllerTest {
                 assertEquals("Name has been updated", "Name Changed", finalName);
             }
         });          
-    }
-    
-    private String constraintTypeForQuestion(JsonNode questions, int index) {
-        return questions.get(index).get("constraints").get("type").asText();
     }
     
     // This would be hard to do, hopefully, since the information is not published, but we prevent it.
@@ -240,6 +236,10 @@ public class SurveyControllerTest {
         public String toString() {
             return "GuidVersionHolder [guid=" + guid + ", versionedOn=" + versionedOn + "]";
         }
+    }
+    
+    private String constraintTypeForQuestion(JsonNode questions, int index) {
+        return questions.get(index).get("constraints").get("type").asText();
     }
     
     private void updateSurvey(String sessionKey, GuidVersionHolder keys, JsonNode survey) throws Exception {
