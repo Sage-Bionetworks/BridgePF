@@ -2,31 +2,32 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 
 import org.sagebionetworks.bridge.json.DataTypeJsonDeserializer;
 import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
+@JsonTypeInfo( use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "dataType")
+@JsonSubTypes({
+    @Type(name="multivalue", value=MultiValueConstraints.class),
+    @Type(name="boolean", value=BooleanConstraints.class),
+    @Type(name="integer", value=IntegerConstraints.class),
+    @Type(name="decimal", value=DecimalConstraints.class),
+    @Type(name="string", value=StringConstraints.class),
+    @Type(name="datetime", value=DateTimeConstraints.class),
+    @Type(name="date", value=DateConstraints.class),
+    @Type(name="time", value=TimeConstraints.class),
+    @Type(name="duration", value=DurationConstraints.class)
+})
 public abstract class Constraints {
 
-    public static Map<String,Class<? extends Constraints>> CLASSES = Maps.newHashMap();
-    static {
-        CLASSES.put("boolean", BooleanConstraints.class);
-        CLASSES.put("integer", IntegerConstraints.class);
-        CLASSES.put("decimal", DecimalConstraints.class);
-        CLASSES.put("string", StringConstraints.class);
-        CLASSES.put("datetime", DateTimeConstraints.class);
-        CLASSES.put("date", DateConstraints.class);
-        CLASSES.put("time", TimeConstraints.class);
-        CLASSES.put("duration", DurationConstraints.class);
-    }
-    
     private EnumSet<UIHint> hints;
     private List<SurveyRule> rules = Lists.newArrayList();
     private DataType dataType;
