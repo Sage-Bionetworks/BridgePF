@@ -6,8 +6,8 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.json.DataTypeJsonDeserializer;
 import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
-import org.sagebionetworks.bridge.validators.Messages;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
@@ -27,15 +27,17 @@ public abstract class Constraints {
         CLASSES.put("duration", DurationConstraints.class);
     }
     
+    private EnumSet<UIHint> hints;
     private List<SurveyRule> rules = Lists.newArrayList();
     private DataType dataType;
     
-    public abstract EnumSet<UIHint> getSupportedHints();
-
-    public void validate(Messages messages, SurveyAnswer answer) {
-        // noop
+    @JsonIgnore
+    public EnumSet<UIHint> getSupportedHints() {
+        return hints;
     }
-    
+    public void setSupportedHints(EnumSet<UIHint> hints) {
+        this.hints = hints;
+    }
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public DataType getDataType() {
         return dataType;
@@ -55,6 +57,7 @@ public abstract class Constraints {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((dataType == null) ? 0 : dataType.hashCode());
+        result = prime * result + ((hints == null) ? 0 : hints.hashCode());
         result = prime * result + ((rules == null) ? 0 : rules.hashCode());
         return result;
     }
@@ -68,6 +71,11 @@ public abstract class Constraints {
             return false;
         Constraints other = (Constraints) obj;
         if (dataType != other.dataType)
+            return false;
+        if (hints == null) {
+            if (other.hints != null)
+                return false;
+        } else if (!hints.equals(other.hints))
             return false;
         if (rules == null) {
             if (other.rules != null)

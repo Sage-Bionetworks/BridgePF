@@ -80,7 +80,7 @@ public class DynamoSurveyResponseDaoTest {
         answers.add(answer);
 
         answer = new SurveyAnswer();
-        answer.setAnswer(DateUtils.getCurrentMillisFromEpoch());
+        answer.setAnswer(DateUtils.getCurrentISODate());
         answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
         answer.setClient("mobile");
         answer.setQuestionGuid(survey.getQuestions().get(1).getGuid());
