@@ -1,14 +1,18 @@
 package org.sagebionetworks.bridge.validators;
 
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.BooleanConstraints;
+import org.sagebionetworks.bridge.models.surveys.Constraints;
+import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DecimalConstraints;
 import org.sagebionetworks.bridge.models.surveys.DurationConstraints;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
@@ -20,13 +24,17 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.TimeBasedConstraints;
 import org.sagebionetworks.bridge.models.surveys.TimeConstraints;
 
+import com.google.common.collect.Sets;
+
 public class SurveyAnswerValidator implements Validator<SurveyAnswer> {
 
     private static final long FIVE_MINUTES = 5 * 60 * 1000;
 
+    private Set<String> BOOLEAN_VALUES = Sets.newHashSet("true", "false");
+
     private SurveyQuestion question;
     
-    public SurveyAnswerValidator(SurveyQuestion question, int pos) {
+    public SurveyAnswerValidator(SurveyQuestion question) {
         this.question = question;
     }
     
@@ -34,7 +42,7 @@ public class SurveyAnswerValidator implements Validator<SurveyAnswer> {
     public void validateNew(SurveyAnswer object) throws InvalidEntityException, EntityAlreadyExistsException {
         throw new UnsupportedOperationException("We don't validate an answer is/isn't new");
     }
-
+    
     @Override
     public void validate(SurveyAnswer answer) throws InvalidEntityException {
         Messages messages = new Messages();
@@ -49,33 +57,40 @@ public class SurveyAnswerValidator implements Validator<SurveyAnswer> {
         }
         if (answer.isDeclined()) {
             answer.setAnswer(null);
-        } else if (answer.getAnswer() == null) {
-            messages.add("it requires an answer (it wasn't declined)");
-        } else if (question.getConstraints().getClass() == MultiValueConstraints.class) {
-            validateType(messages, (MultiValueConstraints)question.getConstraints(), answer);
-        } else {
+            answer.setAnswers(null);
+        } 
+        else if (hasNoAnswer(answer)) {
+            messages.add("it was not declined but has no answer");
+        } 
+        else if (expectsMultipleValues()) {
+            validateType(messages, (MultiValueConstraints) question.getConstraints(), answer.getAnswers());
+        } 
+        else if (isMultiValue()) {
+            validateType(messages, (MultiValueConstraints) question.getConstraints(), answer.getAnswer());
+        } 
+        else {
             switch(question.getConstraints().getDataType()) {
             case DURATION:
-                validateType(messages, (DurationConstraints)question.getConstraints(), answer);
+                validateType(messages, (DurationConstraints)question.getConstraints(), answer.getAnswer());
                 break;
             case STRING:
-                validateType(messages, (StringConstraints)question.getConstraints(), answer);
+                validateType(messages, (StringConstraints)question.getConstraints(), answer.getAnswer());
                 break;
             case INTEGER:
-                validateType(messages, (IntegerConstraints)question.getConstraints(), answer);
+                validateType(messages, (IntegerConstraints)question.getConstraints(), answer.getAnswer());
                 break;
             case DECIMAL:
-                validateType(messages, (DecimalConstraints)question.getConstraints(), answer);
+                validateType(messages, (DecimalConstraints)question.getConstraints(), answer.getAnswer());
                 break;
             case BOOLEAN:
-                validateType(messages, (BooleanConstraints)question.getConstraints(), answer);
+                validateType(messages, (BooleanConstraints)question.getConstraints(), answer.getAnswer());
                 break;
             case DATE:
             case DATETIME:
-                validateType(messages, (TimeBasedConstraints)question.getConstraints(), answer);
+                validateType(messages, (TimeBasedConstraints)question.getConstraints(), answer.getAnswer());
                 break;
             case TIME:
-                validateType(messages, (TimeConstraints)question.getConstraints(), answer);
+                validateType(messages, (TimeConstraints)question.getConstraints(), answer.getAnswer());
                 break;
             }
         }
@@ -85,20 +100,36 @@ public class SurveyAnswerValidator implements Validator<SurveyAnswer> {
         }
     }
     
-    private void validateType(Messages messages, TimeConstraints constraints, SurveyAnswer answer) {
+    private boolean isMultiValue() {
+        return (question.getConstraints() instanceof MultiValueConstraints);
+    }
+    
+    private boolean expectsMultipleValues() {
+        return isMultiValue() && ((MultiValueConstraints)question.getConstraints()).getAllowMultiple();
+    }
+    
+    private boolean hasNoAnswer(SurveyAnswer answer) {
+        if (expectsMultipleValues()) {
+            return BridgeUtils.isEmpty(answer.getAnswers());
+        }
+        return StringUtils.isEmpty(answer.getAnswer());
+    }
+
+    private void validateType(Messages messages, TimeConstraints constraints, String answer) {
         try {
-            LocalTime.parse((String)answer.getAnswer());    
+            LocalTime.parse(answer);
         } catch(Throwable t) {
-            messages.add("%s is not a valid 8601 time value (24 hr 'HH:mm:ss' format, no time zone, seconds optional)", answer.getAnswer());
+            messages.add("%s is not a valid 8601 time value (24 hr 'HH:mm:ss' format, no time zone, seconds optional)", answer);
         }
     }
 
-    private void validateType(Messages messages, TimeBasedConstraints con, SurveyAnswer answer) {
+    private void validateType(Messages messages, TimeBasedConstraints con, String answer) {
         long time = 0;
         try {
-            time = DateUtils.convertToMillisFromEpoch((String)answer.getAnswer());
+            time = DateUtils.convertToMillisFromEpoch(answer);
         } catch(Throwable t) {
-            messages.add("%s is not a valid 8601 date/datetime string", answer.getAnswer());
+            messages.add("%s is not a valid 8601 date/datetime string", answer);
+            return;
         }
         // add 5 minutes of leniency to this test because different machines may 
         // report different times, we're really trying to catch user input at a 
@@ -109,107 +140,116 @@ public class SurveyAnswerValidator implements Validator<SurveyAnswer> {
         }
     }
 
-    private void validateType(Messages messages, DecimalConstraints con, SurveyAnswer answer) {
-        double value = (Double)answer.getAnswer();
-        if (con.getMinValue() != null && value < con.getMinValue()) {
-            messages.add("%s is lower than the minimum value of %s", Double.toString(value), con.getMinValue());
-        }
-        if (con.getMaxValue() != null && value > con.getMaxValue()) {
-            messages.add("%s is higher than the maximum value of %s", Double.toString(value), con.getMaxValue());
-        }
-        // Can't enforce this due to the crazy rounding that goes on with floating point numbers. 
-        // I am wondering how we can preserve these, short of persisting them as strings. This is 
-        // apparently a Hard Problem in Computer Science.
-        /* if (step != null && value % step != 0) {
-            messages.add("%s is not a step value of %s", Double.toString(value), step);
-        }*/
-    }
-
-    private void validateType(Messages messages, IntegerConstraints con, SurveyAnswer answer) {
-        int value = (Integer)answer.getAnswer();
-        if (con.getMinValue() != null && value < con.getMinValue()) {
-            messages.add("%s is lower than the minimum value of %s", value, con.getMinValue());
-        }
-        if (con.getMaxValue() != null && value > con.getMaxValue()) {
-            messages.add("%s is higher than the maximum value of %s", value, con.getMaxValue());
-        }
-        if (con.getStep() != null && value % con.getStep() != 0) {
-            messages.add("%s is not a step value of %s", value, con.getStep());
-        }
-    }
-
-    private void validateType(Messages messages, StringConstraints con, SurveyAnswer answer) {
-        String value = (String)answer.getAnswer();
-        if (con.getMinLength() != null && value.length() < con.getMinLength()) {
-            messages.add("%s is shorter than %s characters", value, con.getMinLength());
-        } else if (con.getMaxLength() != null && value.length() > con.getMaxLength()) {
-            messages.add("%s is longer than %s characters", value, con.getMaxLength());
-        }
-        if (StringUtils.isNotBlank(con.getPattern()) && !value.matches(con.getPattern())) {
-            messages.add("%s does not match the regular expression /%s/", value, con.getPattern());
-        }
-    }
-
-    private void validateType(Messages messages, DurationConstraints constraints, SurveyAnswer answer) {
+    private void validateType(Messages messages, DecimalConstraints con, String answer) {
         try {
-            Period.parse((String)answer.getAnswer());
-        } catch(Throwable t) {
-            messages.add("%s is not a valid ISO 8601 duration string", answer.getAnswer());
+            double value = Double.parseDouble(answer);
+            if (con.getMinValue() != null && value < con.getMinValue()) {
+                messages.add("%s is lower than the minimum value of %s", answer, con.getMinValue());
+            }
+            if (con.getMaxValue() != null && value > con.getMaxValue()) {
+                messages.add("%s is higher than the maximum value of %s", answer, con.getMaxValue());
+            }
+            // TODO: Now that we are keeping strings, it should be possible to test steps, and 
+            // introduce a precision constraint as well.
+            /* if (step != null && value % step != 0) {
+                messages.add("%s is not a step value of %s", Double.toString(value), step);
+            }*/
+        } catch(NumberFormatException e) {
+            messages.add("%s is not a valid decimal number", answer);
         }
     }
 
-    private void validateType(Messages messages, BooleanConstraints con, SurveyAnswer answer) {
-        if (con.getDataType().getCastClass() != answer.getAnswer().getClass()) {
-            messages.add("%s is not a %s value", answer.getAnswer().getClass().getSimpleName(), 
-                    con.getDataType().getCastClass().getSimpleName());
+    private void validateType(Messages messages, IntegerConstraints con, String answer) {
+        try {
+            int value = Integer.parseInt(answer);
+            if (con.getMinValue() != null && value < con.getMinValue()) {
+                messages.add("%s is lower than the minimum value of %s", answer, con.getMinValue());
+            }
+            if (con.getMaxValue() != null && value > con.getMaxValue()) {
+                messages.add("%s is higher than the maximum value of %s", answer, con.getMaxValue());
+            }
+            if (con.getStep() != null && value % con.getStep() != 0) {
+                messages.add("%s is not a step value of %s", answer, con.getStep());
+            }
+        } catch(NumberFormatException e) {
+            messages.add("%s is not a valid integer", answer);
         }
     }
-    private void validateType(Messages messages, MultiValueConstraints con, SurveyAnswer answer) {
-        Object value = answer.getAnswer();
-        if (con.getAllowMultiple()) {
-            // The only acceptable type here is an array, then validate all members of the array.
-            if (!(value instanceof List)) {
-                messages.add("Answer should be an array of values");
-                return;
-            }
-            List<?> array = (List<?>)value;
-            for (int i=0; i < array.size(); i++) {
-                Object obj = array.get(i);
-                validateMultiValueType(messages, con, obj, "Array value #"+i);
-            }
-            if (messages.isEmpty() && !con.getAllowOther()) {
-                for (int i=0; i < array.size(); i++) {
-                    Object obj = array.get(i);
-                    if (!isEnumeratedValue(con, obj)) {
-                        messages.add("Answer #%s is not one of the enumerated values for this question", i);
-                    }
+
+    private void validateType(Messages messages, StringConstraints con, String answer) {
+        if (con.getMinLength() != null && answer.length() < con.getMinLength()) {
+            messages.add("%s is shorter than %s characters", answer, con.getMinLength());
+        } else if (con.getMaxLength() != null && answer.length() > con.getMaxLength()) {
+            messages.add("%s is longer than %s characters", answer, con.getMaxLength());
+        }
+        if (StringUtils.isNotBlank(con.getPattern()) && !answer.matches(con.getPattern())) {
+            messages.add("%s does not match the regular expression /%s/", answer, con.getPattern());
+        }
+    }
+
+    private void validateType(Messages messages, DurationConstraints constraints, String answer) {
+        try {
+            // TODO: The docs don't say it throws an exception when wrong...
+            Period.parse(answer);
+        } catch(Throwable t) {
+            messages.add("%s is not a valid ISO 8601 duration string", answer);
+        }
+    }
+    private void validateType(Messages messages, BooleanConstraints con, String answer) {
+        if (!BOOLEAN_VALUES.contains(answer)) {
+            messages.add("%s is not a boolean", answer);
+        }
+    }
+    private void validateType(Messages messages, MultiValueConstraints con, List<String> answers) {
+        // Then we're concerned with the array of values under "answers"
+        for (int i=0; i < answers.size(); i++) {
+            validateMultiValueType(messages, con, answers.get(i));
+        }
+        if (!con.getAllowOther()) {
+            for (int i=0; i < answers.size(); i++) {
+                if (!isEnumeratedValue(con, answers.get(i))) {
+                    messages.add("%s is not an enumerated value for this question", answers.get(i));
                 }
             }
-        } else {
-            validateMultiValueType(messages, con, value, "Answer");
-            if (messages.isEmpty() && !con.getAllowOther() && !isEnumeratedValue(con, value)) {
-                messages.add("Answer is not one of the enumerated values for this question");
-            }
         }
     }
-    private void validateMultiValueType(Messages messages, MultiValueConstraints con, Object value, String name) {
-        if (con.getDataType().getCastClass() != value.getClass()) {
-            messages.add("%s is the wrong type (it's %s but it should be %s", name, value.getClass().getSimpleName(),
-                    con.getDataType().getCastClass().getSimpleName());
+    private void validateType(Messages messages, MultiValueConstraints con, String answer) {
+        // Then we're concerned with the one answer
+        validateMultiValueType(messages, con, answer);
+        if (!con.getAllowOther() && !isEnumeratedValue(con, answer)) {
+            messages.add("%s is not an enumerated value for this question", answer);
         }
     }
-    private boolean isEnumeratedValue(MultiValueConstraints con, Object value) {
+    private void validateMultiValueType(Messages messages, MultiValueConstraints con, String answer) {
+        switch(con.getDataType()) {
+        case DURATION:
+            validateType(messages, new DurationConstraints(), answer);
+            break;
+        case STRING:
+            validateType(messages, new StringConstraints(), answer);
+            break;
+        case INTEGER:
+            validateType(messages, new IntegerConstraints(), answer);
+            break;
+        case DECIMAL:
+            validateType(messages, new DecimalConstraints(), answer);
+            break;
+        case BOOLEAN:
+            validateType(messages, new BooleanConstraints(), answer);
+            break;
+        case DATE:
+        case DATETIME:
+            validateType(messages, new DateConstraints(), answer);
+            break;
+        case TIME:
+            validateType(messages, new TimeConstraints(), answer);
+            break;
+        }
+    }
+    private boolean isEnumeratedValue(MultiValueConstraints con, String value) {
         for (SurveyQuestionOption option : con.getEnumeration()) {
-            if (option.getValue() instanceof Number && value instanceof Number) {
-                double d1 = ((Number)option.getValue()).doubleValue();
-                double d2 = ((Number)value).doubleValue();
-                if (d1 == d2) {
-                    return true;
-                }
-            } else {
-                if (option.getValue().equals(value)) {
-                    return true;
-                }
+            if (option.getValue().equals(value)) {
+                return true;
             }
         }
         return false;

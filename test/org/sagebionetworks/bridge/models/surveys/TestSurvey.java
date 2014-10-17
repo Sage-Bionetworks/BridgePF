@@ -24,11 +24,11 @@ public class TestSurvey extends DynamoSurvey {
         {
             MultiValueConstraints mvc = new MultiValueConstraints(DataType.INTEGER);
             List<SurveyQuestionOption> options = Lists.newArrayList(
-                new SurveyQuestionOption("Terrible", 1),
-                new SurveyQuestionOption("Poor", 2),
-                new SurveyQuestionOption("OK", 3),
-                new SurveyQuestionOption("Good", 4),
-                new SurveyQuestionOption("Great", 5)
+                new SurveyQuestionOption("Terrible", "1"),
+                new SurveyQuestionOption("Poor", "2"),
+                new SurveyQuestionOption("OK", "3"),
+                new SurveyQuestionOption("Good", "4"),
+                new SurveyQuestionOption("Great", "5")
             );
             mvc.setEnumeration(options);
             mvc.setAllowOther(false);

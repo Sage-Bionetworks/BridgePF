@@ -3,12 +3,12 @@ package org.sagebionetworks.bridge.models.surveys;
 public class SurveyQuestionOption {
 
     private String label;
-    private Object value; // what type can this be? It has to be similar to the type of the encompassing constraint. Grrr.
+    private String value;
     
     public SurveyQuestionOption() {
     }
     
-    public SurveyQuestionOption(String label, Object value) {
+    public SurveyQuestionOption(String label, String value) {
         this.label = label;
         this.value = value;
     }
@@ -19,10 +19,10 @@ public class SurveyQuestionOption {
     public void setLabel(String label) {
         this.label = label;
     }
-    public Object getValue() {
+    public String getValue() {
         return value;
     }
-    public void setValue(Object value) {
+    public void setValue(String value) {
         this.value = value;
     }
 
