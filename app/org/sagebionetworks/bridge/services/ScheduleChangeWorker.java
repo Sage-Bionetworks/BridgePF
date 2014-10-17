@@ -8,6 +8,8 @@ import java.util.concurrent.Callable;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.ScheduleDao;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
+import org.sagebionetworks.bridge.dao.StudyConsentDao;
+import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.events.SchedulePlanCreatedEvent;
 import org.sagebionetworks.bridge.events.SchedulePlanDeletedEvent;
 import org.sagebionetworks.bridge.events.SchedulePlanUpdatedEvent;
@@ -16,6 +18,7 @@ import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -46,6 +49,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     private DistributedLockDao lockDao;
     private ScheduleDao scheduleDao;
     private SchedulePlanDao schedulePlanDao;
+    private ConsentService consentService;
     private StudyService studyService;
    
     public void setStormpathClient(Client stormpathClient) {
@@ -62,6 +66,9 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     }
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+    public void setConsentService(ConsentService consentService) {
+        this.consentService = consentService;
     }
     public void setApplicationEvent(ApplicationEvent event) {
         this.event = event;
@@ -98,7 +105,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         
         final SchedulePlan plan = event.getSchedulePlan();
         final Study study = studyService.getStudyByKey(plan.getStudyKey());
-        final ArrayList<User> users = getStudyUsers();
+        final ArrayList<User> users = getStudyUsers(study);
         final List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
         setSchedulePlan(schedules, plan);
         
@@ -124,7 +131,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         
         final SchedulePlan plan = event.getSchedulePlan();
         final Study study = studyService.getStudyByKey(plan.getStudyKey());
-        final ArrayList<User> users = getStudyUsers();
+        final ArrayList<User> users = getStudyUsers(study);
         final List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
         setSchedulePlan(schedules, plan);
         
@@ -145,6 +152,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().scheduleNewUser(study, user);
             if (schedule != null) {
+                // The constraint doesn't know the plan GUID, so it's set after scheduling method
                 schedule.setSchedulePlanGuid(plan.getGuid());
                 schedules.add(schedule);
             }
@@ -185,40 +193,23 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         }
     }
     
-    /*
-    private void runWithLock(Study study, Command command) throws InterruptedException {
-        String lockId = null;
-        while (true) {
-            try {
-                lockId = lockDao.createLock(Study.class, study.getKey());
-                command.execute();
-                return;
-            } catch(ConcurrentModificationException e) {
-                logger.info("Lock held, waiting to retry");
-                Thread.sleep(300 + rand.nextInt(400));
-            } catch(Throwable t) {
-                logger.info(t.getMessage());
-            } finally {
-                lockDao.releaseLock(Study.class, study.getKey(), lockId);
-            }
-        }
-    }
-    */
-    
     private void setSchedulePlan(List<Schedule> schedules, SchedulePlan plan) {
         for (Schedule schedule : schedules) {
             schedule.setSchedulePlanGuid(plan.getGuid());
         }
     }
     
-    // TODO: Go back to the user consents to verify the user is in the study. 
-    // This will be slow, but accurate, if/until/when we have better.
-    private ArrayList<User> getStudyUsers() {
+    private ArrayList<User> getStudyUsers(Study study) {
         ArrayList<User> users = Lists.newArrayList();
         Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-        AccountList accounts = application.getAccounts(); 
+        // This is every user in the environment. That's what we have to do in case a user signed
+        // up in one study, but is now participating in a different study.
+        AccountList accounts = application.getAccounts();  
         for (Account account : accounts) {
-            users.add(new User(account));
+            User user = new User(account);
+            if (consentService.hasUserConsentedToResearch(user, study)) {
+                users.add(new User(account));    
+            }
         }
         return users;
     }
