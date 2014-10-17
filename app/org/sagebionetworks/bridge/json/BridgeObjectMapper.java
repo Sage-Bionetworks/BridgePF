@@ -73,7 +73,7 @@ public class BridgeObjectMapper extends ObjectMapper {
             return new ExtraFieldSerializer(this, toIgnore);
         }
         public BeanSerializerBase withFilterId(Object object) {
-            return this;
+            return null;
         }
         public void serialize(Object bean, JsonGenerator jgen, SerializerProvider provider) throws IOException,
                 JsonGenerationException {

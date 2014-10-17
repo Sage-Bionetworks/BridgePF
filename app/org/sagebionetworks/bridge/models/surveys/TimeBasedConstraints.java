@@ -1,13 +1,8 @@
 package org.sagebionetworks.bridge.models.surveys;
 
-import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.validators.Messages;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 public abstract class TimeBasedConstraints extends Constraints {
-    
-    private static final long FIVE_MINUTES = 5 * 60 * 1000;
     
     protected boolean allowFuture = false;
     
@@ -18,18 +13,6 @@ public abstract class TimeBasedConstraints extends Constraints {
     public void setAllowFuture(boolean allowFuture) {
         this.allowFuture = allowFuture;
     }
-    
-    public void validate(Messages messages, SurveyAnswer answer) {
-        long time = (Long)answer.getAnswer();
-        // add 5 minutes of leniency to this test because different machines may 
-        // report different times, we're really trying to catch user input at a 
-        // coarser level of time reporting than milliseconds.
-        long now = (DateUtils.getCurrentMillisFromEpoch()+FIVE_MINUTES);
-        if (!allowFuture && time > now) {
-            messages.add("it is not allowed to have a future date value: time %s, current %s", time, now);
-        }
-    }
-    
     @Override
     public int hashCode() {
         final int prime = 31;
