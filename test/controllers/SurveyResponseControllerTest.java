@@ -94,7 +94,7 @@ public class SurveyResponseControllerTest {
                 List<SurveyAnswer> list = Lists.newArrayList();
                 SurveyAnswer answer = new SurveyAnswer();
                 answer.setQuestionGuid(question1.getGuid());
-                answer.setAnswer(Boolean.TRUE);
+                answer.setAnswer("true");
                 answer.setClient("test");
                 answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
                 list.add(answer);
@@ -140,7 +140,7 @@ public class SurveyResponseControllerTest {
                 
                 SurveyQuestion question = survey.getQuestions().get(0); // boolean
                 SurveyAnswer answer = new SurveyAnswer();
-                answer.setAnswer(true);
+                answer.setAnswer("true");
                 answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
                 answer.setClient("mobile");
                 answer.setQuestionGuid(question.getGuid());
@@ -164,7 +164,7 @@ public class SurveyResponseControllerTest {
                 
                 question = survey.getQuestions().get(3); // decimal
                 answer = new SurveyAnswer();
-                answer.setAnswer(4.6f);
+                answer.setAnswer("4.6");
                 answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
                 answer.setClient("mobile");
                 answer.setQuestionGuid(question.getGuid());
@@ -172,7 +172,7 @@ public class SurveyResponseControllerTest {
                 
                 question = survey.getQuestions().get(4); // integer
                 answer = new SurveyAnswer();
-                answer.setAnswer(4);
+                answer.setAnswer("4");
                 answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
                 answer.setClient("mobile");
                 answer.setQuestionGuid(question.getGuid());
@@ -199,13 +199,13 @@ public class SurveyResponseControllerTest {
                 question = survey.getQuestions().get(7); // multichoice integer
                 assertTrue("Question is multi-choice", question.getConstraints() instanceof MultiValueConstraints);
                 answer = new SurveyAnswer();
-                answer.setAnswer(Lists.newArrayList(3));
+                answer.setAnswers(Lists.<String>newArrayList("3"));
                 answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
                 answer.setClient("mobile");
                 answer.setQuestionGuid(question.getGuid());
                 array.add(mapper.valueToTree(answer));
                 
-                question = survey.getQuestions().get(8); // multichoice integer
+                question = survey.getQuestions().get(8); // string
                 answer = new SurveyAnswer();
                 answer.setAnswer("123-456-7890");
                 answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());

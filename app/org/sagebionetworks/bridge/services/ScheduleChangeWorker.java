@@ -67,6 +67,9 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
+    public void setConsentService(ConsentService consentService) {
+        this.consentService = consentService;
+    }
     public void setApplicationEvent(ApplicationEvent event) {
         this.event = event;
     }
