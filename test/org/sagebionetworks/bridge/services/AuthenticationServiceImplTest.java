@@ -6,6 +6,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.List;
+
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
@@ -30,6 +32,7 @@ import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
@@ -61,26 +64,16 @@ public class AuthenticationServiceImplTest {
     @Resource
     private Client stormpathClient;
     
-    private static final int NUMBER_OF_TESTS = 12;
-    
-    private boolean setUpComplete = false;
-    private int testCount = 0;
     private UserSession session;
     
     @Before
     public void before() {
-        if (!setUpComplete) {
-            session = helper.createUser();
-            setUpComplete = true;
-        }
+        session = helper.createUser();
     }
     
     @After
     public void after() {
-        testCount++;
-        if (testCount == NUMBER_OF_TESTS) {
-            helper.deleteUser(session);
-        }
+        helper.deleteUser(session);
     }
 
     @Test(expected = BridgeServiceException.class)
@@ -178,7 +171,41 @@ public class AuthenticationServiceImplTest {
             deleteAccount(nonDefaultUser);
         }
     }
+    
+    @Test
+    public void createResearcherAndSignInWithoutConsentError() {
+        UserSession session = null;
+        try {
+            TestUser researcher = new TestUser("researcher", "researcher@sagebridge.org", "P4ssword");
+            List<String> roles = Lists.newArrayList(helper.getTestStudy().getResearcherRole());
+            
+            helper.createUser(researcher, roles, helper.getTestStudy(), false, false);
+            
+            session = authService.signIn(helper.getTestStudy(), researcher.getSignIn());
+            // no exception should have been thrown.
+            
+        } finally {
+            helper.deleteUser(session);
+        }
+    }
 
+    @Test
+    public void createAdminAndSignInWithoutConsentError() {
+        UserSession session = null;
+        try {
+            TestUser researcher = new TestUser("adminer", "adminer@sagebridge.org", "P4ssword");
+            List<String> roles = Lists.newArrayList(BridgeConstants.ADMIN_GROUP);
+
+            helper.createUser(researcher, roles, helper.getTestStudy(), false, false);
+            
+            session = authService.signIn(helper.getTestStudy(), researcher.getSignIn());
+            // no exception should have been thrown.
+            
+        } finally {
+            helper.deleteUser(session);
+        }
+    }
+    
     private void deleteAccount(TestUser user) {
         Application app = StormpathFactory.createStormpathApplication(stormpathClient);
         AccountCriteria criteria = Accounts.where(Accounts.email().eqIgnoreCase(user.getEmail()));
