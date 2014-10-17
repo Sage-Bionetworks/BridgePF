@@ -6,11 +6,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class SurveyQuestionOption {
 
     private final String label;
-    private final Object value;
+    private final String value;
     private final Image image;
     
     @JsonCreator
-    public SurveyQuestionOption(@JsonProperty("label") String label, @JsonProperty("value") Object value,
+    public SurveyQuestionOption(@JsonProperty("label") String label, @JsonProperty("value") String value,
             @JsonProperty("image") Image image) {
         this.label = label;
         this.value = value;
@@ -20,7 +20,7 @@ public class SurveyQuestionOption {
     public String getLabel() {
         return label;
     }
-    public Object getValue() {
+    public String getValue() {
         return value;
     }
     public Image getImage() {
