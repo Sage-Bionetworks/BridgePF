@@ -29,8 +29,16 @@ import com.google.common.collect.Sets;
 public class SurveyAnswerValidator implements Validator<SurveyAnswer> {
 
     private static final long FIVE_MINUTES = 5 * 60 * 1000;
+    
+    private static final DurationConstraints DURATION_CONSTRAINTS = new DurationConstraints();
+    private static final StringConstraints STRING_CONSTRAINTS = new StringConstraints();
+    private static final IntegerConstraints INTEGER_CONSTRAINTS = new IntegerConstraints();
+    private static final DecimalConstraints DECIMAL_CONSTRAINTS = new DecimalConstraints();
+    private static final BooleanConstraints BOOLEAN_CONSTRAINTS = new BooleanConstraints();
+    private static final DateConstraints DATE_CONSTRAINTS = new DateConstraints();
+    private static final TimeConstraints TIME_CONSTRAINTS = new TimeConstraints();
 
-    private Set<String> BOOLEAN_VALUES = Sets.newHashSet("true", "false");
+    private static Set<String> BOOLEAN_VALUES = Sets.newHashSet("true", "false");
 
     private SurveyQuestion question;
     
@@ -220,29 +228,30 @@ public class SurveyAnswerValidator implements Validator<SurveyAnswer> {
             messages.add("%s is not an enumerated value for this question", answer);
         }
     }
+    
     private void validateMultiValueType(Messages messages, MultiValueConstraints con, String answer) {
         switch(con.getDataType()) {
         case DURATION:
-            validateType(messages, new DurationConstraints(), answer);
+            validateType(messages, DURATION_CONSTRAINTS, answer);
             break;
         case STRING:
-            validateType(messages, new StringConstraints(), answer);
+            validateType(messages, STRING_CONSTRAINTS, answer);
             break;
         case INTEGER:
-            validateType(messages, new IntegerConstraints(), answer);
+            validateType(messages, INTEGER_CONSTRAINTS, answer);
             break;
         case DECIMAL:
-            validateType(messages, new DecimalConstraints(), answer);
+            validateType(messages, DECIMAL_CONSTRAINTS, answer);
             break;
         case BOOLEAN:
-            validateType(messages, new BooleanConstraints(), answer);
+            validateType(messages, BOOLEAN_CONSTRAINTS, answer);
             break;
         case DATE:
         case DATETIME:
-            validateType(messages, new DateConstraints(), answer);
+            validateType(messages, DATE_CONSTRAINTS, answer);
             break;
         case TIME:
-            validateType(messages, new TimeConstraints(), answer);
+            validateType(messages, TIME_CONSTRAINTS, answer);
             break;
         }
     }
