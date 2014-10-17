@@ -1,7 +1,6 @@
 package controllers;
 
 import java.io.IOException;
-
 import java.util.Collection;
 
 import models.StatusMessage;

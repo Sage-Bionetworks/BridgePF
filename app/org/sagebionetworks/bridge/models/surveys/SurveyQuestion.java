@@ -1,5 +1,10 @@
 package org.sagebionetworks.bridge.models.surveys;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+@JsonDeserialize(as=DynamoSurveyQuestion.class)
 public interface SurveyQuestion {
     
     public String getSurveyCompoundKey();
