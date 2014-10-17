@@ -102,21 +102,21 @@ public class ScheduleChangeListenerTest {
             
             List<Schedule> schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("No schedules because there's no plan", 0, schedules.size());
-            
+
             SchedulePlan plan = createSchedulePlan(session.getUser());
             listener.onTestEvent(new SchedulePlanCreatedEvent(plan));
 
             // Now there is a schedule for our dude(tte)
             schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("There is now one schedule for the user", 1, schedules.size());
-            
+
             updateSchedulePlan(plan);
             listener.onTestEvent(new SchedulePlanUpdatedEvent(plan));
-            
+
             schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("There is still one schedule for the user", 1, schedules.size());
             assertEquals("That schedule shows an update", "* * * * * *", schedules.get(0).getCronTrigger());
-            
+
             listener.onTestEvent(new SchedulePlanDeletedEvent(plan));
             schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("Now there is no schedule after the one plan was deleted", 0, schedules.size());
