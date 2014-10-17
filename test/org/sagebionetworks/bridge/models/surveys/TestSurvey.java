@@ -22,13 +22,18 @@ public class TestSurvey extends DynamoSurvey {
     
     private DynamoSurveyQuestion multiValueQuestion = new DynamoSurveyQuestion() {
         {
+            Image terrible = new Image("http://terrible.svg", 600, 300);
+            Image poor = new Image("http://poor.svg", 600, 300);
+            Image ok = new Image("http://ok.svg", 600, 300);
+            Image good = new Image("http://good.svg", 600, 300);
+            Image great = new Image("http://great.svg", 600, 300);
             MultiValueConstraints mvc = new MultiValueConstraints(DataType.INTEGER);
             List<SurveyQuestionOption> options = Lists.newArrayList(
-                new SurveyQuestionOption("Terrible", "1"),
-                new SurveyQuestionOption("Poor", "2"),
-                new SurveyQuestionOption("OK", "3"),
-                new SurveyQuestionOption("Good", "4"),
-                new SurveyQuestionOption("Great", "5")
+                new SurveyQuestionOption("Terrible", "1", terrible),
+                new SurveyQuestionOption("Poor", "2", poor),
+                new SurveyQuestionOption("OK", "3", ok),
+                new SurveyQuestionOption("Good", "4", good),
+                new SurveyQuestionOption("Great", "5", great)
             );
             mvc.setEnumeration(options);
             mvc.setAllowOther(false);
