@@ -20,6 +20,4 @@ public final class DateTimeJsonSerializer extends JsonSerializer<Long> {
         return (millisFromEpoch == null || millisFromEpoch == 0L);
     }
     
-    
-    
 }
