@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 
-
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -67,7 +66,8 @@ public class ScheduleChangeListenerTest {
     public void addPlanThenEnrollUnenrollUser() throws Exception {
         UserSession session = null;
         try {
-            session = helper.createUser(new TestUser("enrollme", "enrollme@sagebridge.org", "P4ssword"), null, study, true, false);
+            session = helper.createUser(new TestUser("enrollme", "enrollme@sagebridge.org", "P4ssword").getSignUp(),
+                    study, true, false);
             User user = session.getUser();
             
             SchedulePlan plan = createSchedulePlan(user);
@@ -94,7 +94,7 @@ public class ScheduleChangeListenerTest {
     public void addUserThenCrudPlan() throws Exception {
         UserSession session = null;
         try {
-            session = helper.createUser();
+            session = helper.createUser("test");
             
             List<Schedule> schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("No schedules because there's no plan", 0, schedules.size());

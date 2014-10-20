@@ -10,8 +10,6 @@ import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
-import java.util.List;
-
 import javax.annotation.Resource;
 
 import org.junit.After;
@@ -19,7 +17,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -54,13 +51,8 @@ public class StudyConsentControllerTest {
 
     @Before
     public void before() {
-        List<String> roles = Lists.newArrayList(BridgeConstants.ADMIN_GROUP);
-        // TODO: When you create two users, they need different email/names. Randomize this in the helper 
-        // so you don't have to spell this out. 
-        adminSession = helper.createUser(new TestUser("admin-user", "admin-user@sagebridge.org", "P4ssword"), roles,
-                helper.getTestStudy(), true, true);
-        userSession = helper.createUser(new TestUser("normal-user", "normal-user@sagebridge.org", "P4ssword"), null,
-                helper.getTestStudy(), true, true);
+        adminSession = helper.createUser("admin-user", Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
+        userSession = helper.createUser("normal-user");
     }
 
     @After
@@ -79,7 +71,6 @@ public class StudyConsentControllerTest {
                 ObjectNode consent = JsonNodeFactory.instance.objectNode();
                 consent.put("minAge", 17);
                 consent.put("path", "conf/email-templates/teststudy-consent.html");
-                // String consent = "{\"minAge\":17,\"path\":\"fake-path\\to\\StudyConsentControllerTest\"}";
 
                 Response addConsentFail = TestUtils.getURL(userSession.getSessionToken(), STUDYCONSENT_URL)
                         .post(consent.toString()).get(TIMEOUT);

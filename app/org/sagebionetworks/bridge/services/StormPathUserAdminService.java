@@ -3,14 +3,11 @@ package org.sagebionetworks.bridge.services;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.UserLockDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
-import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
@@ -25,10 +22,7 @@ import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
-import com.stormpath.sdk.group.Group;
-import com.stormpath.sdk.group.GroupList;
 
 public class StormPathUserAdminService implements UserAdminService {
 
@@ -36,8 +30,6 @@ public class StormPathUserAdminService implements UserAdminService {
     private ConsentService consentService;
     private HealthDataService healthDataService;
     private StudyService studyService;
-    private BridgeEncryptor healthCodeEncryptor;
-    private HealthCodeService healthCodeService;
     private Client stormpathClient;
     private UserLockDao userLockDao;
 
@@ -57,14 +49,6 @@ public class StormPathUserAdminService implements UserAdminService {
         this.studyService = studyService;
     }
 
-    public void setHealthCodeEncryptor(BridgeEncryptor encryptor) {
-        this.healthCodeEncryptor = encryptor;
-    }
-
-    public void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
-    }
-
     public void setStormpathClient(Client stormpathClient) {
         this.stormpathClient = stormpathClient;
     }
@@ -74,8 +58,8 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
-    public UserSession createUser(SignUp signUp, List<String> roles, Study userStudy, boolean signUserIn,
-            boolean consentUser) throws BridgeServiceException {
+    public UserSession createUser(SignUp signUp, Study userStudy, boolean signUserIn, boolean consentUser)
+            throws BridgeServiceException {
         if (signUp == null) {
             throw new BridgeServiceException("User cannot be null");
         } else if (StringUtils.isBlank(signUp.getUsername())) {
@@ -91,21 +75,7 @@ public class StormPathUserAdminService implements UserAdminService {
             Directory directory = getDirectory(userStudy);
             // Search for email and skip creation if it already exists.
             if (userDoesNotExist(directory, signUp.getEmail())) {
-                Account account = stormpathClient.instantiate(Account.class);
-                account.setGivenName("<EMPTY>");
-                account.setSurname("<EMPTY>");
-                account.setEmail(signUp.getEmail());
-                account.setUsername(signUp.getUsername());
-                account.setPassword(signUp.getPassword());
-                directory.createAccount(account, false); // suppress email message
-                addAccountToGroups(directory, account, roles);
-                // Assign a health code
-                CustomData customData = account.getCustomData();
-                HealthId healthId = healthCodeService.create();
-                String healthIdKey = userStudy.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-                customData.put(healthIdKey, healthCodeEncryptor.encrypt(healthId.getId()));
-                customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
-                customData.save();
+                authenticationService.signUp(signUp, userStudy, false);
             }
         } catch (Throwable t) {
             throw new BridgeServiceException(t);
@@ -149,17 +119,6 @@ public class StormPathUserAdminService implements UserAdminService {
         }
         for (Study study : studyService.getStudies()) {
             deleteUserInStudy(user, study);
-        }
-    }
-
-    private void addAccountToGroups(Directory directory, Account account, List<String> roles) {
-        if (roles != null) {
-            GroupList groups = directory.getGroups();
-            for (Group group : groups) {
-                if (roles.contains(group.getName())) {
-                    account.addGroup(group);
-                }
-            }
         }
     }
 

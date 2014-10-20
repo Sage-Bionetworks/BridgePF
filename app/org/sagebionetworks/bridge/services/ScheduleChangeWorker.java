@@ -48,6 +48,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     private SchedulePlanDao schedulePlanDao;
     private ConsentService consentService;
     private StudyService studyService;
+    private AuthenticationServiceImpl authenticationService;
    
     public void setStormpathClient(Client stormpathClient) {
         this.stormpathClient = stormpathClient;
@@ -66,6 +67,11 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     }
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
+    }
+    // Need the implementation because we're going to use functionality there that is not part
+    // of the API, and is specific to our use of Stormpath.
+    public void setAuthenticationService(AuthenticationServiceImpl authenticationService) {
+        this.authenticationService = authenticationService;
     }
     public void setApplicationEvent(ApplicationEvent event) {
         this.event = event;
@@ -171,7 +177,6 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
             }
         });
     }
-    
     private void runWithLock(Class<? extends BridgeEntity> clazz, String id, Command command) throws InterruptedException {
         String lockId = null;
         while (true) {
@@ -189,13 +194,11 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
             }
         }
     }
-    
     private void setSchedulePlan(List<Schedule> schedules, SchedulePlan plan) {
         for (Schedule schedule : schedules) {
             schedule.setSchedulePlanGuid(plan.getGuid());
         }
     }
-    
     private ArrayList<User> getStudyUsers(Study study) {
         ArrayList<User> users = Lists.newArrayList();
         Application application = StormpathFactory.createStormpathApplication(stormpathClient);
@@ -203,13 +206,11 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         // up in one study, but is now participating in a different study.
         AccountList accounts = application.getAccounts();  
         for (Account account : accounts) {
-            // User user = new User(account);
-            // Something wrong here that's breaking the tests
-            //if (consentService.hasUserConsentedToResearch(user, study)) {
-                users.add(new User(account));    
-            //}
+            User user = authenticationService.createSessionFromAccount(study, account).getUser();
+            if (consentService.hasUserConsentedToResearch(user, study)) {
+                users.add(user);    
+            }
         }
         return users;
     }
-    
 }

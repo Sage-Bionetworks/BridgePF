@@ -18,11 +18,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.TestABSchedulePlan;
@@ -47,8 +47,7 @@ public class SchedulePlanControllerTest {
     
     @Before
     public void before() {
-        String role = helper.getTestStudy().getResearcherRole();
-        session = helper.createUser(Lists.newArrayList(role));
+        session = helper.createUser("test", Lists.newArrayList(helper.getTestStudy().getResearcherRole()));
     }
     
     @After
@@ -62,8 +61,8 @@ public class SchedulePlanControllerTest {
             public void testCode() throws Exception {
                 UserSession session = null;
                 try {
-                    TestUser user = new TestUser("normal-test-user", "normal-test-user@sagebridge.org", "P4ssword");
-                    session = helper.createUser(user, null, helper.getTestStudy(), true, true);
+                    session = helper.createUser(new SignUp("normal-test-user", "normal-test-user@sagebridge.org",
+                            "P4ssword"), helper.getTestStudy(), true, true);
                     
                     SchedulePlan plan = new TestABSchedulePlan();
                     String json = BridgeObjectMapper.get().writeValueAsString(plan);
