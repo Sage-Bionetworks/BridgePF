@@ -145,16 +145,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         } else if (!emailValidator.isValid(signUp.getEmail())) {
             throw new BadRequestException("Email address does not appear to be valid");
         }
-        // It's possible to sign up for two different studies. We need to avoid this by checking if the 
-        // application as a whole has an email address, before creating that address in a specific 
-        // study. If it exists anywhere, it cannot be used again.
-        /*
-        Account account = findExistingEmailAddress(signUp);
-        if (account != null) {
-            throw new EntityAlreadyExistsException(new User(account));
-        };
-        */
-        
         try {
             Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
             // Create Stormpath account
@@ -236,17 +226,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
-    // We also want to verify that the username hasn't been taken in another study...
-    /*
-    private Account findExistingEmailAddress(SignUp signUp) {
-        Map<String, Object> queryParams = Maps.newHashMap();
-        queryParams.put("email", signUp.getEmail());
-        Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-        AccountList accounts = application.getAccounts(queryParams);
-        
-        return (accounts.iterator().hasNext()) ? accounts.iterator().next() : null;
-    }*/
-
     private UserSession createSessionFromAccount(Study study, Account account) {
 
         final UserSession session = new UserSession();
@@ -267,6 +246,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             user.setConsent(hasConsented);
         }
 
+        // And now for some exceptions...
+        
+        // All administrators and all researchers are assumed to consent when using any API.
+        // This is needed so they can sign in without facing a 412 exception.
+        if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
+            user.setConsent(true);
+        }
+        // And then we set *anyone* configured as an admin to have signed the consent as well
         String adminUser = BridgeConfigFactory.getConfig().getProperty("admin.email");
         if (adminUser != null && adminUser.equals(account.getEmail())) {
             user.setConsent(true);
