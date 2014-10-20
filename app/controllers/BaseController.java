@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.User;
@@ -22,13 +23,11 @@ import play.mvc.Http.Cookie;
 import play.mvc.Http.Request;
 import play.mvc.Result;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-@org.springframework.stereotype.Controller
 public abstract class BaseController extends Controller {
 
     private static ObjectMapper mapper = BridgeObjectMapper.get();
@@ -172,12 +171,16 @@ public abstract class BaseController extends Controller {
     // because the root object in the JSON is an array (which is legal). OTOH,
     // if asJson() works, you will get an error if you call asText(), as Play
     // seems to only allow processing the body content one time in a request.
-    protected JsonNode requestToJSON(Request request) throws JsonProcessingException, IOException {
-        JsonNode node = request().body().asJson();
-        if (node == null) {
-            node = mapper.readTree(request().body().asText());
+    protected JsonNode requestToJSON(Request request) {
+        try {
+            JsonNode node = request().body().asJson();
+            if (node == null) {
+                node = mapper.readTree(request().body().asText());
+            }
+            return node;
+        } catch(IOException e) {
+            throw new InvalidEntityException("Expected JSON in the request body is missing or malformed");
         }
-        return node;
     }
     
 }

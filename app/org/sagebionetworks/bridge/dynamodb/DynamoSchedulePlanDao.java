@@ -12,7 +12,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
@@ -28,7 +27,6 @@ import com.amazonaws.services.dynamodbv2.model.Condition;
 
 public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventPublisherAware {
 
-    private static final SchedulePlanValidator VALIDATOR = new SchedulePlanValidator();
     private DynamoDBMapper mapper;
     private ApplicationEventPublisher publisher;
 
@@ -80,7 +78,6 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
 
     @Override
     public SchedulePlan createSchedulePlan(SchedulePlan plan) {
-        VALIDATOR.validate(plan);
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
@@ -90,7 +87,6 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
 
     @Override
     public SchedulePlan updateSchedulePlan(SchedulePlan plan) {
-        VALIDATOR.validate(plan);
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
         publisher.publishEvent(new SchedulePlanUpdatedEvent(plan));
