@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models;
 
 import java.util.Set;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
