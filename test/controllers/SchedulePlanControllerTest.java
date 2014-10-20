@@ -1,6 +1,8 @@
 package controllers;
 
+import static org.apache.commons.httpclient.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.commons.httpclient.HttpStatus.SC_CREATED;
+import static org.apache.commons.httpclient.HttpStatus.SC_FORBIDDEN;
 import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -16,6 +18,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -30,6 +33,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import play.libs.WS.Response;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -52,7 +56,26 @@ public class SchedulePlanControllerTest {
         helper.deleteUser(session);
     }
 
-    // Test: only researchers or admins can access service
+    @Test
+    public void normalUserCannotAccess() {
+        running(testServer(3333), new TestUtils.FailableRunnable() {
+            public void testCode() throws Exception {
+                UserSession session = null;
+                try {
+                    TestUser user = new TestUser("normal-test-user", "normal-test-user@sagebridge.org", "P4ssword");
+                    session = helper.createUser(user, null, helper.getTestStudy(), true, true);
+                    
+                    SchedulePlan plan = new TestABSchedulePlan();
+                    String json = BridgeObjectMapper.get().writeValueAsString(plan);
+                    
+                    Response response = TestUtils.getURL(session.getSessionToken(), SCHEDULE_PLANS_URL).post(json).get(TIMEOUT);
+                    assertEquals("Returns 403", SC_FORBIDDEN, response.getStatus());
+                } finally {
+                    helper.deleteUser(session);
+                }
+            }
+        });
+    }
     
     @Test
     public void crudSchedulePlan() {
@@ -89,6 +112,36 @@ public class SchedulePlanControllerTest {
                 // Delete
                 response = TestUtils.getURL(session.getSessionToken(), url).delete().get(TIMEOUT);
                 assertEquals("Returns 200", SC_OK, response.getStatus());
+            }
+        });
+    }
+    
+    @Test
+    public void invalidPlanReturns400Error() {
+        running(testServer(3333), new TestUtils.FailableRunnable() {
+            public void testCode() throws Exception {
+                SchedulePlan plan = new TestABSchedulePlan();
+                plan.setStrategy(null); // invalid
+                String json = BridgeObjectMapper.get().writeValueAsString(plan);
+                
+                // Create
+                Response response = TestUtils.getURL(session.getSessionToken(), SCHEDULE_PLANS_URL).post(json).get(TIMEOUT);
+                assertEquals("Returns 400", SC_BAD_REQUEST, response.getStatus());
+                
+                JsonNode node = response.asJson();
+                ArrayNode strategyErrors = (ArrayNode)node.get("errors").get("strategy");
+                assertEquals("Has a strategy field error", 1, strategyErrors.size());
+            }
+        });
+    }
+    
+    @Test
+    public void noPlanReturns400() {
+        running(testServer(3333), new TestUtils.FailableRunnable() {
+            public void testCode() throws Exception {
+                // Create
+                Response response = TestUtils.getURL(session.getSessionToken(), SCHEDULE_PLANS_URL).post("").get(TIMEOUT);
+                assertEquals("Returns 400", SC_BAD_REQUEST, response.getStatus());
             }
         });
     }

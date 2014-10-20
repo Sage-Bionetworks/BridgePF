@@ -5,13 +5,20 @@ import java.util.List;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.validation.Validator;
 
 public class SchedulePlanServiceImpl implements SchedulePlanService {
-
+    
     private SchedulePlanDao schedulePlanDao;
+    private Validator validator;
     
     public void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
         this.schedulePlanDao = schedulePlanDao;
+    }
+    
+    public void setValidator(Validator validator) {
+        this.validator = validator;
     }
 
     @Override
@@ -26,11 +33,13 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
 
     @Override
     public SchedulePlan createSchedulePlan(SchedulePlan plan) {
+        Validate.entityThrowingException(validator, plan);
         return schedulePlanDao.createSchedulePlan(plan);
     }
 
     @Override
     public SchedulePlan updateSchedulePlan(SchedulePlan plan) {
+        Validate.entityThrowingException(validator, plan);
         return schedulePlanDao.updateSchedulePlan(plan);
     }
 
