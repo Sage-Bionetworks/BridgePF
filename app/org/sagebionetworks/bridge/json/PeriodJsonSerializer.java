@@ -12,9 +12,12 @@ public class PeriodJsonSerializer extends JsonSerializer<Long> {
     @Override
     public void serialize(Long millis, JsonGenerator gen, SerializerProvider provider) throws IOException,
             JsonProcessingException {
-        if (millis != null && millis != 0L) {
-            gen.writeString(DateUtils.convertToDuration(millis));
-        }
+        gen.writeString(DateUtils.convertToDuration(millis));
+    }
+    
+    @Override
+    public boolean isEmpty(Long millis) {
+        return (millis == null || millis == 0L);
     }
 
 }

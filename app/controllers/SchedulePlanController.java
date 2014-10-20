@@ -31,8 +31,8 @@ public class SchedulePlanController extends ResearcherController {
         getAuthenticatedResearcherOrAdminSession(study);
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
+        planForm.setStudyKey(study.getKey());
         SchedulePlan plan = schedulePlanService.createSchedulePlan(planForm);
-        plan.setStudyKey(study.getKey());
         return createdResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
     }
 

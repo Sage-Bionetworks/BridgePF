@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,6 +54,10 @@ public class BridgeUtils {
             }
             throw new BridgeServiceException(messages.join());
         }
+    }
+    
+    public static boolean isEmpty(Collection<?> coll) {
+        return (coll == null || coll.isEmpty());
     }
     
 }

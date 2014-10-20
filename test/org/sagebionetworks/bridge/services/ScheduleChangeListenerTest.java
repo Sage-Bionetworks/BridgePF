@@ -2,12 +2,12 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 
+
 import java.util.List;
 
 import javax.annotation.Resource;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -59,20 +59,16 @@ public class ScheduleChangeListenerTest {
         DynamoInitializer.init(DynamoSchedule.class, DynamoSchedulePlan.class);
         DynamoTestUtil.clearTable(DynamoSchedule.class);
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
+        
         study = helper.getTestStudy();
     }
     
-    // This won't fully work until we're gathering a list of users who are enrolled in the study,
-    // not a list of all users who signed up under the study. Right now, enrollment does not 
-    // change the list of users for the study.
     @Test
-    @Ignore
     public void addPlanThenEnrollUnenrollUser() throws Exception {
         UserSession session = null;
-        User user = null;
         try {
             session = helper.createUser(new TestUser("enrollme", "enrollme@sagebridge.org", "P4ssword"), null, study, true, false);
-            user = session.getUser();
+            User user = session.getUser();
             
             SchedulePlan plan = createSchedulePlan(user);
             schedulePlanDao.createSchedulePlan(plan);
@@ -102,21 +98,20 @@ public class ScheduleChangeListenerTest {
             
             List<Schedule> schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("No schedules because there's no plan", 0, schedules.size());
-            
+
             SchedulePlan plan = createSchedulePlan(session.getUser());
             listener.onTestEvent(new SchedulePlanCreatedEvent(plan));
 
-            // Now there is a schedule for our dude(tte)
             schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("There is now one schedule for the user", 1, schedules.size());
-            
+
             updateSchedulePlan(plan);
             listener.onTestEvent(new SchedulePlanUpdatedEvent(plan));
-            
+
             schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("There is still one schedule for the user", 1, schedules.size());
             assertEquals("That schedule shows an update", "* * * * * *", schedules.get(0).getCronTrigger());
-            
+
             listener.onTestEvent(new SchedulePlanDeletedEvent(plan));
             schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("Now there is no schedule after the one plan was deleted", 0, schedules.size());
@@ -144,7 +139,9 @@ public class ScheduleChangeListenerTest {
         schedule.setActivityRef("task:AAA");
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("0 0 6 ? * MON-FRI *");
-        schedule.setExpires(DateUtils.getCurrentMillisFromEpoch() + (24 * 60 * 60 * 1000));
+        
+        long oneDay = (24 * 60 * 60 * 1000); 
+        schedule.setExpires(DateUtils.getCurrentMillisFromEpoch() + oneDay);
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
