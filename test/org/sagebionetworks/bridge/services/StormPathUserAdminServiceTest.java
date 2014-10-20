@@ -94,8 +94,8 @@ public class StormPathUserAdminServiceTest {
 
     @Test
     public void canCreateUserIdempotently() {
-        test2User = service.createUser(test2.getSignUp(), null, study, true, true).getUser();
-        test2User = service.createUser(test2.getSignUp(), null, study, true, true).getUser();
+        test2User = service.createUser(test2.getSignUp(), study, true, true).getUser();
+        test2User = service.createUser(test2.getSignUp(), study, true, true).getUser();
 
         assertEquals("Correct email", test2.getSignUp().getEmail(), test2User.getEmail());
         assertEquals("Correct username", test2.getSignUp().getUsername(), test2User.getUsername());
@@ -104,7 +104,7 @@ public class StormPathUserAdminServiceTest {
 
     @Test(expected = BridgeServiceException.class)
     public void deletedUserHasBeenDeleted() {
-        test2User = service.createUser(test2.getSignUp(), null, study, true, true).getUser();
+        test2User = service.createUser(test2.getSignUp(), study, true, true).getUser();
         
         service.deleteUser(test2User);
         
@@ -114,7 +114,7 @@ public class StormPathUserAdminServiceTest {
 
     @Test
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
-        UserSession session1 = service.createUser(test2.getSignUp(), null, study, false, false);
+        UserSession session1 = service.createUser(test2.getSignUp(), study, false, false);
         assertNull("No session", session1);
         
         try {

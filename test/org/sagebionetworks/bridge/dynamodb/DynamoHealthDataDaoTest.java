@@ -39,7 +39,7 @@ public class DynamoHealthDataDaoTest {
     public void before() {
         DynamoInitializer.init(DynamoHealthDataRecord.class);
         DynamoTestUtil.clearTable(DynamoHealthDataRecord.class);
-        session = helper.createUser();
+        session = helper.createUser("test");
     }
     
     @After

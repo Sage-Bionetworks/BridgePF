@@ -5,6 +5,7 @@ import javax.annotation.Resource;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.StudyServiceImpl;
@@ -31,13 +32,15 @@ public class SignInTest extends BaseIntegrationTest {
             public void invoke(TestBrowser browser) {
                 UserSession session = null;
                 try {
+                    new SignUp("test", "test@sagebridge.org", "P4ssword");
+                    SignUp signUp = new SignUp("test", "test@sagebridge.org", "P4ssword");
                     Study study = studyService.getStudyByKey("neurod");
-                    session = helper.createUser(helper.getTestUser(), null, study, true, true);
+                    session = helper.createUser(signUp, study, true, true);
                     
                     AppPage page = new AppPage(browser);
                     AppPage.SignInDialog signInDialog = page.openSignInDialog();
 
-                    signInDialog.signIn(helper.getUserSignIn().getUsername(), helper.getUserSignIn().getPassword());
+                    signInDialog.signIn(session.getUser().getUsername(), "P4ssword");
                     page.signOut();
                 } finally {
                     helper.deleteUser(session);

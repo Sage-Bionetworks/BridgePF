@@ -1,7 +1,8 @@
 package controllers;
 
+import static org.sagebionetworks.bridge.json.JsonUtils.asStringList;
+
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -49,13 +50,13 @@ public class UserManagementController extends AdminController {
         String email = JsonUtils.asText(node, EMAIL_FIELD);
         String username = JsonUtils.asText(node, USERNAME_FIELD);
         String password = JsonUtils.asText(node, PASSWORD_FIELD);
-        List<String> roles = JsonUtils.asStringList(node, ROLES_FIELD);
+        String[] roles = asStringList(node, ROLES_FIELD).toArray(new String[] {});
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
 
         Study userStudy = studyService.getStudyByHostname(getHostname());
         boolean signUserIn = false; // can't sign user in because admin is signed in.
 
-        UserSession session = userAdminService.createUser(new SignUp(username, email, password), roles, userStudy,
+        UserSession session = userAdminService.createUser(new SignUp(username, email, password, roles), userStudy,
                 signUserIn, consent);
 
         return createdResult(mapper.writeValueAsString(session));

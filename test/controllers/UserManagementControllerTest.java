@@ -57,7 +57,7 @@ public class UserManagementControllerTest {
 
     @Before
     public void before() {
-        session = helper.createUser(Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
+        session = helper.createUser("admin-test", Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
     }
 
     @After
@@ -71,7 +71,7 @@ public class UserManagementControllerTest {
 
             @Override
             public void testCode() throws Exception {
-                String email = "testtestingggggg@sagebridge.org";
+                String email = "test-creation@sagebridge.org";
 
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 node.put("email", email);
@@ -80,17 +80,13 @@ public class UserManagementControllerTest {
                 node.put("consent", true);
 
                 Response response = TestUtils.getURL(session.getSessionToken(), USER_URL)
-                        .setHeader("Bridge-Host", TEST_STUDY_KEY)
-                        .post(node)
-                        .get(TIMEOUT);
+                        .setHeader("Bridge-Host", TEST_STUDY_KEY).post(node).get(TIMEOUT);
                 assertEquals("Response status is created.", SC_CREATED, response.getStatus());
 
                 Map<String,String> queryParams = new HashMap<String,String>();
                 queryParams.put("email", email);
 
-                response = TestUtils.getURL(session.getSessionToken(), USER_URL, queryParams)
-                        .delete()
-                        .get(TIMEOUT);
+                response = TestUtils.getURL(session.getSessionToken(), USER_URL, queryParams).delete().get(TIMEOUT);
                 assertEquals("Response status is OK.", SC_OK, response.getStatus());
             }
 

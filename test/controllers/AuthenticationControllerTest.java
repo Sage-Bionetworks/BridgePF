@@ -47,7 +47,7 @@ public class AuthenticationControllerTest {
     
     @Before
     public void before() {
-        session = helper.createUser();
+        session = helper.createUser("test");
     }
     
     @After
@@ -92,8 +92,8 @@ public class AuthenticationControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put(USERNAME, helper.getTestUser().getUsername());
-                node.put(PASSWORD, helper.getTestUser().getPassword());
+                node.put(USERNAME, session.getUser().getUsername());
+                node.put(PASSWORD, helper.getPassword());
 
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
                 assertEquals("HTTP response indicates request OK", SC_OK, response.getStatus());
@@ -102,7 +102,7 @@ public class AuthenticationControllerTest {
                 assertEquals("Type is UserSession", "UserSessionInfo", node.get("type").asText());
                 assertNotNull("Session token is assigned", node.get(SESSION_TOKEN).asText());
                 String username = node.get(USERNAME).asText();
-                assertEquals("Username is for test2 user", helper.getTestUser().getUsername(), username);
+                assertEquals("Username is for test2 user", session.getUser().getUsername(), username);
             }
         });
     }
@@ -112,8 +112,8 @@ public class AuthenticationControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put(USERNAME, helper.getTestUser().getUsername());
-                node.put(PASSWORD, helper.getTestUser().getPassword());
+                node.put(USERNAME, session.getUser().getUsername());
+                node.put(PASSWORD, helper.getPassword());
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
                 
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);

@@ -27,11 +27,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
@@ -68,9 +68,9 @@ public class SurveyControllerTest {
             surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
             surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
         }
-        userSession = helper.createUser(new TestUser("user1", "user1@sagebridge.org", "P4ssword"), null, helper.getTestStudy(), true, true);
-        researcherSession = helper.createUser(new TestUser("user2", "user2@sagebridge.org", "P4ssword"), Lists.newArrayList("teststudy_researcher"), helper.getTestStudy(), true, true);
-        adminSession = helper.createUser(new TestUser("user3", "user3@sagebridge.org", "P4ssword"), Lists.newArrayList("admin"), helper.getTestStudy(), true, true);
+        userSession = helper.createUser(new SignUp("user1", "user1@sagebridge.org", "P4ssword"), helper.getTestStudy(), true, true);
+        researcherSession = helper.createUser(new SignUp("user2", "user2@sagebridge.org", "P4ssword", "teststudy_researcher"), helper.getTestStudy(), true, true);
+        adminSession = helper.createUser(new SignUp("user3", "user3@sagebridge.org", "P4ssword", "admin"), helper.getTestStudy(), true, true);
     }
 
     @After
