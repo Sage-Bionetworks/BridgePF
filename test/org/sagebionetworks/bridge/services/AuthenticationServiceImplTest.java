@@ -6,8 +6,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.List;
-
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
@@ -32,7 +30,6 @@ import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
@@ -68,7 +65,7 @@ public class AuthenticationServiceImplTest {
     
     @Before
     public void before() {
-        session = helper.createUser();
+        session = helper.createUser("test");
     }
     
     @After
@@ -101,8 +98,8 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void signInWhenSignedIn() throws Exception {
-        UserSession session = authService.signIn(helper.getTestStudy(), helper.getUserSignIn());
-        assertEquals("Username is for test2 user", helper.getTestUser().getUsername(), session.getUser().getUsername());
+        UserSession newSession = authService.signIn(helper.getTestStudy(), helper.getSignIn(session));
+        assertEquals("Username is for test2 user", session.getUser().getUsername(), newSession.getUser().getUsername());
     }
 
     @Test
@@ -118,7 +115,7 @@ public class AuthenticationServiceImplTest {
     public void getSessionWhenAuthenticated() throws Exception {
         UserSession newSession = authService.getSession(session.getSessionToken());
 
-        assertEquals("Username is for test2 user", helper.getTestUser().getUsername(), newSession.getUser().getUsername());
+        assertEquals("Username is for test2 user", session.getUser().getUsername(), newSession.getUser().getUsername());
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(newSession.getSessionToken()));
     }
 
@@ -144,7 +141,7 @@ public class AuthenticationServiceImplTest {
         try {
             // Create a user who has not consented.
             TestUser user = new TestUser("authTestUser", "authTestUser@sagebridge.org", "P4ssword");
-            aSession = helper.createUser(user, null, helper.getTestStudy(), false, false);
+            aSession = helper.createUser(user.getSignUp(), helper.getTestStudy(), false, false);
             authService.signIn(helper.getTestStudy(), user.getSignIn());
             fail("Should have thrown consent exception");
         } catch(ConsentRequiredException e) {
@@ -159,7 +156,7 @@ public class AuthenticationServiceImplTest {
              
             Study defaultStudy = helper.getTestStudy();
             Study otherStudy = studyService.getStudyByKey("neurod");
-            authService.signUp(nonDefaultUser.getSignUp(), otherStudy);
+            authService.signUp(nonDefaultUser.getSignUp(), otherStudy, false);
 
             // Should have been saved to this account store, not the default account store.
             Directory directory = stormpathClient.getResource(otherStudy.getStormpathDirectoryHref(), Directory.class);
@@ -176,10 +173,10 @@ public class AuthenticationServiceImplTest {
     public void createResearcherAndSignInWithoutConsentError() {
         UserSession session = null;
         try {
-            TestUser researcher = new TestUser("researcher", "researcher@sagebridge.org", "P4ssword");
-            List<String> roles = Lists.newArrayList(helper.getTestStudy().getResearcherRole());
+            TestUser researcher = new TestUser("researcher", "researcher@sagebridge.org", "P4ssword", helper
+                    .getTestStudy().getResearcherRole());
             
-            helper.createUser(researcher, roles, helper.getTestStudy(), false, false);
+            helper.createUser(researcher.getSignUp(), helper.getTestStudy(), false, false);
             
             session = authService.signIn(helper.getTestStudy(), researcher.getSignIn());
             // no exception should have been thrown.
@@ -193,10 +190,9 @@ public class AuthenticationServiceImplTest {
     public void createAdminAndSignInWithoutConsentError() {
         UserSession session = null;
         try {
-            TestUser researcher = new TestUser("adminer", "adminer@sagebridge.org", "P4ssword");
-            List<String> roles = Lists.newArrayList(BridgeConstants.ADMIN_GROUP);
+            TestUser researcher = new TestUser("adminer", "adminer@sagebridge.org", "P4ssword", BridgeConstants.ADMIN_GROUP);
 
-            helper.createUser(researcher, roles, helper.getTestStudy(), false, false);
+            helper.createUser(researcher.getSignUp(), helper.getTestStudy(), false, false);
             
             session = authService.signIn(helper.getTestStudy(), researcher.getSignIn());
             // no exception should have been thrown.

@@ -4,14 +4,16 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.models.SignIn;
+import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+
+import com.google.common.collect.Lists;
 
 /**
  * A support class that can be injected into any SpringJUnit4ClassRunner test that needs to create a test user before
@@ -21,11 +23,11 @@ import org.sagebionetworks.bridge.services.UserAdminService;
  */
 public class TestUserAdminHelper {
 
+    private static final String PASSWORD = "P4ssword";
+    
     UserAdminService userAdminService;
     AuthenticationService authService;
     StudyService studyService;
-
-    private TestUser testUser = new TestUser("tester", "support@sagebase.org", "P4ssword");
 
     public void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
@@ -39,22 +41,23 @@ public class TestUserAdminHelper {
         this.studyService = studyService;
     }
 
-    public UserSession createUser() {
-        return createUser(testUser);
-    }
-
-    public UserSession createUser(TestUser user) {
-        Study study = studyService.getStudyByKey(TEST_STUDY_KEY);
-        return userAdminService.createUser(testUser.getSignUp(), null, study, true, true);
+    public UserSession createUser(String tag) {
+        return createUser(tag, Lists.<String>newArrayList());
     }
     
-    public UserSession createUser(List<String> roles) {
-        Study study = studyService.getStudyByKey(TEST_STUDY_KEY);
-        return userAdminService.createUser(testUser.getSignUp(), roles, study, true, true);
+    public UserSession createUser(String tag, List<String> roles) {
+        return createUser(tag, roles, true, true);
     }
     
-    public UserSession createUser(TestUser user, List<String> roles, Study study, boolean signIn, boolean consent) {
-        return userAdminService.createUser(user.getSignUp(), roles, study, signIn, consent);
+    public UserSession createUser(String tag, List<String> roles, boolean signIn, boolean consent) {
+        String[] rolesArray = (roles == null) ? null : roles.toArray(new String[] {});
+        SignUp signUp = new SignUp(tag, tag + "@sagebridge.org", PASSWORD, rolesArray);
+        Study study = studyService.getStudyByKey(TEST_STUDY_KEY);
+        return createUser(signUp, study, signIn, consent);
+    }
+    
+    public UserSession createUser(SignUp signUp, Study study, boolean signIn, boolean consent) {
+        return userAdminService.createUser(signUp, study, signIn, consent);
     }
     
     public void deleteUser(UserSession session) {
@@ -63,17 +66,21 @@ public class TestUserAdminHelper {
             userAdminService.deleteUser(session.getUser());    
         }
     }
+    
+    public String getPassword() {
+        return PASSWORD;
+    }
 
     public Study getTestStudy() {
         return studyService.getStudyByKey(TEST_STUDY_KEY);
     }
 
-    public SignIn getUserSignIn() {
-        return testUser.getSignIn();
+    public SignIn getSignIn(UserSession session) {
+        return new SignIn(session.getUser().getUsername(), PASSWORD);
     }
-
-    public TestUser getTestUser() {
-        return testUser;
+    
+    public SignIn getSignIn(UserSession session, String password) {
+        return new SignIn(session.getUser().getUsername(), password);
     }
 
     public UserProfile getUserProfile(UserSession session) {

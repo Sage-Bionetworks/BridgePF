@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import java.util.List;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -32,6 +34,8 @@ import com.stormpath.sdk.authc.UsernamePasswordRequest;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
+import com.stormpath.sdk.group.Group;
+import com.stormpath.sdk.group.GroupList;
 import com.stormpath.sdk.resource.ResourceException;
 
 public class AuthenticationServiceImpl implements AuthenticationService {
@@ -131,7 +135,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void signUp(SignUp signUp, Study study) throws BridgeServiceException {
+    public void signUp(SignUp signUp, Study study, boolean sendEmail) throws BridgeServiceException {
         if (study == null) {
             throw new BadRequestException("Study object is required");
         } else if (StringUtils.isBlank(study.getStormpathDirectoryHref())) {
@@ -154,7 +158,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             account.setEmail(signUp.getEmail());
             account.setUsername(signUp.getUsername());
             account.setPassword(signUp.getPassword());
-            directory.createAccount(account);
+            directory.createAccount(account, sendEmail);
+            
+            addAccountToGroups(directory, account, signUp.getRoles());
+            
             // Assign a health code
             CustomData customData = account.getCustomData();
             HealthId healthId = healthCodeService.create();
@@ -162,6 +169,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             customData.put(healthIdKey, healthCodeEncryptor.encrypt(healthId.getId()));
             customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
             customData.save();
+            
         } catch (ResourceException re) {
             throw new BadRequestException(re.getDeveloperMessage());
         }
@@ -225,9 +233,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BadRequestException(e.getDeveloperMessage());
         }
     }
-
-    private UserSession createSessionFromAccount(Study study, Account account) {
-
+    
+    public UserSession createSessionFromAccount(Study study, Account account) {
         final UserSession session = new UserSession();
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment().getEnvName());
@@ -261,5 +268,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         session.setUser(user);
         return session;
+    }
+    
+    
+    
+    private void addAccountToGroups(Directory directory, Account account, List<String> roles) {
+        if (roles != null) {
+            GroupList groups = directory.getGroups();
+            for (Group group : groups) {
+                if (roles.contains(group.getName())) {
+                    account.addGroup(group);
+                }
+            }
+        }
     }
 }
