@@ -12,15 +12,24 @@ public class TestConstants {
         private final String username;
         private final String email;
         private final String password;
+        private final String[] roles;
 
         public TestUser(String username, String email, String password) {
             String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
             this.username = prefix + username;
             this.email = prefix + email;
             this.password = password;
+            this.roles = null;
+        }
+        public TestUser(String username, String email, String password, String... roles) {
+            String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
+            this.username = prefix + username;
+            this.email = prefix + email;
+            this.password = password;
+            this.roles = roles;
         }
         public SignUp getSignUp() {
-            return new SignUp(username, email, password);
+            return new SignUp(username, email, password, roles);
         }
         public SignIn getSignIn() {
             return new SignIn(username, password);

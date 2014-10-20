@@ -44,7 +44,7 @@ public class UserProfileControllerTest {
     
     @Before
     public void before() {
-        session = helper.createUser();
+        session = helper.createUser("test");
     }
     
     @After

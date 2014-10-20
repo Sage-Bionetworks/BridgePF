@@ -15,12 +15,12 @@ public interface AuthenticationService {
 
     public UserSession getSession(String sessionToken);
 
-    public UserSession signIn(Study study, SignIn signIn) 
-        throws ConsentRequiredException, EntityNotFoundException, BridgeServiceException;
+    public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException,
+            BridgeServiceException;
 
     public void signOut(String sessionToken);
 
-    public void signUp(SignUp signUp, Study study) throws BridgeServiceException;
+    public void signUp(SignUp signUp, Study study, boolean sendEmail) throws BridgeServiceException;
 
     public UserSession verifyEmail(Study study, EmailVerification verification) 
         throws ConsentRequiredException, BridgeServiceException;
@@ -28,4 +28,5 @@ public interface AuthenticationService {
     public void requestResetPassword(Email email) throws BridgeServiceException;
 
     public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException;
+    
 }

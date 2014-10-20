@@ -1,7 +1,7 @@
 package controllers;
 
+import static org.apache.commons.httpclient.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.commons.httpclient.HttpStatus.SC_CREATED;
-import static org.apache.commons.httpclient.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.CONSENT_URL;
@@ -42,7 +42,7 @@ public class ConsentControllerTest {
     
     @Before
     public void before() {
-        session = helper.createUser();
+        session = helper.createUser("test");
     }
 
     @After
@@ -57,33 +57,28 @@ public class ConsentControllerTest {
             public void testCode() throws Exception {
 
                 // Helper's user is already consented, so consenting again should fail.
-                Response giveConsentFail = TestUtils.getURL(session.getSessionToken(), CONSENT_URL)
-                                                .post("")
-                                                .get(TIMEOUT);
-                assertEquals("give Consent fails with 500", SC_INTERNAL_SERVER_ERROR, giveConsentFail.getStatus());
+                Response giveConsentFail = TestUtils.getURL(session.getSessionToken(), CONSENT_URL).post("")
+                        .get(TIMEOUT);
+                assertEquals("give Consent fails with 400", SC_BAD_REQUEST, giveConsentFail.getStatus());
 
                 // Consenting turns data sharing on by default, so check that we can suspend sharing.
-                Response suspendDataSharing = TestUtils.getURL(session.getSessionToken(), SUSPEND_URL)
-                                                .post("")
-                                                .get(TIMEOUT);
+                Response suspendDataSharing = TestUtils.getURL(session.getSessionToken(), SUSPEND_URL).post("")
+                        .get(TIMEOUT);
                 assertEquals("suspendDataSharing succeeds with 200", SC_OK, suspendDataSharing.getStatus());
 
                 // We've suspended data sharing, now check to see if we can resume data sharing.
-                Response resumeDataSharing = TestUtils.getURL(session.getSessionToken(), RESUME_URL)
-                                                .post("")
-                                                .get(TIMEOUT);
+                Response resumeDataSharing = TestUtils.getURL(session.getSessionToken(), RESUME_URL).post("")
+                        .get(TIMEOUT);
                 assertEquals("resumeDataSharing succeeds with 200", SC_OK, resumeDataSharing.getStatus());
 
                 // Resume data sharing should be idempotent.
-                resumeDataSharing = TestUtils.getURL(session.getSessionToken(), RESUME_URL)
-                                                .post("")
-                                                .get(TIMEOUT);
+                resumeDataSharing = TestUtils.getURL(session.getSessionToken(), RESUME_URL).post("").get(TIMEOUT);
                 assertEquals("resumeDataSharing succeeds with 200", SC_OK, resumeDataSharing.getStatus());
 
                 UserSession session = null;
                 try {
                     TestUser user = new TestUser("johnsmith", "johnsmith@sagebridge.org", "password");
-                    session = helper.createUser(user, null, helper.getTestStudy(), true, false);
+                    session = helper.createUser(user.getSignUp(), helper.getTestStudy(), true, false);
                     
                     // Consent new user again
                     ObjectNode node = JsonNodeFactory.instance.objectNode();
@@ -91,8 +86,7 @@ public class ConsentControllerTest {
                     node.put("birthdate", DateUtils.getISODate((new DateTime()).minusYears(20)));
 
                     Response giveConsentSuccess = TestUtils.getURL(session.getSessionToken(), CONSENT_URL)
-                                                    .post(node.toString())
-                                                    .get(TIMEOUT);
+                            .post(node.toString()).get(TIMEOUT);
                     assertEquals("Give consent succeeds with 201", SC_CREATED, giveConsentSuccess.getStatus());
                 } finally {
                     helper.deleteUser(session);
