@@ -110,13 +110,15 @@ public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
         return node;
     }
     public void setData(ObjectNode data) {
-        try {
-            String typeName = JsonUtils.asText(data, "type");
-            String className = BridgeConstants.SCHEDULE_STRATEGY_PACKAGE + typeName;
-            Class<?> clazz = Class.forName(className);
-            strategy = (ScheduleStrategy)BridgeObjectMapper.get().treeToValue(data, clazz);
-        } catch (JsonProcessingException | ClassNotFoundException e) {
-            throw new BridgeServiceException(e);
+        if (data != null) {
+            try {
+                String typeName = JsonUtils.asText(data, "type");
+                String className = BridgeConstants.SCHEDULE_STRATEGY_PACKAGE + typeName;
+                Class<?> clazz = Class.forName(className);
+                strategy = (ScheduleStrategy)BridgeObjectMapper.get().treeToValue(data, clazz);
+            } catch (JsonProcessingException | ClassNotFoundException e) {
+                throw new BridgeServiceException(e);
+            }
         }
     }
     @Override

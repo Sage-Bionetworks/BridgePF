@@ -412,6 +412,9 @@
     
     <bean id="schedulePlanService" class="org.sagebionetworks.bridge.services.SchedulePlanServiceImpl">
         <property name="schedulePlanDao" ref="schedulePlanDao"/>
+        <property name="validator">
+            <bean class="org.sagebionetworks.bridge.validators.SpringSchedulePlanValidator"/>
+        </property>
     </bean>
     
     <bean id="studyConsentBootstrapper" class="org.sagebionetworks.bridge.StudyConsentBootstrapper">
