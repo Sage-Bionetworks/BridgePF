@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
-import org.joda.time.PeriodType;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.joda.time.format.ISOPeriodFormat;
@@ -150,7 +149,7 @@ public final class DateUtils {
         if (StringUtils.isNotBlank(duration)) {
             Period period = periodFmt.parsePeriod(duration);
             if (period != null) {
-                return new Long(period.normalizedStandard(PeriodType.millis()).getMillis());    
+                return period.toStandardDuration().getMillis();
             }
         }
         return null;

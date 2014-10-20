@@ -2,27 +2,17 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.EnumSet;
 
-import org.sagebionetworks.bridge.validators.Messages;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 public class DecimalConstraints extends Constraints {
     
-    private static EnumSet<UIHint> UI_HINTS = EnumSet.of(UIHint.NUMBERFIELD, UIHint.SLIDER);
-
     private Double minValue;
     private Double maxValue;
     private Double step;
     
     public DecimalConstraints() {
         setDataType(DataType.DECIMAL);
+        setSupportedHints(EnumSet.of(UIHint.NUMBERFIELD, UIHint.SLIDER));
     }
     
-    @Override
-    @JsonIgnore
-    public EnumSet<UIHint> getSupportedHints() {
-        return UI_HINTS;
-    }
     public Double getMinValue() {
         return minValue;
     }
@@ -40,18 +30,6 @@ public class DecimalConstraints extends Constraints {
     }
     public void setStep(Double step) {
         this.step = step;
-    }
-    public void validate(Messages messages, SurveyAnswer answer) {
-        double value = (Double)answer.getAnswer();
-        if (minValue != null && value < minValue) {
-            messages.add("it is lower than the minimum value of %s", minValue);
-        }
-        if (maxValue != null && value > maxValue) {
-            messages.add("it is higher than the maximum value of %s", maxValue);
-        }
-        if (step != null && value % step != 0) {
-            messages.add("it is not a step value of %s", step);
-        }
     }
 
     @Override
@@ -89,11 +67,6 @@ public class DecimalConstraints extends Constraints {
         } else if (!step.equals(other.step))
             return false;
         return true;
-    }
-
-    @Override
-    public String toString() {
-        return "DecimalConstraints [minValue=" + minValue + ", maxValue=" + maxValue + ", step=" + step + "]";
     }
 
 }

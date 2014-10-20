@@ -114,6 +114,7 @@
         <property name="distributedLockDao" ref="distributedLockDao"/>
         <property name="schedulePlanDao" ref="schedulePlanDao"/>
         <property name="scheduleDao" ref="scheduleDao"/>
+        <property name="consentService" ref="consentService"/>
         <property name="studyService" ref="studyService"/>
     </bean>
 

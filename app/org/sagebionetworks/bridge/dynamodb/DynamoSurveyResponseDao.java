@@ -143,7 +143,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         Map<String,SurveyQuestion> questions = getQuestionsMap(survey);
         for (int i=0; i < answers.size(); i++) {
             SurveyAnswer answer = answers.get(i);
-            SurveyAnswerValidator validator = new SurveyAnswerValidator(questions.get(answer.getQuestionGuid()), i);
+            SurveyAnswerValidator validator = new SurveyAnswerValidator(questions.get(answer.getQuestionGuid()));
             validator.validate(answer);
         }
         

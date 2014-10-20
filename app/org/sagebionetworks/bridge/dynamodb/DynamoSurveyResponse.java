@@ -169,7 +169,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
     public ObjectNode getData() {
         ObjectNode data = JsonNodeFactory.instance.objectNode();
-        data.put(ANSWERS_PROPERTY, BridgeObjectMapper.get().valueToTree(answers));
+        data.set(ANSWERS_PROPERTY, BridgeObjectMapper.get().valueToTree(answers));
         return data;
     }
     public void setData(ObjectNode data) {
