@@ -20,6 +20,8 @@ public class SpringSchedulePlanValidator implements Validator {
         }
         if (plan.getStrategy() == null) {
             errors.rejectValue("strategy", "requires a strategy object");
+        } else {
+            plan.getStrategy().validate(errors);
         }
     }
 

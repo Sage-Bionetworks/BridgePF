@@ -16,7 +16,6 @@ public class TestUtils {
             try {
                 testCode();
             } catch (Exception e) {
-                // there is no fail(e);
                 throw new RuntimeException(e);
             }
         }

@@ -6,7 +6,7 @@ import java.util.List;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.validators.Messages;
+import org.springframework.validation.Errors;
 
 import com.google.common.collect.Lists;
 
@@ -46,9 +46,9 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
         return schedules;
     }
     @Override
-    public void validate(Messages messages) {
+    public void validate(Errors errors) {
         if (schedule == null) {
-            messages.add("simple schedule plan is missing a schedule");
+            errors.reject("simple schedule plan is missing a schedule");
         }
     }
 

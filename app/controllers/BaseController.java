@@ -14,7 +14,7 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.AuthenticationServiceImpl;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import play.libs.Json;
@@ -32,7 +32,7 @@ public abstract class BaseController extends Controller {
 
     private static ObjectMapper mapper = BridgeObjectMapper.get();
     
-    protected AuthenticationService authenticationService;
+    protected AuthenticationServiceImpl authenticationService;
     protected StudyService studyService;
     protected CacheProvider cacheProvider;
     
@@ -40,7 +40,7 @@ public abstract class BaseController extends Controller {
         this.studyService = studyService;
     }
 
-    public void setAuthenticationService(AuthenticationService authenticationService) {
+    public void setAuthenticationService(AuthenticationServiceImpl authenticationService) {
         this.authenticationService = authenticationService;
     }
 

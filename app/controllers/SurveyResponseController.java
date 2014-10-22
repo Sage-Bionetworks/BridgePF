@@ -3,7 +3,6 @@ package controllers;
 import java.io.IOException;
 import java.util.List;
 
-import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -11,6 +10,7 @@ import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
+import org.sagebionetworks.bridge.services.SurveyResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,10 +23,10 @@ public class SurveyResponseController extends BaseController {
 
     private static Logger logger = LoggerFactory.getLogger(SurveyResponseController.class);
     
-    private SurveyResponseDao responseDao;
+    private SurveyResponseService responseService;
     
-    public void setSurveyResponseDao(SurveyResponseDao responseDao) {
-        this.responseDao = responseDao;
+    public void setSurveyResponseService(SurveyResponseService responseService) {
+        this.responseService = responseService;
     }
     
     public Result createSurveyResponse(String surveyGuid, String surveyVersionString) throws Exception {
@@ -34,7 +34,7 @@ public class SurveyResponseController extends BaseController {
         List<SurveyAnswer> answers = deserializeSurveyAnswers();
         Long surveyVersion = DateUtils.convertToMillisFromEpoch(surveyVersionString);
         
-        SurveyResponse response = responseDao.createSurveyResponse(
+        SurveyResponse response = responseService.createSurveyResponse(
             surveyGuid, surveyVersion, session.getUser().getHealthDataCode(), answers);
         return createdResult(new GuidHolder(response.getGuid()));
     }
@@ -48,14 +48,14 @@ public class SurveyResponseController extends BaseController {
         SurveyResponse response = getSurveyResponseIfAuthorized(guid);
         
         List<SurveyAnswer> answers = deserializeSurveyAnswers();
-        responseDao.appendSurveyAnswers(response, answers);
+        responseService.appendSurveyAnswers(response, answers);
         return okResult("Survey response updated.");
     }
     
     public Result deleteSurveyResponse(String guid) {
         SurveyResponse response = getSurveyResponseIfAuthorized(guid);
         
-        responseDao.deleteSurveyResponse(response);
+        responseService.deleteSurveyResponse(response);
         return okResult("Survey response deleted.");
     }
 
@@ -67,7 +67,7 @@ public class SurveyResponseController extends BaseController {
 
     private SurveyResponse getSurveyResponseIfAuthorized(String guid) {
         UserSession session = getAuthenticatedAndConsentedSession();
-        SurveyResponse response = responseDao.getSurveyResponse(guid);
+        SurveyResponse response = responseService.getSurveyResponse(guid);
         if (!response.getHealthCode().equals(session.getUser().getHealthDataCode())) {
             logger.error("Blocked attempt to access survey response (mismatched health data codes) from user " + session.getUser().getId());
             throw new UnauthorizedException();

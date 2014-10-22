@@ -4,6 +4,8 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.TestConstants.TestUser;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
@@ -50,6 +52,10 @@ public class TestUserAdminHelper {
     }
     
     public UserSession createUser(String tag, List<String> roles, boolean signIn, boolean consent) {
+        String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
+        if (!tag.contains(prefix)) {
+            tag = prefix + tag;
+        }
         String[] rolesArray = (roles == null) ? null : roles.toArray(new String[] {});
         SignUp signUp = new SignUp(tag, tag + "@sagebridge.org", PASSWORD, rolesArray);
         Study study = studyService.getStudyByKey(TEST_STUDY_KEY);

@@ -10,7 +10,6 @@ import javax.annotation.Resource;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
@@ -21,15 +20,12 @@ import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoScheduleDaoTest {
 
-    ObjectMapper mapping = new ObjectMapper();
-    
     @Resource
     DynamoScheduleDao scheduleDao;
     
@@ -45,23 +41,6 @@ public class DynamoScheduleDaoTest {
         study = studyService.getStudyByKey(TEST_STUDY_KEY);
     }
     
-    @Test(expected = InvalidEntityException.class)
-    public void testInvalidScheduleIsRejected() {
-        User user = new User();
-        user.setId("test-user");
-        
-        DynamoSchedulePlan plan = new DynamoSchedulePlan();
-        plan.setGuid("test-plan-id");
-
-        Schedule schedule = createSchedule(study, user, plan, "Patient Assessment of Chronic Illness Care Survey",
-                "http://bridge-uat.herokuapp.com/api/v1/surveys/ecf7e761-c7e9-4bb6-b6e7-d6d15c53b209/2014-09-25T20:07:49.186Z");
-        schedule.setScheduleType(ScheduleType.ONCE);
-        
-        List<Schedule> list = Lists.newArrayList(schedule);
-        
-        scheduleDao.createSchedules(list);
-    }
-
     @Test
     public void crudSchedules() {
         User user = new User();

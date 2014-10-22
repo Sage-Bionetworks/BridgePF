@@ -98,7 +98,6 @@ public class SurveyControllerTest {
     public void saveAndRetrieveASurvey() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
-                
                 GuidVersionHolder keys = createSurvey(researcherSession.getSessionToken(), "Name");
                 
                 JsonNode node = getSurvey(researcherSession.getSessionToken(), keys);
@@ -184,7 +183,7 @@ public class SurveyControllerTest {
                 GuidVersionHolder keys = createSurvey(researcherSession.getSessionToken(), "Name");
                 ObjectNode node = (ObjectNode)getSurvey(researcherSession.getSessionToken(), keys);
                 node.put("name", "Name Changed");
-                
+
                 // Check all the types while we have a complete survey
                 assertEquals("Type is Survey", "Survey", node.get("type").asText());
                 JsonNode questions = node.get("questions");
