@@ -49,8 +49,8 @@ public class DynamoInitializerTest {
         assertEquals(4, table.getAttributeDefinitions().size());
         assertEquals(2, table.getLocalSecondaryIndexes().size());
         assertEquals(0, table.getGlobalSecondaryIndexes().size());
-        assertEquals(10L, table.getProvisionedThroughput().getReadCapacityUnits().longValue());
-        assertEquals(5L, table.getProvisionedThroughput().getWriteCapacityUnits().longValue());
+        assertEquals(25L, table.getProvisionedThroughput().getReadCapacityUnits().longValue());
+        assertEquals(20L, table.getProvisionedThroughput().getWriteCapacityUnits().longValue());
     }
 
     @Test
@@ -114,8 +114,8 @@ public class DynamoInitializerTest {
         assertNotNull(attributes);
         assertEquals(4, attributes.size());
         // Throughput
-        assertEquals(10L, request.getProvisionedThroughput().getReadCapacityUnits().longValue());
-        assertEquals(5L, request.getProvisionedThroughput().getWriteCapacityUnits().longValue());
+        assertEquals(25L, request.getProvisionedThroughput().getReadCapacityUnits().longValue());
+        assertEquals(20L, request.getProvisionedThroughput().getWriteCapacityUnits().longValue());
     }
 
     @Test
