@@ -18,7 +18,7 @@ import org.springframework.validation.Validator;
 
 import com.google.common.collect.Sets;
 
-public class SpringSurveyValidator implements Validator {
+public class SurveyValidator implements Validator {
 
     @Override
     public boolean supports(Class<?> clazz) {

@@ -25,7 +25,7 @@ import org.springframework.validation.Validator;
 
 import com.google.common.collect.Sets;
 
-public class SpringSurveyAnswerValidator implements Validator {
+public class SurveyAnswerValidator implements Validator {
 
     private static final long FIVE_MINUTES = 5 * 60 * 1000;
     
@@ -41,7 +41,7 @@ public class SpringSurveyAnswerValidator implements Validator {
 
     private SurveyQuestion question;
     
-    public SpringSurveyAnswerValidator(SurveyQuestion question) {
+    public SurveyAnswerValidator(SurveyQuestion question) {
         this.question = question;
     }
     
