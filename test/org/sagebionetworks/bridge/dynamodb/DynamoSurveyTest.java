@@ -6,7 +6,7 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
-import org.sagebionetworks.bridge.validators.SpringSurveyValidator;
+import org.sagebionetworks.bridge.validators.SurveyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,7 +22,7 @@ public class DynamoSurveyTest {
     
     @Test
     public void yetAnotherSerializationTest() throws Exception {
-        SpringSurveyValidator validator = new SpringSurveyValidator();
+        SurveyValidator validator = new SurveyValidator();
         DynamoSurvey survey = new TestSurvey(false);
         try {
             Validate.entityThrowingException(validator, survey);

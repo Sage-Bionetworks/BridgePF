@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
-import org.sagebionetworks.bridge.validators.SpringSurveyAnswerValidator;
+import org.sagebionetworks.bridge.validators.SurveyAnswerValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.base.Function;
@@ -56,7 +56,7 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
         Map<String, SurveyQuestion> questions = getQuestionsMap(survey);
         for (int i = 0; i < answers.size(); i++) {
             SurveyAnswer answer = answers.get(i);
-            SpringSurveyAnswerValidator validator = new SpringSurveyAnswerValidator(questions.get(answer
+            SurveyAnswerValidator validator = new SurveyAnswerValidator(questions.get(answer
                     .getQuestionGuid()));
             Validate.entityThrowingException(validator, answer);
         }

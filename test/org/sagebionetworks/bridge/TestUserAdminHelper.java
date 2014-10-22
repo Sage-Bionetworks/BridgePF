@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;

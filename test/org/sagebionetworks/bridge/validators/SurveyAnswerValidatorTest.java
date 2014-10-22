@@ -24,9 +24,9 @@ import org.sagebionetworks.bridge.models.surveys.TimeConstraints;
 
 import com.google.common.collect.Lists;
 
-public class SpringSurveyAnswerValidatorTest {
+public class SurveyAnswerValidatorTest {
 
-    private SpringSurveyAnswerValidator validator;
+    private SurveyAnswerValidator validator;
     
     private DynamoSurveyQuestion createQuestion(Constraints constraints) {
         DynamoSurveyQuestion question = new DynamoSurveyQuestion();
@@ -67,7 +67,7 @@ public class SpringSurveyAnswerValidatorTest {
     @Test(expected = InvalidEntityException.class)
     public void validateDataType() {
         BooleanConstraints constraints = new BooleanConstraints();
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("This is not a boolean");
         Validate.entityThrowingException(validator, answer);
@@ -76,7 +76,7 @@ public class SpringSurveyAnswerValidatorTest {
     @Test
     public void validateBoolean() {
         BooleanConstraints constraints = new BooleanConstraints();
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("true");
         Validate.entityThrowingException(validator, answer);
@@ -85,7 +85,7 @@ public class SpringSurveyAnswerValidatorTest {
     public void validateDateAllowFuture() {
         DateConstraints constraints = new DateConstraints();
         constraints.setAllowFuture(true);
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         Long future = DateTime.now().plusMonths(1).getMillis();
         
         Validate.entityThrowingException(validator, createAnswer(DateUtils.convertToISODateTime(future)));
@@ -95,7 +95,7 @@ public class SpringSurveyAnswerValidatorTest {
     public void validateDateDoNotAllowFutrue() {
         DateConstraints constraints = new DateConstraints();
         constraints.setAllowFuture(false);
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         Long future = DateTime.now().plusMonths(1).getMillis();
         
         Validate.entityThrowingException(validator, createAnswer(DateUtils.convertToISODateTime(future)));
@@ -104,7 +104,7 @@ public class SpringSurveyAnswerValidatorTest {
     public void validateDateTimeAllowFuture() {
         DateTimeConstraints constraints = new DateTimeConstraints();
         constraints.setAllowFuture(true);
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         Long future = DateTime.now().plusMonths(1).getMillis();
         
         Validate.entityThrowingException(validator, createAnswer(DateUtils.convertToISODateTime(future)));
@@ -113,7 +113,7 @@ public class SpringSurveyAnswerValidatorTest {
     public void validateDateTimeDoNotAllowFuture() {
         DateTimeConstraints constraints = new DateTimeConstraints();
         constraints.setAllowFuture(false);
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         Long future = DateTime.now().plusMonths(1).getMillis();
         
         Validate.entityThrowingException(validator, createAnswer(DateUtils.convertToISODateTime(future)));
@@ -122,7 +122,7 @@ public class SpringSurveyAnswerValidatorTest {
     public void validateDecimalMinValue() {
         DecimalConstraints constraints = new DecimalConstraints();
         constraints.setMinValue(10d);
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         Validate.entityThrowingException(validator, createAnswer("5.001"));
     }
@@ -130,7 +130,7 @@ public class SpringSurveyAnswerValidatorTest {
     public void validateDecimalMaxValue() {
         DecimalConstraints constraints = new DecimalConstraints();
         constraints.setMaxValue(10d);
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         Validate.entityThrowingException(validator, createAnswer("15.0"));
     }
@@ -139,14 +139,14 @@ public class SpringSurveyAnswerValidatorTest {
     public void validateDecimalStep() {
         DecimalConstraints constraints = new DecimalConstraints();
         constraints.setStep(5d);
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         Validate.entityThrowingException(validator, createAnswer("12.00"));
     }
     @Test(expected = InvalidEntityException.class)
     public void validateDuration() {
         DurationConstraints constraints = new DurationConstraints();
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("14000");
         Validate.entityThrowingException(validator, answer);
@@ -155,7 +155,7 @@ public class SpringSurveyAnswerValidatorTest {
     public void validateIntegerMinValue() {
         IntegerConstraints constraints = new IntegerConstraints();
         constraints.setMinValue(15L);
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("10");
         Validate.entityThrowingException(validator, answer);
@@ -164,7 +164,7 @@ public class SpringSurveyAnswerValidatorTest {
     public void validateIntegerMaxValue() {
         IntegerConstraints constraints = new IntegerConstraints();
         constraints.setMaxValue(10L);
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
 
         SurveyAnswer answer = createAnswer("12");
         Validate.entityThrowingException(validator, answer);
@@ -172,7 +172,7 @@ public class SpringSurveyAnswerValidatorTest {
     @Test
     public void validateIntegerNoConstraints() {
         IntegerConstraints constraints = new IntegerConstraints();
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("12");
         Validate.entityThrowingException(validator, answer);
@@ -182,7 +182,7 @@ public class SpringSurveyAnswerValidatorTest {
         MultiValueConstraints constraints = new MultiValueConstraints();
         constraints.setDataType(DataType.INTEGER);
         constraints.setEnumeration( getOptions() );
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("6");
         Validate.entityThrowingException(validator, answer);
@@ -193,7 +193,7 @@ public class SpringSurveyAnswerValidatorTest {
         constraints.setDataType(DataType.INTEGER);
         constraints.setAllowOther(true);
         constraints.setEnumeration( getOptions() );
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         // The only validation that can happen is type, so any value is okay here
         SurveyAnswer answer = createAnswer("6");
@@ -205,7 +205,7 @@ public class SpringSurveyAnswerValidatorTest {
         constraints.setDataType(DataType.INTEGER);
         constraints.setAllowMultiple(true);
         constraints.setEnumeration( getOptions() );
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswers(Lists.<String>newArrayList("1", "2"));
         Validate.entityThrowingException(validator, answer);
@@ -218,7 +218,7 @@ public class SpringSurveyAnswerValidatorTest {
         constraints.setAllowMultiple(true);
         constraints.setAllowOther(true);
         constraints.setEnumeration( getOptions() );
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         // The only validation that can happen is type, so any value is okay here
         SurveyAnswer answer = createAnswers(Lists.<String>newArrayList("1", "2", "10"));
@@ -228,7 +228,7 @@ public class SpringSurveyAnswerValidatorTest {
     public void validateStringTooShort() {
         StringConstraints constraints = new StringConstraints();
         constraints.setMinLength(5);
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("axe");
         Validate.entityThrowingException(validator, answer);
@@ -237,7 +237,7 @@ public class SpringSurveyAnswerValidatorTest {
     public void validateStringTooLong() {
         StringConstraints constraints = new StringConstraints();
         constraints.setMaxLength(5);
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("belgium");
         Validate.entityThrowingException(validator, answer);
@@ -246,7 +246,7 @@ public class SpringSurveyAnswerValidatorTest {
     public void validateStringFailsPatternMatch() {
         StringConstraints constraints = new StringConstraints();
         constraints.setPattern("\\d{3}-\\d{3}-\\d{4}");
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("123-a67-9870");
         Validate.entityThrowingException(validator, answer);
@@ -254,7 +254,7 @@ public class SpringSurveyAnswerValidatorTest {
     @Test(expected = InvalidEntityException.class)
     public void validateInvalidTime() {
         TimeConstraints constraints = new TimeConstraints();
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("asdf");
         Validate.entityThrowingException(validator, answer);
@@ -262,7 +262,7 @@ public class SpringSurveyAnswerValidatorTest {
     @Test
     public void validateTime() {
         TimeConstraints constraints = new TimeConstraints();
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("13:00"); // no seconds, that's okay
         Validate.entityThrowingException(validator, answer);
@@ -270,7 +270,7 @@ public class SpringSurveyAnswerValidatorTest {
     @Test(expected = InvalidEntityException.class)
     public void validateTimeWithTimeZone() {
         TimeConstraints constraints = new TimeConstraints();
-        validator = new SpringSurveyAnswerValidator(createQuestion(constraints));
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("13:47:30Z"); // time zone, verboten
         Validate.entityThrowingException(validator, answer);

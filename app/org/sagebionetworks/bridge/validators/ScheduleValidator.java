@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-public class SpringScheduleValidator implements Validator {
+public class ScheduleValidator implements Validator {
 
     @Override
     public boolean supports(Class<?> clazz) {
