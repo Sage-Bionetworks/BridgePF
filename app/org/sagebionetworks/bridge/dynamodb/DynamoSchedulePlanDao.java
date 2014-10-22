@@ -1,8 +1,12 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.events.SchedulePlanCreatedEvent;
@@ -45,6 +49,9 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
     
     @Override
     public List<SchedulePlan> getSchedulePlans(Study study) {
+        checkNotNull(study, "Study is null");
+        checkArgument(StringUtils.isNotBlank(study.getKey()), "Study key is null");
+        
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setStudyKey(study.getKey());
         
@@ -57,6 +64,10 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
     
     @Override
     public SchedulePlan getSchedulePlan(Study study, String guid) {
+        checkNotNull(study, "Study is null");
+        checkArgument(StringUtils.isNotBlank(study.getKey()), "Study key is null");
+        checkArgument(StringUtils.isNotBlank(guid), "Plan GUID is blank or null");
+        
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setStudyKey(study.getKey());
         
@@ -78,6 +89,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
 
     @Override
     public SchedulePlan createSchedulePlan(SchedulePlan plan) {
+        checkNotNull(plan, "Schedule plan is null");
+        
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
@@ -87,6 +100,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
 
     @Override
     public SchedulePlan updateSchedulePlan(SchedulePlan plan) {
+        checkNotNull(plan, "Schedule plan is null");
+        
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
         publisher.publishEvent(new SchedulePlanUpdatedEvent(plan));
@@ -95,6 +110,9 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
 
     @Override
     public void deleteSchedulePlan(Study study, String guid) {
+        checkNotNull(study, "Study is null");
+        checkArgument(StringUtils.isNotBlank(guid), "Plan GUID is blank or null");
+        
         SchedulePlan plan = getSchedulePlan(study, guid);
         mapper.delete(plan);
         publisher.publishEvent(new SchedulePlanDeletedEvent(plan));

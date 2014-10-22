@@ -34,6 +34,9 @@ public class SurveyValidator implements Validator {
         if (StringUtils.isBlank(survey.getStudyKey())) {
             errors.reject("missing a study key");
         }
+        if (StringUtils.isBlank(survey.getGuid())) {
+            errors.reject("missing a GUID");
+        }
         validateRules(errors, survey.getQuestions());
         
         for (int i=0; i < survey.getQuestions().size(); i++) {

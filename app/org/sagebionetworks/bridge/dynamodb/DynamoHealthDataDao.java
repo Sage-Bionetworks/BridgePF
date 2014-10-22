@@ -50,9 +50,7 @@ public class DynamoHealthDataDao implements HealthDataDao {
     
     @Override
     public List<HealthDataRecord> appendHealthData(HealthDataKey key, List<HealthDataRecord> records) {
-        for (HealthDataRecord record : records) {
-            record.setRecordId(BridgeUtils.generateGuid());
-        }
+        
         DynamoTransformer transformer = new DynamoTransformer(key.toString());
         List<DynamoHealthDataRecord> dynamoRecords = Lists.transform(records, transformer);
         

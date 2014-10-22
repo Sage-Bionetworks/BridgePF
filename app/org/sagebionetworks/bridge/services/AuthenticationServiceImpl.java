@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
@@ -28,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
+import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
@@ -233,8 +236,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BadRequestException(e.getDeveloperMessage());
         }
     }
-    
-    public UserSession createSessionFromAccount(Study study, Account account) {
+
+    @Override
+    public User getUser(Study study, String email) {
+        Application app = StormpathFactory.createStormpathApplication(stormpathClient);
+        Map<String, Object> queryParams = new HashMap<String, Object>();
+        queryParams.put("email", email);
+        AccountList accounts = app.getAccounts(queryParams);
+
+        if (accounts.iterator().hasNext()) {
+            Account account = accounts.iterator().next();
+            return createSessionFromAccount(study, account).getUser();
+        }
+        return null;
+    }
+   
+    private UserSession createSessionFromAccount(Study study, Account account) {
         final UserSession session = new UserSession();
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment().getEnvName());

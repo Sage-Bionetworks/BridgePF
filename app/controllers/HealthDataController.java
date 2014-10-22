@@ -17,9 +17,17 @@ import org.sagebionetworks.bridge.services.HealthDataService;
 import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
 public class HealthDataController extends BaseController {
+    
+    private static final Function<HealthDataRecord, IdVersionHolder> TRANSFORMER = new Function<HealthDataRecord, IdVersionHolder>() {
+        @Override
+        public IdVersionHolder apply(HealthDataRecord record) {
+            return new IdVersionHolder(record.getRecordId(), record.getVersion());
+        }
+    };
 
     private HealthDataService healthDataService;
 
@@ -44,15 +52,16 @@ public class HealthDataController extends BaseController {
 
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
-        List<IdVersionHolder> ids = healthDataService.appendHealthData(key, records);
-        return okResult(ids);
+        List<HealthDataRecord> updatedRecords = healthDataService.appendHealthData(key, records);
+        
+        return okResult(Lists.transform(updatedRecords, TRANSFORMER));
     }
 
     public Result getHealthData(Long trackerId, String startDate, String endDate) throws Exception {
         if (startDate == null && endDate == null) {
             return getAllHealthData(trackerId);
         }
-        Long start, end;
+        long start, end;
         if (startDate == null) {
             start = -Long.MAX_VALUE;
         } else {

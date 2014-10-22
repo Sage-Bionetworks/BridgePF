@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.UploadRequest;
 
@@ -23,6 +27,9 @@ public class DynamoUploadDao implements UploadDao {
 
     @Override
     public String createUpload(UploadRequest uploadRequest, String healthCode) {
+        checkNotNull(uploadRequest, "Upload request is null");
+        checkArgument(StringUtils.isNotBlank(healthCode), "Health code is null or blank");        
+        
         DynamoUpload upload = new DynamoUpload(uploadRequest, healthCode);
         mapper.save(upload);
         return upload.getUploadId();
@@ -30,6 +37,8 @@ public class DynamoUploadDao implements UploadDao {
 
     @Override
     public String getObjectId(String uploadId) {
+        checkArgument(StringUtils.isNotBlank(uploadId), "Upload ID is null or blank");
+        
         DynamoUpload upload = new DynamoUpload();
         upload.setUploadId(uploadId);
         upload = mapper.load(upload);
@@ -38,6 +47,8 @@ public class DynamoUploadDao implements UploadDao {
 
     @Override
     public void uploadComplete(String uploadId) {
+        checkArgument(StringUtils.isNotBlank(uploadId), "Upload ID is null or blank");
+        
         DynamoUpload upload = new DynamoUpload();
         upload.setUploadId(uploadId);
         upload = mapper.load(upload);
@@ -47,6 +58,8 @@ public class DynamoUploadDao implements UploadDao {
 
     @Override
     public boolean isComplete(String uploadId) {
+        checkArgument(StringUtils.isNotBlank(uploadId), "Upload ID is null or blank");
+        
         DynamoUpload upload = new DynamoUpload();
         upload.setUploadId(uploadId);
         upload = mapper.load(upload);

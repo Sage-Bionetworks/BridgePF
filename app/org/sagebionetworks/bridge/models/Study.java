@@ -79,7 +79,7 @@ public class Study implements BridgeEntity {
     @Override
     public String toString() {
         return "Study [name=" + name + ", key=" + key + ", minAge=" + minAge + ", stormpathDirectoryHref="
-                + stormpathDirectoryHref + ", hostnames=" + hostnames
-                + ", trackers=" + trackers + ", researcherRole=" + researcherRole + "]";
+                + stormpathDirectoryHref + ", hostnames=" + hostnames + ", trackers=" + trackers + ", researcherRole="
+                + researcherRole + "]";
     }
 }

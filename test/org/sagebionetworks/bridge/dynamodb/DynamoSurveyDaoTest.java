@@ -56,7 +56,8 @@ public class DynamoSurveyDaoTest {
 
     // CREATE SURVEY
 
-    @Test(expected = IllegalArgumentException.class)
+    // Not an ideal test, but this is thrown from a precondition, nothing changes
+    @Test(expected = NullPointerException.class) 
     public void createPreventsEmptyStudyKey() {
         testSurvey.setStudyKey(null);
         surveyDao.createSurvey(testSurvey);
