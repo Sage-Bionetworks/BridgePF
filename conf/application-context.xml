@@ -349,6 +349,15 @@
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
         <property name="consentService" ref="consentService" />
+        <property name="signInValidator">
+            <bean class="org.sagebionetworks.bridge.validators.SignInValidator"/>
+        </property>
+        <property name="signUpValidator">
+            <bean class="org.sagebionetworks.bridge.validators.SignUpValidator"/>
+        </property>
+        <property name="passwordResetValidator">
+            <bean class="org.sagebionetworks.bridge.validators.PasswordResetValidator"/>
+        </property>
     </bean>
 
     <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">
@@ -413,7 +422,10 @@
         <property name="healthDataService" ref="healthDataService" />
         <property name="studyService" ref="studyService" />
         <property name="stormpathClient" ref="stormpathClient" />
-        <property name="userLockDao" ref="userLockDao" />
+        <property name="distributedLockDao" ref="distributedLockDao"/>
+        <property name="validator">
+            <bean class="org.sagebionetworks.bridge.validators.SignUpValidator"/>
+        </property>
     </bean>
     
     <bean id="surveyService" class="org.sagebionetworks.bridge.services.SurveyServiceImpl">

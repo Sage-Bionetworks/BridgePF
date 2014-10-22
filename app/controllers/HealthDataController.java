@@ -1,7 +1,5 @@
 package controllers;
 
-import global.JsonSchemaValidator;
-
 import java.util.List;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
@@ -13,6 +11,7 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;
+import org.sagebionetworks.bridge.validators.Validate;
 
 import play.mvc.Result;
 
@@ -39,14 +38,12 @@ public class HealthDataController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         Tracker tracker = study.getTrackerById(trackerId);
-        JsonSchemaValidator validator = new JsonSchemaValidator();
 
         JsonNode node = requestToJSON(request());
-
         List<HealthDataRecord> records = Lists.newArrayListWithCapacity(node.size());
         for (int i = 0; i < node.size(); i++) {
             JsonNode child = node.get(i);
-            validator.validate(tracker, child);
+            Validate.jsonWithSchema(tracker, child);
             records.add(DynamoHealthDataRecord.fromJson(child));
         }
 
@@ -113,7 +110,6 @@ public class HealthDataController extends BaseController {
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
         JsonNode node = requestToJSON(request());
-        new JsonSchemaValidator().validate(tracker, node);
         HealthDataRecord record = DynamoHealthDataRecord.fromJson(node);
 
         IdVersionHolder holder = healthDataService.updateHealthDataRecord(key, record);

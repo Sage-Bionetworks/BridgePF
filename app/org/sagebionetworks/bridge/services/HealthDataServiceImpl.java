@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
@@ -17,15 +18,15 @@ import org.springframework.validation.Validator;
 
 public class HealthDataServiceImpl implements HealthDataService {
     
-    private Validator validator;
     private HealthDataDao healthDataDao;
     
-    public void setValidator(Validator validator) {
-        this.validator = validator;
-    }
+    private Validator validator;
     
     public void setHealthDataDao(HealthDataDao healthDataDao) {
         this.healthDataDao = healthDataDao;
+    }
+    public void setValidator(Validator validator) {
+        this.validator = validator;
     }
     
     @Override
@@ -33,7 +34,7 @@ public class HealthDataServiceImpl implements HealthDataService {
         checkNotNull(key, "HealthDataKey key cannot be null");
         checkNotNull(records, "Health data records cannot be null");
         checkArgument(!records.isEmpty(), "No health data records to add");
-
+        
         for (HealthDataRecord record : records) {
             record.setRecordId(BridgeUtils.generateGuid());
             Validate.entityThrowingException(validator, record);
@@ -78,6 +79,7 @@ public class HealthDataServiceImpl implements HealthDataService {
         checkNotNull(record, "HealthDataRecord cannot be null");
         
         Validate.entityThrowingException(validator, record);
+        
         record = healthDataDao.updateHealthDataRecord(key, record);
         return new IdVersionHolder(record.getRecordId(), record.getVersion());
     }

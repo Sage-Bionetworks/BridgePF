@@ -15,8 +15,6 @@ public class HealthDataRecordValidator implements Validator {
     public void validate(Object object, Errors errors) {
         HealthDataRecord record = (HealthDataRecord)object;
         
-        // TODO: We can do the JsonSchema validation here, which is where you'd look for it.
-        
         /* Totally legal, actually. This is only invalid for searchers.
         if (record.getStartDate() <= 0) {
             errors.rejectValue("startDate", "required and cannot be <= 0");
