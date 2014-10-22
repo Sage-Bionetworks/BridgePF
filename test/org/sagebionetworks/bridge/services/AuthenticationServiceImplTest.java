@@ -16,7 +16,6 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
-import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -36,7 +35,6 @@ import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -45,12 +43,9 @@ public class AuthenticationServiceImplTest {
 
     @Resource
     private AuthenticationServiceImpl authService;
-    
-    @Resource
-    private BridgeEncryptor healthCodeEncryptor;
 
     @Resource
-    private HealthCodeService healthCodeService;
+    private AccountEncryptionService accountEncryptionService;
 
     @Resource
     private StudyServiceImpl studyService;
@@ -230,20 +225,6 @@ public class AuthenticationServiceImplTest {
     }
 
     private boolean hasHealthCode(Study study, Account account) {
-        final CustomData customData = account.getCustomData();
-        final String hdcKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-        final String encryptedId = (String)customData.get(hdcKey);
-        if (encryptedId == null) {
-            return false;
-        }
-        String healthId = healthCodeEncryptor.decrypt(encryptedId);
-        if (healthId == null) {
-            return false;
-        }
-        String healthCode = healthCodeService.getHealthCode(healthId);
-        if (healthCode == null) {
-            return false;
-        }
-        return true;
+        return accountEncryptionService.getHealthCode(study, account) != null;
     }
 }
