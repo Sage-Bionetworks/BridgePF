@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.services;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.events.UserEnrolledEvent;
@@ -22,13 +20,11 @@ import org.springframework.context.ApplicationEventPublisherAware;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.CustomData;
 
 public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
 
     private Client stormpathClient;
-    private BridgeEncryptor healthCodeEncryptor;
-    private HealthCodeService healthCodeService;
+    private AccountEncryptionService accountEncryptionService;
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
@@ -38,12 +34,8 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         this.stormpathClient = client;
     }
 
-    public void setHealthCodeEncryptor(BridgeEncryptor encryptor) {
-        this.healthCodeEncryptor = encryptor;
-    }
-
-    public void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
+    public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
+        this.accountEncryptionService = accountEncryptionService;
     }
 
     public void setSendMailService(SendMailService sendMailService) {
@@ -80,10 +72,11 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         try {
             // Stormpath account
             final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
-            final CustomData customData = account.getCustomData();
-            // HealthID
-            final String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            final HealthId healthId = getHealthId(healthIdKey, customData); // This sets the ID, which we will need when fully
+            HealthId hid = accountEncryptionService.getHealthCode(study, account);
+            if (hid == null) {
+                accountEncryptionService.createAndSaveHealthCode(study, account);
+            }
+            final HealthId healthId = hid;
             // Give consent
             final StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
             userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
@@ -211,29 +204,5 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         } catch (Exception e) {
             throw new BridgeServiceException(e);
         }
-    }
-
-    private HealthId getHealthId(String healthIdKey, CustomData customData) {
-        Object healthIdObj = customData.get(healthIdKey);
-        if (healthIdObj != null) {
-            final String healthId = healthCodeEncryptor.decrypt((String) healthIdObj);
-            final String healthCode = healthCodeService.getHealthCode(healthId);
-            return new HealthId() {
-                @Override
-                public String getId() {
-                    return healthId;
-                }
-
-                @Override
-                public String getCode() {
-                    return healthCode;
-                }
-            };
-        }
-        HealthId healthId = healthCodeService.create();
-        customData.put(healthIdKey, healthCodeEncryptor.encrypt(healthId.getId()));
-        customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
-        customData.save();
-        return healthId;
     }
 }
