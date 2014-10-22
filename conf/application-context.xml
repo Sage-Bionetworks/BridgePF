@@ -251,9 +251,7 @@
     <bean id="controllers.UserManagementControler" parent="proxiedController">
         <property name="target">
             <bean class="controllers.UserManagementController" parent="AdminController">
-                <property name="stormpathClient" ref="stormpathClient" />
                 <property name="userAdminService" ref="userAdminService" />
-                <property name="authenticationService" ref="authenticationService" />
             </bean>
         </property>
     </bean>    
@@ -355,6 +353,9 @@
 
     <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">
         <property name="healthDataDao" ref="healthDataDao"/>
+        <property name="validator">
+            <bean class="org.sagebionetworks.bridge.validators.HealthDataRecordValidator"/>
+        </property>
     </bean>
 
     <bean id="userProfileService" class="org.sagebionetworks.bridge.services.UserProfileServiceImpl">
@@ -372,6 +373,9 @@
     
     <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">
         <property name="studyConsentDao" ref="studyConsentDao" />
+        <property name="validator">
+                <bean class="org.sagebionetworks.bridge.validators.StudyConsentValidator"/>
+        </property>
     </bean>
 
     <bean id="scheduleService" class="org.sagebionetworks.bridge.services.ScheduleServiceImpl">

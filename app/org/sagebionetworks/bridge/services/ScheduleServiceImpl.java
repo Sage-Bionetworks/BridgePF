@@ -1,7 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ScheduleDao;
 import org.sagebionetworks.bridge.models.Study;
@@ -27,11 +31,16 @@ public class ScheduleServiceImpl implements ScheduleService {
     
     @Override
     public List<Schedule> getSchedules(Study study, User user) {
+        checkNotNull(study, "Study cannot be null");
+        checkNotNull(user, "User cannot be null");
+        
         return scheduleDao.getSchedules(study, user);
     }
 
     @Override
     public List<Schedule> createSchedules(List<Schedule> schedules) {
+        checkNotNull(schedules, "Schedules cannot be null");
+        
         for (Schedule schedule : schedules) {
             schedule.setGuid(BridgeUtils.generateGuid());
             Validate.entityThrowingException(validator, schedule);
@@ -41,11 +50,17 @@ public class ScheduleServiceImpl implements ScheduleService {
     
     @Override
     public void deleteSchedules(SchedulePlan plan) {
+        checkNotNull(plan, "Schedule plan cannot be null");
+        checkArgument(StringUtils.isNotBlank(plan.getGuid()), "Schedule plan GUID cannot be blank or null");
+        
         scheduleDao.deleteSchedules(plan);
     }
     
     @Override
     public void deleteSchedules(Study study, User user) {
+        checkNotNull(study, "Study cannot be null");
+        checkNotNull(user, "User cannot be null");
+        
         scheduleDao.deleteSchedules(study, user);
     }
     

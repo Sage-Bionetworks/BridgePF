@@ -1,16 +1,16 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.PublishedSurveyException;
 import org.sagebionetworks.bridge.dao.SurveyDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -31,7 +31,6 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -188,9 +187,10 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey createSurvey(Survey survey) {
-        Preconditions.checkArgument(survey.getStudyKey() != null, "Survey study key is null");
-        
-        survey.setGuid(BridgeUtils.generateGuid());
+        checkNotNull(survey.getStudyKey(), "Survey study key is null");
+        if (survey.getGuid() == null) {
+            survey.setGuid(BridgeUtils.generateGuid());
+        }
         long time = DateUtils.getCurrentMillisFromEpoch();
         survey.setVersionedOn(time);
         survey.setModifiedOn(time);
@@ -243,27 +243,16 @@ public class DynamoSurveyDao implements SurveyDao {
 
     @Override
     public List<Survey> getSurveys(String studyKey) {
-        if (StringUtils.isBlank(studyKey)) {
-            throw new BadRequestException("Study key is required");
-        }
         return new QueryBuilder().setStudy(studyKey).getAll(false);
     }
     
     @Override
     public List<Survey> getSurveyVersions(String surveyGuid) {
-        if (StringUtils.isBlank(surveyGuid)) {
-            throw new BadRequestException("Survey GUID is required");
-        }
         return new QueryBuilder().setSurvey(surveyGuid).getAll(true);
     }
 
     @Override
     public Survey getSurvey(String surveyGuid, long versionedOn) {
-        if (StringUtils.isBlank(surveyGuid)) {
-            throw new BadRequestException("Survey GUID cannot be null/blank");
-        } else if (versionedOn == 0L) {
-            throw new BadRequestException("Survey must have versionedOn date");
-        }
         return new QueryBuilder().setSurvey(surveyGuid).setVersionedOn(versionedOn).getOne(true);
     }
 

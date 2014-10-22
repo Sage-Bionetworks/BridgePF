@@ -208,7 +208,6 @@ public class User implements BridgeEntity {
     @Override
     public String toString() {
         return "User [id=" + id + ", username=" + username + ", firstName=" + firstName + ", lastName=" + lastName
-                + ", email=" + email + ", healthDataCode=" + healthDataCode + ", studyKey=" + studyKey + ", consent="
-                + consent + ", roles=" + roles + "]";
+                + ", email=" + email + ", studyKey=" + studyKey + ", consent=" + consent + ", roles=" + roles + "]";
     }
 }

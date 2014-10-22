@@ -236,7 +236,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     @Override
     public String toString() {
         return "DynamoSurveyResponse [guid=" + guid + ", surveyGuid=" + surveyGuid + ", surveyVersionedOn="
-                + surveyVersionedOn + ", survey=" + survey + ", healthCode=" + healthCode + ", startedOn=" + startedOn
-                + ", completedOn=" + completedOn + ", version=" + version + ", answers=" + answers + "]";
+                + surveyVersionedOn + ", survey=" + survey + ", startedOn=" + startedOn + ", completedOn="
+                + completedOn + ", version=" + version + ", answers=" + answers + "]";
     }
 }

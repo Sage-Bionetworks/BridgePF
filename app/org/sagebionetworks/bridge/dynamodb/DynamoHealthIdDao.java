@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -22,6 +25,9 @@ public class DynamoHealthIdDao implements HealthIdDao {
     }
 
     public boolean setIfNotExist(String id, String code) {
+        checkArgument(StringUtils.isNotBlank(id), "Health ID is blank or null");
+        checkArgument(StringUtils.isNotBlank(code), "Health code is blank or null");
+        
         try {
             DynamoHealthId toSave = new DynamoHealthId();
             toSave.setId(id);
@@ -34,6 +40,8 @@ public class DynamoHealthIdDao implements HealthIdDao {
     }
 
     public String getCode(String id) {
+        checkArgument(StringUtils.isNotBlank(id), "Health ID is blank or null");
+        
         DynamoHealthId healthId = mapper.load(DynamoHealthId.class, id);
         if (healthId != null) {
             return healthId.getCode();

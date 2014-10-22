@@ -43,7 +43,6 @@ public class Validate {
     }
     private static String convertBindingResultToMessage(BindingResult errors) {
         List<String> messages = Lists.newArrayListWithCapacity(errors.getErrorCount());
-        messages.add("Errors: " + errors.getErrorCount());
         for (ObjectError error : errors.getGlobalErrors()) {
             messages.add(errorToString(error.getObjectName(), error));    
         }

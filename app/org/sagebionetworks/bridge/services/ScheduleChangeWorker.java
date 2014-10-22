@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import java.util.ArrayList;
+
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -46,7 +47,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     private SchedulePlanService schedulePlanService;
     private ConsentService consentService;
     private StudyService studyService;
-    private AuthenticationServiceImpl authenticationService;
+    private AuthenticationService authenticationService;
    
     public void setStormpathClient(Client stormpathClient) {
         this.stormpathClient = stormpathClient;
@@ -66,9 +67,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
-    // Need the implementation because we're going to use functionality there that is not part
-    // of the API, and is specific to our use of Stormpath.
-    public void setAuthenticationService(AuthenticationServiceImpl authenticationService) {
+    public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
     public void setApplicationEvent(ApplicationEvent event) {
@@ -202,9 +201,12 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         Application application = StormpathFactory.createStormpathApplication(stormpathClient);
         // This is every user in the environment. That's what we have to do in case a user signed
         // up in one study, but is now participating in a different study.
+        
+        // TODO: This is really inefficient, we get the account twice, and we get the consents
+        // many times.
         AccountList accounts = application.getAccounts();  
         for (Account account : accounts) {
-            User user = authenticationService.createSessionFromAccount(study, account).getUser();
+            User user = authenticationService.getUser(study, account.getEmail());
             if (consentService.hasUserConsentedToResearch(user, study)) {
                 users.add(user);    
             }
