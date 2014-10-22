@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.validators.Messages;
+import org.springframework.validation.Errors;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
@@ -22,6 +22,6 @@ public interface ScheduleStrategy {
     
     public List<Schedule> scheduleExistingUsers(Study study, ArrayList<User> users);
     
-    public void validate(Messages messages);
+    public void validate(Errors errors);
 
 }

@@ -5,7 +5,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public final class SignIn {
+public final class SignIn implements BridgeEntity {
 
     private static final String PASSWORD_FIELD = "password";
     private static final String USERNAME_FIELD = "username";

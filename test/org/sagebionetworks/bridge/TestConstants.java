@@ -28,6 +28,13 @@ public class TestConstants {
             this.password = password;
             this.roles = roles;
         }
+        public TestUser(String tag) {
+            String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
+            this.username = prefix + tag;
+            this.email = prefix + tag + "@sagebridge.org";
+            this.password = "P4ssword";
+            this.roles = null;
+        }
         public SignUp getSignUp() {
             return new SignUp(username, email, password, roles);
         }

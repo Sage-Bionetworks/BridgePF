@@ -6,8 +6,6 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
@@ -15,116 +13,49 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.springframework.validation.Errors;
+import org.springframework.validation.Validator;
 
 import com.google.common.collect.Sets;
 
-public class SurveyValidator implements Validator<Survey> {
-    
+public class SurveyValidator implements Validator {
+
     @Override
-    public void validateNew(Survey survey) throws InvalidEntityException, EntityAlreadyExistsException {
-        Messages messages = new Messages();
-        if (StringUtils.isNotBlank(survey.getGuid())) {
-            messages.add("should not have a GUID");
-        } else if (survey.isPublished()) {
-            messages.add("should not be marked as published");
-        } else if (survey.getVersion() != null) {
-            messages.add("should not have a lock version number");
-        } else if (survey.getVersionedOn() != 0L) {
-            messages.add("should not have a versionedOn date");
-        }
-        for (int i=0; i < survey.getQuestions().size(); i++) {
-            SurveyQuestion question = survey.getQuestions().get(i);
-            if (StringUtils.isNotBlank(question.getGuid())) {
-                messages.add("question #%s should not have a GUID", i);
-            }
-        }
-        if (!messages.isEmpty()) {
-            throw new EntityAlreadyExistsException(survey, "Survey does not appear to be new: " + messages.join());
-        }
-        doValidation(survey, true);
+    public boolean supports(Class<?> clazz) {
+        return Survey.class.isAssignableFrom(clazz);
     }
 
     @Override
-    public void validate(Survey survey) throws InvalidEntityException {
-        doValidation(survey, false);
-    }
-
-    private void doValidation(Survey survey, boolean isNew) throws InvalidEntityException {
-        Messages messages = new Messages();
+    public void validate(Object object, Errors errors) {
+        Survey survey = (Survey)object;
         if (StringUtils.isBlank(survey.getIdentifier())) {
-            messages.add("missing an identifier");
-        } else if (StringUtils.isBlank(survey.getStudyKey())) {
-            messages.add("missing a study key");
+            errors.reject("missing an identifier");
         }
-        if (!isNew && StringUtils.isBlank(survey.getGuid())) {
-            messages.add("missing a GUID");
+        if (StringUtils.isBlank(survey.getStudyKey())) {
+            errors.reject("missing a study key");
         }
+        if (StringUtils.isBlank(survey.getGuid())) {
+            errors.reject("missing a GUID");
+        }
+        validateRules(errors, survey.getQuestions());
+        
         for (int i=0; i < survey.getQuestions().size(); i++) {
             SurveyQuestion question = survey.getQuestions().get(i);
-            doValidateQuestion(question, isNew, i, messages);
-        }
-        validateConstraintRules(messages, survey.getQuestions());
-        if (!messages.isEmpty()) {
-            throw new InvalidEntityException(survey, "Survey is not valid: " + messages.join());
+            errors.pushNestedPath("question"+i);
+            doValidateQuestion(question, i, errors);
+            errors.popNestedPath();
         }
     }
-    
-    private void doValidateQuestion(SurveyQuestion question, boolean isNew, int pos, Messages messages) {
-        if (!isNew && StringUtils.isBlank(question.getGuid())) {
-            messages.add("question #%s is missing a GUID", pos);
-        }
-        if (isNew && StringUtils.isBlank(question.getIdentifier())) {
-            messages.add("question #%s is missing an identifier", pos);
-        }
-        if (question.getConstraints() == null) {
-            messages.add("question #%s is missing constraints, including the data type of the question", pos);
-        }
-        if (question.getUiHint() == null) {
-            messages.add("question #%s is missing a UI hint", pos);
-        }
-        if (StringUtils.isBlank(question.getPrompt())) {
-            messages.add("question #%s is missing a prompt/question text for the user", pos);
-        }
-        // Stop here if basic stuff is missing.
-        if (!messages.isEmpty()) {
-            return;
-        }
-        Constraints con = question.getConstraints();
-        UIHint hint = question.getUiHint();
-        if (!con.getSupportedHints().contains(hint)) {
-            messages.add("question #%s has a data type of '%s' that doesn't match the UI hint of %s", pos,
-                    con.getDataType(), hint.name().toLowerCase());
-        } else if (con instanceof MultiValueConstraints) {
-            // Multiple values have a few odd UI constraints
-            MultiValueConstraints mcon = (MultiValueConstraints)con;
-            if (hint == UIHint.COMBOBOX && (mcon.getAllowMultiple() || !mcon.getAllowOther())) {
-                messages.add("question #%s asks for combobox but that's only valid when multiple = false and other = true", pos);
-            } else if (mcon.getAllowMultiple() && hint != UIHint.CHECKBOX && hint != UIHint.LIST) {
-                messages.add("question #%s allows multiples but %s doesn't gather more than one answer", pos, hint.name().toLowerCase());
-            } else if (!mcon.getAllowMultiple() && (hint == UIHint.CHECKBOX || hint == UIHint.LIST)) {
-                messages.add("question #%s doesn't allow multiples but %s gathers more than one answer", pos, hint.name().toLowerCase());
-            }
-        } else if (con instanceof StringConstraints) {
-            // Validate the regular expression, if it exists
-            StringConstraints scon = (StringConstraints)con;
-            if (StringUtils.isNotBlank(scon.getPattern())) {
-                try {
-                    Pattern.compile(scon.getPattern());
-                } catch (PatternSyntaxException exception) {
-                    messages.add("Pattern is not a valid regular expression: " + scon.getPattern());
-                }
-            }
-        }
-    }
-    
-    private void validateConstraintRules(Messages messages, List<SurveyQuestion> questions) {
+    private void validateRules(Errors errors, List<SurveyQuestion> questions) {
         // Should not try and back-track in the survey.
         Set<String> alreadySeenIdentifiers = Sets.newHashSet();
         for (int i=0; i < questions.size(); i++) {
             SurveyQuestion question = questions.get(i);
             for (SurveyRule rule : question.getConstraints().getRules()) {
                 if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
-                    messages.add("question #%s has a rule that back references question %s: %s", i, rule.getSkipToTarget(), rule.toString());
+                    errors.pushNestedPath("question"+i);
+                    rejectField(errors, "rule", "back references question %s", rule.getSkipToTarget());
+                    errors.popNestedPath();
                 }
             }
             alreadySeenIdentifiers.add(question.getIdentifier());
@@ -134,11 +65,72 @@ public class SurveyValidator implements Validator<Survey> {
             SurveyQuestion question = questions.get(i);
             for (SurveyRule rule : question.getConstraints().getRules()) {
                 if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
-                    messages.add("question #%s has a rule with a skipTo target that doesn't exist (%s)", i, rule.getSkipToTarget());
+                    errors.pushNestedPath("question"+i);
+                    rejectField(errors, "rule", "has a skipTo identifier that doesn't exist: %s", rule.getSkipToTarget());
+                    errors.popNestedPath();
                 }
             }
         }
         
     }
-
+    private void doValidateQuestion(SurveyQuestion question, int pos, Errors errors) {
+        if (StringUtils.isBlank(question.getIdentifier())) {
+            errors.rejectValue("identifier", "missing an identifier");
+        }
+        if (question.getUiHint() == null) {
+            errors.rejectValue("uiHint", "missing a UI hint");
+        }
+        if (StringUtils.isBlank(question.getPrompt())) {
+            errors.rejectValue("prompt", "missing a prompt/question");
+        }
+        if (question.getConstraints() == null) {
+            errors.rejectValue("constraints", "missing a constraints object");
+        } else {
+            errors.pushNestedPath("constraints");
+            doValidateConstraints(question, question.getConstraints(), errors);
+            errors.popNestedPath();
+        }
+    }
+    private void doValidateConstraints(SurveyQuestion question, Constraints con, Errors errors) {
+        if (con.getDataType() == null) {
+            errors.reject("has no dataType");
+            return;
+        }
+        UIHint hint = question.getUiHint();
+        if (!con.getSupportedHints().contains(hint)) {
+            rejectField(errors, "dataType", "(%s) doesn't match the UI hint of '%s'", con.getDataType().name()
+                    .toLowerCase(), hint.name().toLowerCase());
+        } else if (con instanceof MultiValueConstraints) {
+            // Multiple values have a few odd UI constraints
+            MultiValueConstraints mcon = (MultiValueConstraints)con;
+            String hintName = hint.name().toLowerCase();
+            
+            if (hint == UIHint.COMBOBOX && (mcon.getAllowMultiple() || !mcon.getAllowOther())) {
+                rejectField(errors, "uiHint", "'%s' is only valid when multiple = false and other = true", hintName);
+            } else if (mcon.getAllowMultiple() && hint != UIHint.CHECKBOX && hint != UIHint.LIST) {
+                rejectField(errors, "uiHint",
+                        "allows multiples but the '%s' UI hint doesn't gather more than one answer", hintName);
+            } else if (!mcon.getAllowMultiple() && (hint == UIHint.CHECKBOX || hint == UIHint.LIST)) {
+                rejectField(errors, "uiHint",
+                        "doesn't allow multiples but the '%s' UI hint gathers more than one answer", hintName);
+            }
+        } else if (con instanceof StringConstraints) {
+            // Validate the regular expression, if it exists
+            StringConstraints scon = (StringConstraints)con;
+            if (StringUtils.isNotBlank(scon.getPattern())) {
+                try {
+                    Pattern.compile(scon.getPattern());
+                } catch (PatternSyntaxException exception) {
+                    rejectField(errors, "pattern", "is not a valid regular expression: %s", scon.getPattern());
+                }
+            }
+        }
+    }
+    private void rejectField(Errors errors, String field, String message, Object... args) {
+        if (args != null && args.length > 0) {
+            errors.rejectValue(field, message, args, message);    
+        } else {
+            errors.rejectValue(field, message);
+        }
+    }
 }

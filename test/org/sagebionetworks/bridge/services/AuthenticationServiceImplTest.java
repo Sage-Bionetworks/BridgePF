@@ -114,12 +114,12 @@ public class AuthenticationServiceImplTest {
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(newSession.getSessionToken()));
     }
 
-    @Test(expected = BridgeServiceException.class)
+    @Test(expected = NullPointerException.class)
     public void requestPasswordResetFailsOnNull() throws Exception {
         authService.requestResetPassword(null);
     }
 
-    @Test(expected = BridgeServiceException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void requestPasswordResetFailsOnEmptyString() throws Exception {
         Email email = new Email("");
         authService.requestResetPassword(email);

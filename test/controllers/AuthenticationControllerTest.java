@@ -1,5 +1,6 @@
 package controllers;
 
+import static org.apache.commons.httpclient.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.commons.httpclient.HttpStatus.SC_NOT_FOUND;
 import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
@@ -56,22 +57,22 @@ public class AuthenticationControllerTest {
     }
     
     @Test
-    public void signInNoCredentialsFailsWith404() {
+    public void signInNoCredentialsFailsWith400() {
         running(testServer(3333), new Runnable() {
             public void run() {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
-                assertEquals("HTTP response indicates user not found", SC_NOT_FOUND, response.getStatus());
+                assertEquals("HTTP response indicates no credentials is an error", SC_BAD_REQUEST, response.getStatus());
             }
         });
     }
 
     @Test
-    public void signInGarbageCredentialsFailsWith404() {
+    public void signInGarbageCredentialsFailsWith400() {
         running(testServer(3333), new Runnable() {
             public void run() {
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post("username=bob&password=foo").get(TIMEOUT);
-                assertEquals("HTTP response indicates user not found", SC_NOT_FOUND, response.getStatus());
+                assertEquals("HTTP response indicates bad paylod", SC_BAD_REQUEST, response.getStatus());
             }
         });
     }

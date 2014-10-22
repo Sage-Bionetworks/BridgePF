@@ -43,4 +43,40 @@ public class InvalidEntityException extends BridgeServiceException {
         return entity;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((entity == null) ? 0 : entity.hashCode());
+        result = prime * result + ((errors == null) ? 0 : errors.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        InvalidEntityException other = (InvalidEntityException) obj;
+        if (entity == null) {
+            if (other.entity != null)
+                return false;
+        } else if (!entity.equals(other.entity))
+            return false;
+        if (errors == null) {
+            if (other.errors != null)
+                return false;
+        } else if (!errors.equals(other.errors))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "InvalidEntityException [entity=" + entity + ", errors=" + errors + "]";
+    }
+
 }

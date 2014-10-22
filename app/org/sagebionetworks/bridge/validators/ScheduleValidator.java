@@ -1,51 +1,52 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.validators.Validate.*;
+
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
+import org.springframework.validation.Errors;
+import org.springframework.validation.Validator;
 
-public class ScheduleValidator implements Validator<Schedule> {
+public class ScheduleValidator implements Validator {
 
     @Override
-    public void validateNew(Schedule schedule) throws InvalidEntityException, EntityAlreadyExistsException {
+    public boolean supports(Class<?> clazz) {
+        return Schedule.class.isAssignableFrom(clazz);
     }
 
     @Override
-    public void validate(Schedule schedule) throws InvalidEntityException {
-        Messages messages = new Messages();
+    public void validate(Object object, Errors errors) {
+        Schedule schedule = (Schedule)object;
+        
         if (StringUtils.isBlank(schedule.getLabel())) {
-            messages.add("Label cannot be empty");
+            errors.rejectValue("label", CANNOT_BE_BLANK);
         }
         if (StringUtils.isBlank(schedule.getActivityRef())) {
-            messages.add("Activity ref cannot be empty");
+            errors.rejectValue("activityRef", CANNOT_BE_BLANK);
         }
         if (StringUtils.isBlank(schedule.getSchedulePlanGuid())) {
-            messages.add("The schedule plan GUID cannot be empty");
+            errors.rejectValue("schedulePlanGuid", CANNOT_BE_BLANK);
         }
         if (StringUtils.isBlank(schedule.getStudyUserCompoundKey())) {
-            messages.add("Study/user compound key cannot be empty");
+            errors.rejectValue("studyUserCompoundKey", CANNOT_BE_BLANK);
         }
         if (schedule.getActivityType() == null) {
-            messages.add("Activty type cannot be null");
+            errors.rejectValue("activityType", CANNOT_BE_NULL);
         }
         if (schedule.getScheduleType() == null) {
-            messages.add("Schedule type cannot be null");
+            errors.rejectValue("scheduleType", CANNOT_BE_NULL);
         }
         if (schedule.getScheduleType() == ScheduleType.ONCE) {
             if (StringUtils.isNotBlank(schedule.getCronTrigger())) {
-                messages.add("One-time schedule should not have a cron trigger");
+                errors.rejectValue("cronTrigger", "One-time schedule should not have a cron trigger");
             }
         }
         if (schedule.getScheduleType() == ScheduleType.RECURRING) {
             // Pretty much everything is valid
             if (StringUtils.isBlank(schedule.getCronTrigger())) {
-                messages.add("Recurring schedule must have a cron trigger");
+                errors.rejectValue("cronTrigger", "Recurring schedule must have a cron trigger");
             }
-        }
-        if (!messages.isEmpty()) {
-            throw new InvalidEntityException(schedule, "Schedule is invalid: " + messages.join());
         }
     }
 

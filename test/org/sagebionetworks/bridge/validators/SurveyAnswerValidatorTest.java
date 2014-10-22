@@ -70,7 +70,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("This is not a boolean");
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     
     @Test
@@ -79,7 +79,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("true");
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test
     public void validateDateAllowFuture() {
@@ -88,7 +88,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         Long future = DateTime.now().plusMonths(1).getMillis();
         
-        validator.validate(createAnswer(DateUtils.convertToISODateTime(future)));
+        Validate.entityThrowingException(validator, createAnswer(DateUtils.convertToISODateTime(future)));
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -98,7 +98,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         Long future = DateTime.now().plusMonths(1).getMillis();
         
-        validator.validate(createAnswer(DateUtils.convertToISODateTime(future)));
+        Validate.entityThrowingException(validator, createAnswer(DateUtils.convertToISODateTime(future)));
     }
     @Test
     public void validateDateTimeAllowFuture() {
@@ -107,7 +107,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         Long future = DateTime.now().plusMonths(1).getMillis();
         
-        validator.validate(createAnswer(DateUtils.convertToISODateTime(future)));
+        Validate.entityThrowingException(validator, createAnswer(DateUtils.convertToISODateTime(future)));
     }
     @Test(expected = InvalidEntityException.class)
     public void validateDateTimeDoNotAllowFuture() {
@@ -116,7 +116,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         Long future = DateTime.now().plusMonths(1).getMillis();
         
-        validator.validate(createAnswer(DateUtils.convertToISODateTime(future)));
+        Validate.entityThrowingException(validator, createAnswer(DateUtils.convertToISODateTime(future)));
     }
     @Test(expected = InvalidEntityException.class)
     public void validateDecimalMinValue() {
@@ -124,7 +124,7 @@ public class SurveyAnswerValidatorTest {
         constraints.setMinValue(10d);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
-        validator.validate(createAnswer("5.001"));
+        Validate.entityThrowingException(validator, createAnswer("5.001"));
     }
     @Test(expected = InvalidEntityException.class)
     public void validateDecimalMaxValue() {
@@ -132,7 +132,7 @@ public class SurveyAnswerValidatorTest {
         constraints.setMaxValue(10d);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
-        validator.validate(createAnswer("15.0"));
+        Validate.entityThrowingException(validator, createAnswer("15.0"));
     }
     @Test(expected = InvalidEntityException.class)
     @Ignore
@@ -141,7 +141,7 @@ public class SurveyAnswerValidatorTest {
         constraints.setStep(5d);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
-        validator.validate(createAnswer("12.00"));
+        Validate.entityThrowingException(validator, createAnswer("12.00"));
     }
     @Test(expected = InvalidEntityException.class)
     public void validateDuration() {
@@ -149,7 +149,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("14000");
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test(expected = InvalidEntityException.class)
     public void validateIntegerMinValue() {
@@ -158,7 +158,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("10");
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test(expected = InvalidEntityException.class)
     public void validateIntegerMaxValue() {
@@ -167,7 +167,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
 
         SurveyAnswer answer = createAnswer("12");
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test
     public void validateIntegerNoConstraints() {
@@ -175,7 +175,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("12");
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test(expected=InvalidEntityException.class)
     public void validateMultiValueWithNoOther() {
@@ -185,7 +185,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("6");
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test
     public void validateMultiValueWithOther() {
@@ -197,7 +197,7 @@ public class SurveyAnswerValidatorTest {
         
         // The only validation that can happen is type, so any value is okay here
         SurveyAnswer answer = createAnswer("6");
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test
     public void validateMultiValueWithMultipleValues() {
@@ -208,7 +208,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswers(Lists.<String>newArrayList("1", "2"));
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test
     public void validateMultiValueOtherAllowMultiple() {
@@ -222,7 +222,7 @@ public class SurveyAnswerValidatorTest {
         
         // The only validation that can happen is type, so any value is okay here
         SurveyAnswer answer = createAnswers(Lists.<String>newArrayList("1", "2", "10"));
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test(expected = InvalidEntityException.class)
     public void validateStringTooShort() {
@@ -231,7 +231,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("axe");
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test(expected = InvalidEntityException.class)
     public void validateStringTooLong() {
@@ -240,7 +240,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("belgium");
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test(expected = InvalidEntityException.class)
     public void validateStringFailsPatternMatch() {
@@ -249,7 +249,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("123-a67-9870");
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test(expected = InvalidEntityException.class)
     public void validateInvalidTime() {
@@ -257,7 +257,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("asdf");
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test
     public void validateTime() {
@@ -265,7 +265,7 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("13:00"); // no seconds, that's okay
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
     @Test(expected = InvalidEntityException.class)
     public void validateTimeWithTimeZone() {
@@ -273,6 +273,6 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("13:47:30Z"); // time zone, verboten
-        validator.validate(answer);
+        Validate.entityThrowingException(validator, answer);
     }
 }
