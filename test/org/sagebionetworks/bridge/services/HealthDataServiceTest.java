@@ -8,6 +8,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,6 +46,7 @@ public class HealthDataServiceTest {
         session = helper.createUser("healthData-tester");
     }
     
+    @After
     public void after() {
         helper.deleteUser(session);
     }

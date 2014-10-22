@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 
-public class SignUp {
+public class SignUp implements BridgeEntity {
 
     private static final String EMAIL_FIELD = "email";
     private static final String USERNAME_FIELD = "username";

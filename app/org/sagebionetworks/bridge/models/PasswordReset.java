@@ -4,7 +4,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class PasswordReset {
+public class PasswordReset implements BridgeEntity {
 
     private static final String PASSWORD_FIELD = "password";
     private static final String SPTOKEN_FIELD = "sptoken";
