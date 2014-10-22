@@ -2,14 +2,17 @@ package org.sagebionetworks.bridge;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.validators.Messages;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 public class BridgeUtils {
 
@@ -45,19 +48,29 @@ public class BridgeUtils {
      */
     public static void ifFailuresThrowException(List<FailedBatch> failures) {
         if (!failures.isEmpty()) {
-            Messages messages = new Messages();
+            List<String> messages = Lists.newArrayList();
             for (FailedBatch failure : failures) {
                 String message = failure.getException().getMessage();
                 messages.add(message);
                 String ids = Joiner.on("; ").join(failure.getUnprocessedItems().keySet());
                 messages.add(ids);
             }
-            throw new BridgeServiceException(messages.join());
+            throw new BridgeServiceException(Joiner.on(", ").join(messages));
         }
     }
     
     public static boolean isEmpty(Collection<?> coll) {
         return (coll == null || coll.isEmpty());
+    }
+    
+    public static <S,T> Map<S,T> asMap(List<T> list, Function<T,S> function) {
+        Map<S,T> map = Maps.newHashMap();
+        if (list != null && function != null) {
+            for (T item : list) {
+                map.put(function.apply(item), item);
+            }
+        }
+        return map;
     }
     
 }

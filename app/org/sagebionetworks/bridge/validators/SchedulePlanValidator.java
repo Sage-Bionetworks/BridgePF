@@ -1,30 +1,27 @@
 package org.sagebionetworks.bridge.validators;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.springframework.validation.Errors;
+import org.springframework.validation.Validator;
 
-public class SchedulePlanValidator implements Validator<SchedulePlan> {
+public class SchedulePlanValidator implements Validator {
 
     @Override
-    public void validateNew(SchedulePlan plan) throws InvalidEntityException, EntityAlreadyExistsException {
-        if (StringUtils.isNotBlank(plan.getGuid())) {
-            throw new EntityAlreadyExistsException(plan, "Plan appears to exist, it has been assigned a GUID");
-        }
+    public boolean supports(Class<?> clazz) {
+        return SchedulePlan.class.isAssignableFrom(clazz);
     }
 
     @Override
-    public void validate(SchedulePlan plan) throws InvalidEntityException {
-        Messages messages = new Messages();
+    public void validate(Object obj, Errors errors) {
+        SchedulePlan plan = (SchedulePlan)obj;
         if (StringUtils.isBlank(plan.getStudyKey())) {
-            messages.add("missing a study key");
+            errors.rejectValue("studyKey", "missing a study key");
         }
         if (plan.getStrategy() == null) {
-            messages.add("requires a strategy object");
-        }
-        if (!messages.isEmpty()) {
-            throw new InvalidEntityException(plan, "Schedule plan is invalid: " + messages.join());
+            errors.rejectValue("strategy", "requires a strategy object");
+        } else {
+            plan.getStrategy().validate(errors);
         }
     }
 

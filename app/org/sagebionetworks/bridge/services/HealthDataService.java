@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 public interface HealthDataService {
 
-    public List<IdVersionHolder> appendHealthData(HealthDataKey key, List<HealthDataRecord> records);
+    public List<HealthDataRecord> appendHealthData(HealthDataKey key, List<HealthDataRecord> records);
     
     public List<HealthDataRecord> getAllHealthData(HealthDataKey key);
     

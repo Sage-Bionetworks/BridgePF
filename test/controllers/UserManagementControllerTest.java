@@ -21,6 +21,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.TestUtils.FailableRunnable;
@@ -68,15 +69,16 @@ public class UserManagementControllerTest {
     @Test
     public void canCreateAndDeleteUser() {
         running(testServer(3333), new FailableRunnable() {
-
             @Override
             public void testCode() throws Exception {
-                String email = "test-creation@sagebridge.org";
-
+                // Namespaces this user so it doesn't collide with other developers working on the same
+                // local tables.
+                TestUser testUser = new TestUser("test-userAdmin");
+                
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put("email", email);
-                node.put("username", "unique_usernameeee");
-                node.put("password", "1234");
+                node.put("email", testUser.getEmail());
+                node.put("username", testUser.getUsername());
+                node.put("password", testUser.getPassword());
                 node.put("consent", true);
 
                 Response response = TestUtils.getURL(session.getSessionToken(), USER_URL)
@@ -84,7 +86,7 @@ public class UserManagementControllerTest {
                 assertEquals("Response status is created.", SC_CREATED, response.getStatus());
 
                 Map<String,String> queryParams = new HashMap<String,String>();
-                queryParams.put("email", email);
+                queryParams.put("email", testUser.getEmail());
 
                 response = TestUtils.getURL(session.getSessionToken(), USER_URL, queryParams).delete().get(TIMEOUT);
                 assertEquals("Response status is OK.", SC_OK, response.getStatus());

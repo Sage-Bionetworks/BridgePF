@@ -29,6 +29,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
+/**
+ * TODO: All these tests are now repeated in SurveyServiceTest, this whole class can *probably*
+ * just be deleted.
+ */
 public class DynamoSurveyDaoTest {
 
     @Resource
@@ -52,21 +56,10 @@ public class DynamoSurveyDaoTest {
 
     // CREATE SURVEY
 
-    @Test(expected = BridgeServiceException.class)
+    // Not an ideal test, but this is thrown from a precondition, nothing changes
+    @Test(expected = NullPointerException.class) 
     public void createPreventsEmptyStudyKey() {
         testSurvey.setStudyKey(null);
-        surveyDao.createSurvey(testSurvey);
-    }
-
-    @Test(expected = BridgeServiceException.class)
-    public void createPreventsNoIdentifier() {
-        testSurvey.setIdentifier(null);
-        surveyDao.createSurvey(testSurvey);
-    }
-
-    @Test(expected = BridgeServiceException.class)
-    public void createPreventsQuestionWithNoIdentifier() {
-        testSurvey.getStringQuestion().setIdentifier(null);
         surveyDao.createSurvey(testSurvey);
     }
 

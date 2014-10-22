@@ -1,13 +1,12 @@
 package org.sagebionetworks.bridge.services;
 
 import java.util.ArrayList;
+
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
 
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
-import org.sagebionetworks.bridge.dao.ScheduleDao;
-import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.events.SchedulePlanCreatedEvent;
 import org.sagebionetworks.bridge.events.SchedulePlanDeletedEvent;
 import org.sagebionetworks.bridge.events.SchedulePlanUpdatedEvent;
@@ -44,11 +43,11 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     private ApplicationEvent event;
     private Client stormpathClient;
     private DistributedLockDao lockDao;
-    private ScheduleDao scheduleDao;
-    private SchedulePlanDao schedulePlanDao;
+    private ScheduleService scheduleService;
+    private SchedulePlanService schedulePlanService;
     private ConsentService consentService;
     private StudyService studyService;
-    private AuthenticationServiceImpl authenticationService;
+    private AuthenticationService authenticationService;
    
     public void setStormpathClient(Client stormpathClient) {
         this.stormpathClient = stormpathClient;
@@ -56,11 +55,11 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
-    public void setScheduleDao(ScheduleDao scheduleDao) {
-        this.scheduleDao = scheduleDao;
+    public void setScheduleService(ScheduleService scheduleService) {
+        this.scheduleService = scheduleService;
     }
-    public void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
-        this.schedulePlanDao = schedulePlanDao;
+    public void setSchedulePlanService(SchedulePlanService schedulePlanService) {
+        this.schedulePlanService = schedulePlanService;
     }
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
@@ -68,9 +67,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
-    // Need the implementation because we're going to use functionality there that is not part
-    // of the API, and is specific to our use of Stormpath.
-    public void setAuthenticationService(AuthenticationServiceImpl authenticationService) {
+    public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
     public void setApplicationEvent(ApplicationEvent event) {
@@ -114,7 +111,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         
         runWithLock(plan.getClass(), plan.getGuid(), new Command() {
             public void execute() {
-                scheduleDao.createSchedules(schedules);
+                scheduleService.createSchedules(schedules);
             }
         });
     }
@@ -125,7 +122,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         
         runWithLock(plan.getClass(), plan.getGuid(), new Command() {
             public void execute() {
-                scheduleDao.deleteSchedules(plan);
+                scheduleService.deleteSchedules(plan);
             }
         });
     }
@@ -140,8 +137,8 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         
         runWithLock(plan.getClass(), plan.getGuid(), new Command() {
             public void execute() {
-                scheduleDao.deleteSchedules(plan);
-                scheduleDao.createSchedules(schedules);
+                scheduleService.deleteSchedules(plan);
+                scheduleService.createSchedules(schedules);
             }
         });
     }
@@ -150,7 +147,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         
         final Study study = event.getStudy();
         final User user = event.getUser();
-        final List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(event.getStudy());
+        final List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(event.getStudy());
         final List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size()); 
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().scheduleNewUser(study, user);
@@ -162,7 +159,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         }
         runWithLock(user.getClass(), user.getId(), new Command() {
             public void execute() {
-                scheduleDao.createSchedules(schedules);
+                scheduleService.createSchedules(schedules);
             }
         });
     }
@@ -173,7 +170,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         final User user = event.getUser();
         runWithLock(user.getClass(), user.getId(), new Command() {
             public void execute() {
-                scheduleDao.deleteSchedules(study, user);
+                scheduleService.deleteSchedules(study, user);
             }
         });
     }
@@ -204,9 +201,12 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         Application application = StormpathFactory.createStormpathApplication(stormpathClient);
         // This is every user in the environment. That's what we have to do in case a user signed
         // up in one study, but is now participating in a different study.
+        
+        // TODO: This is really inefficient, we get the account twice, and we get the consents
+        // many times.
         AccountList accounts = application.getAccounts();  
         for (Account account : accounts) {
-            User user = authenticationService.createSessionFromAccount(study, account).getUser();
+            User user = authenticationService.getUser(study, account.getEmail());
             if (consentService.hasUserConsentedToResearch(user, study)) {
                 users.add(user);    
             }

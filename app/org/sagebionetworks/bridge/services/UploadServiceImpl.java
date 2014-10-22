@@ -13,8 +13,10 @@ import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.UploadRequest;
 import org.sagebionetworks.bridge.models.UploadSession;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.validation.Validator;
 
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
@@ -32,6 +34,7 @@ public class UploadServiceImpl implements UploadService {
     private AmazonS3 s3UploadClient;
     private AmazonS3 s3Client;
     private UploadDao uploadDao;
+    private Validator validator;
 
     public void setUploadSessionCredentialsService(UploadSessionCredentialsService uploadCredentialsService) {
         this.uploadCredentailsService = uploadCredentialsService;
@@ -45,10 +48,14 @@ public class UploadServiceImpl implements UploadService {
     public void setUploadDao(UploadDao uploadDao) {
         this.uploadDao = uploadDao;
     }
+    public void setValidator(Validator validator) {
+        this.validator = validator;
+    }
 
     @Override
     public UploadSession createUpload(User user, UploadRequest uploadRequest) {
-
+        Validate.entityThrowingException(validator, uploadRequest);
+        
         final String uploadId = uploadDao.createUpload(uploadRequest, user.getHealthDataCode());
         final String objectId = uploadDao.getObjectId(uploadId);
         GeneratePresignedUrlRequest presignedUrlRequest = 
