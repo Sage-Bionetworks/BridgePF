@@ -42,7 +42,7 @@ public class UserManagementController extends AdminController {
     public void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
     }
-
+    
     public Result createUser() throws Exception {
         getAuthenticatedAdminSession();
 
@@ -65,7 +65,6 @@ public class UserManagementController extends AdminController {
     public Result deleteUser(String email) throws Exception {
         getAuthenticatedAdminSession();
 
-
         User user = getUser(email);
         userAdminService.deleteUser(user);
 
@@ -86,17 +85,17 @@ public class UserManagementController extends AdminController {
     }
 
     private User getUser(String email) {
+        Study study = studyService.getStudyByHostname(getHostname());
+        
         Application app = StormpathFactory.createStormpathApplication(stormpathClient);
         Map<String, Object> queryParams = new HashMap<String, Object>();
         queryParams.put("email", email);
         AccountList accounts = app.getAccounts(queryParams);
 
-        User user = null;
-        for (Account account : accounts) {
-            user = new User(account);
-            break; // should only create one user.
+        if (accounts.iterator().hasNext()) {
+            Account account = accounts.iterator().next();
+            return authenticationService.createSessionFromAccount(study, account).getUser();
         }
-
-        return user;
+        return null;
     }
 }

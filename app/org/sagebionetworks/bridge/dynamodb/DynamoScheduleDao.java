@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.validators.ScheduleValidator;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -24,8 +23,6 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 
 public class DynamoScheduleDao implements ScheduleDao {
-    
-    private ScheduleValidator VALIDATOR = new ScheduleValidator();
     
     private DynamoDBMapper mapper;
 
@@ -45,8 +42,9 @@ public class DynamoScheduleDao implements ScheduleDao {
     @Override
     public List<Schedule> createSchedules(List<Schedule> schedules) {
         for (Schedule schedule : schedules) {
-            schedule.setGuid(BridgeUtils.generateGuid());
-            VALIDATOR.validate(schedule);
+            if (schedule.getGuid() == null) {
+                schedule.setGuid(BridgeUtils.generateGuid());
+            }
         }
         List<FailedBatch> failures = mapper.batchSave(schedules);
         BridgeUtils.ifFailuresThrowException(failures);

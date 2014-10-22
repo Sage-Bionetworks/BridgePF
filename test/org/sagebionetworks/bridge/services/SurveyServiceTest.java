@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.dynamodb;
+package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -10,33 +10,38 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.dao.PublishedSurveyException;
+import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
+import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
-import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-/**
- * TODO: All these tests are now repeated in SurveyServiceTest, this whole class can *probably*
- * just be deleted.
- */
-public class DynamoSurveyDaoTest {
+public class SurveyServiceTest {
 
     @Resource
-    DynamoSurveyDao surveyDao;
+    private TestUserAdminHelper helper;
+    
+    @Resource
+    SurveyServiceImpl surveyService;
 
     @Resource
     StudyServiceImpl studyService; 
@@ -53,24 +58,38 @@ public class DynamoSurveyDaoTest {
         DynamoTestUtil.clearTable(DynamoSurvey.class);
         DynamoTestUtil.clearTable(DynamoSurveyQuestion.class);
     }
-
-    // CREATE SURVEY
-
-    @Test(expected = IllegalArgumentException.class)
+    
+    @After
+    public void after() {
+    }
+    
+    @Test(expected = InvalidEntityException.class)
     public void createPreventsEmptyStudyKey() {
         testSurvey.setStudyKey(null);
-        surveyDao.createSurvey(testSurvey);
+        surveyService.createSurvey(testSurvey);
+    }
+
+    @Test(expected = BridgeServiceException.class)
+    public void createPreventsNoIdentifier() {
+        testSurvey.setIdentifier(null);
+        surveyService.createSurvey(testSurvey);
+    }
+
+    @Test(expected = BridgeServiceException.class)
+    public void createPreventsQuestionWithNoIdentifier() {
+        testSurvey.getStringQuestion().setIdentifier(null);
+        surveyService.createSurvey(testSurvey);
     }
 
     @Test(expected = BridgeServiceException.class)
     public void createPreventsRecreatingASurvey() {
-        surveyDao.createSurvey(testSurvey);
-        surveyDao.createSurvey(testSurvey);
+        surveyService.createSurvey(testSurvey);
+        surveyService.createSurvey(testSurvey);
     }
 
     @Test
     public void crudSurvey() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
+        Survey survey = surveyService.createSurvey(testSurvey);
 
         assertTrue("Survey has a guid", survey.getGuid() != null);
         assertTrue("Survey has been versioned", survey.getVersionedOn() != 0L);
@@ -78,14 +97,14 @@ public class DynamoSurveyDaoTest {
         assertTrue("Question #2 has a guid", survey.getQuestions().get(1).getGuid() != null);
 
         survey.setIdentifier("newIdentifier");
-        surveyDao.updateSurvey(survey);
-        survey = surveyDao.getSurvey(survey.getGuid(), survey.getVersionedOn());
+        surveyService.updateSurvey(survey);
+        survey = surveyService.getSurvey(survey.getGuid(), survey.getVersionedOn());
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
 
-        surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
+        surveyService.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
 
         try {
-            survey = surveyDao.getSurvey(survey.getGuid(), survey.getVersionedOn());
+            survey = surveyService.getSurvey(survey.getGuid(), survey.getVersionedOn());
             fail("Should have thrown an exception");
         } catch (EntityNotFoundException enfe) {
         }
@@ -95,9 +114,9 @@ public class DynamoSurveyDaoTest {
 
     @Test
     public void canUpdateASurveyVersion() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
+        Survey survey = surveyService.createSurvey(testSurvey);
 
-        Survey nextVersion = surveyDao.versionSurvey(survey.getGuid(), survey.getVersionedOn());
+        Survey nextVersion = surveyService.versionSurvey(survey.getGuid(), survey.getVersionedOn());
 
         // If you change these, it looks like a different testSurvey, you'll just get a not found exception.
         // testSurvey.setGuid("A");
@@ -106,30 +125,30 @@ public class DynamoSurveyDaoTest {
         survey.setIdentifier("B");
         survey.setName("C");
 
-        surveyDao.updateSurvey(survey);
-        survey = surveyDao.getSurvey(survey.getGuid(), survey.getVersionedOn());
+        surveyService.updateSurvey(survey);
+        survey = surveyService.getSurvey(survey.getGuid(), survey.getVersionedOn());
 
         assertEquals("Identifier can be updated", "B", survey.getIdentifier());
         assertEquals("Name can be updated", "C", survey.getName());
 
         // Now verify the nextVersion has not been changed
-        nextVersion = surveyDao.getSurvey(nextVersion.getGuid(), nextVersion.getVersionedOn());
+        nextVersion = surveyService.getSurvey(nextVersion.getGuid(), nextVersion.getVersionedOn());
         assertEquals("Next version has same identifier", "bloodpressure", nextVersion.getIdentifier());
         assertEquals("Next name has not changed", "General Blood Pressure Survey", nextVersion.getName());
     }
 
     @Test
     public void crudSurveyQuestions() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
+        Survey survey = surveyService.createSurvey(testSurvey);
 
         int count = survey.getQuestions().size();
         
         // Now, alter these, and verify they are altered
         survey.getQuestions().remove(0);
         survey.getQuestions().get(6).setIdentifier("new gender");
-        surveyDao.updateSurvey(survey);
+        surveyService.updateSurvey(survey);
 
-        survey = surveyDao.getSurvey(survey.getGuid(), survey.getVersionedOn());
+        survey = surveyService.getSurvey(survey.getGuid(), survey.getVersionedOn());
 
         assertEquals("Survey has one less question", count-1, survey.getQuestions().size());
         
@@ -144,29 +163,30 @@ public class DynamoSurveyDaoTest {
 
     @Test(expected = ConcurrentModificationException.class)
     public void cannotUpdateVersionWithoutException() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
+        Survey survey = surveyService.createSurvey(testSurvey);
         survey.setVersion(44L);
-        surveyDao.updateSurvey(survey);
+        
+        surveyService.updateSurvey(survey);
     }
 
     @Test(expected = PublishedSurveyException.class)
     public void cannotUpdatePublishedSurveys() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
-        surveyDao.publishSurvey(survey.getGuid(), survey.getVersionedOn());
+        Survey survey = surveyService.createSurvey(testSurvey);
+        surveyService.publishSurvey(survey.getGuid(), survey.getVersionedOn());
 
         survey.setName("This is a new name");
-        surveyDao.updateSurvey(survey);
+        surveyService.updateSurvey(survey);
     }
 
     // VERSION SURVEY
 
     @Test
     public void canVersionASurveyEvenIfPublished() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
-        surveyDao.publishSurvey(survey.getGuid(), survey.getVersionedOn());
+        Survey survey = surveyService.createSurvey(testSurvey);
+        surveyService.publishSurvey(survey.getGuid(), survey.getVersionedOn());
 
         Long originalVersion = survey.getVersionedOn();
-        survey = surveyDao.versionSurvey(survey.getGuid(), survey.getVersionedOn());
+        survey = surveyService.versionSurvey(survey.getGuid(), survey.getVersionedOn());
 
         assertEquals("Newly versioned testSurvey is not published", false, survey.isPublished());
 
@@ -176,11 +196,11 @@ public class DynamoSurveyDaoTest {
 
     @Test
     public void versioningASurveyCopiesTheQuestions() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
+        Survey survey = surveyService.createSurvey(testSurvey);
         String v1SurveyCompoundKey = survey.getQuestions().get(0).getSurveyCompoundKey();
         String v1Guid = survey.getQuestions().get(0).getGuid();
 
-        survey = surveyDao.versionSurvey(survey.getGuid(), survey.getVersionedOn());
+        survey = surveyService.versionSurvey(survey.getGuid(), survey.getVersionedOn());
         String v2SurveyCompoundKey = survey.getQuestions().get(0).getSurveyCompoundKey();
         String v2Guid = survey.getQuestions().get(0).getGuid();
 
@@ -192,20 +212,20 @@ public class DynamoSurveyDaoTest {
 
     @Test
     public void canPublishASurvey() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
-        survey = surveyDao.publishSurvey(survey.getGuid(), survey.getVersionedOn());
+        Survey survey = surveyService.createSurvey(testSurvey);
+        survey = surveyService.publishSurvey(survey.getGuid(), survey.getVersionedOn());
 
         assertTrue("Survey is marked published", survey.isPublished());
 
-        Survey pubSurvey = surveyDao.getMostRecentlyPublishedSurveys(study.getKey()).get(0);
+        Survey pubSurvey = surveyService.getMostRecentlyPublishedSurveys(study).get(0);
 
         assertEquals("Same testSurvey GUID", survey.getGuid(), pubSurvey.getGuid());
         assertEquals("Same testSurvey versionedOn", survey.getVersionedOn(), pubSurvey.getVersionedOn());
         assertTrue("Published testSurvey is marked published", pubSurvey.isPublished());
 
         // Publishing again is harmless
-        survey = surveyDao.publishSurvey(survey.getGuid(), survey.getVersionedOn());
-        pubSurvey = surveyDao.getMostRecentlyPublishedSurveys(study.getKey()).get(0);
+        survey = surveyService.publishSurvey(survey.getGuid(), survey.getVersionedOn());
+        pubSurvey = surveyService.getMostRecentlyPublishedSurveys(study).get(0);
         assertEquals("Same testSurvey GUID", survey.getGuid(), pubSurvey.getGuid());
         assertEquals("Same testSurvey versionedOn", survey.getVersionedOn(), pubSurvey.getVersionedOn());
         assertTrue("Published testSurvey is marked published", pubSurvey.isPublished());
@@ -213,16 +233,16 @@ public class DynamoSurveyDaoTest {
 
     @Test
     public void canPublishANewerVersionOfASurvey() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
-        survey = surveyDao.publishSurvey(survey.getGuid(), survey.getVersionedOn());
+        Survey survey = surveyService.createSurvey(testSurvey);
+        survey = surveyService.publishSurvey(survey.getGuid(), survey.getVersionedOn());
 
-        Survey laterSurvey = surveyDao.versionSurvey(survey.getGuid(), survey.getVersionedOn());
+        Survey laterSurvey = surveyService.versionSurvey(survey.getGuid(), survey.getVersionedOn());
         assertNotEquals("Surveys do not have the same versionedOn", survey.getVersionedOn(),
                 laterSurvey.getVersionedOn());
 
-        laterSurvey = surveyDao.publishSurvey(laterSurvey.getGuid(), laterSurvey.getVersionedOn());
+        laterSurvey = surveyService.publishSurvey(laterSurvey.getGuid(), laterSurvey.getVersionedOn());
 
-        Survey pubSurvey = surveyDao.getMostRecentlyPublishedSurveys(study.getKey()).get(0);
+        Survey pubSurvey = surveyService.getMostRecentlyPublishedSurveys(study).get(0);
         assertEquals("Later testSurvey is the published testSurvey", laterSurvey.getVersionedOn(), pubSurvey.getVersionedOn());
     }
 
@@ -230,28 +250,28 @@ public class DynamoSurveyDaoTest {
 
     @Test
     public void failToGetSurveysByBadStudyKey() {
-        List<Survey> surveys = surveyDao.getSurveys("foo");
+        List<Survey> surveys = surveyService.getSurveys(new Study("foo", "foo", 17, "", null, null, "foo_researcher"));
         assertEquals("No surveys", 0, surveys.size());
     }
 
     @Test
     public void canGetAllSurveys() {
-        surveyDao.createSurvey(new TestSurvey(true));
-        surveyDao.createSurvey(new TestSurvey(true));
-        surveyDao.createSurvey(new TestSurvey(true));
-        surveyDao.createSurvey(new TestSurvey(true));
+        surveyService.createSurvey(new TestSurvey(true));
+        surveyService.createSurvey(new TestSurvey(true));
+        surveyService.createSurvey(new TestSurvey(true));
+        surveyService.createSurvey(new TestSurvey(true));
 
-        Survey survey = surveyDao.createSurvey(new TestSurvey(true));
+        Survey survey = surveyService.createSurvey(new TestSurvey(true));
 
-        surveyDao.versionSurvey(survey.getGuid(), survey.getVersionedOn());
+        surveyService.versionSurvey(survey.getGuid(), survey.getVersionedOn());
 
         // Get all surveys
-        List<Survey> surveys = surveyDao.getSurveys(study.getKey());
+        List<Survey> surveys = surveyService.getSurveys(study);
 
         assertEquals("All surveys are returned", 6, surveys.size());
 
         // Get all surveys of a version
-        surveys = surveyDao.getSurveyVersions(survey.getGuid());
+        surveys = surveyService.getAllVersionsOfSurvey(survey.getGuid());
         assertEquals("All surveys are returned", 2, surveys.size());
 
         Survey survey1 = surveys.get(0);
@@ -266,13 +286,13 @@ public class DynamoSurveyDaoTest {
 
     @Test
     public void canClosePublishedSurvey() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
-        survey = surveyDao.publishSurvey(survey.getGuid(), survey.getVersionedOn());
+        Survey survey = surveyService.createSurvey(testSurvey);
+        survey = surveyService.publishSurvey(survey.getGuid(), survey.getVersionedOn());
 
-        survey = surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
+        survey = surveyService.closeSurvey(survey.getGuid(), survey.getVersionedOn());
         assertEquals("Survey no longer published", false, survey.isPublished());
 
-        survey = surveyDao.getSurvey(survey.getGuid(), survey.getVersionedOn());
+        survey = surveyService.getSurvey(survey.getGuid(), survey.getVersionedOn());
         assertEquals("Survey no longer published", false, survey.isPublished());
     }
 
@@ -281,40 +301,40 @@ public class DynamoSurveyDaoTest {
     @Test
     public void canRetrieveMostRecentlyPublishedSurveysWithManyVersions() {
         // Version 1.
-        Survey survey1 = surveyDao.createSurvey(new TestSurvey(true));
+        Survey survey1 = surveyService.createSurvey(new TestSurvey(true));
 
         // Version 2.
-        Survey survey2 = surveyDao.versionSurvey(survey1.getGuid(), survey1.getVersionedOn());
+        Survey survey2 = surveyService.versionSurvey(survey1.getGuid(), survey1.getVersionedOn());
 
         // Version 3 (tossed)
-        surveyDao.versionSurvey(survey2.getGuid(), survey2.getVersionedOn());
+        surveyService.versionSurvey(survey2.getGuid(), survey2.getVersionedOn());
 
         // Publish one version
-        surveyDao.publishSurvey(survey1.getGuid(), survey1.getVersionedOn());
+        surveyService.publishSurvey(survey1.getGuid(), survey1.getVersionedOn());
 
-        List<Survey> surveys = surveyDao.getMostRecentlyPublishedSurveys(study.getKey());
+        List<Survey> surveys = surveyService.getMostRecentlyPublishedSurveys(study);
         assertEquals("Retrieved published testSurvey v1", survey1.getVersionedOn(), surveys.get(0).getVersionedOn());
 
         // Publish a later version
-        surveyDao.publishSurvey(survey2.getGuid(), survey2.getVersionedOn());
+        surveyService.publishSurvey(survey2.getGuid(), survey2.getVersionedOn());
 
         // Now the most recent version of this testSurvey should be survey2.
-        surveys = surveyDao.getMostRecentlyPublishedSurveys(study.getKey());
+        surveys = surveyService.getMostRecentlyPublishedSurveys(study);
         assertEquals("Retrieved published testSurvey v2", survey2.getVersionedOn(), surveys.get(0).getVersionedOn());
     }
 
     @Test
     public void canRetrieveMostRecentPublishedSurveysWithManySurveys() {
-        Survey survey1 = surveyDao.createSurvey(new TestSurvey(true));
-        surveyDao.publishSurvey(survey1.getGuid(), survey1.getVersionedOn());
+        Survey survey1 = surveyService.createSurvey(new TestSurvey(true));
+        surveyService.publishSurvey(survey1.getGuid(), survey1.getVersionedOn());
 
-        Survey survey2 = surveyDao.createSurvey(new TestSurvey(true));
-        surveyDao.publishSurvey(survey2.getGuid(), survey2.getVersionedOn());
+        Survey survey2 = surveyService.createSurvey(new TestSurvey(true));
+        surveyService.publishSurvey(survey2.getGuid(), survey2.getVersionedOn());
 
-        Survey survey3 = surveyDao.createSurvey(new TestSurvey(true));
-        surveyDao.publishSurvey(survey3.getGuid(), survey3.getVersionedOn());
+        Survey survey3 = surveyService.createSurvey(new TestSurvey(true));
+        surveyService.publishSurvey(survey3.getGuid(), survey3.getVersionedOn());
 
-        List<Survey> published = surveyDao.getMostRecentlyPublishedSurveys(study.getKey());
+        List<Survey> published = surveyService.getMostRecentlyPublishedSurveys(study);
 
         assertEquals("There are three published surveys", 3, published.size());
         assertEquals("The first is survey3", survey3.getGuid(), published.get(0).getGuid());
@@ -326,13 +346,10 @@ public class DynamoSurveyDaoTest {
 
     @Test(expected = PublishedSurveyException.class)
     public void cannotDeleteAPublishedSurvey() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
-        surveyDao.publishSurvey(survey.getGuid(), survey.getVersionedOn());
+        Survey survey = surveyService.createSurvey(testSurvey);
+        surveyService.publishSurvey(survey.getGuid(), survey.getVersionedOn());
 
-        surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
+        surveyService.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
     }
-
-    // GET SURVEY
-    // * Covered by other tests
-
+    
 }

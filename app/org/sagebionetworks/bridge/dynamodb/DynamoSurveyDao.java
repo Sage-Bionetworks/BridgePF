@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-import org.sagebionetworks.bridge.validators.SurveyValidator;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -32,12 +31,11 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class DynamoSurveyDao implements SurveyDao {
-    
-    private static final SurveyValidator VALIDATOR = new SurveyValidator();
     
     Comparator<DynamoSurvey> VERSIONED_ON_DESC_SORTER = new Comparator<DynamoSurvey>() {
         @Override public int compare(DynamoSurvey o1, DynamoSurvey o2) {
@@ -190,13 +188,12 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey createSurvey(Survey survey) {
-        VALIDATOR.validateNew(survey);
-        survey.setGuid(BridgeUtils.generateGuid());
+        Preconditions.checkArgument(survey.getStudyKey() != null, "Survey study key is null");
         
+        survey.setGuid(BridgeUtils.generateGuid());
         long time = DateUtils.getCurrentMillisFromEpoch();
         survey.setVersionedOn(time);
         survey.setModifiedOn(time);
-        
         return saveSurvey(survey);
     }
 
@@ -238,9 +235,8 @@ public class DynamoSurveyDao implements SurveyDao {
         long time = DateUtils.getCurrentMillisFromEpoch();
         copy.setVersionedOn(time);
         copy.setModifiedOn(time);
-
         for (SurveyQuestion question : copy.getQuestions()) {
-            question.setGuid(null);
+            question.setGuid(BridgeUtils.generateGuid());
         }
         return saveSurvey(copy);
     }
@@ -334,6 +330,7 @@ public class DynamoSurveyDao implements SurveyDao {
         deleteAllQuestions(survey.getGuid(), survey.getVersionedOn());
         List<SurveyQuestion> questions = survey.getQuestions();
         for (int i=0; i < questions.size(); i++) {
+            // These shouldn't be invalid at this point, but we double-check.
             SurveyQuestion question = questions.get(i);
             question.setSurveyKeyComponents(survey.getGuid(), survey.getVersionedOn());
             question.setOrder(i);
@@ -341,30 +338,16 @@ public class DynamoSurveyDao implements SurveyDao {
                 question.setGuid(BridgeUtils.generateGuid());
             }
         }
-        // Now it should be valid, by jingo
-        VALIDATOR.validate(survey);
         
-        Throwable error = null;
-        for (int i=0; i < questions.size(); i++) {
-            SurveyQuestion question = questions.get(i);
-            try {
-                surveyQuestionMapper.save(question);    
-            } catch(Throwable throwable) {
-                error = throwable;
-            }
-        }
+        List<FailedBatch> failures = surveyQuestionMapper.batchSave(questions);
+        BridgeUtils.ifFailuresThrowException(failures);
+        
         try {
             surveyMapper.save(survey);    
-        } catch(Throwable throwable) {
-            error = throwable;
-        }
-        // this will only be the last exception if there was more than one
-        if (error != null) { 
-            if (error.getClass() == ConditionalCheckFailedException.class) {
-                throw new ConcurrentModificationException(survey);
-            } else if (error != null) {
-                throw new BridgeServiceException(error);
-            }
+        } catch(ConditionalCheckFailedException throwable) {
+            throw new ConcurrentModificationException(survey);
+        } catch(Throwable t) {
+            throw new BridgeServiceException(t);
         }
         return survey;
     }

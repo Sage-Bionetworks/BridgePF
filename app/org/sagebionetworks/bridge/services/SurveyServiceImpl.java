@@ -5,17 +5,21 @@ import java.util.List;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.validation.Validator;
 
-/**
- * NOTE: This has become just a pass-through between layers, shall we just 
- * call the DAO from the controller?
- */
 public class SurveyServiceImpl implements SurveyService {
+
+    private Validator validator;
     
     private SurveyDao surveyDao;
     
     public void setSurveyDao(SurveyDao surveyDao) {
         this.surveyDao = surveyDao;
+    }
+    
+    public void setValidator(Validator validator) {
+        this.validator = validator;
     }
 
     @Override
@@ -45,11 +49,13 @@ public class SurveyServiceImpl implements SurveyService {
 
     @Override
     public Survey createSurvey(Survey survey) {
+        Validate.entityThrowingException(validator, survey);    
         return surveyDao.createSurvey(survey);
     }
 
     @Override
     public Survey updateSurvey(Survey survey) {
+        Validate.entityThrowingException(validator, survey);
         return surveyDao.updateSurvey(survey);
     }
 
@@ -67,5 +73,9 @@ public class SurveyServiceImpl implements SurveyService {
     public Survey versionSurvey(String surveyGuid, long versionedOn) {
         return surveyDao.versionSurvey(surveyGuid, versionedOn);
     }
-
+    
+    @Override
+    public void deleteSurvey(String surveyGuid, long versionedOn) {
+        surveyDao.deleteSurvey(surveyGuid, versionedOn);
+    }
 }

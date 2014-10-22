@@ -4,7 +4,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class UploadRequest {
+public class UploadRequest implements BridgeEntity {
 
     private static final String NAME_FIELD = "name";
     private static final String LENGTH_FIELD = "contentLength";

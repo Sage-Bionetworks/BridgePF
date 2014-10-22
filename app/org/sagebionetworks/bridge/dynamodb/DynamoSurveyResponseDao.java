@@ -13,9 +13,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
-import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
-import org.sagebionetworks.bridge.validators.SurveyAnswerValidator;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -26,7 +24,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 public class DynamoSurveyResponseDao implements SurveyResponseDao {
 
@@ -110,44 +107,17 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         responseMapper.delete(response);
     }
     
-    private Map<String,SurveyQuestion> getQuestionsMap(Survey survey) {
-        return asMap(survey.getQuestions(), new Function<SurveyQuestion,String>() {
-            public String apply(SurveyQuestion question) {
-                return question.getGuid();
-            }
-        });
-    }
-    
     private Map<String,SurveyAnswer> getAnswerMap(List<SurveyAnswer> answers) {
-        return asMap(answers, new Function<SurveyAnswer,String>() {
+        return BridgeUtils.asMap(answers, new Function<SurveyAnswer,String>() {
             public String apply(SurveyAnswer answer) {
                 return answer.getQuestionGuid();
             }
         });
     }
     
-    private <S,T> Map<S,T> asMap(List<T> list, Function<T,S> function) {
-        Map<S,T> map = Maps.newHashMap();
-        if (list != null && function != null) {
-            for (T item : list) {
-                map.put(function.apply(item), item);
-            }
-        }
-        return map;
-    }
-    
     private List<SurveyAnswer> getUnionOfValidMostRecentAnswers(Survey survey, List<SurveyAnswer> existingAnswers,
             List<SurveyAnswer> answers) {
-        // If any answer is not valid, then throw an exception and abort. We need to validate
-        // these individually
-        Map<String,SurveyQuestion> questions = getQuestionsMap(survey);
-        for (int i=0; i < answers.size(); i++) {
-            SurveyAnswer answer = answers.get(i);
-            SurveyAnswerValidator validator = new SurveyAnswerValidator(questions.get(answer.getQuestionGuid()));
-            validator.validate(answer);
-        }
-        
-        // Now verify these answers are unique or more recent than existing answers, and only include them if they are.
+        // Verify these answers are unique or more recent than existing answers, and only include them if they are.
         Map<String,SurveyAnswer> answersMap = getAnswerMap(existingAnswers);
         for (Iterator<SurveyAnswer> i = answers.iterator(); i.hasNext();) {
             SurveyAnswer newAnswer = i.next();
