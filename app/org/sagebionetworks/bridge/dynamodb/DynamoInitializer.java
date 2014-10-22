@@ -49,8 +49,8 @@ public class DynamoInitializer {
     private static Logger logger = LoggerFactory.getLogger(DynamoInitializer.class);
 
     // DynamoDB Free tier
-    private static final Long READ_CAPACITY = Long.valueOf(10);
-    private static final Long WRITE_CAPACITY = Long.valueOf(5);
+    private static final Long READ_CAPACITY = Long.valueOf(25);
+    private static final Long WRITE_CAPACITY = Long.valueOf(20);
 
     private static final BridgeConfig CONFIG = BridgeConfigFactory.getConfig();
 
@@ -397,19 +397,24 @@ public class DynamoInitializer {
     }
 
     static void waitForActive(TableDescription table) {
+        DescribeTableResult describeResult = DYNAMO.describeTable(
+                new DescribeTableRequest(table.getTableName()));
+        table = describeResult.getTable();
         while (!TableStatus.ACTIVE.name().equalsIgnoreCase(table.getTableStatus())) {
             try {
                 Thread.sleep(200L);
             } catch (InterruptedException e) {
                 throw new RuntimeException("Shouldn't be interrupted.", e);
             }
-            DescribeTableResult describeResult = DYNAMO.describeTable(
-                    new DescribeTableRequest(table.getTableName()));
+            describeResult = DYNAMO.describeTable(new DescribeTableRequest(table.getTableName()));
             table = describeResult.getTable();
         }
     }
 
     static void waitForDelete(TableDescription table) {
+        DescribeTableResult describeResult = DYNAMO.describeTable(
+                new DescribeTableRequest(table.getTableName()));
+        table = describeResult.getTable();
         while (true) {
             try {
                 Thread.sleep(200L);
@@ -417,8 +422,7 @@ public class DynamoInitializer {
                 throw new RuntimeException("Shouldn't be interrupted.", e);
             }
             try {
-                DescribeTableResult describeResult = DYNAMO.describeTable(
-                        new DescribeTableRequest(table.getTableName()));
+                describeResult = DYNAMO.describeTable(new DescribeTableRequest(table.getTableName()));
                 table = describeResult.getTable();
             } catch (ResourceNotFoundException e) {
                 return;

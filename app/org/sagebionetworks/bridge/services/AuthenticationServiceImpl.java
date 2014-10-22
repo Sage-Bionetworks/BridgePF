@@ -39,7 +39,6 @@ import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupList;
@@ -52,8 +51,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private Client stormpathClient;
     private CacheProvider cacheProvider;
     private BridgeConfig config;
-    private BridgeEncryptor healthCodeEncryptor;
-    private HealthCodeService healthCodeService;
+    private AccountEncryptionService accountEncryptionService;
     private ConsentService consentService;
     private Validator signInValidator;
     private Validator signUpValidator;
@@ -71,12 +69,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         this.config = config;
     }
 
-    public void setHealthCodeEncryptor(BridgeEncryptor encryptor) {
-        this.healthCodeEncryptor = encryptor;
-    }
-
-    public void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
+    public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
+        this.accountEncryptionService = accountEncryptionService;
     }
 
     public void setConsentService(ConsentService consentService) {
@@ -170,13 +164,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             addAccountToGroups(directory, account, signUp.getRoles());
             
             // Assign a health code
-            CustomData customData = account.getCustomData();
-            HealthId healthId = healthCodeService.create();
-            String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            customData.put(healthIdKey, healthCodeEncryptor.encrypt(healthId.getId()));
-            customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
-            customData.save();
-            
+            accountEncryptionService.createAndSaveHealthCode(study, account);
+
         } catch (ResourceException re) {
             throw new BadRequestException(re.getDeveloperMessage());
         }
@@ -253,12 +242,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final User user = new User(account);
         user.setStudyKey(study.getKey());
 
-        final CustomData data = account.getCustomData();
-        final String hdcKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-        final String encryptedId = (String)data.get(hdcKey);
-        if (encryptedId != null) {
-            String healthId = healthCodeEncryptor.decrypt(encryptedId);
-            String healthCode = healthCodeService.getHealthCode(healthId);
+        HealthId healthId = accountEncryptionService.getHealthCode(study, account);
+        if (healthId != null) {
+            String healthCode = healthId.getCode();
             user.setHealthDataCode(healthCode);
             boolean hasConsented = consentService.hasUserConsentedToResearch(user, study);
             user.setConsent(hasConsented);
@@ -280,7 +266,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         session.setUser(user);
         return session;
     }
-    
+
     private void addAccountToGroups(Directory directory, Account account, List<String> roles) {
         if (roles != null) {
             GroupList groups = directory.getGroups();

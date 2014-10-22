@@ -346,8 +346,7 @@
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="cacheProvider" ref="cacheProvider" />
         <property name="bridgeConfig" ref="bridgeConfig" />
-        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
-        <property name="healthCodeService" ref="healthCodeService" />
+        <property name="accountEncryptionService" ref="accountEncryptionService" />
         <property name="consentService" ref="consentService" />
         <property name="signInValidator">
             <bean class="org.sagebionetworks.bridge.validators.SignInValidator"/>
@@ -373,13 +372,17 @@
 
     <bean id="consentService" class="org.sagebionetworks.bridge.services.ConsentServiceImpl">
         <property name="stormpathClient" ref="stormpathClient" />
-        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
-        <property name="healthCodeService" ref="healthCodeService" />
+        <property name="accountEncryptionService" ref="accountEncryptionService" />
         <property name="sendMailService" ref="sendEmailViaAmazonService"/>
         <property name="studyConsentDao" ref="studyConsentDao"/>
         <property name="userConsentDao" ref="userConsentDao"/>
     </bean>
-    
+
+    <bean id="accountEncryptionService" class="org.sagebionetworks.bridge.services.AccountEncryptionServiceImpl">
+        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
+        <property name="healthCodeService" ref="healthCodeService" />
+    </bean>
+
     <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">
         <property name="studyConsentDao" ref="studyConsentDao" />
         <property name="validator">
