@@ -52,12 +52,12 @@ public class ResetPasswordTest extends BaseIntegrationTest {
             public void invoke(TestBrowser browser) {
                 UserSession session = null;
                 try {
-                    session = helper.createUser();
+                    session = helper.createUser("test");
                     
                     AppPage page = new AppPage(browser);
                     RequestResetPasswordDialog dialog = page.openSignInDialog().openResetPasswordDialog();
                     
-                    dialog.submitEmailAddress(helper.getTestUser().getEmail());
+                    dialog.submitEmailAddress(session.getUser().getEmail());
                 } finally {
                     helper.deleteUser(session);
                 }

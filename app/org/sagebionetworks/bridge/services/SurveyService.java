@@ -42,6 +42,8 @@ public interface SurveyService {
     
     public Survey publishSurvey(String surveyGuid, long versionedOn);
     
+    public void deleteSurvey(String surveyGuid, long versionedOn);
+    
     public Survey closeSurvey(String surveyGuid, long versionedOn);
     
     public Survey versionSurvey(String surveyGuid, long versionedOn);

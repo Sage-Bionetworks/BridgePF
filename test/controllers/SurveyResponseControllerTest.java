@@ -64,7 +64,7 @@ public class SurveyResponseControllerTest {
     
     @Before
     public void before() {
-        session = helper.createUser(Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
+        session = helper.createUser("admin-test", Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
         survey = new TestSurvey(true);
         surveyDao.createSurvey(survey);
         DynamoInitializer.init(DynamoSurveyResponse.class);

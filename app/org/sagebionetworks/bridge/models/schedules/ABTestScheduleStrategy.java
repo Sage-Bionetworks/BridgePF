@@ -8,7 +8,7 @@ import java.util.Random;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.validators.Messages;
+import org.springframework.validation.Errors;
 
 import com.google.common.collect.Lists;
 
@@ -130,17 +130,17 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
         return list;
     }
     @Override
-    public void validate(Messages messages) {
+    public void validate(Errors errors) {
         int percentage = 0;
         for (ScheduleGroup group : groups) {
             percentage += group.getPercentage();
         }
         if (percentage != 100) {
-            messages.add("groups in AB test plan add up to %s\u0025 and not 100\u0025 (give 20\u0025 as 20, for example)", percentage);
+            errors.reject(String.format("groups in AB test plan add up to %s\u0025 and not 100\u0025 (give 20\u0025 as 20, for example)", percentage));
         }
         for (ScheduleGroup group : groups) {
             if (group.getSchedule() == null){
-                messages.add("at least one AB test plan group is missing a schedule");
+                errors.reject("at least one AB test plan group is missing a schedule");
                 return;
             }
         }

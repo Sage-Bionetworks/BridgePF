@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.validators.SurveyValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,7 +25,7 @@ public class DynamoSurveyTest {
         SurveyValidator validator = new SurveyValidator();
         DynamoSurvey survey = new TestSurvey(false);
         try {
-            validator.validate(survey);
+            Validate.entityThrowingException(validator, survey);
         } catch(Throwable t) {
             fail(t.getMessage());
         }
@@ -41,7 +42,7 @@ public class DynamoSurveyTest {
         newSurvey.setModifiedOn(survey.getModifiedOn());
         newSurvey.setPublished(survey.isPublished());
         try {
-            validator.validate(newSurvey);
+            Validate.entityThrowingException(validator, newSurvey);
         } catch(Throwable t) {
             fail(t.getMessage());
         }

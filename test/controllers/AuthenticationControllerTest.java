@@ -1,5 +1,6 @@
 package controllers;
 
+import static org.apache.commons.httpclient.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.commons.httpclient.HttpStatus.SC_NOT_FOUND;
 import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
@@ -47,7 +48,7 @@ public class AuthenticationControllerTest {
     
     @Before
     public void before() {
-        session = helper.createUser();
+        session = helper.createUser("test");
     }
     
     @After
@@ -56,22 +57,22 @@ public class AuthenticationControllerTest {
     }
     
     @Test
-    public void signInNoCredentialsFailsWith404() {
+    public void signInNoCredentialsFailsWith400() {
         running(testServer(3333), new Runnable() {
             public void run() {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
-                assertEquals("HTTP response indicates user not found", SC_NOT_FOUND, response.getStatus());
+                assertEquals("HTTP response indicates no credentials is an error", SC_BAD_REQUEST, response.getStatus());
             }
         });
     }
 
     @Test
-    public void signInGarbageCredentialsFailsWith404() {
+    public void signInGarbageCredentialsFailsWith400() {
         running(testServer(3333), new Runnable() {
             public void run() {
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post("username=bob&password=foo").get(TIMEOUT);
-                assertEquals("HTTP response indicates user not found", SC_NOT_FOUND, response.getStatus());
+                assertEquals("HTTP response indicates bad paylod", SC_BAD_REQUEST, response.getStatus());
             }
         });
     }
@@ -92,8 +93,8 @@ public class AuthenticationControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put(USERNAME, helper.getTestUser().getUsername());
-                node.put(PASSWORD, helper.getTestUser().getPassword());
+                node.put(USERNAME, session.getUser().getUsername());
+                node.put(PASSWORD, helper.getPassword());
 
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
                 assertEquals("HTTP response indicates request OK", SC_OK, response.getStatus());
@@ -102,7 +103,7 @@ public class AuthenticationControllerTest {
                 assertEquals("Type is UserSession", "UserSessionInfo", node.get("type").asText());
                 assertNotNull("Session token is assigned", node.get(SESSION_TOKEN).asText());
                 String username = node.get(USERNAME).asText();
-                assertEquals("Username is for test2 user", helper.getTestUser().getUsername(), username);
+                assertEquals("Username is for test2 user", session.getUser().getUsername(), username);
             }
         });
     }
@@ -112,8 +113,8 @@ public class AuthenticationControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put(USERNAME, helper.getTestUser().getUsername());
-                node.put(PASSWORD, helper.getTestUser().getPassword());
+                node.put(USERNAME, session.getUser().getUsername());
+                node.put(PASSWORD, helper.getPassword());
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
                 
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);

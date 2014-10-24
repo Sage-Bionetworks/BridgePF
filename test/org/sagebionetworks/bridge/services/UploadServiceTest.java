@@ -81,7 +81,7 @@ public class UploadServiceTest {
             }
         }
         objectsToRemove = new ArrayList<String>();
-        session = helper.createUser();
+        session = helper.createUser("test");
     }
 
     @After

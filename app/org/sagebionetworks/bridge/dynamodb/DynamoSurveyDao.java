@@ -1,23 +1,22 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.PublishedSurveyException;
 import org.sagebionetworks.bridge.dao.SurveyDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-import org.sagebionetworks.bridge.validators.SurveyValidator;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -36,8 +35,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class DynamoSurveyDao implements SurveyDao {
-    
-    private static final SurveyValidator VALIDATOR = new SurveyValidator();
     
     Comparator<DynamoSurvey> VERSIONED_ON_DESC_SORTER = new Comparator<DynamoSurvey>() {
         @Override public int compare(DynamoSurvey o1, DynamoSurvey o2) {
@@ -190,13 +187,13 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey createSurvey(Survey survey) {
-        VALIDATOR.validateNew(survey);
-        survey.setGuid(BridgeUtils.generateGuid());
-        
+        checkNotNull(survey.getStudyKey(), "Survey study key is null");
+        if (survey.getGuid() == null) {
+            survey.setGuid(BridgeUtils.generateGuid());
+        }
         long time = DateUtils.getCurrentMillisFromEpoch();
         survey.setVersionedOn(time);
         survey.setModifiedOn(time);
-        
         return saveSurvey(survey);
     }
 
@@ -238,36 +235,24 @@ public class DynamoSurveyDao implements SurveyDao {
         long time = DateUtils.getCurrentMillisFromEpoch();
         copy.setVersionedOn(time);
         copy.setModifiedOn(time);
-
         for (SurveyQuestion question : copy.getQuestions()) {
-            question.setGuid(null);
+            question.setGuid(BridgeUtils.generateGuid());
         }
         return saveSurvey(copy);
     }
 
     @Override
     public List<Survey> getSurveys(String studyKey) {
-        if (StringUtils.isBlank(studyKey)) {
-            throw new BadRequestException("Study key is required");
-        }
         return new QueryBuilder().setStudy(studyKey).getAll(false);
     }
     
     @Override
     public List<Survey> getSurveyVersions(String surveyGuid) {
-        if (StringUtils.isBlank(surveyGuid)) {
-            throw new BadRequestException("Survey GUID is required");
-        }
         return new QueryBuilder().setSurvey(surveyGuid).getAll(true);
     }
 
     @Override
     public Survey getSurvey(String surveyGuid, long versionedOn) {
-        if (StringUtils.isBlank(surveyGuid)) {
-            throw new BadRequestException("Survey GUID cannot be null/blank");
-        } else if (versionedOn == 0L) {
-            throw new BadRequestException("Survey must have versionedOn date");
-        }
         return new QueryBuilder().setSurvey(surveyGuid).setVersionedOn(versionedOn).getOne(true);
     }
 
@@ -334,6 +319,7 @@ public class DynamoSurveyDao implements SurveyDao {
         deleteAllQuestions(survey.getGuid(), survey.getVersionedOn());
         List<SurveyQuestion> questions = survey.getQuestions();
         for (int i=0; i < questions.size(); i++) {
+            // These shouldn't be invalid at this point, but we double-check.
             SurveyQuestion question = questions.get(i);
             question.setSurveyKeyComponents(survey.getGuid(), survey.getVersionedOn());
             question.setOrder(i);
@@ -341,30 +327,16 @@ public class DynamoSurveyDao implements SurveyDao {
                 question.setGuid(BridgeUtils.generateGuid());
             }
         }
-        // Now it should be valid, by jingo
-        VALIDATOR.validate(survey);
         
-        Throwable error = null;
-        for (int i=0; i < questions.size(); i++) {
-            SurveyQuestion question = questions.get(i);
-            try {
-                surveyQuestionMapper.save(question);    
-            } catch(Throwable throwable) {
-                error = throwable;
-            }
-        }
+        List<FailedBatch> failures = surveyQuestionMapper.batchSave(questions);
+        BridgeUtils.ifFailuresThrowException(failures);
+        
         try {
             surveyMapper.save(survey);    
-        } catch(Throwable throwable) {
-            error = throwable;
-        }
-        // this will only be the last exception if there was more than one
-        if (error != null) { 
-            if (error.getClass() == ConditionalCheckFailedException.class) {
-                throw new ConcurrentModificationException(survey);
-            } else if (error != null) {
-                throw new BridgeServiceException(error);
-            }
+        } catch(ConditionalCheckFailedException throwable) {
+            throw new ConcurrentModificationException(survey);
+        } catch(Throwable t) {
+            throw new BridgeServiceException(t);
         }
         return survey;
     }
