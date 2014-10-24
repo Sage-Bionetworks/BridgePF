@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.sagebionetworks.bridge.TestUtils.waitFor;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import javax.annotation.Resource;
 
@@ -51,24 +53,24 @@ public class ScheduleChangeListenerTest {
     @Resource
     private DynamoSchedulePlanDao schedulePlanDao;
     
-    private Study study;
+    @Resource
+    private AuthenticationServiceImpl authService;
     
     @Before
     public void before() {
         DynamoInitializer.init(DynamoSchedule.class, DynamoSchedulePlan.class);
         DynamoTestUtil.clearTable(DynamoSchedule.class);
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
-        
-        study = helper.getTestStudy();
     }
     
     @Test
     public void addPlanThenEnrollUnenrollUser() throws Exception {
+        final TestUser testUser = new TestUser("enrollme");
+        final Study study = helper.getTestStudy();
         UserSession session = null;
         try {
-            session = helper.createUser(new TestUser("enrollme", "enrollme@sagebridge.org", "P4ssword").getSignUp(),
-                    study, true, false);
-            User user = session.getUser();
+            session = helper.createUser(testUser.getSignUp(), study, true, false);
+            final User user = session.getUser();
             
             SchedulePlan plan = createSchedulePlan(user);
             schedulePlanDao.createSchedulePlan(plan);
@@ -76,48 +78,83 @@ public class ScheduleChangeListenerTest {
             List<Schedule> schedules = scheduleDao.getSchedules(study, user);
             assertEquals("No schedules because the user hasn't joined the study", 0, schedules.size());
             
-            listener.onTestEvent(new UserEnrolledEvent(user, study));
-            
+            listener.onApplicationEvent(new UserEnrolledEvent(user, study));
+            waitFor(new Callable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    return (scheduleDao.getSchedules(study, user).size() == 1);
+                }
+            });
             schedules = scheduleDao.getSchedules(study, user);
             assertEquals("User joined study and has a schedule", 1, schedules.size());
             
-            listener.onTestEvent(new UserUnenrolledEvent(user, study));
-            
+            listener.onApplicationEvent(new UserUnenrolledEvent(user, study));
+            waitFor(new Callable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    return (scheduleDao.getSchedules(study, user).size() == 0);
+                }
+            });
             schedules = scheduleDao.getSchedules(study, user);
             assertEquals("User left study and has no schedules", 0, schedules.size());
         } finally {
             helper.deleteUser(session);
+            waitFor(new Callable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    return (authService.getUser(study, testUser.getEmail()) == null);
+                }                
+            });
         }
     }
     
     @Test
     public void addUserThenCrudPlan() throws Exception {
-        UserSession session = null;
+        final TestUser testUser = new TestUser("enrollme");
+        final Study study = helper.getTestStudy();
+        UserSession session = null; 
         try {
-            session = helper.createUser(getClass().getSimpleName());
+            session = helper.createUser(testUser.getUsername());
+            final User user = session.getUser();
             
             List<Schedule> schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("No schedules because there's no plan", 0, schedules.size());
 
             SchedulePlan plan = createSchedulePlan(session.getUser());
-            listener.onTestEvent(new SchedulePlanCreatedEvent(plan));
-
+            listener.onApplicationEvent(new SchedulePlanCreatedEvent(plan));
+            waitFor(new Callable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    return (scheduleDao.getSchedules(study, user).size() == 1);
+                }
+            });
             schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("There is now one schedule for the user", 1, schedules.size());
 
             updateSchedulePlan(plan);
-            listener.onTestEvent(new SchedulePlanUpdatedEvent(plan));
-
+            listener.onApplicationEvent(new SchedulePlanUpdatedEvent(plan));
+            waitFor(new Callable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    List<Schedule> sch = scheduleDao.getSchedules(study, user);
+                    return (!sch.isEmpty() && "* * * * * *".equals(sch.get(0).getCronTrigger()));
+                }
+            });
             schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("There is still one schedule for the user", 1, schedules.size());
             assertEquals("That schedule shows an update", "* * * * * *", schedules.get(0).getCronTrigger());
 
-            listener.onTestEvent(new SchedulePlanDeletedEvent(plan));
+            listener.onApplicationEvent(new SchedulePlanDeletedEvent(plan));
+            waitFor(new Callable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    return (scheduleDao.getSchedules(study, user).size() == 0);
+                }
+            });
             schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("Now there is no schedule after the one plan was deleted", 0, schedules.size());
             
         } finally {
             helper.deleteUser(session, getClass().getSimpleName());
+            waitFor(new Callable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    return (authService.getUser(study, testUser.getEmail()) == null);
+                }                
+            });
         }
     }
     
@@ -132,7 +169,7 @@ public class ScheduleChangeListenerTest {
         String planGuid = BridgeUtils.generateGuid();
         
         Schedule schedule = new DynamoSchedule();
-        schedule.setStudyAndUser(study, user);
+        schedule.setStudyAndUser(helper.getTestStudy(), user);
         schedule.setSchedulePlanGuid(planGuid);
         schedule.setLabel("Task AAA");
         schedule.setActivityType(ActivityType.TASK);
@@ -150,7 +187,7 @@ public class ScheduleChangeListenerTest {
         plan.setGuid(planGuid);
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         plan.setStrategy(strategy);
-        plan.setStudyKey(study.getKey());
+        plan.setStudyKey(helper.getTestStudy().getKey());
         return plan;
     }
 
