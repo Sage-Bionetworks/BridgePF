@@ -146,6 +146,7 @@ public class StormPathUserAdminService implements UserAdminService {
         while (shouldRetry) {
             try {
                 deleteUserInStudy(user, study);
+                return;
             } catch(ConcurrentModificationException e) {
                 shouldRetry = retryCount < 5;
                 retryCount++;
