@@ -25,15 +25,11 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.account.AccountCriteria;
-import com.stormpath.sdk.account.AccountList;
-import com.stormpath.sdk.account.Accounts;
-import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
 
@@ -132,21 +128,20 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void unconsentedUserMustSignTOU() throws Exception {
-        UserSession aSession = null;
+        TestUser user = new TestUser("authTestUser");
         try {
             // Create a user who has not consented.
-            TestUser user = new TestUser("authTestUser", "authTestUser@sagebridge.org", "P4ssword");
-            aSession = helper.createUser(user.getSignUp(), helper.getTestStudy(), false, false);
+            helper.createUser(user.getSignUp(), helper.getTestStudy(), false, false);
             authService.signIn(helper.getTestStudy(), user.getSignIn());
             fail("Should have thrown consent exception");
         } catch(ConsentRequiredException e) {
-            helper.deleteUser(aSession);
+            helper.deleteUser(helper.getTestStudy(), user.getEmail());
         }
     }
     
     @Test
     public void createUserInNonDefaultAccountStore() {
-        TestUser nonDefaultUser = new TestUser("secondStudyUser", "secondStudyUser@sagebridge.org", "P4ssword");
+        TestUser nonDefaultUser = new TestUser("secondStudyUser");
         try {
              
             Study defaultStudy = helper.getTestStudy();
@@ -160,49 +155,35 @@ public class AuthenticationServiceImplTest {
             directory = stormpathClient.getResource(defaultStudy.getStormpathDirectoryHref(), Directory.class);
             assertFalse("Account is not in store", isInStore(directory, nonDefaultUser.getSignUp()));
         } finally {
-            deleteAccount(nonDefaultUser);
+            helper.deleteUser(helper.getTestStudy(), nonDefaultUser.getEmail());
         }
     }
     
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
-        UserSession session = null;
+        TestUser researcher = new TestUser(getClass().getSimpleName());
         try {
-            TestUser researcher = new TestUser("researcher", "researcher@sagebridge.org", "P4ssword", helper
-                    .getTestStudy().getResearcherRole());
-            
             helper.createUser(researcher.getSignUp(), helper.getTestStudy(), false, false);
             
-            session = authService.signIn(helper.getTestStudy(), researcher.getSignIn());
+            authService.signIn(helper.getTestStudy(), researcher.getSignIn());
             // no exception should have been thrown.
             
         } finally {
-            helper.deleteUser(session);
+            helper.deleteUser(helper.getTestStudy(), researcher.getEmail());
         }
     }
 
     @Test
     public void createAdminAndSignInWithoutConsentError() {
-        UserSession session = null;
+        TestUser researcher = new TestUser("adminer", Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
         try {
-            TestUser researcher = new TestUser("adminer", "adminer@sagebridge.org", "P4ssword", BridgeConstants.ADMIN_GROUP);
-
             helper.createUser(researcher.getSignUp(), helper.getTestStudy(), false, false);
             
-            session = authService.signIn(helper.getTestStudy(), researcher.getSignIn());
+            authService.signIn(helper.getTestStudy(), researcher.getSignIn());
             // no exception should have been thrown.
             
         } finally {
-            helper.deleteUser(session);
-        }
-    }
-    
-    private void deleteAccount(TestUser user) {
-        Application app = StormpathFactory.createStormpathApplication(stormpathClient);
-        AccountCriteria criteria = Accounts.where(Accounts.email().eqIgnoreCase(user.getEmail()));
-        AccountList accounts = app.getAccounts(criteria);
-        for (Account account : accounts) {
-            account.delete();
+            helper.deleteUser(helper.getTestStudy(), researcher.getEmail());
         }
     }
 

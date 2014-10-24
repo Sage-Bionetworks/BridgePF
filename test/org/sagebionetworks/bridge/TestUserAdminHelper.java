@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -81,6 +82,13 @@ public class TestUserAdminHelper {
         }
     }
 
+    public void deleteUser(Study study, String email) {
+        User user = authService.getUser(study, email);
+        if (user != null) {
+            userAdminService.deleteUser(user);
+        }
+    }
+    
     public String getPassword() {
         return PASSWORD;
     }
