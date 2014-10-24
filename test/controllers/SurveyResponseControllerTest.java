@@ -64,7 +64,7 @@ public class SurveyResponseControllerTest {
     
     @Before
     public void before() {
-        session = helper.createUser("admin-test", Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
+        session = helper.createUser(getClass().getSimpleName(), Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
         survey = new TestSurvey(true);
         surveyDao.createSurvey(survey);
         DynamoInitializer.init(DynamoSurveyResponse.class);
@@ -79,7 +79,7 @@ public class SurveyResponseControllerTest {
         if (survey != null) {
             surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());    
         }
-        helper.deleteUser(session);
+        helper.deleteUser(session, getClass().getSimpleName());
     }
     
     @Test

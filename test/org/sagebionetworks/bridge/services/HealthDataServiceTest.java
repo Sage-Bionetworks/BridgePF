@@ -43,12 +43,12 @@ public class HealthDataServiceTest {
     public void before() {
         DynamoInitializer.init(DynamoHealthDataRecord.class);
         DynamoTestUtil.clearTable(DynamoHealthDataRecord.class);
-        session = helper.createUser("healthData-tester");
+        session = helper.createUser(getClass().getSimpleName());
     }
     
     @After
     public void after() {
-        helper.deleteUser(session);
+        helper.deleteUser(session, getClass().getSimpleName());
     }
     
     private HealthDataRecord createHealthDataRecord() {
