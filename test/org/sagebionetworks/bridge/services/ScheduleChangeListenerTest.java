@@ -94,7 +94,7 @@ public class ScheduleChangeListenerTest {
     public void addUserThenCrudPlan() throws Exception {
         UserSession session = null;
         try {
-            session = helper.createUser("test");
+            session = helper.createUser(getClass().getSimpleName());
             
             List<Schedule> schedules = scheduleDao.getSchedules(study, session.getUser());
             assertEquals("No schedules because there's no plan", 0, schedules.size());
@@ -117,7 +117,7 @@ public class ScheduleChangeListenerTest {
             assertEquals("Now there is no schedule after the one plan was deleted", 0, schedules.size());
             
         } finally {
-            helper.deleteUser(session);
+            helper.deleteUser(session, getClass().getSimpleName());
         }
     }
     

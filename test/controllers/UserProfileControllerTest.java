@@ -44,12 +44,12 @@ public class UserProfileControllerTest {
     
     @Before
     public void before() {
-        session = helper.createUser("test");
+        session = helper.createUser(getClass().getSimpleName());
     }
     
     @After
     public void after() {
-        helper.deleteUser(session);
+        helper.deleteUser(session, getClass().getSimpleName());
     }
 
     @Test

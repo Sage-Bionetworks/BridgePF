@@ -46,6 +46,15 @@ public interface UserAdminService {
     /**
      * Delete the target user.
      * 
+     * @param userEmail
+     *            target user's email
+     * @throws BridgeServiceException
+     */
+    public void deleteUser(String userEmail) throws BridgeServiceException;
+
+    /**
+     * Delete the target user.
+     * 
      * @param user
      *            target user
      * @throws BridgeServiceException

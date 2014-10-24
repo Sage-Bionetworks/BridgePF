@@ -41,14 +41,14 @@ public class ScheduleControllerTest {
     
     @Before
     public void before() {
-        session = helper.createUser("test");
+        session = helper.createUser(getClass().getSimpleName());
         plan = schedulePlanDao.createSchedulePlan(new TestSimpleSchedulePlan());
     }
     
     @After
     public void after() {
         schedulePlanDao.deleteSchedulePlan(helper.getTestStudy(), plan.getGuid());
-        helper.deleteUser(session);
+        helper.deleteUser(session, getClass().getSimpleName());
     }
 
     @Test
