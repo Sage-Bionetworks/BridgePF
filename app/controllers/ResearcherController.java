@@ -6,7 +6,7 @@ import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 
-public class ResearcherController extends BaseController {
+public abstract class ResearcherController extends BaseController {
 
     protected UserSession getAuthenticatedResearcherOrAdminSession(Study study) {
         UserSession session = getAuthenticatedSession();

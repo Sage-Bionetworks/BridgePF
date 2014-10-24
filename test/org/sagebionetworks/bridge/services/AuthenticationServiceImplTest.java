@@ -16,7 +16,6 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
-import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -36,7 +35,6 @@ import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -45,12 +43,9 @@ public class AuthenticationServiceImplTest {
 
     @Resource
     private AuthenticationServiceImpl authService;
-    
-    @Resource
-    private BridgeEncryptor healthCodeEncryptor;
 
     @Resource
-    private HealthCodeService healthCodeService;
+    private AccountEncryptionService accountEncryptionService;
 
     @Resource
     private StudyServiceImpl studyService;
@@ -61,26 +56,16 @@ public class AuthenticationServiceImplTest {
     @Resource
     private Client stormpathClient;
     
-    private static final int NUMBER_OF_TESTS = 12;
-    
-    private boolean setUpComplete = false;
-    private int testCount = 0;
     private UserSession session;
     
     @Before
     public void before() {
-        if (!setUpComplete) {
-            session = helper.createUser();
-            setUpComplete = true;
-        }
+        session = helper.createUser("test");
     }
     
     @After
     public void after() {
-        testCount++;
-        if (testCount == NUMBER_OF_TESTS) {
-            helper.deleteUser(session);
-        }
+        helper.deleteUser(session);
     }
 
     @Test(expected = BridgeServiceException.class)
@@ -108,8 +93,8 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void signInWhenSignedIn() throws Exception {
-        UserSession session = authService.signIn(helper.getTestStudy(), helper.getUserSignIn());
-        assertEquals("Username is for test2 user", helper.getTestUser().getUsername(), session.getUser().getUsername());
+        UserSession newSession = authService.signIn(helper.getTestStudy(), helper.getSignIn(session));
+        assertEquals("Username is for test2 user", session.getUser().getUsername(), newSession.getUser().getUsername());
     }
 
     @Test
@@ -125,16 +110,16 @@ public class AuthenticationServiceImplTest {
     public void getSessionWhenAuthenticated() throws Exception {
         UserSession newSession = authService.getSession(session.getSessionToken());
 
-        assertEquals("Username is for test2 user", helper.getTestUser().getUsername(), newSession.getUser().getUsername());
+        assertEquals("Username is for test2 user", session.getUser().getUsername(), newSession.getUser().getUsername());
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(newSession.getSessionToken()));
     }
 
-    @Test(expected = BridgeServiceException.class)
+    @Test(expected = NullPointerException.class)
     public void requestPasswordResetFailsOnNull() throws Exception {
         authService.requestResetPassword(null);
     }
 
-    @Test(expected = BridgeServiceException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void requestPasswordResetFailsOnEmptyString() throws Exception {
         Email email = new Email("");
         authService.requestResetPassword(email);
@@ -151,7 +136,7 @@ public class AuthenticationServiceImplTest {
         try {
             // Create a user who has not consented.
             TestUser user = new TestUser("authTestUser", "authTestUser@sagebridge.org", "P4ssword");
-            aSession = helper.createUser(user, null, helper.getTestStudy(), false, false);
+            aSession = helper.createUser(user.getSignUp(), helper.getTestStudy(), false, false);
             authService.signIn(helper.getTestStudy(), user.getSignIn());
             fail("Should have thrown consent exception");
         } catch(ConsentRequiredException e) {
@@ -166,7 +151,7 @@ public class AuthenticationServiceImplTest {
              
             Study defaultStudy = helper.getTestStudy();
             Study otherStudy = studyService.getStudyByKey("neurod");
-            authService.signUp(nonDefaultUser.getSignUp(), otherStudy);
+            authService.signUp(nonDefaultUser.getSignUp(), otherStudy, false);
 
             // Should have been saved to this account store, not the default account store.
             Directory directory = stormpathClient.getResource(otherStudy.getStormpathDirectoryHref(), Directory.class);
@@ -178,7 +163,40 @@ public class AuthenticationServiceImplTest {
             deleteAccount(nonDefaultUser);
         }
     }
+    
+    @Test
+    public void createResearcherAndSignInWithoutConsentError() {
+        UserSession session = null;
+        try {
+            TestUser researcher = new TestUser("researcher", "researcher@sagebridge.org", "P4ssword", helper
+                    .getTestStudy().getResearcherRole());
+            
+            helper.createUser(researcher.getSignUp(), helper.getTestStudy(), false, false);
+            
+            session = authService.signIn(helper.getTestStudy(), researcher.getSignIn());
+            // no exception should have been thrown.
+            
+        } finally {
+            helper.deleteUser(session);
+        }
+    }
 
+    @Test
+    public void createAdminAndSignInWithoutConsentError() {
+        UserSession session = null;
+        try {
+            TestUser researcher = new TestUser("adminer", "adminer@sagebridge.org", "P4ssword", BridgeConstants.ADMIN_GROUP);
+
+            helper.createUser(researcher.getSignUp(), helper.getTestStudy(), false, false);
+            
+            session = authService.signIn(helper.getTestStudy(), researcher.getSignIn());
+            // no exception should have been thrown.
+            
+        } finally {
+            helper.deleteUser(session);
+        }
+    }
+    
     private void deleteAccount(TestUser user) {
         Application app = StormpathFactory.createStormpathApplication(stormpathClient);
         AccountCriteria criteria = Accounts.where(Accounts.email().eqIgnoreCase(user.getEmail()));
@@ -207,20 +225,6 @@ public class AuthenticationServiceImplTest {
     }
 
     private boolean hasHealthCode(Study study, Account account) {
-        final CustomData customData = account.getCustomData();
-        final String hdcKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-        final String encryptedId = (String)customData.get(hdcKey);
-        if (encryptedId == null) {
-            return false;
-        }
-        String healthId = healthCodeEncryptor.decrypt(encryptedId);
-        if (healthId == null) {
-            return false;
-        }
-        String healthCode = healthCodeService.getHealthCode(healthId);
-        if (healthCode == null) {
-            return false;
-        }
-        return true;
+        return accountEncryptionService.getHealthCode(study, account) != null;
     }
 }

@@ -1,16 +1,15 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
-import org.sagebionetworks.bridge.dao.UserLockDao;
+import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
-import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
@@ -19,16 +18,15 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.validation.Validator;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
-import com.stormpath.sdk.group.Group;
-import com.stormpath.sdk.group.GroupList;
 
 public class StormPathUserAdminService implements UserAdminService {
 
@@ -36,10 +34,9 @@ public class StormPathUserAdminService implements UserAdminService {
     private ConsentService consentService;
     private HealthDataService healthDataService;
     private StudyService studyService;
-    private BridgeEncryptor healthCodeEncryptor;
-    private HealthCodeService healthCodeService;
     private Client stormpathClient;
-    private UserLockDao userLockDao;
+    private DistributedLockDao lockDao;
+    private Validator validator;
 
     public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
@@ -57,55 +54,30 @@ public class StormPathUserAdminService implements UserAdminService {
         this.studyService = studyService;
     }
 
-    public void setHealthCodeEncryptor(BridgeEncryptor encryptor) {
-        this.healthCodeEncryptor = encryptor;
-    }
-
-    public void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
-    }
-
     public void setStormpathClient(Client stormpathClient) {
         this.stormpathClient = stormpathClient;
     }
 
-    public void setUserLockDao(UserLockDao userLockDao) {
-        this.userLockDao = userLockDao;
+    public void setDistributedLockDao(DistributedLockDao lockDao) {
+        this.lockDao = lockDao;
+    }
+    
+    public void setValidator(Validator validator) {
+        this.validator = validator;
     }
 
     @Override
-    public UserSession createUser(SignUp signUp, List<String> roles, Study userStudy, boolean signUserIn,
-            boolean consentUser) throws BridgeServiceException {
-        if (signUp == null) {
-            throw new BridgeServiceException("User cannot be null");
-        } else if (StringUtils.isBlank(signUp.getUsername())) {
-            throw new BadRequestException("User's username cannot be null");
-        } else if (StringUtils.isBlank(signUp.getEmail())) {
-            throw new BadRequestException("User's email cannot be null");
-        } else if (StringUtils.isBlank(signUp.getPassword())) {
-            throw new BadRequestException("User's password cannot be null");
-        } else if (userStudy == null) {
-            throw new BridgeServiceException("User study cannot be null");
-        }
+    public UserSession createUser(SignUp signUp, Study study, boolean signUserIn, boolean consentUser)
+            throws BridgeServiceException {
+        checkNotNull(signUp, "Sign up cannot be null");
+        checkNotNull(study, "Study cannot be null");
+        Validate.entityThrowingException(validator, signUp);
+        
         try {
-            Directory directory = getDirectory(userStudy);
+            Directory directory = getDirectory(study);
             // Search for email and skip creation if it already exists.
             if (userDoesNotExist(directory, signUp.getEmail())) {
-                Account account = stormpathClient.instantiate(Account.class);
-                account.setGivenName("<EMPTY>");
-                account.setSurname("<EMPTY>");
-                account.setEmail(signUp.getEmail());
-                account.setUsername(signUp.getUsername());
-                account.setPassword(signUp.getPassword());
-                directory.createAccount(account, false); // suppress email message
-                addAccountToGroups(directory, account, roles);
-                // Assign a health code
-                CustomData customData = account.getCustomData();
-                HealthId healthId = healthCodeService.create();
-                String healthIdKey = userStudy.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-                customData.put(healthIdKey, healthCodeEncryptor.encrypt(healthId.getId()));
-                customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
-                customData.save();
+                authenticationService.signUp(signUp, study, false);
             }
         } catch (Throwable t) {
             throw new BridgeServiceException(t);
@@ -113,16 +85,16 @@ public class StormPathUserAdminService implements UserAdminService {
         SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
         UserSession newUserSession = null;
         try {
-            newUserSession = authenticationService.signIn(userStudy, signIn);
+            newUserSession = authenticationService.signIn(study, signIn);
         } catch (ConsentRequiredException e) {
             newUserSession = e.getUserSession();
             if (consentUser) {
                 ConsentSignature consent = new ConsentSignature("Test Signature", "1989-08-19");
-                consentService.consentToResearch(newUserSession.getUser(), consent, userStudy, false);
+                consentService.consentToResearch(newUserSession.getUser(), consent, study, false);
 
                 // Now, sign in again so you get the consented user into the session
                 authenticationService.signOut(newUserSession.getSessionToken());
-                newUserSession = authenticationService.signIn(userStudy, signIn);
+                newUserSession = authenticationService.signIn(study, signIn);
             }
         }
         if (!signUserIn) {
@@ -133,57 +105,41 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
-    public void revokeAllConsentRecords(User user, Study userStudy) throws BridgeServiceException {
-        if (user == null) {
-            throw new BadRequestException("User cannot be null");
-        } else if (userStudy == null) {
-            throw new BadRequestException("User study cannot be null");
-        }
-        consentService.withdrawConsent(user, userStudy);
+    public void revokeAllConsentRecords(User user, Study study) throws BridgeServiceException {
+        checkNotNull(user, "User cannot be null");
+        checkNotNull(study, "Study cannot be null");
+        
+        consentService.withdrawConsent(user, study);
     }
 
     @Override
     public void deleteUser(User user) throws BridgeServiceException {
-        if (user == null) {
-            throw new BadRequestException("User cannot be null");
-        }
+        checkNotNull(user, "User cannot be null");
+
         for (Study study : studyService.getStudies()) {
             deleteUserInStudy(user, study);
         }
     }
 
-    private void addAccountToGroups(Directory directory, Account account, List<String> roles) {
-        if (roles != null) {
-            GroupList groups = directory.getGroups();
-            for (Group group : groups) {
-                if (roles.contains(group.getName())) {
-                    account.addGroup(group);
-                }
-            }
-        }
-    }
+    private void deleteUserInStudy(User user, Study study) throws BridgeServiceException {
+        checkNotNull(user, "User cannot be null");
+        checkNotNull(study, "Study cannot be null");
 
-    private void deleteUserInStudy(User user, Study userStudy) throws BridgeServiceException {
-        if (user == null) {
-            throw new BadRequestException("User cannot be null");
-        } else if (userStudy == null) {
-            throw new BadRequestException("User study cannot be null");
-        }
         String uuid = null;
         try {
-            uuid = userLockDao.createLock(user.getId());
+            uuid = lockDao.createLock(User.class, user.getId());
 
             // Verify the user exists before doing this work. Otherwise, it just throws errors.
-            Directory directory = getDirectory(userStudy);
+            Directory directory = getDirectory(study);
             Account account = getUserAccountByEmail(directory, user.getEmail());
             if (account != null) {
-                revokeAllConsentRecords(user, userStudy);
-                removeAllHealthDataRecords(user, userStudy);
-                deleteUserAccount(userStudy, user.getEmail());
+                revokeAllConsentRecords(user, study);
+                removeAllHealthDataRecords(user, study);
+                deleteUserAccount(study, user.getEmail());
             }
         } finally {
             if (uuid != null) {
-                userLockDao.releaseLock(user.getId(), uuid);
+                lockDao.releaseLock(User.class, user.getId(), uuid);
             }
         }
     }

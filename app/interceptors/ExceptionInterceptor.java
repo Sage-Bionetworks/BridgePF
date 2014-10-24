@@ -33,7 +33,7 @@ public class ExceptionInterceptor implements MethodInterceptor {
             if (throwable instanceof ConsentRequiredException) {
                 ConsentRequiredException cre = (ConsentRequiredException)throwable;
                 return Results.status(cre.getStatusCode(), Json.toJson(new UserSessionInfo(cre.getUserSession())));
-            }
+            } 
 
             // Don't log errors here. Log at the source with a level of detail that's useful for 
             // developers, at the correct level of severity. That said, there are times when we 
@@ -48,14 +48,9 @@ public class ExceptionInterceptor implements MethodInterceptor {
             if (StringUtils.isBlank(message)) {
                 message = HttpStatus.getStatusText(status);
             }
-
-            ExceptionMessage exceptionMessage = createMessagePayload(throwable, status, message);
+            
+            ExceptionMessage exceptionMessage = new ExceptionMessage(throwable, message);
             return Results.status(status, Json.toJson(exceptionMessage));
         }
     }
-    
-    private ExceptionMessage createMessagePayload(Throwable throwable, int status, String message) {
-        return new ExceptionMessage(throwable, message);
-    }
-
 }

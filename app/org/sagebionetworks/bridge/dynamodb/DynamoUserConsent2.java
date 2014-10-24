@@ -137,4 +137,11 @@ public class DynamoUserConsent2 implements DynamoTable, BridgeEntity {
     public void setVersion(Long version) {
         this.version = version;
     }
+
+    @Override
+    public String toString() {
+        return "DynamoUserConsent2 [version=" + version + ", signedOn=" + signedOn + ", dataSharing=" + dataSharing
+                + ", name=" + name + ", birthdate=" + birthdate + ", studyKey=" + studyKey + ", consentCreatedOn="
+                + consentCreatedOn + "]";
+    }
 }

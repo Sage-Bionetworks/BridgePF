@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.User;
@@ -13,19 +15,13 @@ public final class HealthDataKey {
     private final String healthDataCode;
     
     public HealthDataKey(Study study, Tracker tracker, User user) {
-        if (study == null) {
-            throw new BadRequestException("HealthDataKey study must not be null");
-        } else if (StringUtils.isBlank(study.getKey())) {
-            throw new BadRequestException("HealthDataKey study must have a valid key");
-        } else if (tracker == null) {
-            throw new BadRequestException("HealthDataKey tracker must not be null");
-        } else if (tracker.getId() == null || tracker.getId().longValue() == 0L) {
-            throw new BadRequestException("HealthDataKey tracker must have a valid ID");
-        } else if (user == null) {
-            throw new BadRequestException("HealthDataKey user must not be null");
-        } else if (StringUtils.isBlank(user.getHealthDataCode())) {
-            throw new BadRequestException("HealthDataKey healthDataCode must not be null");
-        }
+        checkNotNull(study, "HealthDataKey study must not be null");
+        checkNotNull(study.getKey(), "HealthDataKey study must have a valid key");
+        checkNotNull(tracker, "HealthDataKey tracker must not be null");
+        checkNotNull(tracker.getId() == null || tracker.getId().longValue() == 0L, "HealthDataKey tracker must have a valid ID");
+        checkNotNull(user, "HealthDataKey user must not be null");
+        checkArgument(StringUtils.isNotBlank(user.getHealthDataCode()), "HealthDataKey healthDataCode must not be null or blank");
+
         this.studyKey = study.getKey();
         this.trackerId = tracker.getId();
         this.healthDataCode = user.getHealthDataCode();

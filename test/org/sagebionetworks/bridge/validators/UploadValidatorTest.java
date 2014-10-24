@@ -1,4 +1,4 @@
-package controllers;
+package org.sagebionetworks.bridge.validators;
 
 import static org.junit.Assert.assertEquals;
 
@@ -9,12 +9,15 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.UploadRequest;
+import org.sagebionetworks.bridge.validators.UploadValidator;
+import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.validation.Validator;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-public class UploadControllerTest {
+public class UploadValidatorTest {
     
     // The other tests in this class don't go through the controller; we want to do that
     // because we want to verify that we get the right type back. This could easily
@@ -29,7 +32,8 @@ public class UploadControllerTest {
 
     @Test
     public void testValidateRequest() {
-
+        Validator validator = new UploadValidator();
+        
         // A valid case
         final String message = "testValidateRequest";
         {
@@ -39,8 +43,8 @@ public class UploadControllerTest {
             node.put("contentLength", message.getBytes().length);
             node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(message)));
             UploadRequest uploadRequest = UploadRequest.fromJson(node);
-            UploadController controller = new UploadController();
-            controller.validateRequest(uploadRequest);
+            
+            Validate.entityThrowingException(validator, uploadRequest);
         }
 
         try {
@@ -49,8 +53,8 @@ public class UploadControllerTest {
             node.put("contentLength", message.getBytes().length);
             node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(message)));
             UploadRequest uploadRequest = UploadRequest.fromJson(node);
-            UploadController controller = new UploadController();
-            controller.validateRequest(uploadRequest);
+            
+            Validate.entityThrowingException(validator, uploadRequest);
         } catch (BridgeServiceException e) {
             assertEquals("Name missing", HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
         }
@@ -61,8 +65,8 @@ public class UploadControllerTest {
             node.put("contentLength", message.getBytes().length);
             node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(message)));
             UploadRequest uploadRequest = UploadRequest.fromJson(node);
-            UploadController controller = new UploadController();
-            controller.validateRequest(uploadRequest);
+            
+            Validate.entityThrowingException(validator, uploadRequest);
         } catch (BridgeServiceException e) {
             assertEquals("Content type missing", HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
         }
@@ -73,8 +77,8 @@ public class UploadControllerTest {
             node.put("contentType", "text/plain");
             node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(message)));
             UploadRequest uploadRequest = UploadRequest.fromJson(node);
-            UploadController controller = new UploadController();
-            controller.validateRequest(uploadRequest);
+            
+            Validate.entityThrowingException(validator, uploadRequest);
         } catch (BridgeServiceException e) {
             assertEquals("Content length missing", HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
         }
@@ -86,8 +90,8 @@ public class UploadControllerTest {
             node.put("contentLength", 11000000L);
             node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(message)));
             UploadRequest uploadRequest = UploadRequest.fromJson(node);
-            UploadController controller = new UploadController();
-            controller.validateRequest(uploadRequest);
+            
+            Validate.entityThrowingException(validator, uploadRequest);
         } catch (BridgeServiceException e) {
             assertEquals("Content length > 10 MB", HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
         }
@@ -99,8 +103,8 @@ public class UploadControllerTest {
             node.put("contentLength", message.getBytes().length);
             node.put("contentMd5", DigestUtils.md5(message));
             UploadRequest uploadRequest = UploadRequest.fromJson(node);
-            UploadController controller = new UploadController();
-            controller.validateRequest(uploadRequest);
+            
+            Validate.entityThrowingException(validator, uploadRequest);
         } catch (BridgeServiceException e) {
             assertEquals("MD5 not base64 encoded", HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
         }

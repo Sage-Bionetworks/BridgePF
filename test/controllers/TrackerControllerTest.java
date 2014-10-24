@@ -33,7 +33,7 @@ public class TrackerControllerTest {
 
     @Before
     public void before() {
-        session = helper.createUser();
+        session = helper.createUser("test");
     }
 
     @After

@@ -112,10 +112,11 @@
     <bean id="scheduleChangeWorker" class="org.sagebionetworks.bridge.services.ScheduleChangeWorker" scope="prototype">
         <property name="stormpathClient" ref="stormpathClient"/>
         <property name="distributedLockDao" ref="distributedLockDao"/>
-        <property name="schedulePlanDao" ref="schedulePlanDao"/>
-        <property name="scheduleDao" ref="scheduleDao"/>
+        <property name="schedulePlanService" ref="schedulePlanService"/>
+        <property name="scheduleService" ref="scheduleService"/>
         <property name="consentService" ref="consentService"/>
         <property name="studyService" ref="studyService"/>
+        <property name="authenticationService" ref="authenticationService"/>
     </bean>
 
     <!-- Redis -->
@@ -242,7 +243,7 @@
     <bean id="controllers.SurveyResponseController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.SurveyResponseController" parent="BaseController">
-                <property name="surveyResponseDao" ref="surveyResponseDao" />
+                <property name="surveyResponseService" ref="surveyResponseService" />
             </bean>
         </property>
     </bean>
@@ -250,7 +251,6 @@
     <bean id="controllers.UserManagementControler" parent="proxiedController">
         <property name="target">
             <bean class="controllers.UserManagementController" parent="AdminController">
-                <property name="stormpathClient" ref="stormpathClient" />
                 <property name="userAdminService" ref="userAdminService" />
             </bean>
         </property>
@@ -346,13 +346,24 @@
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="cacheProvider" ref="cacheProvider" />
         <property name="bridgeConfig" ref="bridgeConfig" />
-        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
-        <property name="healthCodeService" ref="healthCodeService" />
+        <property name="accountEncryptionService" ref="accountEncryptionService" />
         <property name="consentService" ref="consentService" />
+        <property name="signInValidator">
+            <bean class="org.sagebionetworks.bridge.validators.SignInValidator"/>
+        </property>
+        <property name="signUpValidator">
+            <bean class="org.sagebionetworks.bridge.validators.SignUpValidator"/>
+        </property>
+        <property name="passwordResetValidator">
+            <bean class="org.sagebionetworks.bridge.validators.PasswordResetValidator"/>
+        </property>
     </bean>
 
     <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">
         <property name="healthDataDao" ref="healthDataDao"/>
+        <property name="validator">
+            <bean class="org.sagebionetworks.bridge.validators.HealthDataRecordValidator"/>
+        </property>
     </bean>
 
     <bean id="userProfileService" class="org.sagebionetworks.bridge.services.UserProfileServiceImpl">
@@ -361,19 +372,29 @@
 
     <bean id="consentService" class="org.sagebionetworks.bridge.services.ConsentServiceImpl">
         <property name="stormpathClient" ref="stormpathClient" />
-        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
-        <property name="healthCodeService" ref="healthCodeService" />
+        <property name="accountEncryptionService" ref="accountEncryptionService" />
         <property name="sendMailService" ref="sendEmailViaAmazonService"/>
         <property name="studyConsentDao" ref="studyConsentDao"/>
         <property name="userConsentDao" ref="userConsentDao"/>
     </bean>
-    
+
+    <bean id="accountEncryptionService" class="org.sagebionetworks.bridge.services.AccountEncryptionServiceImpl">
+        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
+        <property name="healthCodeService" ref="healthCodeService" />
+    </bean>
+
     <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">
         <property name="studyConsentDao" ref="studyConsentDao" />
+        <property name="validator">
+                <bean class="org.sagebionetworks.bridge.validators.StudyConsentValidator"/>
+        </property>
     </bean>
 
     <bean id="scheduleService" class="org.sagebionetworks.bridge.services.ScheduleServiceImpl">
         <property name="scheduleDao" ref="scheduleDao" />
+        <property name="validator">
+            <bean class="org.sagebionetworks.bridge.validators.ScheduleValidator" />
+        </property>
     </bean>
     
     <bean id="uploadSessionCredentialsService" class="org.sagebionetworks.bridge.services.UploadSessionCredentialsService">
@@ -385,6 +406,9 @@
         <property name="s3UploadClient" ref="s3UploadClient" />
         <property name="s3Client" ref="s3Client" />
         <property name="uploadDao" ref="uploadDao" />
+        <property name="validator">
+            <bean class="org.sagebionetworks.bridge.validators.UploadValidator"/>
+        </property>
     </bean>
 
     <bean id="backfillService" class="org.sagebionetworks.bridge.services.BackfillService" />
@@ -400,23 +424,35 @@
         <property name="consentService" ref="consentService" />
         <property name="healthDataService" ref="healthDataService" />
         <property name="studyService" ref="studyService" />
-        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
-        <property name="healthCodeService" ref="healthCodeService" />
         <property name="stormpathClient" ref="stormpathClient" />
-        <property name="userLockDao" ref="userLockDao" />
+        <property name="distributedLockDao" ref="distributedLockDao"/>
+        <property name="validator">
+            <bean class="org.sagebionetworks.bridge.validators.SignUpValidator"/>
+        </property>
     </bean>
     
     <bean id="surveyService" class="org.sagebionetworks.bridge.services.SurveyServiceImpl">
         <property name="surveyDao" ref="surveyDao"/>
+        <property name="validator">
+            <bean class="org.sagebionetworks.bridge.validators.SurveyValidator"/>
+        </property>
     </bean> 
     
     <bean id="schedulePlanService" class="org.sagebionetworks.bridge.services.SchedulePlanServiceImpl">
         <property name="schedulePlanDao" ref="schedulePlanDao"/>
+        <property name="validator">
+            <bean class="org.sagebionetworks.bridge.validators.SchedulePlanValidator"/>
+        </property>
     </bean>
     
     <bean id="studyConsentBootstrapper" class="org.sagebionetworks.bridge.StudyConsentBootstrapper">
         <constructor-arg index="0" ref="studyService" />
         <constructor-arg index="1" ref="studyConsentDao" />
+    </bean>
+    
+    <bean id="surveyResponseService" class="org.sagebionetworks.bridge.services.SurveyResponseServiceImpl">
+        <property name="surveyResponseDao" ref="surveyResponseDao"/>
+        <property name="surveyDao" ref="surveyDao"/>
     </bean>
     
 </beans>

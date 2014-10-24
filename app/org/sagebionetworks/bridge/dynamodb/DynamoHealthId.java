@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.HealthId;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
@@ -17,9 +20,8 @@ public class DynamoHealthId implements HealthId, DynamoTable {
     public DynamoHealthId() {}
 
     public DynamoHealthId(String id, String code) {
-        if (id == null || id.isEmpty()) {
-            throw new IllegalArgumentException("id cannot be null or empty.");
-        }
+        checkArgument(StringUtils.isNotBlank(id), "id cannot be null or empty.");
+
         this.id = id;
         this.code = code;
     }
@@ -29,9 +31,8 @@ public class DynamoHealthId implements HealthId, DynamoTable {
         return id;
     }
     public void setId(String id) {
-        if (id == null || id.isEmpty()) {
-            throw new IllegalArgumentException("id cannot be null or empty.");
-        }
+        checkArgument(StringUtils.isNotBlank(id), "id cannot be null or empty.");
+
         this.id = id;
     }
 
@@ -40,9 +41,8 @@ public class DynamoHealthId implements HealthId, DynamoTable {
         return code;
     }
     public void setCode(String code) {
-        if (code == null || code.isEmpty()) {
-            throw new IllegalArgumentException("code cannot be null or empty.");
-        }
+        checkArgument(StringUtils.isNotBlank(code), "code cannot be null or empty.");
+
         this.code = code;
     }
 

@@ -1,7 +1,13 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -22,16 +28,20 @@ import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
+import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.validation.Validator;
 
 import com.stormpath.sdk.account.Account;
+import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
+import com.stormpath.sdk.group.Group;
+import com.stormpath.sdk.group.GroupList;
 import com.stormpath.sdk.resource.ResourceException;
 
 public class AuthenticationServiceImpl implements AuthenticationService {
@@ -41,10 +51,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private Client stormpathClient;
     private CacheProvider cacheProvider;
     private BridgeConfig config;
-    private BridgeEncryptor healthCodeEncryptor;
-    private HealthCodeService healthCodeService;
+    private AccountEncryptionService accountEncryptionService;
     private ConsentService consentService;
-    private EmailValidator emailValidator = EmailValidator.getInstance();
+    private Validator signInValidator;
+    private Validator signUpValidator;
+    private Validator passwordResetValidator;
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
@@ -58,16 +69,24 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         this.config = config;
     }
 
-    public void setHealthCodeEncryptor(BridgeEncryptor encryptor) {
-        this.healthCodeEncryptor = encryptor;
-    }
-
-    public void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
+    public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
+        this.accountEncryptionService = accountEncryptionService;
     }
 
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
+    }
+    
+    public void setSignInValidator(Validator validator) {
+        this.signInValidator = validator;
+    }
+    
+    public void setSignUpValidator(Validator validator) {
+        this.signUpValidator = validator;
+    }
+    
+    public void setPasswordResetValidator(Validator validator) {
+        this.passwordResetValidator = validator;
     }
 
     @Override
@@ -79,21 +98,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException,
-            BridgeServiceException {
+    public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
 
         final long start = System.nanoTime();
 
-        if (signIn == null) {
-            throw new EntityNotFoundException(User.class, "SignIn object is required");
-        } else if (StringUtils.isBlank(signIn.getUsername())) {
-            throw new EntityNotFoundException(User.class, "Username/email must not be null");
-        } else if (StringUtils.isBlank(signIn.getPassword())) {
-            throw new EntityNotFoundException(User.class, "Password must not be null");
-        } else if (study == null) {
-            throw new BadRequestException("Study is required");
-        }
+        checkNotNull(study, "Study cannot be null");
+        checkNotNull(signIn, "Sign in cannot be null");
 
+        Validate.entityThrowingException(signInValidator, signIn);
+        
         AuthenticationRequest<?, ?> request = null;
         UserSession session = null;
         try {
@@ -131,29 +144,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void signUp(SignUp signUp, Study study) throws BridgeServiceException {
-        if (study == null) {
-            throw new BadRequestException("Study object is required");
-        } else if (StringUtils.isBlank(study.getStormpathDirectoryHref())) {
-            throw new BadRequestException("Study's StormPath directory HREF is required");
-        } else if (signUp == null) {
-            throw new BadRequestException("SignUp object is required");
-        } else if (StringUtils.isBlank(signUp.getEmail())) {
-            throw new BadRequestException("Email is required");
-        } else if (StringUtils.isBlank(signUp.getPassword())) {
-            throw new BadRequestException("Password is required");
-        } else if (!emailValidator.isValid(signUp.getEmail())) {
-            throw new BadRequestException("Email address does not appear to be valid");
-        }
-        // It's possible to sign up for two different studies. We need to avoid this by checking if the 
-        // application as a whole has an email address, before creating that address in a specific 
-        // study. If it exists anywhere, it cannot be used again.
-        /*
-        Account account = findExistingEmailAddress(signUp);
-        if (account != null) {
-            throw new EntityAlreadyExistsException(new User(account));
-        };
-        */
+    public void signUp(SignUp signUp, Study study, boolean sendEmail) {
+        checkNotNull(study, "Study cannot be null");
+        checkNotNull(signUp, "Sign up cannot be null");
+        
+        Validate.entityThrowingException(signUpValidator, signUp);
         
         try {
             Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
@@ -164,27 +159,23 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             account.setEmail(signUp.getEmail());
             account.setUsername(signUp.getUsername());
             account.setPassword(signUp.getPassword());
-            directory.createAccount(account);
+            directory.createAccount(account, sendEmail);
+            
+            addAccountToGroups(directory, account, signUp.getRoles());
+            
             // Assign a health code
-            CustomData customData = account.getCustomData();
-            HealthId healthId = healthCodeService.create();
-            String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            customData.put(healthIdKey, healthCodeEncryptor.encrypt(healthId.getId()));
-            customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 1);
-            customData.save();
+            accountEncryptionService.createAndSaveHealthCode(study, account);
+
         } catch (ResourceException re) {
             throw new BadRequestException(re.getDeveloperMessage());
         }
     }
 
     @Override
-    public UserSession verifyEmail(Study study, EmailVerification verification) throws BridgeServiceException,
-            ConsentRequiredException {
-        if (verification == null) {
-            throw new BadRequestException("Verification object is required");
-        } else if (verification.getSptoken() == null) {
-            throw new BadRequestException("Email verification token is required");
-        }
+    public UserSession verifyEmail(Study study, EmailVerification verification) throws ConsentRequiredException {
+        checkNotNull(verification, "Verification object cannot be null");
+        checkNotNull(verification.getSptoken(), "Email verification token is required");
+        
         UserSession session = null;
         try {
             Account account = stormpathClient.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
@@ -203,12 +194,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public void requestResetPassword(Email email) throws BridgeServiceException {
-        if (email == null) {
-            throw new BadRequestException("Email object is required");
-        }
-        if (StringUtils.isBlank(email.getEmail())) {
-            throw new BadRequestException("Email is required");
-        }
+        checkNotNull(email, "Email object cannot cannot be null");
+        checkArgument(StringUtils.isNotBlank(email.getEmail()), "Email is required");
+        
         try {
             Application application = StormpathFactory.createStormpathApplication(stormpathClient);
             application.sendPasswordResetEmail(email.getEmail());
@@ -219,13 +207,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException {
-        if (passwordReset == null) {
-            throw new BadRequestException("Password reset object is required");
-        } else if (StringUtils.isBlank(passwordReset.getSptoken())) {
-            throw new BadRequestException("Password reset token is required");
-        } else if (StringUtils.isBlank(passwordReset.getPassword())) {
-            throw new BadRequestException("Password is required");
-        }
+        checkNotNull(passwordReset, "Password reset object required");
+        
+        Validate.entityThrowingException(passwordResetValidator, passwordReset);
         try {
             Application application = StormpathFactory.createStormpathApplication(stormpathClient);
             Account account = application.verifyPasswordResetToken(passwordReset.getSptoken());
@@ -236,19 +220,21 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
-    // We also want to verify that the username hasn't been taken in another study...
-    /*
-    private Account findExistingEmailAddress(SignUp signUp) {
-        Map<String, Object> queryParams = Maps.newHashMap();
-        queryParams.put("email", signUp.getEmail());
-        Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-        AccountList accounts = application.getAccounts(queryParams);
-        
-        return (accounts.iterator().hasNext()) ? accounts.iterator().next() : null;
-    }*/
+    @Override
+    public User getUser(Study study, String email) {
+        Application app = StormpathFactory.createStormpathApplication(stormpathClient);
+        Map<String, Object> queryParams = new HashMap<String, Object>();
+        queryParams.put("email", email);
+        AccountList accounts = app.getAccounts(queryParams);
 
+        if (accounts.iterator().hasNext()) {
+            Account account = accounts.iterator().next();
+            return createSessionFromAccount(study, account).getUser();
+        }
+        return null;
+    }
+   
     private UserSession createSessionFromAccount(Study study, Account account) {
-
         final UserSession session = new UserSession();
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment().getEnvName());
@@ -256,17 +242,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final User user = new User(account);
         user.setStudyKey(study.getKey());
 
-        final CustomData data = account.getCustomData();
-        final String hdcKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-        final String encryptedId = (String)data.get(hdcKey);
-        if (encryptedId != null) {
-            String healthId = healthCodeEncryptor.decrypt(encryptedId);
-            String healthCode = healthCodeService.getHealthCode(healthId);
+        HealthId healthId = accountEncryptionService.getHealthCode(study, account);
+        if (healthId != null) {
+            String healthCode = healthId.getCode();
             user.setHealthDataCode(healthCode);
             boolean hasConsented = consentService.hasUserConsentedToResearch(user, study);
             user.setConsent(hasConsented);
         }
 
+        // And now for some exceptions...
+        
+        // All administrators and all researchers are assumed to consent when using any API.
+        // This is needed so they can sign in without facing a 412 exception.
+        if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
+            user.setConsent(true);
+        }
+        // And then we set *anyone* configured as an admin to have signed the consent as well
         String adminUser = BridgeConfigFactory.getConfig().getProperty("admin.email");
         if (adminUser != null && adminUser.equals(account.getEmail())) {
             user.setConsent(true);
@@ -274,5 +265,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         session.setUser(user);
         return session;
+    }
+
+    private void addAccountToGroups(Directory directory, Account account, List<String> roles) {
+        if (roles != null) {
+            GroupList groups = directory.getGroups();
+            for (Group group : groups) {
+                if (roles.contains(group.getName())) {
+                    account.addGroup(group);
+                }
+            }
+        }
     }
 }
