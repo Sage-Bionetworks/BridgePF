@@ -64,14 +64,23 @@ public class TestUserAdminHelper {
     public UserSession createUser(SignUp signUp, Study study, boolean signIn, boolean consent) {
         return userAdminService.createUser(signUp, study, signIn, consent);
     }
-    
+
+    public void deleteUser(UserSession session, String tag) {
+        deleteUser(session);
+        String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
+        if (!tag.contains(prefix)) {
+            tag = prefix + tag;
+        }
+        userAdminService.deleteUser(tag + "@sagebridge.org");
+    }
+
     public void deleteUser(UserSession session) {
         if (session != null) {
             authService.signOut(session.getSessionToken());
-            userAdminService.deleteUser(session.getUser());    
+            userAdminService.deleteUser(session.getUser());
         }
     }
-    
+
     public String getPassword() {
         return PASSWORD;
     }

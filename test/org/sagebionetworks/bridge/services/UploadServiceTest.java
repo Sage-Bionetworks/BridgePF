@@ -81,7 +81,7 @@ public class UploadServiceTest {
             }
         }
         objectsToRemove = new ArrayList<String>();
-        session = helper.createUser("test");
+        session = helper.createUser(getClass().getSimpleName());
     }
 
     @After
@@ -93,7 +93,7 @@ public class UploadServiceTest {
         } catch (AmazonClientException e) {
             e.printStackTrace();
         }
-        helper.deleteUser(session);
+        helper.deleteUser(session, getClass().getSimpleName());
     }
 
     @Test

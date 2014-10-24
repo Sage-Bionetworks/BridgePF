@@ -45,7 +45,7 @@ public class ConsentServiceImplTest {
 
     @Before
     public void before() {
-        session = helper.createUser("test");
+        session = helper.createUser(getClass().getSimpleName());
         studyConsent = studyConsentDao.addConsent(helper.getTestStudy().getKey(), "/path/to", helper.getTestStudy()
                 .getMinAge());
         studyConsentDao.setActive(studyConsent, true);
@@ -53,7 +53,7 @@ public class ConsentServiceImplTest {
 
     @After
     public void after() {
-        helper.deleteUser(session);
+        helper.deleteUser(session, getClass().getSimpleName());
         studyConsentDao.setActive(studyConsent, false);
         studyConsentDao.deleteConsent(helper.getTestStudy().getKey(), studyConsent.getCreatedOn());
     }
