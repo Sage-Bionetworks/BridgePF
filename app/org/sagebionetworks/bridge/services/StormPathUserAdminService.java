@@ -150,7 +150,7 @@ public class StormPathUserAdminService implements UserAdminService {
                 shouldRetry = retryCount < 5;
                 retryCount++;
                 try {
-                    Thread.sleep(100 ^ retryCount);
+                    Thread.sleep(100 * 2 ^ retryCount);
                 } catch(InterruptedException ie) {
                     throw new BridgeServiceException(ie);
                 }
