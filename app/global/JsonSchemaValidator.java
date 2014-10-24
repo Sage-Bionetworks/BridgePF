@@ -17,8 +17,9 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
 public class JsonSchemaValidator {
-    
+
     private CacheLoader<Tracker, JsonNode> loader = new CacheLoader<Tracker, JsonNode>() {
+        @Override
         public JsonNode load(Tracker tracker) throws JsonProcessingException, IOException {
             return BridgeObjectMapper.get().readTree(tracker.getSchemaFile().getInputStream());
         }
@@ -29,12 +30,12 @@ public class JsonSchemaValidator {
     public JsonNode getSchemaAsNode(Tracker tracker) throws Exception {
         return cache.get(tracker);
     }
-    
+
     public void validate(Tracker tracker, JsonNode node) throws Exception {
-        // Why does validation occur in the controller layer? Because the validation is occurring 
-        // in the transfer format, not the service API format, and the error messages will make more 
-        // sense to the client if the validation occurs before conversion. However that means there's 
-        // no validation at the service level, we'd have to convert *back* to JSON to use the same 
+        // Why does validation occur in the controller layer? Because the validation is occurring
+        // in the transfer format, not the service API format, and the error messages will make more
+        // sense to the client if the validation occurs before conversion. However that means there's
+        // no validation at the service level, we'd have to convert *back* to JSON to use the same
         // schema for that purpose, and do it all twice.
         JsonSchemaFactory factory = JsonSchemaFactory.byDefault();
         JsonNode schemaFile = getSchemaAsNode(tracker);

@@ -38,6 +38,7 @@ public class HealthDataController extends BaseController {
         List<HealthDataRecord> records = Lists.newArrayListWithCapacity(node.size());
         for (int i = 0; i < node.size(); i++) {
             JsonNode child = node.get(i);
+            System.out.println(child);
             validator.validate(tracker, child);
             records.add(DynamoHealthDataRecord.fromJson(child));
         }
