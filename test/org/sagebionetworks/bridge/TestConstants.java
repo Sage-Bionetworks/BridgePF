@@ -1,10 +1,14 @@
 package org.sagebionetworks.bridge;
 
+import java.util.List;
+
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
+
+import com.google.common.collect.Lists;
 
 public class TestConstants {
 
@@ -14,6 +18,7 @@ public class TestConstants {
         private final String password;
         private final String[] roles;
 
+        /*
         public TestUser(String username, String email, String password) {
             String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
             this.username = prefix + username;
@@ -28,12 +33,16 @@ public class TestConstants {
             this.password = password;
             this.roles = roles;
         }
+        */
         public TestUser(String tag) {
+            this(tag, Lists.<String>newArrayList());
+        }
+        public TestUser(String tag, List<String> roleList) {
             String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
             this.username = prefix + tag;
             this.email = prefix + tag + "@sagebridge.org";
             this.password = "P4ssword";
-            this.roles = null;
+            this.roles = (roleList == null) ? null : roleList.toArray(new String[roleList.size()]);
         }
         public SignUp getSignUp() {
             return new SignUp(username, email, password, roles);

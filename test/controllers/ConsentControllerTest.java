@@ -77,7 +77,7 @@ public class ConsentControllerTest {
 
                 UserSession session = null;
                 try {
-                    TestUser user = new TestUser("johnsmith", "johnsmith@sagebridge.org", "password");
+                    TestUser user = new TestUser("johnsmith");
                     session = helper.createUser(user.getSignUp(), helper.getTestStudy(), true, false);
                     
                     // Consent new user again
