@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.validators.Validate.*;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 
 import org.apache.commons.codec.binary.Base64;
 import org.sagebionetworks.bridge.models.UploadRequest;

@@ -21,13 +21,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.TestUtils.FailableRunnable;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -44,7 +44,7 @@ public class UserManagementControllerTest {
     @Resource
     private TestUserAdminHelper helper;
 
-    private UserSession session;
+    private TestUser testUser;
 
     @BeforeClass
     public static void initialSetUp() {
@@ -58,12 +58,12 @@ public class UserManagementControllerTest {
 
     @Before
     public void before() {
-        session = helper.createUser(getClass().getSimpleName(), Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
+        testUser = helper.createUser(getClass().getSimpleName(), Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
     }
 
     @After
     public void after() {
-        helper.deleteUser(session, getClass().getSimpleName());
+        helper.deleteUser(testUser);
     }
 
     @Test
@@ -71,24 +71,20 @@ public class UserManagementControllerTest {
         running(testServer(3333), new FailableRunnable() {
             @Override
             public void testCode() throws Exception {
-                // Namespaces this user so it doesn't collide with other developers working on the same
-                // local tables.
-                TestUser testUser = new TestUser("test-userAdmin");
-                
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put("email", testUser.getEmail());
-                node.put("username", testUser.getUsername());
-                node.put("password", testUser.getPassword());
+                node.put("email", BridgeConfigFactory.getConfig().getUser() + "-test-userAdmin@sagebridge.org");
+                node.put("username", "test-userAdmin");
+                node.put("password", "P4ssword");
                 node.put("consent", true);
 
-                Response response = TestUtils.getURL(session.getSessionToken(), USER_URL)
+                Response response = TestUtils.getURL(testUser.getSessionToken(), USER_URL)
                         .setHeader("Bridge-Host", TEST_STUDY_KEY).post(node).get(TIMEOUT);
                 assertEquals("Response status is created.", SC_CREATED, response.getStatus());
 
                 Map<String,String> queryParams = new HashMap<String,String>();
                 queryParams.put("email", testUser.getEmail());
 
-                response = TestUtils.getURL(session.getSessionToken(), USER_URL, queryParams).delete().get(TIMEOUT);
+                response = TestUtils.getURL(testUser.getSessionToken(), USER_URL, queryParams).delete().get(TIMEOUT);
                 assertEquals("Response status is OK.", SC_OK, response.getStatus());
             }
 

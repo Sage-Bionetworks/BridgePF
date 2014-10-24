@@ -18,8 +18,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -45,9 +45,9 @@ public class StudyConsentControllerTest {
     @Resource
     private TestUserAdminHelper helper;
     
-    private UserSession adminSession;
+    private TestUser adminSession;
     
-    private UserSession userSession;
+    private TestUser userSession;
 
     @Before
     public void before() {
@@ -57,8 +57,8 @@ public class StudyConsentControllerTest {
 
     @After
     public void after() {
-        helper.deleteUser(adminSession, "admin-" + getClass().getSimpleName());
-        helper.deleteUser(userSession, "normal-" + getClass().getSimpleName());
+        helper.deleteUser(adminSession);
+        helper.deleteUser(userSession);
     }
 
     @Test

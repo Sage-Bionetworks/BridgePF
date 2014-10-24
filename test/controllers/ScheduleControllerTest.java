@@ -16,11 +16,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ScheduleDao;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.TestSimpleSchedulePlan;
 import org.springframework.test.context.ContextConfiguration;
@@ -43,32 +43,32 @@ public class ScheduleControllerTest {
     @Resource
     private SchedulePlanDao schedulePlanDao;
     
-    private UserSession session;
+    private TestUser testUser;
     
     private SchedulePlan plan;
     
     @Before
     public void before() throws Exception {
-        session = helper.createUser(getClass().getSimpleName());
-        final User user = session.getUser();
+        testUser = helper.createUser(getClass().getSimpleName());
+        final User user = testUser.getUser();
         plan = schedulePlanDao.createSchedulePlan(new TestSimpleSchedulePlan());
         // wait until the schedules are created, as this is asynchronous
         waitFor(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                return (scheduleDao.getSchedules(helper.getTestStudy(), user).size() > 0);
+                return (scheduleDao.getSchedules(testUser.getStudy(), user).size() > 0);
             }
         });
     }
     
     @After
     public void after() throws Exception {
-        final User user = session.getUser();
-        schedulePlanDao.deleteSchedulePlan(helper.getTestStudy(), plan.getGuid());
-        helper.deleteUser(session, getClass().getSimpleName());
+        final User user = testUser.getUser();
+        schedulePlanDao.deleteSchedulePlan(testUser.getStudy(), plan.getGuid());
+        helper.deleteUser(testUser);
         // wait until the schedules are all deleted, as this is asynchronous
         waitFor(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                return (scheduleDao.getSchedules(helper.getTestStudy(), user).size() == 0);
+                return (scheduleDao.getSchedules(testUser.getStudy(), user).size() == 0);
             }
         });
     }
@@ -77,7 +77,7 @@ public class ScheduleControllerTest {
     public void canRetrieveSchedulesForAUser() throws Exception {
         running(testServer(3333), new Runnable() {
             public void run() {
-                Response response = TestUtils.getURL(session.getSessionToken(), USER_SCHEDULES_URL).get().get(TIMEOUT);
+                Response response = TestUtils.getURL(testUser.getSessionToken(), USER_SCHEDULES_URL).get().get(TIMEOUT);
                 assertEquals("Response OK", 200, response.getStatus());
                 
                 JsonNode node = response.asJson();
