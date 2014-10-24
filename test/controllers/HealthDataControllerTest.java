@@ -53,7 +53,7 @@ public class HealthDataControllerTest {
 
     @Resource
     private TestUserAdminHelper helper;
-    
+
     private UserSession session;
 
     public HealthDataControllerTest() {
@@ -73,6 +73,7 @@ public class HealthDataControllerTest {
     @Test
     public void appendHealthData() throws Exception {
         running(testServer(3333), new TestUtils.FailableRunnable() {
+            @Override
             public void testCode() throws Exception {
 
                 List<HealthDataRecord> records = getTestRecords();
@@ -89,6 +90,7 @@ public class HealthDataControllerTest {
     @Test
     public void getAllHealthData() throws Exception {
         running(testServer(3333), new TestUtils.FailableRunnable() {
+            @Override
             public void testCode() throws Exception {
                 TestUtils.getURL(session.getSessionToken(), TRACKER_URL)
                         .post(mapper.writeValueAsString(getTestRecords())).get(TIMEOUT);
@@ -101,7 +103,7 @@ public class HealthDataControllerTest {
 
                 JsonNode body = response.asJson().get("items");
                 assertEquals("Returns 3 records", 3, body.size());
-                
+
                 // Verify the type properties
                 JsonNode node = body.get(0);
                 assertEquals("Type is HealthData", "HealthData", node.get("type").asText());
@@ -112,8 +114,11 @@ public class HealthDataControllerTest {
     @Test
     public void getHealthDataByDateRange() throws Exception {
         running(testServer(3333), new TestUtils.FailableRunnable() {
+            @Override
             public void testCode() throws Exception {
                 // Time ranges used in this test, and where they overlap with the 3 test windows or not.
+                // The first six lines represent the time ranges of Health data we are *adding*.
+                // The second three lines represent the time ranges of Health data we are *retrieving*.
                 //       1        1...<2
                 //       2        1............3
                 //       3                                                 4............6
@@ -192,6 +197,7 @@ public class HealthDataControllerTest {
     @Test
     public void updateHealthDataRecord() throws Exception {
         running(testServer(3333), new TestUtils.FailableRunnable() {
+            @Override
             public void testCode() throws Exception {
                 List<HealthDataRecord> records = getTestRecords();
 
@@ -224,6 +230,7 @@ public class HealthDataControllerTest {
     @Test
     public void deleteHealthDataRecord() throws Exception {
         running(testServer(3333), new TestUtils.FailableRunnable() {
+            @Override
             public void testCode() throws Exception {
                 List<HealthDataRecord> records = getTestRecords();
 
