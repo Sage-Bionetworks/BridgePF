@@ -1,5 +1,6 @@
 package webdriver.tests;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import play.libs.F.Callback;
@@ -7,6 +8,7 @@ import play.test.TestBrowser;
 import webdriver.pages.AppPage;
 import webdriver.pages.JoinPage;
 
+@Ignore
 public class SignUpTest extends BaseIntegrationTest {
 
     @Test
