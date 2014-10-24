@@ -2,6 +2,7 @@ package webdriver.tests;
 
 import javax.annotation.Resource;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
@@ -18,6 +19,7 @@ import webdriver.pages.AppPage;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
+@Ignore
 public class SignInTest extends BaseIntegrationTest {
     
     @Resource
