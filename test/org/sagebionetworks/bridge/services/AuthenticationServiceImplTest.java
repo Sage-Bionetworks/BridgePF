@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -160,7 +161,8 @@ public class AuthenticationServiceImplTest {
     
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
-        TestUser researcher = helper.createUser("researcher", null, false, false);
+        Study study = studyService.getStudyByKey(TestConstants.TEST_STUDY_KEY);
+        TestUser researcher = helper.createUser("researcher", Lists.newArrayList(study.getResearcherRole()), false, false);
         try {
             authService.signIn(researcher.getStudy(), researcher.getSignIn());
             // no exception should have been thrown.

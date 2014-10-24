@@ -25,7 +25,6 @@ import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.TestUtils.FailableRunnable;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.springframework.test.context.ContextConfiguration;
@@ -71,9 +70,10 @@ public class UserManagementControllerTest {
         running(testServer(3333), new FailableRunnable() {
             @Override
             public void testCode() throws Exception {
+                String prefix = TestUtils.randomString();
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put("email", BridgeConfigFactory.getConfig().getUser() + "-test-userAdmin@sagebridge.org");
-                node.put("username", "test-userAdmin");
+                node.put("email", prefix + "@sagebridge.org");
+                node.put("username", prefix);
                 node.put("password", "P4ssword");
                 node.put("consent", true);
 

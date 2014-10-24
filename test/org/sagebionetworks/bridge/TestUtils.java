@@ -3,10 +3,13 @@ package org.sagebionetworks.bridge;
 import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.io.BaseEncoding;
 
 import play.libs.WS;
 import play.libs.WS.WSRequestHolder;
@@ -14,6 +17,8 @@ import play.libs.WS.WSRequestHolder;
 public class TestUtils {
 
     private static Logger logger = LoggerFactory.getLogger(TestUtils.class);
+    
+    private static final Random random = new Random();
     
     public abstract static class FailableRunnable implements Runnable {
         public abstract void testCode() throws Exception;
@@ -49,6 +54,12 @@ public class TestUtils {
             Thread.sleep(200);
             processing = !callable.call();
         }
+    }
+    
+    public static String randomString() {
+        final byte[] buffer = new byte[10];
+        random.nextBytes(buffer);
+        return BaseEncoding.base64Url().omitPadding().encode(buffer);
     }
 
  }
