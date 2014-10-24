@@ -2,7 +2,6 @@ package controllers;
 
 import java.util.List;
 
-import org.apache.commons.lang3.Validate;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.IdVersionHolder;
@@ -12,6 +11,7 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;
+import org.sagebionetworks.bridge.validators.Validator;
 
 import play.mvc.Result;
 
@@ -44,7 +44,7 @@ public class HealthDataController extends BaseController {
         for (int i = 0; i < node.size(); i++) {
             JsonNode child = node.get(i);
 
-            Validate.jsonWithSchema(tracker, child);
+            Validator.jsonWithSchema(tracker, child);
             records.add(DynamoHealthDataRecord.fromJson(child));
         }
 
