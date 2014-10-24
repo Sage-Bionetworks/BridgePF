@@ -26,8 +26,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -44,16 +44,16 @@ public class AuthenticationControllerTest {
     @Resource
     private TestUserAdminHelper helper;
     
-    private UserSession session;
+    private TestUser testUser;
     
     @Before
     public void before() {
-        session = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(getClass().getSimpleName());
     }
     
     @After
     public void after() {
-        helper.deleteUser(session, getClass().getSimpleName());
+        helper.deleteUser(testUser);
     }
     
     @Test
@@ -93,8 +93,8 @@ public class AuthenticationControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put(USERNAME, session.getUser().getUsername());
-                node.put(PASSWORD, helper.getPassword());
+                node.put(USERNAME, testUser.getUsername());
+                node.put(PASSWORD, testUser.getPassword());
 
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
                 assertEquals("HTTP response indicates request OK", SC_OK, response.getStatus());
@@ -103,7 +103,7 @@ public class AuthenticationControllerTest {
                 assertEquals("Type is UserSession", "UserSessionInfo", node.get("type").asText());
                 assertNotNull("Session token is assigned", node.get(SESSION_TOKEN).asText());
                 String username = node.get(USERNAME).asText();
-                assertEquals("Username is for test2 user", session.getUser().getUsername(), username);
+                assertEquals("Username is for test2 user", testUser.getUsername(), username);
             }
         });
     }
@@ -113,8 +113,8 @@ public class AuthenticationControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put(USERNAME, session.getUser().getUsername());
-                node.put(PASSWORD, helper.getPassword());
+                node.put(USERNAME, testUser.getUsername());
+                node.put(PASSWORD, testUser.getPassword());
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
                 
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);

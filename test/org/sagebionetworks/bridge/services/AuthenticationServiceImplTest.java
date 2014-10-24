@@ -14,8 +14,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -52,45 +52,45 @@ public class AuthenticationServiceImplTest {
     @Resource
     private Client stormpathClient;
     
-    private UserSession session;
+    private TestUser testUser;
     
     @Before
     public void before() {
-        session = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(getClass().getSimpleName());
     }
     
     @After
     public void after() {
-        helper.deleteUser(session, getClass().getSimpleName());
+        helper.deleteUser(testUser);
     }
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoUsername() throws Exception {
-        authService.signIn(helper.getTestStudy(), new SignIn(null, "bar"));
+        authService.signIn(testUser.getStudy(), new SignIn(null, "bar"));
     }
 
     @Test(expected = BridgeServiceException.class)
     public void signInNoPassword() throws Exception {
-        authService.signIn(helper.getTestStudy(), new SignIn("foo", null));
+        authService.signIn(testUser.getStudy(), new SignIn("foo", null));
     }
 
     @Test(expected = EntityNotFoundException.class)
     public void signInInvalidCredentials() throws Exception {
-        authService.signIn(helper.getTestStudy(), new SignIn("foo", "bar"));
+        authService.signIn(testUser.getStudy(), new SignIn("foo", "bar"));
     }
 
     @Test
     public void signInCorrectCredentials() throws Exception {
-        UserSession newSession = authService.getSession(session.getSessionToken());
+        UserSession newSession = authService.getSession(testUser.getSessionToken());
 
-        assertEquals("Username is for test2 user", newSession.getUser().getUsername(), session.getUser().getUsername());
-        assertTrue("Session token has been assigned", StringUtils.isNotBlank(session.getSessionToken()));
+        assertEquals("Username is for test2 user", newSession.getUser().getUsername(), testUser.getUsername());
+        assertTrue("Session token has been assigned", StringUtils.isNotBlank(testUser.getSessionToken()));
     }
 
     @Test
     public void signInWhenSignedIn() throws Exception {
-        UserSession newSession = authService.signIn(helper.getTestStudy(), helper.getSignIn(session));
-        assertEquals("Username is for test2 user", session.getUser().getUsername(), newSession.getUser().getUsername());
+        UserSession newSession = authService.signIn(testUser.getStudy(), testUser.getSignIn());
+        assertEquals("Username is for test2 user", testUser.getUsername(), newSession.getUser().getUsername());
     }
 
     @Test
@@ -104,9 +104,9 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void getSessionWhenAuthenticated() throws Exception {
-        UserSession newSession = authService.getSession(session.getSessionToken());
+        UserSession newSession = authService.getSession(testUser.getSessionToken());
 
-        assertEquals("Username is for test2 user", session.getUser().getUsername(), newSession.getUser().getUsername());
+        assertEquals("Username is for test2 user", testUser.getUsername(), newSession.getUser().getUsername());
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(newSession.getSessionToken()));
     }
 
@@ -128,62 +128,55 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void unconsentedUserMustSignTOU() throws Exception {
-        TestUser user = new TestUser("authTestUser");
+        TestUser user = helper.createUser("authTestUser", null, false, false);
         try {
             // Create a user who has not consented.
-            helper.createUser(user.getSignUp(), helper.getTestStudy(), false, false);
-            authService.signIn(helper.getTestStudy(), user.getSignIn());
+            authService.signIn(user.getStudy(), user.getSignIn());
             fail("Should have thrown consent exception");
         } catch(ConsentRequiredException e) {
-            helper.deleteUser(helper.getTestStudy(), user.getEmail());
+            helper.deleteUser(user);
         }
     }
     
     @Test
     public void createUserInNonDefaultAccountStore() {
-        TestUser nonDefaultUser = new TestUser("secondStudyUser");
+        SignUp signUp = new SignUp("secondStudyUser", "secondStudyUser@sagebridge.org", "P4ssword");
+        Study otherStudy = studyService.getStudyByKey("neurod");
         try {
              
-            Study defaultStudy = helper.getTestStudy();
-            Study otherStudy = studyService.getStudyByKey("neurod");
-            authService.signUp(nonDefaultUser.getSignUp(), otherStudy, false);
+            Study defaultStudy = testUser.getStudy();
+            authService.signUp(signUp, otherStudy, false);
 
             // Should have been saved to this account store, not the default account store.
             Directory directory = stormpathClient.getResource(otherStudy.getStormpathDirectoryHref(), Directory.class);
-            assertTrue("Account is in store", isInStore(directory, nonDefaultUser.getSignUp()));
-            assertTrue("Account has health code", hasHealthCode(otherStudy, directory, nonDefaultUser.getSignUp()));
+            assertTrue("Account is in store", isInStore(directory, signUp));
+            assertTrue("Account has health code", hasHealthCode(otherStudy, directory, signUp));
             directory = stormpathClient.getResource(defaultStudy.getStormpathDirectoryHref(), Directory.class);
-            assertFalse("Account is not in store", isInStore(directory, nonDefaultUser.getSignUp()));
+            assertFalse("Account is not in store", isInStore(directory, signUp));
         } finally {
-            helper.deleteUser(helper.getTestStudy(), nonDefaultUser.getEmail());
+            helper.deleteUser(otherStudy, signUp.getEmail());
         }
     }
     
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
-        TestUser researcher = new TestUser(getClass().getSimpleName());
+        TestUser researcher = helper.createUser("researcher", null, false, false);
         try {
-            helper.createUser(researcher.getSignUp(), helper.getTestStudy(), false, false);
-            
-            authService.signIn(helper.getTestStudy(), researcher.getSignIn());
+            authService.signIn(researcher.getStudy(), researcher.getSignIn());
             // no exception should have been thrown.
-            
         } finally {
-            helper.deleteUser(helper.getTestStudy(), researcher.getEmail());
+            helper.deleteUser(researcher);
         }
     }
 
     @Test
     public void createAdminAndSignInWithoutConsentError() {
-        TestUser researcher = new TestUser("adminer", Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
+        TestUser researcher = helper.createUser("adminer", Lists.newArrayList(BridgeConstants.ADMIN_GROUP), false, false);
         try {
-            helper.createUser(researcher.getSignUp(), helper.getTestStudy(), false, false);
-            
-            authService.signIn(helper.getTestStudy(), researcher.getSignIn());
+            authService.signIn(researcher.getStudy(), researcher.getSignIn());
             // no exception should have been thrown.
-            
         } finally {
-            helper.deleteUser(helper.getTestStudy(), researcher.getEmail());
+            helper.deleteUser(researcher);
         }
     }
 

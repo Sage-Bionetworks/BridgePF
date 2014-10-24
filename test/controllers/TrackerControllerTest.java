@@ -13,8 +13,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -29,16 +29,16 @@ public class TrackerControllerTest {
     @Resource
     private TestUserAdminHelper helper;
     
-    private UserSession session;
+    private TestUser testUser;
 
     @Before
     public void before() {
-        session = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(getClass().getSimpleName());
     }
 
     @After
     public void after() {
-        helper.deleteUser(session, getClass().getSimpleName());
+        helper.deleteUser(testUser);
     }
     
     @Test
@@ -46,7 +46,7 @@ public class TrackerControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
 
-                Response response = TestUtils.getURL(session.getSessionToken(), TRACKERS_URL).get().get(TIMEOUT);
+                Response response = TestUtils.getURL(testUser.getSessionToken(), TRACKERS_URL).get().get(TIMEOUT);
                 assertEquals("HTTP response OK", 200, response.getStatus());
                 
                 JsonNode node = response.asJson().get("items").get(0);

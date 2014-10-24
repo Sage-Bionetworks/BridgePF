@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.validators.Validate.*;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
