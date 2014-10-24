@@ -3,11 +3,17 @@ package org.sagebionetworks.bridge;
 import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import play.libs.WS;
 import play.libs.WS.WSRequestHolder;
 
 public class TestUtils {
+
+    private static Logger logger = LoggerFactory.getLogger(TestUtils.class);
     
     public abstract static class FailableRunnable implements Runnable {
         public abstract void testCode() throws Exception;
@@ -33,6 +39,16 @@ public class TestUtils {
             }
         }
         return request;
+    }
+    
+    public static void waitFor(Callable<Boolean> callable) throws Exception {
+        int countdown = 200;
+        boolean processing = true;
+        while(countdown-- > 0 && processing) {
+            logger.info("    sleeping 200ms");
+            Thread.sleep(200);
+            processing = !callable.call();
+        }
     }
     
     // Useful in tests because Play Framework seems to disable all logging of the server code 

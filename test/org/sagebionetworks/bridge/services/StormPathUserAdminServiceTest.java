@@ -51,7 +51,7 @@ public class StormPathUserAdminServiceTest {
     
     private Study study;
     
-    private TestUser test2 = new TestUser("testUser2", "test2@sagebridge.org", "P4ssword");
+    private TestUser test2 = new TestUser("testUser2");
     
     private User test2User;
     private User test3User;
