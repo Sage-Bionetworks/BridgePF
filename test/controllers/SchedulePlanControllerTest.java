@@ -47,12 +47,12 @@ public class SchedulePlanControllerTest {
     
     @Before
     public void before() {
-        session = helper.createUser("test", Lists.newArrayList(helper.getTestStudy().getResearcherRole()));
+        session = helper.createUser(getClass().getSimpleName(), Lists.newArrayList(helper.getTestStudy().getResearcherRole()));
     }
     
     @After
     public void after() {
-        helper.deleteUser(session);
+        helper.deleteUser(session, getClass().getSimpleName());
     }
 
     @Test

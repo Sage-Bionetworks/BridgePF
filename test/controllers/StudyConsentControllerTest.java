@@ -51,14 +51,14 @@ public class StudyConsentControllerTest {
 
     @Before
     public void before() {
-        adminSession = helper.createUser("admin-user", Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
-        userSession = helper.createUser("normal-user");
+        adminSession = helper.createUser("admin-" + getClass().getSimpleName(), Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
+        userSession = helper.createUser("normal-" + getClass().getSimpleName());
     }
 
     @After
     public void after() {
-        helper.deleteUser(adminSession);
-        helper.deleteUser(userSession);
+        helper.deleteUser(adminSession, "admin-" + getClass().getSimpleName());
+        helper.deleteUser(userSession, "normal-" + getClass().getSimpleName());
     }
 
     @Test

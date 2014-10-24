@@ -58,12 +58,12 @@ public class UserManagementControllerTest {
 
     @Before
     public void before() {
-        session = helper.createUser("admin-test", Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
+        session = helper.createUser(getClass().getSimpleName(), Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
     }
 
     @After
     public void after() {
-        helper.deleteUser(session);
+        helper.deleteUser(session, getClass().getSimpleName());
     }
 
     @Test
