@@ -33,7 +33,7 @@ public class TrackerControllerTest {
 
     @Before
     public void before() {
-        testUser = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(TrackerControllerTest.class);
     }
 
     @After

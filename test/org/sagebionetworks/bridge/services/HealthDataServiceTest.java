@@ -42,7 +42,7 @@ public class HealthDataServiceTest {
     public void before() {
         DynamoInitializer.init(DynamoHealthDataRecord.class);
         DynamoTestUtil.clearTable(DynamoHealthDataRecord.class);
-        testUser = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(HealthDataServiceTest.class);
     }
     
     @After

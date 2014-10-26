@@ -41,7 +41,7 @@ public class ConsentControllerTest {
     
     @Before
     public void before() {
-        testUser = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(ConsentControllerTest.class);
     }
 
     @After
@@ -76,14 +76,14 @@ public class ConsentControllerTest {
 
                 TestUser otherUser = null;
                 try {
-                    otherUser = helper.createUser("johnsmith", null, true, false);
+                    otherUser = helper.createUser(ConsentControllerTest.class, true, false);
                     
                     // Consent new user again
                     ObjectNode node = JsonNodeFactory.instance.objectNode();
                     node.put("name", "John Smith");
                     node.put("birthdate", DateUtils.getISODate((new DateTime()).minusYears(20)));
 
-                    Response giveConsentSuccess = TestUtils.getURL(testUser.getSessionToken(), CONSENT_URL)
+                    Response giveConsentSuccess = TestUtils.getURL(otherUser.getSessionToken(), CONSENT_URL)
                             .post(node.toString()).get(TIMEOUT);
                     assertEquals("Give consent succeeds with 201", SC_CREATED, giveConsentSuccess.getStatus());
                 } finally {

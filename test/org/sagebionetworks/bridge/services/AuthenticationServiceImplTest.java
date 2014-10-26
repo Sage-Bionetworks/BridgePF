@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
@@ -57,7 +56,7 @@ public class AuthenticationServiceImplTest {
     
     @Before
     public void before() {
-        testUser = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(AuthenticationServiceImplTest.class);
     }
     
     @After
@@ -129,7 +128,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void unconsentedUserMustSignTOU() throws Exception {
-        TestUser user = helper.createUser("authTestUser", null, false, false);
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false);
         try {
             // Create a user who has not consented.
             authService.signIn(user.getStudy(), user.getSignIn());
@@ -162,7 +161,7 @@ public class AuthenticationServiceImplTest {
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
         Study study = studyService.getStudyByKey(TestConstants.TEST_STUDY_KEY);
-        TestUser researcher = helper.createUser("researcher", Lists.newArrayList(study.getResearcherRole()), false, false);
+        TestUser researcher = helper.createUser(AuthenticationServiceImplTest.class, false, false, study.getResearcherRole());
         try {
             authService.signIn(researcher.getStudy(), researcher.getSignIn());
             // no exception should have been thrown.
@@ -173,7 +172,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void createAdminAndSignInWithoutConsentError() {
-        TestUser researcher = helper.createUser("adminer", Lists.newArrayList(BridgeConstants.ADMIN_GROUP), false, false);
+        TestUser researcher = helper.createUser(AuthenticationServiceImplTest.class, false, false, BridgeConstants.ADMIN_GROUP);
         try {
             authService.signIn(researcher.getStudy(), researcher.getSignIn());
             // no exception should have been thrown.

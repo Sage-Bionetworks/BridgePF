@@ -64,7 +64,7 @@ public class ScheduleChangeListenerTest {
     
     @Test
     public void addPlanThenEnrollUnenrollUser() throws Exception {
-        final TestUser testUser = helper.createUser("enrollme", null, true, false);
+        final TestUser testUser = helper.createUser(ScheduleChangeListenerTest.class, true, false);
         final User user = testUser.getUser();
         final Study study = testUser.getStudy();
         try {
@@ -104,7 +104,7 @@ public class ScheduleChangeListenerTest {
     
     @Test
     public void addUserThenCrudPlan() throws Exception {
-        final TestUser testUser = helper.createUser("enrollme");
+        final TestUser testUser = helper.createUser(ScheduleChangeListenerTest.class);
         final Study study = testUser.getStudy();
         final User user = testUser.getUser();
         try {

@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
 
 import java.util.List;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
@@ -15,8 +16,6 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
-
-import com.google.common.collect.Lists;
 
 /**
  * A support class that can be injected into any SpringJUnit4ClassRunner test that needs to 
@@ -91,22 +90,29 @@ public class TestUserAdminHelper {
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
+    
+    public String makeRandomUserName(Class<?> cls) {
+        String clsPart = cls.getSimpleName();
+        String devPart = BridgeConfigFactory.getConfig().getUser();
+        String rndPart = RandomStringUtils.randomAlphabetic(4);
+        return String.format("%s-%s-%s", devPart, clsPart, rndPart);
+    }
 
-    public TestUser createUser(String tag) {
-        return createUser(tag, Lists.<String>newArrayList());
+    public TestUser createUser(Class<?> cls) {
+        return createUser(cls, (String[])null);
     }
     
-    public TestUser createUser(String tag, List<String> roles) {
-        return createUser(tag, roles, true, true);
+    public TestUser createUser(Class<?> cls, String... roles) {
+        checkNotNull(cls, "Class must not be null");
+        
+        return createUser(cls, true, true, roles);
     }
     
-    public TestUser createUser(String tag, List<String> roles, boolean signIn, boolean consent) {
-        String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
-        if (!tag.contains(prefix)) {
-            tag = prefix + tag;
-        }
-        String[] rolesArray = (roles == null) ? null : roles.toArray(new String[] {});
-        SignUp signUp = new SignUp(tag, tag + "@sagebridge.org", PASSWORD, rolesArray);
+    public TestUser createUser(Class<?> cls, boolean signIn, boolean consent, String...roles) {
+        checkNotNull(cls, "Class must not be null");
+        
+        String name = makeRandomUserName(cls);
+        SignUp signUp = new SignUp(name, name + "@sagebridge.org", PASSWORD, roles);
         Study study = studyService.getStudyByKey(TEST_STUDY_KEY);
         return createUser(signUp, study, signIn, consent);
     }

@@ -69,7 +69,7 @@ public class StormPathUserAdminServiceTest {
     @Before
     public void before() {
         study = studyService.getStudyByKey(TEST_STUDY_KEY);
-        signUp = new SignUp("testUser2", "testUser2@sagebridge.org", "P4ssword");
+        signUp = new SignUp(bridgeConfig.getUser() + "-admin", "admin@sagebridge.org", "P4ssword");
         
         SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         authService.signIn(study, signIn).getUser();
