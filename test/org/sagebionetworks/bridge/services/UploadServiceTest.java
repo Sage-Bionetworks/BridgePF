@@ -81,7 +81,7 @@ public class UploadServiceTest {
             }
         }
         objectsToRemove = new ArrayList<String>();
-        testUser = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(UploadServiceTest.class);
     }
 
     @After

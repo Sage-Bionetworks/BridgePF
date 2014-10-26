@@ -49,7 +49,7 @@ public class ScheduleControllerTest {
     
     @Before
     public void before() throws Exception {
-        testUser = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(ScheduleControllerTest.class);
         final User user = testUser.getUser();
         plan = schedulePlanDao.createSchedulePlan(new TestSimpleSchedulePlan());
         // wait until the schedules are created, as this is asynchronous

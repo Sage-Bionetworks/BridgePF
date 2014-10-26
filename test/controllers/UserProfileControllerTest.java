@@ -44,7 +44,7 @@ public class UserProfileControllerTest {
     
     @Before
     public void before() {
-        testUser = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(UserProfileControllerTest.class);
     }
     
     @After

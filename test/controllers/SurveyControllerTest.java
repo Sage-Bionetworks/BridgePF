@@ -75,9 +75,9 @@ public class SurveyControllerTest {
             surveyDao.closeSurvey(survey.getGuid(), survey.getVersionedOn());
             surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
         }
-        testUser = helper.createUser("user1");
-        testResearcher = helper.createUser("user2", Lists.newArrayList(study.getResearcherRole()));
-        testAdmin = helper.createUser("user3", Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
+        testUser = helper.createUser(SurveyControllerTest.class);
+        testResearcher = helper.createUser(SurveyControllerTest.class, study.getResearcherRole());
+        testAdmin = helper.createUser(SurveyControllerTest.class, BridgeConstants.ADMIN_GROUP);
     }
 
     @After

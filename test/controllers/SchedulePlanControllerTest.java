@@ -36,7 +36,6 @@ import play.libs.WS.Response;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -53,7 +52,7 @@ public class SchedulePlanControllerTest {
     @Before
     public void before() {
         Study study = studyService.getStudyByKey(TestConstants.TEST_STUDY_KEY);
-        testUser = helper.createUser(getClass().getSimpleName(), Lists.newArrayList(study.getResearcherRole()));
+        testUser = helper.createUser(SchedulePlanControllerTest.class, study.getResearcherRole());
     }
     
     @After
@@ -67,7 +66,7 @@ public class SchedulePlanControllerTest {
             public void testCode() throws Exception {
                 TestUser testUser2 = null;
                 try {
-                    testUser2 = helper.createUser("normal-test-user");
+                    testUser2 = helper.createUser(SchedulePlanControllerTest.class);
                     
                     SchedulePlan plan = new TestABSchedulePlan();
                     String json = BridgeObjectMapper.get().writeValueAsString(plan);

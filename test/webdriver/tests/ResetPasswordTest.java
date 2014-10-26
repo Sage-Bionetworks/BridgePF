@@ -54,7 +54,7 @@ public class ResetPasswordTest extends BaseIntegrationTest {
             public void invoke(TestBrowser browser) {
                 TestUser testUser = null;
                 try {
-                    testUser = helper.createUser(getClass().getSimpleName());
+                    testUser = helper.createUser(ResetPasswordTest.class);
                     
                     AppPage page = new AppPage(browser);
                     RequestResetPasswordDialog dialog = page.openSignInDialog().openResetPasswordDialog();

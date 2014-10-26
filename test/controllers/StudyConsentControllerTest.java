@@ -30,7 +30,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -51,8 +50,8 @@ public class StudyConsentControllerTest {
 
     @Before
     public void before() {
-        adminSession = helper.createUser("admin-" + getClass().getSimpleName(), Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
-        userSession = helper.createUser("normal-" + getClass().getSimpleName());
+        adminSession = helper.createUser(StudyConsentControllerTest.class, BridgeConstants.ADMIN_GROUP);
+        userSession = helper.createUser(StudyConsentControllerTest.class);
     }
 
     @After

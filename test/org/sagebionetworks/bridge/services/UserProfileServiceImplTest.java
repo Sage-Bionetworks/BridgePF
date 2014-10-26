@@ -29,7 +29,7 @@ public class UserProfileServiceImplTest {
     
     @Before
     public void before() {
-        testUser = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(UserProfileServiceImplTest.class);
     }
     
     @After

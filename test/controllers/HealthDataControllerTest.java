@@ -62,7 +62,7 @@ public class HealthDataControllerTest {
 
     @Before
     public void before() {
-        testUser = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(HealthDataControllerTest.class);
     }
 
     @After
