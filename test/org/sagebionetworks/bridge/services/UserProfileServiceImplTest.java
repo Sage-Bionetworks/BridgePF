@@ -9,9 +9,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -25,25 +25,25 @@ public class UserProfileServiceImplTest {
     @Resource
     private TestUserAdminHelper helper;
     
-    private UserSession session;
+    private TestUser testUser;
     
     @Before
     public void before() {
-        session = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(UserProfileServiceImplTest.class);
     }
     
     @After
     public void after() {
-        helper.deleteUser(session, getClass().getSimpleName());
+        helper.deleteUser(testUser);
     }
     
     @Test
     public void canUpdateUserProfile() {
-        UserProfile userProfile = helper.getUserProfile(session);
+        UserProfile userProfile = testUser.getUserProfile();
         userProfile.setFirstName("Test");
         userProfile.setLastName("Powers");
         
-        User updatedUser = service.updateProfile(session.getUser(), userProfile);
+        User updatedUser = service.updateProfile(testUser.getUser(), userProfile);
         
         assertEquals("Test", updatedUser.getFirstName());
         assertEquals("Powers", updatedUser.getLastName());

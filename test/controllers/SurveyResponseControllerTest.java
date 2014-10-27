@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
@@ -27,7 +28,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponseDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
@@ -60,11 +60,11 @@ public class SurveyResponseControllerTest {
     private ObjectMapper mapper = new ObjectMapper();
     private TestSurvey survey;
     private String responseGuid;
-    private UserSession session;
+    private TestUser testUser;
     
     @Before
     public void before() {
-        session = helper.createUser(getClass().getSimpleName(), Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
+        testUser = helper.createUser(SurveyResponseControllerTest.class, BridgeConstants.ADMIN_GROUP);
         survey = new TestSurvey(true);
         surveyDao.createSurvey(survey);
         DynamoInitializer.init(DynamoSurveyResponse.class);
@@ -79,7 +79,7 @@ public class SurveyResponseControllerTest {
         if (survey != null) {
             surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());    
         }
-        helper.deleteUser(session, getClass().getSimpleName());
+        helper.deleteUser(testUser);
     }
     
     @Test
@@ -110,7 +110,7 @@ public class SurveyResponseControllerTest {
                 String body = mapper.writeValueAsString(list);
                 
                 String url = String.format(NEW_SURVEY_RESPONSE, survey.getGuid(), DateUtils.convertToISODateTime(survey.getVersionedOn()));
-                Response response = TestUtils.getURL(session.getSessionToken(), url).post(body).get(TIMEOUT);
+                Response response = TestUtils.getURL(testUser.getSessionToken(), url).post(body).get(TIMEOUT);
 
                 assertEquals("Create new record returns 201", SC_CREATED, response.getStatus());
                 
@@ -122,7 +122,7 @@ public class SurveyResponseControllerTest {
                 // Check the types of this response object
                 
                 url = String.format(SURVEY_RESPONSE_URL, responseGuid);
-                response = TestUtils.getURL(session.getSessionToken(), url).get().get(TIMEOUT);
+                response = TestUtils.getURL(testUser.getSessionToken(), url).get().get(TIMEOUT);
                 JsonNode node = response.asJson();
                 assertEquals("Type is SurveyResponse", "SurveyResponse", node.get("type").asText());
 
@@ -215,7 +215,7 @@ public class SurveyResponseControllerTest {
                 
                 // Submit all these tricky examples of answers through the API.
                 String url = String.format(USER_SURVEY_URL, survey.getGuid(), DateUtils.convertToISODateTime(survey.getVersionedOn()));
-                Response response = TestUtils.getURL(session.getSessionToken(), url).post(array.toString()).get(TIMEOUT);
+                Response response = TestUtils.getURL(testUser.getSessionToken(), url).post(array.toString()).get(TIMEOUT);
                 assertEquals("Response successful", SC_CREATED, response.getStatus());
             }
         });

@@ -14,13 +14,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.SignIn;
+import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -51,13 +51,11 @@ public class StormPathUserAdminServiceTest {
     
     private Study study;
     
-    private TestUser test2 = new TestUser("testUser2");
+    private SignUp signUp;
     
     private User test2User;
     private User test3User;
     
-    private boolean setUpComplete = false;
-
     @BeforeClass
     public static void initialSetUp() {
         DynamoTestUtil.clearTable(DynamoUserConsent2.class);
@@ -70,14 +68,11 @@ public class StormPathUserAdminServiceTest {
 
     @Before
     public void before() {
-        if (!setUpComplete) {
-            study = studyService.getStudyByKey(TEST_STUDY_KEY);
-            
-            SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
-            authService.signIn(study, signIn).getUser();
-            
-            setUpComplete = true;
-        }
+        study = studyService.getStudyByKey(TEST_STUDY_KEY);
+        signUp = new SignUp(bridgeConfig.getUser() + "-admin", "admin@sagebridge.org", "P4ssword");
+        
+        SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
+        authService.signIn(study, signIn).getUser();
     }
 
     @After
@@ -94,31 +89,31 @@ public class StormPathUserAdminServiceTest {
 
     @Test
     public void canCreateUserIdempotently() {
-        test2User = service.createUser(test2.getSignUp(), study, true, true).getUser();
-        test2User = service.createUser(test2.getSignUp(), study, true, true).getUser();
+        test2User = service.createUser(signUp, study, true, true).getUser();
+        test2User = service.createUser(signUp, study, true, true).getUser();
 
-        assertEquals("Correct email", test2.getSignUp().getEmail(), test2User.getEmail());
-        assertEquals("Correct username", test2.getSignUp().getUsername(), test2User.getUsername());
+        assertEquals("Correct email", signUp.getEmail(), test2User.getEmail());
+        assertEquals("Correct username", signUp.getUsername(), test2User.getUsername());
         assertTrue("Has consented", test2User.doesConsent());
     }
 
     @Test(expected = BridgeServiceException.class)
     public void deletedUserHasBeenDeleted() {
-        test2User = service.createUser(test2.getSignUp(), study, true, true).getUser();
+        test2User = service.createUser(signUp, study, true, true).getUser();
         
         service.deleteUser(test2User);
         
         // This should fail with a 404.
-        authService.signIn(study, test2.getSignIn());
+        authService.signIn(study, new SignIn(signUp.getEmail(), signUp.getPassword()));
     }
 
     @Test
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
-        UserSession session1 = service.createUser(test2.getSignUp(), study, false, false);
+        UserSession session1 = service.createUser(signUp, study, false, false);
         assertNull("No session", session1);
         
         try {
-            authService.signIn(study, test2.getSignIn());
+            authService.signIn(study, new SignIn(signUp.getEmail(), signUp.getPassword()));
             fail("Should throw a consent required exception");
         } catch (ConsentRequiredException e) {
             test2User = e.getUserSession().getUser();

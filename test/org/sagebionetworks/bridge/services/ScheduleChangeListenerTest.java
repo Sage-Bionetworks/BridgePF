@@ -12,8 +12,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduleDao;
@@ -28,7 +28,6 @@ import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -65,14 +64,12 @@ public class ScheduleChangeListenerTest {
     
     @Test
     public void addPlanThenEnrollUnenrollUser() throws Exception {
-        final TestUser testUser = new TestUser("enrollme");
-        final Study study = helper.getTestStudy();
-        UserSession session = null;
+        final TestUser testUser = helper.createUser(ScheduleChangeListenerTest.class, true, false);
+        final User user = testUser.getUser();
+        final Study study = testUser.getStudy();
         try {
-            session = helper.createUser(testUser.getSignUp(), study, true, false);
-            final User user = session.getUser();
             
-            SchedulePlan plan = createSchedulePlan(user);
+            SchedulePlan plan = createSchedulePlan(study, user);
             schedulePlanDao.createSchedulePlan(plan);
             
             List<Schedule> schedules = scheduleDao.getSchedules(study, user);
@@ -96,7 +93,7 @@ public class ScheduleChangeListenerTest {
             schedules = scheduleDao.getSchedules(study, user);
             assertEquals("User left study and has no schedules", 0, schedules.size());
         } finally {
-            helper.deleteUser(session);
+            helper.deleteUser(testUser);
             waitFor(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     return (authService.getUser(study, testUser.getEmail()) == null);
@@ -107,24 +104,22 @@ public class ScheduleChangeListenerTest {
     
     @Test
     public void addUserThenCrudPlan() throws Exception {
-        final TestUser testUser = new TestUser("enrollme");
-        final Study study = helper.getTestStudy();
-        UserSession session = null; 
+        final TestUser testUser = helper.createUser(ScheduleChangeListenerTest.class);
+        final Study study = testUser.getStudy();
+        final User user = testUser.getUser();
         try {
-            session = helper.createUser(testUser.getUsername());
-            final User user = session.getUser();
             
-            List<Schedule> schedules = scheduleDao.getSchedules(study, session.getUser());
+            List<Schedule> schedules = scheduleDao.getSchedules(study, user);
             assertEquals("No schedules because there's no plan", 0, schedules.size());
 
-            SchedulePlan plan = createSchedulePlan(session.getUser());
+            SchedulePlan plan = createSchedulePlan(study, user);
             listener.onApplicationEvent(new SchedulePlanCreatedEvent(plan));
             waitFor(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     return (scheduleDao.getSchedules(study, user).size() == 1);
                 }
             });
-            schedules = scheduleDao.getSchedules(study, session.getUser());
+            schedules = scheduleDao.getSchedules(study, user);
             assertEquals("There is now one schedule for the user", 1, schedules.size());
 
             updateSchedulePlan(plan);
@@ -135,7 +130,7 @@ public class ScheduleChangeListenerTest {
                     return (!sch.isEmpty() && "* * * * * *".equals(sch.get(0).getCronTrigger()));
                 }
             });
-            schedules = scheduleDao.getSchedules(study, session.getUser());
+            schedules = scheduleDao.getSchedules(study, user);
             assertEquals("There is still one schedule for the user", 1, schedules.size());
             assertEquals("That schedule shows an update", "* * * * * *", schedules.get(0).getCronTrigger());
 
@@ -145,11 +140,11 @@ public class ScheduleChangeListenerTest {
                     return (scheduleDao.getSchedules(study, user).size() == 0);
                 }
             });
-            schedules = scheduleDao.getSchedules(study, session.getUser());
+            schedules = scheduleDao.getSchedules(study, user);
             assertEquals("Now there is no schedule after the one plan was deleted", 0, schedules.size());
             
         } finally {
-            helper.deleteUser(session, getClass().getSimpleName());
+            helper.deleteUser(testUser);
             waitFor(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     return (authService.getUser(study, testUser.getEmail()) == null);
@@ -165,11 +160,11 @@ public class ScheduleChangeListenerTest {
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
     }
     
-    private SchedulePlan createSchedulePlan(User user) {
+    private SchedulePlan createSchedulePlan(Study study, User user) {
         String planGuid = BridgeUtils.generateGuid();
         
         Schedule schedule = new DynamoSchedule();
-        schedule.setStudyAndUser(helper.getTestStudy(), user);
+        schedule.setStudyAndUser(study, user);
         schedule.setSchedulePlanGuid(planGuid);
         schedule.setLabel("Task AAA");
         schedule.setActivityType(ActivityType.TASK);
@@ -187,7 +182,7 @@ public class ScheduleChangeListenerTest {
         plan.setGuid(planGuid);
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         plan.setStrategy(strategy);
-        plan.setStudyKey(helper.getTestStudy().getKey());
+        plan.setStudyKey(study.getKey());
         return plan;
     }
 

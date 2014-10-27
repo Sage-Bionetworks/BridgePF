@@ -18,11 +18,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants.TestUser;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -38,16 +37,16 @@ public class ConsentControllerTest {
     @Resource
     private TestUserAdminHelper helper;
 
-    private UserSession session;
+    private TestUser testUser;
     
     @Before
     public void before() {
-        session = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(ConsentControllerTest.class);
     }
 
     @After
     public void after() {
-        helper.deleteUser(session, getClass().getSimpleName());
+        helper.deleteUser(testUser);
     }
     
     @Test
@@ -57,39 +56,38 @@ public class ConsentControllerTest {
             public void testCode() throws Exception {
 
                 // Helper's user is already consented, so consenting again should fail.
-                Response giveConsentFail = TestUtils.getURL(session.getSessionToken(), CONSENT_URL).post("")
+                Response giveConsentFail = TestUtils.getURL(testUser.getSessionToken(), CONSENT_URL).post("")
                         .get(TIMEOUT);
                 assertEquals("give Consent fails with 400", SC_BAD_REQUEST, giveConsentFail.getStatus());
 
                 // Consenting turns data sharing on by default, so check that we can suspend sharing.
-                Response suspendDataSharing = TestUtils.getURL(session.getSessionToken(), SUSPEND_URL).post("")
+                Response suspendDataSharing = TestUtils.getURL(testUser.getSessionToken(), SUSPEND_URL).post("")
                         .get(TIMEOUT);
                 assertEquals("suspendDataSharing succeeds with 200", SC_OK, suspendDataSharing.getStatus());
 
                 // We've suspended data sharing, now check to see if we can resume data sharing.
-                Response resumeDataSharing = TestUtils.getURL(session.getSessionToken(), RESUME_URL).post("")
+                Response resumeDataSharing = TestUtils.getURL(testUser.getSessionToken(), RESUME_URL).post("")
                         .get(TIMEOUT);
                 assertEquals("resumeDataSharing succeeds with 200", SC_OK, resumeDataSharing.getStatus());
 
                 // Resume data sharing should be idempotent.
-                resumeDataSharing = TestUtils.getURL(session.getSessionToken(), RESUME_URL).post("").get(TIMEOUT);
+                resumeDataSharing = TestUtils.getURL(testUser.getSessionToken(), RESUME_URL).post("").get(TIMEOUT);
                 assertEquals("resumeDataSharing succeeds with 200", SC_OK, resumeDataSharing.getStatus());
 
-                UserSession session = null;
+                TestUser otherUser = null;
                 try {
-                    TestUser user = new TestUser("johnsmith");
-                    session = helper.createUser(user.getSignUp(), helper.getTestStudy(), true, false);
+                    otherUser = helper.createUser(ConsentControllerTest.class, true, false);
                     
                     // Consent new user again
                     ObjectNode node = JsonNodeFactory.instance.objectNode();
                     node.put("name", "John Smith");
                     node.put("birthdate", DateUtils.getISODate((new DateTime()).minusYears(20)));
 
-                    Response giveConsentSuccess = TestUtils.getURL(session.getSessionToken(), CONSENT_URL)
+                    Response giveConsentSuccess = TestUtils.getURL(otherUser.getSessionToken(), CONSENT_URL)
                             .post(node.toString()).get(TIMEOUT);
                     assertEquals("Give consent succeeds with 201", SC_CREATED, giveConsentSuccess.getStatus());
                 } finally {
-                    helper.deleteUser(session);
+                    helper.deleteUser(otherUser);
                 }
             }
         });

@@ -9,8 +9,6 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.UploadRequest;
-import org.sagebionetworks.bridge.validators.UploadValidator;
-import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.validation.Validator;
 
 import com.fasterxml.jackson.databind.JsonNode;

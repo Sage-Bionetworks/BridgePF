@@ -18,8 +18,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -30,7 +30,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -45,20 +44,20 @@ public class StudyConsentControllerTest {
     @Resource
     private TestUserAdminHelper helper;
     
-    private UserSession adminSession;
+    private TestUser adminSession;
     
-    private UserSession userSession;
+    private TestUser userSession;
 
     @Before
     public void before() {
-        adminSession = helper.createUser("admin-" + getClass().getSimpleName(), Lists.newArrayList(BridgeConstants.ADMIN_GROUP));
-        userSession = helper.createUser("normal-" + getClass().getSimpleName());
+        adminSession = helper.createUser(StudyConsentControllerTest.class, BridgeConstants.ADMIN_GROUP);
+        userSession = helper.createUser(StudyConsentControllerTest.class);
     }
 
     @After
     public void after() {
-        helper.deleteUser(adminSession, "admin-" + getClass().getSimpleName());
-        helper.deleteUser(userSession, "normal-" + getClass().getSimpleName());
+        helper.deleteUser(adminSession);
+        helper.deleteUser(userSession);
     }
 
     @Test
