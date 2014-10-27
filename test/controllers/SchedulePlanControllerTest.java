@@ -18,15 +18,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.TestABSchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.TestSimpleSchedulePlan;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -34,7 +36,6 @@ import play.libs.WS.Response;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -43,34 +44,37 @@ public class SchedulePlanControllerTest {
     @Resource
     private TestUserAdminHelper helper;
     
-    private UserSession session;
+    @Resource
+    private StudyService studyService;
+    
+    private TestUser testUser;
     
     @Before
     public void before() {
-        session = helper.createUser(getClass().getSimpleName(), Lists.newArrayList(helper.getTestStudy().getResearcherRole()));
+        Study study = studyService.getStudyByKey(TestConstants.TEST_STUDY_KEY);
+        testUser = helper.createUser(SchedulePlanControllerTest.class, study.getResearcherRole());
     }
     
     @After
     public void after() {
-        helper.deleteUser(session, getClass().getSimpleName());
+        helper.deleteUser(testUser);
     }
 
     @Test
     public void normalUserCannotAccess() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
-                UserSession session = null;
+                TestUser testUser2 = null;
                 try {
-                    session = helper.createUser(new SignUp("normal-test-user", "normal-test-user@sagebridge.org",
-                            "P4ssword"), helper.getTestStudy(), true, true);
+                    testUser2 = helper.createUser(SchedulePlanControllerTest.class);
                     
                     SchedulePlan plan = new TestABSchedulePlan();
                     String json = BridgeObjectMapper.get().writeValueAsString(plan);
                     
-                    Response response = TestUtils.getURL(session.getSessionToken(), SCHEDULE_PLANS_URL).post(json).get(TIMEOUT);
+                    Response response = TestUtils.getURL(testUser2.getSessionToken(), SCHEDULE_PLANS_URL).post(json).get(TIMEOUT);
                     assertEquals("Returns 403", SC_FORBIDDEN, response.getStatus());
                 } finally {
-                    helper.deleteUser(session);
+                    helper.deleteUser(testUser2);
                 }
             }
         });
@@ -84,7 +88,7 @@ public class SchedulePlanControllerTest {
                 String json = BridgeObjectMapper.get().writeValueAsString(plan);
                 
                 // Create
-                Response response = TestUtils.getURL(session.getSessionToken(), SCHEDULE_PLANS_URL).post(json).get(TIMEOUT);
+                Response response = TestUtils.getURL(testUser.getSessionToken(), SCHEDULE_PLANS_URL).post(json).get(TIMEOUT);
                 assertEquals("Returns 201", SC_CREATED, response.getStatus());
                 JsonNode node = response.asJson();
                 assertNotNull("Returned plan has a guid", node.get("guid").asText());
@@ -98,18 +102,18 @@ public class SchedulePlanControllerTest {
                 json = BridgeObjectMapper.get().writeValueAsString(plan);
                 
                 String url = String.format(SCHEDULE_PLAN_URL, plan.getGuid());
-                response = TestUtils.getURL(session.getSessionToken(), url).post(json).get(TIMEOUT);
+                response = TestUtils.getURL(testUser.getSessionToken(), url).post(json).get(TIMEOUT);
                 assertEquals("Returns 200", SC_OK, response.getStatus());
                 
                 // Get
-                response = TestUtils.getURL(session.getSessionToken(), url).get().get(TIMEOUT); 
+                response = TestUtils.getURL(testUser.getSessionToken(), url).get().get(TIMEOUT); 
                 node = response.asJson();
                 assertEquals("Returns 200", SC_OK, response.getStatus());
                 assertEquals("Type is SchedulePlan", "SchedulePlan", node.get("type").asText());
                 assertEquals("Strategy type has been changed", "SimpleScheduleStrategy", node.get("strategy").get("type").asText());
                 
                 // Delete
-                response = TestUtils.getURL(session.getSessionToken(), url).delete().get(TIMEOUT);
+                response = TestUtils.getURL(testUser.getSessionToken(), url).delete().get(TIMEOUT);
                 assertEquals("Returns 200", SC_OK, response.getStatus());
             }
         });
@@ -124,7 +128,7 @@ public class SchedulePlanControllerTest {
                 String json = BridgeObjectMapper.get().writeValueAsString(plan);
                 
                 // Create
-                Response response = TestUtils.getURL(session.getSessionToken(), SCHEDULE_PLANS_URL).post(json).get(TIMEOUT);
+                Response response = TestUtils.getURL(testUser.getSessionToken(), SCHEDULE_PLANS_URL).post(json).get(TIMEOUT);
                 assertEquals("Returns 400", SC_BAD_REQUEST, response.getStatus());
                 
                 JsonNode node = response.asJson();
@@ -139,7 +143,7 @@ public class SchedulePlanControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 // Create
-                Response response = TestUtils.getURL(session.getSessionToken(), SCHEDULE_PLANS_URL).post("").get(TIMEOUT);
+                Response response = TestUtils.getURL(testUser.getSessionToken(), SCHEDULE_PLANS_URL).post("").get(TIMEOUT);
                 assertEquals("Returns 400", SC_BAD_REQUEST, response.getStatus());
             }
         });

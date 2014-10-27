@@ -7,7 +7,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -52,16 +52,16 @@ public class ResetPasswordTest extends BaseIntegrationTest {
     public void resetPasswordSubmitsValidEmail() {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
-                UserSession session = null;
+                TestUser testUser = null;
                 try {
-                    session = helper.createUser(getClass().getSimpleName());
+                    testUser = helper.createUser(ResetPasswordTest.class);
                     
                     AppPage page = new AppPage(browser);
                     RequestResetPasswordDialog dialog = page.openSignInDialog().openResetPasswordDialog();
                     
-                    dialog.submitEmailAddress(session.getUser().getEmail());
+                    dialog.submitEmailAddress(testUser.getUser().getEmail());
                 } finally {
-                    helper.deleteUser(session, getClass().getSimpleName());
+                    helper.deleteUser(testUser);
                 }
             }
         });

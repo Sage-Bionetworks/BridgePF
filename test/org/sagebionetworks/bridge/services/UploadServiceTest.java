@@ -27,11 +27,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.UploadRequest;
 import org.sagebionetworks.bridge.models.UploadSession;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -61,7 +61,7 @@ public class UploadServiceTest {
     @Resource
     private TestUserAdminHelper helper;
     
-    private UserSession session;
+    private TestUser testUser;
 
     private List<String> objectsToRemove;
 
@@ -81,7 +81,7 @@ public class UploadServiceTest {
             }
         }
         objectsToRemove = new ArrayList<String>();
-        session = helper.createUser(getClass().getSimpleName());
+        testUser = helper.createUser(UploadServiceTest.class);
     }
 
     @After
@@ -93,13 +93,13 @@ public class UploadServiceTest {
         } catch (AmazonClientException e) {
             e.printStackTrace();
         }
-        helper.deleteUser(session, getClass().getSimpleName());
+        helper.deleteUser(testUser);
     }
 
     @Test
     public void test() throws Exception {
         UploadRequest uploadRequest = createUploadRequest();
-        UploadSession uploadSession = uploadService.createUpload(session.getUser(), uploadRequest);
+        UploadSession uploadSession = uploadService.createUpload(testUser.getUser(), uploadRequest);
         final String uploadId = uploadSession.getId();
         final String objectId = uploadDao.getObjectId(uploadId);
         objectsToRemove.add(objectId);

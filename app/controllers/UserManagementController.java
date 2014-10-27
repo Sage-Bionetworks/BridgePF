@@ -41,12 +41,13 @@ public class UserManagementController extends AdminController {
 
     public Result deleteUser(String email) throws Exception {
         getAuthenticatedAdminSession();
+        
         Study study = studyService.getStudyByHostname(getHostname());
         
         User user = authenticationService.getUser(study, email);
         userAdminService.deleteUser(user);
 
-        return okResult("Deleted user successfully.");
+        return okResult("User deleted.");
     }
 
     public Result revokeAllConsentRecords() throws Exception {
@@ -59,6 +60,6 @@ public class UserManagementController extends AdminController {
         User user = authenticationService.getUser(study, email);
         userAdminService.revokeAllConsentRecords(user, study);
 
-        return okResult("Revoked all consent records successfully.");
+        return okResult("All consent records revoked.");
     }
 }
