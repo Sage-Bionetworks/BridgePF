@@ -18,7 +18,7 @@
     </bean>
 
     <bean id="healthCodeEncryptor" class="org.sagebionetworks.bridge.crypto.BridgeAesGcmEncryptor">
-        <constructor-arg value="#{bridgeConfig.healthCodePassword}"/>
+        <constructor-arg value="#{bridgeConfig.healthCodeKey}"/>
     </bean>
 
     <bean id="awsCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
