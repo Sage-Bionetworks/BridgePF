@@ -4,7 +4,6 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
 import play.mvc.Result;
@@ -13,7 +12,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public class UserManagementController extends AdminController {
 
-    private static final String EMAIL_FIELD = "email";
     private static final String CONSENT_FIELD = "consent";
 
     private UserAdminService userAdminService;
@@ -32,11 +30,9 @@ public class UserManagementController extends AdminController {
         
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
         
-        // If you don't sign the user in, there will certainly be no session
-        UserSession session = userAdminService.createUser(signUp, study, true, consent);
-        session.getUser().setHealthDataCode(null);
+        userAdminService.createUser(signUp, study, false, consent);
         
-        return createdResult(session);
+        return createdResult("User created.");
     }
 
     public Result deleteUser(String email) throws Exception {
@@ -49,17 +45,5 @@ public class UserManagementController extends AdminController {
 
         return okResult("User deleted.");
     }
-
-    public Result revokeAllConsentRecords() throws Exception {
-        getAuthenticatedAdminSession();
-        Study study = studyService.getStudyByHostname(getHostname());
-        
-        JsonNode node = requestToJSON(request());
-        String email = JsonUtils.asText(node, EMAIL_FIELD);
-
-        User user = authenticationService.getUser(study, email);
-        userAdminService.revokeAllConsentRecords(user, study);
-
-        return okResult("All consent records revoked.");
-    }
+    
 }
