@@ -13,7 +13,11 @@
     <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfigFactory"
             factory-method="getConfig" />
 
-    <bean id="healthCodeEncryptor" class="org.sagebionetworks.bridge.crypto.BridgeEncryptor">
+    <bean id="healthCodeEncryptorOld" class="org.sagebionetworks.bridge.crypto.BridgeEncryptor">
+        <constructor-arg value="#{bridgeConfig.healthCodePassword}"/>
+    </bean>
+
+    <bean id="healthCodeEncryptor" class="org.sagebionetworks.bridge.crypto.BridgeAesGcmEncryptor">
         <constructor-arg value="#{bridgeConfig.healthCodePassword}"/>
     </bean>
 
@@ -379,6 +383,7 @@
     </bean>
 
     <bean id="accountEncryptionService" class="org.sagebionetworks.bridge.services.AccountEncryptionServiceImpl">
+        <property name="healthCodeEncryptorOld" ref="healthCodeEncryptorOld" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
     </bean>
