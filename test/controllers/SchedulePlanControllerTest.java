@@ -16,6 +16,7 @@ import javax.annotation.Resource;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
@@ -61,6 +62,7 @@ public class SchedulePlanControllerTest {
     }
 
     @Test
+    @Ignore // MOVED TO SDK
     public void normalUserCannotAccess() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
@@ -81,6 +83,7 @@ public class SchedulePlanControllerTest {
     }
     
     @Test
+    @Ignore // MOVED TO SDK
     public void crudSchedulePlan() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
@@ -120,6 +123,7 @@ public class SchedulePlanControllerTest {
     }
     
     @Test
+    @Ignore // MOVED TO SDK
     public void invalidPlanReturns400Error() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
@@ -139,6 +143,7 @@ public class SchedulePlanControllerTest {
     }
     
     @Test
+    @Ignore // MOVED TO SDK
     public void noPlanReturns400() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
@@ -148,5 +153,4 @@ public class SchedulePlanControllerTest {
             }
         });
     }
-    
 }
