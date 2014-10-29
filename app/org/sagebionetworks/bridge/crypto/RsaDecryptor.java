@@ -15,8 +15,8 @@ public class RsaDecryptor {
 
     public RsaDecryptor(Key key) {
         try {
-            cipher = Cipher.getInstance("RSA");
-            cipher.init(Cipher.ENCRYPT_MODE, key);
+            cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            cipher.init(Cipher.DECRYPT_MODE, key);
         } catch(NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         } catch (InvalidKeyException e) {
@@ -26,9 +26,10 @@ public class RsaDecryptor {
         }
     }
 
-    public String decrypt(String text) {
+    public String decrypt(String base64Encoded) {
         try {
-            return Base64.encodeToString(cipher.doFinal(Base64.decode(text)));
+            byte[] decrypted = cipher.doFinal(Base64.decode(base64Encoded));
+            return Base64.encodeToString(decrypted);
         } catch (IllegalBlockSizeException e) {
             throw new RuntimeException(e);
         } catch (BadPaddingException e) {

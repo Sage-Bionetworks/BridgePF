@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.crypto;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -29,7 +28,8 @@ public class RsaEncryptor {
 
     public String encrypt(String base64Encoded) {
         try {
-            return Base64.encodeToString(cipher.doFinal(Base64.decode(base64Encoded)));
+            byte[] encrypted = cipher.doFinal(Base64.decode(base64Encoded));
+            return Base64.encodeToString(encrypted);
         } catch (IllegalBlockSizeException e) {
             throw new RuntimeException(e);
         } catch (BadPaddingException e) {
