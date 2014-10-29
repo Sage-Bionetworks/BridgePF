@@ -8,6 +8,7 @@ import java.util.concurrent.Callable;
 
 import javax.annotation.Resource;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,6 +41,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ScheduleChangeListenerTest {
     
+    private static final String CRON_TRIGGER = "* * * * * *";
+
     @Resource
     private TestUserAdminHelper helper;
     
@@ -55,22 +58,28 @@ public class ScheduleChangeListenerTest {
     @Resource
     private AuthenticationServiceImpl authService;
     
+    private TestUser testUser;
+    
     @Before
     public void before() {
         DynamoInitializer.init(DynamoSchedule.class, DynamoSchedulePlan.class);
         DynamoTestUtil.clearTable(DynamoSchedule.class);
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
+        testUser = helper.createUser(ScheduleChangeListenerTest.class);
+    }
+    
+    @After
+    public void after() {
+        helper.deleteUser(testUser);
     }
     
     @Test
     public void addPlanThenEnrollUnenrollUser() throws Exception {
-        final TestUser testUser = helper.createUser(ScheduleChangeListenerTest.class, true, false);
         final User user = testUser.getUser();
         final Study study = testUser.getStudy();
+        SchedulePlan plan = null;
         try {
-            
-            SchedulePlan plan = createSchedulePlan(study, user);
-            schedulePlanDao.createSchedulePlan(plan);
+            plan = createSchedulePlan(study, user);
             
             List<Schedule> schedules = scheduleDao.getSchedules(study, user);
             assertEquals("No schedules because the user hasn't joined the study", 0, schedules.size());
@@ -93,26 +102,20 @@ public class ScheduleChangeListenerTest {
             schedules = scheduleDao.getSchedules(study, user);
             assertEquals("User left study and has no schedules", 0, schedules.size());
         } finally {
-            helper.deleteUser(testUser);
-            waitFor(new Callable<Boolean>() {
-                @Override public Boolean call() throws Exception {
-                    return (authService.getUser(study, testUser.getEmail()) == null);
-                }                
-            });
+            schedulePlanDao.deleteSchedulePlan(study, plan.getGuid());
         }
     }
     
     @Test
     public void addUserThenCrudPlan() throws Exception {
-        final TestUser testUser = helper.createUser(ScheduleChangeListenerTest.class);
         final Study study = testUser.getStudy();
         final User user = testUser.getUser();
+        SchedulePlan plan = null;
         try {
-            
             List<Schedule> schedules = scheduleDao.getSchedules(study, user);
             assertEquals("No schedules because there's no plan", 0, schedules.size());
 
-            SchedulePlan plan = createSchedulePlan(study, user);
+            plan = createSchedulePlan(study, user);
             listener.onApplicationEvent(new SchedulePlanCreatedEvent(plan));
             waitFor(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
@@ -126,13 +129,13 @@ public class ScheduleChangeListenerTest {
             listener.onApplicationEvent(new SchedulePlanUpdatedEvent(plan));
             waitFor(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
-                    List<Schedule> sch = scheduleDao.getSchedules(study, user);
-                    return (!sch.isEmpty() && "* * * * * *".equals(sch.get(0).getCronTrigger()));
+                    List<Schedule> list = scheduleDao.getSchedules(study, user);
+                    return (!list.isEmpty() && list.size() == 1 && CRON_TRIGGER.equals(list.get(0).getCronTrigger()));
                 }
             });
             schedules = scheduleDao.getSchedules(study, user);
             assertEquals("There is still one schedule for the user", 1, schedules.size());
-            assertEquals("That schedule shows an update", "* * * * * *", schedules.get(0).getCronTrigger());
+            assertEquals("That schedule shows an update", CRON_TRIGGER, schedules.get(0).getCronTrigger());
 
             listener.onApplicationEvent(new SchedulePlanDeletedEvent(plan));
             waitFor(new Callable<Boolean>() {
@@ -144,20 +147,15 @@ public class ScheduleChangeListenerTest {
             assertEquals("Now there is no schedule after the one plan was deleted", 0, schedules.size());
             
         } finally {
-            helper.deleteUser(testUser);
-            waitFor(new Callable<Boolean>() {
-                @Override public Boolean call() throws Exception {
-                    return (authService.getUser(study, testUser.getEmail()) == null);
-                }                
-            });
+            schedulePlanDao.deleteSchedulePlan(study, plan.getGuid());
         }
     }
     
     private void updateSchedulePlan(SchedulePlan plan) {
         SimpleScheduleStrategy strategy = (SimpleScheduleStrategy)plan.getStrategy();
         Schedule schedule = strategy.getSchedule();
-        schedule.setCronTrigger("* * * * * *");
-        plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        schedule.setCronTrigger(CRON_TRIGGER);
+        schedulePlanDao.updateSchedulePlan(plan);
     }
     
     private SchedulePlan createSchedulePlan(Study study, User user) {
@@ -183,6 +181,7 @@ public class ScheduleChangeListenerTest {
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         plan.setStrategy(strategy);
         plan.setStudyKey(study.getKey());
+        schedulePlanDao.createSchedulePlan(plan);
         return plan;
     }
 
