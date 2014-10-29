@@ -65,7 +65,7 @@ public class ScheduleChangeListenerTest {
         DynamoInitializer.init(DynamoSchedule.class, DynamoSchedulePlan.class);
         DynamoTestUtil.clearTable(DynamoSchedule.class);
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
-        testUser = helper.createUser(ScheduleChangeListenerTest.class);
+        testUser = helper.createUser(ScheduleChangeListenerTest.class, true, true);
     }
     
     @After
