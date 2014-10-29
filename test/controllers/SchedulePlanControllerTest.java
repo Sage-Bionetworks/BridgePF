@@ -40,6 +40,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
+@Ignore // MOVED TO SDK
 public class SchedulePlanControllerTest {
     
     @Resource
@@ -62,7 +63,6 @@ public class SchedulePlanControllerTest {
     }
 
     @Test
-    @Ignore // MOVED TO SDK
     public void normalUserCannotAccess() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
@@ -83,7 +83,6 @@ public class SchedulePlanControllerTest {
     }
     
     @Test
-    @Ignore // MOVED TO SDK
     public void crudSchedulePlan() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
@@ -123,7 +122,6 @@ public class SchedulePlanControllerTest {
     }
     
     @Test
-    @Ignore // MOVED TO SDK
     public void invalidPlanReturns400Error() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
@@ -143,7 +141,6 @@ public class SchedulePlanControllerTest {
     }
     
     @Test
-    @Ignore // MOVED TO SDK
     public void noPlanReturns400() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {

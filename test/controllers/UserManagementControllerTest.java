@@ -1,6 +1,7 @@
 package controllers;
 
 import static org.apache.commons.httpclient.HttpStatus.SC_CREATED;
+
 import static org.apache.commons.httpclient.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.SIGN_OUT_URL;
@@ -34,6 +35,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
+@Ignore // MOVED TO SDK (WHICH DOES IT OVER AND OVER AGAIN)
 public class UserManagementControllerTest {
 
     @Resource
@@ -52,11 +54,6 @@ public class UserManagementControllerTest {
     }
 
     @Test
-    @Ignore
-    // This test sometimes succeeds, and sometimes fails with
-    // java.util.concurrent.TimeoutException: Futures timed out after [10000 milliseconds].
-    // The user is deleted in this case, there are no schedules to delete. This test is 
-    // going to move to the SDK and we'll try again there.
     public void canCreateAndDeleteUser() {
         running(testServer(3333), new FailableRunnable() {
             @Override
