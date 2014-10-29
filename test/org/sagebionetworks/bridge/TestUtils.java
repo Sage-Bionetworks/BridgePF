@@ -45,7 +45,7 @@ public class TestUtils {
     // 3x with the correct answer is assumed to be propagated.
     public static void waitFor(Callable<Boolean> callable) throws Exception {
         int delay = 200;
-        int loopLimit = 40;
+        int loopLimit = 80;
         int successesLimit = 3;
         int loops = 0;
         int successes = 0;
