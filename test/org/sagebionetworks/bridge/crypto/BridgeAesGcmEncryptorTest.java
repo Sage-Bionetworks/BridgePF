@@ -29,16 +29,16 @@ public class BridgeAesGcmEncryptorTest {
     }
 
     @Test
-    public void testEncryptNoRepeat() {
+    public void testEncryptRandomized() {
         BridgeAesGcmEncryptor encryptor = new BridgeAesGcmEncryptor("QDA7jti2QrJ5gzbkdTn+rcckcDJzFZ4KwgVjlMhpLUw=");
-        assertFalse(encryptor.encrypt("Encrypt me").equals(encryptor.encrypt("Encrypt me")));
+        assertFalse("Encryption should be randomized.", encryptor.encrypt("Encrypt me").equals(encryptor.encrypt("Encrypt me")));
     }
 
     @Test
-    public void testPersisted() {
+    public void testDecryptDeterministic() {
         BridgeAesGcmEncryptor encryptor1 = new BridgeAesGcmEncryptor("jVoKFK0fxGPdDsWKZHSxIGR0P/QDUUEGpnetUf2jtDs=");
         BridgeAesGcmEncryptor encryptor2 = new BridgeAesGcmEncryptor("jVoKFK0fxGPdDsWKZHSxIGR0P/QDUUEGpnetUf2jtDs=");
-        assertEquals("Encrypt me", encryptor2.decrypt(encryptor1.encrypt("Encrypt me")));
+        assertEquals("Decryption should be deterministic.", "Encrypt me", encryptor2.decrypt(encryptor1.encrypt("Encrypt me")));
     }
 
     @Test(expected=IllegalArgumentException.class)
