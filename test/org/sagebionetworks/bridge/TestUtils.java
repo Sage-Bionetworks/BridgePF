@@ -44,7 +44,7 @@ public class TestUtils {
     // Waiting for that eventual consistency to ensure the test passes every time.
     // 3x with the correct answer is assumed to be propagated.
     public static void waitFor(Callable<Boolean> callable) throws Exception {
-        int delay = 400;
+        int delay = 250;
         int loopLimit = 40;
         int successesLimit = 3;
         int loops = 0;
@@ -63,20 +63,5 @@ public class TestUtils {
             Thread.sleep(delay);
         }
     }
-    
-    /* This waited for one right answer, then slept, then continued, it was pretty reliable
-     * but not 100% reliable.
-    public static void waitForOriginal(Callable<Boolean> callable) throws Exception {
-        int countdown = 20;
-        boolean processing = true;
-        while(countdown-- > 0 && processing) {
-            Thread.sleep(200);
-            processing = !callable.call();
-        }
-        // And then, it seems there's an issue with eventual consistency, even after
-        // the system returns at least one desired state change. Possible with DynamoDB?
-        System.out.println("Waiting 2s after condition was true for eventual consistency(?)");
-        Thread.sleep(2000);
-    }*/
 
  }

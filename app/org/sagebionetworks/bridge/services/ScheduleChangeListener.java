@@ -27,8 +27,7 @@ public class ScheduleChangeListener implements ApplicationListener<ApplicationEv
         try {
             ScheduleChangeWorker worker = beanFactory.getBean("scheduleChangeWorker", ScheduleChangeWorker.class);
             worker.setApplicationEvent(event);
-            // executor.submit(new FutureTask<Boolean>(worker));
-            worker.call();
+            executor.submit(new FutureTask<Boolean>(worker));
         } catch(Throwable t) {
             t.printStackTrace();
         }
