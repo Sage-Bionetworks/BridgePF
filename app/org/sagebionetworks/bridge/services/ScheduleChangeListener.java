@@ -24,9 +24,13 @@ public class ScheduleChangeListener implements ApplicationListener<ApplicationEv
     
     @Override
     public void onApplicationEvent(ApplicationEvent event) {
-        ScheduleChangeWorker worker = beanFactory.getBean("scheduleChangeWorker", ScheduleChangeWorker.class);
-        worker.setApplicationEvent(event);
-        
-        executor.submit(new FutureTask<Boolean>(worker));
+        try {
+            ScheduleChangeWorker worker = beanFactory.getBean("scheduleChangeWorker", ScheduleChangeWorker.class);
+            worker.setApplicationEvent(event);
+            // executor.submit(new FutureTask<Boolean>(worker));
+            worker.call();
+        } catch(Throwable t) {
+            t.printStackTrace();
+        }
     }
 }
