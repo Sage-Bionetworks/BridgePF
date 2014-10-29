@@ -11,7 +11,7 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;
-import org.sagebionetworks.bridge.validators.Validator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 import play.mvc.Result;
 
@@ -44,7 +44,7 @@ public class HealthDataController extends BaseController {
         for (int i = 0; i < node.size(); i++) {
             JsonNode child = node.get(i);
 
-            Validator.jsonWithSchema(tracker, child);
+            Validate.jsonWithSchema(tracker, child);
             records.add(DynamoHealthDataRecord.fromJson(child));
         }
 

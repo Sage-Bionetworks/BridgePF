@@ -1,10 +1,8 @@
 package global;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import org.junit.Test;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.Tracker;
 import org.springframework.core.io.FileSystemResource;
 

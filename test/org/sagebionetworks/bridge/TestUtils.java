@@ -3,11 +3,17 @@ package org.sagebionetworks.bridge;
 import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import play.libs.WS;
 import play.libs.WS.WSRequestHolder;
 
 public class TestUtils {
+
+    private static Logger logger = LoggerFactory.getLogger(TestUtils.class);
     
     public abstract static class FailableRunnable implements Runnable {
         public abstract void testCode() throws Exception;
@@ -35,12 +41,42 @@ public class TestUtils {
         return request;
     }
     
-    // Useful in tests because Play Framework seems to disable all logging of the server code 
-    // during integration tests. This is a quick and dirty way to ping what is happening from 
-    // the integration tests. Remove references before committing code.
-    public static void output(String tag, String output) {
-        String str = String.format("\033[31m%s: \033[0m%s", tag, output);
-        System.out.println(str);
+    // Waiting for that eventual consistency to ensure the test passes every time.
+    // 3x with the correct answer is assumed to be propagated.
+    public static void waitFor(Callable<Boolean> callable) throws Exception {
+        int delay = 400;
+        int loopLimit = 40;
+        int successesLimit = 3;
+        int loops = 0;
+        int successes = 0;
+        while (successes < successesLimit && loops < loopLimit) {
+            if (callable.call()) {
+                successes++;
+            } else {
+                successes = 0;
+            }
+            loops++;
+            String msg = String.format("waitFor sleeping %sms (%s/%s successes after loop %s/%s)", delay, successes,
+                    successesLimit, loops, loopLimit);
+            logger.info(msg);
+            System.out.println(msg);
+            Thread.sleep(delay);
+        }
     }
+    
+    /* This waited for one right answer, then slept, then continued, it was pretty reliable
+     * but not 100% reliable.
+    public static void waitForOriginal(Callable<Boolean> callable) throws Exception {
+        int countdown = 20;
+        boolean processing = true;
+        while(countdown-- > 0 && processing) {
+            Thread.sleep(200);
+            processing = !callable.call();
+        }
+        // And then, it seems there's an issue with eventual consistency, even after
+        // the system returns at least one desired state change. Possible with DynamoDB?
+        System.out.println("Waiting 2s after condition was true for eventual consistency(?)");
+        Thread.sleep(2000);
+    }*/
 
  }

@@ -2,33 +2,40 @@ package org.sagebionetworks.bridge.crypto;
 
 import java.security.Security;
 
-import org.apache.shiro.authc.credential.DefaultPasswordService;
 import org.apache.shiro.codec.Base64;
 import org.apache.shiro.crypto.AesCipherService;
 import org.apache.shiro.crypto.OperationMode;
 import org.apache.shiro.crypto.PaddingScheme;
-import org.apache.shiro.crypto.hash.Hash;
 import org.apache.shiro.util.ByteSource;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class BridgeAesGcmEncryptor {
 
-    public BridgeAesGcmEncryptor(String password) {
-
-        if (password == null || password.isEmpty()) {
-            throw new IllegalArgumentException("Password must not be null or empty.");
+    public static void main(String[] args) {
+        if (args.length < 2) {
+            throw new RuntimeException("Must supply at least 2 parameters: "
+                    + "key, target, decrypt (optional, when missing, encrypt)");
         }
+        final String key = args[0];
+        final BridgeAesGcmEncryptor encryptor = new BridgeAesGcmEncryptor(key);
+        if (args.length == 2 || "encrypt".equalsIgnoreCase(args[2])) {
+            System.out.println("Encrypted: " + encryptor.encrypt(args[1]));
+        } else {
+            System.out.println("Decrypted: " + encryptor.decrypt(args[1]));
+        }
+    }
 
-        Security.addProvider(new BouncyCastleProvider());
+    BridgeAesGcmEncryptor() {
+        aesCipher = createCipher();
+        key = Base64.encodeToString(aesCipher.generateNewKey(KEY_BIT_SIZE).getEncoded());
+    }
 
-        DefaultPasswordService pwdService = new DefaultPasswordService();
-        Hash hash = pwdService.hashPassword(password);
-        key = hash.toBase64();
-
-        aesCipher = new AesCipherService();
-        aesCipher.setKeySize(256);
-        aesCipher.setMode(OperationMode.GCM);
-        aesCipher.setPaddingScheme(PaddingScheme.NONE);
+    public BridgeAesGcmEncryptor(String key) {
+        if (key == null || key.isEmpty()) {
+            throw new IllegalArgumentException("Key must not be null or empty.");
+        }
+        this.key = key;
+        aesCipher = createCipher();
     }
 
     public String encrypt(String text) {
@@ -48,6 +55,16 @@ public class BridgeAesGcmEncryptor {
         return Base64.decodeToString(bytes.getBytes());
     }
 
+    private AesCipherService createCipher() {
+        Security.addProvider(new BouncyCastleProvider());
+        AesCipherService cipher = new AesCipherService();
+        cipher.setKeySize(KEY_BIT_SIZE);
+        cipher.setMode(OperationMode.GCM);
+        cipher.setPaddingScheme(PaddingScheme.NONE);
+        return cipher;
+    }
+
+    private static final int KEY_BIT_SIZE = 256;
     private final AesCipherService aesCipher;
     private final String key;
 }

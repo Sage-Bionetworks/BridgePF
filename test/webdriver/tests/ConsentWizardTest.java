@@ -7,10 +7,10 @@ import play.libs.F.Callback;
 import play.test.TestBrowser;
 import webdriver.pages.ConsentPage;
 
+@Ignore
 public class ConsentWizardTest extends BaseIntegrationTest {
 
     @Test
-    @Ignore
     public void canProgressThroughWizard() {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
@@ -46,7 +46,6 @@ public class ConsentWizardTest extends BaseIntegrationTest {
     }
     
     @Test
-    @Ignore
     public void allLearnMoreButtonsWork() {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {

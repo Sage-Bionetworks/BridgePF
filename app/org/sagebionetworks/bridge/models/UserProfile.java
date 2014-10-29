@@ -67,9 +67,6 @@ public class UserProfile {
     public String getEmail() {
         return this.email;
     }
-    public void setEmail(String email) {
-        this.email = email;
-    }
     
     private static String replaceWithEmpty(String s) {
         if (StringUtils.isBlank(s)) {

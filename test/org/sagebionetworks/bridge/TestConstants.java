@@ -2,55 +2,8 @@ package org.sagebionetworks.bridge;
 
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.models.SignIn;
-import org.sagebionetworks.bridge.models.SignUp;
 
 public class TestConstants {
-
-    public static class TestUser {
-        private final String username;
-        private final String email;
-        private final String password;
-        private final String[] roles;
-
-        public TestUser(String username, String email, String password) {
-            String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
-            this.username = prefix + username;
-            this.email = prefix + email;
-            this.password = password;
-            this.roles = null;
-        }
-        public TestUser(String username, String email, String password, String... roles) {
-            String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
-            this.username = prefix + username;
-            this.email = prefix + email;
-            this.password = password;
-            this.roles = roles;
-        }
-        public TestUser(String tag) {
-            String prefix = BridgeConfigFactory.getConfig().getUser() + "-";
-            this.username = prefix + tag;
-            this.email = prefix + tag + "@sagebridge.org";
-            this.password = "P4ssword";
-            this.roles = null;
-        }
-        public SignUp getSignUp() {
-            return new SignUp(username, email, password, roles);
-        }
-        public SignIn getSignIn() {
-            return new SignIn(username, password);
-        }
-        public String getUsername() {
-            return username;
-        }
-        public String getEmail() {
-            return email;
-        }
-        public String getPassword() {
-            return password;
-        }
-    }
 
     public static final String TEST_STUDY_KEY = "teststudy";
     public static final int TIMEOUT = 10000;

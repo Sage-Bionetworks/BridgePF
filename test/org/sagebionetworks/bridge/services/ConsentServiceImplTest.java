@@ -10,11 +10,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.StudyConsent;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -41,21 +41,21 @@ public class ConsentServiceImplTest {
     @Resource
     private TestUserAdminHelper helper;
     
-    private UserSession session;
+    private TestUser testUser;
 
     @Before
     public void before() {
-        session = helper.createUser("test");
-        studyConsent = studyConsentDao.addConsent(helper.getTestStudy().getKey(), "/path/to", helper.getTestStudy()
+        testUser = helper.createUser(ConsentServiceImplTest.class);
+        studyConsent = studyConsentDao.addConsent(testUser.getStudy().getKey(), "/path/to", testUser.getStudy()
                 .getMinAge());
         studyConsentDao.setActive(studyConsent, true);
     }
 
     @After
     public void after() {
-        helper.deleteUser(session);
         studyConsentDao.setActive(studyConsent, false);
-        studyConsentDao.deleteConsent(helper.getTestStudy().getKey(), studyConsent.getCreatedOn());
+        studyConsentDao.deleteConsent(testUser.getStudy().getKey(), studyConsent.getCreatedOn());
+        helper.deleteUser(testUser);
     }
 
     @Test
@@ -64,19 +64,19 @@ public class ConsentServiceImplTest {
         boolean sendEmail = false;
 
         // Withdrawing and consenting again should return to original state.
-        consentService.withdrawConsent(session.getUser(), helper.getTestStudy());
-        consentService.consentToResearch(session.getUser(), researchConsent, helper.getTestStudy(), sendEmail);
-        boolean hasConsented = consentService.hasUserConsentedToResearch(session.getUser(), helper.getTestStudy());
+        consentService.withdrawConsent(testUser.getUser(), testUser.getStudy());
+        consentService.consentToResearch(testUser.getUser(), researchConsent, testUser.getStudy(), sendEmail);
+        boolean hasConsented = consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy());
         assertTrue(hasConsented);
 
         // Suspend sharing should make isSharingData return false.
-        consentService.suspendDataSharing(session.getUser(), helper.getTestStudy());
-        boolean isSharing = consentService.isSharingData(session.getUser(), helper.getTestStudy());
+        consentService.suspendDataSharing(testUser.getUser(), testUser.getStudy());
+        boolean isSharing = consentService.isSharingData(testUser.getUser(), testUser.getStudy());
         assertFalse(isSharing);
 
         // Resume sharing should make isSharingData return true.
-        consentService.resumeDataSharing(session.getUser(), helper.getTestStudy());
-        isSharing = consentService.isSharingData(session.getUser(), helper.getTestStudy());
+        consentService.resumeDataSharing(testUser.getUser(), testUser.getStudy());
+        isSharing = consentService.isSharingData(testUser.getUser(), testUser.getStudy());
 
     }
 }

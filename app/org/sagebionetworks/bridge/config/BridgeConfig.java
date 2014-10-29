@@ -35,6 +35,7 @@ public class BridgeConfig {
     private static final String PASSWORD = "bridge.pwd";
 
     private static final String HEALTHCODE_PASSWORD = "bridge.healthcode.pwd";
+    private static final String HEALTHCODE_KEY = "bridge.healthcode.key";
     private static final String HEALTHCODE_SALT = "bridge.healthcode.salt";
     
     private final String user;
@@ -170,6 +171,10 @@ public class BridgeConfig {
 
     public String getHealthCodePassword() {
         return getProperty(HEALTHCODE_PASSWORD);
+    }
+
+    public String getHealthCodeKey() {
+        return getProperty(HEALTHCODE_KEY);
     }
 
     public String getHealthCodeSalt() {
