@@ -22,18 +22,15 @@ public class ScheduleChangeListener implements ApplicationListener<ApplicationEv
         executor.shutdown();
     }
     
-    public void onTestEvent(ApplicationEvent event) throws Exception {
-        ScheduleChangeWorker worker = beanFactory.getBean("scheduleChangeWorker", ScheduleChangeWorker.class);
-        worker.setApplicationEvent(event);
-        // Wait for response, no retries, that's all.
-        worker.call();
-    }
-    
     @Override
     public void onApplicationEvent(ApplicationEvent event) {
-        ScheduleChangeWorker worker = beanFactory.getBean("scheduleChangeWorker", ScheduleChangeWorker.class);
-        worker.setApplicationEvent(event);
-        
-        executor.submit(new FutureTask<Boolean>(worker));
+        try {
+            ScheduleChangeWorker worker = beanFactory.getBean("scheduleChangeWorker", ScheduleChangeWorker.class);
+            worker.setApplicationEvent(event);
+            // executor.submit(new FutureTask<Boolean>(worker));
+            worker.call();
+        } catch(Throwable t) {
+            t.printStackTrace();
+        }
     }
 }

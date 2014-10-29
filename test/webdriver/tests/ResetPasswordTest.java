@@ -3,10 +3,11 @@ package webdriver.tests;
 
 import javax.annotation.Resource;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -17,6 +18,7 @@ import webdriver.pages.AppPage.RequestResetPasswordDialog;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
+@Ignore
 public class ResetPasswordTest extends BaseIntegrationTest {
     
     @Resource
@@ -50,16 +52,16 @@ public class ResetPasswordTest extends BaseIntegrationTest {
     public void resetPasswordSubmitsValidEmail() {
         call(new Callback<TestBrowser>() {
             public void invoke(TestBrowser browser) {
-                UserSession session = null;
+                TestUser testUser = null;
                 try {
-                    session = helper.createUser("test");
+                    testUser = helper.createUser(ResetPasswordTest.class);
                     
                     AppPage page = new AppPage(browser);
                     RequestResetPasswordDialog dialog = page.openSignInDialog().openResetPasswordDialog();
                     
-                    dialog.submitEmailAddress(session.getUser().getEmail());
+                    dialog.submitEmailAddress(testUser.getUser().getEmail());
                 } finally {
-                    helper.deleteUser(session);
+                    helper.deleteUser(testUser);
                 }
             }
         });

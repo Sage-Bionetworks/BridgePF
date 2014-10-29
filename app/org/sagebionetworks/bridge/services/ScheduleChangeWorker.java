@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import java.util.ArrayList;
-
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -111,6 +110,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         
         runWithLock(plan.getClass(), plan.getGuid(), new Command() {
             public void execute() {
+                scheduleService.deleteSchedules(plan); // There should be 0 schedules.
                 scheduleService.createSchedules(schedules);
             }
         });
@@ -202,12 +202,12 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         // This is every user in the environment. That's what we have to do in case a user signed
         // up in one study, but is now participating in a different study.
         
-        // TODO: This is really inefficient, we get the account twice, and we get the consents
-        // many times.
-        AccountList accounts = application.getAccounts();  
+        // TODO: This is inefficient, we get the account twice, and we get the consents many times.
+        // Put this in the consentService where we can cache.
+        AccountList accounts = application.getAccounts();
         for (Account account : accounts) {
             User user = authenticationService.getUser(study, account.getEmail());
-            if (consentService.hasUserConsentedToResearch(user, study)) {
+            if (user != null && consentService.hasUserConsentedToResearch(user, study)) {
                 users.add(user);    
             }
         }

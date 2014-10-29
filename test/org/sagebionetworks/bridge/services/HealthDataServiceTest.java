@@ -13,15 +13,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Tracker;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.services.HealthDataServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -37,18 +36,18 @@ public class HealthDataServiceTest {
     @Resource
     private TestUserAdminHelper helper;
     
-    private UserSession session;
+    private TestUser testUser;
     
     @Before
     public void before() {
         DynamoInitializer.init(DynamoHealthDataRecord.class);
         DynamoTestUtil.clearTable(DynamoHealthDataRecord.class);
-        session = helper.createUser("healthData-tester");
+        testUser = helper.createUser(HealthDataServiceTest.class);
     }
     
     @After
     public void after() {
-        helper.deleteUser(session);
+        helper.deleteUser(testUser);
     }
     
     private HealthDataRecord createHealthDataRecord() {
@@ -62,7 +61,7 @@ public class HealthDataServiceTest {
     private HealthDataKey createKey() {
         Tracker tracker = new Tracker();
         tracker.setId(1L);
-        return new HealthDataKey(helper.getTestStudy(), tracker, session.getUser());
+        return new HealthDataKey(testUser.getStudy(), tracker, testUser.getUser());
     }
 
     @Test

@@ -13,11 +13,12 @@ import javax.annotation.Resource;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
+import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -29,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
+@Ignore // MOVED TO SDK
 public class UserProfileControllerTest {
 
     private ObjectMapper mapper = new ObjectMapper();
@@ -36,7 +38,7 @@ public class UserProfileControllerTest {
     @Resource
     private TestUserAdminHelper helper;
     
-    private UserSession session;
+    private TestUser testUser;
 
     public UserProfileControllerTest() {
         mapper.setSerializationInclusion(Include.NON_NULL);
@@ -44,12 +46,12 @@ public class UserProfileControllerTest {
     
     @Before
     public void before() {
-        session = helper.createUser("test");
+        testUser = helper.createUser(UserProfileControllerTest.class);
     }
     
     @After
     public void after() {
-        helper.deleteUser(session);
+        helper.deleteUser(testUser);
     }
 
     @Test
@@ -69,7 +71,7 @@ public class UserProfileControllerTest {
 
             @Override
             public void testCode() throws Exception {
-                Response response = TestUtils.getURL(session.getSessionToken(), PROFILE_URL).get().get(TIMEOUT);
+                Response response = TestUtils.getURL(testUser.getSessionToken(), PROFILE_URL).get().get(TIMEOUT);
 
                 JsonNode node = response.asJson();
                 assertNotNull("First name exists", node.get("firstName"));
@@ -87,7 +89,7 @@ public class UserProfileControllerTest {
             @Override
             public void testCode() throws Exception {
                 Response response = TestUtils.getURL("", PROFILE_URL)
-                        .post(mapper.writeValueAsString(session.getSessionToken())).get(TIMEOUT);
+                        .post(mapper.writeValueAsString(testUser.getSessionToken())).get(TIMEOUT);
 
                 assertEquals("HTTP Status should be 401", SC_UNAUTHORIZED, response.getStatus());
             }
@@ -100,8 +102,8 @@ public class UserProfileControllerTest {
 
             @Override
             public void testCode() throws Exception {
-                Response response = TestUtils.getURL(session.getSessionToken(), PROFILE_URL)
-                        .post(mapper.writeValueAsString(session.getUser())).get(TIMEOUT);
+                Response response = TestUtils.getURL(testUser.getSessionToken(), PROFILE_URL)
+                        .post(mapper.writeValueAsString(testUser.getUser())).get(TIMEOUT);
 
                 assertEquals("HTTP Status should be 200 OK", SC_OK, response.getStatus());
             }

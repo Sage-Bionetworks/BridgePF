@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.SignIn;
@@ -61,7 +62,7 @@ public class StormPathUserAdminService implements UserAdminService {
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
-    
+
     public void setValidator(Validator validator) {
         this.validator = validator;
     }
@@ -89,7 +90,7 @@ public class StormPathUserAdminService implements UserAdminService {
         } catch (ConsentRequiredException e) {
             newUserSession = e.getUserSession();
             if (consentUser) {
-                ConsentSignature consent = new ConsentSignature("Test Signature", "1989-08-19");
+                ConsentSignature consent = new ConsentSignature("[Signature for " + signUp.getEmail() + "]", "1989-08-19");
                 consentService.consentToResearch(newUserSession.getUser(), consent, study, false);
 
                 // Now, sign in again so you get the consented user into the session
@@ -113,22 +114,58 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
+    public void deleteUser(String userEmail) throws BridgeServiceException {
+        checkNotNull(userEmail, "User emailcannot be null");
+        for (Study study : studyService.getStudies()) {
+            deleteUserInStudyWithRetries(userEmail, study);
+        }
+    }
+
+    @Override
     public void deleteUser(User user) throws BridgeServiceException {
         checkNotNull(user, "User cannot be null");
-
         for (Study study : studyService.getStudies()) {
-            deleteUserInStudy(user, study);
+            deleteUserInStudyWithRetries(user, study);
+        }
+    }
+
+    private void deleteUserInStudyWithRetries(String userEmail, Study study) throws BridgeServiceException {
+        checkNotNull(userEmail, "User email cannot be null");
+        checkNotNull(study, "Study cannot be null");
+        Directory directory = getDirectory(study);
+        Account account = getUserAccountByEmail(directory, userEmail);
+        if (account != null) {
+            User user = new User(account);
+            deleteUserInStudyWithRetries(user, study);
+        }
+    }
+
+    private void deleteUserInStudyWithRetries(User user, Study study) throws BridgeServiceException {
+        int retryCount = 0;
+        boolean shouldRetry = true;
+        while (shouldRetry) {
+            try {
+                deleteUserInStudy(user, study);
+                return;
+            } catch(ConcurrentModificationException e) {
+                shouldRetry = retryCount < 5;
+                retryCount++;
+                try {
+                    Thread.sleep(100 * 2 ^ retryCount);
+                } catch(InterruptedException ie) {
+                    throw new BridgeServiceException(ie);
+                }
+            }
         }
     }
 
     private void deleteUserInStudy(User user, Study study) throws BridgeServiceException {
         checkNotNull(user, "User cannot be null");
         checkNotNull(study, "Study cannot be null");
-
+        final String lock = study.getKey() + ":" + user.getId();
         String uuid = null;
         try {
-            uuid = lockDao.createLock(User.class, user.getId());
-
+            uuid = lockDao.createLock(User.class, lock);
             // Verify the user exists before doing this work. Otherwise, it just throws errors.
             Directory directory = getDirectory(study);
             Account account = getUserAccountByEmail(directory, user.getEmail());
@@ -139,7 +176,7 @@ public class StormPathUserAdminService implements UserAdminService {
             }
         } finally {
             if (uuid != null) {
-                lockDao.releaseLock(User.class, user.getId(), uuid);
+                lockDao.releaseLock(User.class, lock, uuid);
             }
         }
     }
