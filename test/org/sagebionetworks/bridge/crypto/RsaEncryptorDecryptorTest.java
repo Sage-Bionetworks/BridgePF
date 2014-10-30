@@ -42,9 +42,10 @@ public class RsaEncryptorDecryptorTest {
     }
 
     @Test
-    public void testRandomness() {
+    public void testEncryptRandomized() {
         KeyPair keyPair = KeyPairFactory.newRsa2048();
-        RsaEncryptor encryptor = new RsaEncryptor(keyPair.getPrivate());
-        assertFalse("Encryption should be randomized.", encryptor.encrypt(text).equals(encryptor.encrypt(text)));
+        RsaEncryptor encryptor1 = new RsaEncryptor(keyPair.getPublic());
+        RsaEncryptor encryptor2 = new RsaEncryptor(keyPair.getPublic());
+        assertFalse("Encryption should be randomized.", encryptor2.encrypt(text).equals(encryptor1.encrypt(text)));
     }
 }
