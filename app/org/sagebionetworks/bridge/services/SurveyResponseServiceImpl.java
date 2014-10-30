@@ -10,14 +10,18 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.validators.SurveyAnswerValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.validation.MapBindingResult;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Maps;
 
 public class SurveyResponseServiceImpl implements SurveyResponseService {
 
@@ -70,12 +74,15 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
 
     private void validate(List<SurveyAnswer> answers, Survey survey) {
         Map<String, SurveyQuestion> questions = getQuestionsMap(survey);
+        
+        MapBindingResult errors = new MapBindingResult(Maps.newHashMap(), "SurveyResponse");
         for (int i = 0; i < answers.size(); i++) {
             SurveyAnswer answer = answers.get(i);
-            SurveyAnswerValidator validator = new SurveyAnswerValidator(questions.get(answer
-                    .getQuestionGuid()));
-            Validate.entityThrowingException(validator, answer);
+            SurveyQuestion question = questions.get(answer.getQuestionGuid());
+            SurveyAnswerValidator validator = new SurveyAnswerValidator(question);
+            Validate.entity(validator, errors, answer);
         }
+        Validate.throwException(errors, survey);
     }
 
     private Map<String, SurveyQuestion> getQuestionsMap(Survey survey) {
