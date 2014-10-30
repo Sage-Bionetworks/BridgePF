@@ -9,7 +9,7 @@ import org.apache.shiro.crypto.PaddingScheme;
 import org.apache.shiro.util.ByteSource;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-public class BridgeAesGcmEncryptor {
+public class AesGcmEncryptor {
 
     public static void main(String[] args) {
         if (args.length < 2) {
@@ -17,7 +17,7 @@ public class BridgeAesGcmEncryptor {
                     + "key, target, decrypt (optional, when missing, encrypt)");
         }
         final String key = args[0];
-        final BridgeAesGcmEncryptor encryptor = new BridgeAesGcmEncryptor(key);
+        final AesGcmEncryptor encryptor = new AesGcmEncryptor(key);
         if (args.length == 2 || "encrypt".equalsIgnoreCase(args[2])) {
             System.out.println("Encrypted: " + encryptor.encrypt(args[1]));
         } else {
@@ -25,12 +25,12 @@ public class BridgeAesGcmEncryptor {
         }
     }
 
-    BridgeAesGcmEncryptor() {
+    AesGcmEncryptor() {
         aesCipher = createCipher();
         key = Base64.encodeToString(aesCipher.generateNewKey(KEY_BIT_SIZE).getEncoded());
     }
 
-    public BridgeAesGcmEncryptor(String key) {
+    public AesGcmEncryptor(String key) {
         if (key == null || key.isEmpty()) {
             throw new IllegalArgumentException("Key must not be null or empty.");
         }

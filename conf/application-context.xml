@@ -17,7 +17,7 @@
         <constructor-arg value="#{bridgeConfig.healthCodePassword}"/>
     </bean>
 
-    <bean id="healthCodeEncryptor" class="org.sagebionetworks.bridge.crypto.BridgeAesGcmEncryptor">
+    <bean id="healthCodeEncryptor" class="org.sagebionetworks.bridge.crypto.AesGcmEncryptor">
         <constructor-arg value="#{bridgeConfig.healthCodeKey}"/>
     </bean>
 
