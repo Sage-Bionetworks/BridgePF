@@ -63,6 +63,7 @@ POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion/publish  @controllers.
 POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion/close    @controllers.SurveyController.closeSurvey(surveyGuid: String, surveyVersion: String)
 GET    /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.getSurvey(surveyGuid: String, surveyVersion: String)
 POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.updateSurvey(surveyGuid: String, surveyVersion: String)
+DELETE /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.deleteSurvey(surveyGuid: String, surveyVersion: String)
 
 # Researchers - Schedule Plans
 GET    /researchers/v1/scheduleplans           @controllers.SchedulePlanController.getSchedulePlans

@@ -14,4 +14,7 @@ public interface HealthIdDao {
      * Given a health ID, gets the health code.
      */
     String getCode(String id);
+    
+    void deleteMapping(String healthCode);
+    
 }
