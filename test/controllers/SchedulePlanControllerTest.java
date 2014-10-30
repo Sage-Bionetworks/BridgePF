@@ -16,6 +16,7 @@ import javax.annotation.Resource;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
@@ -39,6 +40,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
+@Ignore // MOVED TO SDK
 public class SchedulePlanControllerTest {
     
     @Resource
@@ -148,5 +150,4 @@ public class SchedulePlanControllerTest {
             }
         });
     }
-    
 }
