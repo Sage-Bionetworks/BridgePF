@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
-public interface UserConsent {
+public interface UserConsent extends BridgeEntity {
     
     public long getSignedOn();
 
