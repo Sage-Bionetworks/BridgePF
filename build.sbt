@@ -6,7 +6,7 @@ scalaVersion := "2.10.3"
 
 libraryDependencies ++= Seq(
   filters,
-  "com.amazonaws" % "aws-java-sdk" % "1.8.11",
+  "com.amazonaws" % "aws-java-sdk" % "1.9.3",
   "org.springframework" % "spring-context" % "4.0.7.RELEASE",
   "org.springframework" % "spring-test" % "4.0.7.RELEASE",
   "org.apache.commons" % "commons-lang3" % "3.3.2",
