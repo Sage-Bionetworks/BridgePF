@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.crypto.BridgeAesGcmEncryptor;
+import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.Study;
@@ -12,14 +12,14 @@ import com.stormpath.sdk.directory.CustomData;
 public class AccountEncryptionServiceImpl implements AccountEncryptionService {
 
     private BridgeEncryptor healthCodeEncryptorOld;
-    private BridgeAesGcmEncryptor healthCodeEncryptor;
+    private AesGcmEncryptor healthCodeEncryptor;
     private HealthCodeService healthCodeService;
 
     public void setHealthCodeEncryptorOld(BridgeEncryptor encryptor) {
         this.healthCodeEncryptorOld = encryptor;
     }
 
-    public void setHealthCodeEncryptor(BridgeAesGcmEncryptor encryptor) {
+    public void setHealthCodeEncryptor(AesGcmEncryptor encryptor) {
         this.healthCodeEncryptor = encryptor;
     }
 
