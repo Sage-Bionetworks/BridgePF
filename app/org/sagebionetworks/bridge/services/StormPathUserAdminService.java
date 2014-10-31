@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
+import org.sagebionetworks.bridge.dao.HealthCodeDao;
+import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -38,6 +40,9 @@ public class StormPathUserAdminService implements UserAdminService {
     private Client stormpathClient;
     private DistributedLockDao lockDao;
     private Validator validator;
+    
+    private HealthIdDao healthIdDao;
+    private HealthCodeDao healthCodeDao;
 
     public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
@@ -65,6 +70,14 @@ public class StormPathUserAdminService implements UserAdminService {
 
     public void setValidator(Validator validator) {
         this.validator = validator;
+    }
+    
+    public void setHealthIdDao(HealthIdDao healthIdDao) {
+        this.healthIdDao = healthIdDao;
+    }
+    
+    public void setHealthCodeDao(HealthCodeDao healthCodeDao) {
+        this.healthCodeDao = healthCodeDao;
     }
 
     @Override
@@ -172,6 +185,7 @@ public class StormPathUserAdminService implements UserAdminService {
             if (account != null) {
                 revokeAllConsentRecords(user, study);
                 removeAllHealthDataRecords(user, study);
+                removeHealthCodeAndIdMappings(user);
                 deleteUserAccount(study, user.getEmail());
             }
         } finally {
@@ -181,6 +195,12 @@ public class StormPathUserAdminService implements UserAdminService {
         }
     }
 
+    private void removeHealthCodeAndIdMappings(User user) {
+        String healthDataCode = user.getHealthDataCode();
+        healthIdDao.deleteMapping(healthDataCode);
+        healthCodeDao.deleteCode(healthDataCode);
+    }
+    
     private void removeAllHealthDataRecords(User user, Study userStudy) throws BridgeServiceException {
         // This user may have never consented to research. Ignore if that's the case.
         if (user.getHealthDataCode() != null) {

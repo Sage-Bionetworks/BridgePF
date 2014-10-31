@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -21,6 +24,7 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 
+    @Override
     public boolean setIfNotExist(String code) {
         try {
             DynamoHealthCode toSave = new DynamoHealthCode(code);
@@ -30,4 +34,16 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
             return false;
         }
     }
+    
+    @Override
+    public void deleteCode(String healthCode) {
+        checkArgument(isNotEmpty(healthCode));
+        
+        DynamoHealthCode code = new DynamoHealthCode(healthCode);
+        DynamoHealthCode dynamoHealthCode = mapper.load(code);
+        if (dynamoHealthCode != null) {
+            mapper.delete(dynamoHealthCode);
+        }
+    }
+    
 }

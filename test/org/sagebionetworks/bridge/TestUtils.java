@@ -1,15 +1,9 @@
 package org.sagebionetworks.bridge;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
-
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import play.libs.WS;
-import play.libs.WS.WSRequestHolder;
 
 public class TestUtils {
 
@@ -25,20 +19,6 @@ public class TestUtils {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    public static WSRequestHolder getURL(String sessionToken, String path) {
-        return getURL(sessionToken, path, null);
-    }
-    
-    public static WSRequestHolder getURL(String sessionToken, String path, Map<String,String> queryMap) {
-        WSRequestHolder request = WS.url(TEST_BASE_URL + path).setHeader(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken);
-        if (queryMap != null) {
-            for (Map.Entry<String,String> entry : queryMap.entrySet()) {
-                request.setQueryParameter(entry.getKey(), entry.getValue());
-            }
-        }
-        return request;
     }
     
     // Waiting for that eventual consistency to ensure the test passes every time.
