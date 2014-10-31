@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
@@ -119,11 +121,8 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     
     @Override
     public UserConsent getUserConsent(User caller, Study study) {
-        if (caller == null) {
-            throw new BadRequestException("User is required.");
-        } else if (study == null) {
-            throw new BadRequestException("Study is required.");
-        }
+        checkNotNull(caller, "User is required");
+        checkNotNull(study, "Study is required");
         try {
             final String healthCode = caller.getHealthDataCode();
             List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());

@@ -28,7 +28,7 @@ public interface UserConsentDao {
     boolean hasConsented(String healthCode, StudyConsent consent);
 
     /**
-     * Get the user consent record that consents this user to this study.
+     * Get the user consent record that consents the user to this study.
      * @param healthCode
      * @param consent
      * @return
