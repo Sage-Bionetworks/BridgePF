@@ -19,6 +19,9 @@ public class DynamoHealthCode implements DynamoTable {
     private String code;
     private Long version;
 
+    public DynamoHealthCode() {
+    }
+    
     public DynamoHealthCode(String code) {
         checkArgument(StringUtils.isNotBlank(code), "code cannot be null or empty.");
 

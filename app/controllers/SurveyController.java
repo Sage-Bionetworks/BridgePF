@@ -65,6 +65,15 @@ public class SurveyController extends ResearcherController {
         return okResult(survey);
     }
     
+    public Result deleteSurvey(String surveyGuid, String versionString) throws Exception {
+        Study study = studyService.getStudyByHostname(getHostname());
+        getAuthenticatedResearcherOrAdminSession(study);
+        
+        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
+        surveyService.deleteSurvey(surveyGuid, surveyVersion);
+        return okResult("Survey deleted.");
+    }
+    
     public Result getAllVersionsOfASurvey(String surveyGuid) throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);

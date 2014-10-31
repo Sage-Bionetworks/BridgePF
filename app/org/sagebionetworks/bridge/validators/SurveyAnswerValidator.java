@@ -54,54 +54,58 @@ public class SurveyAnswerValidator implements Validator {
     public void validate(Object object, Errors errors) {
         SurveyAnswer answer = (SurveyAnswer)object;
         
+        if (question == null) {
+            errors.reject("Answer does not match a question with the GUID of: " + answer.getQuestionGuid());
+            return;
+        }
+        errors.pushNestedPath(question.getIdentifier());
+        
         if (answer.getAnsweredOn() == 0L) {
-            rejectField(errors, "answeredOn", "it requires the date the user answered the question", answer.getQuestionGuid());
-       }
-       if (StringUtils.isBlank(answer.getClient())) {
-           rejectField(errors, "client", "it requires a client string", answer.getQuestionGuid());
-       }
-       if (StringUtils.isBlank(answer.getQuestionGuid())) {
-           rejectField(errors, "questionGuid", "it requires a question GUID", answer.getQuestionGuid());
-       }
-       if (answer.isDeclined()) {
-           answer.setAnswer(null);
-           answer.setAnswers(null);
-       } 
-       else if (hasNoAnswer(answer)) {
-           rejectField(errors, "answer", "it was not declined but has no answer");
-       } 
-       else if (expectsMultipleValues()) {
-           validateType(errors, (MultiValueConstraints) question.getConstraints(), answer.getAnswers());
-       } 
-       else if (isMultiValue()) {
-           validateType(errors, (MultiValueConstraints) question.getConstraints(), answer.getAnswer());
-       } 
-       else {
-           switch(question.getConstraints().getDataType()) {
-           case DURATION:
-               validateType(errors, (DurationConstraints)question.getConstraints(), answer.getAnswer());
-               break;
-           case STRING:
-               validateType(errors, (StringConstraints)question.getConstraints(), answer.getAnswer());
-               break;
-           case INTEGER:
-               validateType(errors, (IntegerConstraints)question.getConstraints(), answer.getAnswer());
-               break;
-           case DECIMAL:
-               validateType(errors, (DecimalConstraints)question.getConstraints(), answer.getAnswer());
-               break;
-           case BOOLEAN:
-               validateType(errors, (BooleanConstraints)question.getConstraints(), answer.getAnswer());
-               break;
-           case DATE:
-           case DATETIME:
-               validateType(errors, (TimeBasedConstraints)question.getConstraints(), answer.getAnswer());
-               break;
-           case TIME:
-               validateType(errors, (TimeConstraints)question.getConstraints(), answer.getAnswer());
-               break;
-           }
-       }
+            rejectField(errors, "answeredOn", "it requires the date the user answered the question",
+                    answer.getQuestionGuid());
+        }
+        if (StringUtils.isBlank(answer.getClient())) {
+            rejectField(errors, "client", "it requires a client string", answer.getQuestionGuid());
+        }
+        if (StringUtils.isBlank(answer.getQuestionGuid())) {
+            rejectField(errors, "questionGuid", "it requires a question GUID", answer.getQuestionGuid());
+        }
+        if (answer.isDeclined()) {
+            answer.setAnswer(null);
+            answer.setAnswers(null);
+        } else if (hasNoAnswer(answer)) {
+            rejectField(errors, "answer", "it was not declined but has no answer");
+        } else if (expectsMultipleValues()) {
+            validateType(errors, (MultiValueConstraints) question.getConstraints(), answer.getAnswers());
+        } else if (isMultiValue()) {
+            validateType(errors, (MultiValueConstraints) question.getConstraints(), answer.getAnswer());
+        } else {
+            switch (question.getConstraints().getDataType()) {
+            case DURATION:
+                validateType(errors, (DurationConstraints) question.getConstraints(), answer.getAnswer());
+                break;
+            case STRING:
+                validateType(errors, (StringConstraints) question.getConstraints(), answer.getAnswer());
+                break;
+            case INTEGER:
+                validateType(errors, (IntegerConstraints) question.getConstraints(), answer.getAnswer());
+                break;
+            case DECIMAL:
+                validateType(errors, (DecimalConstraints) question.getConstraints(), answer.getAnswer());
+                break;
+            case BOOLEAN:
+                validateType(errors, (BooleanConstraints) question.getConstraints(), answer.getAnswer());
+                break;
+            case DATE:
+            case DATETIME:
+                validateType(errors, (TimeBasedConstraints) question.getConstraints(), answer.getAnswer());
+                break;
+            case TIME:
+                validateType(errors, (TimeConstraints) question.getConstraints(), answer.getAnswer());
+                break;
+            }
+        }
+        errors.popNestedPath();
     }
     private boolean isMultiValue() {
         return (question.getConstraints() instanceof MultiValueConstraints);
