@@ -63,6 +63,7 @@ POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion/publish  @controllers.
 POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion/close    @controllers.SurveyController.closeSurvey(surveyGuid: String, surveyVersion: String)
 GET    /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.getSurvey(surveyGuid: String, surveyVersion: String)
 POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.updateSurvey(surveyGuid: String, surveyVersion: String)
+DELETE /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.deleteSurvey(surveyGuid: String, surveyVersion: String)
 
 # Researchers - Schedule Plans
 GET    /researchers/v1/scheduleplans           @controllers.SchedulePlanController.getSchedulePlans
@@ -71,12 +72,12 @@ GET    /researchers/v1/scheduleplans/:guid     @controllers.SchedulePlanControll
 POST   /researchers/v1/scheduleplans/:guid     @controllers.SchedulePlanController.updateSchedulePlan(guid: String)
 DELETE /researchers/v1/scheduleplans/:guid     @controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
 
-# Admin - Consent
-GET    /admin/v1/consents                      @controllers.StudyConsentController.getAllConsents
-GET    /admin/v1/consents/active               @controllers.StudyConsentController.getActiveConsent
-GET    /admin/v1/consents/:timestamp           @controllers.StudyConsentController.getConsent(timestamp: String)
-POST   /admin/v1/consents                      @controllers.StudyConsentController.addConsent
-POST   /admin/v1/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: String)
+# Researchers - Study Consent Documents
+GET    /researcher/v1/consents                      @controllers.StudyConsentController.getAllConsents
+GET    /researcher/v1/consents/active               @controllers.StudyConsentController.getActiveConsent
+GET    /researcher/v1/consents/:timestamp           @controllers.StudyConsentController.getConsent(timestamp: String)
+POST   /researcher/v1/consents                      @controllers.StudyConsentController.addConsent
+POST   /researcher/v1/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: String)
 
 # Admin - Backfill
 GET    /admin/v1/backfill/:name    @controllers.BackfillController.backfill(name: String)

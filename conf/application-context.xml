@@ -431,6 +431,8 @@
         <property name="studyService" ref="studyService" />
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="distributedLockDao" ref="distributedLockDao"/>
+        <property name="healthIdDao" ref="healthIdDao"/>
+        <property name="healthCodeDao" ref="healthCodeDao"/>
         <property name="validator">
             <bean class="org.sagebionetworks.bridge.validators.SignUpValidator"/>
         </property>

@@ -26,7 +26,7 @@ public class AuthenticationController extends BaseController {
             return okResult(new UserSessionInfo(session));
         }
         Study study = studyService.getStudyByHostname(getHostname());
-        SignIn signIn = SignIn.fromJson(request().body().asJson());
+        SignIn signIn = SignIn.fromJson(requestToJSON(request()));
         session = authenticationService.signIn(study, signIn);
         setSessionToken(session.getSessionToken());
         Result result = okResult(new UserSessionInfo(session));
@@ -45,7 +45,7 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result signUp() throws Exception {
-        SignUp signUp = SignUp.fromJson(request().body().asJson(), false);
+        SignUp signUp = SignUp.fromJson(requestToJSON(request()), false);
         Study study = studyService.getStudyByHostname(getHostname());
         authenticationService.signUp(signUp, study, true);
         return createdResult("Signed up.");
@@ -53,7 +53,7 @@ public class AuthenticationController extends BaseController {
 
     public Result verifyEmail() throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
-        EmailVerification ev = EmailVerification.fromJson(request().body().asJson());
+        EmailVerification ev = EmailVerification.fromJson(requestToJSON(request()));
         // In normal course of events (verify email, consent to research),
         // an exception is thrown. Code after this line will rarely execute
         UserSession session = authenticationService.verifyEmail(study, ev);
@@ -62,13 +62,13 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result requestResetPassword() throws Exception {
-        Email email = Email.fromJson(request().body().asJson());
+        Email email = Email.fromJson(requestToJSON(request()));
         authenticationService.requestResetPassword(email);
         return okResult("An email has been sent allowing you to set a new password.");
     }
 
     public Result resetPassword() throws Exception {
-        PasswordReset passwordReset = PasswordReset.fromJson(request().body().asJson());
+        PasswordReset passwordReset = PasswordReset.fromJson(requestToJSON(request()));
         authenticationService.resetPassword(passwordReset);
         return okResult("Password has been changed.");
     }

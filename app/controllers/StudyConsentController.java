@@ -3,13 +3,14 @@ package controllers;
 import java.util.List;
 
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.StudyConsentForm;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 
 import play.mvc.Result;
 
-public class StudyConsentController extends AdminController {
+public class StudyConsentController extends ResearcherController {
 
     private StudyConsentService studyConsentService;
 
@@ -18,40 +19,40 @@ public class StudyConsentController extends AdminController {
     }
 
     public Result getAllConsents() throws Exception {
-        getAuthenticatedAdminSession();
-        String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
-        List<StudyConsent> consents = studyConsentService.getAllConsents(studyKey);
+        Study study = studyService.getStudyByHostname(getHostname());
+        getAuthenticatedResearcherOrAdminSession(study);
+        List<StudyConsent> consents = studyConsentService.getAllConsents(study.getKey());
         return okResult(consents);
     }
 
     public Result getActiveConsent() throws Exception {
-        getAuthenticatedAdminSession();
-        String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
-        StudyConsent consent = studyConsentService.getActiveConsent(studyKey);
+        Study study = studyService.getStudyByHostname(getHostname());
+        getAuthenticatedResearcherOrAdminSession(study);
+        StudyConsent consent = studyConsentService.getActiveConsent(study.getKey());
         return okResult(consent);
     }
 
     public Result getConsent(String createdOn) throws Exception {
-        getAuthenticatedAdminSession();
-        String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
+        Study study = studyService.getStudyByHostname(getHostname());
+        getAuthenticatedResearcherOrAdminSession(study);
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
-        StudyConsent consent = studyConsentService.getConsent(studyKey, timestamp);
+        StudyConsent consent = studyConsentService.getConsent(study.getKey(), timestamp);
         return okResult(consent);
     }
 
     public Result addConsent() throws Exception {
-        getAuthenticatedAdminSession();
-        String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
+        Study study = studyService.getStudyByHostname(getHostname());
+        getAuthenticatedResearcherOrAdminSession(study);
         StudyConsentForm form = StudyConsentForm.fromJson(requestToJSON(request()));
-        StudyConsent studyConsent = studyConsentService.addConsent(studyKey, form);
+        StudyConsent studyConsent = studyConsentService.addConsent(study.getKey(), form);
         return createdResult(studyConsent);
     }
 
     public Result setActiveConsent(String createdOn) throws Exception {
-        getAuthenticatedAdminSession();
-        String studyKey = studyService.getStudyByHostname(getHostname()).getKey();
+        Study study = studyService.getStudyByHostname(getHostname());
+        getAuthenticatedResearcherOrAdminSession(study);
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
-        studyConsentService.activateConsent(studyKey, timestamp);
+        studyConsentService.activateConsent(study.getKey(), timestamp);
         return okResult("Consent document set as active.");
     }
 }

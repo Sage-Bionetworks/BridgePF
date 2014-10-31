@@ -19,7 +19,7 @@ public class SchedulePlanValidator implements Validator {
             errors.rejectValue("studyKey", "missing a study key");
         }
         if (plan.getStrategy() == null) {
-            errors.rejectValue("strategy", "requires a strategy object");
+            errors.rejectValue("strategy", "cannot be null");
         } else {
             plan.getStrategy().validate(errors);
         }
