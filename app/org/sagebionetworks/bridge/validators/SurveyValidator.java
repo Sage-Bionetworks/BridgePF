@@ -97,7 +97,9 @@ public class SurveyValidator implements Validator {
             return;
         }
         UIHint hint = question.getUiHint();
-        if (!con.getSupportedHints().contains(hint)) {
+        if (hint == null) {
+            rejectField(errors, "uiHint", "required");
+        } else if (!con.getSupportedHints().contains(hint)) {
             rejectField(errors, "dataType", "(%s) doesn't match the UI hint of '%s'", con.getDataType().name()
                     .toLowerCase(), hint.name().toLowerCase());
         } else if (con instanceof MultiValueConstraints) {
