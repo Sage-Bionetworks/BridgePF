@@ -133,6 +133,6 @@ public class SurveyController extends ResearcherController {
         
         long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
         surveyService.closeSurvey(surveyGuid, surveyVersion);
-        return okResult("The survey has been closed.");
+        return okResult("The closed.");
     }
 }

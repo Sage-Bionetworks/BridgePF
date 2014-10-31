@@ -1,6 +1,5 @@
 package controllers;
 
-import java.io.IOException;
 import java.util.Collection;
 
 import models.StatusMessage;
@@ -179,7 +178,7 @@ public abstract class BaseController extends Controller {
                 node = mapper.readTree(request().body().asText());
             }
             return node;
-        } catch(IOException e) {
+        } catch(Throwable e) {
             throw new InvalidEntityException("Expected JSON in the request body is missing or malformed");
         }
     }

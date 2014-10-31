@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.UserConsent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
@@ -115,6 +116,28 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             throw new BridgeServiceException(e);
         }
     }
+    
+    @Override
+    public UserConsent getUserConsent(User caller, Study study) {
+        if (caller == null) {
+            throw new BadRequestException("User is required.");
+        } else if (study == null) {
+            throw new BadRequestException("Study is required.");
+        }
+        try {
+            final String healthCode = caller.getHealthDataCode();
+            List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
+            for (StudyConsent consent : consents) {
+                if (userConsentDao.hasConsented(healthCode, consent)) {
+                    return userConsentDao.getUserConsent(healthCode, consent);
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            throw new BridgeServiceException(e);
+        }
+    }
+    
 
     @Override
     public User withdrawConsent(User caller, Study study) {

@@ -5,6 +5,7 @@ import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.StudyConsent;
+import org.sagebionetworks.bridge.models.UserConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -15,7 +16,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @DynamoDBTable(tableName = "UserConsent2")
 @BridgeTypeName("UserConsent")
-public class DynamoUserConsent2 implements DynamoTable, BridgeEntity {
+public class DynamoUserConsent2 implements UserConsent, DynamoTable, BridgeEntity {
 
     // Schema attributes
     private String healthCodeStudy; // <health-code>:<study-key>
