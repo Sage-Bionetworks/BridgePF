@@ -25,6 +25,7 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -245,9 +246,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (healthId != null) {
             String healthCode = healthId.getCode();
             user.setHealthDataCode(healthCode);
-            boolean hasConsented = consentService.hasUserConsentedToResearch(user, study);
-            user.setConsent(hasConsented);
+            
+            UserConsent consent = consentService.getUserConsent(user, study);
+            if (consent != null) {
+                user.setConsent(true);
+                user.setDataSharing(consent.getDataSharing());
+            }
         }
+        
 
         // And now for some exceptions...
         
