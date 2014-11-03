@@ -6,7 +6,7 @@ scalaVersion := "2.10.3"
 
 libraryDependencies ++= Seq(
   filters,
-  "com.amazonaws" % "aws-java-sdk" % "1.8.11",
+  "com.amazonaws" % "aws-java-sdk" % "1.9.3",
   "org.springframework" % "spring-context" % "4.0.7.RELEASE",
   "org.springframework" % "spring-test" % "4.0.7.RELEASE",
   "org.apache.commons" % "commons-lang3" % "3.3.2",
@@ -20,6 +20,7 @@ libraryDependencies ++= Seq(
   "org.jasypt" % "jasypt" % "1.9.2",
   "org.apache.shiro" % "shiro-core" % "1.2.3",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.51",
+  "org.bouncycastle" % "bcpkix-jdk15on" % "1.51",
   "com.github.fge" % "json-schema-validator" % "2.2.5",
   "commons-httpclient" % "commons-httpclient" % "3.1",
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC2.1",
