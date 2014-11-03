@@ -109,6 +109,7 @@
     </bean>
  
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
+    <bean id="loggingInterceptor" class="interceptors.LoggingInterceptor"/>
     
     <bean id="scheduleChangeListener" class="org.sagebionetworks.bridge.services.ScheduleChangeListener" destroy-method="destroy">
     </bean>
@@ -152,7 +153,10 @@
     <bean id="proxiedController" class="org.springframework.aop.framework.ProxyFactoryBean">
         <property name="proxyTargetClass" value="true"/>
         <property name="interceptorNames">
-            <list><value>exceptionInterceptor</value></list>
+            <list>
+                <value>loggingInterceptor</value>
+                <value>exceptionInterceptor</value>
+            </list>
         </property>
     </bean>
 
