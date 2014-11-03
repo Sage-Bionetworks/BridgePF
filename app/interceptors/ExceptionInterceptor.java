@@ -48,7 +48,6 @@ public class ExceptionInterceptor implements MethodInterceptor {
             if (StringUtils.isBlank(message)) {
                 message = HttpStatus.getStatusText(status);
             }
-            
             ExceptionMessage exceptionMessage = new ExceptionMessage(throwable, message);
             return Results.status(status, Json.toJson(exceptionMessage));
         }
