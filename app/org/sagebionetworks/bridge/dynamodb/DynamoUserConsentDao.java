@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.StudyConsent;
+import org.sagebionetworks.bridge.models.UserConsent;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -48,6 +49,12 @@ public class DynamoUserConsentDao implements UserConsentDao {
         return hasConsented;
     }
 
+    @Override
+    public UserConsent getUserConsent(String healthCode, StudyConsent studyConsent) {
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
+        return mapper.load(consent);
+    }
+    
     @Override
     public ConsentSignature getConsentSignature(String healthCode, StudyConsent consent) {
         ConsentSignature signature = getConsentSignature2(healthCode, consent);
