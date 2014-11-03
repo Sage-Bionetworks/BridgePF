@@ -9,7 +9,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 
-import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.X500NameBuilder;
+import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -30,15 +31,29 @@ public class BcCertificateFactory implements CertificateFactory {
     @Override
     public X509Certificate newCertificate(KeyPair keyPair) {
 
-        X500Name issuer =  new X500Name("CN=Test");
+        final X500NameBuilder issuer = new X500NameBuilder(BCStyle.INSTANCE);
+        // Common name
+        issuer.addRDN(BCStyle.CN, "Sage Bridge Self-Signed");
+        // Organizational unit name
+        issuer.addRDN(BCStyle.OU, "Bridge Project");
+        // Organization name
+        issuer.addRDN(BCStyle.O, "Sage Bionetworks");
+        // Country code
+        issuer.addRDN(BCStyle.C, "US");
+
+        final X500NameBuilder subject = new X500NameBuilder(BCStyle.INSTANCE);
+        subject.addRDN(BCStyle.CN, "Sage Bridge Self-Signed");
+
+        // TODO: Serial
         BigInteger serial = BigInteger.ONE;
+
         DateTime now = DateTime.now(DateTimeZone.UTC);
         Date notBefore = now.minusDays(1).toDate();
         Date notAfter = now.plusDays(365).toDate();
-        X500Name subject = new X500Name("CN=Test");
+
         X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
-                issuer, serial, notBefore, notAfter, subject, keyPair.getPublic());
-        // TODO: Add extensions here to the builder
+                issuer.build(), serial, notBefore, notAfter, subject.build(), keyPair.getPublic());
+        // TODO: Add extensions here to the cert builder
 
         try {
             JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder(ALGORITHM).setProvider(PROVIDER);
@@ -59,9 +74,9 @@ public class BcCertificateFactory implements CertificateFactory {
         DateTime now = DateTime.now(DateTimeZone.UTC);
         Date notBefore = now.minusDays(1).toDate();
         Date notAfter = now.plusDays(365).toDate();
-        X500Name subject = new X500Name("CN=Test");
+        final X500NameBuilder subject = (new X500NameBuilder(BCStyle.INSTANCE)).addRDN(BCStyle.CN, "Sage Bridge Self-Signed");
         X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
-                caCert, serial, notBefore, notAfter, subject, publicKey);
+                caCert, serial, notBefore, notAfter, subject.build(), publicKey);
         // TODO: Add extensions here to the builder
 
         try {
