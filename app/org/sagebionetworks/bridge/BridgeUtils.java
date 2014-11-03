@@ -73,4 +73,12 @@ public class BridgeUtils {
         return map;
     }
     
+    public static Long parseLong(String value) {
+        try {
+            return Long.parseLong(value);
+        } catch(NumberFormatException e) {
+            throw new RuntimeException("'" + value + "' is not a valid integer");
+        }
+    }
+    
 }
