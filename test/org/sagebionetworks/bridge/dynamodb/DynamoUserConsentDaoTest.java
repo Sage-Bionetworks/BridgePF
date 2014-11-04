@@ -107,8 +107,6 @@ public class DynamoUserConsentDaoTest {
             assertTrue(true); // Expected
         }
 
-        // Must consent first before sharing data
-        // assertFalse(userConsentDao.isSharingData(healthCode, consent));
         try {
             userConsentDao.resumeSharing(healthCode, consent);
         } catch (EntityNotFoundException e) {
