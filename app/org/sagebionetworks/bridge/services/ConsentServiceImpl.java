@@ -120,7 +120,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     }
     
     @Override
-    // This probably can go away.
     public UserConsent getUserConsent(User caller, Study study) {
         checkNotNull(caller, "User is required");
         checkNotNull(study, "Study is required");
@@ -137,25 +136,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             throw new BridgeServiceException(e);
         }
     }
-    
-    /* Is this somewhere else?
-    public StudyConsent getStudyConsent(User caller, Study study) {
-        checkNotNull(caller, "User is required");
-        checkNotNull(study, "Study is required");
-        try {
-            final String healthCode = caller.getHealthDataCode();
-            List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
-            for (StudyConsent consent : consents) {
-                if (userConsentDao.hasConsented(healthCode, consent)) {
-                    return consent;
-                }
-            }
-            return null;
-        } catch (Exception e) {
-            throw new BridgeServiceException(e);
-        }
-    }
-    */
     
     @Override
     public User withdrawConsent(User caller, Study study) {
