@@ -46,11 +46,6 @@ public interface UserConsentDao {
     void suspendSharing(String healthCode, StudyConsent consent);
 
     /**
-     * Whether the user has agreed to share data for the study.
-     */
-    boolean isSharingData(String healthCode, StudyConsent consent);
-
-    /**
      * Returns the consent signature, consisting of the signature name and birthdate.
      */
     ConsentSignature getConsentSignature(String healthCode, StudyConsent consent);

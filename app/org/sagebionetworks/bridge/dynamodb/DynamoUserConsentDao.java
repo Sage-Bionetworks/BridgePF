@@ -45,8 +45,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     @Override
     public boolean hasConsented(String healthCode, StudyConsent consent) {
-        boolean hasConsented = hasConsented2(healthCode, consent);
-        return hasConsented;
+        DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
+        return mapper.load(userConsent) != null;
     }
 
     @Override
@@ -83,12 +83,14 @@ public class DynamoUserConsentDao implements UserConsentDao {
         mapper.save(userConsent);
     }
 
+    /*
     @Override
     public boolean isSharingData(String healthCode, StudyConsent consent) {
         DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
         userConsent = mapper.load(userConsent);
         return (userConsent != null && userConsent.getDataSharing());
     }
+    */
 
     void giveConsent2(String healthCode, StudyConsent studyConsent, ConsentSignature researchConsent) {
         DynamoUserConsent2 consent = null;
@@ -121,11 +123,6 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyKey);
         consent = mapper.load(consent);
         return consent == null ? null : consent.getConsentCreatedOn();
-    }
-
-    boolean hasConsented2(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
-        return mapper.load(consent) != null;
     }
 
     ConsentSignature getConsentSignature2(String healthCode, StudyConsent studyConsent) {
