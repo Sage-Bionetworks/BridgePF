@@ -74,6 +74,8 @@ public class TestSurvey extends DynamoSurvey {
     private DynamoSurveyQuestion dateQuestion = new DynamoSurveyQuestion() {
         {
             DateConstraints c = new DateConstraints();
+            c.setEarliestValue(DateUtils.convertToMillisFromEpoch("2010-10-10T00:00:00.000Z"));
+            c.setLatestValue(DateUtils.getCurrentMillisFromEpoch());
             setPrompt("When did you last have a medical check-up?");
             setIdentifier("last_checkup");
             setUiHint(UIHint.DATEPICKER);
@@ -86,6 +88,8 @@ public class TestSurvey extends DynamoSurvey {
         {
             DateTimeConstraints c = new DateTimeConstraints();
             c.setAllowFuture(true);
+            c.setEarliestValue(DateUtils.convertToMillisFromEpoch("2010-10-10T00:00:00.000Z"));
+            c.setLatestValue(DateUtils.getCurrentMillisFromEpoch());
             setPrompt("When is your next medical check-up scheduled?");
             setIdentifier("last_reading");
             setUiHint(UIHint.DATETIMEPICKER);
