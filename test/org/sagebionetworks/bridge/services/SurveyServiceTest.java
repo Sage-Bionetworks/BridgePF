@@ -25,6 +25,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
@@ -77,7 +78,7 @@ public class SurveyServiceTest {
 
     @Test(expected = BridgeServiceException.class)
     public void createPreventsQuestionWithNoIdentifier() {
-        testSurvey.getStringQuestion().setIdentifier(null);
+        TestSurvey.selectBy(testSurvey, DataType.STRING).setIdentifier(null);
         surveyService.createSurvey(testSurvey);
     }
 

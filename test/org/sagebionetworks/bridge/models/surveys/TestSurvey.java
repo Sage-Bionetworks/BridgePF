@@ -6,13 +6,9 @@ import java.util.UUID;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
-import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
 /**
@@ -20,6 +16,15 @@ import com.google.common.collect.Lists;
  *
  */
 public class TestSurvey extends DynamoSurvey {
+
+    public static SurveyQuestion selectBy(Survey survey, DataType type) {
+        for (SurveyQuestion question : survey.getQuestions()) {
+            if (question.getConstraints().getDataType() == type) {
+                return question;
+            }
+        }
+        return null;
+    }
     
     private DynamoSurveyQuestion multiValueQuestion = new DynamoSurveyQuestion() {
         {
@@ -180,64 +185,6 @@ public class TestSurvey extends DynamoSurvey {
                 question.setGuid(null);
             }
         }
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getBooleanQuestion() {
-        return booleanQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getDateQuestion() {
-        return dateQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getDateTimeQuestion() {
-        return dateTimeQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getDecimalQuestion() {
-        return decimalQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getIntegerQuestion() {
-        return integerQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getDurationQuestion() {
-        return durationQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getTimeQuestion() {
-        return timeQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getMultiValueQuestion() {
-        return multiValueQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getStringQuestion() {
-        return stringQuestion;
-    }
-    
-    public String toJSON() throws Exception {
-        return new ObjectMapper().writeValueAsString(this);
     }
     
 }
