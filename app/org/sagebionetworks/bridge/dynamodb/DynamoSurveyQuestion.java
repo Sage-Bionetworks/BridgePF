@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @DynamoDBTable(tableName = "SurveyQuestion")
-@BridgeTypeName("SurveyQuestion")
 public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     
     private static final String CONSTRAINTS_PROPERTY = "constraints";

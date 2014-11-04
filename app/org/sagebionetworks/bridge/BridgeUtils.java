@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.base.Function;
@@ -21,20 +22,9 @@ public class BridgeUtils {
     }
     
     public static String getTypeName(Class<?> clazz) {
-        try {
-            BridgeTypeName att = (BridgeTypeName)clazz.getAnnotation(BridgeTypeName.class);
-            if (att == null) {
-                Class<?>[] ifcs = clazz.getInterfaces();
-                for (Class<?> ifc : ifcs) {
-                    if (att == null) {
-                        att = ifc.getAnnotation(BridgeTypeName.class);    
-                    }
-                }
-            }
-            if (att != null) {
-                return att.value();
-            }
-        } catch(Throwable t) {
+        BridgeTypeName att = AnnotationUtils.findAnnotation(clazz,BridgeTypeName.class);
+        if (att != null) {
+            return att.value();
         }
         return clazz.getSimpleName();
     }

@@ -32,7 +32,6 @@ public class DynamoSurveyTest {
         }
         
         String string = JsonUtils.toJSON(survey);
-        System.out.println(string);
         
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(string);
@@ -48,7 +47,7 @@ public class DynamoSurveyTest {
         } catch(Throwable t) {
             fail(t.getMessage());
         }
-        assertTrue("Correct serialize/deserialize survey", survey.equals(newSurvey));
+        
         assertEquals("Correct serialize/deserialize survey", survey.hashCode(), newSurvey.hashCode());
     }
     
