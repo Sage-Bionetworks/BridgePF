@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
@@ -31,6 +32,7 @@ public class DynamoSurveyTest {
         }
         
         String string = JsonUtils.toJSON(survey);
+        System.out.println(string);
         
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(string);
@@ -46,7 +48,7 @@ public class DynamoSurveyTest {
         } catch(Throwable t) {
             fail(t.getMessage());
         }
-        
+        assertTrue("Correct serialize/deserialize survey", survey.equals(newSurvey));
         assertEquals("Correct serialize/deserialize survey", survey.hashCode(), newSurvey.hashCode());
     }
     
