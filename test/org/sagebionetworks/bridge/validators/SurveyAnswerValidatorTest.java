@@ -151,6 +151,15 @@ public class SurveyAnswerValidatorTest {
         SurveyAnswer answer = createAnswer("14000");
         Validate.entityThrowingException(validator, answer);
     }
+    @Test
+    public void validateValidDuration() {
+        DurationConstraints constraints = new DurationConstraints();
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+        
+        SurveyAnswer answer = createAnswer("PT2H3S");
+        Validate.entityThrowingException(validator, answer);
+    }
+    
     @Test(expected = InvalidEntityException.class)
     public void validateIntegerMinValue() {
         IntegerConstraints constraints = new IntegerConstraints();
@@ -260,7 +269,15 @@ public class SurveyAnswerValidatorTest {
         Validate.entityThrowingException(validator, answer);
     }
     @Test
-    public void validateTime() {
+    public void validateValidTimeWithSeconds() {
+        TimeConstraints constraints = new TimeConstraints();
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+        
+        SurveyAnswer answer = createAnswer("2:00:03"); // two hours, 3 seconds, it can happen
+        Validate.entityThrowingException(validator, answer);
+    }
+    @Test
+    public void validateTimeNoSeconds() {
         TimeConstraints constraints = new TimeConstraints();
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
