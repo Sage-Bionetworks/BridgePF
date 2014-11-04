@@ -68,7 +68,7 @@ public class BcCertificateFactory implements CertificateFactory {
     }
 
     @Override
-    public X509Certificate newCertificate(PublicKey publicKey, X509Certificate caCert, PrivateKey privateKey) {
+    public X509Certificate newCertificate(PublicKey publicKey, X509Certificate caCert, PrivateKey caPrivateKey) {
 
         BigInteger serial = BigInteger.ONE;
         DateTime now = DateTime.now(DateTimeZone.UTC);
@@ -81,7 +81,7 @@ public class BcCertificateFactory implements CertificateFactory {
 
         try {
             JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder(ALGORITHM).setProvider(PROVIDER);
-            ContentSigner consentSigner = signerBuilder.build(privateKey);
+            ContentSigner consentSigner = signerBuilder.build(caPrivateKey);
             X509CertificateHolder certHolder = certBuilder.build(consentSigner);
             return new JcaX509CertificateConverter().setProvider(PROVIDER).getCertificate(certHolder);
         } catch (OperatorCreationException e) {
