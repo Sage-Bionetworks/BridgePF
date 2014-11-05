@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -14,6 +15,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
+import org.sagebionetworks.bridge.models.UserConsent;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -43,15 +45,15 @@ public class DynamoUserConsentDaoTest {
         final DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey("study123");
         consent.setCreatedOn(123L);
-        assertFalse(userConsentDao.hasConsented(healthCode, consent));
-        assertFalse(userConsentDao.hasConsented2(healthCode, consent));
+        UserConsent userConsent = userConsentDao.getUserConsent(healthCode, consent);
+        assertNull(userConsent);
         assertNull(userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
 
         // Give consent
         final ConsentSignature consentSignature = new ConsentSignature("John Smith", "1999-12-01");
         userConsentDao.giveConsent(healthCode, consent, consentSignature);
-        assertTrue(userConsentDao.hasConsented(healthCode, consent));
-        assertTrue(userConsentDao.hasConsented2(healthCode, consent));
+        userConsent = userConsentDao.getUserConsent(healthCode, consent);
+        assertNotNull(userConsent);
         assertEquals(Long.valueOf(123), userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
         ConsentSignature cs = userConsentDao.getConsentSignature(healthCode, consent);
         assertEquals(consentSignature.getName(), cs.getName());
@@ -70,18 +72,18 @@ public class DynamoUserConsentDaoTest {
 
         // Withdraw
         userConsentDao.withdrawConsent(healthCode, consent);
-        assertFalse(userConsentDao.hasConsented(healthCode, consent));
-        assertFalse(userConsentDao.hasConsented2(healthCode, consent));
+        userConsent = userConsentDao.getUserConsent(healthCode, consent);
+        assertNull(userConsent);
 
         // Can give consent again if the previous consent is withdrawn
         userConsentDao.giveConsent(healthCode, consent, consentSignature);
-        assertTrue(userConsentDao.hasConsented(healthCode, consent));
-        assertTrue(userConsentDao.hasConsented2(healthCode, consent));
+        userConsent = userConsentDao.getUserConsent(healthCode, consent);
+        assertNotNull(userConsent);
 
         // Withdraw again
         userConsentDao.withdrawConsent(healthCode, consent);
-        assertFalse(userConsentDao.hasConsented(healthCode, consent));
-        assertFalse(userConsentDao.hasConsented2(healthCode, consent));
+        userConsent = userConsentDao.getUserConsent(healthCode, consent);
+        assertNull(userConsent);
 
     }
 
@@ -93,18 +95,18 @@ public class DynamoUserConsentDaoTest {
         final DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey("study789");
         consent.setCreatedOn(456L);
-        assertFalse(userConsentDao.hasConsented(healthCode, consent));
+        
+        UserConsent userConsent = userConsentDao.getUserConsent(healthCode, consent);
+        assertNull(userConsent);
 
-        // Must consent first
-        assertFalse(userConsentDao.isSharingData(healthCode, consent));
+        // Impossible until you have consented/joined study
+        // assertFalse(userConsentDao.isSharingData(healthCode, consent));
         try {
             userConsentDao.getConsentSignature(healthCode, consent);
         } catch (EntityNotFoundException e) {
             assertTrue(true); // Expected
         }
 
-        // Must consent first before sharing data
-        assertFalse(userConsentDao.isSharingData(healthCode, consent));
         try {
             userConsentDao.resumeSharing(healthCode, consent);
         } catch (EntityNotFoundException e) {
@@ -119,16 +121,21 @@ public class DynamoUserConsentDaoTest {
         // Give consent
         final ConsentSignature consentSignature = new ConsentSignature("John Smith", "2009-12-01");
         userConsentDao.giveConsent(healthCode, consent, consentSignature);
-        assertTrue(userConsentDao.hasConsented(healthCode, consent));
-        assertTrue(userConsentDao.isSharingData(healthCode, consent));
+        
+        userConsent = userConsentDao.getUserConsent(healthCode, consent);
+        assertNotNull(userConsent);
+        assertTrue(userConsent.getDataSharing());
 
         // Share data
         userConsentDao.resumeSharing(healthCode, consent);
-        assertTrue(userConsentDao.isSharingData(healthCode, consent));
+        userConsent = userConsentDao.getUserConsent(healthCode, consent);
+        assertTrue(userConsent.getDataSharing());
         userConsentDao.suspendSharing(healthCode, consent);
-        assertFalse(userConsentDao.isSharingData(healthCode, consent));
+        userConsent = userConsentDao.getUserConsent(healthCode, consent);
+        assertFalse(userConsent.getDataSharing());
         userConsentDao.resumeSharing(healthCode, consent);
-        assertTrue(userConsentDao.isSharingData(healthCode, consent));
+        userConsent = userConsentDao.getUserConsent(healthCode, consent);
+        assertTrue(userConsent.getDataSharing());
     }
 
 }

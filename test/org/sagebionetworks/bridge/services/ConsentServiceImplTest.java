@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import javax.annotation.Resource;
@@ -15,6 +16,7 @@ import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.StudyConsent;
+import org.sagebionetworks.bridge.models.UserConsent;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -66,17 +68,18 @@ public class ConsentServiceImplTest {
         // Withdrawing and consenting again should return to original state.
         consentService.withdrawConsent(testUser.getUser(), testUser.getStudy());
         consentService.consentToResearch(testUser.getUser(), researchConsent, testUser.getStudy(), sendEmail);
-        boolean hasConsented = consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy());
-        assertTrue(hasConsented);
+        
+        UserConsent consent = consentService.getUserConsent(testUser.getUser(), testUser.getStudy());
+        assertNotNull("Consent exists", consent);
 
         // Suspend sharing should make isSharingData return false.
         consentService.suspendDataSharing(testUser.getUser(), testUser.getStudy());
-        boolean isSharing = consentService.isSharingData(testUser.getUser(), testUser.getStudy());
-        assertFalse(isSharing);
+        consent = consentService.getUserConsent(testUser.getUser(), testUser.getStudy());
+        assertFalse(consent.getDataSharing());
 
         // Resume sharing should make isSharingData return true.
         consentService.resumeDataSharing(testUser.getUser(), testUser.getStudy());
-        isSharing = consentService.isSharingData(testUser.getUser(), testUser.getStudy());
-
+        consent = consentService.getUserConsent(testUser.getUser(), testUser.getStudy());
+        assertTrue(consent.getDataSharing());
     }
 }

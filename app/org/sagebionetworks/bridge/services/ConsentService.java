@@ -2,24 +2,27 @@ package org.sagebionetworks.bridge.services;
 
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserConsent;
 
 public interface ConsentService {
 
-    public User consentToResearch(User caller, ConsentSignature researchConsent, Study study, boolean sendEmail);
+    public UserConsent getUserConsent(User caller, Study study);
+    
+    public StudyConsent getStudyConsentUserConsentedTo(User caller, Study study);
 
-    public boolean hasUserConsentedToResearch(User caller, Study study);
+    public User consentToResearch(User caller, ConsentSignature researchConsent, Study study, boolean sendEmail);
+    
+    // public boolean hasUserConsentedToResearch(User caller, Study study);
 
     public User withdrawConsent(User caller, Study study);
 
     public void emailConsentAgreement(User caller, Study study);
-
-    public UserConsent getUserConsent(User caller, Study study);
     
     public User suspendDataSharing(User caller, Study study);
 
     public User resumeDataSharing(User caller, Study study);
     
-    public boolean isSharingData(User caller, Study study);
+    // public boolean isSharingData(User caller, Study study);
 }

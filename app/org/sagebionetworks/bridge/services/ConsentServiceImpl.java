@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.Study;
@@ -97,30 +98,24 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             throw new BridgeServiceException(e);
         }
     }
-
+    
     @Override
-    public boolean hasUserConsentedToResearch(User caller, Study study) {
-        if (caller == null) {
-            throw new BadRequestException("User is required.");
-        } else if (study == null) {
-            throw new BadRequestException("Study is required.");
-        }
+    public UserConsent getUserConsent(User caller, Study study) {
+        checkNotNull(caller, "User is required");
+        checkNotNull(study, "Study is required");
         try {
-            final String healthCode = caller.getHealthDataCode();
-            List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
-            for (StudyConsent consent : consents) {
-                if (userConsentDao.hasConsented(healthCode, consent)) {
-                    return true;
-                }
+            StudyConsent consent = getStudyConsentUserConsentedTo(caller, study);
+            if (consent != null) {
+                return userConsentDao.getUserConsent(caller.getHealthDataCode(), consent);
             }
-            return false;
+            return null;
         } catch (Exception e) {
             throw new BridgeServiceException(e);
         }
     }
     
     @Override
-    public UserConsent getUserConsent(User caller, Study study) {
+    public StudyConsent getStudyConsentUserConsentedTo(User caller, Study study) {
         checkNotNull(caller, "User is required");
         checkNotNull(study, "Study is required");
         try {
@@ -128,7 +123,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
             for (StudyConsent consent : consents) {
                 if (userConsentDao.hasConsented(healthCode, consent)) {
-                    return userConsentDao.getUserConsent(healthCode, consent);
+                    return consent;
                 }
             }
             return null;
@@ -139,91 +134,57 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     
     @Override
     public User withdrawConsent(User caller, Study study) {
-        if (caller == null) {
-            throw new BadRequestException("User is required.");
-        } else if (study == null) {
-            throw new BadRequestException("Study is required.");
+        checkNotNull(caller, "User is required");
+        checkNotNull(study, "Study is required");
+        
+        StudyConsent consent = getStudyConsentUserConsentedTo(caller, study);
+        if (consent != null) {
+            userConsentDao.withdrawConsent(caller.getHealthDataCode(), consent);
+            publisher.publishEvent(new UserUnenrolledEvent(caller, study));
+            caller.setConsent(false);
         }
-        String healthCode = caller.getHealthDataCode();
-        List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
-        for (StudyConsent consent : consents) {
-            if (userConsentDao.hasConsented(healthCode, consent)) {
-                userConsentDao.withdrawConsent(healthCode, consent);
-                publisher.publishEvent(new UserUnenrolledEvent(caller, study));
-            }
-        }
-        caller.setConsent(false);
         return caller;
     }
 
     @Override
     public void emailConsentAgreement(final User caller, final Study study) {
-        if (caller == null) {
-            throw new BadRequestException("User is required.");
-        } else if (study == null) {
-            throw new BadRequestException("Study is required.");
+        checkNotNull(caller, "User is required");
+        checkNotNull(study, "Study is required");
+        
+        StudyConsent consent = getStudyConsentUserConsentedTo(caller, study);
+        if (consent == null) {
+            throw new EntityNotFoundException(StudyConsent.class, "Consent not found.");
         }
-        try {
-            final StudyConsent consent = studyConsentDao.getConsent(study.getKey());
-            if (consent == null) {
-                throw new BridgeServiceException("Consent not found.");
-            }
-            ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthDataCode(), consent);
-            if (consentSignature == null) {
-                throw new BridgeServiceException("Consent signature not found.");
-            }
-            sendMailService.sendConsentAgreement(caller, consentSignature, consent);
-        } catch (Exception e) {
-            throw new BridgeServiceException(e);
+        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthDataCode(), consent);
+        if (consentSignature == null) {
+            throw new EntityNotFoundException(ConsentSignature.class, "Consent signature not found.");
         }
+        sendMailService.sendConsentAgreement(caller, consentSignature, consent);
     }
 
     @Override
     public User suspendDataSharing(User caller, Study study) {
-        if (caller == null) {
-            throw new BadRequestException("User is required.");
-        } else if (study == null) {
-            throw new BadRequestException("Study is required.");
-        }
-        try {
-            StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
-            userConsentDao.suspendSharing(caller.getHealthDataCode(), studyConsent);
+        checkNotNull(caller, "User is required");
+        checkNotNull(study, "Study is required");
+        
+        StudyConsent consent = getStudyConsentUserConsentedTo(caller, study);
+        if (consent != null) {
+            userConsentDao.suspendSharing(caller.getHealthDataCode(), consent);
             caller.setDataSharing(false);
-        } catch (Exception e) {
-            throw new BridgeServiceException(e);
         }
         return caller;
     }
 
     @Override
     public User resumeDataSharing(User caller, Study study) {
-        if (caller == null) {
-            throw new BadRequestException("User is required.");
-        } else if (study == null) {
-            throw new BadRequestException("Study is required.");
-        }
-        try {
-            StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
-            userConsentDao.resumeSharing(caller.getHealthDataCode(), studyConsent);
+        checkNotNull(caller, "User is required");
+        checkNotNull(study, "Study is required");
+        
+        StudyConsent consent = getStudyConsentUserConsentedTo(caller, study);
+        if (consent != null) {
+            userConsentDao.resumeSharing(caller.getHealthDataCode(), consent);
             caller.setDataSharing(true);
-        } catch (Exception e) {
-            throw new BridgeServiceException(e);
         }
         return caller;
-    }
-
-    @Override
-    public boolean isSharingData(User caller, Study study) {
-        if (caller == null) {
-            throw new BadRequestException("User is required.");
-        } else if (study == null) {
-            throw new BadRequestException("Study is required.");
-        }
-        try {
-            StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
-            return userConsentDao.isSharingData(caller.getHealthDataCode(), studyConsent);
-        } catch (Exception e) {
-            throw new BridgeServiceException(e);
-        }
     }
 }

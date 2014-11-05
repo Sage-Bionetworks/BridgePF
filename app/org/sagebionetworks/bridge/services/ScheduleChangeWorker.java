@@ -207,7 +207,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         AccountList accounts = application.getAccounts();
         for (Account account : accounts) {
             User user = authenticationService.getUser(study, account.getEmail());
-            if (user != null && consentService.hasUserConsentedToResearch(user, study)) {
+            if (user != null && consentService.getUserConsent(user, study) != null) {
                 users.add(user);
             }
         }
