@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
