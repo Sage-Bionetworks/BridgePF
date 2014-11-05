@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.crypto;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.IOException;
 import java.security.PrivateKey;
 import java.security.Security;
@@ -27,12 +29,8 @@ import org.bouncycastle.operator.OutputEncryptor;
 public final class BcCmsEncryptor implements CmsEncryptor {
 
     public BcCmsEncryptor(X509Certificate cert, PrivateKey privateKey) throws CertificateEncodingException {
-        if (cert == null) {
-            throw new IllegalArgumentException("Cert cannot be null.");
-        }
-        if (privateKey == null) {
-            throw new IllegalArgumentException("Private key cannot be null.");
-        }
+        checkNotNull(cert, "Cert cannot be null.");
+        checkNotNull(privateKey, "Private key cannot be null.");
         Security.addProvider(new BouncyCastleProvider());
         generator = new CMSEnvelopedDataGenerator();
         RecipientInfoGenerator recipientInfoGenerator =
