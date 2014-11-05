@@ -5,8 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.base.Function;
@@ -78,6 +81,12 @@ public class BridgeUtils {
             return Long.parseLong(value);
         } catch(NumberFormatException e) {
             throw new RuntimeException("'" + value + "' is not a valid integer");
+        }
+    }
+    
+    public static void checkNewEntity(BridgeEntity entity, Object field, String message) {
+        if (field != null) {
+            throw new InvalidEntityException(entity, message);
         }
     }
     
