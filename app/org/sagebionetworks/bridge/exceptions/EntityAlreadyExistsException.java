@@ -13,7 +13,7 @@ public class EntityAlreadyExistsException extends BridgeServiceException {
     }
     
     public EntityAlreadyExistsException(BridgeEntity entity, String message) {
-        super(message, HttpStatus.SC_BAD_REQUEST);
+        super(message, HttpStatus.SC_CONFLICT);
         this.entity = entity;
     }
     
