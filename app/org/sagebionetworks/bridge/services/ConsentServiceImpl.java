@@ -137,7 +137,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         }
     }
     
-
     @Override
     public User withdrawConsent(User caller, Study study) {
         if (caller == null) {
