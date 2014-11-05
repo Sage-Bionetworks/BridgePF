@@ -108,7 +108,9 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
  
-    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
+    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor">
+        <property name="bridgeConfig" ref="bridgeConfig"/>
+    </bean>
     <bean id="loggingInterceptor" class="interceptors.LoggingInterceptor"/>
     
     <bean id="scheduleChangeListener" class="org.sagebionetworks.bridge.services.ScheduleChangeListener" destroy-method="destroy">
