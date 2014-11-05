@@ -56,10 +56,10 @@ public class BcCertificateFactory implements CertificateFactory {
         // TODO: Add extensions here to the cert builder
 
         try {
-            JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder(ALGORITHM).setProvider(PROVIDER);
+            JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder(BcCmsConstants.SIGNER_ALGO).setProvider(BcCmsConstants.PROVIDER);
             ContentSigner consentSigner = signerBuilder.build(keyPair.getPrivate());
             X509CertificateHolder certHolder = certBuilder.build(consentSigner);
-            return new JcaX509CertificateConverter().setProvider(PROVIDER).getCertificate(certHolder);
+            return new JcaX509CertificateConverter().setProvider(BcCmsConstants.PROVIDER).getCertificate(certHolder);
         } catch (OperatorCreationException e) {
             throw new RuntimeException(e);
         } catch (CertificateException e) {
@@ -68,7 +68,7 @@ public class BcCertificateFactory implements CertificateFactory {
     }
 
     @Override
-    public X509Certificate newCertificate(PublicKey publicKey, X509Certificate caCert, PrivateKey privateKey) {
+    public X509Certificate newCertificate(PublicKey publicKey, X509Certificate caCert, PrivateKey caPrivateKey) {
 
         BigInteger serial = BigInteger.ONE;
         DateTime now = DateTime.now(DateTimeZone.UTC);
@@ -80,17 +80,14 @@ public class BcCertificateFactory implements CertificateFactory {
         // TODO: Add extensions here to the builder
 
         try {
-            JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder(ALGORITHM).setProvider(PROVIDER);
-            ContentSigner consentSigner = signerBuilder.build(privateKey);
+            JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder(BcCmsConstants.SIGNER_ALGO).setProvider(BcCmsConstants.PROVIDER);
+            ContentSigner consentSigner = signerBuilder.build(caPrivateKey);
             X509CertificateHolder certHolder = certBuilder.build(consentSigner);
-            return new JcaX509CertificateConverter().setProvider(PROVIDER).getCertificate(certHolder);
+            return new JcaX509CertificateConverter().setProvider(BcCmsConstants.PROVIDER).getCertificate(certHolder);
         } catch (OperatorCreationException e) {
             throw new RuntimeException(e);
         } catch (CertificateException e) {
             throw new RuntimeException(e);
         }
     }
-
-    private static final String ALGORITHM = "SHA256withRSA";
-    private static final String PROVIDER = "BC";
 }

@@ -18,7 +18,6 @@ public interface CertificateFactory {
      * @param publicKey   The public key associated with this certificate
      * @param caCert      Issuer's certificate
      * @param privateKey  Issuer's private key
-     * @return
      */
-    X509Certificate newCertificate(PublicKey publicKey, X509Certificate caCert, PrivateKey privateKey);
+    X509Certificate newCertificate(PublicKey publicKey, X509Certificate caCert, PrivateKey caPrivateKey);
 }
