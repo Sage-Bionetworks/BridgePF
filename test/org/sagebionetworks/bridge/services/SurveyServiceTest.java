@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Study;
@@ -88,6 +89,11 @@ public class SurveyServiceTest {
         surveyService.createSurvey(testSurvey);
     }
 
+    @Test(expected = EntityAlreadyExistsException.class)
+    public void cannotCreateAnExistingSurvey() {
+        surveyService.createSurvey(new TestSurvey(false));
+    }
+    
     @Test
     public void crudSurvey() {
         Survey survey = surveyService.createSurvey(testSurvey);
