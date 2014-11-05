@@ -9,9 +9,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
 /**
@@ -19,6 +16,15 @@ import com.google.common.collect.Lists;
  *
  */
 public class TestSurvey extends DynamoSurvey {
+
+    public static SurveyQuestion selectBy(Survey survey, DataType type) {
+        for (SurveyQuestion question : survey.getQuestions()) {
+            if (question.getConstraints().getDataType() == type) {
+                return question;
+            }
+        }
+        return null;
+    }
     
     private DynamoSurveyQuestion multiValueQuestion = new DynamoSurveyQuestion() {
         {
@@ -74,6 +80,8 @@ public class TestSurvey extends DynamoSurvey {
     private DynamoSurveyQuestion dateQuestion = new DynamoSurveyQuestion() {
         {
             DateConstraints c = new DateConstraints();
+            c.setEarliestValue(DateUtils.convertToMillisFromEpoch("2010-10-10T00:00:00.000Z"));
+            c.setLatestValue(DateUtils.getCurrentMillisFromEpoch());
             setPrompt("When did you last have a medical check-up?");
             setIdentifier("last_checkup");
             setUiHint(UIHint.DATEPICKER);
@@ -86,6 +94,8 @@ public class TestSurvey extends DynamoSurvey {
         {
             DateTimeConstraints c = new DateTimeConstraints();
             c.setAllowFuture(true);
+            c.setEarliestValue(DateUtils.convertToMillisFromEpoch("2010-10-10T00:00:00.000Z"));
+            c.setLatestValue(DateUtils.getCurrentMillisFromEpoch());
             setPrompt("When is your next medical check-up scheduled?");
             setIdentifier("last_reading");
             setUiHint(UIHint.DATETIMEPICKER);
@@ -175,64 +185,6 @@ public class TestSurvey extends DynamoSurvey {
                 question.setGuid(null);
             }
         }
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getBooleanQuestion() {
-        return booleanQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getDateQuestion() {
-        return dateQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getDateTimeQuestion() {
-        return dateTimeQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getDecimalQuestion() {
-        return decimalQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getIntegerQuestion() {
-        return integerQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getDurationQuestion() {
-        return durationQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getTimeQuestion() {
-        return timeQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getMultiValueQuestion() {
-        return multiValueQuestion;
-    }
-
-    @DynamoDBIgnore
-    @JsonIgnore
-    public DynamoSurveyQuestion getStringQuestion() {
-        return stringQuestion;
-    }
-    
-    public String toJSON() throws Exception {
-        return new ObjectMapper().writeValueAsString(this);
     }
     
 }

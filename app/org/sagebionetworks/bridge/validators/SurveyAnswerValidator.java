@@ -145,6 +145,12 @@ public class SurveyAnswerValidator implements Validator {
         if (!con.getAllowFuture() && time > now) {
             rejectField(errors, "constraints", "%s is not allowed to have a future value after %s", time, now);
         }
+        if (con.getEarliestValue() != null && time < con.getEarliestValue()) {
+            rejectField(errors, "constraints", "%s is not allowed to have a date before %s", time, con.getEarliestValue());
+        }
+        if (con.getLatestValue() != null && time > con.getLatestValue()) {
+            rejectField(errors, "constraints", "%s is not allowed to have a date after %s", time, con.getLatestValue());
+        }
     }
 
     private void validateType(Errors errors, DecimalConstraints con, String answer) {
