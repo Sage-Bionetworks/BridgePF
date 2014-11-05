@@ -99,22 +99,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
-
-        final long start = System.nanoTime();
-
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signIn, "Sign in cannot be null");
 
         Validate.entityThrowingException(signInValidator, signIn);
         
+        final long start = System.nanoTime();
         AuthenticationRequest<?, ?> request = null;
         UserSession session = null;
         try {
             Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-            logger.info("sign in create app " + (System.nanoTime() - start) );
+            logger.debug("sign in create app " + (System.nanoTime() - start) );
             request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword());
             Account account = application.authenticateAccount(request).getAccount();
-            logger.info("sign in authenticate " + (System.nanoTime() - start));
+            logger.debug("sign in authenticate " + (System.nanoTime() - start));
             session = createSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
             
@@ -129,9 +127,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 request.clear();
             }
         }
-
         final long end = System.nanoTime();
-        logger.info("sign in service " + (end - start));
+        logger.debug("sign in service " + (end - start));
 
         return session;
     }
