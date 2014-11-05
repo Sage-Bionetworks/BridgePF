@@ -87,6 +87,11 @@ public class SurveyServiceTest {
         surveyService.createSurvey(testSurvey);
     }
 
+    @Test(expected = InvalidEntityException.class)
+    public void cannotCreateAnExistingSurvey() {
+        surveyService.createSurvey(new TestSurvey(false));
+    }
+    
     @Test
     public void crudSurvey() {
         Survey survey = surveyService.createSurvey(testSurvey);

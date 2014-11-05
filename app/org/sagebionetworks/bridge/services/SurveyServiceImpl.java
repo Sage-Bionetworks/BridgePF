@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
 import java.util.List;
 
@@ -69,6 +70,8 @@ public class SurveyServiceImpl implements SurveyService {
     @Override
     public Survey createSurvey(Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
+        checkNewEntity(survey, survey.getGuid(), "Survey has a GUID; it may already exist");
+        checkNewEntity(survey, survey.getVersion(), "Survey has a version value; it may already exist");
         
         survey.setGuid(BridgeUtils.generateGuid());
         Validate.entityThrowingException(validator, survey);    
