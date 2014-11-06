@@ -16,9 +16,9 @@ POST   /api/v1/auth/signUp                @controllers.AuthenticationController.
 POST   /api/v1/auth/verifyEmail           @controllers.AuthenticationController.verifyEmail
 
 # API - Individual Health Data Record
-GET    /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(trackerId: String, recordId: String)
-POST   /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.updateHealthDataRecord(trackerId: String, recordId: String)
-DELETE /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(trackerId: String, recordId: String)
+GET    /api/v1/healthdata/:trackerId/record/:guid @controllers.HealthDataController.getHealthDataRecord(trackerId: String, guid: String)
+POST   /api/v1/healthdata/:trackerId/record/:guid @controllers.HealthDataController.updateHealthDataRecord(trackerId: String, guid: String)
+DELETE /api/v1/healthdata/:trackerId/record/:guid @controllers.HealthDataController.deleteHealthDataRecord(trackerId: String, guid: String)
 
 # API - Health Data
 GET    /api/v1/healthdata/:trackerId      @controllers.HealthDataController.getHealthData(trackerId: String, startDate: java.lang.String ?= null, endDate: java.lang.String ?= null)

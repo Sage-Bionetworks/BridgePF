@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.IdVersionHolder;
+import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
@@ -14,10 +14,10 @@ public interface HealthDataService {
     
     public List<HealthDataRecord> getHealthDataByDateRange(HealthDataKey key, long startDate, long endDate);
     
-    public HealthDataRecord getHealthDataRecord(HealthDataKey key, String recordId);
+    public HealthDataRecord getHealthDataRecord(HealthDataKey key, String guid);
 
-    public IdVersionHolder updateHealthDataRecord(HealthDataKey key, HealthDataRecord record);
+    public GuidVersionHolder updateHealthDataRecord(HealthDataKey key, HealthDataRecord record);
 
-    public void deleteHealthDataRecord(HealthDataKey key, String recordId);
+    public void deleteHealthDataRecord(HealthDataKey key, String guid);
     
 }

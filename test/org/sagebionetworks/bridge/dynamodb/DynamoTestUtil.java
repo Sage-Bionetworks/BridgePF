@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,6 +9,7 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -17,6 +20,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
+import com.google.common.base.Joiner;
 
 public class DynamoTestUtil {
 
@@ -54,8 +58,15 @@ public class DynamoTestUtil {
         List<String> keyAttrs = new ArrayList<String>();
         Method[] methods = clazz.getMethods();
         for (Method method : methods) {
-            if (method.getAnnotation(DynamoDBHashKey.class) != null 
-                    || method.getAnnotation(DynamoDBRangeKey.class) != null) {
+            
+            DynamoDBHashKey hashKeyAtt = AnnotationUtils.getAnnotation(method, DynamoDBHashKey.class);
+            DynamoDBRangeKey rangeKeyAtt = AnnotationUtils.getAnnotation(method, DynamoDBRangeKey.class);
+            
+            if (hashKeyAtt != null && isNotBlank(hashKeyAtt.attributeName())) {
+                keyAttrs.add(hashKeyAtt.attributeName());
+            } else if (rangeKeyAtt != null && isNotBlank(rangeKeyAtt.attributeName())) {
+                keyAttrs.add(rangeKeyAtt.attributeName());
+            } else if (hashKeyAtt != null || rangeKeyAtt != null) {
                 String name = method.getName();
                 // Remove 'get', 'set', or 'is'
                 if (name.startsWith("get") || name.startsWith("set")) {

@@ -5,7 +5,7 @@ import java.util.List;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.IdVersionHolder;
+import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -22,10 +22,10 @@ import com.google.common.collect.Lists;
 
 public class HealthDataController extends BaseController {
     
-    private static final Function<HealthDataRecord, IdVersionHolder> TRANSFORMER = new Function<HealthDataRecord, IdVersionHolder>() {
+    private static final Function<HealthDataRecord, GuidVersionHolder> TRANSFORMER = new Function<HealthDataRecord, GuidVersionHolder>() {
         @Override
-        public IdVersionHolder apply(HealthDataRecord record) {
-            return new IdVersionHolder(record.getRecordId(), record.getVersion());
+        public GuidVersionHolder apply(HealthDataRecord record) {
+            return new GuidVersionHolder(record.getGuid(), record.getVersion());
         }
     };
 
@@ -96,18 +96,18 @@ public class HealthDataController extends BaseController {
         return okResult(entries);
     }
 
-    public Result getHealthDataRecord(String trackerIdString, String recordId) throws Exception {
+    public Result getHealthDataRecord(String trackerIdString, String guid) throws Exception {
         Long trackerId = BridgeUtils.parseLong(trackerIdString);
         UserSession session = getAuthenticatedAndConsentedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         Tracker tracker = study.getTrackerById(trackerId);
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
-        HealthDataRecord record = healthDataService.getHealthDataRecord(key, recordId);
+        HealthDataRecord record = healthDataService.getHealthDataRecord(key, guid);
         return okResult(record);
     }
 
-    public Result updateHealthDataRecord(String trackerIdString, String recordId) throws Exception {
+    public Result updateHealthDataRecord(String trackerIdString, String guid) throws Exception {
         Long trackerId = BridgeUtils.parseLong(trackerIdString);
         UserSession session = getAuthenticatedAndConsentedSession();
         Study study = studyService.getStudyByHostname(getHostname());
@@ -116,19 +116,20 @@ public class HealthDataController extends BaseController {
 
         JsonNode node = requestToJSON(request());
         HealthDataRecord record = DynamoHealthDataRecord.fromJson(node);
+        record.setGuid(guid);
 
-        IdVersionHolder holder = healthDataService.updateHealthDataRecord(key, record);
+        GuidVersionHolder holder = healthDataService.updateHealthDataRecord(key, record);
         return okResult(holder);
     }
 
-    public Result deleteHealthDataRecord(String trackerIdString, String recordId) throws Exception {
+    public Result deleteHealthDataRecord(String trackerIdString, String guid) throws Exception {
         Long trackerId = BridgeUtils.parseLong(trackerIdString);
         UserSession session = getAuthenticatedAndConsentedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         Tracker tracker = study.getTrackerById(trackerId);
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
-        healthDataService.deleteHealthDataRecord(key, recordId);
+        healthDataService.deleteHealthDataRecord(key, guid);
         return okResult("Record deleted.");
     }
 

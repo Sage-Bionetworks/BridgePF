@@ -7,7 +7,6 @@ import java.util.UUID;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
