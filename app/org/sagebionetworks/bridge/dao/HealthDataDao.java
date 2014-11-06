@@ -13,10 +13,10 @@ public interface HealthDataDao {
     
     public List<HealthDataRecord> getHealthDataByDateRange(HealthDataKey key, long startDate, long endDate);
     
-    public HealthDataRecord getHealthDataRecord(HealthDataKey key, String recordId);
+    public HealthDataRecord getHealthDataRecord(HealthDataKey key, String guid);
     
     public HealthDataRecord updateHealthDataRecord(HealthDataKey key, HealthDataRecord record);
     
-    public void deleteHealthDataRecord(HealthDataKey key, String recordId);
+    public void deleteHealthDataRecord(HealthDataKey key, String guid);
     
 }

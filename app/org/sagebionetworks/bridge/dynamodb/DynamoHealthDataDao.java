@@ -126,9 +126,9 @@ public class DynamoHealthDataDao implements HealthDataDao {
     }
 
     @Override
-    public HealthDataRecord getHealthDataRecord(HealthDataKey key, String recordId) {
+    public HealthDataRecord getHealthDataRecord(HealthDataKey key, String guid) {
         DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString());
-        dynamoRecord.setRecordId(recordId);
+        dynamoRecord.setGuid(guid);
         dynamoRecord = mapper.load(dynamoRecord);
         if (dynamoRecord == null) {
             throw new EntityNotFoundException(HealthDataRecord.class);
@@ -144,9 +144,9 @@ public class DynamoHealthDataDao implements HealthDataDao {
     }
 
     @Override
-    public void deleteHealthDataRecord(HealthDataKey key, String recordId) {
-        HealthDataRecord record = getHealthDataRecord(key, recordId);
-        DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString(), recordId, record);
+    public void deleteHealthDataRecord(HealthDataKey key, String guid) {
+        HealthDataRecord record = getHealthDataRecord(key, guid);
+        DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString(), guid, record);
         mapper.delete(dynamoRecord);
     }
 

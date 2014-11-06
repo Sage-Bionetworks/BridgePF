@@ -210,7 +210,7 @@ public class StormPathUserAdminService implements UserAdminService {
                 key = new HealthDataKey(userStudy, tracker, user);
                 List<HealthDataRecord> records = healthDataService.getAllHealthData(key);
                 for (HealthDataRecord record : records) {
-                    healthDataService.deleteHealthDataRecord(key, record.getRecordId());
+                    healthDataService.deleteHealthDataRecord(key, record.getGuid());
                 }
             }
         }

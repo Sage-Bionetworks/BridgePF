@@ -1,6 +1,7 @@
 package controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
@@ -63,6 +64,7 @@ public class AuthenticationControllerTest {
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
                 
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+                assertNotNull("There's a cookie", cookie);
 
                 String sessionToken = cookie.getValue();
                 assertTrue("Cookie is not empty", StringUtils.isNotBlank(sessionToken));
