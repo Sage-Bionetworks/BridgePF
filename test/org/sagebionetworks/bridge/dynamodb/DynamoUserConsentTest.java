@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -28,7 +27,6 @@ public class DynamoUserConsentTest {
         assertEquals(consentTimestamp, userConsent.getConsentCreatedOn());
         // Test copy constructor
         userConsent.setSignedOn(555L);
-        userConsent.setDataSharing(true);
         userConsent.setName("name");
         userConsent.setBirthdate("birthdate");
         userConsent.setVersion(777L);
@@ -38,7 +36,6 @@ public class DynamoUserConsentTest {
         assertEquals(studyKey, userConsent.getStudyKey());
         assertEquals(consentTimestamp, userConsent.getConsentCreatedOn());
         assertEquals(555L, userConsent.getSignedOn());
-        assertTrue(userConsent.getDataSharing());
         assertEquals("name", userConsent.getName());
         assertEquals("birthdate", userConsent.getBirthdate());
         assertEquals(userConsent.getVersion(), userConsentCopy.getVersion());
