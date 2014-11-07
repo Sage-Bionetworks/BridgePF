@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
+import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.Study;
 
 public interface ParticipantOptionsService {
@@ -15,22 +16,13 @@ public interface ParticipantOptionsService {
     public void setOption(Study study, String healthDataCode, Option option, String value);
     
     /**
-     * Get an option for a participant. Returns null if the value has never been set.
+     * Get an option for a participant. Returns the default value for the option if the option 
+     * has never been set for this participant (which may be null).
      * @param healthDataCode
      * @param option
      * @return
      */
     public String getOption(String healthDataCode, Option option);
-    
-    /**
-     * Get an option for a participant. Returns the default value if the option has never
-     * been set.
-     * @param healthDataCode
-     * @param option
-     * @param defaultValue
-     * @return
-     */
-    public String getOption(String healthDataCode, Option option, String defaultValue);
     
     /**
      * Get a participant option as a boolean
@@ -39,15 +31,6 @@ public interface ParticipantOptionsService {
      * @return true or false (false if not set)
      */
     public boolean getBooleanOption(String healthDataCode, Option option);
-    
-    /**
-     * Get a participant option as a boolean
-     * @param healthDataCode
-     * @param option
-     * @param defaultValue
-     * @return true or false (or the defaultValue if not set)
-     */
-    public boolean getBooleanOption(String healthDataCode, Option option, boolean defaultValue);
     
     /**
      * Delete the entire record associated with a participant in the study (for deleting users).
@@ -79,6 +62,6 @@ public interface ParticipantOptionsService {
      * @param option
      * @return
      */
-    public Map<String,String> getOptionForAllStudyParticipants(Study study, Option option);
+    public OptionLookup getOptionForAllStudyParticipants(Study study, Option option);
 
 }

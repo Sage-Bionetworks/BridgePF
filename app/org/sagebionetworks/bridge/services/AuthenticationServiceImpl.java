@@ -253,7 +253,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             user.setConsent(consent);
             
             if (healthCode != null) { // haven't consented yet.
-                boolean dataSharing = optionsService.getBooleanOption(healthCode, Option.DATA_SHARING, true);
+                boolean dataSharing = optionsService.getBooleanOption(healthCode, Option.DATA_SHARING);
                 user.setDataSharing(dataSharing);
             }
         }

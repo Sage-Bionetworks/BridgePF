@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
+import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -43,21 +44,6 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
         return Boolean.valueOf(value);
     }
     
-    @Override
-    public boolean getBooleanOption(String healthDataCode, Option option, boolean defaultValue) {
-        String value = getOption(healthDataCode, option);
-        return (value == null) ? defaultValue : Boolean.valueOf(value);
-    }
-    
-    @Override
-    public String getOption(String healthDataCode, Option option, String defaultValue) {
-        checkArgument(isNotBlank(healthDataCode), Validate.CANNOT_BE_BLANK, "healthDataCode");
-        checkNotNull(defaultValue, Validate.CANNOT_BE_NULL, "defaultValue");
-        checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
-        
-        return optionsDao.getOption(healthDataCode, option, defaultValue);
-    }
-
     public void deleteAllParticipantOptions(String healthDataCode) {
         checkArgument(isNotBlank(healthDataCode), Validate.CANNOT_BE_BLANK, "healthDataCode");
         
@@ -80,7 +66,7 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
     }
 
     @Override
-    public Map<String, String> getOptionForAllStudyParticipants(Study study, Option option) {
+    public OptionLookup getOptionForAllStudyParticipants(Study study, Option option) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
         

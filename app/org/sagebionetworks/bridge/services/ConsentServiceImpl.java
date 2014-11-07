@@ -68,7 +68,8 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         
         if (caller.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
-        } else if (consentSignature.getBirthdate() == null) {
+        }
+        if (consentSignature.getBirthdate() == null) {
             throw new InvalidEntityException(consentSignature, "Consent birth date is required.");
         }
         // Stormpath account
@@ -115,19 +116,16 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         boolean withdrawn = false;
 
-        try {
-            String healthCode = caller.getHealthDataCode();
-            List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
-            for (StudyConsent consent : consents) {
-                if (userConsentDao.hasConsented(healthCode, consent)) {
-                    userConsentDao.withdrawConsent(healthCode, consent);
-                    withdrawn = true;
-                }
+        String healthCode = caller.getHealthDataCode();
+        List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
+        for (StudyConsent consent : consents) {
+            if (userConsentDao.hasConsented(healthCode, consent)) {
+                userConsentDao.withdrawConsent(healthCode, consent);
+                withdrawn = true;
             }
-        } finally {
-            if (withdrawn) {
-                publisher.publishEvent(new UserUnenrolledEvent(caller, study));
-            }
+        }
+        if (withdrawn) {
+            publisher.publishEvent(new UserUnenrolledEvent(caller, study));
             caller.setConsent(false);
         }
         return caller;

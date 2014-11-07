@@ -2,12 +2,21 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.Map;
 
+import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.Study;
 
 public interface ParticipantOptionsDao {
 
     public enum Option {
-        DATA_SHARING;
+        DATA_SHARING("true");
+        
+        private String defaultValue;
+        private Option(String defaultValue) {
+            this.defaultValue = defaultValue;
+        }
+        public String getDefaultValue() {
+            return defaultValue;
+        }
     }
     
     /**
@@ -17,18 +26,10 @@ public interface ParticipantOptionsDao {
      * @param value
      */
     public void setOption(Study study, String healthDataCode, Option option, String value);
-    
+     
     /**
-     * Get an option for a participant. Returns null if the value has never been set.
-     * @param healthDataCode
-     * @param option
-     * @param defaultValue
-     * @return
-     */
-    public String getOption(String healthDataCode, Option option, String defaultValue);
-    
-    /**
-     * Get an option for a participant. Returns null if the value has never been set.
+     * Get an option for a participant. Returns defaultValue (which can be null for a specific 
+     * option, see the Option enum class) if the value has never been set.
      * @param healthDataCode
      * @param option
      * @return
@@ -65,6 +66,6 @@ public interface ParticipantOptionsDao {
      * @param option
      * @return
      */
-    public Map<String,String> getOptionForAllStudyParticipants(Study study, Option option);
+    public OptionLookup getOptionForAllStudyParticipants(Study study, Option option);
     
 }
