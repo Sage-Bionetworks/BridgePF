@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -52,6 +53,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private BridgeConfig config;
     private AccountEncryptionService accountEncryptionService;
     private ConsentService consentService;
+    private ParticipantOptionsService optionsService;
     private Validator signInValidator;
     private Validator signUpValidator;
     private Validator passwordResetValidator;
@@ -76,6 +78,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         this.consentService = consentService;
     }
     
+    public void setOptionsService(ParticipantOptionsService optionsService) {
+        this.optionsService = optionsService;
+    }
+    
     public void setSignInValidator(Validator validator) {
         this.signInValidator = validator;
     }
@@ -98,22 +104,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
-
-        final long start = System.nanoTime();
-
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signIn, "Sign in cannot be null");
 
         Validate.entityThrowingException(signInValidator, signIn);
         
+        final long start = System.nanoTime();
         AuthenticationRequest<?, ?> request = null;
         UserSession session = null;
         try {
             Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-            logger.info("sign in create app " + (System.nanoTime() - start) );
+            logger.debug("sign in create app " + (System.nanoTime() - start) );
             request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword());
             Account account = application.authenticateAccount(request).getAccount();
-            logger.info("sign in authenticate " + (System.nanoTime() - start));
+            logger.debug("sign in authenticate " + (System.nanoTime() - start));
             session = createSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
             
@@ -128,9 +132,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 request.clear();
             }
         }
-
         final long end = System.nanoTime();
-        logger.info("sign in service " + (end - start));
+        logger.debug("sign in service " + (end - start));
 
         return session;
     }
@@ -245,10 +248,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (healthId != null) {
             String healthCode = healthId.getCode();
             user.setHealthDataCode(healthCode);
-            boolean hasConsented = consentService.hasUserConsentedToResearch(user, study);
-            user.setConsent(hasConsented);
-        }
 
+            boolean consent = consentService.hasUserConsentedToResearch(user, study);
+            user.setConsent(consent);
+            
+            if (healthCode != null) { // haven't consented yet.
+                boolean dataSharing = optionsService.getBooleanOption(healthCode, Option.DATA_SHARING);
+                user.setDataSharing(dataSharing);
+            }
+        }
         // And now for some exceptions...
         
         // All administrators and all researchers are assumed to consent when using any API.

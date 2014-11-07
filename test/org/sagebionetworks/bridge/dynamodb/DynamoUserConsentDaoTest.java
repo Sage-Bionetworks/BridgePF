@@ -12,7 +12,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -83,52 +82,6 @@ public class DynamoUserConsentDaoTest {
         assertFalse(userConsentDao.hasConsented(healthCode, consent));
         assertFalse(userConsentDao.hasConsented2(healthCode, consent));
 
-    }
-
-    @Test
-    public void testDataSharing() {
-
-        // Not consented yet
-        final String healthCode = "hc123";
-        final DynamoStudyConsent1 consent = new DynamoStudyConsent1();
-        consent.setStudyKey("study789");
-        consent.setCreatedOn(456L);
-        assertFalse(userConsentDao.hasConsented(healthCode, consent));
-
-        // Must consent first
-        assertFalse(userConsentDao.isSharingData(healthCode, consent));
-        try {
-            userConsentDao.getConsentSignature(healthCode, consent);
-        } catch (EntityNotFoundException e) {
-            assertTrue(true); // Expected
-        }
-
-        // Must consent first before sharing data
-        assertFalse(userConsentDao.isSharingData(healthCode, consent));
-        try {
-            userConsentDao.resumeSharing(healthCode, consent);
-        } catch (EntityNotFoundException e) {
-            assertTrue(true); // Expected
-        }
-        try {
-            userConsentDao.suspendSharing(healthCode, consent);
-        } catch (EntityNotFoundException e) {
-            assertTrue(true); // Expected
-        }
-
-        // Give consent
-        final ConsentSignature consentSignature = new ConsentSignature("John Smith", "2009-12-01");
-        userConsentDao.giveConsent(healthCode, consent, consentSignature);
-        assertTrue(userConsentDao.hasConsented(healthCode, consent));
-        assertTrue(userConsentDao.isSharingData(healthCode, consent));
-
-        // Share data
-        userConsentDao.resumeSharing(healthCode, consent);
-        assertTrue(userConsentDao.isSharingData(healthCode, consent));
-        userConsentDao.suspendSharing(healthCode, consent);
-        assertFalse(userConsentDao.isSharingData(healthCode, consent));
-        userConsentDao.resumeSharing(healthCode, consent);
-        assertTrue(userConsentDao.isSharingData(healthCode, consent));
     }
 
 }

@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.StudyConsent;
+import org.sagebionetworks.bridge.models.UserConsent;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -49,38 +50,15 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
+    public UserConsent getUserConsent(String healthCode, StudyConsent studyConsent) {
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
+        return mapper.load(consent);
+    }
+    
+    @Override
     public ConsentSignature getConsentSignature(String healthCode, StudyConsent consent) {
         ConsentSignature signature = getConsentSignature2(healthCode, consent);
         return signature;
-    }
-
-    @Override
-    public void resumeSharing(String healthCode, StudyConsent consent) {
-        DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
-        userConsent = mapper.load(userConsent);
-        if (userConsent == null) {
-            throw new EntityNotFoundException(DynamoUserConsent2.class);
-        }
-        userConsent.setDataSharing(true);
-        mapper.save(userConsent);
-    }
-
-    @Override
-    public void suspendSharing(String healthCode, StudyConsent consent) {
-        DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
-        userConsent = mapper.load(userConsent);
-        if (userConsent == null) {
-            throw new EntityNotFoundException(DynamoUserConsent2.class);
-        }
-        userConsent.setDataSharing(false);
-        mapper.save(userConsent);
-    }
-
-    @Override
-    public boolean isSharingData(String healthCode, StudyConsent consent) {
-        DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
-        userConsent = mapper.load(userConsent);
-        return (userConsent != null && userConsent.getDataSharing());
     }
 
     void giveConsent2(String healthCode, StudyConsent studyConsent, ConsentSignature researchConsent) {
@@ -94,7 +72,6 @@ public class DynamoUserConsentDao implements UserConsentDao {
             consent.setName(researchConsent.getName());
             consent.setBirthdate(researchConsent.getBirthdate());
             consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
-            consent.setDataSharing(true);
             mapper.save(consent);
         } catch (ConditionalCheckFailedException e) {
             throw new EntityAlreadyExistsException(consent);
