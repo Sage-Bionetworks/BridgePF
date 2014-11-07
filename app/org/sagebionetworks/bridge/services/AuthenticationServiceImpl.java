@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -25,7 +26,6 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -53,6 +53,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private BridgeConfig config;
     private AccountEncryptionService accountEncryptionService;
     private ConsentService consentService;
+    private ParticipantOptionsService optionsService;
     private Validator signInValidator;
     private Validator signUpValidator;
     private Validator passwordResetValidator;
@@ -75,6 +76,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
+    }
+    
+    public void setOptionsService(ParticipantOptionsService optionsService) {
+        this.optionsService = optionsService;
     }
     
     public void setSignInValidator(Validator validator) {
@@ -243,15 +248,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (healthId != null) {
             String healthCode = healthId.getCode();
             user.setHealthDataCode(healthCode);
+
+            boolean consent = consentService.hasUserConsentedToResearch(user, study);
+            user.setConsent(consent);
             
-            UserConsent consent = consentService.getUserConsent(user, study);
-            if (consent != null) {
-                user.setConsent(true);
-                user.setDataSharing(consent.getDataSharing());
+            if (healthCode != null) { // haven't consented yet.
+                boolean dataSharing = optionsService.getBooleanOption(healthCode, Option.DATA_SHARING);
+                user.setDataSharing(dataSharing);
             }
         }
-        
-
         // And now for some exceptions...
         
         // All administrators and all researchers are assumed to consent when using any API.
