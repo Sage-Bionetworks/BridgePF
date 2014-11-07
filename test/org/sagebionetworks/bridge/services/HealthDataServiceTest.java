@@ -60,7 +60,7 @@ public class HealthDataServiceTest {
     
     private HealthDataKey createKey() {
         Tracker tracker = new Tracker();
-        tracker.setId(1L);
+        tracker.setIdentifier("1");
         return new HealthDataKey(testUser.getStudy(), tracker, testUser.getUser());
     }
 

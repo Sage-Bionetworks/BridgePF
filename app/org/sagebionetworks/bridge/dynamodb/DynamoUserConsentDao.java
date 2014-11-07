@@ -61,35 +61,6 @@ public class DynamoUserConsentDao implements UserConsentDao {
         return signature;
     }
 
-    @Override
-    public void resumeSharing(String healthCode, StudyConsent consent) {
-        DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
-        userConsent = mapper.load(userConsent);
-        if (userConsent == null) {
-            throw new EntityNotFoundException(DynamoUserConsent2.class);
-        }
-        userConsent.setDataSharing(true);
-        mapper.save(userConsent);
-    }
-
-    @Override
-    public void suspendSharing(String healthCode, StudyConsent consent) {
-        DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
-        userConsent = mapper.load(userConsent);
-        if (userConsent == null) {
-            throw new EntityNotFoundException(DynamoUserConsent2.class);
-        }
-        userConsent.setDataSharing(false);
-        mapper.save(userConsent);
-    }
-
-    @Override
-    public boolean isSharingData(String healthCode, StudyConsent consent) {
-        DynamoUserConsent2 userConsent = new DynamoUserConsent2(healthCode, consent);
-        userConsent = mapper.load(userConsent);
-        return (userConsent != null && userConsent.getDataSharing());
-    }
-
     void giveConsent2(String healthCode, StudyConsent studyConsent, ConsentSignature researchConsent) {
         DynamoUserConsent2 consent = null;
         try {
@@ -101,7 +72,6 @@ public class DynamoUserConsentDao implements UserConsentDao {
             consent.setName(researchConsent.getName());
             consent.setBirthdate(researchConsent.getBirthdate());
             consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
-            consent.setDataSharing(true);
             mapper.save(consent);
         } catch (ConditionalCheckFailedException e) {
             throw new EntityAlreadyExistsException(consent);

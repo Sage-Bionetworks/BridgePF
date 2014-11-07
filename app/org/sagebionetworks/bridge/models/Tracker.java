@@ -6,9 +6,9 @@ import org.springframework.core.io.Resource;
 @BridgeTypeName("Tracker")
 public class Tracker implements BridgeEntity {
 
+    private String identifier;
     private String name;
     private String type;
-    private Long id;
     private Resource schemaFile;
     
     public String getName() {
@@ -23,11 +23,11 @@ public class Tracker implements BridgeEntity {
     public void setType(String type) {
         this.type = type;
     }
-    public Long getId() {
-        return id;
+    public String getIdentifier() {
+        return identifier;
     }
-    public void setId(Long id) {
-        this.id = id;
+    public void setIdentifier(String identifier) {
+        this.identifier = identifier;
     }
     public Resource getSchemaFile() {
         return schemaFile;
