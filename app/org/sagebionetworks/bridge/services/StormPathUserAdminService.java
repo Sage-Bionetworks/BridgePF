@@ -38,6 +38,7 @@ public class StormPathUserAdminService implements UserAdminService {
     private HealthDataService healthDataService;
     private StudyService studyService;
     private Client stormpathClient;
+    private ParticipantOptionsService optionsService;
     private DistributedLockDao lockDao;
     private Validator validator;
     
@@ -50,6 +51,10 @@ public class StormPathUserAdminService implements UserAdminService {
 
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
+    }
+    
+    public void setOptionsService(ParticipantOptionsService optionsService) {
+        this.optionsService = optionsService;
     }
 
     public void setHealthDataService(HealthDataService healthDataService) {
@@ -184,6 +189,7 @@ public class StormPathUserAdminService implements UserAdminService {
             Account account = getUserAccountByEmail(directory, user.getEmail());
             if (account != null) {
                 revokeAllConsentRecords(user, study);
+                removeParticipantOptions(user);
                 removeAllHealthDataRecords(user, study);
                 removeHealthCodeAndIdMappings(user);
                 deleteUserAccount(study, user.getEmail());
@@ -195,6 +201,13 @@ public class StormPathUserAdminService implements UserAdminService {
         }
     }
 
+    private void removeParticipantOptions(User user) {
+        String healthDataCode = user.getHealthDataCode();
+        if (healthDataCode != null) {
+            optionsService.deleteAllParticipantOptions(healthDataCode);    
+        }
+    }
+    
     private void removeHealthCodeAndIdMappings(User user) {
         String healthDataCode = user.getHealthDataCode();
         healthIdDao.deleteMapping(healthDataCode);

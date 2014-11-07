@@ -16,17 +16,17 @@ POST   /api/v1/auth/signUp                @controllers.AuthenticationController.
 POST   /api/v1/auth/verifyEmail           @controllers.AuthenticationController.verifyEmail
 
 # API - Individual Health Data Record
-GET    /api/v1/healthdata/:trackerId/record/:guid @controllers.HealthDataController.getHealthDataRecord(trackerId: String, guid: String)
-POST   /api/v1/healthdata/:trackerId/record/:guid @controllers.HealthDataController.updateHealthDataRecord(trackerId: String, guid: String)
-DELETE /api/v1/healthdata/:trackerId/record/:guid @controllers.HealthDataController.deleteHealthDataRecord(trackerId: String, guid: String)
+GET    /api/v1/healthdata/:identifier/record/:guid @controllers.HealthDataController.getHealthDataRecord(identifier: String, guid: String)
+POST   /api/v1/healthdata/:identifier/record/:guid @controllers.HealthDataController.updateHealthDataRecord(identifier: String, guid: String)
+DELETE /api/v1/healthdata/:identifier/record/:guid @controllers.HealthDataController.deleteHealthDataRecord(identifier: String, guid: String)
 
 # API - Health Data
-GET    /api/v1/healthdata/:trackerId      @controllers.HealthDataController.getHealthData(trackerId: String, startDate: java.lang.String ?= null, endDate: java.lang.String ?= null)
-POST   /api/v1/healthdata/:trackerId      @controllers.HealthDataController.appendHealthData(trackerId: String)
+GET    /api/v1/healthdata/:identifier     @controllers.HealthDataController.getHealthData(identifier: String, startDate: java.lang.String ?= null, endDate: java.lang.String ?= null)
+POST   /api/v1/healthdata/:identifier     @controllers.HealthDataController.appendHealthData(identifier: String)
 
 # API - Trackers
 GET    /api/v1/trackers                       @controllers.TrackerController.getTrackers
-GET    /api/v1/trackers/schema/:trackerId     @controllers.TrackerController.getTrackerSchema(trackerId: String)
+GET    /api/v1/trackers/schema/:identifier    @controllers.TrackerController.getTrackerSchema(identifier: String)
 
 # API - Users
 GET    /api/v1/profile      @controllers.UserProfileController.getUserProfile

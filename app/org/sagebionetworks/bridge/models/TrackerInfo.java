@@ -4,14 +4,14 @@ public class TrackerInfo {
 
     private final String name;
     private final String type;
-    private final Long id;
+    private final String identifier;
     private final String schemaUrl;
 
     public TrackerInfo(Tracker tracker) {
         name = tracker.getName();
         type = tracker.getType();
-        id = tracker.getId();
-        schemaUrl = "/api/v1/trackers/schema/" + tracker.getId().toString();
+        identifier = tracker.getIdentifier();
+        schemaUrl = "/api/v1/trackers/schema/" + tracker.getIdentifier();
     }
 
     public String getName() {
@@ -22,8 +22,8 @@ public class TrackerInfo {
         return type;
     }
 
-    public Long getId() {
-        return id;
+    public String getIdentifier() {
+        return identifier;
     }
 
     public String getSchemaUrl() {

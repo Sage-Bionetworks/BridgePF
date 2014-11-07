@@ -107,10 +107,15 @@
     <bean id="healthDataDao" class="org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
+    
+    <bean id="participantOptionsDao" class="org.sagebionetworks.bridge.dynamodb.DynamoParticipantOptionsDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
  
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor">
         <property name="bridgeConfig" ref="bridgeConfig"/>
     </bean>
+    
     <bean id="loggingInterceptor" class="interceptors.LoggingInterceptor"/>
     
     <bean id="scheduleChangeListener" class="org.sagebionetworks.bridge.services.ScheduleChangeListener" destroy-method="destroy">
@@ -206,6 +211,7 @@
         <property name="target">
             <bean class="controllers.ConsentController" parent="BaseController">
                 <property name="consentService" ref="consentService" />
+                <property name="optionsService" ref="optionsService" />
             </bean>
         </property>
     </bean>
@@ -336,14 +342,14 @@
     <bean id="pb-tracker" class="org.sagebionetworks.bridge.models.Tracker">
         <property name="name" value="Blood Pressure Reading"/>
         <property name="type" value="BloodPressure"/>
-        <property name="id" value="1"/>
+        <property name="identifier" value="bp"/>
         <property name="schemaFile" value="file:conf/schemas/bloodpressure.json"/>
     </bean>
 
     <bean id="med-tracker" class="org.sagebionetworks.bridge.models.Tracker">
         <property name="name" value="Medication"/>
         <property name="type" value="Medication"/>
-        <property name="id" value="2"/>
+        <property name="identifier" value="med"/>
         <property name="schemaFile" value="file:conf/schemas/medication.json"/>
     </bean>
 
@@ -360,6 +366,7 @@
         <property name="bridgeConfig" ref="bridgeConfig" />
         <property name="accountEncryptionService" ref="accountEncryptionService" />
         <property name="consentService" ref="consentService" />
+        <property name="optionsService" ref="optionsService" />
         <property name="signInValidator">
             <bean class="org.sagebionetworks.bridge.validators.SignInValidator"/>
         </property>
@@ -439,6 +446,7 @@
         <property name="studyService" ref="studyService" />
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="distributedLockDao" ref="distributedLockDao"/>
+        <property name="optionsService" ref="optionsService"/>
         <property name="healthIdDao" ref="healthIdDao"/>
         <property name="healthCodeDao" ref="healthCodeDao"/>
         <property name="validator">
@@ -470,4 +478,8 @@
         <property name="surveyDao" ref="surveyDao"/>
     </bean>
     
+    <bean id="optionsService" class="org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl">
+        <property name="participantOptionsDao" ref="participantOptionsDao"/>
+    </bean>
+
 </beans>
