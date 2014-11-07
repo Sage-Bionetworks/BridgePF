@@ -112,6 +112,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
             public void execute() {
                 scheduleService.deleteSchedules(plan); // There should be 0 schedules.
                 scheduleService.createSchedules(schedules);
+                logger.debug("Updating " + users.size() + " users with new schedule(s).");
             }
         });
     }
@@ -123,12 +124,12 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         runWithLock(plan.getClass(), plan.getGuid(), new Command() {
             public void execute() {
                 scheduleService.deleteSchedules(plan);
+                logger.debug("Deleting all schedules for plan " + plan.getGuid());
             }
         });
     }
     private void schedulePlanUpdated(SchedulePlanUpdatedEvent event) throws InterruptedException {
         logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" updated");
-        
         final SchedulePlan plan = event.getSchedulePlan();
         final Study study = studyService.getStudyByKey(plan.getStudyKey());
         final ArrayList<User> users = getStudyUsers(study);
@@ -139,11 +140,12 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
             public void execute() {
                 scheduleService.deleteSchedules(plan);
                 scheduleService.createSchedules(schedules);
+                logger.debug("Updating " + users.size() + " users with updated schedule(s).");
             }
         });
     }
-    private void userEnrolled(UserEnrolledEvent event) throws InterruptedException {
-        logger.info("EVENT: User " + event.getUser().getId() + " enrolled in study " + event.getStudy().getKey());
+    private void userEnrolled(final UserEnrolledEvent event) throws InterruptedException {
+        logger.info("EVENT: Participant " + event.getUser().getHealthDataCode() + " enrolled in study " + event.getStudy().getKey());
         
         final Study study = event.getStudy();
         final User user = event.getUser();
@@ -160,17 +162,19 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         runWithLock(user.getClass(), user.getId(), new Command() {
             public void execute() {
                 scheduleService.createSchedules(schedules);
+                logger.debug("Updating all schedules for user " + event.getUser().getHealthDataCode());
             }
         });
     }
-    private void userUnenrolled(UserUnenrolledEvent event) throws InterruptedException {
-        logger.info("EVENT: User " + event.getUser().getId() + " withdrawn from study " + event.getStudy().getKey());
+    private void userUnenrolled(final UserUnenrolledEvent event) throws InterruptedException {
+        logger.info("EVENT: Participant " + event.getUser().getHealthDataCode() + " withdrawn from study " + event.getStudy().getKey());
 
         final Study study = event.getStudy();
         final User user = event.getUser();
         runWithLock(user.getClass(), user.getId(), new Command() {
             public void execute() {
                 scheduleService.deleteSchedules(study, user);
+                logger.debug("Removing all schedules for user " + event.getUser().getHealthDataCode());
             }
         });
     }
@@ -208,7 +212,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         for (Account account : accounts) {
             User user = authenticationService.getUser(study, account.getEmail());
             if (user != null && consentService.hasUserConsentedToResearch(user, study)) {
-                users.add(user);    
+                users.add(user);
             }
         }
         return users;

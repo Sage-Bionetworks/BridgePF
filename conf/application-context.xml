@@ -17,7 +17,7 @@
         <constructor-arg value="#{bridgeConfig.healthCodePassword}"/>
     </bean>
 
-    <bean id="healthCodeEncryptor" class="org.sagebionetworks.bridge.crypto.BridgeAesGcmEncryptor">
+    <bean id="healthCodeEncryptor" class="org.sagebionetworks.bridge.crypto.AesGcmEncryptor">
         <constructor-arg value="#{bridgeConfig.healthCodeKey}"/>
     </bean>
 
@@ -107,8 +107,16 @@
     <bean id="healthDataDao" class="org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
+    
+    <bean id="participantOptionsDao" class="org.sagebionetworks.bridge.dynamodb.DynamoParticipantOptionsDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
  
-    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
+    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor">
+        <property name="bridgeConfig" ref="bridgeConfig"/>
+    </bean>
+    
+    <bean id="loggingInterceptor" class="interceptors.LoggingInterceptor"/>
     
     <bean id="scheduleChangeListener" class="org.sagebionetworks.bridge.services.ScheduleChangeListener" destroy-method="destroy">
     </bean>
@@ -152,7 +160,10 @@
     <bean id="proxiedController" class="org.springframework.aop.framework.ProxyFactoryBean">
         <property name="proxyTargetClass" value="true"/>
         <property name="interceptorNames">
-            <list><value>exceptionInterceptor</value></list>
+            <list>
+                <value>loggingInterceptor</value>
+                <value>exceptionInterceptor</value>
+            </list>
         </property>
     </bean>
 
@@ -200,6 +211,7 @@
         <property name="target">
             <bean class="controllers.ConsentController" parent="BaseController">
                 <property name="consentService" ref="consentService" />
+                <property name="optionsService" ref="optionsService" />
             </bean>
         </property>
     </bean>
@@ -298,8 +310,8 @@
                     <constructor-arg index="4">
                         <list>
                             <!-- IE VirtualBox Machine, local development -->
-                            <value>10.0.2.2</value> 
                             <value>localhost</value>
+                            <value>10.0.2.2</value> 
                             <!-- HTTP endpoints -->
                             <value>bridge-develop.herokuapp.com</value>
                             <value>bridge-uat.herokuapp.com</value>
@@ -352,6 +364,7 @@
         <property name="bridgeConfig" ref="bridgeConfig" />
         <property name="accountEncryptionService" ref="accountEncryptionService" />
         <property name="consentService" ref="consentService" />
+        <property name="optionsService" ref="optionsService" />
         <property name="signInValidator">
             <bean class="org.sagebionetworks.bridge.validators.SignInValidator"/>
         </property>
@@ -431,6 +444,7 @@
         <property name="studyService" ref="studyService" />
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="distributedLockDao" ref="distributedLockDao"/>
+        <property name="optionsService" ref="optionsService"/>
         <property name="healthIdDao" ref="healthIdDao"/>
         <property name="healthCodeDao" ref="healthCodeDao"/>
         <property name="validator">
@@ -462,4 +476,8 @@
         <property name="surveyDao" ref="surveyDao"/>
     </bean>
     
+    <bean id="optionsService" class="org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl">
+        <property name="participantOptionsDao" ref="participantOptionsDao"/>
+    </bean>
+
 </beans>

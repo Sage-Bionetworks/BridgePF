@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dao;
 
 import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.StudyConsent;
+import org.sagebionetworks.bridge.models.UserConsent;
 
 public interface UserConsentDao {
 
@@ -27,20 +28,13 @@ public interface UserConsentDao {
     boolean hasConsented(String healthCode, StudyConsent consent);
 
     /**
-     * Resume sharing data for the study.
+     * Get the user consent record that consents the user to this study.
+     * @param healthCode
+     * @param consent
+     * @return
      */
-    void resumeSharing(String healthCode, StudyConsent consent);
-
-    /**
-     * Stop sharing data for the study.
-     */
-    void suspendSharing(String healthCode, StudyConsent consent);
-
-    /**
-     * Whether the user has agreed to share data for the study.
-     */
-    boolean isSharingData(String healthCode, StudyConsent consent);
-
+    UserConsent getUserConsent(String healthCode, StudyConsent consent);
+    
     /**
      * Returns the consent signature, consisting of the signature name and birthdate.
      */

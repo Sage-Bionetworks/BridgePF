@@ -14,9 +14,4 @@ public interface ConsentService {
 
     public void emailConsentAgreement(User caller, Study study);
 
-    public User suspendDataSharing(User caller, Study study);
-
-    public User resumeDataSharing(User caller, Study study);
-    
-    public boolean isSharingData(User caller, Study study);
 }

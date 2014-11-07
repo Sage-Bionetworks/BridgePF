@@ -15,16 +15,18 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
-import org.sagebionetworks.bridge.dao.PublishedSurveyException;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
@@ -77,7 +79,7 @@ public class SurveyServiceTest {
 
     @Test(expected = BridgeServiceException.class)
     public void createPreventsQuestionWithNoIdentifier() {
-        testSurvey.getStringQuestion().setIdentifier(null);
+        TestSurvey.selectBy(testSurvey, DataType.STRING).setIdentifier(null);
         surveyService.createSurvey(testSurvey);
     }
 
@@ -87,6 +89,11 @@ public class SurveyServiceTest {
         surveyService.createSurvey(testSurvey);
     }
 
+    @Test(expected = EntityAlreadyExistsException.class)
+    public void cannotCreateAnExistingSurvey() {
+        surveyService.createSurvey(new TestSurvey(false));
+    }
+    
     @Test
     public void crudSurvey() {
         Survey survey = surveyService.createSurvey(testSurvey);

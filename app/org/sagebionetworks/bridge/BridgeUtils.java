@@ -6,7 +6,10 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.springframework.core.annotation.AnnotationUtils;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.base.Function;
@@ -21,20 +24,9 @@ public class BridgeUtils {
     }
     
     public static String getTypeName(Class<?> clazz) {
-        try {
-            BridgeTypeName att = (BridgeTypeName)clazz.getAnnotation(BridgeTypeName.class);
-            if (att == null) {
-                Class<?>[] ifcs = clazz.getInterfaces();
-                for (Class<?> ifc : ifcs) {
-                    if (att == null) {
-                        att = ifc.getAnnotation(BridgeTypeName.class);    
-                    }
-                }
-            }
-            if (att != null) {
-                return att.value();
-            }
-        } catch(Throwable t) {
+        BridgeTypeName att = AnnotationUtils.findAnnotation(clazz,BridgeTypeName.class);
+        if (att != null) {
+            return att.value();
         }
         return clazz.getSimpleName();
     }
@@ -71,6 +63,20 @@ public class BridgeUtils {
             }
         }
         return map;
+    }
+    
+    public static Long parseLong(String value) {
+        try {
+            return Long.parseLong(value);
+        } catch(NumberFormatException e) {
+            throw new RuntimeException("'" + value + "' is not a valid integer");
+        }
+    }
+    
+    public static void checkNewEntity(BridgeEntity entity, Object field, String message) {
+        if (field != null) {
+            throw new EntityAlreadyExistsException(entity, message);
+        }
     }
     
 }

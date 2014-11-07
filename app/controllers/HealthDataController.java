@@ -2,6 +2,7 @@ package controllers;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.IdVersionHolder;
@@ -34,7 +35,8 @@ public class HealthDataController extends BaseController {
         this.healthDataService = healthDataService;
     }
 
-    public Result appendHealthData(Long trackerId) throws Exception {
+    public Result appendHealthData(String trackerIdString) throws Exception {
+        Long trackerId = BridgeUtils.parseLong(trackerIdString);
         UserSession session = getAuthenticatedAndConsentedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         Tracker tracker = study.getTrackerById(trackerId);
@@ -55,7 +57,8 @@ public class HealthDataController extends BaseController {
         return okResult(Lists.transform(updatedRecords, TRANSFORMER));
     }
 
-    public Result getHealthData(Long trackerId, String startDate, String endDate) throws Exception {
+    public Result getHealthData(String trackerIdString, String startDate, String endDate) throws Exception {
+        Long trackerId = BridgeUtils.parseLong(trackerIdString);
         if (startDate == null && endDate == null) {
             return getAllHealthData(trackerId);
         }
@@ -94,7 +97,8 @@ public class HealthDataController extends BaseController {
         return okResult(entries);
     }
 
-    public Result getHealthDataRecord(Long trackerId, String recordId) throws Exception {
+    public Result getHealthDataRecord(String trackerIdString, String recordId) throws Exception {
+        Long trackerId = BridgeUtils.parseLong(trackerIdString);
         UserSession session = getAuthenticatedAndConsentedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         Tracker tracker = study.getTrackerById(trackerId);
@@ -104,7 +108,8 @@ public class HealthDataController extends BaseController {
         return okResult(record);
     }
 
-    public Result updateHealthDataRecord(Long trackerId, String recordId) throws Exception {
+    public Result updateHealthDataRecord(String trackerIdString, String recordId) throws Exception {
+        Long trackerId = BridgeUtils.parseLong(trackerIdString);
         UserSession session = getAuthenticatedAndConsentedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         Tracker tracker = study.getTrackerById(trackerId);
@@ -117,7 +122,8 @@ public class HealthDataController extends BaseController {
         return okResult(holder);
     }
 
-    public Result deleteHealthDataRecord(Long trackerId, String recordId) throws Exception {
+    public Result deleteHealthDataRecord(String trackerIdString, String recordId) throws Exception {
+        Long trackerId = BridgeUtils.parseLong(trackerIdString);
         UserSession session = getAuthenticatedAndConsentedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         Tracker tracker = study.getTrackerById(trackerId);
