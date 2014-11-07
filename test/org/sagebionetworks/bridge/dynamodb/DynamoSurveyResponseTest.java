@@ -35,7 +35,7 @@ public class DynamoSurveyResponseTest {
         response.setStartedOn(DateUtils.getCurrentMillisFromEpoch());
         response.setGuid(UUID.randomUUID().toString());
         response.setSurveyGuid(UUID.randomUUID().toString());
-        response.setSurveyVersionedOn(DateUtils.getCurrentMillisFromEpoch());
+        response.setSurveyCreatedOn(DateUtils.getCurrentMillisFromEpoch());
         response.setHealthCode(UUID.randomUUID().toString());
         response.setVersion(2L);
         response.setCompletedOn(DateUtils.getCurrentMillisFromEpoch());
@@ -52,7 +52,7 @@ public class DynamoSurveyResponseTest {
         // These are not copied over
         newResponse.setGuid(response.getGuid());        
         newResponse.setSurveyGuid(response.getSurveyGuid());
-        newResponse.setSurveyVersionedOn(response.getSurveyVersionedOn());
+        newResponse.setSurveyCreatedOn(response.getSurveyCreatedOn());
         newResponse.setVersion(response.getVersion());
         newResponse.setHealthCode(response.getHealthCode());
 

@@ -73,8 +73,8 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     }
 
     @Override
-    public void setSurveyKeyComponents(String surveyGuid, long versionedOn) {
-        this.surveyCompoundKey = surveyGuid + ":" + Long.toString(versionedOn);
+    public void setSurveyKeyComponents(String surveyGuid, long createdOn) {
+        this.surveyCompoundKey = surveyGuid + ":" + Long.toString(createdOn);
     }
 
     @Override

@@ -161,7 +161,7 @@ public class TestSurvey extends DynamoSurvey {
         setName("General Blood Pressure Survey");
         setIdentifier("bloodpressure");
         setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        setVersionedOn(DateUtils.getCurrentMillisFromEpoch());
+        setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
         setVersion(2L);
         setPublished(true);
         setStudyKey(TestConstants.TEST_STUDY_KEY);
@@ -180,7 +180,7 @@ public class TestSurvey extends DynamoSurvey {
             setGuid(null);
             setPublished(false);
             setVersion(null);
-            setVersionedOn(0L);
+            setCreatedOn(0L);
             for (SurveyQuestion question : getQuestions()) {
                 question.setGuid(null);
             }

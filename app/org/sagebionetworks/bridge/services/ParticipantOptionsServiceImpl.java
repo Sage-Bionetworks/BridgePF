@@ -21,48 +21,48 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
     }
     
     @Override
-    public void setOption(Study study, String healthDataCode, Option option, String value) {
+    public void setOption(Study study, String healthCode, Option option, String value) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        checkArgument(isNotBlank(healthDataCode), Validate.CANNOT_BE_BLANK, "healthDataCode");
+        checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
         checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
         checkArgument(isNotBlank(value), Validate.CANNOT_BE_BLANK, "value");
         
-        optionsDao.setOption(study, healthDataCode, option, value);
+        optionsDao.setOption(study, healthCode, option, value);
     }
     
     @Override
-    public String getOption(String healthDataCode, Option option) {
-        checkArgument(isNotBlank(healthDataCode), Validate.CANNOT_BE_BLANK, "healthDataCode");
+    public String getOption(String healthCode, Option option) {
+        checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
         checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
         
-        return optionsDao.getOption(healthDataCode, option);
+        return optionsDao.getOption(healthCode, option);
     }
 
     @Override
-    public boolean getBooleanOption(String healthDataCode, Option option) {
-        String value = getOption(healthDataCode, option);
+    public boolean getBooleanOption(String healthCode, Option option) {
+        String value = getOption(healthCode, option);
         return Boolean.valueOf(value);
     }
     
-    public void deleteAllParticipantOptions(String healthDataCode) {
-        checkArgument(isNotBlank(healthDataCode), Validate.CANNOT_BE_BLANK, "healthDataCode");
+    public void deleteAllParticipantOptions(String healthCode) {
+        checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
         
-        optionsDao.deleteAllParticipantOptions(healthDataCode);
+        optionsDao.deleteAllParticipantOptions(healthCode);
     }
     
     @Override
-    public void deleteOption(String healthDataCode, Option option) {
-        checkArgument(isNotBlank(healthDataCode), Validate.CANNOT_BE_BLANK, "healthDataCode");
+    public void deleteOption(String healthCode, Option option) {
+        checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
         checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
         
-        optionsDao.deleteOption(healthDataCode, option);
+        optionsDao.deleteOption(healthCode, option);
     }
 
     @Override
-    public Map<Option, String> getAllParticipantOptions(String healthDataCode) {
-        checkArgument(isNotBlank(healthDataCode), Validate.CANNOT_BE_BLANK, "healthDataCode");
+    public Map<Option, String> getAllParticipantOptions(String healthCode) {
+        checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
         
-        return optionsDao.getAllParticipantOptions(healthDataCode);
+        return optionsDao.getAllParticipantOptions(healthCode);
     }
 
     @Override

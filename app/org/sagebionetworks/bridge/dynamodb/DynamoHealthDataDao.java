@@ -40,10 +40,9 @@ public class DynamoHealthDataDao implements HealthDataDao {
     private DynamoDBMapper mapper;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
-                SaveBehavior.UPDATE,
-                ConsistentReads.CONSISTENT,
-                TableNameOverrideFactory.getTableNameOverride(DynamoHealthDataRecord.class));
+        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
+                .withConsistentReads(ConsistentReads.CONSISTENT)
+                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoHealthDataRecord.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
     

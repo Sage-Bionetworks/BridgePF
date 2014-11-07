@@ -45,7 +45,7 @@ public class DynamoSurveyTest {
         survey = DynamoSurvey.fromJson(node);
         survey.setStudyKey(newSurvey.getStudyKey());
         survey.setGuid(newSurvey.getGuid());
-        survey.setVersionedOn(newSurvey.getVersionedOn());
+        survey.setCreatedOn(newSurvey.getCreatedOn());
         survey.setModifiedOn(newSurvey.getModifiedOn());
         survey.setPublished(newSurvey.isPublished());
     }

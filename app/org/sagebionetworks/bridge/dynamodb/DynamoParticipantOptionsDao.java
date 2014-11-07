@@ -24,32 +24,31 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     private DynamoDBMapper mapper;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
-                SaveBehavior.UPDATE,
-                ConsistentReads.CONSISTENT,
-                TableNameOverrideFactory.getTableNameOverride(DynamoParticipantOptions.class));
+        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
+                .withConsistentReads(ConsistentReads.CONSISTENT)
+                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoParticipantOptions.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 
     @Override
-    public void setOption(Study study, String healthDataCode, Option option, String value) {
+    public void setOption(Study study, String healthCode, Option option, String value) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
-        keyObject.setHealthDataCode(healthDataCode);
+        keyObject.setHealthCode(healthCode);
         
         DynamoParticipantOptions options = mapper.load(keyObject);
         if (options == null) {
             options = new DynamoParticipantOptions();
         }
         options.setStudyKey(study.getKey());
-        options.setHealthDataCode(healthDataCode);
+        options.setHealthCode(healthCode);
         options.getOptions().put(option.name(), value);
         mapper.save(options);
     }
     
     @Override
-    public String getOption(String healthDataCode, Option option) {
+    public String getOption(String healthCode, Option option) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
-        keyObject.setHealthDataCode(healthDataCode);
+        keyObject.setHealthCode(healthCode);
         
         String value = option.getDefaultValue();
         DynamoParticipantOptions options = mapper.load(keyObject);
@@ -60,9 +59,9 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
     
     @Override
-    public void deleteAllParticipantOptions(String healthDataCode) {
+    public void deleteAllParticipantOptions(String healthCode) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
-        keyObject.setHealthDataCode(healthDataCode);
+        keyObject.setHealthCode(healthCode);
         
         DynamoParticipantOptions options = mapper.load(keyObject);
         if (options != null) {
@@ -71,9 +70,9 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
 
     @Override
-    public void deleteOption(String healthDataCode, Option option) {
+    public void deleteOption(String healthCode, Option option) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
-        keyObject.setHealthDataCode(healthDataCode);
+        keyObject.setHealthCode(healthCode);
         
         DynamoParticipantOptions options = mapper.load(keyObject);
         if (options != null) {
@@ -83,9 +82,9 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
 
     @Override
-    public Map<Option,String> getAllParticipantOptions(String healthDataCode) {
+    public Map<Option,String> getAllParticipantOptions(String healthCode) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
-        keyObject.setHealthDataCode(healthDataCode);
+        keyObject.setHealthCode(healthCode);
         
         Map<Option,String> map = Maps.newHashMap();
         DynamoParticipantOptions options = mapper.load(keyObject);
@@ -122,7 +121,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         
         OptionLookup map = new OptionLookup(option.getDefaultValue());
         for (DynamoParticipantOptions opt : mappings) {
-            map.put(opt.getHealthDataCode(), opt.getOptions().get(option.name()));
+            map.put(opt.getHealthCode(), opt.getOptions().get(option.name()));
         }
         return map;
     }
