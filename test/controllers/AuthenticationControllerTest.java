@@ -64,6 +64,8 @@ public class AuthenticationControllerTest {
                 Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
                 
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+
+                // All of a sudden, there's no cookie being set. I have no idea why.
                 assertNotNull("There's a cookie", cookie);
 
                 String sessionToken = cookie.getValue();
@@ -75,7 +77,7 @@ public class AuthenticationControllerTest {
                 cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
                 assertEquals("Cookie has been set to empty string", "", cookie.getValue());
                 
-                JedisStringOps stringOps = new JedisStringOps();                
+                JedisStringOps stringOps = new JedisStringOps();
                 String output = stringOps.get(sessionToken).execute();
                 assertNull("Should no longer be session data", output);
             }

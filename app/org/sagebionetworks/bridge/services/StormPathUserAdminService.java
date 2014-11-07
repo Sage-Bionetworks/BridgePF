@@ -202,21 +202,21 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     private void removeParticipantOptions(User user) {
-        String healthDataCode = user.getHealthDataCode();
-        if (healthDataCode != null) {
-            optionsService.deleteAllParticipantOptions(healthDataCode);    
+        String healthCode = user.getHealthCode();
+        if (healthCode != null) {
+            optionsService.deleteAllParticipantOptions(healthCode);    
         }
     }
     
     private void removeHealthCodeAndIdMappings(User user) {
-        String healthDataCode = user.getHealthDataCode();
-        healthIdDao.deleteMapping(healthDataCode);
-        healthCodeDao.deleteCode(healthDataCode);
+        String healthCode = user.getHealthCode();
+        healthIdDao.deleteMapping(healthCode);
+        healthCodeDao.deleteCode(healthCode);
     }
     
     private void removeAllHealthDataRecords(User user, Study userStudy) throws BridgeServiceException {
         // This user may have never consented to research. Ignore if that's the case.
-        if (user.getHealthDataCode() != null) {
+        if (user.getHealthCode() != null) {
             List<Tracker> trackers = userStudy.getTrackers();
             HealthDataKey key = null;
             for (Tracker tracker : trackers) {

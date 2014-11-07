@@ -291,7 +291,6 @@
                     <constructor-arg index="4">
                         <list>
                             <!-- SSL endpoints -->
-                            <value>localhost</value>
                             <value>pd-develop.sagebridge.org</value>
                             <value>pd-staging.sagebridge.org</value>
                             <value>pd.sagebridge.org</value>
@@ -314,6 +313,7 @@
                         <list>
                             <!-- IE VirtualBox Machine, local development -->
                             <value>10.0.2.2</value> 
+                            <value>localhost</value>
                             <!-- HTTP endpoints -->
                             <value>bridge-develop.herokuapp.com</value>
                             <value>bridge-uat.herokuapp.com</value>

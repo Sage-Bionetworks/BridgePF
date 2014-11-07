@@ -35,10 +35,9 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
     private ApplicationEventPublisher publisher;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
-                SaveBehavior.UPDATE,
-                ConsistentReads.CONSISTENT,
-                TableNameOverrideFactory.getTableNameOverride(DynamoSchedulePlan.class));
+        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
+                .withConsistentReads(ConsistentReads.CONSISTENT)
+                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoSchedulePlan.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 

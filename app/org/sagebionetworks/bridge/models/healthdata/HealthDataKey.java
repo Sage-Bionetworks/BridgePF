@@ -13,7 +13,7 @@ public final class HealthDataKey {
 
     private final String studyKey;
     private final String trackerIdentifier;
-    private final String healthDataCode;
+    private final String healthCode;
     
     public HealthDataKey(Study study, Tracker tracker, User user) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
@@ -21,23 +21,23 @@ public final class HealthDataKey {
         checkNotNull(tracker, Validate.CANNOT_BE_NULL, "tracker");
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkArgument(isNotBlank(tracker.getIdentifier()), Validate.CANNOT_BE_BLANK, "tracker identifier");
-        checkArgument(isNotBlank(user.getHealthDataCode()), Validate.CANNOT_BE_BLANK, "user healthDataCode");
+        checkArgument(isNotBlank(user.getHealthCode()), Validate.CANNOT_BE_BLANK, "user healthCode");
 
         this.studyKey = study.getKey();
         this.trackerIdentifier = tracker.getIdentifier();
-        this.healthDataCode = user.getHealthDataCode();
+        this.healthCode = user.getHealthCode();
     }
 
     @Override
     public String toString() {
-        return String.format("%s:%s:%s", studyKey, trackerIdentifier, healthDataCode);
+        return String.format("%s:%s:%s", studyKey, trackerIdentifier, healthCode);
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((healthDataCode == null) ? 0 : healthDataCode.hashCode());
+        result = prime * result + ((healthCode == null) ? 0 : healthCode.hashCode());
         result = prime * result + ((studyKey == null) ? 0 : studyKey.hashCode());
         result = prime * result + ((trackerIdentifier == null) ? 0 : trackerIdentifier.hashCode());
         return result;
@@ -52,10 +52,10 @@ public final class HealthDataKey {
         if (getClass() != obj.getClass())
             return false;
         HealthDataKey other = (HealthDataKey) obj;
-        if (healthDataCode == null) {
-            if (other.healthDataCode != null)
+        if (healthCode == null) {
+            if (other.healthCode != null)
                 return false;
-        } else if (!healthDataCode.equals(other.healthDataCode))
+        } else if (!healthCode.equals(other.healthCode))
             return false;
         if (studyKey == null) {
             if (other.studyKey != null)
