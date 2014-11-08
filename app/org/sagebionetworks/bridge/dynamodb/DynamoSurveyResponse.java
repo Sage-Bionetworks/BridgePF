@@ -46,7 +46,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     
     private String guid;
     private String surveyGuid; // stored in dynamo
-    private long surveyVersionedOn; // stored in dynamo
+    private long surveyCreatedOn; // stored in dynamo
     private Survey survey; // constructed and returned to the consumer
     private String healthCode;
     private long startedOn;
@@ -71,11 +71,11 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     }
     @DynamoDBAttribute
     @JsonIgnore
-    public long getSurveyVersionedOn() {
-        return surveyVersionedOn;
+    public long getSurveyCreatedOn() {
+        return surveyCreatedOn;
     }
-    public void setSurveyVersionedOn(long surveyVersionedOn) {
-        this.surveyVersionedOn = surveyVersionedOn;
+    public void setSurveyCreatedOn(long surveyCreatedOn) {
+        this.surveyCreatedOn = surveyCreatedOn;
     }
     @Override
     @JsonIgnore
@@ -146,10 +146,10 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
     public void setSurvey(Survey survey) {
         this.survey = survey;
         this.surveyGuid = null;
-        this.surveyVersionedOn = 0L;
+        this.surveyCreatedOn = 0L;
         if (survey != null) {
             this.surveyGuid = survey.getGuid();
-            this.surveyVersionedOn = survey.getVersionedOn();
+            this.surveyCreatedOn = survey.getCreatedOn();
         }
     }
     @Override
@@ -185,7 +185,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
         result = prime * result + ((healthCode == null) ? 0 : healthCode.hashCode());
         result = prime * result + (int) (startedOn ^ (startedOn >>> 32));
         result = prime * result + ((surveyGuid == null) ? 0 : surveyGuid.hashCode());
-        result = prime * result + (int) (surveyVersionedOn ^ (surveyVersionedOn >>> 32));
+        result = prime * result + (int) (surveyCreatedOn ^ (surveyCreatedOn >>> 32));
         result = prime * result + ((version == null) ? 0 : version.hashCode());
         return result;
     }
@@ -223,7 +223,7 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
                 return false;
         } else if (!surveyGuid.equals(other.surveyGuid))
             return false;
-        if (surveyVersionedOn != other.surveyVersionedOn)
+        if (surveyCreatedOn != other.surveyCreatedOn)
             return false;
         if (version == null) {
             if (other.version != null)
@@ -235,8 +235,8 @@ public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
 
     @Override
     public String toString() {
-        return "DynamoSurveyResponse [guid=" + guid + ", surveyGuid=" + surveyGuid + ", surveyVersionedOn="
-                + surveyVersionedOn + ", survey=" + survey + ", startedOn=" + startedOn + ", completedOn="
+        return "DynamoSurveyResponse [guid=" + guid + ", surveyGuid=" + surveyGuid + ", surveyCreatedOn="
+                + surveyCreatedOn + ", survey=" + survey + ", startedOn=" + startedOn + ", completedOn="
                 + completedOn + ", version=" + version + ", answers=" + answers + "]";
     }
 }

@@ -26,10 +26,9 @@ public class DynamoHealthIdDao implements HealthIdDao {
     private DynamoDBMapper mapper;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
-                SaveBehavior.UPDATE,
-                ConsistentReads.CONSISTENT,
-                TableNameOverrideFactory.getTableNameOverride(DynamoHealthId.class));
+        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
+                .withConsistentReads(ConsistentReads.CONSISTENT)
+                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoHealthId.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 

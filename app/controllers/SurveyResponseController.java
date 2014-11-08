@@ -29,13 +29,13 @@ public class SurveyResponseController extends BaseController {
         this.responseService = responseService;
     }
     
-    public Result createSurveyResponse(String surveyGuid, String surveyVersionString) throws Exception {
+    public Result createSurveyResponse(String surveyGuid, String versionString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         List<SurveyAnswer> answers = deserializeSurveyAnswers();
-        Long surveyVersion = DateUtils.convertToMillisFromEpoch(surveyVersionString);
+        Long version = DateUtils.convertToMillisFromEpoch(versionString);
         
         SurveyResponse response = responseService.createSurveyResponse(
-            surveyGuid, surveyVersion, session.getUser().getHealthDataCode(), answers);
+            surveyGuid, version, session.getUser().getHealthCode(), answers);
         return createdResult(new GuidHolder(response.getGuid()));
     }
     
@@ -68,7 +68,7 @@ public class SurveyResponseController extends BaseController {
     private SurveyResponse getSurveyResponseIfAuthorized(String guid) {
         UserSession session = getAuthenticatedAndConsentedSession();
         SurveyResponse response = responseService.getSurveyResponse(guid);
-        if (!response.getHealthCode().equals(session.getUser().getHealthDataCode())) {
+        if (!response.getHealthCode().equals(session.getUser().getHealthCode())) {
             logger.error("Blocked attempt to access survey response (mismatched health data codes) from user " + session.getUser().getId());
             throw new UnauthorizedException();
         }

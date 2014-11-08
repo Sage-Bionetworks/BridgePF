@@ -98,13 +98,13 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q',
             var url = '/api/v1/healthdata/'+trackerId+'?startDate='+start+'&endDate='+end;
             return $http.get(url);
         },
-        get: function(trackerId, recordId) {
-            var url = '/api/v1/healthdata/'+trackerId+"/record/"+recordId;
+        get: function(trackerId, guid) {
+            var url = '/api/v1/healthdata/'+trackerId+"/record/"+guid;
             return $http.get(url);
         },
         create: function(trackerId, object) {
-            if (object.recordId) {
-                throw new Error("Trying to create a record with a pre-existing recordId");
+            if (object.guid) {
+                throw new Error("Trying to create a record with a pre-existing guid");
             }
             var copy = utils.clone(object);
             utils.convertObjDateFields(copy, utils.convertMillisISO, ['startDate', 'endDate']);
@@ -113,19 +113,19 @@ bridge.service('healthDataService', ['$http', '$rootScope', '$q',
             return $http.post(url, JSON.stringify([copy]));
         },
         update: function(trackerId, object) {
-            if (!object.recordId) {
-                throw new Error("Cannot update a record with no recordId");
+            if (!object.guid) {
+                throw new Error("Cannot update a record with no guid");
             } else if (typeof object.version === "undefined") {
                 throw new Error("Cannot update a record with no version");
             }
             var copy = utils.clone(object);
             utils.convertObjDateFields(copy, utils.convertMillisISO, ['startDate', 'endDate']);
 
-            var url = '/api/v1/healthdata/'+trackerId+'/record/'+copy.recordId;
+            var url = '/api/v1/healthdata/'+trackerId+'/record/'+copy.guid;
             return $http.post(url, JSON.stringify(copy));
         },
-        remove: function(trackerId, recordId) {
-            var url = '/api/v1/healthdata/'+trackerId+'/record/'+recordId;
+        remove: function(trackerId, guid) {
+            var url = '/api/v1/healthdata/'+trackerId+'/record/'+guid;
             return $http['delete'](url);
         },
         createPayload: function(form, dateFields, fields, toMidnight) {

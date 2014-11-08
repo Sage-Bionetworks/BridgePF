@@ -4,7 +4,7 @@
     "additionalProperties": false,
     "properties": {
         "key": {"type": "string"},
-        "recordId": {"type": "string"},
+        "guid": {"type": "string"},
         "startDate": {"type": ["string","null"]},
         "endDate": {"type": ["string","null"]},
         "version": {"type": "number"},

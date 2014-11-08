@@ -18,7 +18,7 @@ import com.google.common.collect.Maps;
 @DynamoDBTable(tableName = "ParticipantOptions")
 public class DynamoParticipantOptions implements DynamoTable { 
     
-    private String healthDataCode; // hash
+    private String healthCode; // hash
     private String studyKey; // range
     private Map<String,String> options = Maps.newHashMap();
     
@@ -29,12 +29,12 @@ public class DynamoParticipantOptions implements DynamoTable {
     public void setStudyKey(String studyKey) {
         this.studyKey = studyKey;
     }
-    @DynamoDBHashKey
-    public String getHealthDataCode() {
-        return healthDataCode;
+    @DynamoDBHashKey(attributeName="healthDataCode")
+    public String getHealthCode() {
+        return healthCode;
     }
-    public void setHealthDataCode(String healthDataCode) {
-        this.healthDataCode = healthDataCode;
+    public void setHealthCode(String healthCode) {
+        this.healthCode = healthCode;
     }
     @DynamoDBIgnore
     public Map<String,String> getOptions() {
