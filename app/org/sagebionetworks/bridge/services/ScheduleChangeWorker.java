@@ -145,7 +145,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         });
     }
     private void userEnrolled(final UserEnrolledEvent event) throws InterruptedException {
-        logger.info("EVENT: Participant " + event.getUser().getHealthDataCode() + " enrolled in study " + event.getStudy().getKey());
+        logger.info("EVENT: Participant " + event.getUser().getHealthCode() + " enrolled in study " + event.getStudy().getKey());
         
         final Study study = event.getStudy();
         final User user = event.getUser();
@@ -162,19 +162,19 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         runWithLock(user.getClass(), user.getId(), new Command() {
             public void execute() {
                 scheduleService.createSchedules(schedules);
-                logger.debug("Updating all schedules for user " + event.getUser().getHealthDataCode());
+                logger.debug("Updating all schedules for user " + event.getUser().getHealthCode());
             }
         });
     }
     private void userUnenrolled(final UserUnenrolledEvent event) throws InterruptedException {
-        logger.info("EVENT: Participant " + event.getUser().getHealthDataCode() + " withdrawn from study " + event.getStudy().getKey());
+        logger.info("EVENT: Participant " + event.getUser().getHealthCode() + " withdrawn from study " + event.getStudy().getKey());
 
         final Study study = event.getStudy();
         final User user = event.getUser();
         runWithLock(user.getClass(), user.getId(), new Command() {
             public void execute() {
                 scheduleService.deleteSchedules(study, user);
-                logger.debug("Removing all schedules for user " + event.getUser().getHealthDataCode());
+                logger.debug("Removing all schedules for user " + event.getUser().getHealthCode());
             }
         });
     }

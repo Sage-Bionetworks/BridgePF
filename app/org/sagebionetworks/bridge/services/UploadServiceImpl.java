@@ -56,7 +56,7 @@ public class UploadServiceImpl implements UploadService {
     public UploadSession createUpload(User user, UploadRequest uploadRequest) {
         Validate.entityThrowingException(validator, uploadRequest);
         
-        final String uploadId = uploadDao.createUpload(uploadRequest, user.getHealthDataCode());
+        final String uploadId = uploadDao.createUpload(uploadRequest, user.getHealthCode());
         final String objectId = uploadDao.getObjectId(uploadId);
         GeneratePresignedUrlRequest presignedUrlRequest = 
                 new GeneratePresignedUrlRequest(BUCKET, objectId, HttpMethod.PUT);

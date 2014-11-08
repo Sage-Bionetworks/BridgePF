@@ -247,7 +247,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         HealthId healthId = accountEncryptionService.getHealthCode(study, account);
         if (healthId != null) {
             String healthCode = healthId.getCode();
-            user.setHealthDataCode(healthCode);
+            user.setHealthCode(healthCode);
 
             boolean consent = consentService.hasUserConsentedToResearch(user, study);
             user.setConsent(consent);

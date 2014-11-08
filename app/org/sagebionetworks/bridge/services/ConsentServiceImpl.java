@@ -91,7 +91,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         }
         // Update user
         caller.setConsent(true);
-        caller.setHealthDataCode(healthId.getCode());
+        caller.setHealthCode(healthId.getCode());
         return caller;
     }
 
@@ -100,7 +100,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
-        final String healthCode = caller.getHealthDataCode();
+        final String healthCode = caller.getHealthCode();
         List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
         for (StudyConsent consent : consents) {
             if (userConsentDao.hasConsented(healthCode, consent)) {
@@ -116,7 +116,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         boolean withdrawn = false;
 
-        String healthCode = caller.getHealthDataCode();
+        String healthCode = caller.getHealthCode();
         List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
         for (StudyConsent consent : consents) {
             if (userConsentDao.hasConsented(healthCode, consent)) {
@@ -140,7 +140,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
-        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthDataCode(), consent);
+        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }

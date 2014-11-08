@@ -21,10 +21,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
     private DynamoDBMapper mapper;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
-                SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES,
-                ConsistentReads.CONSISTENT,
-                TableNameOverrideFactory.getTableNameOverride(DynamoUserConsent2.class));
+        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
+                .withConsistentReads(ConsistentReads.CONSISTENT)
+                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoUserConsent2.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 

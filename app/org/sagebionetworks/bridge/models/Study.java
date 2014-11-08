@@ -67,13 +67,13 @@ public class Study implements BridgeEntity {
     public String getResearcherRole() {
         return researcherRole;
     }
-    public Tracker getTrackerById(Long id) {
+    public Tracker getTrackerByIdentifier(String identifier) {
         for (Tracker tracker : trackers) {
-            if (tracker.getId() == id) {
+            if (tracker.getIdentifier().equals(identifier)) {
                 return tracker;
             }
         }
-        String message = String.format("Tracker %s not available for study '%s'", id.toString(), key);
+        String message = String.format("Tracker %s not available for study '%s'", identifier, key);
         throw new EntityNotFoundException(Tracker.class, message);
     }
     @Override

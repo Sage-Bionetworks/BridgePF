@@ -16,28 +16,28 @@ POST   /api/v1/auth/signUp                @controllers.AuthenticationController.
 POST   /api/v1/auth/verifyEmail           @controllers.AuthenticationController.verifyEmail
 
 # API - Individual Health Data Record
-GET    /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.getHealthDataRecord(trackerId: String, recordId: String)
-POST   /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.updateHealthDataRecord(trackerId: String, recordId: String)
-DELETE /api/v1/healthdata/:trackerId/record/:recordId @controllers.HealthDataController.deleteHealthDataRecord(trackerId: String, recordId: String)
+GET    /api/v1/healthdata/:identifier/record/:guid @controllers.HealthDataController.getHealthDataRecord(identifier: String, guid: String)
+POST   /api/v1/healthdata/:identifier/record/:guid @controllers.HealthDataController.updateHealthDataRecord(identifier: String, guid: String)
+DELETE /api/v1/healthdata/:identifier/record/:guid @controllers.HealthDataController.deleteHealthDataRecord(identifier: String, guid: String)
 
 # API - Health Data
-GET    /api/v1/healthdata/:trackerId      @controllers.HealthDataController.getHealthData(trackerId: String, startDate: java.lang.String ?= null, endDate: java.lang.String ?= null)
-POST   /api/v1/healthdata/:trackerId      @controllers.HealthDataController.appendHealthData(trackerId: String)
+GET    /api/v1/healthdata/:identifier     @controllers.HealthDataController.getHealthData(identifier: String, startDate: java.lang.String ?= null, endDate: java.lang.String ?= null)
+POST   /api/v1/healthdata/:identifier     @controllers.HealthDataController.appendHealthData(identifier: String)
 
 # API - Trackers
 GET    /api/v1/trackers                       @controllers.TrackerController.getTrackers
-GET    /api/v1/trackers/schema/:trackerId     @controllers.TrackerController.getTrackerSchema(trackerId: String)
+GET    /api/v1/trackers/schema/:identifier    @controllers.TrackerController.getTrackerSchema(identifier: String)
 
 # API - Users
 GET    /api/v1/profile      @controllers.UserProfileController.getUserProfile
 POST   /api/v1/profile      @controllers.UserProfileController.updateUserProfile
 
 # API - Survey Responses
-GET    /api/v1/surveys/response/:guid              @controllers.SurveyResponseController.getSurveyResponse(guid: String)
-POST   /api/v1/surveys/response/:guid              @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
-DELETE /api/v1/surveys/response/:guid              @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
-GET    /api/v1/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyController.getSurveyForUser(surveyGuid: String, surveyVersion: String)
-POST   /api/v1/surveys/:surveyGuid/:surveyVersion  @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, surveyVersion: String)
+GET    /api/v1/surveys/response/:guid          @controllers.SurveyResponseController.getSurveyResponse(guid: String)
+POST   /api/v1/surveys/response/:guid          @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
+DELETE /api/v1/surveys/response/:guid          @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
+GET    /api/v1/surveys/:surveyGuid/:createdOn  @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
+POST   /api/v1/surveys/:surveyGuid/:createdOn  @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
 
 # API - Schedules
 GET    /api/v1/schedules   @controllers.ScheduleController.getSchedules
@@ -53,17 +53,17 @@ POST   /api/v1/upload                  @controllers.UploadController.upload
 POST   /api/v1/upload/:id/complete     @controllers.UploadController.uploadComplete(id: String)
 
 # Researchers - Surveys
-GET    /researchers/v1/surveys                                     @controllers.SurveyController.getAllSurveysAllVersions
-POST   /researchers/v1/surveys                                     @controllers.SurveyController.createSurvey
-GET    /researchers/v1/surveys/recent                              @controllers.SurveyController.getMostRecentSurveys
-GET    /researchers/v1/surveys/published                           @controllers.SurveyController.getMostRecentlyPublishedSurveys
-GET    /researchers/v1/surveys/:surveyGuid/versions                @controllers.SurveyController.getAllVersionsOfASurvey(surveyGuid: String)
-POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion/version  @controllers.SurveyController.versionSurvey(surveyGuid: String, surveyVersion: String)
-POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion/publish  @controllers.SurveyController.publishSurvey(surveyGuid: String, surveyVersion: String)
-POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion/close    @controllers.SurveyController.closeSurvey(surveyGuid: String, surveyVersion: String)
-GET    /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.getSurvey(surveyGuid: String, surveyVersion: String)
-POST   /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.updateSurvey(surveyGuid: String, surveyVersion: String)
-DELETE /researchers/v1/surveys/:surveyGuid/:surveyVersion          @controllers.SurveyController.deleteSurvey(surveyGuid: String, surveyVersion: String)
+GET    /researchers/v1/surveys                                 @controllers.SurveyController.getAllSurveysAllVersions
+POST   /researchers/v1/surveys                                 @controllers.SurveyController.createSurvey
+GET    /researchers/v1/surveys/recent                          @controllers.SurveyController.getMostRecentSurveys
+GET    /researchers/v1/surveys/published                       @controllers.SurveyController.getMostRecentlyPublishedSurveys
+GET    /researchers/v1/surveys/:surveyGuid/versions            @controllers.SurveyController.getAllVersionsOfASurvey(surveyGuid: String)
+POST   /researchers/v1/surveys/:surveyGuid/:createdOn/version  @controllers.SurveyController.versionSurvey(surveyGuid: String, createdOn: String)
+POST   /researchers/v1/surveys/:surveyGuid/:createdOn/publish  @controllers.SurveyController.publishSurvey(surveyGuid: String, createdOn: String)
+POST   /researchers/v1/surveys/:surveyGuid/:createdOn/close    @controllers.SurveyController.closeSurvey(surveyGuid: String, createdOn: String)
+GET    /researchers/v1/surveys/:surveyGuid/:createdOn          @controllers.SurveyController.getSurvey(surveyGuid: String, createdOn: String)
+POST   /researchers/v1/surveys/:surveyGuid/:createdOn          @controllers.SurveyController.updateSurvey(surveyGuid: String, createdOn: String)
+DELETE /researchers/v1/surveys/:surveyGuid/:createdOn          @controllers.SurveyController.deleteSurvey(surveyGuid: String, createdOn: String)
 
 # Researchers - Schedule Plans
 GET    /researchers/v1/scheduleplans           @controllers.SchedulePlanController.getSchedulePlans

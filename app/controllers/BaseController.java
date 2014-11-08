@@ -102,6 +102,10 @@ public abstract class BaseController extends Controller {
     protected void setSessionToken(String sessionToken) {
         response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
                 BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+        /*
+        response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", null, true, false);
+        */
     }
 
     protected void updateSessionUser(UserSession session, User user) {
