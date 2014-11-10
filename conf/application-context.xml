@@ -152,6 +152,7 @@
         <property name="authenticationService" ref="authenticationService" />
         <property name="studyService" ref="studyService" />
         <property name="cacheProvider" ref="cacheProvider" />
+        <property name="bridgeConfig" ref="bridgeConfig" />
     </bean>
 
     <bean id="AdminController" class="controllers.AdminController" abstract="true" parent="BaseController">
@@ -298,8 +299,6 @@
                     </constructor-arg>
                     <constructor-arg index="5">
                         <list>
-                            <ref bean="pb-tracker"/>
-                            <ref bean="med-tracker"/>
                         </list>
                     </constructor-arg>
                     <constructor-arg index="6" value="neurod_researcher"/>                       

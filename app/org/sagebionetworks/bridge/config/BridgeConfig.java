@@ -33,6 +33,9 @@ public class BridgeConfig {
 
     // Property name for the encryption password
     private static final String PASSWORD = "bridge.pwd";
+    
+    // For testing, a host name may be specified that will override the actual host name of the server
+    private static final String BRIDGE_HOST = "bridge.host";
 
     private static final String HEALTHCODE_PASSWORD = "bridge.healthcode.pwd";
     private static final String HEALTHCODE_KEY = "bridge.healthcode.key";
@@ -145,6 +148,10 @@ public class BridgeConfig {
         return Environment.PROD.equals(environment);
     }
 
+    public String getHost() {
+        return getProperty(BRIDGE_HOST);
+    }
+    
     public String getProperty(String name) {
         return properties.getProperty(name);
     }

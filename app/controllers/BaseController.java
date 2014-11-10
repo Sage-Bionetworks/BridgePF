@@ -6,6 +6,7 @@ import models.StatusMessage;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -34,6 +35,7 @@ public abstract class BaseController extends Controller {
     protected AuthenticationService authenticationService;
     protected StudyService studyService;
     protected CacheProvider cacheProvider;
+    protected BridgeConfig bridgeConfig;
     
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
@@ -45,6 +47,10 @@ public abstract class BaseController extends Controller {
 
     public void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
+    }
+    
+    public void setBridgeConfig(BridgeConfig bridgeConfig) {
+        this.bridgeConfig = bridgeConfig;
     }
     
     /**
@@ -102,10 +108,6 @@ public abstract class BaseController extends Controller {
     protected void setSessionToken(String sessionToken) {
         response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
                 BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
-        /*
-        response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", null, true, false);
-        */
     }
 
     protected void updateSessionUser(UserSession session, User user) {
@@ -114,13 +116,17 @@ public abstract class BaseController extends Controller {
     }
 
     protected String getHostname() {
-        // For testing, we check a few places for a forced host value.
-        String[] hosts = request().queryString().get("Bridge-Host");
-        if (hosts != null && hosts.length > 0) {
-            return hosts[0];
-        }
-        if (request().getHeader("Bridge-Host") != null) {
-            return request().getHeader("Bridge-Host");
+        // For testing, we check a few places for a forced host value, first 
+        // from the configuration, and then on every request, as a header from
+        // the client.
+        if (!bridgeConfig.isProduction()) {
+            if (bridgeConfig.getHost() != null) {
+                return bridgeConfig.getHost();
+            }
+            String header = request().getHeader("Bridge-Host");
+            if (header != null) {
+                return header;
+            }
         }
         String host = request().host();
         if (host.indexOf(":") > -1) {
