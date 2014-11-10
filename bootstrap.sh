@@ -28,6 +28,7 @@ ln -s /usr/bin/nodejs /usr/bin/node
 # PhantomJS
 apt-get -q -y install fontconfig freetype2-demos
 su - vagrant -c "wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-1.9.7-linux-x86_64.tar.bz2"
+su - vagrant -c "rm -rf phantomjs-1.9.7-linux-x86_64"
 su - vagrant -c "bunzip2 phantomjs-1.9.7-linux-x86_64.tar.bz2"
 su - vagrant -c "tar xvf phantomjs-1.9.7-linux-x86_64.tar"
 rm phantomjs-1.9.7-linux-x86_64.tar
@@ -57,3 +58,6 @@ rm play-2.2.5.zip
 # Redis
 apt-get -q -y install redis-server
 
+# .bash_profile
+su - vagrant -c "echo 'source ~/.profile' > .bash_profile"
+su - vagrant -c "echo 'export PATH=$PATH:~/phantomjs-1.9.7-linux-x86_64/bin:~/play-2.2.5' >> ~/.bash_profile"
