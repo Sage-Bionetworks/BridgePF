@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
 public interface SurveyService {

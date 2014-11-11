@@ -5,8 +5,8 @@ import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.validation.Validator;
 

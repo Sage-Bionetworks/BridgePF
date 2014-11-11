@@ -2,9 +2,9 @@ package controllers;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ScheduleService;
 
 import play.mvc.Result;

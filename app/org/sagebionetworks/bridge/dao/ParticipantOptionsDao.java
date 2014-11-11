@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.dao;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
-import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 public interface ParticipantOptionsDao {
 
