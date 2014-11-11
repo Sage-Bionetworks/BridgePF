@@ -17,14 +17,14 @@ public class BcCertificateFactoryTest {
         assertNotNull(cert1);
         cert1.checkValidity();
         cert1.verify(keyPair1.getPublic(), "BC");
-        String pem1 = CertificateUtils.toPem(cert1);
+        String pem1 = PemUtils.toPem(cert1);
         assertNotNull(pem1);
         KeyPair keyPair2 = KeyPairFactory.newRsa2048();
         X509Certificate cert2 = certFactory.newCertificate(keyPair2.getPublic(), cert1, keyPair1.getPrivate());
         assertNotNull(cert2);
         cert2.checkValidity();
         cert2.verify(keyPair1.getPublic(), "BC");
-        String pem2 = CertificateUtils.toPem(cert2);
+        String pem2 = PemUtils.toPem(cert2);
         assertNotNull(pem2);
     }
 }
