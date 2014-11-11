@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.validation.Errors;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;

@@ -6,9 +6,9 @@ import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

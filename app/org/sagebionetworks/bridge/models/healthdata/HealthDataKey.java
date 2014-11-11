@@ -4,9 +4,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.validators.Validate;
 
 public final class HealthDataKey {
