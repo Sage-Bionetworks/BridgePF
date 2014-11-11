@@ -113,7 +113,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         AuthenticationRequest<?, ?> request = null;
         UserSession session = null;
         try {
-            Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+            Application application = StormpathFactory.getStormpathApplication(stormpathClient);
             logger.debug("sign in create app " + (System.nanoTime() - start) );
             request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword());
             Account account = application.authenticateAccount(request).getAccount();
@@ -200,7 +200,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkArgument(StringUtils.isNotBlank(email.getEmail()), "Email is required");
         
         try {
-            Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+            Application application = StormpathFactory.getStormpathApplication(stormpathClient);
             application.sendPasswordResetEmail(email.getEmail());
         } catch (ResourceException re) {
             throw new BadRequestException(re.getDeveloperMessage());
@@ -213,7 +213,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         Validate.entityThrowingException(passwordResetValidator, passwordReset);
         try {
-            Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+            Application application = StormpathFactory.getStormpathApplication(stormpathClient);
             Account account = application.verifyPasswordResetToken(passwordReset.getSptoken());
             account.setPassword(passwordReset.getPassword());
             account.save();
@@ -224,7 +224,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public User getUser(Study study, String email) {
-        Application app = StormpathFactory.createStormpathApplication(stormpathClient);
+        Application app = StormpathFactory.getStormpathApplication(stormpathClient);
         Map<String, Object> queryParams = new HashMap<String, Object>();
         queryParams.put("email", email);
         AccountList accounts = app.getAccounts(queryParams);

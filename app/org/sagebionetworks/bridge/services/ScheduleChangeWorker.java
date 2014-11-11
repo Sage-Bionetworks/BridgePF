@@ -202,7 +202,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     }
     private ArrayList<User> getStudyUsers(Study study) {
         ArrayList<User> users = Lists.newArrayList();
-        Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+        Application application = StormpathFactory.getStormpathApplication(stormpathClient);
         // This is every user in the environment. That's what we have to do in case a user signed
         // up in one study, but is now participating in a different study.
         

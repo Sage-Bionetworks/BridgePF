@@ -6,8 +6,6 @@ import org.sagebionetworks.bridge.models.studies.Study2;
 
 public interface StudyDao {
 
-    public boolean isStudyIdentifierUnique(String identifier);
-    
     public Study2 getStudy(String identifier);
     
     public List<Study2> getStudies();
