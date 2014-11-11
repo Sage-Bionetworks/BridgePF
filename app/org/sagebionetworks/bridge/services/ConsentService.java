@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
-import org.sagebionetworks.bridge.models.ConsentSignature;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 public interface ConsentService {
 

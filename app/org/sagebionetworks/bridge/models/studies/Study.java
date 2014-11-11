@@ -1,10 +1,11 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.studies;
 
 import java.util.Collections;
 import java.util.List;
 
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.google.common.collect.ImmutableList;
 

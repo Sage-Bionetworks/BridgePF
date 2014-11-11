@@ -13,10 +13,10 @@ import org.sagebionetworks.bridge.events.UserEnrolledEvent;
 import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -202,7 +202,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     }
     private ArrayList<User> getStudyUsers(Study study) {
         ArrayList<User> users = Lists.newArrayList();
-        Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+        Application application = StormpathFactory.getStormpathApplication(stormpathClient);
         // This is every user in the environment. That's what we have to do in case a user signed
         // up in one study, but is now participating in a different study.
         

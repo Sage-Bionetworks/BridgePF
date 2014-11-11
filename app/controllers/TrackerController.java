@@ -4,9 +4,9 @@ import global.JsonSchemaValidator;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.Tracker;
-import org.sagebionetworks.bridge.models.TrackerInfo;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.Tracker;
+import org.sagebionetworks.bridge.models.studies.TrackerInfo;
 
 import play.mvc.Result;
 
