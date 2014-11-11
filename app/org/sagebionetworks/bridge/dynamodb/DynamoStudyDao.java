@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.Study2;
@@ -19,6 +20,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 
 public class DynamoStudyDao implements StudyDao {
 
@@ -29,16 +31,6 @@ public class DynamoStudyDao implements StudyDao {
                 .withConsistentReads(ConsistentReads.CONSISTENT)
                 .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoStudy.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
-    }
-
-    @Override
-    public boolean isStudyIdentifierUnique(String identifier) {
-        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
-        
-        DynamoStudy study = new DynamoStudy();
-        study.setIdentifier(identifier);
-        study = mapper.load(study);
-        return (study == null);
     }
     
     @Override
@@ -66,10 +58,11 @@ public class DynamoStudyDao implements StudyDao {
     public Study2 createStudy(Study2 study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkArgument(study.getVersion() == null, "%s has a version; may not be new", "study");
-        if (!isStudyIdentifierUnique(study.getIdentifier())) {
+        try {
+            mapper.save(study);
+        } catch(ConditionalCheckFailedException e) { // in the create scenario, this should be a hash key clash.
             throw new EntityAlreadyExistsException(study);
         }
-        mapper.save(study);
         return study;
     }
 
@@ -77,8 +70,11 @@ public class DynamoStudyDao implements StudyDao {
     public Study2 updateStudy(Study2 study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(study.getVersion(), Validate.CANNOT_BE_NULL, "study version");
-        
-        mapper.save(study);
+        try {
+            mapper.save(study);
+        } catch(ConditionalCheckFailedException e) {
+            throw new ConcurrentModificationException(study);
+        }
         return study;
     }
 

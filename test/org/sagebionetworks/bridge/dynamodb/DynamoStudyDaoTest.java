@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -101,11 +102,13 @@ public class DynamoStudyDaoTest {
         }
     }
     
-    @Test
-    public void iLikeJson() throws Exception {
+    @Test(expected=EntityAlreadyExistsException.class)
+    public void identifierUniquenessEnforcedByVersionChecks() throws Exception {
         Study2 study = createStudy();
+        studyDao.createStudy(study);
         
-        System.out.println(BridgeObjectMapper.get().writeValueAsString(study));
+        study.setVersion(null); // This is now a "new study"
+        studyDao.createStudy(study);
     }
     
     private Study2 createStudy() {

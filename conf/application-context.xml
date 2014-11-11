@@ -112,8 +112,13 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
  
-    <bean id="studyDao" class="org.sagebionetworks.bridge.dynamodb.DynamoStudyDao">
+    <bean id="dynamoStudyDao" class="org.sagebionetworks.bridge.dynamodb.DynamoStudyDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+    
+    <bean id="stormpathStudyDao" class="org.sagebionetworks.bridge.stormpath.StormpathStudyDao">
+        <property name="stormpathClient" ref="stormpathClient"/>
+        <property name="bridgeConfig" ref="bridgeConfig"/>
     </bean>
     
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor">
@@ -143,7 +148,7 @@
     <!-- Stormpath identity service -->
 
     <bean id="stormpathClient" class="org.sagebionetworks.bridge.stormpath.StormpathFactory" 
-        factory-method="createStormpathClient" scope="singleton">
+        factory-method="getStormpathClient" scope="singleton">
     </bean>
 
     <!-- Caching abstraction -->
