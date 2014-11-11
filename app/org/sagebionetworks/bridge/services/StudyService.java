@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.Collection;
 
-import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 public interface StudyService {
     public Study getStudyByHostname(String hostname);

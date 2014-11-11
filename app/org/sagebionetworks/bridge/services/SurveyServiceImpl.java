@@ -9,7 +9,7 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
-import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.validation.Validator;

@@ -112,6 +112,10 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
  
+    <bean id="studyDao" class="org.sagebionetworks.bridge.dynamodb.DynamoStudyDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+    
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor">
         <property name="bridgeConfig" ref="bridgeConfig"/>
     </bean>
@@ -284,7 +288,7 @@
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
         <property name="studies">
             <list>
-                <bean class="org.sagebionetworks.bridge.models.Study">
+                <bean class="org.sagebionetworks.bridge.models.studies.Study">
                     <constructor-arg index="0" value="Parkinson’s Disease Mobile Study"/>
                     <constructor-arg index="1" value="neurod"/>
                     <constructor-arg index="2" value="17"/>
@@ -303,7 +307,7 @@
                     </constructor-arg>
                     <constructor-arg index="6" value="neurod_researcher"/>                       
                 </bean>
-                <bean class="org.sagebionetworks.bridge.models.Study">
+                <bean class="org.sagebionetworks.bridge.models.studies.Study">
                     <constructor-arg index="0" value="Test Study"/>
                     <constructor-arg index="1" value="teststudy"/>
                     <constructor-arg index="2" value="18"/>
@@ -338,14 +342,14 @@
         </property>
     </bean>
 
-    <bean id="pb-tracker" class="org.sagebionetworks.bridge.models.Tracker">
+    <bean id="pb-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
         <property name="name" value="Blood Pressure Reading"/>
         <property name="type" value="BloodPressure"/>
         <property name="identifier" value="bp"/>
         <property name="schemaFile" value="file:conf/schemas/bloodpressure.json"/>
     </bean>
 
-    <bean id="med-tracker" class="org.sagebionetworks.bridge.models.Tracker">
+    <bean id="med-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
         <property name="name" value="Medication"/>
         <property name="type" value="Medication"/>
         <property name="identifier" value="med"/>

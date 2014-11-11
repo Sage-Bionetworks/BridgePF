@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
-import org.sagebionetworks.bridge.models.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
