@@ -1,6 +1,5 @@
-package org.sagebionetworks.bridge.dao;
+package org.sagebionetworks.bridge.exceptions;
 
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
 public class PublishedSurveyException extends BridgeServiceException {

@@ -107,8 +107,25 @@
     <bean id="healthDataDao" class="org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
+    
+    <bean id="participantOptionsDao" class="org.sagebionetworks.bridge.dynamodb.DynamoParticipantOptionsDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
  
-    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor"/>
+    <bean id="dynamoStudyDao" class="org.sagebionetworks.bridge.dynamodb.DynamoStudyDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+    
+    <bean id="stormpathStudyDao" class="org.sagebionetworks.bridge.stormpath.StormpathStudyDao">
+        <property name="stormpathClient" ref="stormpathClient"/>
+        <property name="bridgeConfig" ref="bridgeConfig"/>
+    </bean>
+    
+    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor">
+        <property name="bridgeConfig" ref="bridgeConfig"/>
+    </bean>
+    
+    <bean id="loggingInterceptor" class="interceptors.LoggingInterceptor"/>
     
     <bean id="scheduleChangeListener" class="org.sagebionetworks.bridge.services.ScheduleChangeListener" destroy-method="destroy">
     </bean>
@@ -131,7 +148,7 @@
     <!-- Stormpath identity service -->
 
     <bean id="stormpathClient" class="org.sagebionetworks.bridge.stormpath.StormpathFactory" 
-        factory-method="createStormpathClient" scope="singleton">
+        factory-method="getStormpathClient" scope="singleton">
     </bean>
 
     <!-- Caching abstraction -->
@@ -144,6 +161,7 @@
         <property name="authenticationService" ref="authenticationService" />
         <property name="studyService" ref="studyService" />
         <property name="cacheProvider" ref="cacheProvider" />
+        <property name="bridgeConfig" ref="bridgeConfig" />
     </bean>
 
     <bean id="AdminController" class="controllers.AdminController" abstract="true" parent="BaseController">
@@ -152,7 +170,10 @@
     <bean id="proxiedController" class="org.springframework.aop.framework.ProxyFactoryBean">
         <property name="proxyTargetClass" value="true"/>
         <property name="interceptorNames">
-            <list><value>exceptionInterceptor</value></list>
+            <list>
+                <value>loggingInterceptor</value>
+                <value>exceptionInterceptor</value>
+            </list>
         </property>
     </bean>
 
@@ -200,6 +221,7 @@
         <property name="target">
             <bean class="controllers.ConsentController" parent="BaseController">
                 <property name="consentService" ref="consentService" />
+                <property name="optionsService" ref="optionsService" />
             </bean>
         </property>
     </bean>
@@ -271,7 +293,7 @@
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
         <property name="studies">
             <list>
-                <bean class="org.sagebionetworks.bridge.models.Study">
+                <bean class="org.sagebionetworks.bridge.models.studies.Study">
                     <constructor-arg index="0" value="Parkinson’s Disease Mobile Study"/>
                     <constructor-arg index="1" value="neurod"/>
                     <constructor-arg index="2" value="17"/>
@@ -290,7 +312,7 @@
                     </constructor-arg>
                     <constructor-arg index="6" value="neurod_researcher"/>                       
                 </bean>
-                <bean class="org.sagebionetworks.bridge.models.Study">
+                <bean class="org.sagebionetworks.bridge.models.studies.Study">
                     <constructor-arg index="0" value="Test Study"/>
                     <constructor-arg index="1" value="teststudy"/>
                     <constructor-arg index="2" value="18"/>
@@ -325,17 +347,17 @@
         </property>
     </bean>
 
-    <bean id="pb-tracker" class="org.sagebionetworks.bridge.models.Tracker">
+    <bean id="pb-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
         <property name="name" value="Blood Pressure Reading"/>
         <property name="type" value="BloodPressure"/>
-        <property name="id" value="1"/>
+        <property name="identifier" value="bp"/>
         <property name="schemaFile" value="file:conf/schemas/bloodpressure.json"/>
     </bean>
 
-    <bean id="med-tracker" class="org.sagebionetworks.bridge.models.Tracker">
+    <bean id="med-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
         <property name="name" value="Medication"/>
         <property name="type" value="Medication"/>
-        <property name="id" value="2"/>
+        <property name="identifier" value="med"/>
         <property name="schemaFile" value="file:conf/schemas/medication.json"/>
     </bean>
 
@@ -352,6 +374,7 @@
         <property name="bridgeConfig" ref="bridgeConfig" />
         <property name="accountEncryptionService" ref="accountEncryptionService" />
         <property name="consentService" ref="consentService" />
+        <property name="optionsService" ref="optionsService" />
         <property name="signInValidator">
             <bean class="org.sagebionetworks.bridge.validators.SignInValidator"/>
         </property>
@@ -431,6 +454,7 @@
         <property name="studyService" ref="studyService" />
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="distributedLockDao" ref="distributedLockDao"/>
+        <property name="optionsService" ref="optionsService"/>
         <property name="healthIdDao" ref="healthIdDao"/>
         <property name="healthCodeDao" ref="healthCodeDao"/>
         <property name="validator">
@@ -462,4 +486,8 @@
         <property name="surveyDao" ref="surveyDao"/>
     </bean>
     
+    <bean id="optionsService" class="org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl">
+        <property name="participantOptionsDao" ref="participantOptionsDao"/>
+    </bean>
+
 </beans>

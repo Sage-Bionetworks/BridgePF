@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Random;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.validation.Errors;
 
 import com.google.common.collect.Lists;

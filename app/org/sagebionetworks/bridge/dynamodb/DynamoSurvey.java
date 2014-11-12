@@ -47,7 +47,7 @@ public class DynamoSurvey implements Survey, DynamoTable {
 
     private String studyKey;
     private String guid;
-    private long versionedOn;
+    private long createdOn;
     private long modifiedOn;
     private Long version;
     private String name;
@@ -59,17 +59,17 @@ public class DynamoSurvey implements Survey, DynamoTable {
         this.questions = Lists.newArrayList();
     }
     
-    public DynamoSurvey(String guid, long versionedOn) {
+    public DynamoSurvey(String guid, long createdOn) {
         this();
         setGuid(guid);
-        setVersionedOn(versionedOn);
+        setCreatedOn(createdOn);
     }
     
     public DynamoSurvey(DynamoSurvey survey) {
         this();
         setStudyKey(survey.getStudyKey());
         setGuid(survey.getGuid());
-        setVersionedOn(survey.getVersionedOn());
+        setCreatedOn(survey.getCreatedOn());
         setModifiedOn(survey.getModifiedOn());
         setVersion(survey.getVersion());
         setName(survey.getName());
@@ -105,16 +105,16 @@ public class DynamoSurvey implements Survey, DynamoTable {
     }
 
     @Override
-    @DynamoDBRangeKey
+    @DynamoDBRangeKey(attributeName="versionedOn")
     @JsonSerialize(using = DateTimeJsonSerializer.class)
-    public long getVersionedOn() {
-        return versionedOn;
+    public long getCreatedOn() {
+        return createdOn;
     }
 
     @Override
     @JsonDeserialize(using = DateTimeJsonDeserializer.class)
-    public void setVersionedOn(long versionedOn) {
-        this.versionedOn = versionedOn;
+    public void setCreatedOn(long createdOn) {
+        this.createdOn = createdOn;
     }
 
     @Override
@@ -197,7 +197,7 @@ public class DynamoSurvey implements Survey, DynamoTable {
         result = prime * result + ((questions == null) ? 0 : questions.hashCode());
         result = prime * result + ((studyKey == null) ? 0 : studyKey.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
-        result = prime * result + (int) (versionedOn ^ (versionedOn >>> 32));
+        result = prime * result + (int) (createdOn ^ (createdOn >>> 32));
         return result;
     }
 
@@ -244,14 +244,14 @@ public class DynamoSurvey implements Survey, DynamoTable {
                 return false;
         } else if (!version.equals(other.version))
             return false;
-        if (versionedOn != other.versionedOn)
+        if (createdOn != other.createdOn)
             return false;
         return true;
     }
     
     @Override
     public String toString() {
-        return "DynamoSurvey [studyKey=" + studyKey + ", guid=" + guid + ", versionedOn=" + versionedOn
+        return "DynamoSurvey [studyKey=" + studyKey + ", guid=" + guid + ", createdOn=" + createdOn
                 + ", modifiedOn=" + modifiedOn + ", version=" + version + ", name=" + name + ", identifier="
                 + identifier + ", published=" + published + ", questions=" + questions + "]";
     }

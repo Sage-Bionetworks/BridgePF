@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 
 public interface SurveyResponseService {
     
-    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyVersionedOn, String healthDataCode,
+    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode,
             List<SurveyAnswer> answers);
     
     public SurveyResponse getSurveyResponse(String guid);

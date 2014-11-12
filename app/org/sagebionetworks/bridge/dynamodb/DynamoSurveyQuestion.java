@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
@@ -21,7 +20,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @DynamoDBTable(tableName = "SurveyQuestion")
-@BridgeTypeName("SurveyQuestion")
 public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     
     private static final String CONSTRAINTS_PROPERTY = "constraints";
@@ -75,8 +73,8 @@ public class DynamoSurveyQuestion implements SurveyQuestion, DynamoTable {
     }
 
     @Override
-    public void setSurveyKeyComponents(String surveyGuid, long versionedOn) {
-        this.surveyCompoundKey = surveyGuid + ":" + Long.toString(versionedOn);
+    public void setSurveyKeyComponents(String surveyGuid, long createdOn) {
+        this.surveyCompoundKey = surveyGuid + ":" + Long.toString(createdOn);
     }
 
     @Override

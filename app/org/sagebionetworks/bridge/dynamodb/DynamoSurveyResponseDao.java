@@ -30,10 +30,9 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     private DynamoSurveyDao surveyDao;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
-                SaveBehavior.UPDATE,
-                ConsistentReads.CONSISTENT,
-                TableNameOverrideFactory.getTableNameOverride(DynamoSurveyResponse.class));
+        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
+                .withConsistentReads(ConsistentReads.CONSISTENT)
+                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoSurveyResponse.class)).build();
         responseMapper = new DynamoDBMapper(client, mapperConfig);
     }
     
@@ -42,8 +41,8 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     @Override
-    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyVersionedOn, String healthCode, List<SurveyAnswer> answers) {
-        Survey survey = surveyDao.getSurvey(surveyGuid, surveyVersionedOn);
+    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode, List<SurveyAnswer> answers) {
+        Survey survey = surveyDao.getSurvey(surveyGuid, surveyCreatedOn);
         List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, Collections.<SurveyAnswer>emptyList(), answers);
         
         SurveyResponse response = new DynamoSurveyResponse();
@@ -72,7 +71,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         }
         DynamoSurveyResponse response = results.get(0);
         // Now add survey
-        Survey survey = surveyDao.getSurvey(response.getSurveyGuid(), response.getSurveyVersionedOn());
+        Survey survey = surveyDao.getSurvey(response.getSurveyGuid(), response.getSurveyCreatedOn());
         response.setSurvey(survey);
         return response;
     }

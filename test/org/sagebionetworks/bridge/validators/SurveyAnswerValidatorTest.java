@@ -151,6 +151,15 @@ public class SurveyAnswerValidatorTest {
         SurveyAnswer answer = createAnswer("14000");
         Validate.entityThrowingException(validator, answer);
     }
+    @Test
+    public void validateValidDuration() {
+        DurationConstraints constraints = new DurationConstraints();
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+        
+        SurveyAnswer answer = createAnswer("PT2H3S");
+        Validate.entityThrowingException(validator, answer);
+    }
+    
     @Test(expected = InvalidEntityException.class)
     public void validateIntegerMinValue() {
         IntegerConstraints constraints = new IntegerConstraints();
@@ -260,7 +269,15 @@ public class SurveyAnswerValidatorTest {
         Validate.entityThrowingException(validator, answer);
     }
     @Test
-    public void validateTime() {
+    public void validateValidTimeWithSeconds() {
+        TimeConstraints constraints = new TimeConstraints();
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+        
+        SurveyAnswer answer = createAnswer("2:00:03"); // two hours, 3 seconds, it can happen
+        Validate.entityThrowingException(validator, answer);
+    }
+    @Test
+    public void validateTimeNoSeconds() {
         TimeConstraints constraints = new TimeConstraints();
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
@@ -273,6 +290,25 @@ public class SurveyAnswerValidatorTest {
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("13:47:30Z"); // time zone, verboten
+        Validate.entityThrowingException(validator, answer);
+    }
+    @Test(expected = InvalidEntityException.class)
+    public void validateTimeBasedEarliestConstraints() {
+        DateConstraints constraints = new DateConstraints();
+        constraints.setEarliestValue(DateUtils.convertToMillisFromEpoch("2010-10-10"));
+
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+        SurveyAnswer answer = createAnswer("2008-08-08"); // Earlier than earliest date
+        Validate.entityThrowingException(validator, answer);
+    }
+    @Test(expected = InvalidEntityException.class)
+    public void validateTimeBasedLatestConstraints() {
+        DateTimeConstraints constraints = new DateTimeConstraints();
+        constraints.setAllowFuture(true);
+        constraints.setLatestValue(DateUtils.convertToMillisFromEpoch("2010-10-10T00:00:00.000Z"));
+
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+        SurveyAnswer answer = createAnswer(DateUtils.getCurrentISODateTime()); // later than latest date
         Validate.entityThrowingException(validator, answer);
     }
 }

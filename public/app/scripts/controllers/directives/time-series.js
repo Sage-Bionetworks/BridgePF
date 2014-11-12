@@ -72,7 +72,7 @@ TimeSeries.prototype = {
             var series = this.originalData[time];
             for (var i=0; i < series.length; i++) {
                 var r = series[i];
-                if (r.recordId === record.recordId) {
+                if (r.guid === record.guid) {
                     series.splice(i, 1);
                     // If the series contains one item and it is removed, 
                     // then the entire entry by date needs to be removed as well.
@@ -91,7 +91,7 @@ TimeSeries.prototype = {
             var series = this.originalData[time];
             for (var i=0; i < series.length; i++) {
                 var r = series[i];
-                if (r.recordId === record.recordId) {
+                if (r.guid === record.guid) {
                     series[i] = record;
                     // time is a string, and series[i].startDate is a number.
                     if (series[i].startDate != time) {

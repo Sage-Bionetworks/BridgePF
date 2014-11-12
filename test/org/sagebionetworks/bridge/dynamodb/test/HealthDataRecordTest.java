@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
 
     private String key;
-    private String recordId;
+    private String guid;
     private long startDate;
     private long endDate;
     private Long version;
@@ -36,17 +36,16 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
 
     public HealthDataRecordTest(String key, HealthDataRecord record) {
         this.key = key;
-        this.recordId = record.getRecordId();
+        this.guid = record.getGuid();
         this.startDate = record.getStartDate();
         this.endDate = record.getEndDate();
         this.version = record.getVersion();
         this.data = record.getData();
     }
 
-    public HealthDataRecordTest(String key, String recordId,
-            HealthDataRecord record) {
+    public HealthDataRecordTest(String key, String guid, HealthDataRecord record) {
         this.key = key;
-        this.recordId = recordId;
+        this.guid = guid;
         this.startDate = record.getStartDate();
         this.endDate = record.getEndDate();
         this.version = record.getVersion();
@@ -63,14 +62,14 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
     }
 
     @Override
-    @DynamoDBRangeKey
-    public String getRecordId() {
-        return recordId;
+    @DynamoDBRangeKey(attributeName="recordId")
+    public String getGuid() {
+        return guid;
     }
 
     @Override
-    public void setRecordId(String recordId) {
-        this.recordId = recordId;
+    public void setGuid(String guid) {
+        this.guid = guid;
     }
 
     @Override
@@ -128,7 +127,7 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((recordId == null) ? 0 : recordId.hashCode());
+        result = prime * result + ((guid == null) ? 0 : guid.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
         return result;
     }
@@ -142,10 +141,10 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
         if (getClass() != obj.getClass())
             return false;
         HealthDataRecordTest other = (HealthDataRecordTest) obj;
-        if (recordId == null) {
-            if (other.recordId != null)
+        if (guid == null) {
+            if (other.guid != null)
                 return false;
-        } else if (!recordId.equals(other.recordId))
+        } else if (!guid.equals(other.guid))
             return false;
         if (version == null) {
             if (other.version != null)
