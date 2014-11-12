@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.models.schedules;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 

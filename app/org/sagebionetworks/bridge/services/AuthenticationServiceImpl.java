@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -23,10 +24,9 @@ import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
@@ -53,6 +53,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private BridgeConfig config;
     private AccountEncryptionService accountEncryptionService;
     private ConsentService consentService;
+    private ParticipantOptionsService optionsService;
     private Validator signInValidator;
     private Validator signUpValidator;
     private Validator passwordResetValidator;
@@ -77,6 +78,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         this.consentService = consentService;
     }
     
+    public void setOptionsService(ParticipantOptionsService optionsService) {
+        this.optionsService = optionsService;
+    }
+    
     public void setSignInValidator(Validator validator) {
         this.signInValidator = validator;
     }
@@ -99,22 +104,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
-
-        final long start = System.nanoTime();
-
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signIn, "Sign in cannot be null");
 
         Validate.entityThrowingException(signInValidator, signIn);
         
+        final long start = System.nanoTime();
         AuthenticationRequest<?, ?> request = null;
         UserSession session = null;
         try {
-            Application application = StormpathFactory.createStormpathApplication(stormpathClient);
-            logger.info("sign in create app " + (System.nanoTime() - start) );
+            Application application = StormpathFactory.getStormpathApplication(stormpathClient);
+            logger.debug("sign in create app " + (System.nanoTime() - start) );
             request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword());
             Account account = application.authenticateAccount(request).getAccount();
-            logger.info("sign in authenticate " + (System.nanoTime() - start));
+            logger.debug("sign in authenticate " + (System.nanoTime() - start));
             session = createSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
             
@@ -129,9 +132,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 request.clear();
             }
         }
-
         final long end = System.nanoTime();
-        logger.info("sign in service " + (end - start));
+        logger.debug("sign in service " + (end - start));
 
         return session;
     }
@@ -198,7 +200,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkArgument(StringUtils.isNotBlank(email.getEmail()), "Email is required");
         
         try {
-            Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+            Application application = StormpathFactory.getStormpathApplication(stormpathClient);
             application.sendPasswordResetEmail(email.getEmail());
         } catch (ResourceException re) {
             throw new BadRequestException(re.getDeveloperMessage());
@@ -211,7 +213,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         Validate.entityThrowingException(passwordResetValidator, passwordReset);
         try {
-            Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+            Application application = StormpathFactory.getStormpathApplication(stormpathClient);
             Account account = application.verifyPasswordResetToken(passwordReset.getSptoken());
             account.setPassword(passwordReset.getPassword());
             account.save();
@@ -222,7 +224,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public User getUser(Study study, String email) {
-        Application app = StormpathFactory.createStormpathApplication(stormpathClient);
+        Application app = StormpathFactory.getStormpathApplication(stormpathClient);
         Map<String, Object> queryParams = new HashMap<String, Object>();
         queryParams.put("email", email);
         AccountList accounts = app.getAccounts(queryParams);
@@ -245,16 +247,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         HealthId healthId = accountEncryptionService.getHealthCode(study, account);
         if (healthId != null) {
             String healthCode = healthId.getCode();
-            user.setHealthDataCode(healthCode);
+            user.setHealthCode(healthCode);
+
+            boolean consent = consentService.hasUserConsentedToResearch(user, study);
+            user.setConsent(consent);
             
-            UserConsent consent = consentService.getUserConsent(user, study);
-            if (consent != null) {
-                user.setConsent(true);
-                user.setDataSharing(consent.getDataSharing());
+            if (healthCode != null) { // haven't consented yet.
+                boolean dataSharing = optionsService.getBooleanOption(healthCode, Option.DATA_SHARING);
+                user.setDataSharing(dataSharing);
             }
         }
-        
-
         // And now for some exceptions...
         
         // All administrators and all researchers are assumed to consent when using any API.

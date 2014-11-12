@@ -7,9 +7,9 @@ import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 public interface AuthenticationService {
 

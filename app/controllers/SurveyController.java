@@ -5,8 +5,8 @@ import java.util.List;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.GuidVersionedOnHolder;
-import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.services.SurveyService;
 
@@ -44,11 +44,11 @@ public class SurveyController extends ResearcherController {
         return okResult(surveys);
     }
     
-    public Result getSurveyForUser(String surveyGuid, String versionString) throws Exception {
+    public Result getSurveyForUser(String surveyGuid, String createdOnString) throws Exception {
         getAuthenticatedAndConsentedSession();
         
-        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
-        Survey survey = surveyService.getSurvey(surveyGuid, surveyVersion);
+        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
+        Survey survey = surveyService.getSurvey(surveyGuid, createdOn);
         if (!survey.isPublished()) {
             throw new EntityNotFoundException(Survey.class);
         }
@@ -56,21 +56,21 @@ public class SurveyController extends ResearcherController {
     }
     
     // Otherwise you don't need consent but you must be a researcher or an administrator
-    public Result getSurvey(String surveyGuid, String versionString) throws Exception {
+    public Result getSurvey(String surveyGuid, String createdOnString) throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
         
-        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
-        Survey survey = surveyService.getSurvey(surveyGuid, surveyVersion);
+        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
+        Survey survey = surveyService.getSurvey(surveyGuid, createdOn);
         return okResult(survey);
     }
     
-    public Result deleteSurvey(String surveyGuid, String versionString) throws Exception {
+    public Result deleteSurvey(String surveyGuid, String createdOnString) throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
         
-        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
-        surveyService.deleteSurvey(surveyGuid, surveyVersion);
+        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
+        surveyService.deleteSurvey(surveyGuid, createdOn);
         return okResult("Survey deleted.");
     }
     
@@ -90,49 +90,49 @@ public class SurveyController extends ResearcherController {
         survey.setStudyKey(study.getKey());
         
         survey = surveyService.createSurvey(survey);
-        return createdResult(new GuidVersionedOnHolder(survey.getGuid(), survey.getVersionedOn()));
+        return createdResult(new GuidCreatedOnVersionHolder(survey));
     }
     
-    public Result versionSurvey(String surveyGuid, String versionString) throws Exception {
+    public Result versionSurvey(String surveyGuid, String createdOnString) throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
         
-        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
-        Survey survey = surveyService.versionSurvey(surveyGuid, surveyVersion);
-        return createdResult(new GuidVersionedOnHolder(survey.getGuid(), survey.getVersionedOn()));
+        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
+        Survey survey = surveyService.versionSurvey(surveyGuid, createdOn);
+        return createdResult(new GuidCreatedOnVersionHolder(survey));
     }
     
-    public Result updateSurvey(String surveyGuid, String versionString) throws Exception {
+    public Result updateSurvey(String surveyGuid, String createdOnString) throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
         
         // The parameters in the URL take precedence over anything declared in 
         // the object itself.
-        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
+        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
         Survey survey = DynamoSurvey.fromJson(requestToJSON(request()));
         survey.setGuid(surveyGuid);
-        survey.setVersionedOn(surveyVersion);
+        survey.setCreatedOn(createdOn);
         survey.setStudyKey(study.getKey());
         
         survey = surveyService.updateSurvey(survey);
-        return okResult(new GuidVersionedOnHolder(survey.getGuid(), survey.getVersionedOn()));
+        return okResult(new GuidCreatedOnVersionHolder(survey));
     }
     
-    public Result publishSurvey(String surveyGuid, String versionString) throws Exception {
+    public Result publishSurvey(String surveyGuid, String createdOnString) throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
         
-        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
-        surveyService.publishSurvey(surveyGuid, surveyVersion);
+        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
+        surveyService.publishSurvey(surveyGuid, createdOn);
         return okResult("Survey published.");
     }
     
-    public Result closeSurvey(String surveyGuid, String versionString) throws Exception {
+    public Result closeSurvey(String surveyGuid, String createdOnString) throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
         
-        long surveyVersion = DateUtils.convertToMillisFromEpoch(versionString);
-        surveyService.closeSurvey(surveyGuid, surveyVersion);
+        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
+        surveyService.closeSurvey(surveyGuid, createdOn);
         return okResult("Survey closed.");
     }
 }

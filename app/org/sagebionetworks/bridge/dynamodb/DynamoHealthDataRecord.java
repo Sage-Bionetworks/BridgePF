@@ -20,14 +20,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @DynamoDBTable(tableName = "HealthDataRecord2")
 public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
 
-    private static final String RECORD_ID_FIELD = "recordId";
+    private static final String GUID_FIELD = "guid";
     private static final String START_DATE_FIELD = "startDate";
     private static final String END_DATE_FIELD = "endDate";
     private static final String VERSION_FIELD = "version";
     private static final String DATA_FIELD = "data";
     
     private String key;
-    private String recordId;
+    private String guid;
     private long startDate;
     private long endDate;
     private JsonNode data;
@@ -35,7 +35,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     
     public static final DynamoHealthDataRecord fromJson(JsonNode node) {
         DynamoHealthDataRecord record = new DynamoHealthDataRecord();
-        record.setRecordId(JsonUtils.asText(node, RECORD_ID_FIELD));
+        record.setGuid(JsonUtils.asText(node, GUID_FIELD));
         record.setStartDate(JsonUtils.asMillisSinceEpoch(node, START_DATE_FIELD));
         record.setEndDate(JsonUtils.asMillisSinceEpoch(node, END_DATE_FIELD));
         record.setVersion(JsonUtils.asLongPrimitive(node, VERSION_FIELD));
@@ -52,16 +52,16 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     
     public DynamoHealthDataRecord(String key, HealthDataRecord record) {
         this.key = key;
-        this.recordId = record.getRecordId();
+        this.guid = record.getGuid();
         this.startDate = record.getStartDate();
         this.endDate = record.getEndDate();
         this.data = record.getData();
         this.version = record.getVersion();
     }
     
-    public DynamoHealthDataRecord(String key, String recordId, HealthDataRecord record) {
+    public DynamoHealthDataRecord(String key, String guid, HealthDataRecord record) {
         this.key = key;
-        this.recordId = recordId;
+        this.guid = guid;
         this.startDate = record.getStartDate();
         this.endDate = record.getEndDate();
         this.data = record.getData();
@@ -78,13 +78,13 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     }
     
     @Override 
-    @DynamoDBRangeKey
-    public String getRecordId() { 
-        return recordId; 
+    @DynamoDBRangeKey(attributeName="recordId")
+    public String getGuid() { 
+        return guid; 
     }
     @Override
-    public void setRecordId(String recordId) { 
-        this.recordId = recordId;
+    public void setGuid(String guid) { 
+        this.guid = guid;
     }
     
     @Override 
@@ -141,7 +141,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
         int result = 1;
         result = prime * result + (int) (endDate ^ (endDate >>> 32));
         result = prime * result + ((key == null) ? 0 : key.hashCode());
-        result = prime * result + ((recordId == null) ? 0 : recordId.hashCode());
+        result = prime * result + ((guid == null) ? 0 : guid.hashCode());
         result = prime * result + (int) (startDate ^ (startDate >>> 32));
         result = prime * result + ((version == null) ? 0 : version.hashCode());
         return result;
@@ -167,10 +167,10 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
                 return false;
         } else if (!key.equals(other.key))
             return false;
-        if (recordId == null) {
-            if (other.recordId != null)
+        if (guid == null) {
+            if (other.guid != null)
                 return false;
-        } else if (!recordId.equals(other.recordId))
+        } else if (!guid.equals(other.guid))
             return false;
         if (startDate != other.startDate)
             return false;

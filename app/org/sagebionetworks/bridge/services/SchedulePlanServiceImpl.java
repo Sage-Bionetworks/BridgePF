@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
+
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.validation.Validator;
 
@@ -34,6 +36,9 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     @Override
     public SchedulePlan createSchedulePlan(SchedulePlan plan) {
         Validate.entityThrowingException(validator, plan);
+        checkNewEntity(plan, plan.getGuid(), "Schedule plan has a GUID; it may already exist");
+        checkNewEntity(plan, plan.getVersion(), "Schedule plan has a version value; it may already exist");
+        
         return schedulePlanDao.createSchedulePlan(plan);
     }
 

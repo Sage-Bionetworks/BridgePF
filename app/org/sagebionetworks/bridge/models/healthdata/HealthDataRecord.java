@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 @BridgeTypeName("HealthData")
 public interface HealthDataRecord extends BridgeEntity {
 
-    public String getRecordId();
-    public void setRecordId(String recordId);
+    public String getGuid();
+    public void setGuid(String guid);
     
     public Long getVersion();
     public void setVersion(Long version);

@@ -8,5 +8,5 @@ public class DateConstraints extends TimeBasedConstraints {
         setDataType(DataType.DATE);
         setSupportedHints(EnumSet.of(UIHint.DATEPICKER));
     }
-    
+
 }

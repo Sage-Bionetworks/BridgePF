@@ -12,7 +12,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.Tracker;
+import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
 import org.springframework.validation.FieldError;
@@ -31,9 +31,9 @@ public class Validate {
     
     private final static JsonSchemaValidator schemaValidator = new JsonSchemaValidator();
     
-    public static String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
+    public static String CANNOT_BE_BLANK = "%s cannot be missing, null, or blank";
     
-    public static String CANNOT_BE_NULL = "cannot be missing or null";
+    public static String CANNOT_BE_NULL = "%s cannot be missing or null";
   
     public static void jsonWithSchema(Tracker tracker, JsonNode node) {
         MapBindingResult errors = new MapBindingResult(Maps.newHashMap(), tracker.getName());

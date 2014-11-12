@@ -3,7 +3,7 @@ package global;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
-import org.sagebionetworks.bridge.models.Tracker;
+import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.springframework.core.io.FileSystemResource;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,13 +30,13 @@ public class JsonSchemaValidatorTest {
     }
 
     @Test
-    public void schemaValidationSucceedsWithRecordId() throws Exception {
-        ProcessingReport report = validate("{ \"recordId\": \"asdf-zxfv-sdfg\", \"key\": \"1:1:asdf\", \"startDate\":\"date+time\", \"endDate\":\"date+time\", \"data\":{ \"systolic\":120, \"diastolic\":80 } }");
+    public void schemaValidationSucceedsWithGuid() throws Exception {
+        ProcessingReport report = validate("{ \"guid\": \"asdf-zxfv-sdfg\", \"key\": \"1:1:asdf\", \"startDate\":\"date+time\", \"endDate\":\"date+time\", \"data\":{ \"systolic\":120, \"diastolic\":80 } }");
         assertTrue("Report should have no errors", report.isSuccess());
     }
 
     @Test
-    public void schemaValidationSucceedsWithoutRecordId() throws Exception {
+    public void schemaValidationSucceedsWithoutGuid() throws Exception {
         ProcessingReport report = validate("{ \"key\": \"1:1:asdf\", \"startDate\":\"date-time\", \"endDate\":\"date-time\", \"data\":{ \"systolic\":120, \"diastolic\":80 } }");
         assertTrue("Report should have no errors", report.isSuccess());
     }

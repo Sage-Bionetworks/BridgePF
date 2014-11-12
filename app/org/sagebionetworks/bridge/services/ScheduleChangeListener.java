@@ -29,7 +29,7 @@ public class ScheduleChangeListener implements ApplicationListener<ApplicationEv
             worker.setApplicationEvent(event);
             executor.submit(new FutureTask<Boolean>(worker));
         } catch(Throwable t) {
-            t.printStackTrace();
+            throw new RuntimeException(t);
         }
     }
 }

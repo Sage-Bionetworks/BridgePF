@@ -2,13 +2,14 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
-import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.validation.Validator;
@@ -59,16 +60,18 @@ public class SurveyServiceImpl implements SurveyService {
     }
 
     @Override
-    public Survey getSurvey(String surveyGuid, long versionedOn) {
+    public Survey getSurvey(String surveyGuid, long createdOn) {
         checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(versionedOn != 0L, "Survey versionedOn timestamp cannot be 0");
+        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.getSurvey(surveyGuid, versionedOn);
+        return surveyDao.getSurvey(surveyGuid, createdOn);
     }
 
     @Override
     public Survey createSurvey(Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
+        checkNewEntity(survey, survey.getGuid(), "Survey has a GUID; it may already exist");
+        checkNewEntity(survey, survey.getVersion(), "Survey has a version value; it may already exist");
         
         survey.setGuid(BridgeUtils.generateGuid());
         Validate.entityThrowingException(validator, survey);    
@@ -84,34 +87,34 @@ public class SurveyServiceImpl implements SurveyService {
     }
 
     @Override
-    public Survey publishSurvey(String surveyGuid, long versionedOn) {
+    public Survey publishSurvey(String surveyGuid, long createdOn) {
         checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(versionedOn != 0L, "Survey versionedOn timestamp cannot be 0");
+        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.publishSurvey(surveyGuid, versionedOn);
+        return surveyDao.publishSurvey(surveyGuid, createdOn);
     }
 
     @Override
-    public Survey closeSurvey(String surveyGuid, long versionedOn) {
+    public Survey closeSurvey(String surveyGuid, long createdOn) {
         checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(versionedOn != 0L, "Survey versionedOn timestamp cannot be 0");
+        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.closeSurvey(surveyGuid, versionedOn);
+        return surveyDao.closeSurvey(surveyGuid, createdOn);
     }
     
     @Override
-    public Survey versionSurvey(String surveyGuid, long versionedOn) {
+    public Survey versionSurvey(String surveyGuid, long createdOn) {
         checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(versionedOn != 0L, "Survey versionedOn timestamp cannot be 0");
+        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.versionSurvey(surveyGuid, versionedOn);
+        return surveyDao.versionSurvey(surveyGuid, createdOn);
     }
     
     @Override
-    public void deleteSurvey(String surveyGuid, long versionedOn) {
+    public void deleteSurvey(String surveyGuid, long createdOn) {
         checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(versionedOn != 0L, "Survey versionedOn timestamp cannot be 0");
+        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
 
-        surveyDao.deleteSurvey(surveyGuid, versionedOn);
+        surveyDao.deleteSurvey(surveyGuid, createdOn);
     }
 }

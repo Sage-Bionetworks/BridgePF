@@ -18,8 +18,8 @@ public interface Survey extends BridgeEntity {
     public String getGuid();
     public void setGuid(String guid);
     
-    public long getVersionedOn();
-    public void setVersionedOn(long versionedOn);
+    public long getCreatedOn();
+    public void setCreatedOn(long createdOn);
     
     public long getModifiedOn();
     public void setModifiedOn(long modifiedOn);
