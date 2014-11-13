@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 public interface SchedulePlanDao {
 

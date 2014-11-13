@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;

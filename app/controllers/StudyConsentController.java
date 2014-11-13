@@ -3,9 +3,9 @@ package controllers;
 import java.util.List;
 
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.StudyConsent;
-import org.sagebionetworks.bridge.models.StudyConsentForm;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 
 import play.mvc.Result;

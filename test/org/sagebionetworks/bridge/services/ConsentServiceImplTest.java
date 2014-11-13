@@ -12,8 +12,8 @@ import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.models.ConsentSignature;
-import org.sagebionetworks.bridge.models.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 

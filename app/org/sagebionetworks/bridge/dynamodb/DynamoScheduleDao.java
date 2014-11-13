@@ -5,10 +5,10 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ScheduleDao;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;

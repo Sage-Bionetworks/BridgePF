@@ -21,9 +21,9 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 

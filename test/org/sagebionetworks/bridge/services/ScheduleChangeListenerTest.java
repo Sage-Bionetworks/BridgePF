@@ -24,13 +24,13 @@ import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.events.UserEnrolledEvent;
 import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
