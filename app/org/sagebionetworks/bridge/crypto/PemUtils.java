@@ -3,9 +3,7 @@ package org.sagebionetworks.bridge.crypto;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.StringReader;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -16,8 +14,6 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.SystemUtils;
@@ -34,9 +30,10 @@ public class PemUtils {
     }
 
     public static X509Certificate loadCertificateFromPem(String pem) {
+        checkNotNull(pem, "Pem string cannot be null.");
         Security.addProvider(new BouncyCastleProvider());
         try {
-            List<String> lines = readLines(pem);
+            String[] lines = readLines(pem);
             byte[] decoded = decode(lines, BEGIN_CERT, END_CERT);
             X509CertificateHolder certHolder = new X509CertificateHolder(decoded);
             return new JcaX509CertificateConverter().setProvider(BcCmsConstants.PROVIDER).getCertificate(certHolder);
@@ -54,9 +51,10 @@ public class PemUtils {
     }
 
     public static PrivateKey loadPrivateKeyFromPem(String pem) {
+        checkNotNull(pem, "Pem string cannot be null.");
         Security.addProvider(new BouncyCastleProvider());
         try {
-            List<String> lines = readLines(pem);
+            String[] lines = readLines(pem);
             byte[] decoded = decode(lines, BEGIN_PRIVATE_KEY, END_PRIVATE_KEY);
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decoded);
             KeyFactory keyFactory = KeyFactory.getInstance(BcCmsConstants.KEY_PAIR_ALGO, BcCmsConstants.PROVIDER);
@@ -72,9 +70,9 @@ public class PemUtils {
         }
     }
 
-    private static byte[] decode(List<String> lines, String begin, String end) {
+    private static byte[] decode(String[] lines, String begin, String end) {
         checkNotNull(lines, "Lines cannot be null");
-        checkArgument(lines.size() >= 2, "Two few lines.");
+        checkArgument(lines.length >= 2, "Too few lines.");
         StringBuilder base64Encoded = new StringBuilder();
         boolean addLine = false;
         for (String line : lines) {
@@ -94,19 +92,8 @@ public class PemUtils {
         return decoded;
     }
 
-    private static List<String> readLines(String text) throws IOException {
-        List<String> lines = new ArrayList<String>();
-        try (
-            StringReader stringReader = new StringReader(text);
-            BufferedReader bufferedReader = new BufferedReader(stringReader)
-        ) {
-            String line = bufferedReader.readLine();
-            while (line != null) {
-                lines.add(line);
-                line = bufferedReader.readLine();
-            }
-        }
-        return lines;
+    private static String[] readLines(String text) throws IOException {
+        return text.split("\\r?\\n");
     }
 
     private static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
