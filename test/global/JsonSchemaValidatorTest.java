@@ -3,7 +3,7 @@ package global;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
-import org.sagebionetworks.bridge.models.Tracker;
+import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.springframework.core.io.FileSystemResource;
 
 import com.fasterxml.jackson.databind.JsonNode;

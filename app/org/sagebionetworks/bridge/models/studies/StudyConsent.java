@@ -1,6 +1,7 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.studies;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 @BridgeTypeName("StudyConsent")
 public interface StudyConsent extends BridgeEntity {

@@ -15,6 +15,7 @@ apt-get -q -y upgrade
 
 # Tools
 apt-get -q -y install bzip2
+apt-get -q -y install curl
 apt-get -q -y install zip
 apt-get -q -y install git
 
