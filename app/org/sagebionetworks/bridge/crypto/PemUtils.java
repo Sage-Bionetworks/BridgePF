@@ -96,22 +96,14 @@ public class PemUtils {
 
     private static List<String> readLines(String text) throws IOException {
         List<String> lines = new ArrayList<String>();
-        BufferedReader bufferedReader = null;
-        StringReader stringReader = null;
-        try {
-            stringReader = new StringReader(text);
-            bufferedReader = new BufferedReader(stringReader);
+        try (
+            StringReader stringReader = new StringReader(text);
+            BufferedReader bufferedReader = new BufferedReader(stringReader)
+        ) {
             String line = bufferedReader.readLine();
             while (line != null) {
                 lines.add(line);
                 line = bufferedReader.readLine();
-            }
-        } finally {
-            if (stringReader != null) {
-                stringReader.close();
-            }
-            if (bufferedReader != null) {
-                bufferedReader.close();
             }
         }
         return lines;
