@@ -40,7 +40,7 @@ public class DynamoParticipantOptionsDaoTest {
     
     @Test
     public void crudOptionForParticipant() {
-        Study study = studyService.getStudyByKey(TestConstants.TEST_STUDY_KEY);
+        Study study = studyService.getStudyByIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         String healthCode = "AAA";
         Option option = Option.DATA_SHARING;
         
@@ -66,7 +66,7 @@ public class DynamoParticipantOptionsDaoTest {
 
     @Test
     public void canGetAllOptionsForMultipleParticipants() {
-        Study study = studyService.getStudyByKey(TestConstants.TEST_STUDY_KEY);
+        Study study = studyService.getStudyByIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         String healthCode1 = "AAA";
         String healthCode2 = "BBB";
         String healthCode3 = "CCC";

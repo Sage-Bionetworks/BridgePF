@@ -50,7 +50,7 @@ public class SendMailViaAmazonService implements SendMailService {
     @Override
     public void sendConsentAgreement(User user, ConsentSignature consentSignature, StudyConsent studyConsent) {
         try {
-            Study study = studyService.getStudyByKey(studyConsent.getStudyKey());
+            Study study = studyService.getStudyByIdentifier(studyConsent.getStudyKey());
             Content subject = new Content().withData("Consent Agreement for " + study.getName());
             Body body = createSignedDocument(consentSignature, studyConsent);
             Message message = new Message().withSubject(subject).withBody(body);

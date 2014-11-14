@@ -32,6 +32,13 @@ public class DynamoStudyDao implements StudyDao {
                 .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoStudy.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
+
+    @Override
+    public boolean doesIdentifierExist(String identifier) {
+        DynamoStudy study = new DynamoStudy();
+        study.setIdentifier(identifier);
+        return (mapper.load(study) != null);
+    }
     
     @Override
     public Study2 getStudy(String identifier) {
@@ -81,7 +88,7 @@ public class DynamoStudyDao implements StudyDao {
     @Override
     public void deleteStudy(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
-        
+
         Study2 study = getStudy(identifier);
         mapper.delete(study);
     }
