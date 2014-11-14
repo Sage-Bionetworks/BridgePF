@@ -8,7 +8,6 @@ import static org.junit.Assert.fail;
 import javax.annotation.Resource;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.config.Environment;
@@ -24,7 +23,6 @@ import com.stormpath.sdk.client.Client;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-@Ignore
 public class StudyServiceImplTest {
 
     @Resource

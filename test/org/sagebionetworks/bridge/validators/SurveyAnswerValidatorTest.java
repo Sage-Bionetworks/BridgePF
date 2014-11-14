@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.validators;
 import java.util.List;
 
 import org.joda.time.DateTime;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -134,15 +133,14 @@ public class SurveyAnswerValidatorTest {
         
         Validate.entityThrowingException(validator, createAnswer("15.0"));
     }
-    @Test(expected = InvalidEntityException.class)
-    @Ignore
+    /* @Test(expected = InvalidEntityException.class)
     public void validateDecimalStep() {
         DecimalConstraints constraints = new DecimalConstraints();
         constraints.setStep(5d);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         Validate.entityThrowingException(validator, createAnswer("12.00"));
-    }
+    } */
     @Test(expected = InvalidEntityException.class)
     public void validateDuration() {
         DurationConstraints constraints = new DurationConstraints();

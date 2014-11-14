@@ -130,15 +130,15 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
     public Study2 createStudy(Study2 study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNewEntity(study, study.getVersion(), "Study has a version value; it may already exist");
-        
+
         Validate.entityThrowingException(validator, study);
-        
+
         String id = study.getIdentifier();
         String lockId = null;
         try {
             lockId = lockDao.createLock(Study2.class, id);
             
-            if (!studyDao.doesIdentifierExist(study.getIdentifier())) {
+            if (studyDao.doesIdentifierExist(study.getIdentifier())) {
                 throw new EntityAlreadyExistsException(study);
             }
             for (Environment env : Environment.values()) {

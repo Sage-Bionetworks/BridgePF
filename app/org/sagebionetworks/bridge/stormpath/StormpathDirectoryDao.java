@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.stormpath.sdk.application.AccountStoreMapping;
-import com.stormpath.sdk.application.AccountStoreMappingList;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.application.ApplicationCriteria;
 import com.stormpath.sdk.application.ApplicationList;
@@ -40,7 +39,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
         checkNotNull(app);
         String dirName = String.format("%s (%s)", identifier, env.name().toLowerCase());
         String groupName = identifier + "_researcher";
-        
+
         Directory directory = getDirectory(dirName);
         if (directory == null) {
             directory = client.instantiate(Directory.class);
