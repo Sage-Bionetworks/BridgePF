@@ -141,7 +141,7 @@ public class AuthenticationServiceImplTest {
     @Test
     public void createUserInNonDefaultAccountStore() {
         SignUp signUp = new SignUp("secondStudyUser", "secondStudyUser@sagebridge.org", "P4ssword");
-        Study otherStudy = studyService.getStudyByKey("neurod");
+        Study otherStudy = studyService.getStudyByIdentifier("neurod");
         try {
              
             Study defaultStudy = testUser.getStudy();
@@ -160,7 +160,7 @@ public class AuthenticationServiceImplTest {
     
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
-        Study study = studyService.getStudyByKey(TestConstants.TEST_STUDY_KEY);
+        Study study = studyService.getStudyByIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         TestUser researcher = helper.createUser(AuthenticationServiceImplTest.class, false, false, study.getResearcherRole());
         try {
             authService.signIn(researcher.getStudy(), researcher.getSignIn());

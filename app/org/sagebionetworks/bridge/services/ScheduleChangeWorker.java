@@ -103,7 +103,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" created");
         
         final SchedulePlan plan = event.getSchedulePlan();
-        final Study study = studyService.getStudyByKey(plan.getStudyKey());
+        final Study study = studyService.getStudyByIdentifier(plan.getStudyKey());
         final ArrayList<User> users = getStudyUsers(study);
         final List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
         setSchedulePlan(schedules, plan);
@@ -131,7 +131,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     private void schedulePlanUpdated(SchedulePlanUpdatedEvent event) throws InterruptedException {
         logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" updated");
         final SchedulePlan plan = event.getSchedulePlan();
-        final Study study = studyService.getStudyByKey(plan.getStudyKey());
+        final Study study = studyService.getStudyByIdentifier(plan.getStudyKey());
         final ArrayList<User> users = getStudyUsers(study);
         final List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
         setSchedulePlan(schedules, plan);
