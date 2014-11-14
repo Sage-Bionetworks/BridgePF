@@ -260,7 +260,23 @@ public class DynamoInitializer {
 
     static void initTables(final List<TableDescription> tables) {
         Map<String, TableDescription> existingTables = getExistingTables();
+        Environment env = CONFIG.getEnvironment();
+        if (Environment.UAT.equals(env) || Environment.PROD.equals(env)) {
+            StringBuilder builder = new StringBuilder("[");
+            for (Map.Entry<String, TableDescription> entry : existingTables.entrySet()) {
+                builder.append("(");
+                builder.append(entry.getKey());
+                builder.append(", ");
+                builder.append(entry.getValue().getTableName());
+                builder.append(", ");
+                builder.append(entry.getValue().getTableStatus());
+                builder.append("), ");
+            }
+            builder.append("]");
+            logger.info("Existing tables: " + builder.toString());
+        }
         for (TableDescription table : tables) {
+            logger.info("Checking table " + table.getTableName());
             if (!existingTables.containsKey(table.getTableName())) {
                 CreateTableRequest createTableRequest = getCreateTableRequest(table);
                 logger.info("Creating table " + table.getTableName());
@@ -275,12 +291,19 @@ public class DynamoInitializer {
 
     static Map<String, TableDescription> getExistingTables() {
         Map<String, TableDescription> existingTables = new HashMap<String, TableDescription>();
-        ListTablesResult listResult = DYNAMO.listTables();
-        for (String tableName : listResult.getTableNames()) {
-            DescribeTableResult describeResult = DYNAMO.describeTable(new DescribeTableRequest(tableName));
-            TableDescription table = describeResult.getTable();
-            existingTables.put(tableName, table);
-        }
+        String lastTableName = null;
+        ListTablesResult listTablesResult = DYNAMO.listTables();
+        do {
+            for (String tableName : listTablesResult.getTableNames()) {
+                DescribeTableResult describeResult = DYNAMO.describeTable(new DescribeTableRequest(tableName));
+                TableDescription table = describeResult.getTable();
+                existingTables.put(tableName, table);
+            }
+            lastTableName = listTablesResult.getLastEvaluatedTableName();
+            if (lastTableName != null) {
+                listTablesResult = DYNAMO.listTables(lastTableName);
+            }
+        } while (lastTableName != null);
         return existingTables;
     }
 
