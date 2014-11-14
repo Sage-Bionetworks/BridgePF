@@ -260,20 +260,21 @@ public class DynamoInitializer {
 
     static void initTables(final List<TableDescription> tables) {
         Map<String, TableDescription> existingTables = getExistingTables();
-        ////// TODO: To be removed
-        StringBuilder builder = new StringBuilder("[");
-        for (Map.Entry<String, TableDescription> entry : existingTables.entrySet()) {
-            builder.append("(");
-            builder.append(entry.getKey());
-            builder.append(", ");
-            builder.append(entry.getValue().getTableName());
-            builder.append(", ");
-            builder.append(entry.getValue().getTableStatus());
-            builder.append("), ");
+        Environment env = CONFIG.getEnvironment();
+        if (Environment.UAT.equals(env) || Environment.PROD.equals(env)) {
+            StringBuilder builder = new StringBuilder("[");
+            for (Map.Entry<String, TableDescription> entry : existingTables.entrySet()) {
+                builder.append("(");
+                builder.append(entry.getKey());
+                builder.append(", ");
+                builder.append(entry.getValue().getTableName());
+                builder.append(", ");
+                builder.append(entry.getValue().getTableStatus());
+                builder.append("), ");
+            }
+            builder.append("]");
+            logger.info("Existing tables: " + builder.toString());
         }
-        builder.append("]");
-        logger.info("Existing tables: " + builder.toString());
-        ////// ENDTODO
         for (TableDescription table : tables) {
             logger.info("Checking table " + table.getTableName());
             if (!existingTables.containsKey(table.getTableName())) {
