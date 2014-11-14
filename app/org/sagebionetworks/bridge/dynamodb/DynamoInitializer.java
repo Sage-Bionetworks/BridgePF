@@ -291,7 +291,7 @@ public class DynamoInitializer {
 
     static Map<String, TableDescription> getExistingTables() {
         Map<String, TableDescription> existingTables = new HashMap<String, TableDescription>();
-        ListTablesResult listResult = DYNAMO.listTables();
+        ListTablesResult listResult = DYNAMO.listTables(Integer.MAX_VALUE);
         for (String tableName : listResult.getTableNames()) {
             DescribeTableResult describeResult = DYNAMO.describeTable(new DescribeTableRequest(tableName));
             TableDescription table = describeResult.getTable();
