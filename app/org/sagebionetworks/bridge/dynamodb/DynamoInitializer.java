@@ -291,12 +291,19 @@ public class DynamoInitializer {
 
     static Map<String, TableDescription> getExistingTables() {
         Map<String, TableDescription> existingTables = new HashMap<String, TableDescription>();
-        ListTablesResult listResult = DYNAMO.listTables();
-        for (String tableName : listResult.getTableNames()) {
-            DescribeTableResult describeResult = DYNAMO.describeTable(new DescribeTableRequest(tableName));
-            TableDescription table = describeResult.getTable();
-            existingTables.put(tableName, table);
-        }
+        String lastTableName = null;
+        ListTablesResult listTablesResult = DYNAMO.listTables();
+        do {
+            for (String tableName : listTablesResult.getTableNames()) {
+                DescribeTableResult describeResult = DYNAMO.describeTable(new DescribeTableRequest(tableName));
+                TableDescription table = describeResult.getTable();
+                existingTables.put(tableName, table);
+            }
+            lastTableName = listTablesResult.getLastEvaluatedTableName();
+            if (lastTableName != null) {
+                listTablesResult = DYNAMO.listTables(lastTableName);
+            }
+        } while (lastTableName != null);
         return existingTables;
     }
 
