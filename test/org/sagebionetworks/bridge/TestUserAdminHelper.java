@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 
@@ -113,7 +113,7 @@ public class TestUserAdminHelper {
         
         String name = makeRandomUserName(cls);
         SignUp signUp = new SignUp(name, name + "@sagebridge.org", PASSWORD, roles);
-        Study study = studyService.getStudyByKey(TEST_STUDY_KEY);
+        Study study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
         return createUser(signUp, study, signIn, consent);
     }
     

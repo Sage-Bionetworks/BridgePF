@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 
@@ -38,7 +38,7 @@ public class DynamoScheduleDaoTest {
     public void before() {
         DynamoInitializer.init(DynamoSchedule.class);
         DynamoTestUtil.clearTable(DynamoSchedule.class);
-        study = studyService.getStudyByKey(TEST_STUDY_KEY);
+        study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
     }
     
     @Test

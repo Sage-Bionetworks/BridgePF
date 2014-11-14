@@ -112,13 +112,12 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
  
-    <bean id="dynamoStudyDao" class="org.sagebionetworks.bridge.dynamodb.DynamoStudyDao">
+    <bean id="studyDao" class="org.sagebionetworks.bridge.dynamodb.DynamoStudyDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
     
-    <bean id="stormpathStudyDao" class="org.sagebionetworks.bridge.stormpath.StormpathStudyDao">
+    <bean id="directoryDao" class="org.sagebionetworks.bridge.stormpath.StormpathDirectoryDao">
         <property name="stormpathClient" ref="stormpathClient"/>
-        <property name="bridgeConfig" ref="bridgeConfig"/>
     </bean>
     
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor">
@@ -291,6 +290,12 @@
     </bean>
     
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
+        <property name="studyDao" ref="studyDao"/>
+        <property name="directoryDao" ref="directoryDao"/>
+        <property name="distributedLockDao" ref="distributedLockDao"/>
+        <property name="validator">
+            <bean class="org.sagebionetworks.bridge.validators.StudyValidator"/>
+        </property>
         <property name="studies">
             <list>
                 <bean class="org.sagebionetworks.bridge.models.studies.Study">
@@ -414,7 +419,7 @@
     <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">
         <property name="studyConsentDao" ref="studyConsentDao" />
         <property name="validator">
-                <bean class="org.sagebionetworks.bridge.validators.StudyConsentValidator"/>
+            <bean class="org.sagebionetworks.bridge.validators.StudyConsentValidator"/>
         </property>
     </bean>
 

@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 
@@ -55,7 +55,7 @@ public class SurveyServiceTest {
     @Before
     public void before() {
         testSurvey = new TestSurvey(true);
-        study = studyService.getStudyByKey(TEST_STUDY_KEY);
+        study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
         DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyQuestion.class);
         DynamoTestUtil.clearTable(DynamoSurvey.class);
         DynamoTestUtil.clearTable(DynamoSurveyQuestion.class);

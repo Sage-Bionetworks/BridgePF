@@ -38,7 +38,7 @@ public class SendMailViaAmazonServiceTest {
         Study study = new Study(null, "teststudy", 17, null, null, null, null);
         
         studyService = mock(StudyService.class);
-        when(studyService.getStudyByKey(TestConstants.TEST_STUDY_KEY)).thenReturn(study);
+        when(studyService.getStudyByIdentifier(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         emailClient = mock(AmazonSimpleEmailServiceClient.class);
         argument = ArgumentCaptor.forClass(SendEmailRequest.class);
         
@@ -51,7 +51,7 @@ public class SendMailViaAmazonServiceTest {
         studyConsent = new StudyConsent() {
             @Override
             public String getStudyKey() {
-                return TestConstants.TEST_STUDY_KEY;
+                return TestConstants.TEST_STUDY_IDENTIFIER;
             }
             @Override
             public long getCreatedOn() {

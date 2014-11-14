@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 
@@ -42,7 +42,7 @@ public class DynamoSchedulePlanDaoTest {
     public void before() {
         DynamoInitializer.init(DynamoSchedulePlan.class);
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
-        study = studyService.getStudyByKey(TEST_STUDY_KEY);
+        study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
     }
     
     @Test
