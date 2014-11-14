@@ -33,7 +33,7 @@ public class DynamoStudy implements Study2, DynamoTable {
 
     // We need the unconfigured mapper for setData/getData.
     private static ObjectMapper mapper = new ObjectMapper();
-    private static TypeReference<HashMap<Environment,StudyEnvironments>> typeRef = new TypeReference<HashMap<Environment,StudyEnvironments>>() {};
+    private static TypeReference<HashMap<Environment,StudyEnvironment>> typeRef = new TypeReference<HashMap<Environment,StudyEnvironment>>() {};
 
     private static final String ENVIRONMENTS_PROPERTY = "environments";
     private static final String TRACKERS_PROPERTY = "trackers";
@@ -47,10 +47,10 @@ public class DynamoStudy implements Study2, DynamoTable {
     private int minAgeOfConsent;
     private int maxNumberOfParticipants;
     private List<String> trackers = Lists.newArrayList();
-    private Map<Environment,StudyEnvironments> environments = Maps.newHashMap();
+    private Map<Environment,StudyEnvironment> environments = Maps.newHashMap();
     private Long version;
 
-    public static class StudyEnvironments {
+    public static class StudyEnvironment {
         private String stormpathHref;
         public String getStormpathHref() {
             return stormpathHref;
@@ -65,7 +65,7 @@ public class DynamoStudy implements Study2, DynamoTable {
     
     public DynamoStudy() {
         for (Environment env : Environment.values()) {
-            environments.put(env, new StudyEnvironments());    
+            environments.put(env, new StudyEnvironment());    
         }
     }
     
@@ -138,6 +138,12 @@ public class DynamoStudy implements Study2, DynamoTable {
     public List<String> getTrackerIdentifiers() {
         return trackers;
     }
+    @DynamoDBIgnore
+    @JsonIgnore
+    public Map<Environment,StudyEnvironment> getStudyEnvironments() {
+        return environments;
+    }
+    
     @DynamoDBAttribute
     @JsonIgnore
     public String getData() {
@@ -164,11 +170,71 @@ public class DynamoStudy implements Study2, DynamoTable {
     }
 
     @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((environments == null) ? 0 : environments.hashCode());
+        result = prime * result + ((identifier == null) ? 0 : identifier.hashCode());
+        result = prime * result + maxNumberOfParticipants;
+        result = prime * result + minAgeOfConsent;
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((researcherRole == null) ? 0 : researcherRole.hashCode());
+        result = prime * result + ((trackers == null) ? 0 : trackers.hashCode());
+        result = prime * result + ((version == null) ? 0 : version.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        DynamoStudy other = (DynamoStudy) obj;
+        if (environments == null) {
+            if (other.environments != null)
+                return false;
+        } else if (!environments.equals(other.environments))
+            return false;
+        if (identifier == null) {
+            if (other.identifier != null)
+                return false;
+        } else if (!identifier.equals(other.identifier))
+            return false;
+        if (maxNumberOfParticipants != other.maxNumberOfParticipants)
+            return false;
+        if (minAgeOfConsent != other.minAgeOfConsent)
+            return false;
+        if (name == null) {
+            if (other.name != null)
+                return false;
+        } else if (!name.equals(other.name))
+            return false;
+        if (researcherRole == null) {
+            if (other.researcherRole != null)
+                return false;
+        } else if (!researcherRole.equals(other.researcherRole))
+            return false;
+        if (trackers == null) {
+            if (other.trackers != null)
+                return false;
+        } else if (!trackers.equals(other.trackers))
+            return false;
+        if (version == null) {
+            if (other.version != null)
+                return false;
+        } else if (!version.equals(other.version))
+            return false;
+        return true;
+    }
+
+    @Override
     public String toString() {
         return "DynamoStudy [name=" + name + ", identifier=" + identifier + ", researcherRole=" + researcherRole
                 + ", minimumAgeOfConsent=" + minAgeOfConsent + ", maximumNumberOfParticipants="
                 + maxNumberOfParticipants + ", trackers=" + trackers + ", environments=" + environments
                 + ", version=" + version + "]";
     }
-    
 }

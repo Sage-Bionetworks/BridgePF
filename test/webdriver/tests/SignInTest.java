@@ -35,7 +35,7 @@ public class SignInTest extends BaseIntegrationTest {
                 TestUser testUser = null;
                 try {
                     SignUp signUp = new SignUp("test", "test@sagebridge.org", "P4ssword");
-                    Study study = studyService.getStudyByKey("neurod");
+                    Study study = studyService.getStudyByIdentifier("neurod");
                     testUser = helper.createUser(signUp, study, true, true);
                     
                     AppPage page = new AppPage(browser);

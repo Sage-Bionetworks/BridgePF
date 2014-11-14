@@ -5,7 +5,7 @@ import org.openqa.selenium.phantomjs.PhantomJSDriver;
 
 public class TestConstants {
 
-    public static final String TEST_STUDY_KEY = "teststudy";
+    public static final String TEST_STUDY_IDENTIFIER = "teststudy";
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";
     public static final String API_URL = "/api/v1";

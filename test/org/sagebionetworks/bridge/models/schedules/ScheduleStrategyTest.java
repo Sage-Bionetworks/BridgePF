@@ -37,7 +37,7 @@ public class ScheduleStrategyTest {
         for (int i=0; i < 10; i++) {
             users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
         }
-        study = new Study("name", TestConstants.TEST_STUDY_KEY, 18, null, Collections.<String>emptyList(), Collections.<Tracker>emptyList(), null);
+        study = new Study("name", TestConstants.TEST_STUDY_IDENTIFIER, 18, null, Collections.<String>emptyList(), Collections.<Tracker>emptyList(), null);
     }
     
     public void createContextWithRemainderUsers() {
