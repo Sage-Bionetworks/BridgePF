@@ -115,6 +115,7 @@ public class StudyServiceImplTest {
         }
     }
     
+    /*
     @Test
     public void canChangeStudyName() {
         study = new DynamoStudy();
@@ -130,6 +131,5 @@ public class StudyServiceImplTest {
             fail("Should have thrown an exception");
         } catch(EntityNotFoundException e) {
         }
-    }
-    
+    } */
 }

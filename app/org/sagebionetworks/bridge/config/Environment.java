@@ -2,18 +2,9 @@ package org.sagebionetworks.bridge.config;
 
 public enum Environment {
 
-    LOCAL("local"),
-    DEV("dev"),
-    UAT("uat"),
-    PROD("prod");
+    LOCAL,
+    DEV,
+    UAT,
+    PROD;
 
-    public String getEnvName() {
-        return name;
-    }
-
-    private Environment(String name) {
-        this.name = name;
-    }
-
-    private final String name;
 }
