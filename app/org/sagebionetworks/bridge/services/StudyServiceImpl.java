@@ -12,13 +12,14 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
+import org.sagebionetworks.bridge.dao.DnsDao;
+import org.sagebionetworks.bridge.dao.DomainDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy.StudyEnvironment;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -35,14 +36,6 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 
 public class StudyServiceImpl extends CacheLoader<String,Study2>  implements StudyService {
     
-    private static Map<Environment,String> postfixes = Maps.newHashMap();
-    static {
-        postfixes.put(Environment.LOCAL, "");
-        postfixes.put(Environment.DEV, "-develop.");
-        postfixes.put(Environment.UAT, "-staging.");
-        postfixes.put(Environment.PROD, ".");
-    }
-
     LoadingCache<String, Study2> studyCache = CacheBuilder.newBuilder()
             .maximumSize(50)
             .expireAfterWrite(10, TimeUnit.MINUTES)
@@ -54,7 +47,10 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
     
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
+    private DomainDao domainDao;
+    private DnsDao dnsDao;
     private DistributedLockDao lockDao;
+    private BridgeConfig config;
     private StudyValidator validator;
 
     public void setDistributedLockDao(DistributedLockDao lockDao) {
@@ -64,12 +60,25 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
     public void setValidator(StudyValidator validator) {
         this.validator = validator;
     }
+    
+    public void setDomainDao(DomainDao domainDao) {
+        this.domainDao = domainDao;
+    }
+    
+    public void setDnsDao(DnsDao dnsDao) {
+        this.dnsDao = dnsDao;
+    }
+    
     public void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
     }
     
     public void setDirectoryDao(DirectoryDao directoryDao) {
         this.directoryDao = directoryDao;
+    }
+    
+    public void setBridgeConfig(BridgeConfig bridgeConfig) {
+        this.config = bridgeConfig;
     }
     
     // REMOVEME
@@ -114,7 +123,8 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
     public Study2 getStudy2ByHostname(String hostname) {
         checkArgument(isNotBlank(hostname), Validate.CANNOT_BE_BLANK, "hostname");
         
-        String postfix = postfixes.get(BridgeConfigFactory.getConfig().getEnvironment());
+        String postfix = config.getProperty("study.hostname."+config.getEnvironment().name().toLowerCase());
+        
         String identifier = (postfix == null) ? "teststudy" : hostname.split(postfix)[0];
         return getStudy2ByIdentifier(identifier);
     }
@@ -145,6 +155,8 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
                 String href = directoryDao.createDirectory(env, study.getIdentifier());
                 study.setStormpathUrl(env, href);
             }
+            dnsDao.addCnameRecordsForStudy(study.getIdentifier());
+            domainDao.addDomain(study.getIdentifier());
             study = studyDao.createStudy(study);    
         } finally {
             lockDao.releaseLock(Study2.class, id, lockId);
@@ -173,12 +185,16 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
                 String href = study.getStudyEnvironments().get(env).getStormpathHref();
                 directoryDao.deleteDirectory(env, href);
             }
+            domainDao.removeDomain(identifier);
+            dnsDao.removeCnameRecordsForStudy(identifier);
             studyDao.deleteStudy(identifier);
             studyCache.invalidate(identifier);
         } finally {
             lockDao.releaseLock(Study2.class, identifier, lockId);
         }
     }
+    
+    /* Skip this.
     @Override
     public Study2 changeStudyId(String oldIdentifier, String newIdentifier) {
         checkArgument(isNotBlank(oldIdentifier), Validate.CANNOT_BE_BLANK, "oldIdentifier");
@@ -209,5 +225,5 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
         studyDao.deleteStudy(study.getIdentifier());
         
         return newStudy;
-    }
+    }*/
 }

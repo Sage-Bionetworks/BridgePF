@@ -41,6 +41,8 @@ public class BridgeConfig {
     private static final String HEALTHCODE_KEY = "bridge.healthcode.key";
     private static final String HEALTHCODE_SALT = "bridge.healthcode.salt";
     
+    private static final String HEROKU_AUTH_TOKEN = "heroku.auth.token";
+    
     private final String user;
     private final Environment environment;
     private final Properties properties;
@@ -107,7 +109,7 @@ public class BridgeConfig {
         }
 
         // Collapse the properties for the current environment
-        Properties collapsed = collapse(properties, environment.getEnvName());
+        Properties collapsed = collapse(properties, environment.name().toLowerCase());
 
         final String pwd = read(PASSWORD, properties);
         final BridgeEncryptor encryptor = new BridgeEncryptor(pwd);
@@ -172,6 +174,10 @@ public class BridgeConfig {
         return getProperty(STORMPATH_APPLICATION_HREF);
     }
 
+    public String getHerokuAuthToken() {
+        return getProperty(HEROKU_AUTH_TOKEN);
+    }
+    
     public String getPassword() {
         return getProperty(PASSWORD);
     }
@@ -221,7 +227,7 @@ public class BridgeConfig {
             return Environment.LOCAL;
         }
         for (Environment env : Environment.values()) {
-            if (env.getEnvName().equals(envName)) {
+            if (env.name().toLowerCase().equals(envName)) {
                 return env;
             };
         }
@@ -286,7 +292,7 @@ public class BridgeConfig {
      */
     private boolean isDefaultProperty(String propName) {
         for (Environment env : Environment.values()) {
-            String envPrefix = env.getEnvName() + ".";
+            String envPrefix = env.name().toLowerCase() + ".";
             if (propName.startsWith(envPrefix)) {
                 return false;
             }

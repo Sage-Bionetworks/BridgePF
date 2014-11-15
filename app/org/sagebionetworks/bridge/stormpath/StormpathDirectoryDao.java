@@ -68,7 +68,8 @@ public class StormpathDirectoryDao implements DirectoryDao {
         return directory.getHref();
     }
 
-    @Override
+    /* Skip this.
+    @Overrid
     public void renameStudyIdentifier(Environment env, String oldIdentifier, String newIdentifier) {
         checkNotNull(env);
         checkArgument(isNotBlank(oldIdentifier), Validate.CANNOT_BE_BLANK, "oldIdentifier");
@@ -89,7 +90,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
             group.setName(newIdentifier+"_researcher");
             group.save();
         }
-    };
+    }; */
     
     @Override
     public void deleteDirectory(Environment env, String directoryHref) {
