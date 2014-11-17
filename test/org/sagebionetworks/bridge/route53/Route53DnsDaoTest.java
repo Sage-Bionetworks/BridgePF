@@ -1,7 +1,11 @@
 package org.sagebionetworks.bridge.route53;
 
+import static org.junit.Assert.*;
+
 import javax.annotation.Resource;
 
+import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
@@ -14,10 +18,28 @@ public class Route53DnsDaoTest {
     @Resource
     private Route53DnsDao dnsDao;
     
+    private String identifier;
+    
+    @After
+    public void after() {
+        if (identifier != null) {
+            dnsDao.deleteDnsRecordForStudy(identifier);
+        }
+    }
+    
     @Test
-    public void addAndRemover() {
-        dnsDao.addCnameRecordsForStudy("dns-test");
-        dnsDao.removeCnameRecordsForStudy("dns-test");
+    public void crudDnsRecord() {
+        identifier = RandomStringUtils.randomAlphabetic(5).toLowerCase();
+        
+        String dnsRecord = dnsDao.createDnsRecordForStudy(identifier);
+        assertEquals("Correct hostname", identifier+"-develop.sagebridge.org", dnsRecord);
+        
+        dnsDao.deleteDnsRecordForStudy(identifier);
+        
+        dnsRecord = dnsDao.getDnsRecordForStudy(identifier);
+        assertNull("Hostname deleted", dnsRecord);
+        
+        identifier = null;
     }
     
 }

@@ -13,13 +13,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.DnsDao;
-import org.sagebionetworks.bridge.dao.DomainDao;
+import org.sagebionetworks.bridge.dao.HerokuApi;
 import org.sagebionetworks.bridge.dao.StudyDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -47,7 +45,7 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
     
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
-    private DomainDao domainDao;
+    private HerokuApi herokuApi;
     private DnsDao dnsDao;
     private DistributedLockDao lockDao;
     private BridgeConfig config;
@@ -61,8 +59,8 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
         this.validator = validator;
     }
     
-    public void setDomainDao(DomainDao domainDao) {
-        this.domainDao = domainDao;
+    public void setHerokuApi(HerokuApi herokuApi) {
+        this.herokuApi = herokuApi;
     }
     
     public void setDnsDao(DnsDao dnsDao) {
@@ -151,12 +149,18 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
             if (studyDao.doesIdentifierExist(study.getIdentifier())) {
                 throw new EntityAlreadyExistsException(study);
             }
-            for (Environment env : Environment.values()) {
-                String href = directoryDao.createDirectory(env, study.getIdentifier());
-                study.setStormpathUrl(env, href);
+            String directory = directoryDao.createDirectoryForStudy(study.getIdentifier());
+            study.setStormpathHref(directory);
+            
+            String record = dnsDao.createDnsRecordForStudy(study.getIdentifier());
+            String domain = herokuApi.registerDomainForStudy(study.getIdentifier());
+            
+            if (record != null && record.equals(domain)) {
+                study.setHostname(domain);    
+            } else {
+                String msg = String.format("DNS (%s) record and Host name don't match (%s).", record, domain);
+                throw new BridgeServiceException(msg);
             }
-            dnsDao.addCnameRecordsForStudy(study.getIdentifier());
-            domainDao.addDomain(study.getIdentifier());
             study = studyDao.createStudy(study);    
         } finally {
             lockDao.releaseLock(Study2.class, id, lockId);
@@ -167,6 +171,12 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
     public Study2 updateStudy(Study2 study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         Validate.entityThrowingException(validator, study);
+        
+        // These cannot be set through the API and will be null here, so they are set on update
+        Study2 originalStudy = studyDao.getStudy(study.getIdentifier());
+        study.setHostname(originalStudy.getHostname());
+        study.setStormpathHref(originalStudy.getStormpathHref());
+        study.setResearcherRole(study.getIdentifier() + "_researcher");
         
         Study2 updatedStudy = studyDao.updateStudy(study);
         studyCache.invalidate(study.getIdentifier());
@@ -180,50 +190,13 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
         try {
             lockId = lockDao.createLock(Study2.class, identifier);
             
-            DynamoStudy study = (DynamoStudy)studyDao.getStudy(identifier);
-            for (Environment env : Environment.values()) {
-                String href = study.getStudyEnvironments().get(env).getStormpathHref();
-                directoryDao.deleteDirectory(env, href);
-            }
-            domainDao.removeDomain(identifier);
-            dnsDao.removeCnameRecordsForStudy(identifier);
+            directoryDao.deleteDirectoryForStudy(identifier);
+            herokuApi.unregisterDomainForStudy(identifier);
+            dnsDao.deleteDnsRecordForStudy(identifier);
             studyDao.deleteStudy(identifier);
             studyCache.invalidate(identifier);
         } finally {
             lockDao.releaseLock(Study2.class, identifier, lockId);
         }
     }
-    
-    /* Skip this.
-    @Override
-    public Study2 changeStudyId(String oldIdentifier, String newIdentifier) {
-        checkArgument(isNotBlank(oldIdentifier), Validate.CANNOT_BE_BLANK, "oldIdentifier");
-        checkArgument(isNotBlank(newIdentifier), Validate.CANNOT_BE_BLANK, "newIdentifier");
-
-        // The study object is loaded, copied, then deleted and created.
-        // Study data is lost, that's a much more complicated thing to preserve
-        DynamoStudy study = (DynamoStudy)studyDao.getStudy(oldIdentifier);
-        
-        DynamoStudy newStudy = new DynamoStudy();
-        newStudy.setName(study.getName());
-        newStudy.setIdentifier(newIdentifier);
-        newStudy.setMaxParticipants(study.getMaxParticipants());
-        newStudy.setMinAgeOfConsent(study.getMinAgeOfConsent());
-        newStudy.getTrackerIdentifiers().addAll(study.getTrackerIdentifiers());
-        for (Environment env: Environment.values()) {
-            StudyEnvironment se = study.getStudyEnvironments().get(env);
-            newStudy.getStudyEnvironments().put(env, se);
-        }
-        Validate.entityThrowingException(validator, newStudy);
-        
-        studyDao.createStudy(newStudy);
-        // In stormpath so as to not lose users, rename the existing directories, rename
-        // the researcher groups.
-        for (Environment env : Environment.values()) {
-            directoryDao.renameStudyIdentifier(env, study.getIdentifier(), newIdentifier);    
-        }
-        studyDao.deleteStudy(study.getIdentifier());
-        
-        return newStudy;
-    }*/
 }

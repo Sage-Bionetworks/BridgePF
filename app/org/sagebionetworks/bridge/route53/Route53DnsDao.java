@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.route53;
 
-import java.util.EnumSet;
-
 import java.util.List;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -13,6 +11,8 @@ import com.amazonaws.services.route53.model.Change;
 import com.amazonaws.services.route53.model.ChangeAction;
 import com.amazonaws.services.route53.model.ChangeBatch;
 import com.amazonaws.services.route53.model.ChangeResourceRecordSetsRequest;
+import com.amazonaws.services.route53.model.ListResourceRecordSetsRequest;
+import com.amazonaws.services.route53.model.ListResourceRecordSetsResult;
 import com.amazonaws.services.route53.model.RRType;
 import com.amazonaws.services.route53.model.ResourceRecord;
 import com.amazonaws.services.route53.model.ResourceRecordSet;
@@ -33,51 +33,76 @@ public class Route53DnsDao implements DnsDao {
     }
     
     @Override
-    public void addCnameRecordsForStudy(String identifier) {
+    public String createDnsRecordForStudy(String identifier) {
         updateRecords(identifier, ChangeAction.CREATE);
+        return getDnsRecordForStudy(identifier);
     }
-
+    
     @Override
-    public void removeCnameRecordsForStudy(String identifier) {
+    public String getDnsRecordForStudy(String identifier) {
+        // This is an odd way to do it, but we're basically verifying the host names
+        // we expect to be there, are actually there.
+        ListResourceRecordSetsRequest request = new ListResourceRecordSetsRequest();
+        request.setHostedZoneId(config.getProperty("route53.zone"));
+        ListResourceRecordSetsResult result = client.listResourceRecordSets(request);
+        do {
+            List<ResourceRecordSet> recordSets = result.getResourceRecordSets();
+            for(ResourceRecordSet recordSet : recordSets) {
+                // Yes it has a period at the end, so it's not the hostname exactly.
+                String recordSetName = getDnsName(config.getEnvironment(), identifier) + ".";
+                if (recordSetName.equals(recordSet.getName())) {
+                    return getDnsName(config.getEnvironment(), identifier);
+                }
+            }
+            request.setStartRecordName(result.getNextRecordName());
+            request.setStartRecordType(result.getNextRecordType());
+            result = client.listResourceRecordSets(request);
+        } while (result.getNextRecordName() != null);
+        return null;
+    }
+    
+    @Override
+    public void deleteDnsRecordForStudy(String identifier) {
         updateRecords(identifier, ChangeAction.DELETE);
     }
     
-    private void updateRecords(String identifier, ChangeAction action) {
-        for (Environment env : EnumSet.of(Environment.DEV, Environment.UAT, Environment.PROD)) {
-
-            List<ResourceRecord> records = Lists.newArrayList();
-            ResourceRecord record = new ResourceRecord();
-            record.setValue( getHerokuHostname(env) );
-            records.add(record);
-            
-            ResourceRecordSet recordSet = new ResourceRecordSet();
-            recordSet.setName( getStudyHostname(identifier, env) );
-            recordSet.setType(RRType.CNAME);
-            recordSet.setTTL(new Long(60));
-            recordSet.setResourceRecords(records);
-            
-            List<Change> changes = Lists.newArrayList();
-            Change change = new Change();
-            change.setAction(action);
-            change.setResourceRecordSet(recordSet);
-            changes.add(change);
-            
-            ChangeBatch batch = new ChangeBatch();
-            batch.setChanges(changes);
-            
-            ChangeResourceRecordSetsRequest request = new ChangeResourceRecordSetsRequest();
-            request.setHostedZoneId(config.getProperty("route53.zone"));
-            request.setChangeBatch(batch);
-            
-            client.changeResourceRecordSets(request);
-        }
-    }
-    
-    private String getHerokuHostname(Environment env) {
-        return config.getProperty("heroku.ssl.hostname."+env.name().toLowerCase());
-    }
-    
-    private String getStudyHostname(String identifier, Environment env) {
+    private String getDnsName(Environment env, String identifier) {
         return identifier + config.getProperty("study.hostname."+env.name().toLowerCase());
+    }
+    
+    private void updateRecords(String identifier, ChangeAction action) {
+        List<ResourceRecord> records = Lists.newArrayList();
+        ResourceRecord record = new ResourceRecord();
+        record.setValue( getHerokuHostname() );
+        records.add(record);
+        
+        ResourceRecordSet recordSet = new ResourceRecordSet();
+        recordSet.setName( getStudyHostname(identifier) );
+        recordSet.setType(RRType.CNAME);
+        recordSet.setTTL(new Long(60));
+        recordSet.setResourceRecords(records);
+        
+        List<Change> changes = Lists.newArrayList();
+        Change change = new Change();
+        change.setAction(action);
+        change.setResourceRecordSet(recordSet);
+        changes.add(change);
+        
+        ChangeBatch batch = new ChangeBatch();
+        batch.setChanges(changes);
+        
+        ChangeResourceRecordSetsRequest request = new ChangeResourceRecordSetsRequest();
+        request.setHostedZoneId(config.getProperty("route53.zone"));
+        request.setChangeBatch(batch);
+        
+        client.changeResourceRecordSets(request);
+    }
+    
+    private String getHerokuHostname() {
+        return config.getProperty("heroku.ssl.hostname."+config.getEnvironment().name().toLowerCase());
+    }
+    
+    private String getStudyHostname(String identifier) {
+        return identifier + config.getProperty("study.hostname."+config.getEnvironment().name().toLowerCase());
     }
 }

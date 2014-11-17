@@ -13,7 +13,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.Study2;
@@ -49,7 +48,8 @@ public class DynamoStudyDaoTest {
         study = studyDao.getStudy(study.getIdentifier());
         assertEquals("Name was set", "This is a test name", study.getName());
         assertEquals("Max participants was set", 10, study.getMaxParticipants());
-        assertNotNull("Study deployment was set", study.getStormpathUrl());
+        assertNotNull("Study deployment was set", study.getStormpathHref());
+        assertNotNull("Study hostname was set", study.getHostname());
         assertTrue("Contains tracker", study.getTrackerIdentifiers().contains("sage:bp"));
         
         String identifier = study.getIdentifier();
@@ -110,17 +110,16 @@ public class DynamoStudyDaoTest {
     
     private Study2 createStudy() {
         Study2 study = new DynamoStudy();
-        study.setIdentifier(RandomStringUtils.randomAlphabetic(5));
+        study.setIdentifier(RandomStringUtils.randomAlphabetic(5).toLowerCase());
         study.setMaxParticipants(100);
         study.setMinAgeOfConsent(18);
         study.setName(RandomStringUtils.randomAlphabetic(5));
         study.setResearcherRole("researcher");
-        study.setStormpathUrl(Environment.LOCAL, "http://local/null");
-        study.setStormpathUrl(Environment.DEV, "http://dev/null");
-        study.setStormpathUrl(Environment.UAT, "http://uat/null");
-        study.setStormpathUrl(Environment.PROD, "http://prod/null");
         study.getTrackerIdentifiers().add("sage:med");
         study.getTrackerIdentifiers().add("sage:bp");
+        study.setHostname("test.sagebridge.org");
+        study.setStormpathHref("http://test/local/");
         return study;
     }
+    
 }

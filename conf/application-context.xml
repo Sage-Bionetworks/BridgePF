@@ -123,6 +123,7 @@
     </bean>
     
     <bean id="directoryDao" class="org.sagebionetworks.bridge.stormpath.StormpathDirectoryDao">
+        <property name="bridgeConfig" ref="bridgeConfig"/>
         <property name="stormpathClient" ref="stormpathClient"/>
     </bean>
     
@@ -131,7 +132,7 @@
         <property name="amazonRoute53Client" ref="r5client"/>
     </bean>
 
-    <bean id="domainDao" class="org.sagebionetworks.bridge.heroku.HerokuDomainDao">
+    <bean id="herokuApi" class="org.sagebionetworks.bridge.heroku.HerokuApiImpl">
         <property name="bridgeConfig" ref="bridgeConfig"/>
     </bean>
     
@@ -307,7 +308,7 @@
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
         <property name="studyDao" ref="studyDao"/>
         <property name="directoryDao" ref="directoryDao"/>
-        <property name="domainDao" ref="domainDao"/>
+        <property name="herokuApi" ref="herokuApi"/>
         <property name="dnsDao" ref="dnsDao"/>
         <property name="distributedLockDao" ref="distributedLockDao"/>
         <property name="bridgeConfig" ref="bridgeConfig"/>
