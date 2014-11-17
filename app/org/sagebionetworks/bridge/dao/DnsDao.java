@@ -2,8 +2,10 @@ package org.sagebionetworks.bridge.dao;
 
 public interface DnsDao {
 
-    public void addCnameRecordsForStudy(String identifier);
+    public String createDnsRecordForStudy(String identifier);
 
-    public void removeCnameRecordsForStudy(String identifier);
+    public String getDnsRecordForStudy(String identifier);
+    
+    public void deleteDnsRecordForStudy(String identifier);
     
 }

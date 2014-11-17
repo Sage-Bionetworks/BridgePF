@@ -1,11 +1,13 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.config.Environment;
@@ -31,18 +33,35 @@ public class StormpathDirectoryDaoTest {
     @Resource
     Client client;
     
+    private String identifier;
+    
+    @After
+    public void after() {
+        if (identifier != null) {
+            directoryDao.deleteDirectoryForStudy(identifier);
+        }
+    }
+    
     @Test
     public void crudDirectory() {
-        String name = RandomStringUtils.randomAlphabetic(5);
-        String href = directoryDao.createDirectory(Environment.LOCAL, name);
+        identifier = RandomStringUtils.randomAlphabetic(5).toLowerCase();
+        String stormpathHref = directoryDao.createDirectoryForStudy(identifier);
         
         // Verify the directory and mapping were created
-        Directory directory = getDirectory(href);
-        assertEquals("Name is the right one", name + " (local)", directory.getName());
-        assertTrue("Mapping exists for new directory in the right application", containsMapping(href));
-        assertTrue("The researcher group was created", researcherGroupExists(directory, name));
+        Directory directory = getDirectory(stormpathHref);
+        assertEquals("Name is the right one", identifier + " (local)", directory.getName());
+        assertTrue("Mapping exists for new directory in the right application", containsMapping(stormpathHref));
+        assertTrue("The researcher group was created", researcherGroupExists(directory, identifier));
         
-        directoryDao.deleteDirectory(Environment.LOCAL, href);
+        Directory newDirectory = directoryDao.getDirectoryForStudy(identifier);
+        assertEquals("Directory is in map", directory.getHref(), newDirectory.getHref());
+        
+        directoryDao.deleteDirectoryForStudy(identifier);
+        
+        newDirectory = directoryDao.getDirectoryForStudy(identifier);
+        assertNull("Directory has been deleted", newDirectory);
+        
+        identifier = null;
     }
     
     private boolean researcherGroupExists(Directory directory, String name) {

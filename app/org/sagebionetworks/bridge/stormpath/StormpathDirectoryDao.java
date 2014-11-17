@@ -4,7 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -25,20 +25,24 @@ import com.stormpath.sdk.group.Groups;
 
 public class StormpathDirectoryDao implements DirectoryDao {
 
+    private BridgeConfig config;
     private Client client;
+    
+    public void setBridgeConfig(BridgeConfig bridgeConfig) {
+        this.config = bridgeConfig;
+    }
     
     public void setStormpathClient(Client client) {
         this.client = client;
     }
 
     @Override
-    public String createDirectory(Environment env, String identifier) {
-        checkNotNull(env);
+    public String createDirectoryForStudy(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
-        Application app = getApplication(env);
+        Application app = getApplication();
         checkNotNull(app);
-        String dirName = String.format("%s (%s)", identifier, env.name().toLowerCase());
-        String groupName = identifier + "_researcher";
+        String dirName = createDirectoryName(identifier);
+        String groupName = createGroupName(identifier);
 
         Directory directory = getDirectory(dirName);
         if (directory == null) {
@@ -67,53 +71,46 @@ public class StormpathDirectoryDao implements DirectoryDao {
         
         return directory.getHref();
     }
+    
 
-    /* Skip this.
-    @Overrid
-    public void renameStudyIdentifier(Environment env, String oldIdentifier, String newIdentifier) {
-        checkNotNull(env);
-        checkArgument(isNotBlank(oldIdentifier), Validate.CANNOT_BE_BLANK, "oldIdentifier");
-        checkArgument(isNotBlank(newIdentifier), Validate.CANNOT_BE_BLANK, "newIdentifier");
-        Application app = getApplication(env);
-        checkNotNull(app);
-        
-        String oldDirName = String.format("%s (%s)", oldIdentifier, env.name().toLowerCase());
-        String newDirName = String.format("%s (%s)", newIdentifier, env.name().toLowerCase());
-        
-        Directory directory = getDirectory(oldDirName);
-        if (directory != null) {
-            directory.setName(newDirName);
-            directory.save();
-
-            // Also change the name of the researcher group, of course.
-            Group group = getResearcherGroup(app, oldIdentifier+"_researcher");
-            group.setName(newIdentifier+"_researcher");
-            group.save();
-        }
-    }; */
+    @Override
+    public Directory getDirectoryForStudy(String identifier) {
+        String dirName = createDirectoryName(identifier);
+        return getDirectory(dirName);
+    }
     
     @Override
-    public void deleteDirectory(Environment env, String directoryHref) {
-        checkNotNull(env);
-        checkArgument(isNotBlank(directoryHref), Validate.CANNOT_BE_BLANK, "directoryHref");
-        Application app = getApplication(env);
+    public void deleteDirectoryForStudy(String identifier) {
+        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
+        Application app = getApplication();
         checkNotNull(app);
         
+        Directory existing = getDirectory(createDirectoryName(identifier));
         // delete the mapping
-        AccountStoreMapping mapping = getApplicationMapping(app, directoryHref);
+        AccountStoreMapping mapping = getApplicationMapping(app, existing.getHref());
         if (mapping != null) {
             mapping.delete();
         }
         
         // delete the directory
-        Directory directory = client.getResource(directoryHref, Directory.class);
+        Directory directory = client.getResource(existing.getHref(), Directory.class);
         if (directory != null) {
             directory.delete();    
         }
     }
+
+    private String createGroupName(String identifier) {
+        String groupName = identifier + "_researcher";
+        return groupName;
+    }
+
+    private String createDirectoryName(String identifier) {
+        String dirName = String.format("%s (%s)", identifier, config.getEnvironment().name().toLowerCase());
+        return dirName;
+    }
     
-    private Application getApplication(Environment env) {
-        String appName = "bridge-"+env.name().toLowerCase();
+    private Application getApplication() {
+        String appName = "bridge-"+config.getEnvironment().name().toLowerCase();
         ApplicationCriteria criteria = Applications.where(Applications.name().eqIgnoreCase(appName));
         ApplicationList list = client.getApplications(criteria);
         return (list.iterator().hasNext()) ? list.iterator().next() : null;
@@ -139,4 +136,5 @@ public class StormpathDirectoryDao implements DirectoryDao {
         GroupList list = app.getGroups(criteria);
         return (list.iterator().hasNext()) ? list.iterator().next() : null;
     }
+
 }
