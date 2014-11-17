@@ -1,0 +1,20 @@
+# This file configures the New Relic Agent.  New Relic monitors
+# Java applications with deep visibility and low overhead.  For more details and additional
+# configuration options visit https://docs.newrelic.com/docs/java/java-agent-configuration.
+#
+# This section is for settings common to all environments.
+# Do not add anything above this next line.
+common: &default_settings
+
+  # License key is overriden by NEW_RELIC_LICENSE_KEY config var in Heroku
+  # license_key: 'your license key'
+
+  app_name: BridgePF
+  enable_auto_app_naming: true
+  enable_auto_transaction_naming: false
+  high_security: true
+  log_file_name: newrelic_agent.log
+
+  # The levels in increasing order of verboseness are:
+  #   off, severe, warning, info, fine, finer, finest
+  log_level: info
