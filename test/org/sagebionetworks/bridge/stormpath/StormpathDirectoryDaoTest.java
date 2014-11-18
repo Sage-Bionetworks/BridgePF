@@ -10,15 +10,12 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.stormpath.sdk.application.AccountStoreMapping;
 import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.application.ApplicationCriteria;
-import com.stormpath.sdk.application.ApplicationList;
-import com.stormpath.sdk.application.Applications;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.group.Group;
@@ -77,15 +74,12 @@ public class StormpathDirectoryDaoTest {
         return client.getResource(href, Directory.class);
     }
     
-    private Application applicationForEnvironment(Environment env) {
-        String appName = "bridge-"+env.name().toLowerCase();
-        ApplicationCriteria criteria = Applications.where(Applications.name().eqIgnoreCase(appName));
-        ApplicationList list = client.getApplications(criteria);
-        return (list.iterator().hasNext()) ? list.iterator().next() : null;
+    private Application getApplication() {
+        return client.getResource(BridgeConfigFactory.getConfig().getStormpathApplicationHref(), Application.class);
     }
     
     private boolean containsMapping(String href) {
-        Application app = applicationForEnvironment(Environment.LOCAL);
+        Application app = getApplication();
         for (AccountStoreMapping mapping : app.getAccountStoreMappings()) {
             if (mapping.getAccountStore().getHref().equals(href)) {
                 return true;    

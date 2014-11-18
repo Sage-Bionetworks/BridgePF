@@ -42,6 +42,9 @@ public class BridgeConfig {
     private static final String HEALTHCODE_SALT = "bridge.healthcode.salt";
     
     private static final String HEROKU_AUTH_TOKEN = "heroku.auth.token";
+    private static final String HEROKU_APPNAME = "heroku.appname";
+    private static final String HEROKU_SSL_ENDPOINT = "heroku.ssl.endpoint";
+    private static final String STUDY_HOSTNAME = "study.hostname";
     
     private final String user;
     private final Environment environment;
@@ -173,10 +176,6 @@ public class BridgeConfig {
     public String getStormpathApplicationHref() {
         return getProperty(STORMPATH_APPLICATION_HREF);
     }
-
-    public String getHerokuAuthToken() {
-        return getProperty(HEROKU_AUTH_TOKEN);
-    }
     
     public String getPassword() {
         return getProperty(PASSWORD);
@@ -192,6 +191,26 @@ public class BridgeConfig {
 
     public String getHealthCodeSalt() {
         return getProperty(HEALTHCODE_SALT);
+    }
+    
+    public String getStudyHostname() {
+        return getProperty(STUDY_HOSTNAME);
+    }
+    
+    public String getFullStudyHostname(String identifier) {
+        return identifier + getProperty(STUDY_HOSTNAME);
+    }
+
+    public String getHerokuAuthToken() {
+        return getProperty(HEROKU_AUTH_TOKEN);
+    }
+    
+    public String getHerokuAppName() {
+        return getProperty(HEROKU_APPNAME);
+    }
+    
+    public String getHerokuSslEndpoint() {
+        return getProperty(HEROKU_SSL_ENDPOINT);
     }
 
     ///////////////////////////

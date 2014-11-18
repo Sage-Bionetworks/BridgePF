@@ -10,9 +10,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 import com.stormpath.sdk.application.AccountStoreMapping;
 import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.application.ApplicationCriteria;
-import com.stormpath.sdk.application.ApplicationList;
-import com.stormpath.sdk.application.Applications;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directories;
 import com.stormpath.sdk.directory.Directory;
@@ -110,10 +107,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
     }
     
     private Application getApplication() {
-        String appName = "bridge-"+config.getEnvironment().name().toLowerCase();
-        ApplicationCriteria criteria = Applications.where(Applications.name().eqIgnoreCase(appName));
-        ApplicationList list = client.getApplications(criteria);
-        return (list.iterator().hasNext()) ? list.iterator().next() : null;
+        return client.getResource(config.getStormpathApplicationHref(), Application.class);
     }
     
     private AccountStoreMapping getApplicationMapping(Application app, String href) {
