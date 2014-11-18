@@ -4,10 +4,10 @@ import static org.junit.Assert.*;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestUtils;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -29,7 +29,7 @@ public class Route53DnsDaoTest {
     
     @Test
     public void crudDnsRecord() {
-        identifier = RandomStringUtils.randomAlphabetic(5).toLowerCase();
+        identifier = TestUtils.randomName();
         
         String dnsRecord = dnsDao.createDnsRecordForStudy(identifier);
         assertEquals("Correct hostname", identifier+"-local.sagebridge.org", dnsRecord);

@@ -1,12 +1,15 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import static com.google.common.base.Preconditions.checkArgument;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.application.AccountStoreMapping;
 import com.stormpath.sdk.application.Application;
@@ -21,6 +24,8 @@ import com.stormpath.sdk.group.GroupList;
 import com.stormpath.sdk.group.Groups;
 
 public class StormpathDirectoryDao implements DirectoryDao {
+
+    private static Logger logger = LoggerFactory.getLogger(StormpathDirectoryDao.class);
 
     private BridgeConfig config;
     private Client client;
@@ -48,7 +53,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
             directory = client.createDirectory(directory);
         }
         
-        AccountStoreMapping mapping = getApplicationMapping(app, directory.getHref());
+        AccountStoreMapping mapping = getApplicationMapping(directory.getHref(), app);
         if (mapping == null) {
             mapping = client.instantiate(AccountStoreMapping.class);
             mapping.setAccountStore(directory);
@@ -69,7 +74,6 @@ public class StormpathDirectoryDao implements DirectoryDao {
         return directory.getHref();
     }
     
-
     @Override
     public Directory getDirectoryForStudy(String identifier) {
         String dirName = createDirectoryName(identifier);
@@ -84,33 +88,35 @@ public class StormpathDirectoryDao implements DirectoryDao {
         
         Directory existing = getDirectory(createDirectoryName(identifier));
         // delete the mapping
-        AccountStoreMapping mapping = getApplicationMapping(app, existing.getHref());
+        AccountStoreMapping mapping = getApplicationMapping(existing.getHref(), app);
         if (mapping != null) {
             mapping.delete();
+        } else {
+            logger.warn("AccountStoreMapping not found: " + app.getName() + ", " + existing.getHref());
         }
         
         // delete the directory
         Directory directory = client.getResource(existing.getHref(), Directory.class);
         if (directory != null) {
             directory.delete();    
+        } else {
+            logger.warn("Directory not found: " + existing.getHref());
         }
     }
 
     private String createGroupName(String identifier) {
-        String groupName = identifier + "_researcher";
-        return groupName;
+        return identifier + "_researcher";
     }
 
     private String createDirectoryName(String identifier) {
-        String dirName = String.format("%s (%s)", identifier, config.getEnvironment().name().toLowerCase());
-        return dirName;
+        return String.format("%s (%s)", identifier, config.getEnvironment().name().toLowerCase());
     }
     
     private Application getApplication() {
         return client.getResource(config.getStormpathApplicationHref(), Application.class);
     }
     
-    private AccountStoreMapping getApplicationMapping(Application app, String href) {
+    private AccountStoreMapping getApplicationMapping(String href, Application app) {
         for (AccountStoreMapping mapping : app.getAccountStoreMappings()) {
             if (mapping.getAccountStore().getHref().equals(href)) {
                 return mapping;

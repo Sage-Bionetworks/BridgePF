@@ -5,10 +5,10 @@ import static org.junit.Assert.assertNull;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -31,7 +31,7 @@ public class HerokuApiImplTest {
     
     @Test
     public void crudDomains() {
-        identifier = RandomStringUtils.randomAlphabetic(5).toLowerCase();
+        identifier = TestUtils.randomName();
         herokuApi.registerDomainForStudy(identifier);
         
         String domain = herokuApi.getDomainRegistrationForStudy(identifier);

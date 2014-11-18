@@ -6,10 +6,10 @@ import static org.junit.Assert.assertTrue;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -41,7 +41,7 @@ public class StormpathDirectoryDaoTest {
     
     @Test
     public void crudDirectory() {
-        identifier = RandomStringUtils.randomAlphabetic(5).toLowerCase();
+        identifier = TestUtils.randomName();
         String stormpathHref = directoryDao.createDirectoryForStudy(identifier);
         
         // Verify the directory and mapping were created

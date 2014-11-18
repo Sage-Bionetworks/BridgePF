@@ -7,10 +7,10 @@ import static org.junit.Assert.fail;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -65,7 +65,7 @@ public class StudyServiceImplTest {
     
     @Test
     public void cannotCreateAnExistingStudyWithAVersion() {
-        identifier = RandomStringUtils.randomAlphabetic(5).toLowerCase();
+        identifier = TestUtils.randomName();
         study = new DynamoStudy();
         study.setIdentifier(identifier);
         study.setName("Belgium Waffles [Test]");
@@ -75,7 +75,6 @@ public class StudyServiceImplTest {
             fail("Should have thrown an exception");
         } catch(EntityAlreadyExistsException e) {
         }
-        identifier = null;
     }
     
     @Test(expected=EntityAlreadyExistsException.class)
@@ -89,7 +88,7 @@ public class StudyServiceImplTest {
     
     @Test
     public void crudStudy() {
-        identifier = RandomStringUtils.randomAlphabetic(5).toLowerCase();
+        identifier = TestUtils.randomName();
         study = new DynamoStudy();
         study.setIdentifier(identifier);
         study.setName("Test of study creation");

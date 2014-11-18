@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
@@ -94,7 +93,7 @@ public class TestUserAdminHelper {
     public String makeRandomUserName(Class<?> cls) {
         String clsPart = cls.getSimpleName();
         String devPart = BridgeConfigFactory.getConfig().getUser();
-        String rndPart = RandomStringUtils.randomAlphabetic(4);
+        String rndPart = TestUtils.randomName();
         return String.format("%s-%s-%s", devPart, clsPart, rndPart);
     }
 
