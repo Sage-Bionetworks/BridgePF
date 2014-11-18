@@ -5,7 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.models.UploadRequest;
+import org.sagebionetworks.bridge.models.upload.UploadRequest;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
