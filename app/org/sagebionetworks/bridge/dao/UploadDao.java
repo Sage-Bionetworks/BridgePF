@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
-import org.sagebionetworks.bridge.models.UploadRequest;
+import org.sagebionetworks.bridge.models.upload.UploadRequest;
 
 public interface UploadDao {
 
