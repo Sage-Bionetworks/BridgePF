@@ -6,11 +6,10 @@ import static org.junit.Assert.assertNotNull;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import scala.actors.threadpool.Arrays;
 
 public class BcCmsEncryptorTest {
 
