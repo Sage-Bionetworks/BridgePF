@@ -15,7 +15,6 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.shiro.codec.Base64;
 import org.bouncycastle.cms.CMSException;
 import org.sagebionetworks.bridge.crypto.BcCmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
@@ -56,8 +55,7 @@ public class UploadArchiveService {
 
     private byte[] encrypt(byte[] bytes) {
         try {
-            String encrypted = encryptor.encrypt(Base64.encodeToString(bytes));
-            return Base64.decode(encrypted);
+            return encryptor.encrypt(bytes);
         } catch (CMSException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {
@@ -67,8 +65,7 @@ public class UploadArchiveService {
 
     private byte[] decrypt(byte[] bytes) {
         try {
-            String decrypted = encryptor.decrypt(Base64.encodeToString(bytes));
-            return Base64.decode(decrypted);
+            return encryptor.decrypt(bytes);
         } catch (CertificateEncodingException e) {
             throw new RuntimeException(e);
         } catch (CMSException e) {
