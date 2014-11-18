@@ -32,7 +32,7 @@ object GlobalWithFilters extends WithFilters (
   ) with GlobalSettings {
 
   override def beforeStart(app: Application) {
-    Logger.info("Environment: " + BridgeConfigFactory.getConfig().getEnvironment().getEnvName())
+    Logger.info("Environment: " + BridgeConfigFactory.getConfig().getEnvironment().name().toLowerCase())
     DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb")
   }
 

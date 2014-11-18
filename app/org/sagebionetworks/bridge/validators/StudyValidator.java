@@ -19,7 +19,7 @@ public class StudyValidator implements Validator {
             errors.reject("identifier", "is null or blank");
         } else {
             if (!study.getIdentifier().matches("^[a-z-]+$")) {
-                errors.reject("identifier", "must contain only letters with optional dashes");
+                errors.reject("identifier", "must contain only lower-case letters with optional dashes");
             }
             if (study.getIdentifier().length() < 2) {
                 errors.reject("identifier", "must be at least 2 characters");
@@ -27,11 +27,6 @@ public class StudyValidator implements Validator {
         }
         if (StringUtils.isBlank(study.getName())) {
             errors.reject("name", "is null or blank");
-        }
-        if (!errors.hasErrors()) {
-            // Normalize this, if an identifier exists.
-            study.setIdentifier(study.getIdentifier().toLowerCase());
-            study.setResearcherRole(study.getIdentifier() + "_researcher");
         }
     }
 
