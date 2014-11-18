@@ -9,10 +9,10 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.Study2;
@@ -110,10 +110,10 @@ public class DynamoStudyDaoTest {
     
     private Study2 createStudy() {
         Study2 study = new DynamoStudy();
-        study.setIdentifier(RandomStringUtils.randomAlphabetic(5).toLowerCase());
+        study.setIdentifier(TestUtils.randomName());
         study.setMaxParticipants(100);
         study.setMinAgeOfConsent(18);
-        study.setName(RandomStringUtils.randomAlphabetic(5));
+        study.setName(TestUtils.randomName());
         study.setResearcherRole("researcher");
         study.getTrackerIdentifiers().add("sage:med");
         study.getTrackerIdentifiers().add("sage:bp");
