@@ -9,7 +9,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -36,7 +35,7 @@ public class HerokuApiImplTest {
         herokuApi.registerDomainForStudy(identifier);
         
         String domain = herokuApi.getDomainRegistrationForStudy(identifier);
-        assertEquals("Has correct domain", getStudyHostname(identifier), domain);
+        assertEquals("Has correct domain", BridgeConfigFactory.getConfig().getFullStudyHostname(identifier), domain);
         
         herokuApi.unregisterDomainForStudy(identifier);
         domain = herokuApi.getDomainRegistrationForStudy(identifier);
@@ -44,11 +43,6 @@ public class HerokuApiImplTest {
         assertNull("Now has no domain", domain);
         
         identifier = null;
-    }
-    
-    private String getStudyHostname(String identifier) {
-        BridgeConfig config = BridgeConfigFactory.getConfig();
-        return identifier + config.getProperty("study.hostname."+config.getEnvironment().name().toLowerCase());
     }
     
 }

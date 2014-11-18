@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.route53;
 
 import java.util.List;
 
+
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.DnsDao;
 
 import com.amazonaws.services.route53.AmazonRoute53Client;
@@ -44,14 +44,16 @@ public class Route53DnsDao implements DnsDao {
         // we expect to be there, are actually there.
         ListResourceRecordSetsRequest request = new ListResourceRecordSetsRequest();
         request.setHostedZoneId(config.getProperty("route53.zone"));
-        ListResourceRecordSetsResult result = client.listResourceRecordSets(request);
+        
+        ListResourceRecordSetsResult result = null;
         do {
+            result = client.listResourceRecordSets(request);
             List<ResourceRecordSet> recordSets = result.getResourceRecordSets();
             for(ResourceRecordSet recordSet : recordSets) {
                 // Yes it has a period at the end, so it's not the hostname exactly.
-                String recordSetName = getDnsName(config.getEnvironment(), identifier) + ".";
+                String recordSetName = config.getFullStudyHostname(identifier) + ".";
                 if (recordSetName.equals(recordSet.getName())) {
-                    return getDnsName(config.getEnvironment(), identifier);
+                    return config.getFullStudyHostname(identifier);
                 }
             }
             request.setStartRecordName(result.getNextRecordName());
@@ -66,18 +68,14 @@ public class Route53DnsDao implements DnsDao {
         updateRecords(identifier, ChangeAction.DELETE);
     }
     
-    private String getDnsName(Environment env, String identifier) {
-        return identifier + config.getProperty("study.hostname."+env.name().toLowerCase());
-    }
-    
     private void updateRecords(String identifier, ChangeAction action) {
         List<ResourceRecord> records = Lists.newArrayList();
         ResourceRecord record = new ResourceRecord();
-        record.setValue( getHerokuHostname() );
+        record.setValue( config.getHerokuSslEndpoint() );
         records.add(record);
         
         ResourceRecordSet recordSet = new ResourceRecordSet();
-        recordSet.setName( getStudyHostname(identifier) );
+        recordSet.setName( config.getFullStudyHostname(identifier) );
         recordSet.setType(RRType.CNAME);
         recordSet.setTTL(new Long(60));
         recordSet.setResourceRecords(records);
@@ -98,11 +96,4 @@ public class Route53DnsDao implements DnsDao {
         client.changeResourceRecordSets(request);
     }
     
-    private String getHerokuHostname() {
-        return config.getProperty("heroku.ssl.hostname."+config.getEnvironment().name().toLowerCase());
-    }
-    
-    private String getStudyHostname(String identifier) {
-        return identifier + config.getProperty("study.hostname."+config.getEnvironment().name().toLowerCase());
-    }
 }

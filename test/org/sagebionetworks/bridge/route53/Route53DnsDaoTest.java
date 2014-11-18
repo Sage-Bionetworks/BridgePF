@@ -32,7 +32,7 @@ public class Route53DnsDaoTest {
         identifier = RandomStringUtils.randomAlphabetic(5).toLowerCase();
         
         String dnsRecord = dnsDao.createDnsRecordForStudy(identifier);
-        assertEquals("Correct hostname", identifier+"-develop.sagebridge.org", dnsRecord);
+        assertEquals("Correct hostname", identifier+"-local.sagebridge.org", dnsRecord);
         
         dnsDao.deleteDnsRecordForStudy(identifier);
         

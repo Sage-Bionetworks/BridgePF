@@ -121,7 +121,7 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
     public Study2 getStudy2ByHostname(String hostname) {
         checkArgument(isNotBlank(hostname), Validate.CANNOT_BE_BLANK, "hostname");
         
-        String postfix = config.getProperty("study.hostname."+config.getEnvironment().name().toLowerCase());
+        String postfix = config.getStudyHostname();
         
         String identifier = (postfix == null) ? "teststudy" : hostname.split(postfix)[0];
         return getStudy2ByIdentifier(identifier);
