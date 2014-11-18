@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
-import org.sagebionetworks.bridge.models.UploadRequest;
-import org.sagebionetworks.bridge.models.UploadSession;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.upload.UploadRequest;
+import org.sagebionetworks.bridge.models.upload.UploadSession;
 
 public interface UploadService {
 
