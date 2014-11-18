@@ -121,7 +121,7 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
     public Study2 getStudy2ByHostname(String hostname) {
         checkArgument(isNotBlank(hostname), Validate.CANNOT_BE_BLANK, "hostname");
         
-        String postfix = config.getStudyHostname();
+        String postfix = config.getStudyHostnamePostfix();
         
         String identifier = (postfix == null) ? "teststudy" : hostname.split(postfix)[0];
         return getStudy2ByIdentifier(identifier);
@@ -158,7 +158,7 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
             if (record != null && record.equals(domain)) {
                 study.setHostname(domain);    
             } else {
-                String msg = String.format("DNS (%s) record and Host name don't match (%s).", record, domain);
+                String msg = String.format("DNS record (%s) and hostname as registered with Heroku (%s) don't match.", record, domain);
                 throw new BridgeServiceException(msg);
             }
             study = studyDao.createStudy(study);    
@@ -176,7 +176,7 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
         Study2 originalStudy = studyDao.getStudy(study.getIdentifier());
         study.setHostname(originalStudy.getHostname());
         study.setStormpathHref(originalStudy.getStormpathHref());
-        study.setResearcherRole(study.getIdentifier() + "_researcher");
+        study.setResearcherRole(originalStudy.getResearcherRole());
         
         Study2 updatedStudy = studyDao.updateStudy(study);
         studyCache.invalidate(study.getIdentifier());
@@ -190,9 +190,9 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
         try {
             lockId = lockDao.createLock(Study2.class, identifier);
             
-            directoryDao.deleteDirectoryForStudy(identifier);
             herokuApi.unregisterDomainForStudy(identifier);
             dnsDao.deleteDnsRecordForStudy(identifier);
+            directoryDao.deleteDirectoryForStudy(identifier);
             studyDao.deleteStudy(identifier);
             studyCache.invalidate(identifier);
         } finally {

@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.config;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -193,11 +195,12 @@ public class BridgeConfig {
         return getProperty(HEALTHCODE_SALT);
     }
     
-    public String getStudyHostname() {
+    public String getStudyHostnamePostfix() {
         return getProperty(STUDY_HOSTNAME);
     }
     
-    public String getFullStudyHostname(String identifier) {
+    public String getStudyHostname(String identifier) {
+        checkNotNull(identifier);
         return identifier + getProperty(STUDY_HOSTNAME);
     }
 

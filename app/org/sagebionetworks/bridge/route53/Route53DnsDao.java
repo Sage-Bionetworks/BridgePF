@@ -51,14 +51,13 @@ public class Route53DnsDao implements DnsDao {
             List<ResourceRecordSet> recordSets = result.getResourceRecordSets();
             for(ResourceRecordSet recordSet : recordSets) {
                 // Yes it has a period at the end, so it's not the hostname exactly.
-                String recordSetName = config.getFullStudyHostname(identifier) + ".";
+                String recordSetName = config.getStudyHostname(identifier) + ".";
                 if (recordSetName.equals(recordSet.getName())) {
-                    return config.getFullStudyHostname(identifier);
+                    return config.getStudyHostname(identifier);
                 }
             }
             request.setStartRecordName(result.getNextRecordName());
             request.setStartRecordType(result.getNextRecordType());
-            result = client.listResourceRecordSets(request);
         } while (result.getNextRecordName() != null);
         return null;
     }
@@ -75,7 +74,7 @@ public class Route53DnsDao implements DnsDao {
         records.add(record);
         
         ResourceRecordSet recordSet = new ResourceRecordSet();
-        recordSet.setName( config.getFullStudyHostname(identifier) );
+        recordSet.setName( config.getStudyHostname(identifier) );
         recordSet.setType(RRType.CNAME);
         recordSet.setTTL(new Long(60));
         recordSet.setResourceRecords(records);

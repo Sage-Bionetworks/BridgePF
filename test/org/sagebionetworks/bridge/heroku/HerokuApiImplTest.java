@@ -35,7 +35,7 @@ public class HerokuApiImplTest {
         herokuApi.registerDomainForStudy(identifier);
         
         String domain = herokuApi.getDomainRegistrationForStudy(identifier);
-        assertEquals("Has correct domain", BridgeConfigFactory.getConfig().getFullStudyHostname(identifier), domain);
+        assertEquals("Has correct domain", BridgeConfigFactory.getConfig().getStudyHostname(identifier), domain);
         
         herokuApi.unregisterDomainForStudy(identifier);
         domain = herokuApi.getDomainRegistrationForStudy(identifier);
