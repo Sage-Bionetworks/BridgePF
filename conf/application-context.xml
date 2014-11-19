@@ -305,6 +305,14 @@
         </property>
     </bean>
     
+    <bean id="controllers.StudyController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.StudyController" parent="BaseController">
+                <property name="studyService" ref="studyService" />
+            </bean>
+        </property>
+    </bean>
+    
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
         <property name="studyDao" ref="studyDao"/>
         <property name="directoryDao" ref="directoryDao"/>

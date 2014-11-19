@@ -99,7 +99,7 @@ public class HerokuApiImpl implements HerokuApi {
              CloseableHttpResponse response = client.execute(delete)) {
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != 200) {
-                String msg = String.format("%s: could not register domain name %s with Heroku app %s",
+                String msg = String.format("%s: could not unregister domain name %s with Heroku app %s",
                         Integer.toString(statusCode), studyHostname, herokuAppName);
                 throw new BridgeServiceException(msg);
             }
