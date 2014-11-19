@@ -42,15 +42,15 @@ public class DynamoStudyDaoTest {
         assertNotNull("Study was assigned a version", study.getVersion());
         
         study.setName("This is a test name");
-        study.setMaxParticipants(10);
+        study.setMaxNumOfParticipants(10);
         study = studyDao.updateStudy(study);
         
         study = studyDao.getStudy(study.getIdentifier());
         assertEquals("Name was set", "This is a test name", study.getName());
-        assertEquals("Max participants was set", 10, study.getMaxParticipants());
+        assertEquals("Max participants was set", 10, study.getMaxNumOfParticipants());
         assertNotNull("Study deployment was set", study.getStormpathHref());
         assertNotNull("Study hostname was set", study.getHostname());
-        assertTrue("Contains tracker", study.getTrackerIdentifiers().contains("sage:bp"));
+        assertTrue("Contains tracker", study.getTrackers().contains("sage:bp"));
         
         String identifier = study.getIdentifier();
         studyDao.deleteStudy(study.getIdentifier());
@@ -111,12 +111,12 @@ public class DynamoStudyDaoTest {
     private Study2 createStudy() {
         Study2 study = new DynamoStudy();
         study.setIdentifier(TestUtils.randomName());
-        study.setMaxParticipants(100);
+        study.setMaxNumOfParticipants(100);
         study.setMinAgeOfConsent(18);
         study.setName(TestUtils.randomName());
         study.setResearcherRole("researcher");
-        study.getTrackerIdentifiers().add("sage:med");
-        study.getTrackerIdentifiers().add("sage:bp");
+        study.getTrackers().add("sage:med");
+        study.getTrackers().add("sage:bp");
         study.setHostname("test.sagebridge.org");
         study.setStormpathHref("http://test/local/");
         return study;

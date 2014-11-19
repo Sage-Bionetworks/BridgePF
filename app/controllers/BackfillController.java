@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.services.BackfillService;
 
 import play.mvc.Result;
 
-public class BackfillController extends AdminController {
+public class BackfillController extends BaseController {
 
     private BackfillService backfillService;
     public void setBackfillService(BackfillService backfillService) {

@@ -14,10 +14,7 @@ apt-get -q -y update
 apt-get -q -y upgrade
 
 # Tools
-apt-get -q -y install bzip2
-apt-get -q -y install curl
-apt-get -q -y install zip
-apt-get -q -y install git
+apt-get -q -y install vim bzip2 curl zip git
 
 # NFS Client
 apt-get -q -y install nfs-common
@@ -62,3 +59,5 @@ apt-get -q -y install redis-server
 # .bash_profile
 su - vagrant -c "echo 'source ~/.profile' > .bash_profile"
 su - vagrant -c "echo 'export PATH=$PATH:~/phantomjs-1.9.7-linux-x86_64/bin:~/play-2.2.5' >> ~/.bash_profile"
+su - vagrant -c "echo 'export SBT_OPTS=\"-Xmx2000M -Xss2M -XX:PermSize=128M -XX:MaxPermSize=256M -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled\"' >> ~/.bash_profile"
+su - vagrant -c "source ~/.bash_profile"

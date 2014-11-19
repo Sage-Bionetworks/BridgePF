@@ -32,7 +32,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 
-public class StudyServiceImpl extends CacheLoader<String,Study2>  implements StudyService {
+public class StudyServiceImpl extends CacheLoader<String,Study2> implements StudyService {
     
     LoadingCache<String, Study2> studyCache = CacheBuilder.newBuilder()
             .maximumSize(50)
@@ -122,8 +122,13 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
         checkArgument(isNotBlank(hostname), Validate.CANNOT_BE_BLANK, "hostname");
         
         String postfix = config.getStudyHostnamePostfix();
+<<<<<<< HEAD
         
         String identifier = (postfix == null) ? "api" : hostname.split(postfix)[0];
+=======
+        String identifier = (postfix == null) ? "teststudy" : hostname.split(postfix)[0];
+        
+>>>>>>> c72ad370f209818037d76b174f226d84b8316c1d
         return getStudy2ByIdentifier(identifier);
     }
     @Override
@@ -149,6 +154,8 @@ public class StudyServiceImpl extends CacheLoader<String,Study2>  implements Stu
             if (studyDao.doesIdentifierExist(study.getIdentifier())) {
                 throw new EntityAlreadyExistsException(study);
             }
+            study.setResearcherRole(study.getIdentifier() + "_researcher");
+            
             String directory = directoryDao.createDirectoryForStudy(study.getIdentifier());
             study.setStormpathHref(directory);
             
