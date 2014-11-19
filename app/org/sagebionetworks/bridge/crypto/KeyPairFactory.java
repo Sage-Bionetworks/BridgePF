@@ -10,7 +10,7 @@ public class KeyPairFactory {
     private static final KeyPairGenerator rsa2048;
     static {
         try {
-            rsa2048 = KeyPairGenerator.getInstance("RSA");
+            rsa2048 = KeyPairGenerator.getInstance(BcCmsConstants.KEY_PAIR_ALGO);
             SecureRandom random = SecureRandom.getInstance("NativePRNG");
             rsa2048.initialize(2048, random);
         } catch (NoSuchAlgorithmException e) {

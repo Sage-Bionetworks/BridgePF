@@ -17,4 +17,5 @@ public class GuidVersionHolder {
     public Long getVersion() {
         return version;
     }
+
 }

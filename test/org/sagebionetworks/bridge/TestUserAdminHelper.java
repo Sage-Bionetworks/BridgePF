@@ -1,18 +1,17 @@
 package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_KEY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
@@ -94,7 +93,7 @@ public class TestUserAdminHelper {
     public String makeRandomUserName(Class<?> cls) {
         String clsPart = cls.getSimpleName();
         String devPart = BridgeConfigFactory.getConfig().getUser();
-        String rndPart = RandomStringUtils.randomAlphabetic(4);
+        String rndPart = TestUtils.randomName();
         return String.format("%s-%s-%s", devPart, clsPart, rndPart);
     }
 
@@ -113,7 +112,7 @@ public class TestUserAdminHelper {
         
         String name = makeRandomUserName(cls);
         SignUp signUp = new SignUp(name, name + "@sagebridge.org", PASSWORD, roles);
-        Study study = studyService.getStudyByKey(TEST_STUDY_KEY);
+        Study study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
         return createUser(signUp, study, signIn, consent);
     }
     

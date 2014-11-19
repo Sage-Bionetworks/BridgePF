@@ -12,15 +12,15 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
-import org.sagebionetworks.bridge.models.ConsentSignature;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.validation.Validator;
 
@@ -202,28 +202,28 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     private void removeParticipantOptions(User user) {
-        String healthDataCode = user.getHealthDataCode();
-        if (healthDataCode != null) {
-            optionsService.deleteAllParticipantOptions(healthDataCode);    
+        String healthCode = user.getHealthCode();
+        if (healthCode != null) {
+            optionsService.deleteAllParticipantOptions(healthCode);    
         }
     }
     
     private void removeHealthCodeAndIdMappings(User user) {
-        String healthDataCode = user.getHealthDataCode();
-        healthIdDao.deleteMapping(healthDataCode);
-        healthCodeDao.deleteCode(healthDataCode);
+        String healthCode = user.getHealthCode();
+        healthIdDao.deleteMapping(healthCode);
+        healthCodeDao.deleteCode(healthCode);
     }
     
     private void removeAllHealthDataRecords(User user, Study userStudy) throws BridgeServiceException {
         // This user may have never consented to research. Ignore if that's the case.
-        if (user.getHealthDataCode() != null) {
+        if (user.getHealthCode() != null) {
             List<Tracker> trackers = userStudy.getTrackers();
             HealthDataKey key = null;
             for (Tracker tracker : trackers) {
                 key = new HealthDataKey(userStudy, tracker, user);
                 List<HealthDataRecord> records = healthDataService.getAllHealthData(key);
                 for (HealthDataRecord record : records) {
-                    healthDataService.deleteHealthDataRecord(key, record.getRecordId());
+                    healthDataService.deleteHealthDataRecord(key, record.getGuid());
                 }
             }
         }

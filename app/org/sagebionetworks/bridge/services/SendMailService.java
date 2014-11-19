@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
-import org.sagebionetworks.bridge.models.ConsentSignature;
-import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 public interface SendMailService {
 

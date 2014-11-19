@@ -26,8 +26,8 @@ public class HealthDataRecordValidator implements Validator {
             errors.rejectValue("endDate", "earlier than the startDate: " + record.getEndDate());
         }
         */
-        if (record.getRecordId() == null) {
-            errors.rejectValue("recordId", "null");
+        if (record.getGuid() == null) {
+            errors.rejectValue("guid", "null");
         }
     }
 

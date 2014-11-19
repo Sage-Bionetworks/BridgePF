@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.services;
 import java.util.List;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.StudyConsent;
-import org.sagebionetworks.bridge.models.StudyConsentForm;
+import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 
 public interface StudyConsentService {
 

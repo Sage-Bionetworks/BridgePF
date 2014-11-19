@@ -11,10 +11,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.models.ConsentSignature;
-import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.regions.Region;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
@@ -38,7 +38,7 @@ public class SendMailViaAmazonServiceTest {
         Study study = new Study(null, "teststudy", 17, null, null, null, null);
         
         studyService = mock(StudyService.class);
-        when(studyService.getStudyByKey(TestConstants.TEST_STUDY_KEY)).thenReturn(study);
+        when(studyService.getStudyByIdentifier(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         emailClient = mock(AmazonSimpleEmailServiceClient.class);
         argument = ArgumentCaptor.forClass(SendEmailRequest.class);
         
@@ -51,7 +51,7 @@ public class SendMailViaAmazonServiceTest {
         studyConsent = new StudyConsent() {
             @Override
             public String getStudyKey() {
-                return TestConstants.TEST_STUDY_KEY;
+                return TestConstants.TEST_STUDY_IDENTIFIER;
             }
             @Override
             public long getCreatedOn() {

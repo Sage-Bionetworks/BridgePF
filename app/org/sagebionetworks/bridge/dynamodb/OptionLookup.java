@@ -16,14 +16,14 @@ public class OptionLookup {
         this.defaultValue = defaultValue;
     }
 
-    void put(String healthDataCode, String value) {
-        checkNotNull(healthDataCode, Validate.CANNOT_BE_NULL, "healthDataCode");
-        map.put(healthDataCode, value);
+    void put(String healthCode, String value) {
+        checkNotNull(healthCode, Validate.CANNOT_BE_NULL, "healthCode");
+        map.put(healthCode, value);
     }
 
-    public String get(String healthDataCode) {
-        if (map.containsKey(healthDataCode)) {
-            return map.get(healthDataCode);
+    public String get(String healthCode) {
+        if (map.containsKey(healthCode)) {
+            return map.get(healthCode);
         }
         return defaultValue;
     }

@@ -1,10 +1,11 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.studies;
 
 import java.util.Collections;
 import java.util.List;
 
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.google.common.collect.ImmutableList;
 
@@ -67,13 +68,13 @@ public class Study implements BridgeEntity {
     public String getResearcherRole() {
         return researcherRole;
     }
-    public Tracker getTrackerById(Long id) {
+    public Tracker getTrackerByIdentifier(String identifier) {
         for (Tracker tracker : trackers) {
-            if (tracker.getId() == id) {
+            if (tracker.getIdentifier().equals(identifier)) {
                 return tracker;
             }
         }
-        String message = String.format("Tracker %s not available for study '%s'", id.toString(), key);
+        String message = String.format("Tracker %s not available for study '%s'", identifier, key);
         throw new EntityNotFoundException(Tracker.class, message);
     }
     @Override

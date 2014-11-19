@@ -14,8 +14,8 @@ import org.sagebionetworks.bridge.events.SchedulePlanDeletedEvent;
 import org.sagebionetworks.bridge.events.SchedulePlanUpdatedEvent;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
@@ -35,10 +35,9 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
     private ApplicationEventPublisher publisher;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
-                SaveBehavior.UPDATE,
-                ConsistentReads.CONSISTENT,
-                TableNameOverrideFactory.getTableNameOverride(DynamoSchedulePlan.class));
+        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
+                .withConsistentReads(ConsistentReads.CONSISTENT)
+                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoSchedulePlan.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 

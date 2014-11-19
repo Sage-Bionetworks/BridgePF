@@ -1,14 +1,15 @@
 package controllers;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,14 +26,19 @@ public class AuthenticationController extends BaseController {
             setSessionToken(session.getSessionToken());
             return okResult(new UserSessionInfo(session));
         }
-        Study study = studyService.getStudyByHostname(getHostname());
-        SignIn signIn = SignIn.fromJson(requestToJSON(request()));
-        session = authenticationService.signIn(study, signIn);
-        setSessionToken(session.getSessionToken());
-        Result result = okResult(new UserSessionInfo(session));
-        final long end = System.nanoTime();
-        logger.info("sign in controller " + (end - start));
-        return result;
+        try {
+            Study study = studyService.getStudyByHostname(getHostname());
+            SignIn signIn = SignIn.fromJson(requestToJSON(request()));
+            session = authenticationService.signIn(study, signIn);
+            setSessionToken(session.getSessionToken());
+            Result result = okResult(new UserSessionInfo(session));
+            final long end = System.nanoTime();
+            logger.info("sign in controller " + (end - start));
+            return result;
+        } catch(ConsentRequiredException e) {
+            setSessionToken(e.getUserSession().getSessionToken());
+            throw e;
+        }
     }
 
     public Result signOut() throws Exception {

@@ -13,10 +13,10 @@ import org.sagebionetworks.bridge.events.UserEnrolledEvent;
 import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,7 +103,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" created");
         
         final SchedulePlan plan = event.getSchedulePlan();
-        final Study study = studyService.getStudyByKey(plan.getStudyKey());
+        final Study study = studyService.getStudyByIdentifier(plan.getStudyKey());
         final ArrayList<User> users = getStudyUsers(study);
         final List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
         setSchedulePlan(schedules, plan);
@@ -131,7 +131,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     private void schedulePlanUpdated(SchedulePlanUpdatedEvent event) throws InterruptedException {
         logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" updated");
         final SchedulePlan plan = event.getSchedulePlan();
-        final Study study = studyService.getStudyByKey(plan.getStudyKey());
+        final Study study = studyService.getStudyByIdentifier(plan.getStudyKey());
         final ArrayList<User> users = getStudyUsers(study);
         final List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
         setSchedulePlan(schedules, plan);
@@ -145,7 +145,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         });
     }
     private void userEnrolled(final UserEnrolledEvent event) throws InterruptedException {
-        logger.info("EVENT: Participant " + event.getUser().getHealthDataCode() + " enrolled in study " + event.getStudy().getKey());
+        logger.info("EVENT: Participant " + event.getUser().getHealthCode() + " enrolled in study " + event.getStudy().getKey());
         
         final Study study = event.getStudy();
         final User user = event.getUser();
@@ -162,19 +162,19 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         runWithLock(user.getClass(), user.getId(), new Command() {
             public void execute() {
                 scheduleService.createSchedules(schedules);
-                logger.debug("Updating all schedules for user " + event.getUser().getHealthDataCode());
+                logger.debug("Updating all schedules for user " + event.getUser().getHealthCode());
             }
         });
     }
     private void userUnenrolled(final UserUnenrolledEvent event) throws InterruptedException {
-        logger.info("EVENT: Participant " + event.getUser().getHealthDataCode() + " withdrawn from study " + event.getStudy().getKey());
+        logger.info("EVENT: Participant " + event.getUser().getHealthCode() + " withdrawn from study " + event.getStudy().getKey());
 
         final Study study = event.getStudy();
         final User user = event.getUser();
         runWithLock(user.getClass(), user.getId(), new Command() {
             public void execute() {
                 scheduleService.deleteSchedules(study, user);
-                logger.debug("Removing all schedules for user " + event.getUser().getHealthDataCode());
+                logger.debug("Removing all schedules for user " + event.getUser().getHealthCode());
             }
         });
     }
@@ -202,7 +202,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     }
     private ArrayList<User> getStudyUsers(Study study) {
         ArrayList<User> users = Lists.newArrayList();
-        Application application = StormpathFactory.createStormpathApplication(stormpathClient);
+        Application application = StormpathFactory.getStormpathApplication(stormpathClient);
         // This is every user in the environment. That's what we have to do in case a user signed
         // up in one study, but is now participating in a different study.
         
