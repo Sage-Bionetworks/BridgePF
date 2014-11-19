@@ -16,6 +16,6 @@ public class TableNameOverrideFactory {
         if (tableName == null || tableName.isEmpty()) {
             throw new IllegalArgumentException("Missing DynamoDBTable table name for " + clazz.getName());
         }
-        return new TableNameOverride(env.getEnvName() + "-" + config.getUser() + "-" + tableName);
+        return new TableNameOverride(env.name().toLowerCase() + "-" + config.getUser() + "-" + tableName);
     }
 }

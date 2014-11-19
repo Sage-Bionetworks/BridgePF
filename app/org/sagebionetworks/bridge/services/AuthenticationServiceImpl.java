@@ -239,7 +239,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private UserSession createSessionFromAccount(Study study, Account account) {
         final UserSession session = new UserSession();
         session.setAuthenticated(true);
-        session.setEnvironment(config.getEnvironment().getEnvName());
+        session.setEnvironment(config.getEnvironment().name().toLowerCase());
         session.setSessionToken(BridgeUtils.generateGuid());
         final User user = new User(account);
         user.setStudyKey(study.getKey());

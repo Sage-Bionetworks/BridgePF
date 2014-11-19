@@ -22,7 +22,7 @@ public class Global extends GlobalSettings {
 
     @Override
     public void onStart(Application application) {
-        String env = BridgeConfigFactory.getConfig().getEnvironment().getEnvName();
+        String env = BridgeConfigFactory.getConfig().getEnvironment().name().toLowerCase();
         Logger.info("Environment: " + env);
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
         applicationContext = new ClassPathXmlApplicationContext("application-context.xml");
