@@ -10,15 +10,7 @@ import org.bouncycastle.cms.CMSException;
  */
 public interface CmsEncryptor {
 
-    /**
-     * @param base64Encoded Base64-encoded string to be encrypted
-     * @return Encrypted string, Base64-encoded
-     */
-    String encrypt(String base64Encoded) throws CMSException, IOException;
+    byte[] encrypt(byte[] bytes) throws CMSException, IOException;
 
-    /**
-     * @param base64Encoded Base64-encoded string to be decrypted
-     * @return Decrypted string, Base64-encoded
-     */
-    String decrypt(String base64Encoded) throws CMSException, CertificateEncodingException, IOException;
+    byte[] decrypt(byte[] bytes) throws CMSException, CertificateEncodingException, IOException;
 }

@@ -28,8 +28,8 @@ public class DynamoStudy implements Study2, DynamoTable {
     private static final String IDENTIFIER_PROPERTY = "identifier";
     private static final String NAME_PROPERTY = "name";
     private static final String TRACKERS_PROPERTY = "trackers";
-    private static final String MAXIMUM_NUMBER_OF_PARTICIPANTS_PROPERTY = "maxNumOfParticipants";
-    private static final String MINIMUM_AGE_OF_CONSENT_PROPERTY = "minAgeOfConsent";
+    private static final String MAX_NUM_OF_PARTICIPANTS_PROPERTY = "maxNumOfParticipants";
+    private static final String MIN_AGE_OF_CONSENT_PROPERTY = "minAgeOfConsent";
     private static final String RESEARCHER_ROLE_PROPERTY = "researcherRole";
     private static final String HOSTNAME_PROPERTY = "hostname";
     private static final String STORMPATH_HREF_PROPERTY = "stormpathHref";
@@ -41,7 +41,7 @@ public class DynamoStudy implements Study2, DynamoTable {
     private String stormpathHref;
     private String hostname;
     private int minAgeOfConsent;
-    private int maxNumberOfParticipants;
+    private int maxNumOfParticipants;
     private List<String> trackers = Lists.newArrayList();
     private Long version;
 
@@ -49,10 +49,10 @@ public class DynamoStudy implements Study2, DynamoTable {
         DynamoStudy study = new DynamoStudy();
         study.setIdentifier(JsonUtils.asText(node, IDENTIFIER_PROPERTY));
         study.setName(JsonUtils.asText(node, NAME_PROPERTY));
-        study.setMinAgeOfConsent(JsonUtils.asInt(node, MINIMUM_AGE_OF_CONSENT_PROPERTY));
-        study.setMaxParticipants(JsonUtils.asInt(node, MAXIMUM_NUMBER_OF_PARTICIPANTS_PROPERTY));
+        study.setMinAgeOfConsent(JsonUtils.asInt(node, MIN_AGE_OF_CONSENT_PROPERTY));
+        study.setMaxNumOfParticipants(JsonUtils.asInt(node, MAX_NUM_OF_PARTICIPANTS_PROPERTY));
         study.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
-        study.getTrackerIdentifiers().addAll(JsonUtils.asStringList(node, TRACKERS_PROPERTY));
+        study.getTrackers().addAll(JsonUtils.asStringList(node, TRACKERS_PROPERTY));
         return study;
     }
 
@@ -105,15 +105,16 @@ public class DynamoStudy implements Study2, DynamoTable {
     }
     @DynamoDBIgnore
     @Override
-    public int getMaxParticipants() {
-        return maxNumberOfParticipants;
+    public int getMaxNumOfParticipants() {
+        return maxNumOfParticipants;
     }
     @Override
-    public void setMaxParticipants(int maxParticipants) {
-        this.maxNumberOfParticipants = maxParticipants;
+    public void setMaxNumOfParticipants(int maxParticipants) {
+        this.maxNumOfParticipants = maxParticipants;
     }
     @DynamoDBIgnore
     @Override
+    @JsonIgnore
     public String getStormpathHref() {
         return stormpathHref;
     }
@@ -132,7 +133,7 @@ public class DynamoStudy implements Study2, DynamoTable {
     }
     @DynamoDBIgnore
     @Override
-    public List<String> getTrackerIdentifiers() {
+    public List<String> getTrackers() {
         return trackers;
     }
     
@@ -141,8 +142,8 @@ public class DynamoStudy implements Study2, DynamoTable {
     public String getData() {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put(RESEARCHER_ROLE_PROPERTY, researcherRole);
-        node.put(MINIMUM_AGE_OF_CONSENT_PROPERTY, minAgeOfConsent);
-        node.put(MAXIMUM_NUMBER_OF_PARTICIPANTS_PROPERTY, maxNumberOfParticipants);
+        node.put(MIN_AGE_OF_CONSENT_PROPERTY, minAgeOfConsent);
+        node.put(MAX_NUM_OF_PARTICIPANTS_PROPERTY, maxNumOfParticipants);
         node.set(TRACKERS_PROPERTY, mapper.valueToTree(trackers));
         node.put(STORMPATH_HREF_PROPERTY, stormpathHref);
         node.put(HOSTNAME_PROPERTY, hostname);
@@ -152,8 +153,8 @@ public class DynamoStudy implements Study2, DynamoTable {
         try {
             JsonNode node = mapper.readTree(data);
             this.researcherRole = JsonUtils.asText(node, RESEARCHER_ROLE_PROPERTY);
-            this.minAgeOfConsent = JsonUtils.asIntPrimitive(node, MINIMUM_AGE_OF_CONSENT_PROPERTY);
-            this.maxNumberOfParticipants = JsonUtils.asIntPrimitive(node, MAXIMUM_NUMBER_OF_PARTICIPANTS_PROPERTY);
+            this.minAgeOfConsent = JsonUtils.asIntPrimitive(node, MIN_AGE_OF_CONSENT_PROPERTY);
+            this.maxNumOfParticipants = JsonUtils.asIntPrimitive(node, MAX_NUM_OF_PARTICIPANTS_PROPERTY);
             this.trackers = JsonUtils.asStringList(node, TRACKERS_PROPERTY);
             this.stormpathHref = JsonUtils.asText(node, STORMPATH_HREF_PROPERTY);
             this.hostname = JsonUtils.asText(node, HOSTNAME_PROPERTY);
@@ -168,7 +169,7 @@ public class DynamoStudy implements Study2, DynamoTable {
         int result = 1;
         result = prime * result + ((hostname == null) ? 0 : hostname.hashCode());
         result = prime * result + ((identifier == null) ? 0 : identifier.hashCode());
-        result = prime * result + maxNumberOfParticipants;
+        result = prime * result + maxNumOfParticipants;
         result = prime * result + minAgeOfConsent;
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((researcherRole == null) ? 0 : researcherRole.hashCode());
@@ -197,7 +198,7 @@ public class DynamoStudy implements Study2, DynamoTable {
                 return false;
         } else if (!identifier.equals(other.identifier))
             return false;
-        if (maxNumberOfParticipants != other.maxNumberOfParticipants)
+        if (maxNumOfParticipants != other.maxNumOfParticipants)
             return false;
         if (minAgeOfConsent != other.minAgeOfConsent)
             return false;
@@ -233,7 +234,7 @@ public class DynamoStudy implements Study2, DynamoTable {
     public String toString() {
         return "DynamoStudy [name=" + name + ", identifier=" + identifier + ", researcherRole=" + researcherRole
                 + ", stormpathHref=" + stormpathHref + ", hostname=" + hostname + ", minAgeOfConsent="
-                + minAgeOfConsent + ", maxNumberOfParticipants=" + maxNumberOfParticipants + ", trackers=" + trackers
+                + minAgeOfConsent + ", maxNumOfParticipants=" + maxNumOfParticipants + ", trackers=" + trackers
                 + ", version=" + version + "]";
     }
 }
