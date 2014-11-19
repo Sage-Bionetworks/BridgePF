@@ -8,7 +8,6 @@ import java.security.Security;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 
-import org.apache.shiro.codec.Base64;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSEnvelopedData;
 import org.bouncycastle.cms.CMSEnvelopedDataGenerator;
@@ -28,9 +27,13 @@ import org.bouncycastle.operator.OutputEncryptor;
 
 public final class BcCmsEncryptor implements CmsEncryptor {
 
+    private final CMSEnvelopedDataGenerator generator;
+    private final X509Certificate cert;
+    private final PrivateKey privateKey;
+
     public BcCmsEncryptor(X509Certificate cert, PrivateKey privateKey) throws CertificateEncodingException {
-        checkNotNull(cert, "Cert cannot be null.");
-        checkNotNull(privateKey, "Private key cannot be null.");
+        checkNotNull(cert);
+        checkNotNull(privateKey);
         Security.addProvider(new BouncyCastleProvider());
         generator = new CMSEnvelopedDataGenerator();
         RecipientInfoGenerator recipientInfoGenerator =
@@ -41,26 +44,25 @@ public final class BcCmsEncryptor implements CmsEncryptor {
     }
 
     @Override
-    public String encrypt(String base64Encoded) throws CMSException, IOException {
-        CMSTypedData cmsData = new CMSProcessableByteArray(Base64.decode(base64Encoded));
+    public byte[] encrypt(byte[] bytes) throws CMSException, IOException {
+        checkNotNull(bytes);
+        CMSTypedData cmsData = new CMSProcessableByteArray(bytes);
         OutputEncryptor encryptor = new JceCMSContentEncryptorBuilder(BcCmsConstants.ENCRYPTOR_ALGO)
                 .setProvider(BcCmsConstants.PROVIDER).build();
         CMSEnvelopedData envelopedData = generator.generate(cmsData, encryptor);
-        return Base64.encodeToString(envelopedData.getEncoded());
+        byte[] encrypted = envelopedData.getEncoded();
+        return encrypted;
     }
 
     @Override
-    public String decrypt(String base64Encoded) throws CMSException, CertificateEncodingException, IOException {
-        CMSEnvelopedData envelopedData = new CMSEnvelopedData(Base64.decode(base64Encoded));
+    public byte[] decrypt(byte[] bytes) throws CMSException, CertificateEncodingException, IOException {
+        checkNotNull(bytes);
+        CMSEnvelopedData envelopedData = new CMSEnvelopedData(bytes);
         X509CertificateHolder certHolder = new X509CertificateHolder(cert.getEncoded());
         RecipientId recipientId = new KeyTransRecipientId(certHolder.getIssuer(), certHolder.getSerialNumber());
         RecipientInformation recInfo = envelopedData.getRecipientInfos().get(recipientId);
         Recipient recipient = new JceKeyTransEnvelopedRecipient(privateKey);
-        byte[] bytes = recInfo.getContent(recipient);
-        return Base64.encodeToString(bytes);
+        byte[] decrypted = recInfo.getContent(recipient);
+        return decrypted;
     }
-
-    private final CMSEnvelopedDataGenerator generator;
-    private final X509Certificate cert;
-    private final PrivateKey privateKey;
 }

@@ -6,8 +6,8 @@ import static org.junit.Assert.assertNotNull;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 
-import org.apache.shiro.codec.Base64;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -28,24 +28,31 @@ public class BcCmsEncryptorTest {
     @Test
     public void test() throws Exception {
         String text = "some text";
-        String base64Encoded = Base64.encodeToString(text.getBytes());
-        String encrypted = encryptor.encrypt(base64Encoded);
+        byte[] bytes = text.getBytes();
+        byte[] encrypted = encryptor.encrypt(bytes);
         assertNotNull(encrypted);
-        assertFalse(base64Encoded.equals(encrypted));
-        assertEquals(base64Encoded, encryptor.decrypt(encrypted));
+        assertFalse(text.equals(new String(encrypted)));
+        byte[] decrypted = encryptor.decrypt(encrypted);
+        assertEquals(text, new String(decrypted));
     }
 
     @Test
     public void testDecryptDeterministic() throws Exception {
         String text = "some more text";
-        String base64Encoded = Base64.encodeToString(text.getBytes());
-        assertEquals(base64Encoded, decryptor.decrypt(encryptor.encrypt(base64Encoded)));
+        byte[] bytes = text.getBytes("UTF-8");
+        byte[] encrypted = encryptor.encrypt(bytes);
+        byte[] decrypted = decryptor.decrypt(encrypted);
+        assertEquals(text, new String(decrypted, "UTF-8"));
     }
 
     @Test
     public void testEncryptRandomized() throws Exception {
         String text = "some even more text";
-        String base64Encoded = Base64.encodeToString(text.getBytes());
-        assertFalse(encryptor.encrypt(base64Encoded).equals(encryptor.encrypt(base64Encoded)));
+        byte[] bytes = text.getBytes();
+        byte[] encrypted1 = encryptor.encrypt(bytes);
+        assertNotNull(encrypted1);
+        byte[] encrypted2 = encryptor.encrypt(bytes);
+        assertNotNull(encrypted2);
+        assertFalse(Arrays.equals(encrypted1, encrypted2));
     }
 }
