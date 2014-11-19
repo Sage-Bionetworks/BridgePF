@@ -36,24 +36,23 @@ public class DynamoHealthDataDao implements HealthDataDao {
             return new DynamoHealthDataRecord(key, record);
         }
     }
-    
+
     private DynamoDBMapper mapper;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig(
-                SaveBehavior.UPDATE,
-                ConsistentReads.CONSISTENT,
-                TableNameOverrideFactory.getTableNameOverride(DynamoHealthDataRecord.class));
+        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
+                .withConsistentReads(ConsistentReads.CONSISTENT)
+                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoHealthDataRecord.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
-    
-    
+
+
     @Override
     public List<HealthDataRecord> appendHealthData(HealthDataKey key, List<HealthDataRecord> records) {
-        
+
         DynamoTransformer transformer = new DynamoTransformer(key.toString());
         List<DynamoHealthDataRecord> dynamoRecords = Lists.transform(records, transformer);
-        
+
         List<FailedBatch> failures = mapper.batchSave(dynamoRecords);
         BridgeUtils.ifFailuresThrowException(failures);
         return records;
@@ -71,14 +70,14 @@ public class DynamoHealthDataDao implements HealthDataDao {
 
     // To do this we would need a secondary index on the endDate.
     // (startDate <= windowEnd && (endDate == null || endDate >= windowStart))
-    
-    // For any local secondary index, you can store up to 10 GB of data per distinct hash key value. 
+
+    // For any local secondary index, you can store up to 10 GB of data per distinct hash key value.
     // I think this is okay. That's per user per tracker per study. That's 160k records.
 
     @Override
     public List<HealthDataRecord> getHealthDataByDateRange(HealthDataKey key, final long startDate, final long endDate) {
-        /* Works for sure, very inefficient. Code below this at least queries out records that start after 
-         * the query window. 
+        /* Works for sure, very inefficient. Code below this at least queries out records that start after
+         * the query window.
         return FluentIterable.from(getAllHealthData(key)).filter(new Predicate<HealthDataRecord>() {
             public boolean apply(HealthDataRecord record) {
                 if ((record.getEndDate() != 0 && record.getEndDate() < startDate.getTime())
@@ -99,13 +98,13 @@ public class DynamoHealthDataDao implements HealthDataDao {
         DynamoDBQueryExpression<DynamoHealthDataRecord> queryExpression = new DynamoDBQueryExpression<DynamoHealthDataRecord>()
             .withHashKeyValues(dynamoRecord)
             .withRangeKeyCondition("startDate", isLessThanOrEqualToEndDateWindow);
-        
+
         /* DynamoDB cannot make compound queries like this. I'm about 99% sure of it at this point.
          * We have to pull more records than we intend, and then filter.
         Condition isGreaterThanOrEqualToStartDateWindow = new Condition()
             .withComparisonOperator(ComparisonOperator.GE.toString())
             .withAttributeValueList(new AttributeValue().withN(Long.toString(startDate.getTime())));
-        
+
         Condition isEqualToZero = new Condition()
             .withComparisonOperator(ComparisonOperator.EQ.toString())
             .withAttributeValueList(new AttributeValue().withN("0"));
@@ -117,18 +116,19 @@ public class DynamoHealthDataDao implements HealthDataDao {
         */
 
         List<DynamoHealthDataRecord> records = mapper.query(DynamoHealthDataRecord.class, queryExpression);
-        
+
         return new ArrayList<HealthDataRecord>((FluentIterable.from(records).filter(new Predicate<DynamoHealthDataRecord>() {
+            @Override
             public boolean apply(DynamoHealthDataRecord record) {
                 return !(record.getEndDate() != 0 && record.getEndDate() < startDate);
             }
-        }).toList()));    
+        }).toList()));
     }
 
     @Override
-    public HealthDataRecord getHealthDataRecord(HealthDataKey key, String recordId) {
+    public HealthDataRecord getHealthDataRecord(HealthDataKey key, String guid) {
         DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString());
-        dynamoRecord.setRecordId(recordId);
+        dynamoRecord.setGuid(guid);
         dynamoRecord = mapper.load(dynamoRecord);
         if (dynamoRecord == null) {
             throw new EntityNotFoundException(HealthDataRecord.class);
@@ -144,9 +144,9 @@ public class DynamoHealthDataDao implements HealthDataDao {
     }
 
     @Override
-    public void deleteHealthDataRecord(HealthDataKey key, String recordId) {
-        HealthDataRecord record = getHealthDataRecord(key, recordId);
-        DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString(), recordId, record);
+    public void deleteHealthDataRecord(HealthDataKey key, String guid) {
+        HealthDataRecord record = getHealthDataRecord(key, guid);
+        DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString(), guid, record);
         mapper.delete(dynamoRecord);
     }
 

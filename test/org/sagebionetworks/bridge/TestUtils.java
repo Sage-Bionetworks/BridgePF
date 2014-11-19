@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge;
 
 import java.util.concurrent.Callable;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,10 @@ public class TestUtils {
             System.out.println(msg);
             Thread.sleep(delay);
         }
+    }
+    
+    public static String randomName() {
+        return "test-" + RandomStringUtils.randomAlphabetic(5).toLowerCase();
     }
 
  }

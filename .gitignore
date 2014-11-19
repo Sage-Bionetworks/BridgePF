@@ -1,8 +1,11 @@
 .classpath
+.idea
+.idea_modules
 .project
 .settings
 .history
 .grunt
+BridgePF.iml
 TODO.txt
 phantomjsdriver.log
 target

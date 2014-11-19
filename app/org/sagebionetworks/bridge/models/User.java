@@ -17,7 +17,7 @@ public class User implements BridgeEntity {
     private String firstName;
     private String lastName;
     private String email;
-    private String healthDataCode;
+    private String healthCode;
     private String studyKey;
     private boolean consent;
     private boolean dataSharing;
@@ -74,12 +74,12 @@ public class User implements BridgeEntity {
         this.lastName = lastName;
     }
 
-    public String getHealthDataCode() {
-        return healthDataCode;
+    public String getHealthCode() {
+        return healthCode;
     }
 
-    public void setHealthDataCode(String healthDataCode) {
-        this.healthDataCode = healthDataCode;
+    public void setHealthCode(String healthCode) {
+        this.healthCode = healthCode;
     }
 
     public String getId() {
@@ -142,7 +142,7 @@ public class User implements BridgeEntity {
         result = prime * result + (consent ? 1231 : 1237);
         result = prime * result + ((email == null) ? 0 : email.hashCode());
         result = prime * result + ((firstName == null) ? 0 : firstName.hashCode());
-        result = prime * result + ((healthDataCode == null) ? 0 : healthDataCode.hashCode());
+        result = prime * result + ((healthCode == null) ? 0 : healthCode.hashCode());
         result = prime * result + ((id == null) ? 0 : id.hashCode());
         result = prime * result + ((lastName == null) ? 0 : lastName.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
@@ -172,10 +172,10 @@ public class User implements BridgeEntity {
                 return false;
         } else if (!firstName.equals(other.firstName))
             return false;
-        if (healthDataCode == null) {
-            if (other.healthDataCode != null)
+        if (healthCode == null) {
+            if (other.healthCode != null)
                 return false;
-        } else if (!healthDataCode.equals(other.healthDataCode))
+        } else if (!healthCode.equals(other.healthCode))
             return false;
         if (id == null) {
             if (other.id != null)

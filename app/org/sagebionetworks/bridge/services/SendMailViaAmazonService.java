@@ -9,10 +9,10 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.ConsentSignature;
-import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.StudyConsent;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.springframework.core.io.FileSystemResource;
 
 import com.amazonaws.regions.Region;
@@ -50,7 +50,7 @@ public class SendMailViaAmazonService implements SendMailService {
     @Override
     public void sendConsentAgreement(User user, ConsentSignature consentSignature, StudyConsent studyConsent) {
         try {
-            Study study = studyService.getStudyByKey(studyConsent.getStudyKey());
+            Study study = studyService.getStudyByIdentifier(studyConsent.getStudyKey());
             Content subject = new Content().withData("Consent Agreement for " + study.getName());
             Body body = createSignedDocument(consentSignature, studyConsent);
             Message message = new Message().withSubject(subject).withBody(body);

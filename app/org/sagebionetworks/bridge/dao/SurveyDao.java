@@ -10,9 +10,9 @@ public interface SurveyDao {
     
     public Survey updateSurvey(Survey survey);
     
-    public Survey versionSurvey(String surveyGuid, long versionedOn);
+    public Survey versionSurvey(String surveyGuid, long createdOn);
     
-    public Survey publishSurvey(String surveyGuid, long versionedOn);
+    public Survey publishSurvey(String surveyGuid, long createdOn);
     
     public List<Survey> getSurveys(String studyKey);
     
@@ -46,26 +46,26 @@ public interface SurveyDao {
      * by tests.
      *  
      * @param surveyGuid
-     * @param versionedOn
+     * @param createdOn
      */
-    public void deleteSurvey(String surveyGuid, long versionedOn);
+    public void deleteSurvey(String surveyGuid, long createdOn);
 
     /**
      * Unpublish the survey, closing out any active records that are still 
      * pointing to this survey. 
      * @param surveyGuid
-     * @param versionedOn
+     * @param createdOn
      * @return
      */
-    public Survey closeSurvey(String surveyGuid, long versionedOn);
+    public Survey closeSurvey(String surveyGuid, long createdOn);
     
     
     /**
      * Get a particular survey by version, regardless of publication state.
      * @param surveyGuid
-     * @param versionedOn
+     * @param createdOn
      * @return
      */
-    public Survey getSurvey(String surveyGuid, long versionedOn);
+    public Survey getSurvey(String surveyGuid, long createdOn);
     
 }

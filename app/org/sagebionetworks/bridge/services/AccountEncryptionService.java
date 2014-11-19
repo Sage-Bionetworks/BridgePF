@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import org.sagebionetworks.bridge.models.HealthId;
-import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.stormpath.sdk.account.Account;
 

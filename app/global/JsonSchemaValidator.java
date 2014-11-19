@@ -3,7 +3,7 @@ package global;
 import java.io.IOException;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.Tracker;
+import org.sagebionetworks.bridge.models.studies.Tracker;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;

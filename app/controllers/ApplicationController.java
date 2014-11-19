@@ -1,9 +1,9 @@
 package controllers;
 
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 import play.libs.Json;
 import play.mvc.Result;

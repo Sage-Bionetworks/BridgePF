@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge;
 
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.services.StudyService;
 
 public class StudyConsentBootstrapper {

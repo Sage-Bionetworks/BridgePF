@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.events;
 
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.context.ApplicationEvent;
 
 public class UserUnenrolledEvent extends ApplicationEvent {

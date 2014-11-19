@@ -18,9 +18,9 @@ import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -60,7 +60,7 @@ public class HealthDataServiceTest {
     
     private HealthDataKey createKey() {
         Tracker tracker = new Tracker();
-        tracker.setId(1L);
+        tracker.setIdentifier("1");
         return new HealthDataKey(testUser.getStudy(), tracker, testUser.getUser());
     }
 
@@ -70,7 +70,7 @@ public class HealthDataServiceTest {
         List<HealthDataRecord> records = Lists.newArrayList(createHealthDataRecord());
         
         records = healthDataService.appendHealthData(key, records);
-        assertNotNull("Records were assigned record ids", records.get(0).getRecordId());
+        assertNotNull("Records were assigned record ids", records.get(0).getGuid());
         
         long datetime = DateUtils.getCurrentMillisFromEpoch()+10000;
         records.get(0).setEndDate(datetime);
@@ -81,13 +81,13 @@ public class HealthDataServiceTest {
         assertEquals("There is one health data record", 1, records.size());
         assertEquals("The end date was updated", datetime, records.get(0).getEndDate());
         
-        healthDataService.deleteHealthDataRecord(key, records.get(0).getRecordId());
+        healthDataService.deleteHealthDataRecord(key, records.get(0).getGuid());
         
         records = healthDataService.getAllHealthData(key);
         assertEquals("There are no health data records after delete", 0, records.size());
         
         for (HealthDataRecord record : records) {
-            healthDataService.deleteHealthDataRecord(key, record.getRecordId());    
+            healthDataService.deleteHealthDataRecord(key, record.getGuid());    
         }
         
     }

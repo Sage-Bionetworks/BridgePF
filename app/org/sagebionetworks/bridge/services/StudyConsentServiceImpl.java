@@ -9,8 +9,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.StudyConsent;
-import org.sagebionetworks.bridge.models.StudyConsentForm;
+import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.validation.Validator;
 

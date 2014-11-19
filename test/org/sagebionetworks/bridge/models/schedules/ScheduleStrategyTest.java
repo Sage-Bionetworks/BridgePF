@@ -15,9 +15,9 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.Tracker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,7 +37,7 @@ public class ScheduleStrategyTest {
         for (int i=0; i < 10; i++) {
             users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
         }
-        study = new Study("name", TestConstants.TEST_STUDY_KEY, 18, null, Collections.<String>emptyList(), Collections.<Tracker>emptyList(), null);
+        study = new Study("name", TestConstants.TEST_STUDY_IDENTIFIER, 18, null, Collections.<String>emptyList(), Collections.<Tracker>emptyList(), null);
     }
     
     public void createContextWithRemainderUsers() {

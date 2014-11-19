@@ -21,7 +21,7 @@ public interface RedisKey {
 
     /** For name spacing **/
     public static final String ENV_NAME = BridgeConfigFactory.getConfig().getUser() + "-"
-            + BridgeConfigFactory.getConfig().getEnvironment().getEnvName();
+            + BridgeConfigFactory.getConfig().getEnvironment().name().toLowerCase();
 
     /** For internal locking. */
     public static final RedisKey LOCK = new SimpleKey("lock");

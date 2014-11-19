@@ -1,6 +1,6 @@
 describe('HealthDataService', function() {
 
-    var healthDataService, form, scope, currentDate, httpBackend, trackerId, recordId;
+    var healthDataService, form, scope, currentDate, httpBackend, trackerId, guid;
 
     beforeEach(module('bridge'));
 
@@ -37,7 +37,7 @@ describe('HealthDataService', function() {
         var startDate = payload.startDate;
 
         var record = {
-            recordId: 'abcd-1234-1a2d3',
+            guid: 'abcd-1234-1a2d3',
             version: 1,
             startDate: startDate,
             endDate: startDate
@@ -45,13 +45,13 @@ describe('HealthDataService', function() {
 
         var trackerId = '1234';
         httpBackend.when('POST', '/api/v1/healthdata/'+trackerId).respond({});
-        httpBackend.when('POST', '/api/v1/healthdata/'+trackerId+'/record/'+record.recordId).respond({});
+        httpBackend.when('POST', '/api/v1/healthdata/'+trackerId+'/record/'+record.guid).respond({});
 
         httpBackend.expect('POST', '/api/v1/healthdata/'+trackerId);
         healthDataService.create(trackerId, payload);
         expect(startDate).toEqual(payload.startDate);
 
-        httpBackend.expect('POST', '/api/v1/healthdata/'+trackerId+'/record/'+recordId);
+        httpBackend.expect('POST', '/api/v1/healthdata/'+trackerId+'/record/'+guid);
         healthDataService.update(trackerId, record);
         expect(startDate).toEqual(record.startDate);
     });

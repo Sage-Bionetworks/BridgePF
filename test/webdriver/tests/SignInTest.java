@@ -8,7 +8,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.Study;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -35,7 +35,7 @@ public class SignInTest extends BaseIntegrationTest {
                 TestUser testUser = null;
                 try {
                     SignUp signUp = new SignUp("test", "test@sagebridge.org", "P4ssword");
-                    Study study = studyService.getStudyByKey("neurod");
+                    Study study = studyService.getStudyByIdentifier("neurod");
                     testUser = helper.createUser(signUp, study, true, true);
                     
                     AppPage page = new AppPage(browser);

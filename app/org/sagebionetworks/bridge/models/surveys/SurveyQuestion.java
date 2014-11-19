@@ -12,7 +12,7 @@ public interface SurveyQuestion {
     public String getSurveyCompoundKey();
     public void setSurveyCompoundKey(String surveyCompoundKey);
     
-    public void setSurveyKeyComponents(String surveyGuid, long versionedOn);
+    public void setSurveyKeyComponents(String surveyGuid, long createdOn);
     
     public String getGuid();
     public void setGuid(String guid);

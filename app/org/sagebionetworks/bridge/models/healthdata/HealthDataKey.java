@@ -2,53 +2,44 @@ package org.sagebionetworks.bridge.models.healthdata;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.models.Study;
-import org.sagebionetworks.bridge.models.Tracker;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.Tracker;
+import org.sagebionetworks.bridge.validators.Validate;
 
 public final class HealthDataKey {
 
     private final String studyKey;
-    private final long trackerId;
-    private final String healthDataCode;
+    private final String trackerIdentifier;
+    private final String healthCode;
     
     public HealthDataKey(Study study, Tracker tracker, User user) {
-        checkNotNull(study, "HealthDataKey study must not be null");
-        checkNotNull(study.getKey(), "HealthDataKey study must have a valid key");
-        checkNotNull(tracker, "HealthDataKey tracker must not be null");
-        checkNotNull(tracker.getId() == null || tracker.getId().longValue() == 0L, "HealthDataKey tracker must have a valid ID");
-        checkNotNull(user, "HealthDataKey user must not be null");
-        checkArgument(StringUtils.isNotBlank(user.getHealthDataCode()), "HealthDataKey healthDataCode must not be null or blank");
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        checkNotNull(study.getKey(), Validate.CANNOT_BE_NULL, "study key");
+        checkNotNull(tracker, Validate.CANNOT_BE_NULL, "tracker");
+        checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
+        checkArgument(isNotBlank(tracker.getIdentifier()), Validate.CANNOT_BE_BLANK, "tracker identifier");
+        checkArgument(isNotBlank(user.getHealthCode()), Validate.CANNOT_BE_BLANK, "user healthCode");
 
         this.studyKey = study.getKey();
-        this.trackerId = tracker.getId();
-        this.healthDataCode = user.getHealthDataCode();
+        this.trackerIdentifier = tracker.getIdentifier();
+        this.healthCode = user.getHealthCode();
     }
 
-    public String getStudyKey() {
-        return studyKey;
-    }
-    public long getTrackerId() {
-        return trackerId;
-    }
-    public String getHealthDataCode() {
-        return healthDataCode;
-    }
-    
     @Override
     public String toString() {
-        return String.format("%s:%s:%s", getStudyKey(), getTrackerId(), getHealthDataCode());
+        return String.format("%s:%s:%s", studyKey, trackerIdentifier, healthCode);
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((healthDataCode == null) ? 0 : healthDataCode.hashCode());
+        result = prime * result + ((healthCode == null) ? 0 : healthCode.hashCode());
         result = prime * result + ((studyKey == null) ? 0 : studyKey.hashCode());
-        result = prime * result + (int) (trackerId ^ (trackerId >>> 32));
+        result = prime * result + ((trackerIdentifier == null) ? 0 : trackerIdentifier.hashCode());
         return result;
     }
 
@@ -61,17 +52,20 @@ public final class HealthDataKey {
         if (getClass() != obj.getClass())
             return false;
         HealthDataKey other = (HealthDataKey) obj;
-        if (healthDataCode == null) {
-            if (other.healthDataCode != null)
+        if (healthCode == null) {
+            if (other.healthCode != null)
                 return false;
-        } else if (!healthDataCode.equals(other.healthDataCode))
+        } else if (!healthCode.equals(other.healthCode))
             return false;
         if (studyKey == null) {
             if (other.studyKey != null)
                 return false;
         } else if (!studyKey.equals(other.studyKey))
             return false;
-        if (trackerId != other.trackerId)
+        if (trackerIdentifier == null) {
+            if (other.trackerIdentifier != null)
+                return false;
+        } else if (!trackerIdentifier.equals(other.trackerIdentifier))
             return false;
         return true;
     }

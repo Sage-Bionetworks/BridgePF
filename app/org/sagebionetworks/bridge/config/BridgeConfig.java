@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.config;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,10 +35,18 @@ public class BridgeConfig {
 
     // Property name for the encryption password
     private static final String PASSWORD = "bridge.pwd";
+    
+    // For testing, a host name may be specified that will override the actual host name of the server
+    private static final String BRIDGE_HOST = "bridge.host";
 
     private static final String HEALTHCODE_PASSWORD = "bridge.healthcode.pwd";
     private static final String HEALTHCODE_KEY = "bridge.healthcode.key";
     private static final String HEALTHCODE_SALT = "bridge.healthcode.salt";
+    
+    private static final String HEROKU_AUTH_TOKEN = "heroku.auth.token";
+    private static final String HEROKU_APPNAME = "heroku.appname";
+    private static final String HEROKU_SSL_ENDPOINT = "heroku.ssl.endpoint";
+    private static final String STUDY_HOSTNAME = "study.hostname";
     
     private final String user;
     private final Environment environment;
@@ -104,7 +114,7 @@ public class BridgeConfig {
         }
 
         // Collapse the properties for the current environment
-        Properties collapsed = collapse(properties, environment.getEnvName());
+        Properties collapsed = collapse(properties, environment.name().toLowerCase());
 
         final String pwd = read(PASSWORD, properties);
         final BridgeEncryptor encryptor = new BridgeEncryptor(pwd);
@@ -145,6 +155,10 @@ public class BridgeConfig {
         return Environment.PROD.equals(environment);
     }
 
+    public String getHost() {
+        return getProperty(BRIDGE_HOST);
+    }
+    
     public String getProperty(String name) {
         return properties.getProperty(name);
     }
@@ -164,7 +178,7 @@ public class BridgeConfig {
     public String getStormpathApplicationHref() {
         return getProperty(STORMPATH_APPLICATION_HREF);
     }
-
+    
     public String getPassword() {
         return getProperty(PASSWORD);
     }
@@ -179,6 +193,27 @@ public class BridgeConfig {
 
     public String getHealthCodeSalt() {
         return getProperty(HEALTHCODE_SALT);
+    }
+    
+    public String getStudyHostnamePostfix() {
+        return getProperty(STUDY_HOSTNAME);
+    }
+    
+    public String getStudyHostname(String identifier) {
+        checkNotNull(identifier);
+        return identifier + getProperty(STUDY_HOSTNAME);
+    }
+
+    public String getHerokuAuthToken() {
+        return getProperty(HEROKU_AUTH_TOKEN);
+    }
+    
+    public String getHerokuAppName() {
+        return getProperty(HEROKU_APPNAME);
+    }
+    
+    public String getHerokuSslEndpoint() {
+        return getProperty(HEROKU_SSL_ENDPOINT);
     }
 
     ///////////////////////////
@@ -214,7 +249,7 @@ public class BridgeConfig {
             return Environment.LOCAL;
         }
         for (Environment env : Environment.values()) {
-            if (env.getEnvName().equals(envName)) {
+            if (env.name().toLowerCase().equals(envName)) {
                 return env;
             };
         }
@@ -279,7 +314,7 @@ public class BridgeConfig {
      */
     private boolean isDefaultProperty(String propName) {
         for (Environment env : Environment.values()) {
-            String envPrefix = env.getEnvName() + ".";
+            String envPrefix = env.name().toLowerCase() + ".";
             if (propName.startsWith(envPrefix)) {
                 return false;
             }

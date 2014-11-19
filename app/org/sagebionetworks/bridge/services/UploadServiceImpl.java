@@ -10,9 +10,9 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.models.UploadRequest;
-import org.sagebionetworks.bridge.models.UploadSession;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.upload.UploadRequest;
+import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +56,7 @@ public class UploadServiceImpl implements UploadService {
     public UploadSession createUpload(User user, UploadRequest uploadRequest) {
         Validate.entityThrowingException(validator, uploadRequest);
         
-        final String uploadId = uploadDao.createUpload(uploadRequest, user.getHealthDataCode());
+        final String uploadId = uploadDao.createUpload(uploadRequest, user.getHealthCode());
         final String objectId = uploadDao.getObjectId(uploadId);
         GeneratePresignedUrlRequest presignedUrlRequest = 
                 new GeneratePresignedUrlRequest(BUCKET, objectId, HttpMethod.PUT);

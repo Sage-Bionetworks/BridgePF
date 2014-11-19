@@ -47,7 +47,7 @@ function($scope, healthDataService, dashboardService, $q, $modal) {
     };
     $scope.removeRecord = function(record) {
         $scope.dataset.remove(record); 
-        healthDataService.remove($scope.tracker.id, record.recordId);
+        healthDataService.remove($scope.tracker.id, record.guid);
     };
     
     function openModalEditor() {

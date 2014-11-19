@@ -11,7 +11,7 @@ import com.stormpath.sdk.client.Clients;
 
 public class StormpathFactory {
 
-    public static Client createStormpathClient() {
+    public static Client getStormpathClient() {
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
         ApiKey apiKey = ApiKeys.builder()
@@ -20,7 +20,7 @@ public class StormpathFactory {
         return Clients.builder().setApiKey(apiKey).build();
     }
 
-    public static Application createStormpathApplication(Client client) {
+    public static Application getStormpathApplication(Client client) {
         BridgeConfig config = BridgeConfigFactory.getConfig();
 
         return client.getResource(config.getStormpathApplicationHref().trim(), Application.class);

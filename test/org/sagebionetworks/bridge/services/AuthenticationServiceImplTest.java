@@ -24,8 +24,8 @@ import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.Study;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -141,7 +141,7 @@ public class AuthenticationServiceImplTest {
     @Test
     public void createUserInNonDefaultAccountStore() {
         SignUp signUp = new SignUp("secondStudyUser", "secondStudyUser@sagebridge.org", "P4ssword");
-        Study otherStudy = studyService.getStudyByKey("neurod");
+        Study otherStudy = studyService.getStudyByIdentifier("neurod");
         try {
              
             Study defaultStudy = testUser.getStudy();
@@ -160,7 +160,7 @@ public class AuthenticationServiceImplTest {
     
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
-        Study study = studyService.getStudyByKey(TestConstants.TEST_STUDY_KEY);
+        Study study = studyService.getStudyByIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         TestUser researcher = helper.createUser(AuthenticationServiceImplTest.class, false, false, study.getResearcherRole());
         try {
             authService.signIn(researcher.getStudy(), researcher.getSignIn());

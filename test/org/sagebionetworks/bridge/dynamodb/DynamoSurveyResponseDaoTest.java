@@ -52,7 +52,7 @@ public class DynamoSurveyResponseDaoTest {
 
     @After
     public void after() {
-        surveyDao.deleteSurvey(survey.getGuid(), survey.getVersionedOn());
+        surveyDao.deleteSurvey(survey.getGuid(), survey.getCreatedOn());
         survey = null;
     }
 
@@ -60,7 +60,7 @@ public class DynamoSurveyResponseDaoTest {
     public void createSurveyResponse() {
         List<SurveyAnswer> answers = Lists.newArrayList();
 
-        SurveyResponse response = surveyResponseDao.createSurveyResponse(survey.getGuid(), survey.getVersionedOn(),
+        SurveyResponse response = surveyResponseDao.createSurveyResponse(survey.getGuid(), survey.getCreatedOn(),
                 HEALTH_DATA_CODE, answers);
         assertTrue("Has been assigned a GUID", response.getGuid() != null);
 
