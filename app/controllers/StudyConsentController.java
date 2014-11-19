@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.services.StudyConsentService;
 
 import play.mvc.Result;
 
-public class StudyConsentController extends ResearcherController {
+public class StudyConsentController extends BaseController {
 
     private StudyConsentService studyConsentService;
 
