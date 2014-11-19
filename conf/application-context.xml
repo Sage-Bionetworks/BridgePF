@@ -338,9 +338,9 @@
                 </bean>
                 <bean class="org.sagebionetworks.bridge.models.studies.Study">
                     <constructor-arg index="0" value="Test Study"/>
-                    <constructor-arg index="1" value="teststudy"/>
+                    <constructor-arg index="1" value="api"/>
                     <constructor-arg index="2" value="18"/>
-                    <constructor-arg index="3" value="#{bridgeConfig.getProperty('stormpath.teststudy.directory.href')}"/>
+                    <constructor-arg index="3" value="#{bridgeConfig.getProperty('stormpath.api.directory.href')}"/>
                     <constructor-arg index="4">
                         <list>
                             <!-- IE VirtualBox Machine, local development -->
@@ -365,7 +365,7 @@
                             <ref bean="med-tracker"/>
                         </list>
                     </constructor-arg>
-                    <constructor-arg index="6" value="teststudy_researcher"/>
+                    <constructor-arg index="6" value="api_researcher"/>
                 </bean>
             </list>
         </property>
