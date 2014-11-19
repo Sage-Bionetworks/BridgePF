@@ -10,7 +10,7 @@ import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class UserManagementController extends AdminController {
+public class UserManagementController extends BaseController {
 
     private static final String CONSENT_FIELD = "consent";
 

@@ -92,7 +92,7 @@ public class StudyServiceImplTest {
         study = new DynamoStudy();
         study.setIdentifier(identifier);
         study.setName("Test of study creation");
-        study.setMaxParticipants(100);
+        study.setMaxNumOfParticipants(100);
         study.setMinAgeOfConsent(18);
         study.setResearcherRole(identifier+"_researcher");
         study.setStormpathHref("http://dev-test-junk");
@@ -104,7 +104,7 @@ public class StudyServiceImplTest {
         study = studyService.getStudy2ByIdentifier(identifier);
         assertEquals(identifier, study.getIdentifier());
         assertEquals("Test of study creation", study.getName());
-        assertEquals(100, study.getMaxParticipants());
+        assertEquals(100, study.getMaxNumOfParticipants());
         assertEquals(18, study.getMinAgeOfConsent());
         // these should have been changed
         assertEquals(identifier+"_researcher", study.getResearcherRole());
