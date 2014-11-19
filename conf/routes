@@ -79,6 +79,17 @@ GET    /researcher/v1/consents/:timestamp           @controllers.StudyConsentCon
 POST   /researcher/v1/consents                      @controllers.StudyConsentController.addConsent
 POST   /researcher/v1/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: String)
 
+# Researchers - Studies
+GET    /researcher/v1/study           @controllers.StudyController.getStudyForResearcher          
+POST   /researcher/v1/study           @controllers.StudyController.updateStudyForResearcher
+
+# Admin - Studies
+GET    /admin/v1/studies/:identifier  @controllers.StudyController.getStudy(identifier: String)
+POST   /admin/v1/studies/:identifier  @controllers.StudyController.updateStudy(identifier: String)
+GET    /admin/v1/studies              @controllers.StudyController.getAllStudies
+POST   /admin/v1/studies              @controllers.StudyController.createStudy 
+DELETE /admin/v1/studies/:identifier  @controllers.StudyController.deleteStudy(identifier: String)
+
 # Admin - Backfill
 GET    /admin/v1/backfill/:name    @controllers.BackfillController.backfill(name: String)
 

@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.services.SchedulePlanService;
 
 import play.mvc.Result;
 
-public class SchedulePlanController extends ResearcherController {
+public class SchedulePlanController extends BaseController {
 
     private SchedulePlanService schedulePlanService;
     

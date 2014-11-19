@@ -23,10 +23,10 @@ public interface Study2 extends BridgeEntity {
     public int getMinAgeOfConsent();
     public void setMinAgeOfConsent(int minAge);
     
-    public int getMaxParticipants();
-    public void setMaxParticipants(int maxParticipants);
+    public int getMaxNumOfParticipants();
+    public void setMaxNumOfParticipants(int maxParticipants);
     
-    public List<String> getTrackerIdentifiers();
+    public List<String> getTrackers();
     
     public String getStormpathHref();
     public void setStormpathHref(String stormpathHref);
