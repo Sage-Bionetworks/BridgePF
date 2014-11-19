@@ -8,6 +8,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -32,7 +33,7 @@ public class Route53DnsDaoTest {
         identifier = TestUtils.randomName();
         
         String dnsRecord = dnsDao.createDnsRecordForStudy(identifier);
-        assertEquals("Correct hostname", identifier+"-local.sagebridge.org", dnsRecord);
+        assertEquals("Correct hostname", BridgeConfigFactory.getConfig().getStudyHostname(identifier), dnsRecord);
         
         dnsDao.deleteDnsRecordForStudy(identifier);
         

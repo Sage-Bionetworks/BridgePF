@@ -10,6 +10,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -43,10 +44,11 @@ public class StormpathDirectoryDaoTest {
     public void crudDirectory() {
         identifier = TestUtils.randomName();
         String stormpathHref = directoryDao.createDirectoryForStudy(identifier);
+        BridgeConfig config = BridgeConfigFactory.getConfig();
         
         // Verify the directory and mapping were created
         Directory directory = getDirectory(stormpathHref);
-        assertEquals("Name is the right one", identifier + " (local)", directory.getName());
+        assertEquals("Name is the right one", identifier + " ("+config.getEnvironment().name().toLowerCase()+")", directory.getName());
         assertTrue("Mapping exists for new directory in the right application", containsMapping(stormpathHref));
         assertTrue("The researcher group was created", researcherGroupExists(directory, identifier));
         
