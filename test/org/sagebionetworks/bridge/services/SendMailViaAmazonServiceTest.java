@@ -35,7 +35,7 @@ public class SendMailViaAmazonServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        Study study = new Study(null, "teststudy", 17, null, null, null, null);
+        Study study = new Study(null, "api", 17, null, null, null, null);
         
         studyService = mock(StudyService.class);
         when(studyService.getStudyByIdentifier(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
@@ -63,7 +63,7 @@ public class SendMailViaAmazonServiceTest {
             }
             @Override
             public String getPath() {
-                return "conf/email-templates/teststudy-consent.html";
+                return "conf/email-templates/api-consent.html";
             }
             @Override
             public int getMinAge() {
