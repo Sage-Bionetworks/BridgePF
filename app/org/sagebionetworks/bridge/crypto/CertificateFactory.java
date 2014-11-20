@@ -8,9 +8,14 @@ import java.security.cert.X509Certificate;
 public interface CertificateFactory {
 
     /**
-     * Creates a self-signed X509 certificate.
+     * Creates a self-signed X509 certificate with default information.
      */
     X509Certificate newCertificate(KeyPair keyPair);
+
+    /**
+     * Creates a self-signed X509 certificate with the supplied information.
+     */
+    X509Certificate newCertificate(KeyPair keyPair, CertificateInfo certInfo);
 
     /**
      * Creates an X509 certificate chained to a certifying authority (ca) certificate.
