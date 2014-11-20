@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.studies.ConsentSignatureImage;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -70,6 +71,14 @@ public class DynamoUserConsentDao implements UserConsentDao {
             }
             consent.setName(researchConsent.getName());
             consent.setBirthdate(researchConsent.getBirthdate());
+
+            // Signature image, if it exists.
+            ConsentSignatureImage signatureImage = researchConsent.getImage();
+            if (signatureImage != null) {
+                consent.setImageData(signatureImage.getData());
+                consent.setImageMimeType(signatureImage.getMimeType());
+            }
+
             consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
             mapper.save(consent);
         } catch (ConditionalCheckFailedException e) {
@@ -103,6 +112,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         if (consent == null) {
             throw new EntityNotFoundException(DynamoUserConsent2.class);
         }
-        return new ConsentSignature(consent.getName(), consent.getBirthdate());
+        return new ConsentSignature(consent.getName(), consent.getBirthdate(), new ConsentSignatureImage(
+                consent.getImageData(), consent.getImageMimeType()));
     }
 }

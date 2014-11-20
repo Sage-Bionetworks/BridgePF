@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.studies.ConsentSignatureImage;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.springframework.core.io.FileSystemResource;
@@ -27,9 +28,8 @@ import com.google.common.io.CharStreams;
 
 public class SendMailViaAmazonService implements SendMailService {
 
-    private static Region region = Region.getRegion(Regions.US_EAST_1);
-
-    private static DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
+    private static final DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
+    private static final Region region = Region.getRegion(Regions.US_EAST_1);
 
     private String fromEmail;
     private AmazonSimpleEmailServiceClient emailClient;
@@ -79,6 +79,14 @@ public class SendMailViaAmazonService implements SendMailService {
         String html = consentAgreementHTML.replace("@@name@@", consent.getName());
         html = html.replace("@@birth.date@@", birthdate);
         html = html.replace("@@signing.date@@", signingDate);
+
+        // Signature image, if we have it.
+        ConsentSignatureImage sigImg = consent.getImage();
+        if (sigImg != null) {
+            html = html.replace("@@signature.image.mime.type@@", sigImg.getMimeType());
+            html = html.replace("@@signature.image.data@@", sigImg.getData());
+        }
+
         Content textBody = new Content().withData(html); 
         return new Body().withHtml(textBody);
     }
