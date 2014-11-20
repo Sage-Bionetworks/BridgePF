@@ -122,13 +122,8 @@ public class StudyServiceImpl extends CacheLoader<String,Study2> implements Stud
         checkArgument(isNotBlank(hostname), Validate.CANNOT_BE_BLANK, "hostname");
         
         String postfix = config.getStudyHostnamePostfix();
-<<<<<<< HEAD
         
         String identifier = (postfix == null) ? "api" : hostname.split(postfix)[0];
-=======
-        String identifier = (postfix == null) ? "teststudy" : hostname.split(postfix)[0];
-        
->>>>>>> c72ad370f209818037d76b174f226d84b8316c1d
         return getStudy2ByIdentifier(identifier);
     }
     @Override
