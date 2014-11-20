@@ -26,5 +26,4 @@ public interface StudyService {
     
     public void deleteStudy(String identifier);
     
-    public Study2 changeStudyId(String oldIdentifier, String newIdentifier);
 }

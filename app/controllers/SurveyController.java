@@ -12,7 +12,7 @@ import org.sagebionetworks.bridge.services.SurveyService;
 
 import play.mvc.Result;
 
-public class SurveyController extends ResearcherController {
+public class SurveyController extends BaseController {
 
     private SurveyService surveyService;
     

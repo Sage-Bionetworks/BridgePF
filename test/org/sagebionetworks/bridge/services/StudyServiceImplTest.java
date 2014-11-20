@@ -10,7 +10,7 @@ import javax.annotation.Resource;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -33,11 +33,12 @@ public class StudyServiceImplTest {
     
     private Study2 study;
     
+    private String identifier;
+    
     @After
     public void after() {
-        try {
-            studyService.deleteStudy(study.getIdentifier());
-        } catch(Throwable t) {
+        if (identifier != null) {
+            studyService.deleteStudy(identifier);
         }
     }
     
@@ -64,8 +65,9 @@ public class StudyServiceImplTest {
     
     @Test
     public void cannotCreateAnExistingStudyWithAVersion() {
+        identifier = TestUtils.randomName();
         study = new DynamoStudy();
-        study.setIdentifier("belgium");
+        study.setIdentifier(identifier);
         study.setName("Belgium Waffles [Test]");
         study = studyService.createStudy(study);
         try {
@@ -86,50 +88,36 @@ public class StudyServiceImplTest {
     
     @Test
     public void crudStudy() {
+        identifier = TestUtils.randomName();
         study = new DynamoStudy();
-        study.setIdentifier("sage-test");
+        study.setIdentifier(identifier);
         study.setName("Test of study creation");
-        study.setMaxParticipants(100);
+        study.setMaxNumOfParticipants(100);
         study.setMinAgeOfConsent(18);
-        study.setResearcherRole("foo_manchu");
-        study.setStormpathUrl(Environment.LOCAL, "crap");
-        study.setStormpathUrl(Environment.DEV, "crap");
-        
+        study.setResearcherRole(identifier+"_researcher");
+        study.setStormpathHref("http://dev-test-junk");
+        study.setHostname("dev-hostname-test-junk");
+
         study = studyService.createStudy(study);
         assertNotNull("Version has been set", study.getVersion());
         
-        study = studyService.getStudy2ByIdentifier("sage-test");
-        assertEquals("sage-test", study.getIdentifier());
+        study = studyService.getStudy2ByIdentifier(identifier);
+        assertEquals(identifier, study.getIdentifier());
         assertEquals("Test of study creation", study.getName());
-        assertEquals(100, study.getMaxParticipants());
+        assertEquals(100, study.getMaxNumOfParticipants());
         assertEquals(18, study.getMinAgeOfConsent());
-        // yeah this is always set a specific string, you can't edit it.
-        assertEquals("sage-test_researcher", study.getResearcherRole()); 
-        assertNotEquals("crap", study.getStormpathUrl());
+        // these should have been changed
+        assertEquals(identifier+"_researcher", study.getResearcherRole());
+        assertNotEquals("http://local-test-junk", study.getStormpathHref());
+        assertNotEquals("local-hostname-test-junk", study.getHostname());
 
-        studyService.deleteStudy(study.getIdentifier());
+        studyService.deleteStudy(identifier);
         try {
             studyService.getStudy2ByIdentifier(study.getIdentifier());
             fail("Should have thrown an exception");
         } catch(EntityNotFoundException e) {
         }
+        identifier = null;
     }
-    
-    @Test
-    public void canChangeStudyName() {
-        study = new DynamoStudy();
-        study.setIdentifier("aaa");
-        study.setName("Test of identifier changes");
-        studyService.createStudy(study);
-        
-        studyService.changeStudyId(study.getIdentifier(), "ccc");
-        
-        study = studyService.getStudy2ByIdentifier("ccc");
-        try {
-            studyService.getStudy2ByIdentifier("aaa");
-            fail("Should have thrown an exception");
-        } catch(EntityNotFoundException e) {
-        }
-    }
-    
+
 }
