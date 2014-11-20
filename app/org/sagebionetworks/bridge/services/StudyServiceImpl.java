@@ -98,7 +98,7 @@ public class StudyServiceImpl extends CacheLoader<String,Study2> implements Stud
     }
     public Study getStudyByHostname(String hostname) {
         Study study = studies.get(hostname);
-        return (study == null) ? getStudyByIdentifier("teststudy") : study;
+        return (study == null) ? getStudyByIdentifier("api") : study;
     }
     public Collection<Study> getStudies() {
         return Collections.unmodifiableCollection(studies.values());
@@ -122,8 +122,8 @@ public class StudyServiceImpl extends CacheLoader<String,Study2> implements Stud
         checkArgument(isNotBlank(hostname), Validate.CANNOT_BE_BLANK, "hostname");
         
         String postfix = config.getStudyHostnamePostfix();
-        String identifier = (postfix == null) ? "teststudy" : hostname.split(postfix)[0];
         
+        String identifier = (postfix == null) ? "api" : hostname.split(postfix)[0];
         return getStudy2ByIdentifier(identifier);
     }
     @Override

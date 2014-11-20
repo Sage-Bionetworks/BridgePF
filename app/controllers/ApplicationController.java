@@ -38,8 +38,8 @@ public class ApplicationController extends BaseController {
         Study study = studyService.getStudyByHostname(getHostname());
         if (study == null || "neurod".equals(study.getKey())) {
             return ok(views.html.neurod.render(Json.toJson(info).toString()));    
-        } else if ("teststudy".equals(study.getKey())) {
-            return ok(views.html.test.render(Json.toJson(info).toString()));
+        } else if ("api".equals(study.getKey())) {
+            return ok(views.html.api.render(Json.toJson(info).toString()));
         }
         throw new EntityNotFoundException(Study.class, "Cannot determine study from the host name: " + getHostname());
     }
