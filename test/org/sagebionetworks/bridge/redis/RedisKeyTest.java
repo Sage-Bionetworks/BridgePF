@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 public class RedisKeyTest {
 
     private BridgeConfig conf = BridgeConfigFactory.getConfig();
-    private String devName = conf.getUser() + "-" + conf.getEnvironment().getEnvName();
+    private String devName = conf.getUser() + "-" + conf.getEnvironment().name().toLowerCase();
     
     @Test
     public void testSimpleKey() {

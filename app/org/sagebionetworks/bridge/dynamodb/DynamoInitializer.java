@@ -115,7 +115,7 @@ public class DynamoInitializer {
      */
     static String getTableName(String table) {
         Environment env = CONFIG.getEnvironment();
-        return env.getEnvName() + "-" + CONFIG.getUser() + "-" + table;
+        return env.name().toLowerCase() + "-" + CONFIG.getUser() + "-" + table;
     }
 
     /**

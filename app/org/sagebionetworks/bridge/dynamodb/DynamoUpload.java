@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.Upload;
-import org.sagebionetworks.bridge.models.UploadRequest;
+import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadRequest;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
