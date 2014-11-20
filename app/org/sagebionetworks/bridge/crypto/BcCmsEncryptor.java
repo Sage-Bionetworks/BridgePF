@@ -47,7 +47,7 @@ public final class BcCmsEncryptor implements CmsEncryptor {
     public byte[] encrypt(byte[] bytes) throws CMSException, IOException {
         checkNotNull(bytes);
         CMSTypedData cmsData = new CMSProcessableByteArray(bytes);
-        OutputEncryptor encryptor = new JceCMSContentEncryptorBuilder(BcCmsConstants.ENCRYPTOR_ALGO)
+        OutputEncryptor encryptor = new JceCMSContentEncryptorBuilder(BcCmsConstants.ENCRYPTOR_ALGO_ID)
                 .setProvider(BcCmsConstants.PROVIDER).build();
         CMSEnvelopedData envelopedData = generator.generate(cmsData, encryptor);
         byte[] encrypted = envelopedData.getEncoded();
