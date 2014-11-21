@@ -59,5 +59,5 @@ apt-get -q -y install redis-server
 # .bash_profile
 su - vagrant -c "echo 'source ~/.profile' > .bash_profile"
 su - vagrant -c "echo 'export PATH=$PATH:~/phantomjs-1.9.8-linux-x86_64/bin:~/play-2.2.6' >> ~/.bash_profile"
-su - vagrant -c "echo 'export SBT_OPTS=\"-Xmx2000M -Xss1M -XX:PermSize=128M -XX:MaxPermSize=256M -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled\"' >> ~/.bash_profile"
+su - vagrant -c "echo 'export SBT_OPTS=\"-Xmx2000M -Xss2M -XX:PermSize=128M -XX:MaxPermSize=256M -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled\"' >> ~/.bash_profile"
 su - vagrant -c "source ~/.bash_profile"
