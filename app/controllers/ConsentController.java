@@ -26,11 +26,7 @@ public class ConsentController extends BaseController {
 
     public Result give() throws Exception {
         final UserSession session = getAuthenticatedSession();
-
-        // ConsentSignature validates name and birthdate, but for backwards compatibility, does not validate image.
-        // TODO: Add a check to validate consent image exists, so we can ensure new signatures include an image.
-        final ConsentSignature consent = ConsentSignature.fromJson(requestToJSON(request()));
-
+        final ConsentSignature consent = ConsentSignature.createFromJson(requestToJSON(request()));
         final Study study = studyService.getStudyByHostname(getHostname());
         final User user = consentService.consentToResearch(session.getUser(), consent, study, true);
         updateSessionUser(session, user);

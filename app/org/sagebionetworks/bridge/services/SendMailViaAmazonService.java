@@ -11,7 +11,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
-import org.sagebionetworks.bridge.models.studies.ConsentSignatureImage;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.springframework.core.io.FileSystemResource;
@@ -80,12 +79,10 @@ public class SendMailViaAmazonService implements SendMailService {
         html = html.replace("@@birth.date@@", birthdate);
         html = html.replace("@@signing.date@@", signingDate);
 
-        // Signature image, if we have it.
-        ConsentSignatureImage sigImg = consent.getImage();
-        if (sigImg != null) {
-            html = html.replace("@@signature.image.mime.type@@", sigImg.getMimeType());
-            html = html.replace("@@signature.image.data@@", sigImg.getData());
-        }
+        // TODO: Attach signature image to email.
+        // This will require a non-trivial re-write of this class, because SES.sendEmail() doesn't support attachments.
+        // Rather, we have to build an email by hand and call sendRawEmail().
+        // Furthermore, embedding the image as inline Base64 is blocked by Google.
 
         Content textBody = new Content().withData(html); 
         return new Body().withHtml(textBody);

@@ -13,7 +13,6 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
-import org.sagebionetworks.bridge.models.studies.ConsentSignatureImage;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
@@ -48,8 +47,7 @@ public class SendMailViaAmazonServiceTest {
         service.setEmailClient(emailClient);
         service.setStudyService(studyService);
         
-        consent = new ConsentSignature("Test 2", "1950-05-05", new ConsentSignatureImage(TestConstants.DUMMY_IMAGE_DATA,
-                "image/fake"));
+        consent = ConsentSignature.create("Test 2", "1950-05-05", TestConstants.DUMMY_IMAGE_DATA, "image/fake");
         studyConsent = new StudyConsent() {
             @Override
             public String getStudyKey() {
@@ -91,8 +89,6 @@ public class SendMailViaAmazonServiceTest {
         assertTrue("Contains consent content", html.contains("Had this been a real study"));
         assertTrue("Date transposed to document", html.contains("May 5, 1950"));
         assertTrue("Name transposed to document", html.contains("Test 2"));
-        assertTrue("Contains signature image data", html.contains(TestConstants.DUMMY_IMAGE_DATA));
-        assertTrue("Contains signature image MIME type", html.contains("image/fake"));
     }
     
 }

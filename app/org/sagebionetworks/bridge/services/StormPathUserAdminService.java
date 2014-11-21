@@ -108,7 +108,8 @@ public class StormPathUserAdminService implements UserAdminService {
         } catch (ConsentRequiredException e) {
             newUserSession = e.getUserSession();
             if (consentUser) {
-                ConsentSignature consent = new ConsentSignature("[Signature for " + signUp.getEmail() + "]", "1989-08-19", null);
+                ConsentSignature consent = ConsentSignature.create("[Signature for " + signUp.getEmail() + "]",
+                        "1989-08-19", null, null);
                 consentService.consentToResearch(newUserSession.getUser(), consent, study, false);
 
                 // Now, sign in again so you get the consented user into the session
