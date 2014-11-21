@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.crypto;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -31,28 +33,37 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 
 public class BcCertificateFactory implements CertificateFactory {
+
+    private static final BridgeConfig config = BridgeConfigFactory.getConfig();
 
     public BcCertificateFactory() {
         Security.addProvider(new BouncyCastleProvider());
     }
 
     @Override
-    public X509Certificate newCertificate(KeyPair keyPair) {
+    public X509Certificate newCertificate(KeyPair keyPair, String studyKey) {
+        checkNotNull(keyPair);
+        checkNotNull(studyKey);
         CertificateInfo certInfo = new CertificateInfo()
-                .withCountry("US")
-                .withState("WA")
-                .withCity("Seattle")
-                .withOrganization("Sage Bionetworks")
-                .withTeam("Platform")
-                .withEmail("bridgeIT@sagebase.org")
-                .withFqdn("*.sagebridge.org");
+                .withCountry(config.getProperty("upload.cms.certificate.country"))
+                .withState(config.getProperty("upload.cms.certificate.state"))
+                .withCity(config.getProperty("upload.cms.certificate.city"))
+                .withOrganization(config.getProperty("upload.cms.certificate.organization"))
+                .withTeam(config.getProperty("upload.cms.certificate.team"))
+                .withEmail(config.getProperty("upload.cms.certificate.email"))
+                .withFqdn(studyKey + "." + config.getProperty("upload.cms.certificate.domain"));
         return newCertificate(keyPair, certInfo);
     }
 
     @Override
     public X509Certificate newCertificate(KeyPair keyPair, CertificateInfo certInfo) {
+
+        checkNotNull(keyPair);
+        checkNotNull(certInfo);
 
         // Create a cert builder
         DateTime now = DateTime.now(DateTimeZone.UTC);
