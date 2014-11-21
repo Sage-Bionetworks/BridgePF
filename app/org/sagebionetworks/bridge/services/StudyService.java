@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -8,11 +7,11 @@ import org.sagebionetworks.bridge.models.studies.Study2;
 
 public interface StudyService {
     
+    public List<Study> getStudies();
+    
     public Study getStudyByIdentifier(String key);
     
     public Study getStudyByHostname(String hostname);
-    
-    public Collection<Study> getStudies();
     
     public Study2 getStudy2ByIdentifier(String identifier);
     
