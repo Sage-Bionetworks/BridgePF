@@ -1,28 +1,23 @@
 package org.sagebionetworks.bridge.services;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.Study2;
+import org.sagebionetworks.bridge.models.studies.Tracker;
 
 public interface StudyService {
     
-    public Study getStudyByIdentifier(String key);
+    public Tracker getTrackerByIdentifier(String trackerId);
+    
+    public Study getStudyByIdentifier(String identifier);
     
     public Study getStudyByHostname(String hostname);
     
-    public Collection<Study> getStudies();
+    public List<Study> getStudies();
     
-    public Study2 getStudy2ByIdentifier(String identifier);
+    public Study createStudy(Study study);
     
-    public Study2 getStudy2ByHostname(String hostname);
-    
-    public List<Study2> getStudies2();
-    
-    public Study2 createStudy(Study2 study);
-    
-    public Study2 updateStudy(Study2 study);
+    public Study updateStudy(Study study);
     
     public void deleteStudy(String identifier);
     

@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.models.studies.Study2;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 
 @DynamoDBTable(tableName = "Study")
-public class DynamoStudy implements Study2, DynamoTable {
+public class DynamoStudy implements Study, DynamoTable {
 
     // We need the unconfigured mapper for setData/getData.
     private static ObjectMapper mapper = new ObjectMapper();

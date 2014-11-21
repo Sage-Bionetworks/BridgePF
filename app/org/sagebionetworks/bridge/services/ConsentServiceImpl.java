@@ -77,7 +77,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         
         final HealthId healthId = hid;
         // Give consent
-        final StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
+        final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
         userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
         // Publish event
         publisher.publishEvent(new UserEnrolledEvent(caller, study));
@@ -97,7 +97,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
         final String healthCode = caller.getHealthCode();
-        List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
+        List<StudyConsent> consents = studyConsentDao.getConsents(study.getIdentifier());
         for (StudyConsent consent : consents) {
             if (userConsentDao.hasConsented(healthCode, consent)) {
                 return true;
@@ -113,7 +113,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         boolean withdrawn = false;
 
         String healthCode = caller.getHealthCode();
-        List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
+        List<StudyConsent> consents = studyConsentDao.getConsents(study.getIdentifier());
         for (StudyConsent consent : consents) {
             if (userConsentDao.hasConsented(healthCode, consent)) {
                 userConsentDao.withdrawConsent(healthCode, consent);
@@ -132,7 +132,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
-        final StudyConsent consent = studyConsentDao.getConsent(study.getKey());
+        final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }

@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.models.studies.Study2;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -9,12 +9,12 @@ public class StudyValidator implements Validator {
 
     @Override
     public boolean supports(Class<?> clazz) {
-        return Study2.class.isAssignableFrom(clazz);
+        return Study.class.isAssignableFrom(clazz);
     }
 
     @Override
     public void validate(Object obj, Errors errors) {
-        Study2 study = (Study2)obj;
+        Study study = (Study)obj;
         if (StringUtils.isBlank(study.getIdentifier())) {
             errors.rejectValue("identifier", "is null or blank");
         } else {

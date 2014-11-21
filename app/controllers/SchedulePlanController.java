@@ -31,7 +31,7 @@ public class SchedulePlanController extends BaseController {
         getAuthenticatedResearcherOrAdminSession(study);
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
-        planForm.setStudyKey(study.getKey());
+        planForm.setStudyKey(study.getIdentifier());
         SchedulePlan plan = schedulePlanService.createSchedulePlan(planForm);
         return createdResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
     }
@@ -49,7 +49,7 @@ public class SchedulePlanController extends BaseController {
         getAuthenticatedResearcherOrAdminSession(study);
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
-        planForm.setStudyKey(study.getKey());
+        planForm.setStudyKey(study.getIdentifier());
         SchedulePlan plan = schedulePlanService.updateSchedulePlan(planForm);
         
         return okResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));

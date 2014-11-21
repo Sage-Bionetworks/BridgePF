@@ -173,7 +173,7 @@ public class ScheduleChangeListenerTest {
         plan.setGuid(planGuid);
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         plan.setStrategy(strategy);
-        plan.setStudyKey(study.getKey());
+        plan.setStudyKey(study.getIdentifier());
         schedulePlanDao.createSchedulePlan(plan);
         return plan;
     }

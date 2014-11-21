@@ -145,7 +145,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         });
     }
     private void userEnrolled(final UserEnrolledEvent event) throws InterruptedException {
-        logger.info("EVENT: Participant " + event.getUser().getHealthCode() + " enrolled in study " + event.getStudy().getKey());
+        logger.info("EVENT: Participant " + event.getUser().getHealthCode() + " enrolled in study " + event.getStudy().getIdentifier());
         
         final Study study = event.getStudy();
         final User user = event.getUser();
@@ -167,7 +167,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         });
     }
     private void userUnenrolled(final UserUnenrolledEvent event) throws InterruptedException {
-        logger.info("EVENT: Participant " + event.getUser().getHealthCode() + " withdrawn from study " + event.getStudy().getKey());
+        logger.info("EVENT: Participant " + event.getUser().getHealthCode() + " withdrawn from study " + event.getStudy().getIdentifier());
 
         final Study study = event.getStudy();
         final User user = event.getUser();

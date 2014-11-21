@@ -15,7 +15,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.studies.Study2;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -31,7 +31,7 @@ public class StudyServiceImplTest {
     @Resource
     Client stormpathClient;
     
-    private Study2 study;
+    private Study study;
     
     private String identifier;
     
@@ -101,7 +101,7 @@ public class StudyServiceImplTest {
         study = studyService.createStudy(study);
         assertNotNull("Version has been set", study.getVersion());
         
-        study = studyService.getStudy2ByIdentifier(identifier);
+        study = studyService.getStudyByIdentifier(identifier);
         assertEquals(identifier, study.getIdentifier());
         assertEquals("Test of study creation", study.getName());
         assertEquals(100, study.getMaxNumOfParticipants());
@@ -113,7 +113,7 @@ public class StudyServiceImplTest {
 
         studyService.deleteStudy(identifier);
         try {
-            studyService.getStudy2ByIdentifier(study.getIdentifier());
+            studyService.getStudyByIdentifier(study.getIdentifier());
             fail("Should have thrown an exception");
         } catch(EntityNotFoundException e) {
         }

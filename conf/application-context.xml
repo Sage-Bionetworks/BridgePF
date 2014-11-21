@@ -323,73 +323,28 @@
         <property name="validator">
             <bean class="org.sagebionetworks.bridge.validators.StudyValidator"/>
         </property>
-        <property name="studies">
+        <property name="trackers">
             <list>
-                <bean class="org.sagebionetworks.bridge.models.studies.Study">
-                    <constructor-arg index="0" value="Parkinson’s Disease Mobile Study"/>
-                    <constructor-arg index="1" value="neurod"/>
-                    <constructor-arg index="2" value="17"/>
-                    <constructor-arg index="3" value="#{bridgeConfig.getProperty('stormpath.neurod.directory.href')}"/>
-                    <constructor-arg index="4">
-                        <list>
-                            <!-- SSL endpoints -->
-                            <value>pd-develop.sagebridge.org</value>
-                            <value>pd-staging.sagebridge.org</value>
-                            <value>pd.sagebridge.org</value>
-                        </list>
-                    </constructor-arg>
-                    <constructor-arg index="5">
-                        <list>
-                        </list>
-                    </constructor-arg>
-                    <constructor-arg index="6" value="neurod_researcher"/>                       
-                </bean>
-                <bean class="org.sagebionetworks.bridge.models.studies.Study">
-                    <constructor-arg index="0" value="Test Study"/>
-                    <constructor-arg index="1" value="api"/>
-                    <constructor-arg index="2" value="18"/>
-                    <constructor-arg index="3" value="#{bridgeConfig.getProperty('stormpath.api.directory.href')}"/>
-                    <constructor-arg index="4">
-                        <list>
-                            <!-- IE VirtualBox Machine, local development -->
-                            <value>10.0.2.2</value> 
-                            <value>localhost</value>
-                            <!-- HTTP endpoints -->
-                            <value>bridge-develop.herokuapp.com</value>
-                            <value>bridge-uat.herokuapp.com</value>
-                            <value>bridge-prod.herokuapp.com</value>
-                            <!-- SSL endpoints -->
-                            <value>test-develop.sagebridge.org</value>
-                            <value>test-staging.sagebridge.org</value>
-                            <value>test.sagebridge.org</value>
-                            <value>api-develop.sagebridge.org</value>
-                            <value>api-staging.sagebridge.org</value>
-                            <value>api.sagebridge.org</value>
-                        </list>
-                    </constructor-arg>
-                    <constructor-arg index="5">
-                        <list>
-                            <ref bean="pb-tracker"/>
-                            <ref bean="med-tracker"/>
-                        </list>
-                    </constructor-arg>
-                    <constructor-arg index="6" value="api_researcher"/>
-                </bean>
-            </list>
+                <ref bean="pb-tracker"/>
+                <ref bean="med-tracker"/>
+            </list>            
         </property>
     </bean>
 
     <bean id="pb-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
         <property name="name" value="Blood Pressure Reading"/>
         <property name="type" value="BloodPressure"/>
-        <property name="identifier" value="bp"/>
+        <!-- It should be bp-tracker, but I screwed this up when creating the API study.
+            Not currently in use, but if it ever is, I'll update in each environment.
+         -->
+        <property name="identifier" value="pb-tracker"/>
         <property name="schemaFile" value="file:conf/schemas/bloodpressure.json"/>
     </bean>
 
     <bean id="med-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
         <property name="name" value="Medication"/>
         <property name="type" value="Medication"/>
-        <property name="identifier" value="med"/>
+        <property name="identifier" value="med-tracker"/>
         <property name="schemaFile" value="file:conf/schemas/medication.json"/>
     </bean>
 
