@@ -42,3 +42,4 @@ from the command line, using PhantomJS. At the moment, Play does not need to be
 running in order to run the tests (they are true unit tests with mocks). 
 
 This file will be packaged with your application, when using `play dist`.
+
