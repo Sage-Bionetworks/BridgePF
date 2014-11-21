@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
@@ -257,7 +258,12 @@ public class SurveyServiceTest {
 
     @Test
     public void failToGetSurveysByBadStudyKey() {
-        List<Survey> surveys = surveyService.getSurveys(new Study("foo", "foo", 17, "", null, null, "foo_researcher"));
+        Study study = new DynamoStudy();
+        study.setName("foo");
+        study.setIdentifier("foo");
+        study.setMinAgeOfConsent(17);
+        study.setResearcherRole("foo_researcher");
+        List<Survey> surveys = surveyService.getSurveys(study);
         assertEquals("No surveys", 0, surveys.size());
     }
 

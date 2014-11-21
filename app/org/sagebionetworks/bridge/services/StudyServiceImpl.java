@@ -5,7 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -21,27 +20,24 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.Study2;
 import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-import com.google.common.base.Function;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 
-public class StudyServiceImpl extends CacheLoader<String,Study2> implements StudyService {
+public class StudyServiceImpl extends CacheLoader<String,Study> implements StudyService {
     
-    LoadingCache<String, Study2> studyCache = CacheBuilder.newBuilder()
+    LoadingCache<String, Study> studyCache = CacheBuilder.newBuilder()
             .maximumSize(50)
             .expireAfterWrite(10, TimeUnit.MINUTES)
             .build(this);
     
-    public Study2 load(String identifier) throws EntityNotFoundException {
+    public Study load(String identifier) throws EntityNotFoundException {
         return studyDao.getStudy(identifier);
     }
     
@@ -90,105 +86,41 @@ public class StudyServiceImpl extends CacheLoader<String,Study2> implements Stud
         }
     }
     
-    // REMOVEME
-    private Map<String,Study> studies = Maps.newHashMap();
-    public void setStudies(List<Study> studiesList) {
-        for (Study study : studiesList) {
-            for (String hostname : study.getHostnames()) {
-                studies.put(hostname, study);    
-            }
-        }
+    @Override
+    public Tracker getTrackerByIdentifier(String trackerId) {
+        return trackersByIdentifier.get(trackerId);
     }
     @Override
-    public List<Study> getStudies() {
-        /*
-        List<Study2> studies = getStudies2();
-        Function<Study2, Study> toOldStudiesObject = new Function<Study2, Study>() { 
-            public Study apply(Study2 study2) { 
-                return convertStudy2ToOldStudy(study2); 
-            }
-        };
-        return Lists.transform(studies, toOldStudiesObject);
-        */
-        return Lists.newArrayList(studies.values());
-    }
-    
-    @Override
-    public Study getStudyByIdentifier(String key) {
-        /*
-        Study2 study = getStudy2ByIdentifier(key);
-        return convertStudy2ToOldStudy(study);
-        */
-        for (Study study : studies.values()) {
-            if (study.getKey().equals(key)) {
-                return study;
-            }
-        }
-        return null;
-    }
-    
-    @Override
-    public Study getStudyByHostname(String hostname) {
-        /*
-        Study2 study = getStudy2ByHostname(hostname);
-        return convertStudy2ToOldStudy(study);
-        */
-        Study study = studies.get(hostname);
-        return (study == null) ? getStudyByIdentifier("api") : study;
-    }
-
-    /*
-    private Study convertStudy2ToOldStudy(Study2 study) {
-        if (study != null) {
-            List<Tracker> trackers = Lists.newArrayList();
-            for (String trackerId : study.getTrackers()) {
-                Tracker tracker = trackersByIdentifier.get(trackerId);
-                if (tracker != null) {
-                    trackers.add(tracker);
-                }
-            }
-            return new Study(study.getName(), study.getIdentifier(), study.getMinAgeOfConsent(), study.getStormpathHref(), Lists.newArrayList(study.getHostname()),
-                    trackers, study.getResearcherRole());
-        }
-        return null;
-    }*/
-    
-    // END REMOVEME
-    
-    @Override
-    public Study2 getStudy2ByIdentifier(String identifier) {
+    public Study getStudyByIdentifier(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
         
         try {
             return studyCache.get(identifier);
         } catch (UncheckedExecutionException e) {
-            throw new EntityNotFoundException(Study2.class);
+            throw new EntityNotFoundException(Study.class);
         } catch (ExecutionException e) {
             throw new BridgeServiceException(e);
         }
     }
     @Override
-    public Study2 getStudy2ByHostname(String hostname) {
+    public Study getStudyByHostname(String hostname) {
         checkArgument(isNotBlank(hostname), Validate.CANNOT_BE_BLANK, "hostname");
         
         String postfix = config.getStudyHostnamePostfix();
-        
         String identifier = (postfix == null) ? "api" : hostname.split(postfix)[0];
         
-        System.out.println("IDENTIFIER: " + identifier);
-        
-        return getStudy2ByIdentifier(identifier);
+        return getStudyByIdentifier(identifier);
     }
     @Override
-    public List<Study2> getStudies2() {
-        List<Study2> studies = studyDao.getStudies();
-        for (Study2 study : studies) {
+    public List<Study> getStudies() {
+        List<Study> studies = studyDao.getStudies();
+        for (Study study : studies) {
             studyCache.put(study.getIdentifier(), study);
         }
         return studies;
     }
     @Override
-    public Study2 createStudy(Study2 study) {
+    public Study createStudy(Study study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNewEntity(study, study.getVersion(), "Study has a version value; it may already exist");
 
@@ -197,7 +129,7 @@ public class StudyServiceImpl extends CacheLoader<String,Study2> implements Stud
         String id = study.getIdentifier();
         String lockId = null;
         try {
-            lockId = lockDao.createLock(Study2.class, id);
+            lockId = lockDao.createLock(Study.class, id);
             
             if (studyDao.doesIdentifierExist(study.getIdentifier())) {
                 throw new EntityAlreadyExistsException(study);
@@ -206,34 +138,37 @@ public class StudyServiceImpl extends CacheLoader<String,Study2> implements Stud
             
             String directory = directoryDao.createDirectoryForStudy(study.getIdentifier());
             study.setStormpathHref(directory);
-            
-            String record = dnsDao.createDnsRecordForStudy(study.getIdentifier());
-            String domain = herokuApi.registerDomainForStudy(study.getIdentifier());
-            
-            if (record != null && record.equals(domain)) {
-                study.setHostname(domain);    
+            if (!config.isLocal()) {
+                String record = dnsDao.createDnsRecordForStudy(study.getIdentifier());
+                String domain = herokuApi.registerDomainForStudy(study.getIdentifier());
+                
+                if (record != null && record.equals(domain)) {
+                    study.setHostname(domain);    
+                } else {
+                    String msg = String.format("DNS record (%s) and hostname as registered with Heroku (%s) don't match.", record, domain);
+                    throw new BridgeServiceException(msg);
+                }
             } else {
-                String msg = String.format("DNS record (%s) and hostname as registered with Heroku (%s) don't match.", record, domain);
-                throw new BridgeServiceException(msg);
+                study.setHostname(study.getIdentifier() + config.getStudyHostnamePostfix());
             }
             study = studyDao.createStudy(study);    
         } finally {
-            lockDao.releaseLock(Study2.class, id, lockId);
+            lockDao.releaseLock(Study.class, id, lockId);
         }
         return study;
     }
     @Override
-    public Study2 updateStudy(Study2 study) {
+    public Study updateStudy(Study study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         Validate.entityThrowingException(validator, study);
         
         // These cannot be set through the API and will be null here, so they are set on update
-        Study2 originalStudy = studyDao.getStudy(study.getIdentifier());
+        Study originalStudy = studyDao.getStudy(study.getIdentifier());
         study.setHostname(originalStudy.getHostname());
         study.setStormpathHref(originalStudy.getStormpathHref());
         study.setResearcherRole(originalStudy.getResearcherRole());
         
-        Study2 updatedStudy = studyDao.updateStudy(study);
+        Study updatedStudy = studyDao.updateStudy(study);
         studyCache.invalidate(study.getIdentifier());
         return updatedStudy;
     }
@@ -243,15 +178,17 @@ public class StudyServiceImpl extends CacheLoader<String,Study2> implements Stud
         
         String lockId = null;
         try {
-            lockId = lockDao.createLock(Study2.class, identifier);
+            lockId = lockDao.createLock(Study.class, identifier);
             
-            herokuApi.unregisterDomainForStudy(identifier);
-            dnsDao.deleteDnsRecordForStudy(identifier);
+            if (!config.isLocal()) {
+                herokuApi.unregisterDomainForStudy(identifier);
+                dnsDao.deleteDnsRecordForStudy(identifier);
+            }
             directoryDao.deleteDirectoryForStudy(identifier);
             studyDao.deleteStudy(identifier);
             studyCache.invalidate(identifier);
         } finally {
-            lockDao.releaseLock(Study2.class, identifier, lockId);
+            lockDao.releaseLock(Study.class, identifier, lockId);
         }
     }
 }

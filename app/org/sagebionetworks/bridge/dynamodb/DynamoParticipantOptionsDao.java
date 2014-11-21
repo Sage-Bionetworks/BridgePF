@@ -39,7 +39,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         if (options == null) {
             options = new DynamoParticipantOptions();
         }
-        options.setStudyKey(study.getKey());
+        options.setStudyKey(study.getIdentifier());
         options.setHealthCode(healthCode);
         options.getOptions().put(option.name(), value);
         mapper.save(options);
@@ -112,7 +112,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
 
         Condition condition = new Condition();
         condition.withComparisonOperator(ComparisonOperator.EQ);
-        condition.withAttributeValueList(new AttributeValue().withS(study.getKey()));
+        condition.withAttributeValueList(new AttributeValue().withS(study.getIdentifier()));
         scan.addFilterCondition("studyKey", condition);
         
         List<DynamoParticipantOptions> mappings = mapper.scan(DynamoParticipantOptions.class, scan);

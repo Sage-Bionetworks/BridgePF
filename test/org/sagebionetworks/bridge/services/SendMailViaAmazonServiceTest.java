@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -35,7 +36,9 @@ public class SendMailViaAmazonServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        Study study = new Study(null, "api", 17, null, null, null, null);
+        Study study = new DynamoStudy();
+        study.setIdentifier("api");
+        study.setMinAgeOfConsent(17);
         
         studyService = mock(StudyService.class);
         when(studyService.getStudyByIdentifier(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
