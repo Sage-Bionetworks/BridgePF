@@ -36,7 +36,7 @@ public class ApplicationController extends BaseController {
         
         // There's probably a non-crappy way of doing this in Play, but I couldn't find it.
         Study study = studyService.getStudyByHostname(getHostname());
-        if (study == null || "neurod".equals(study.getKey())) {
+        if (study == null || "pd".equals(study.getKey()) || "neurod".equals(study.getKey()) || "parkinson".equals(study.getKey())) {
             return ok(views.html.neurod.render(Json.toJson(info).toString()));    
         } else if ("api".equals(study.getKey())) {
             return ok(views.html.api.render(Json.toJson(info).toString()));
