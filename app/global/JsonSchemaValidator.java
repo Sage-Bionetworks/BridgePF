@@ -15,8 +15,9 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
 public class JsonSchemaValidator {
-    
+
     private CacheLoader<Tracker, JsonNode> loader = new CacheLoader<Tracker, JsonNode>() {
+        @Override
         public JsonNode load(Tracker tracker) throws JsonProcessingException, IOException {
             return BridgeObjectMapper.get().readTree(tracker.getSchemaFile().getInputStream());
         }
@@ -27,7 +28,7 @@ public class JsonSchemaValidator {
     public JsonNode getSchemaAsNode(Tracker tracker) throws Exception {
         return cache.get(tracker);
     }
-    
+
     public ProcessingReport validate(Tracker tracker, JsonNode node) throws Exception {
         JsonSchemaFactory factory = JsonSchemaFactory.byDefault();
         JsonNode schemaFile = getSchemaAsNode(tracker);
