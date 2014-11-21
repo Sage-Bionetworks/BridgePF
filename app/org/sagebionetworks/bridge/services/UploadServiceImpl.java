@@ -28,7 +28,7 @@ public class UploadServiceImpl implements UploadService {
     private final Logger logger = LoggerFactory.getLogger(UploadServiceImpl.class);
 
     private static final long EXPIRATION = 60 * 1000; // 1 minute
-    private static final String BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket.pd");
+    private static final String BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
 
     private UploadSessionCredentialsService uploadCredentailsService;
     private AmazonS3 s3UploadClient;
