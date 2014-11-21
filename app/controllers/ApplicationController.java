@@ -36,12 +36,16 @@ public class ApplicationController extends BaseController {
         
         // There's probably a non-crappy way of doing this in Play, but I couldn't find it.
         Study study = studyService.getStudyByHostname(getHostname());
-        if (study == null || "pd".equals(study.getKey()) || "neurod".equals(study.getKey()) || "parkinson".equals(study.getKey())) {
+        if (study == null) {
+            throw new EntityNotFoundException(Study.class, "Cannot determine study from the host name: " + getHostname());
+        } else if ("pd".equals(study.getIdentifier()) || "neurod".equals(study.getIdentifier()) || "parkinson".equals(study.getIdentifier())) {
             return ok(views.html.neurod.render(Json.toJson(info).toString()));    
-        } else if ("api".equals(study.getKey())) {
+        } else if ("api".equals(study.getIdentifier())) {
             return ok(views.html.api.render(Json.toJson(info).toString()));
         }
-        throw new EntityNotFoundException(Study.class, "Cannot determine study from the host name: " + getHostname());
+        String apiHost = "api" + bridgeConfig.getStudyHostnamePostfix();
+        
+        return ok(views.html.nosite.render(study.getName(), apiHost));
     }
     
     public Result loadConsent(String sessionToken) throws Exception {

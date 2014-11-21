@@ -87,7 +87,7 @@ public class SurveyController extends BaseController {
         getAuthenticatedResearcherOrAdminSession(study);
         
         Survey survey = DynamoSurvey.fromJson(requestToJSON(request()));
-        survey.setStudyKey(study.getKey());
+        survey.setStudyKey(study.getIdentifier());
         
         survey = surveyService.createSurvey(survey);
         return createdResult(new GuidCreatedOnVersionHolder(survey));
@@ -112,7 +112,7 @@ public class SurveyController extends BaseController {
         Survey survey = DynamoSurvey.fromJson(requestToJSON(request()));
         survey.setGuid(surveyGuid);
         survey.setCreatedOn(createdOn);
-        survey.setStudyKey(study.getKey());
+        survey.setStudyKey(study.getIdentifier());
         
         survey = surveyService.updateSurvey(survey);
         return okResult(new GuidCreatedOnVersionHolder(survey));

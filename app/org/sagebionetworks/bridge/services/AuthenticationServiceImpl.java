@@ -153,7 +153,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Validate.entityThrowingException(signUpValidator, signUp);
         
         try {
-            Directory directory = stormpathClient.getResource(study.getStormpathDirectoryHref(), Directory.class);
+            Directory directory = stormpathClient.getResource(study.getStormpathHref(), Directory.class);
             // Create Stormpath account
             Account account = stormpathClient.instantiate(Account.class);
             account.setGivenName("<EMPTY>");
@@ -242,7 +242,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         session.setEnvironment(config.getEnvironment().name().toLowerCase());
         session.setSessionToken(BridgeUtils.generateGuid());
         final User user = new User(account);
-        user.setStudyKey(study.getKey());
+        user.setStudyKey(study.getIdentifier());
 
         HealthId healthId = accountEncryptionService.getHealthCode(study, account);
         if (healthId != null) {
