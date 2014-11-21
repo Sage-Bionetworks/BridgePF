@@ -8,6 +8,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
@@ -59,7 +61,8 @@ public class ConsentServiceImplTest {
 
     @Test
     public void test() {
-        ConsentSignature researchConsent = new ConsentSignature("John Smith", "2011-11-11");
+        ConsentSignature researchConsent = ConsentSignature.create("John Smith", "2011-11-11",
+                TestConstants.DUMMY_IMAGE_DATA, "image/gif");
         boolean sendEmail = false;
 
         // Withdrawing and consenting again should return to original state.

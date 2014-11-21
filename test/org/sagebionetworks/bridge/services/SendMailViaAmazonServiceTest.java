@@ -50,7 +50,7 @@ public class SendMailViaAmazonServiceTest {
         service.setEmailClient(emailClient);
         service.setStudyService(studyService);
         
-        consent = new ConsentSignature("Test 2", "1950-05-05");
+        consent = ConsentSignature.create("Test 2", "1950-05-05", TestConstants.DUMMY_IMAGE_DATA, "image/fake");
         studyConsent = new StudyConsent() {
             @Override
             public String getStudyKey() {
@@ -89,9 +89,9 @@ public class SendMailViaAmazonServiceTest {
         String html = message.getBody().getHtml().getData();
         
         assertEquals("Correct sender", recipientEmail, destination.getToAddresses().get(0));
-        assertTrue("Contains consent content", html.indexOf("Had this been a real study") > -1);
-        assertTrue("Date transposed to document", html.indexOf("May 5, 1950") > -1);
-        assertTrue("Name transposed to document", html.indexOf("Test 2") > -1);
+        assertTrue("Contains consent content", html.contains("Had this been a real study"));
+        assertTrue("Date transposed to document", html.contains("May 5, 1950"));
+        assertTrue("Name transposed to document", html.contains("Test 2"));
     }
     
 }

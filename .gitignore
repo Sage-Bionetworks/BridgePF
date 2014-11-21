@@ -5,7 +5,6 @@
 .settings
 .history
 .grunt
-BridgePF.iml
 TODO.txt
 phantomjsdriver.log
 target
@@ -24,3 +23,6 @@ setup.sh
 verify.rb
 .dpl
 /project
+
+# IntelliJ project files
+*.iml

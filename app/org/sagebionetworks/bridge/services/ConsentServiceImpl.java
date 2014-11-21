@@ -11,7 +11,6 @@ import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
@@ -68,9 +67,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         
         if (caller.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
-        }
-        if (consentSignature.getBirthdate() == null) {
-            throw new InvalidEntityException(consentSignature, "Consent birth date is required.");
         }
         // Stormpath account
         final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
