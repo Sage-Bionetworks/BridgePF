@@ -70,6 +70,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
             }
             consent.setName(researchConsent.getName());
             consent.setBirthdate(researchConsent.getBirthdate());
+            consent.setImageData(researchConsent.getImageData());
+            consent.setImageMimeType(researchConsent.getImageMimeType());
             consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
             mapper.save(consent);
         } catch (ConditionalCheckFailedException e) {
@@ -103,6 +105,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         if (consent == null) {
             throw new EntityNotFoundException(DynamoUserConsent2.class);
         }
-        return new ConsentSignature(consent.getName(), consent.getBirthdate());
+        return ConsentSignature.create(consent.getName(), consent.getBirthdate(), consent.getImageData(),
+                consent.getImageMimeType());
     }
 }
