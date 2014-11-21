@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
-import org.sagebionetworks.bridge.models.studies.ConsentSignatureImage;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -62,8 +61,8 @@ public class ConsentServiceImplTest {
 
     @Test
     public void test() {
-        ConsentSignature researchConsent = new ConsentSignature("John Smith", "2011-11-11", new ConsentSignatureImage(
-                TestConstants.DUMMY_IMAGE_DATA, "image/gif"));
+        ConsentSignature researchConsent = ConsentSignature.create("John Smith", "2011-11-11",
+                TestConstants.DUMMY_IMAGE_DATA, "image/gif");
         boolean sendEmail = false;
 
         // Withdrawing and consenting again should return to original state.

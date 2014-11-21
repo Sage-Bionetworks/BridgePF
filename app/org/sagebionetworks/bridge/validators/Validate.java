@@ -31,9 +31,9 @@ public class Validate {
     
     private final static JsonSchemaValidator schemaValidator = new JsonSchemaValidator();
     
-    public static String CANNOT_BE_BLANK = "%s cannot be missing, null, or blank";
-    
-    public static String CANNOT_BE_NULL = "%s cannot be missing or null";
+    public static final String CANNOT_BE_BLANK = "%s cannot be missing, null, or blank";
+    public static final String CANNOT_BE_EMPTY_STRING = "%s cannot be an empty string";
+    public static final String CANNOT_BE_NULL = "%s cannot be missing or null";
   
     public static void jsonWithSchema(Tracker tracker, JsonNode node) {
         MapBindingResult errors = new MapBindingResult(Maps.newHashMap(), tracker.getName());

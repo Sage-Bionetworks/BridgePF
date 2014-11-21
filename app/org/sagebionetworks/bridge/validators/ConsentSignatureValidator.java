@@ -22,6 +22,8 @@ public class ConsentSignatureValidator implements Validator {
             errors.rejectValue("birthdate", Validate.CANNOT_BE_BLANK);
         }
 
+        // Signature image is currently optional. Some studies may collect a signature, but some may not. It's okay
+        // to let the client validate this until we're sure this 100% required for all consents.
         String imageData = sig.getImageData();
         String imageMimeType = sig.getImageMimeType();
         if (imageData != null && imageData.isEmpty()) {
