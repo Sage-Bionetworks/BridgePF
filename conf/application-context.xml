@@ -309,6 +309,7 @@
         <property name="target">
             <bean class="controllers.StudyController" parent="BaseController">
                 <property name="studyService" ref="studyService" />
+                <property name="studyDao" ref="studyDao" />
             </bean>
         </property>
     </bean>
@@ -322,6 +323,12 @@
         <property name="bridgeConfig" ref="bridgeConfig"/>
         <property name="validator">
             <bean class="org.sagebionetworks.bridge.validators.StudyValidator"/>
+        </property>
+        <property name="trackers">
+            <list>
+                <ref bean="pb-tracker"/>
+                <ref bean="med-tracker"/>
+            </list>            
         </property>
         <property name="studies">
             <list>

@@ -2,6 +2,7 @@ package controllers;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study2;
@@ -12,9 +13,24 @@ import play.mvc.Result;
 public class StudyController extends BaseController {
     
     private StudyService studyService;
+    private StudyDao studyDao;
     
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+
+    public void setStudyDao(StudyDao studyDao) {
+        this.studyDao = studyDao;
+    }
+    
+    // REMOVEME
+    public Result createStudyRecordOnly() throws Exception {
+        getAuthenticatedAdminSession();
+        
+        Study2 study = DynamoStudy.fromJson(requestToJSON(request()));
+        study = studyDao.createStudy(study);
+        
+        return okResult(new VersionHolder(study.getVersion()));        
     }
     
     public Result getStudyForResearcher() throws Exception {
