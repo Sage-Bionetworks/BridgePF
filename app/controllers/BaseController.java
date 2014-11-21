@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.Study2;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -117,7 +116,7 @@ public abstract class BaseController extends Controller {
         throw new UnauthorizedException();
     }
     
-    protected UserSession getAuthenticatedResearchOrAdminSession(Study2 study) {
+    protected UserSession getAuthenticatedResearchOrAdminSession(Study study) {
         UserSession session = getAuthenticatedSession();
         User user = session.getUser();
         if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
