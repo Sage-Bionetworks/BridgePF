@@ -53,6 +53,10 @@ public class DynamoStudy implements Study2, DynamoTable {
         study.setMaxNumOfParticipants(JsonUtils.asInt(node, MAX_NUM_OF_PARTICIPANTS_PROPERTY));
         study.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
         study.getTrackers().addAll(JsonUtils.asStringList(node, TRACKERS_PROPERTY));
+        // REMOVEME after creating API study
+        study.setHostname(JsonUtils.asText(node, HOSTNAME_PROPERTY));
+        study.setResearcherRole(JsonUtils.asText(node, RESEARCHER_ROLE_PROPERTY));
+        study.setStormpathHref(JsonUtils.asText(node, STORMPATH_HREF_PROPERTY));
         return study;
     }
 

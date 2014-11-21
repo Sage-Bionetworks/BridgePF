@@ -5,7 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -23,12 +22,15 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.Study2;
+import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.google.common.base.Function;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 
@@ -50,6 +52,7 @@ public class StudyServiceImpl extends CacheLoader<String,Study2> implements Stud
     private DistributedLockDao lockDao;
     private BridgeConfig config;
     private StudyValidator validator;
+    private Map<String,Tracker> trackersByIdentifier = Maps.newHashMap();
 
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
@@ -79,6 +82,14 @@ public class StudyServiceImpl extends CacheLoader<String,Study2> implements Stud
         this.config = bridgeConfig;
     }
     
+    public void setTrackers(List<Tracker> trackers) {
+        if (trackers != null) {
+            for (Tracker tracker : trackers) {
+                trackersByIdentifier.put(tracker.getIdentifier(), tracker);
+            }
+        }
+    }
+    
     // REMOVEME
     private Map<String,Study> studies = Maps.newHashMap();
     public void setStudies(List<Study> studiesList) {
@@ -88,7 +99,26 @@ public class StudyServiceImpl extends CacheLoader<String,Study2> implements Stud
             }
         }
     }
+    @Override
+    public List<Study> getStudies() {
+        /*
+        List<Study2> studies = getStudies2();
+        Function<Study2, Study> toOldStudiesObject = new Function<Study2, Study>() { 
+            public Study apply(Study2 study2) { 
+                return convertStudy2ToOldStudy(study2); 
+            }
+        };
+        return Lists.transform(studies, toOldStudiesObject);
+        */
+        return Lists.newArrayList(studies.values());
+    }
+    
+    @Override
     public Study getStudyByIdentifier(String key) {
+        /*
+        Study2 study = getStudy2ByIdentifier(key);
+        return convertStudy2ToOldStudy(study);
+        */
         for (Study study : studies.values()) {
             if (study.getKey().equals(key)) {
                 return study;
@@ -96,13 +126,33 @@ public class StudyServiceImpl extends CacheLoader<String,Study2> implements Stud
         }
         return null;
     }
+    
+    @Override
     public Study getStudyByHostname(String hostname) {
+        /*
+        Study2 study = getStudy2ByHostname(hostname);
+        return convertStudy2ToOldStudy(study);
+        */
         Study study = studies.get(hostname);
         return (study == null) ? getStudyByIdentifier("api") : study;
     }
-    public Collection<Study> getStudies() {
-        return Collections.unmodifiableCollection(studies.values());
-    }
+
+    /*
+    private Study convertStudy2ToOldStudy(Study2 study) {
+        if (study != null) {
+            List<Tracker> trackers = Lists.newArrayList();
+            for (String trackerId : study.getTrackers()) {
+                Tracker tracker = trackersByIdentifier.get(trackerId);
+                if (tracker != null) {
+                    trackers.add(tracker);
+                }
+            }
+            return new Study(study.getName(), study.getIdentifier(), study.getMinAgeOfConsent(), study.getStormpathHref(), Lists.newArrayList(study.getHostname()),
+                    trackers, study.getResearcherRole());
+        }
+        return null;
+    }*/
+    
     // END REMOVEME
     
     @Override
@@ -124,6 +174,9 @@ public class StudyServiceImpl extends CacheLoader<String,Study2> implements Stud
         String postfix = config.getStudyHostnamePostfix();
         
         String identifier = (postfix == null) ? "api" : hostname.split(postfix)[0];
+        
+        System.out.println("IDENTIFIER: " + identifier);
+        
         return getStudy2ByIdentifier(identifier);
     }
     @Override
