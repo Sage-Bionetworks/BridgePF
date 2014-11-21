@@ -15,7 +15,7 @@ public class PemUtilsTest {
     public void testCert() throws Exception {
         CertificateFactory certFactory = new BcCertificateFactory();
         KeyPair keyPair = KeyPairFactory.newRsa2048();
-        X509Certificate cert = certFactory.newCertificate(keyPair);
+        X509Certificate cert = certFactory.newCertificate(keyPair, "study");
         String pem = PemUtils.toPem(cert);
         assertNotNull(pem);
         cert = PemUtils.loadCertificateFromPem(pem);
