@@ -20,7 +20,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
 public class HealthDataController extends BaseController {
-    
+
     private static final Function<HealthDataRecord, GuidVersionHolder> TRANSFORMER = new Function<HealthDataRecord, GuidVersionHolder>() {
         @Override
         public GuidVersionHolder apply(HealthDataRecord record) {
@@ -43,6 +43,7 @@ public class HealthDataController extends BaseController {
         List<HealthDataRecord> records = Lists.newArrayListWithCapacity(node.size());
         for (int i = 0; i < node.size(); i++) {
             JsonNode child = node.get(i);
+
             Validate.jsonWithSchema(tracker, child);
             records.add(DynamoHealthDataRecord.fromJson(child));
         }
@@ -50,7 +51,7 @@ public class HealthDataController extends BaseController {
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
         List<HealthDataRecord> updatedRecords = healthDataService.appendHealthData(key, records);
-        
+
         return okResult(Lists.transform(updatedRecords, TRANSFORMER));
     }
 
