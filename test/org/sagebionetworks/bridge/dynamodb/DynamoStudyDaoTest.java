@@ -15,7 +15,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.studies.Study2;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -31,12 +31,18 @@ public class DynamoStudyDaoTest {
     @Before
     public void before() {
         DynamoInitializer.init(DynamoStudy.class);
-        DynamoTestUtil.clearTable(DynamoStudy.class);
+        // We need to leave the test study in the database.
+        List<Study> studies = studyDao.getStudies();
+        for (Study study : studies) {
+            if (!"api".equals(study.getIdentifier())) {
+                studyDao.deleteStudy(study.getIdentifier());
+            }
+        }
     }
     
     @Test
     public void crudOneStudy() {
-        Study2 study = createStudy();
+        Study study = createStudy();
         
         study = studyDao.createStudy(study);
         assertNotNull("Study was assigned a version", study.getVersion());
@@ -71,21 +77,23 @@ public class DynamoStudyDaoTest {
             identifiers.add(studyDao.createStudy(createStudy()).getIdentifier());
             identifiers.add(studyDao.createStudy(createStudy()).getIdentifier());
             
-            List<Study2> studies = studyDao.getStudies();
-            assertEquals("There are five studies", 5, studies.size());
+            List<Study> studies = studyDao.getStudies();
+            // The five studies, plus the API study we refuse to delete...
+            assertEquals("There are five studies", 6, studies.size());
             
         } finally {
             for (String identifier : identifiers) {
                 studyDao.deleteStudy(identifier);
             }
         }
-        List<Study2> studies = studyDao.getStudies();
-        assertEquals("There are no studies", 0, studies.size());
+        List<Study> studies = studyDao.getStudies();
+        assertEquals("There should be only one study", 1, studies.size());
+        assertEquals("That should be the test study study", "api", studies.get(0).getIdentifier());
     }
     
     @Test
     public void willNotSaveTwoStudiesWithSameIdentifier() {
-        Study2 study = null;
+        Study study = null;
         try {
             study = createStudy();
             study = studyDao.createStudy(study);
@@ -101,15 +109,15 @@ public class DynamoStudyDaoTest {
     
     @Test(expected=EntityAlreadyExistsException.class)
     public void identifierUniquenessEnforcedByVersionChecks() throws Exception {
-        Study2 study = createStudy();
+        Study study = createStudy();
         studyDao.createStudy(study);
         
         study.setVersion(null); // This is now a "new study"
         studyDao.createStudy(study);
     }
     
-    private Study2 createStudy() {
-        Study2 study = new DynamoStudy();
+    private Study createStudy() {
+        Study study = new DynamoStudy();
         study.setIdentifier(TestUtils.randomName());
         study.setMaxNumOfParticipants(100);
         study.setMinAgeOfConsent(18);

@@ -19,7 +19,7 @@ public class UserManagementController extends BaseController {
     public void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
     }
-    
+
     public Result createUser() throws Exception {
         getAuthenticatedAdminSession();
 
@@ -27,23 +27,21 @@ public class UserManagementController extends BaseController {
 
         JsonNode node = requestToJSON(request());
         SignUp signUp = SignUp.fromJson(node, true);
-        
+
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
-        
+
         userAdminService.createUser(signUp, study, false, consent);
-        
+
         return createdResult("User created.");
     }
 
     public Result deleteUser(String email) throws Exception {
         getAuthenticatedAdminSession();
-        
         Study study = studyService.getStudyByHostname(getHostname());
-        
         User user = authenticationService.getUser(study, email);
         userAdminService.deleteUser(user);
 
         return okResult("User deleted.");
     }
-    
+
 }

@@ -64,7 +64,7 @@ public class DynamoSchedule implements DynamoTable, Schedule {
         this.studyUserCompoundKey = studyUserCompoundKey;
     }
     public void setStudyAndUser(Study study, User user) {
-        setStudyUserCompoundKey(study.getKey()+":"+user.getId());
+        setStudyUserCompoundKey(study.getIdentifier()+":"+user.getId());
     }
     @DynamoDBRangeKey
     @JsonIgnore

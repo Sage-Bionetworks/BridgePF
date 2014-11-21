@@ -181,7 +181,7 @@ public class StormPathUserAdminService implements UserAdminService {
     private void deleteUserInStudy(User user, Study study) throws BridgeServiceException {
         checkNotNull(user, "User cannot be null");
         checkNotNull(study, "Study cannot be null");
-        final String lock = study.getKey() + ":" + user.getId();
+        final String lock = study.getIdentifier() + ":" + user.getId();
         String uuid = null;
         try {
             uuid = lockDao.createLock(User.class, lock);
@@ -218,10 +218,10 @@ public class StormPathUserAdminService implements UserAdminService {
     private void removeAllHealthDataRecords(User user, Study userStudy) throws BridgeServiceException {
         // This user may have never consented to research. Ignore if that's the case.
         if (user.getHealthCode() != null) {
-            List<Tracker> trackers = userStudy.getTrackers();
-            HealthDataKey key = null;
-            for (Tracker tracker : trackers) {
-                key = new HealthDataKey(userStudy, tracker, user);
+            for (String trackerId : userStudy.getTrackers()) {
+                Tracker tracker = studyService.getTrackerByIdentifier(trackerId);
+                
+                HealthDataKey key = new HealthDataKey(userStudy, tracker, user);
                 List<HealthDataRecord> records = healthDataService.getAllHealthData(key);
                 for (HealthDataRecord record : records) {
                     healthDataService.deleteHealthDataRecord(key, record.getGuid());
@@ -246,7 +246,7 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     private Directory getDirectory(Study userStudy) {
-        return stormpathClient.getResource(userStudy.getStormpathDirectoryHref(), Directory.class);
+        return stormpathClient.getResource(userStudy.getStormpathHref(), Directory.class);
     }
 
     private boolean userDoesNotExist(Directory directory, String email) {

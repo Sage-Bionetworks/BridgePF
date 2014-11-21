@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models.schedules;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,11 +12,11 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.Tracker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,7 +36,10 @@ public class ScheduleStrategyTest {
         for (int i=0; i < 10; i++) {
             users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
         }
-        study = new Study("name", TestConstants.TEST_STUDY_IDENTIFIER, 18, null, Collections.<String>emptyList(), Collections.<Tracker>emptyList(), null);
+        study = new DynamoStudy();
+        study.setName("name");
+        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        study.setMinAgeOfConsent(18);
     }
     
     public void createContextWithRemainderUsers() {
@@ -72,7 +74,7 @@ public class ScheduleStrategyTest {
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(study.getKey());
+        plan.setStudyKey(study.getIdentifier());
         plan.setStrategy(strategy);
         
         String output = JsonUtils.toJSON(plan);
@@ -142,7 +144,7 @@ public class ScheduleStrategyTest {
     private DynamoSchedulePlan createABSchedulePlan() {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(study.getKey());
+        plan.setStudyKey(study.getIdentifier());
         plan.setStrategy(createABTestStrategy());
         return plan;
     }

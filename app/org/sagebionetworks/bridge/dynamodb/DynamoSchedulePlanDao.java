@@ -49,10 +49,10 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
     @Override
     public List<SchedulePlan> getSchedulePlans(Study study) {
         checkNotNull(study, "Study is null");
-        checkArgument(StringUtils.isNotBlank(study.getKey()), "Study key is null");
+        checkArgument(StringUtils.isNotBlank(study.getIdentifier()), "Study key is null");
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
-        plan.setStudyKey(study.getKey());
+        plan.setStudyKey(study.getIdentifier());
         
         DynamoDBQueryExpression<DynamoSchedulePlan> query = new DynamoDBQueryExpression<DynamoSchedulePlan>();
         query.withScanIndexForward(false);
@@ -64,11 +64,11 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
     @Override
     public SchedulePlan getSchedulePlan(Study study, String guid) {
         checkNotNull(study, "Study is null");
-        checkArgument(StringUtils.isNotBlank(study.getKey()), "Study key is null");
+        checkArgument(StringUtils.isNotBlank(study.getIdentifier()), "Study key is null");
         checkArgument(StringUtils.isNotBlank(guid), "Plan GUID is blank or null");
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
-        plan.setStudyKey(study.getKey());
+        plan.setStudyKey(study.getIdentifier());
         
         Condition condition = new Condition();
         condition.withComparisonOperator(ComparisonOperator.EQ);
