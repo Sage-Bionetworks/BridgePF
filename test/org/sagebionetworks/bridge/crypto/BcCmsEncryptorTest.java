@@ -20,7 +20,7 @@ public class BcCmsEncryptorTest {
     public void before() throws Exception {
         KeyPair keyPair = KeyPairFactory.newRsa2048();
         CertificateFactory certFactory = new BcCertificateFactory();
-        X509Certificate cert = certFactory.newCertificate(keyPair);
+        X509Certificate cert = certFactory.newCertificate(keyPair, "*");
         encryptor = new BcCmsEncryptor(cert, keyPair.getPrivate());
         decryptor = new BcCmsEncryptor(cert, keyPair.getPrivate());
     }

@@ -24,7 +24,7 @@ public class BcCmsSignedDataProcessorTest {
 
         CertificateFactory certFactory = new BcCertificateFactory();
         KeyPair keyPair = KeyPairFactory.newRsa2048();
-        Certificate cert = certFactory.newCertificate(keyPair);
+        Certificate cert = certFactory.newCertificate(keyPair, "study");
         Certificate[] certChain = new Certificate[]{cert};
         CmsSignedDataProcessor processor = new BcCmsSignedDataProcessor(certChain, keyPair.getPrivate());
 

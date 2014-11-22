@@ -47,7 +47,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class UploadServiceTest {
     
-    private static final String BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket.pd");
+    private static final String BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
 
     @Resource
     private UploadService uploadService;
