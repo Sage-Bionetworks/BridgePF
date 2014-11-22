@@ -10,7 +10,7 @@ public interface CertificateFactory {
     /**
      * Creates a self-signed X509 certificate for a specific study with default information.
      */
-    X509Certificate newCertificate(KeyPair keyPair, String studyKey);
+    X509Certificate newCertificate(KeyPair keyPair, String studyFqdn);
 
     /**
      * Creates a self-signed X509 certificate with the supplied information.
