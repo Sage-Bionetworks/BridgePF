@@ -45,9 +45,9 @@ public class BcCertificateFactory implements CertificateFactory {
     }
 
     @Override
-    public X509Certificate newCertificate(KeyPair keyPair, String studyKey) {
+    public X509Certificate newCertificate(KeyPair keyPair, String studyFqdn) {
         checkNotNull(keyPair);
-        checkNotNull(studyKey);
+        checkNotNull(studyFqdn);
         CertificateInfo certInfo = new CertificateInfo()
                 .withCountry(config.getProperty("upload.cms.certificate.country"))
                 .withState(config.getProperty("upload.cms.certificate.state"))
@@ -55,7 +55,7 @@ public class BcCertificateFactory implements CertificateFactory {
                 .withOrganization(config.getProperty("upload.cms.certificate.organization"))
                 .withTeam(config.getProperty("upload.cms.certificate.team"))
                 .withEmail(config.getProperty("upload.cms.certificate.email"))
-                .withFqdn(studyKey + "." + config.getProperty("upload.cms.certificate.domain"));
+                .withFqdn(studyFqdn);
         return newCertificate(keyPair, certInfo);
     }
 
