@@ -34,18 +34,17 @@ public class ApplicationController extends BaseController {
     public Result loadPublicApp() throws Exception {
         UserSessionInfo info = new UserSessionInfo(new UserSession());
         
-        // There's probably a non-crappy way of doing this in Play, but I couldn't find it.
-        Study study = studyService.getStudyByHostname(getHostname());
-        if (study == null) {
-            throw new EntityNotFoundException(Study.class, "Cannot determine study from the host name: " + getHostname());
-        } else if ("pd".equals(study.getIdentifier()) || "neurod".equals(study.getIdentifier()) || "parkinson".equals(study.getIdentifier())) {
-            return ok(views.html.neurod.render(Json.toJson(info).toString()));    
-        } else if ("api".equals(study.getIdentifier())) {
-            return ok(views.html.api.render(Json.toJson(info).toString()));
+        // We need to default to a study or the integration tests in Play will fail 
+        // (localhost:3333 won't match anything).
+        try {
+            Study study = studyService.getStudyByHostname(getHostname());
+            if ("pd".equals(study.getIdentifier()) || "neurod".equals(study.getIdentifier()) || "parkinson".equals(study.getIdentifier())) {
+                return ok(views.html.neurod.render(Json.toJson(info).toString()));    
+            }
+        } catch(EntityNotFoundException e) {
+            // Go with the API study
         }
-        String apiHost = "api" + bridgeConfig.getStudyHostnamePostfix();
-        
-        return ok(views.html.nosite.render(study.getName(), apiHost));
+        return ok(views.html.api.render(Json.toJson(info).toString()));
     }
     
     public Result loadConsent(String sessionToken) throws Exception {
