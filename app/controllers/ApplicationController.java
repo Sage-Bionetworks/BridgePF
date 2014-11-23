@@ -41,6 +41,8 @@ public class ApplicationController extends BaseController {
             Study study = studyService.getStudyByHostname(getHostname());
             if ("pd".equals(study.getIdentifier()) || "neurod".equals(study.getIdentifier()) || "parkinson".equals(study.getIdentifier())) {
                 return ok(views.html.neurod.render(Json.toJson(info).toString()));    
+            } else if ("api".equals(study.getIdentifier())) {
+                return ok(views.html.api.render(Json.toJson(info).toString()));
             }
             String apiHost = "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix();
             return ok(views.html.nosite.render(study.getName(), apiHost));
