@@ -1,5 +1,6 @@
 package controllers;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
@@ -41,10 +42,12 @@ public class ApplicationController extends BaseController {
             if ("pd".equals(study.getIdentifier()) || "neurod".equals(study.getIdentifier()) || "parkinson".equals(study.getIdentifier())) {
                 return ok(views.html.neurod.render(Json.toJson(info).toString()));    
             }
+            String apiHost = "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix();
+            return ok(views.html.nosite.render(study.getName(), apiHost));
         } catch(EntityNotFoundException e) {
             // Go with the API study
+            return ok(views.html.api.render(Json.toJson(info).toString()));
         }
-        return ok(views.html.api.render(Json.toJson(info).toString()));
     }
     
     public Result loadConsent(String sessionToken) throws Exception {
