@@ -22,8 +22,8 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 public class UploadCertificateServiceImpl implements UploadCertificateService {
 
     private static final BridgeConfig CONFIG = BridgeConfigFactory.getConfig();
-    private static final String PRIVATE_KEY_BUCKET = CONFIG.getProperty("");
-    private static final String CERT_BUCKET = CONFIG.getProperty("");
+    private static final String PRIVATE_KEY_BUCKET = CONFIG.getProperty("upload.cms.priv.bucket");
+    private static final String CERT_BUCKET = CONFIG.getProperty("upload.cms.cert.bucket");
 
     private final CertificateFactory certificateFactory;
 
@@ -42,7 +42,7 @@ public class UploadCertificateServiceImpl implements UploadCertificateService {
         final KeyPair keyPair = KeyPairFactory.newRsa2048();
         final String studyFqdn = CONFIG.getStudyHostname(studyIdentifier);
         final X509Certificate cert = certificateFactory.newCertificate(keyPair, studyFqdn);
-        final String name = studyFqdn + ".pem";
+        final String name = studyIdentifier + ".pem";
         try {
             s3Put(PRIVATE_KEY_BUCKET, name,  PemUtils.toPem(keyPair.getPrivate()));
             s3Put(CERT_BUCKET, name, PemUtils.toPem(cert));
