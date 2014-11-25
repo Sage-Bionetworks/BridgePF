@@ -4,7 +4,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.Backfill;
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.services.BackfillService;
+import org.sagebionetworks.bridge.services.backfill.BackfillService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
