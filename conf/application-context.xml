@@ -439,8 +439,6 @@
         <property name="s3CmsClient" ref="s3CmsClient" />
     </bean>
 
-    <bean id="backfillService" class="org.sagebionetworks.bridge.services.BackfillService" />
-
     <bean id="sendEmailViaAmazonService" class="org.sagebionetworks.bridge.services.SendMailViaAmazonService">
         <property name="fromEmail" value="support@sagebridge.org" />
         <property name="emailClient" ref="sesClient" />
