@@ -1,8 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
-import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
-
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
@@ -11,6 +8,9 @@ import org.springframework.validation.Validator;
 
 public class ScheduleValidator implements Validator {
 
+    public static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
+    public static final String CANNOT_BE_NULL = "cannot be missing or null";
+    
     @Override
     public boolean supports(Class<?> clazz) {
         return Schedule.class.isAssignableFrom(clazz);
@@ -26,12 +26,16 @@ public class ScheduleValidator implements Validator {
         if (StringUtils.isBlank(schedule.getActivityRef())) {
             errors.rejectValue("activityRef", CANNOT_BE_BLANK);
         }
+        /* You validate before these are set as part of schedule finalization per user.
+         * (We copy the schedule as a kind of template, for each user, and set these 
+         * values, before persisting that copy).
         if (StringUtils.isBlank(schedule.getSchedulePlanGuid())) {
             errors.rejectValue("schedulePlanGuid", CANNOT_BE_BLANK);
         }
         if (StringUtils.isBlank(schedule.getStudyUserCompoundKey())) {
             errors.rejectValue("studyUserCompoundKey", CANNOT_BE_BLANK);
         }
+        */
         if (schedule.getActivityType() == null) {
             errors.rejectValue("activityType", CANNOT_BE_NULL);
         }
