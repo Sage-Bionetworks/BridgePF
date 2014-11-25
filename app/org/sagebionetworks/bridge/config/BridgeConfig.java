@@ -201,7 +201,7 @@ public class BridgeConfig {
     
     public String getStudyHostname(String identifier) {
         checkNotNull(identifier);
-        return identifier + getProperty(STUDY_HOSTNAME);
+        return identifier + getStudyHostnamePostfix();
     }
 
     public String getHerokuAuthToken() {
