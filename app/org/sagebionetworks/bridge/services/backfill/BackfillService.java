@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.services;
+package org.sagebionetworks.bridge.services.backfill;
 
 import org.sagebionetworks.bridge.models.Backfill;
 

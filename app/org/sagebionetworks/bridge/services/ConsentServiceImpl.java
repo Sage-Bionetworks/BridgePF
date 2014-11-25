@@ -72,7 +72,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
         HealthId hid = accountEncryptionService.getHealthCode(study, account);
         if (hid == null) {
-            accountEncryptionService.createAndSaveHealthCode(study, account);
+            hid = accountEncryptionService.createAndSaveHealthCode(study, account);
         }
         
         final HealthId healthId = hid;
