@@ -31,6 +31,11 @@
         <constructor-arg index="1" value="#{bridgeConfig.getProperty('aws.secret.key.upload')}"/>
     </bean>
 
+    <bean id="s3CmsCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
+        <constructor-arg index="0" value="#{bridgeConfig.getProperty('aws.key.upload.cms')}"/>
+        <constructor-arg index="1" value="#{bridgeConfig.getProperty('aws.secret.key.upload.cms')}"/>
+    </bean>
+
     <!-- Simple Email Service -->
 
     <bean id="sesClient" class="com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient">
@@ -62,6 +67,12 @@
     <bean id="uploadTokenServiceClient" class="com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient">
         <constructor-arg index="0">
             <ref bean="s3UploadCredentials" />
+        </constructor-arg>
+    </bean>
+
+    <bean id="s3CmsClient" class="com.amazonaws.services.s3.AmazonS3Client">
+        <constructor-arg index="0">
+            <ref bean="s3CmsCredentials" />
         </constructor-arg>
     </bean>
 
@@ -251,9 +262,7 @@
     
     <bean id="controllers.BackfillController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.BackfillController" parent="AdminController">
-                <property name="backfillService" ref="backfillService" />
-            </bean>
+            <bean class="controllers.BackfillController" parent="AdminController" />
         </property>
     </bean>
 
@@ -411,7 +420,7 @@
             <bean class="org.sagebionetworks.bridge.validators.ScheduleValidator" />
         </property>
     </bean>
-    
+
     <bean id="uploadSessionCredentialsService" class="org.sagebionetworks.bridge.services.UploadSessionCredentialsService">
         <constructor-arg ref="uploadTokenServiceClient" />
     </bean>
@@ -426,7 +435,9 @@
         </property>
     </bean>
 
-    <bean id="backfillService" class="org.sagebionetworks.bridge.services.BackfillService" />
+    <bean id="uploadCertificateService" class="org.sagebionetworks.bridge.services.UploadCertificateServiceImpl">
+        <property name="s3CmsClient" ref="s3CmsClient" />
+    </bean>
 
     <bean id="sendEmailViaAmazonService" class="org.sagebionetworks.bridge.services.SendMailViaAmazonService">
         <property name="fromEmail" value="support@sagebridge.org" />
