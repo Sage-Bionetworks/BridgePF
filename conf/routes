@@ -44,6 +44,7 @@ GET    /api/v1/schedules   @controllers.ScheduleController.getSchedules
 
 # API - Consent
 POST   /api/v1/consent                       @controllers.ConsentController.give
+GET    /api/v1/consent                       @controllers.ConsentController.getConsentSignature
 POST   /api/v1/consent/email                 @controllers.ConsentController.emailCopy
 POST   /api/v1/consent/dataSharing/suspend   @controllers.ConsentController.suspendDataSharing
 POST   /api/v1/consent/dataSharing/resume    @controllers.ConsentController.resumeDataSharing
