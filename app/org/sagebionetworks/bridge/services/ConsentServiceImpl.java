@@ -58,6 +58,19 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     }
 
     @Override
+    public ConsentSignature getConsentSignature(final User caller, final Study study) {
+        checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+
+        final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
+        if (consent == null) {
+            throw new EntityNotFoundException(StudyConsent.class);
+        }
+        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
+        return consentSignature;
+    }
+
+    @Override
     public User consentToResearch(final User caller, final ConsentSignature consentSignature, 
         final Study study, final boolean sendEmail) throws BridgeServiceException {
         
