@@ -53,7 +53,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         return mapper.load(consent);
     }
-    
+
+    /** Returns a non-null consent signature. Throws EntityNotFoundException if no consent signature is found. */
     @Override
     public ConsentSignature getConsentSignature(String healthCode, StudyConsent consent) {
         ConsentSignature signature = getConsentSignature2(healthCode, consent);
@@ -99,6 +100,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         return mapper.load(consent) != null;
     }
 
+    /** Returns a non-null consent signature. Throws EntityNotFoundException if no consent signature is found. */
     ConsentSignature getConsentSignature2(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
