@@ -9,9 +9,13 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 
+/**
+ * The executor/threading stuff works for sure on local, but I cannot verify it is working
+ * on development. Removing for the time-being. -- alxdark
+ */
 public class ScheduleChangeListener implements ApplicationListener<ApplicationEvent>, BeanFactoryAware {
     
-    private ExecutorService executor = Executors.newFixedThreadPool(3); //.newSingleThreadExecutor();
+    // private ExecutorService executor = Executors.newFixedThreadPool(3); //.newSingleThreadExecutor();
     private BeanFactory beanFactory;
     
     public void setBeanFactory(BeanFactory beanFactory) {
@@ -19,7 +23,7 @@ public class ScheduleChangeListener implements ApplicationListener<ApplicationEv
     }
     
     public void destroy() {
-        executor.shutdown();
+        // executor.shutdown();
     }
     
     @Override
@@ -27,7 +31,8 @@ public class ScheduleChangeListener implements ApplicationListener<ApplicationEv
         try {
             ScheduleChangeWorker worker = beanFactory.getBean("scheduleChangeWorker", ScheduleChangeWorker.class);
             worker.setApplicationEvent(event);
-            executor.submit(new FutureTask<Boolean>(worker));
+            // executor.submit(new FutureTask<Boolean>(worker));
+            worker.call();
         } catch(Throwable t) {
             throw new RuntimeException(t);
         }
