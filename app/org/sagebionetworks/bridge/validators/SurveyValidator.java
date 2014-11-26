@@ -37,13 +37,16 @@ public class SurveyValidator implements Validator {
         if (StringUtils.isBlank(survey.getGuid())) {
             errors.reject("missing a GUID");
         }
-        validateRules(errors, survey.getQuestions());
-        
         for (int i=0; i < survey.getQuestions().size(); i++) {
             SurveyQuestion question = survey.getQuestions().get(i);
             errors.pushNestedPath("question"+i);
             doValidateQuestion(question, i, errors);
             errors.popNestedPath();
+        }
+        // You can get all sorts of NPEs if survey is not valid and you look at the rules.
+        // So don't.
+        if (!errors.hasErrors()) {
+            validateRules(errors, survey.getQuestions());    
         }
     }
     private void validateRules(Errors errors, List<SurveyQuestion> questions) {
@@ -98,8 +101,9 @@ public class SurveyValidator implements Validator {
         }
         UIHint hint = question.getUiHint();
         if (hint == null) {
-            rejectField(errors, "uiHint", "required");
-        } else if (!con.getSupportedHints().contains(hint)) {
+            return; // will have been validated above, skip this
+        }
+        if (!con.getSupportedHints().contains(hint)) {
             rejectField(errors, "dataType", "(%s) doesn't match the UI hint of '%s'", con.getDataType().name()
                     .toLowerCase(), hint.name().toLowerCase());
         } else if (con instanceof MultiValueConstraints) {
