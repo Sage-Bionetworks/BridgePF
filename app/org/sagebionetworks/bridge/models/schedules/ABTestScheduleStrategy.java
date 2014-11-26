@@ -8,6 +8,7 @@ import java.util.Random;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.springframework.validation.Errors;
 
 import com.google.common.collect.Lists;
@@ -138,10 +139,29 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
         if (percentage != 100) {
             errors.reject(String.format("groups in AB test plan add up to %s\u0025 and not 100\u0025 (give 20\u0025 as 20, for example)", percentage));
         }
+        for (int i=0; i < groups.size(); i++) {
+            ScheduleGroup group = groups.get(i);
+            errors.pushNestedPath("group[" + i + "]");
+            if (group.getSchedule() == null){
+                errors.reject("at least one AB test plan group is missing a schedule");
+                errors.popNestedPath();
+                return;
+            } else {
+                errors.pushNestedPath("schedule");
+                new ScheduleValidator().validate(group.getSchedule(), errors);
+                errors.popNestedPath();
+            }
+            errors.popNestedPath();
+        }
+        
         for (ScheduleGroup group : groups) {
             if (group.getSchedule() == null){
                 errors.reject("at least one AB test plan group is missing a schedule");
                 return;
+            } else {
+                errors.pushNestedPath("schedule");
+                new ScheduleValidator().validate(group.getSchedule(), errors);
+                errors.popNestedPath();
             }
         }
     }
