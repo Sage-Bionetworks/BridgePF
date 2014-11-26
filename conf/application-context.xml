@@ -488,4 +488,9 @@
         <property name="participantOptionsDao" ref="participantOptionsDao"/>
     </bean>
 
+    <bean id="studyCertificateBackfill" class="org.sagebionetworks.bridge.services.backfill.StudyCertificateBackfill">
+        <property name="studyService" ref="studyService" />
+        <property name="uploadCertificateService" ref="uploadCertificateService" />
+    </bean>
+
 </beans>
