@@ -255,7 +255,7 @@
     <bean id="controllers.ScheduleController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.ScheduleController" parent="BaseController">
-                <property name="scheduleService" ref="scheduleService" />
+                <property name="schedulePlanService" ref="schedulePlanService" />
             </bean>
         </property>
     </bean>
