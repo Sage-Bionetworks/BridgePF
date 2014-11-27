@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import static com.google.common.base.Preconditions.checkArgument;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -68,6 +68,12 @@ public class StormpathDirectoryDao implements DirectoryDao {
         if (group == null) {
             group = client.instantiate(Group.class);
             group.setName(groupName);
+            directory.createGroup(group);
+        }
+        group = getAdminGroup(app);
+        if (group == null) {
+            group = client.instantiate(Group.class);
+            group.setName(BridgeConstants.ADMIN_GROUP);
             directory.createGroup(group);
         }
         
@@ -137,4 +143,9 @@ public class StormpathDirectoryDao implements DirectoryDao {
         return (list.iterator().hasNext()) ? list.iterator().next() : null;
     }
 
+    private Group getAdminGroup(Application app) {
+        GroupCriteria criteria = Groups.where(Groups.name().eqIgnoreCase(BridgeConstants.ADMIN_GROUP));
+        GroupList list = app.getGroups(criteria);
+        return (list.iterator().hasNext()) ? list.iterator().next() : null;
+    }
 }
