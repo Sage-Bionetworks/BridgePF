@@ -39,6 +39,16 @@ public class SurveyResponseController extends BaseController {
         return createdResult(new GuidHolder(response.getGuid()));
     }
     
+    public Result createSurveyResponseWithGuid(String surveyGuid, String versionString, String responseGuid) throws Exception {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        List<SurveyAnswer> answers = deserializeSurveyAnswers();
+        Long version = DateUtils.convertToMillisFromEpoch(versionString);
+
+        SurveyResponse response = responseService.createSurveyResponseWithGuid(
+            surveyGuid, version, session.getUser().getHealthCode(), answers, responseGuid);
+        return createdResult(new GuidHolder(response.getGuid()));
+    }
+    
     public Result getSurveyResponse(String guid) throws Exception {
         SurveyResponse response = getSurveyResponseIfAuthorized(guid);
         return okResult(response);

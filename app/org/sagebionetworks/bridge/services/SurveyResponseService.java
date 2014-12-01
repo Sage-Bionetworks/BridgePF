@@ -10,6 +10,9 @@ public interface SurveyResponseService {
     public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode,
             List<SurveyAnswer> answers);
     
+    public SurveyResponse createSurveyResponseWithGuid(String surveyGuid, long surveyCreatedOn, String healthCode,
+            List<SurveyAnswer> answers, String responseGuid);
+    
     public SurveyResponse getSurveyResponse(String guid);
     
     public SurveyResponse appendSurveyAnswers(SurveyResponse response, List<SurveyAnswer> answers);

@@ -8,6 +8,7 @@ import java.util.Map;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
@@ -41,38 +42,30 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     @Override
-    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode, List<SurveyAnswer> answers) {
-        Survey survey = surveyDao.getSurvey(surveyGuid, surveyCreatedOn);
-        List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, Collections.<SurveyAnswer>emptyList(), answers);
-        
-        SurveyResponse response = new DynamoSurveyResponse();
-        response.setGuid(BridgeUtils.generateGuid());
-        response.setSurvey(survey);
-        response.setAnswers(unionOfAnswers);
-        response.setHealthCode(healthCode);
-        updateTimestamps(response);
-        
-        try {
-            responseMapper.save(response);
-        } catch(ConditionalCheckFailedException e) {
-            throw new ConcurrentModificationException(response);
-        }
-        return response;
+    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode,
+            List<SurveyAnswer> answers) {
+        return createSurveyResponseInternal(surveyGuid, surveyCreatedOn, healthCode, answers,
+                BridgeUtils.generateGuid());
     }
 
     @Override
+    public SurveyResponse createSurveyResponseWithGuid(String surveyGuid, long surveyCreatedOn, String healthCode,
+            List<SurveyAnswer> answers, String responseGuid) {
+        
+        SurveyResponse response = getSurveyResponseInternal(responseGuid);
+        if (response == null) {
+            // This is the response we want. This is good, carry on.
+            return createSurveyResponseInternal(surveyGuid, surveyCreatedOn, healthCode, answers, responseGuid);
+        }
+        throw new EntityAlreadyExistsException(response);
+    }
+    
+    @Override
     public SurveyResponse getSurveyResponse(String guid) {
-        DynamoDBQueryExpression<DynamoSurveyResponse> query = new DynamoDBQueryExpression<DynamoSurveyResponse>();
-        query.withScanIndexForward(false);
-        query.withHashKeyValues(new DynamoSurveyResponse(guid));
-        List<DynamoSurveyResponse> results = responseMapper.queryPage(DynamoSurveyResponse.class, query).getResults();
-        if (results == null || results.isEmpty()) {
+        DynamoSurveyResponse response = getSurveyResponseInternal(guid);
+        if (response == null) {
             throw new EntityNotFoundException(SurveyResponse.class);
         }
-        DynamoSurveyResponse response = results.get(0);
-        // Now add survey
-        Survey survey = surveyDao.getSurvey(response.getSurveyGuid(), response.getSurveyCreatedOn());
-        response.setSurvey(survey);
         return response;
     }
     
@@ -95,6 +88,40 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         responseMapper.delete(response);
     }
     
+    private SurveyResponse createSurveyResponseInternal(String surveyGuid, long surveyCreatedOn, String healthCode, List<SurveyAnswer> answers, String responseGuid) {
+        Survey survey = surveyDao.getSurvey(surveyGuid, surveyCreatedOn);
+        List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, Collections.<SurveyAnswer>emptyList(), answers);
+        
+        SurveyResponse response = new DynamoSurveyResponse();
+        response.setGuid(responseGuid);
+        response.setSurvey(survey);
+        response.setAnswers(unionOfAnswers);
+        response.setHealthCode(healthCode);
+        updateTimestamps(response);
+        
+        try {
+            responseMapper.save(response);
+        } catch(ConditionalCheckFailedException e) {
+            throw new ConcurrentModificationException(response);
+        }
+        return response;
+    }
+    
+    private DynamoSurveyResponse getSurveyResponseInternal(String guid) {
+        DynamoDBQueryExpression<DynamoSurveyResponse> query = new DynamoDBQueryExpression<DynamoSurveyResponse>();
+        query.withScanIndexForward(false);
+        query.withHashKeyValues(new DynamoSurveyResponse(guid));
+        List<DynamoSurveyResponse> results = responseMapper.queryPage(DynamoSurveyResponse.class, query).getResults();
+        if (results == null || results.isEmpty()) {
+            return null;
+        }
+        // Now add survey
+        DynamoSurveyResponse response = results.get(0);
+        Survey survey = surveyDao.getSurvey(response.getSurveyGuid(), response.getSurveyCreatedOn());
+        response.setSurvey(survey);
+        return response;
+    }
+
     private Map<String,SurveyAnswer> getAnswerMap(List<SurveyAnswer> answers) {
         return BridgeUtils.asMap(answers, new Function<SurveyAnswer,String>() {
             public String apply(SurveyAnswer answer) {
