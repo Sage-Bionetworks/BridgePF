@@ -8,11 +8,13 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -56,6 +58,32 @@ public class DynamoSurveyResponseDaoTest {
         survey = null;
     }
 
+    @Test
+    public void createSurveyResponseWithExternalGuid() {
+        String externalGuid = RandomStringUtils.randomAlphanumeric(10);
+        List<SurveyAnswer> answers = Lists.newArrayList();
+
+        SurveyResponse response = surveyResponseDao.createSurveyResponseWithGuid(survey.getGuid(), survey.getCreatedOn(),
+                HEALTH_DATA_CODE, answers, externalGuid);
+        assertEquals("Has been assigned the supplied GUID", externalGuid, response.getGuid());
+
+        // Do it again, it should fail.
+        try {
+            surveyResponseDao.createSurveyResponseWithGuid(survey.getGuid(), survey.getCreatedOn(),
+                    HEALTH_DATA_CODE, answers, externalGuid);
+            fail("Should have thrown an exception");
+        } catch(EntityAlreadyExistsException e) {
+            
+        }
+        surveyResponseDao.deleteSurveyResponse(response);
+        try {
+            surveyResponseDao.getSurveyResponse(externalGuid);
+            fail("Should have thrown an EntityNotFoundException");
+        } catch (EntityNotFoundException nfe) {
+
+        }
+    }
+    
     @Test
     public void createSurveyResponse() {
         List<SurveyAnswer> answers = Lists.newArrayList();

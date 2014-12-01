@@ -48,6 +48,20 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     }
 
     @Override
+    public SurveyResponse createSurveyResponseWithGuid(String surveyGuid, long surveyCreatedOn, String healthCode,
+            List<SurveyAnswer> answers, String responseGuid) {
+        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey guid cannot be null/blank");
+        checkArgument(surveyCreatedOn != 0L, "Survey createdOn cannot be 0");
+        checkNotNull(answers, "Survey answers cannot be null");
+        checkNotNull(responseGuid, "Survey response identifier cannot be null");
+        checkArgument(StringUtils.isNotBlank(healthCode), "Health code cannot be null/blank");
+
+        Survey survey = surveyDao.getSurvey(surveyGuid, surveyCreatedOn);
+        validate(answers, survey);
+        return surveyResponseDao.createSurveyResponseWithGuid(surveyGuid, surveyCreatedOn, healthCode, answers, responseGuid);
+    }
+    
+    @Override
     public SurveyResponse getSurveyResponse(String guid) {
         checkNotNull(guid, "Survey response guid cannot be null");
         
