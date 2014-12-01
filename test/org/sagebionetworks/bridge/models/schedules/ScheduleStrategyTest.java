@@ -5,10 +5,10 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 public class ScheduleStrategyTest {
 
@@ -34,7 +33,9 @@ public class ScheduleStrategyTest {
     public void before() {
         users = Lists.newArrayList();
         for (int i=0; i < 10; i++) {
-            users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
+        	User user = new User(Integer.toString(i), "test"+i+"@sagebridge.org");
+        	user.setHealthCode(BridgeUtils.generateGuid());
+            users.add(user);
         }
         study = new DynamoStudy();
         study.setName("name");
@@ -48,24 +49,6 @@ public class ScheduleStrategyTest {
             users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
         }
     }
-    
-    @Test
-    public void testSimpleScheduleStrategy() {
-        Schedule schedule = createSchedule("AAA");
-        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
-        strategy.setSchedule(schedule);
-        
-        List<Schedule> schedules = strategy.scheduleExistingUsers(study, users);
-        
-        Set<String> identifiers = Sets.newHashSet();
-        for (Schedule sch : schedules) {
-            identifiers.add(sch.getStudyUserCompoundKey());
-        }
-        
-        assertEquals("There are ten schedules", 10, schedules.size());
-        assertEquals("Each assigned to a different person", 10, identifiers.size());
-    }
-    
     @Test
     public void canRountripSimplePlan() throws Exception {
         Schedule schedule = createSchedule("AAA");
@@ -106,7 +89,11 @@ public class ScheduleStrategyTest {
     public void verifyABTestingStrategyWorks() {
         DynamoSchedulePlan plan = createABSchedulePlan();
 
-        List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
+        List<Schedule> schedules = Lists.newArrayList();
+        for (User user : users) {
+        	Schedule schedule = plan.getStrategy().getScheduleForUser(study, plan, user);
+        	schedules.add(schedule);
+        }
         
         // We want 4 in A, 4 in B and 2 in C
         // and they should not be in order...
@@ -131,18 +118,10 @@ public class ScheduleStrategyTest {
         assertNotEquals("C has random users", schedules.get(2), newSchedules.get(2));
         */
     }
-    
-    @Test
-    public void abScheduleStrategyAssignsRemainders() {
-        DynamoSchedulePlan plan = createABSchedulePlan();
-        createContextWithRemainderUsers();
-        
-        List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
-        assertEquals("All users have schedules", 14, schedules.size());
-    }
 
     private DynamoSchedulePlan createABSchedulePlan() {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
+        plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         plan.setStudyKey(study.getIdentifier());
         plan.setStrategy(createABTestStrategy());
