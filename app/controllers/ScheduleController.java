@@ -34,7 +34,7 @@ public class ScheduleController extends BaseController {
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(study);
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
         for (SchedulePlan plan : plans) {
-            Schedule schedule = plan.getStrategy().scheduleNewUser(study, session.getUser());
+            Schedule schedule = plan.getStrategy().getScheduleForUser(study, plan, session.getUser());
             schedules.add(schedule);
         }
         //List<Schedule> schedules = scheduleService.getSchedules(study, session.getUser());

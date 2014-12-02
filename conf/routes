@@ -33,11 +33,12 @@ GET    /api/v1/profile      @controllers.UserProfileController.getUserProfile
 POST   /api/v1/profile      @controllers.UserProfileController.updateUserProfile
 
 # API - Survey Responses
-GET    /api/v1/surveys/response/:guid          @controllers.SurveyResponseController.getSurveyResponse(guid: String)
-POST   /api/v1/surveys/response/:guid          @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
-DELETE /api/v1/surveys/response/:guid          @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
-GET    /api/v1/surveys/:surveyGuid/:createdOn  @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
-POST   /api/v1/surveys/:surveyGuid/:createdOn  @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
+GET    /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.getSurveyResponse(guid: String)
+POST   /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
+DELETE /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
+GET    /api/v1/surveys/:surveyGuid/:createdOn              @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
+POST   /api/v1/surveys/:surveyGuid/:createdOn              @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
+POST   /api/v1/surveys/:surveyGuid/:createdOn/:identifier  @controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
 
 # API - Schedules
 GET    /api/v1/schedules   @controllers.ScheduleController.getSchedules
