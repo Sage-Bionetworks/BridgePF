@@ -89,7 +89,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
                 + UUID.fromString(user.getHealthCode()).getLeastSignificantBits();        
         
         int i = 0;
-        int perc = (int)(seed % 100.0);
+        int perc = (int)(seed % 100.0) + 1;
         while (perc > 0) {
             group = groups.get(i++);
             perc -= group.getPercentage();
