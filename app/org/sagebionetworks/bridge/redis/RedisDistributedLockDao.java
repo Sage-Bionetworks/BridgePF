@@ -14,12 +14,12 @@ public class RedisDistributedLockDao implements DistributedLockDao {
     private final StringOps stringOps = new JedisStringOps();
 
     @Override
-    public String acquire(final Class<?> clazz, final String identifier) {
-        return acquire(clazz, identifier, EXPIRATION_IN_SECONDS);
+    public String acquireLock(final Class<?> clazz, final String identifier) {
+        return acquireLock(clazz, identifier, EXPIRATION_IN_SECONDS);
     }
 
     @Override
-    public String acquire(final Class<?> clazz, final String identifier, final int expireInSeconds) {
+    public String acquireLock(final Class<?> clazz, final String identifier, final int expireInSeconds) {
         checkNotNull(clazz);
         checkNotNull(identifier);
         checkArgument(expireInSeconds > 0);
@@ -40,7 +40,7 @@ public class RedisDistributedLockDao implements DistributedLockDao {
     }
 
     @Override
-    public boolean release(Class<?> clazz, String identifier, String lockId) {
+    public boolean releaseLock(Class<?> clazz, String identifier, String lockId) {
         checkNotNull(clazz);
         checkNotNull(identifier);
         checkNotNull(lockId);
