@@ -49,20 +49,24 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
 
     @Override
-    public SurveyResponse createSurveyResponseWithGuid(String surveyGuid, long surveyCreatedOn, String healthCode,
-            List<SurveyAnswer> answers, String responseGuid) {
-        
-        SurveyResponse response = getSurveyResponseInternal(responseGuid);
-        if (response == null) {
-            // This is the response we want. This is good, carry on.
-            return createSurveyResponseInternal(surveyGuid, surveyCreatedOn, healthCode, answers, responseGuid);
+    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode,
+            List<SurveyAnswer> answers, String identifier) {
+        try {
+            SurveyResponse response = getSurveyResponseInternal(healthCode, identifier);
+            if (response == null) {
+                // This is the response we want. This is good, carry on.
+                return createSurveyResponseInternal(surveyGuid, surveyCreatedOn, healthCode, answers, identifier);
+            }
+            throw new EntityAlreadyExistsException(response);
+        } catch(ConcurrentModificationException e) {
+            // This can happen due to the version not being correct, as we're only checking the identifier;
+            throw new EntityAlreadyExistsException(e.getEntity());
         }
-        throw new EntityAlreadyExistsException(response);
     }
     
     @Override
-    public SurveyResponse getSurveyResponse(String guid) {
-        DynamoSurveyResponse response = getSurveyResponseInternal(guid);
+    public SurveyResponse getSurveyResponse(String healthCode, String identifier) {
+        DynamoSurveyResponse response = getSurveyResponseInternal(healthCode, identifier);
         if (response == null) {
             throw new EntityNotFoundException(SurveyResponse.class);
         }
@@ -88,12 +92,14 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         responseMapper.delete(response);
     }
     
-    private SurveyResponse createSurveyResponseInternal(String surveyGuid, long surveyCreatedOn, String healthCode, List<SurveyAnswer> answers, String responseGuid) {
+    private SurveyResponse createSurveyResponseInternal(String surveyGuid, long surveyCreatedOn, String healthCode,
+            List<SurveyAnswer> answers, String identifier) {
+        
         Survey survey = surveyDao.getSurvey(surveyGuid, surveyCreatedOn);
         List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, Collections.<SurveyAnswer>emptyList(), answers);
         
         SurveyResponse response = new DynamoSurveyResponse();
-        response.setGuid(responseGuid);
+        response.setIdentifier(identifier);
         response.setSurvey(survey);
         response.setAnswers(unionOfAnswers);
         response.setHealthCode(healthCode);
@@ -107,10 +113,10 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         return response;
     }
     
-    private DynamoSurveyResponse getSurveyResponseInternal(String guid) {
+    private DynamoSurveyResponse getSurveyResponseInternal(String healthCode, String identifier) {
         DynamoDBQueryExpression<DynamoSurveyResponse> query = new DynamoDBQueryExpression<DynamoSurveyResponse>();
         query.withScanIndexForward(false);
-        query.withHashKeyValues(new DynamoSurveyResponse(guid));
+        query.withHashKeyValues(new DynamoSurveyResponse(healthCode, identifier));
         List<DynamoSurveyResponse> results = responseMapper.queryPage(DynamoSurveyResponse.class, query).getResults();
         if (results == null || results.isEmpty()) {
             return null;
