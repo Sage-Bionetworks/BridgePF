@@ -13,7 +13,7 @@ public interface SurveyResponse extends BridgeEntity {
         IN_PROGRESS,
         FINISHED;
     }
-    
+
     public String getGuid();
     public void setGuid(String guid);
     
@@ -22,6 +22,9 @@ public interface SurveyResponse extends BridgeEntity {
     
     public Long getVersion();
     public void setVersion(Long version);
+    
+    public String getIdentifier();
+    public void setIdentifier(String identifier);
     
     public String getHealthCode();
     public void setHealthCode(String healthCode);
