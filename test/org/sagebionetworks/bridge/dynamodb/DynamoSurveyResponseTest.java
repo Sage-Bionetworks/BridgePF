@@ -33,7 +33,7 @@ public class DynamoSurveyResponseTest {
     public void canRountripSerializeSurveyResponse() throws Exception {
         DynamoSurveyResponse response = new DynamoSurveyResponse();
         response.setStartedOn(DateUtils.getCurrentMillisFromEpoch());
-        response.setGuid(UUID.randomUUID().toString());
+        response.setIdentifier(UUID.randomUUID().toString());
         response.setSurveyGuid(UUID.randomUUID().toString());
         response.setSurveyCreatedOn(DateUtils.getCurrentMillisFromEpoch());
         response.setHealthCode(UUID.randomUUID().toString());
@@ -50,7 +50,7 @@ public class DynamoSurveyResponseTest {
         DynamoSurveyResponse newResponse = DynamoSurveyResponse.fromJson(node);
         
         // These are not copied over
-        newResponse.setGuid(response.getGuid());        
+        newResponse.setIdentifier(response.getIdentifier());        
         newResponse.setSurveyGuid(response.getSurveyGuid());
         newResponse.setSurveyCreatedOn(response.getSurveyCreatedOn());
         newResponse.setVersion(response.getVersion());

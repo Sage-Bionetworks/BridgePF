@@ -3,16 +3,13 @@ package controllers;
 import java.io.IOException;
 import java.util.List;
 
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.models.GuidHolder;
+import org.sagebionetworks.bridge.models.IdentifierHolder;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.services.SurveyResponseService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import play.mvc.Result;
 
@@ -20,8 +17,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class SurveyResponseController extends BaseController {
-
-    private static Logger logger = LoggerFactory.getLogger(SurveyResponseController.class);
     
     private SurveyResponseService responseService;
     
@@ -36,19 +31,21 @@ public class SurveyResponseController extends BaseController {
         
         SurveyResponse response = responseService.createSurveyResponse(
             surveyGuid, version, session.getUser().getHealthCode(), answers);
-        return createdResult(new GuidHolder(response.getGuid()));
+        return createdResult(new IdentifierHolder(response.getIdentifier()));
     }
     
-    public Result createSurveyResponseWithGuid(String surveyGuid, String versionString, String responseGuid) throws Exception {
+    public Result createSurveyResponseWithIdentifier(String surveyGuid, String versionString, String identifier)
+            throws Exception {
+        
         UserSession session = getAuthenticatedAndConsentedSession();
         List<SurveyAnswer> answers = deserializeSurveyAnswers();
         Long version = DateUtils.convertToMillisFromEpoch(versionString);
 
-        SurveyResponse response = responseService.createSurveyResponseWithGuid(
-            surveyGuid, version, session.getUser().getHealthCode(), answers, responseGuid);
-        return createdResult(new GuidHolder(response.getGuid()));
+        SurveyResponse response = responseService.createSurveyResponse(
+            surveyGuid, version, session.getUser().getHealthCode(), answers, identifier);
+        return createdResult(new IdentifierHolder(response.getIdentifier()));
     }
-    
+
     public Result getSurveyResponse(String guid) throws Exception {
         SurveyResponse response = getSurveyResponseIfAuthorized(guid);
         return okResult(response);
@@ -62,8 +59,8 @@ public class SurveyResponseController extends BaseController {
         return okResult("Survey response updated.");
     }
     
-    public Result deleteSurveyResponse(String guid) {
-        SurveyResponse response = getSurveyResponseIfAuthorized(guid);
+    public Result deleteSurveyResponse(String identifier) {
+        SurveyResponse response = getSurveyResponseIfAuthorized(identifier);
         
         responseService.deleteSurveyResponse(response);
         return okResult("Survey response deleted.");
@@ -75,14 +72,10 @@ public class SurveyResponseController extends BaseController {
         return answers;
     }
 
-    private SurveyResponse getSurveyResponseIfAuthorized(String guid) {
+    private SurveyResponse getSurveyResponseIfAuthorized(String identifier) {
         UserSession session = getAuthenticatedAndConsentedSession();
-        SurveyResponse response = responseService.getSurveyResponse(guid);
-        if (!response.getHealthCode().equals(session.getUser().getHealthCode())) {
-            logger.error("Blocked attempt to access survey response (mismatched health data codes) from user " + session.getUser().getId());
-            throw new UnauthorizedException();
-        }
-        return response;
+        String healthCode = session.getUser().getHealthCode(); 
+        return responseService.getSurveyResponse(healthCode, identifier);
     }
     
 }
