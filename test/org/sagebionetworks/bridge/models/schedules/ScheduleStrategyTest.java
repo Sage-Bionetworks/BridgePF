@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +34,7 @@ public class ScheduleStrategyTest {
     @Before
     public void before() {
         users = Lists.newArrayList();
-        for (int i=0; i < 10; i++) {
+        for (int i=0; i < 1000; i++) {
         	User user = new User(Integer.toString(i), "test"+i+"@sagebridge.org");
         	user.setHealthCode(BridgeUtils.generateGuid());
             users.add(user);
@@ -43,12 +45,6 @@ public class ScheduleStrategyTest {
         study.setMinAgeOfConsent(18);
     }
     
-    public void createContextWithRemainderUsers() {
-        users = Lists.newArrayList();
-        for (int i=0; i < 14; i++) {
-            users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
-        }
-    }
     @Test
     public void canRountripSimplePlan() throws Exception {
         Schedule schedule = createSchedule("AAA");
@@ -106,21 +102,14 @@ public class ScheduleStrategyTest {
                 countsByLabel.put(schedule.getLabel(), ++count);
             }
         }
-        assertEquals("Four users assigned to A", 4, countsByLabel.get("A").intValue());
-        assertEquals("Four users assigned to B", 4, countsByLabel.get("B").intValue());
-        assertEquals("Four users assigned to C", 2, countsByLabel.get("C").intValue());
-
-        // This fails, not all that rarely, due to actual randomness.
-        /*
-        List<Schedule> newSchedules = plan.getStrategy().generateSchedules(context);
-        assertNotEquals("A has random users", schedules.get(0), newSchedules.get(0));
-        assertNotEquals("B has random users", schedules.get(1), newSchedules.get(1));
-        assertNotEquals("C has random users", schedules.get(2), newSchedules.get(2));
-        */
+        assertTrue("40% users assigned to A", Math.abs(countsByLabel.get("A").intValue()-400) < 50);
+        assertTrue("40% users assigned to B", Math.abs(countsByLabel.get("B").intValue()-400) < 50);
+        assertTrue("20% users assigned to C", Math.abs(countsByLabel.get("C").intValue()-200) < 50);
     }
 
     private DynamoSchedulePlan createABSchedulePlan() {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
+        // plan.setGuid("a71eecc3-5e75-4a11-91f4-c587999cbb20");
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         plan.setStudyKey(study.getIdentifier());
