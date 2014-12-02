@@ -2,11 +2,13 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
@@ -37,10 +39,10 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     @Override
     public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode,
             List<SurveyAnswer> answers) {
-        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey guid cannot be null/blank");
+        checkArgument(isNotBlank(surveyGuid), CANNOT_BE_BLANK, "survey guid");
+        checkArgument(isNotBlank(healthCode), CANNOT_BE_BLANK, "health code");
         checkArgument(surveyCreatedOn != 0L, "Survey createdOn cannot be 0");
-        checkNotNull(answers, "Survey answers cannot be null");
-        checkArgument(StringUtils.isNotBlank(healthCode), "Health code cannot be null/blank");
+        checkNotNull(answers, CANNOT_BE_NULL, "survey answers");
         
         Survey survey = surveyDao.getSurvey(surveyGuid, surveyCreatedOn);
         validate(answers, survey);
@@ -48,16 +50,31 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     }
 
     @Override
-    public SurveyResponse getSurveyResponse(String guid) {
-        checkNotNull(guid, "Survey response guid cannot be null");
+    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode,
+            List<SurveyAnswer> answers, String identifier) {
+        checkArgument(isNotBlank(surveyGuid), CANNOT_BE_BLANK, "survey guid");
+        checkArgument(isNotBlank(identifier), CANNOT_BE_BLANK, "identifier");
+        checkArgument(isNotBlank(healthCode), CANNOT_BE_BLANK, "health code");
+        checkArgument(surveyCreatedOn != 0L, "Survey createdOn cannot be 0");
+        checkNotNull(answers, CANNOT_BE_NULL, "survey answers");
+
+        Survey survey = surveyDao.getSurvey(surveyGuid, surveyCreatedOn);
+        validate(answers, survey);
+        return surveyResponseDao.createSurveyResponse(surveyGuid, surveyCreatedOn, healthCode, answers, identifier);
+    }
+    
+    @Override
+    public SurveyResponse getSurveyResponse(String healthCode, String identifier) {
+        checkNotNull(healthCode, CANNOT_BE_NULL, "health code");
+        checkNotNull(identifier, CANNOT_BE_NULL, "identifier");
         
-        return surveyResponseDao.getSurveyResponse(guid);
+        return surveyResponseDao.getSurveyResponse(healthCode, identifier);
     }
 
     @Override
     public SurveyResponse appendSurveyAnswers(SurveyResponse response, List<SurveyAnswer> answers) {
-        checkNotNull(response, "Survey response cannot be null");
-        checkNotNull(answers, "Survey answers cannot be null");
+        checkNotNull(response, CANNOT_BE_NULL, "survey response");
+        checkNotNull(answers, CANNOT_BE_NULL, "survey answers");
         
         validate(answers, response.getSurvey());
         return surveyResponseDao.appendSurveyAnswers(response, answers);
@@ -65,7 +82,7 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
 
     @Override
     public void deleteSurveyResponse(SurveyResponse response) {
-        checkNotNull(response, "Survey response cannot be null");
+        checkNotNull(response, CANNOT_BE_NULL, "survey response");
         
         surveyResponseDao.deleteSurveyResponse(response);
     }
