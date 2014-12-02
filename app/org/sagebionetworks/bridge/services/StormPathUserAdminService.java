@@ -184,7 +184,7 @@ public class StormPathUserAdminService implements UserAdminService {
         final String lock = study.getIdentifier() + ":" + user.getId();
         String uuid = null;
         try {
-            uuid = lockDao.createLock(User.class, lock);
+            uuid = lockDao.acquire(User.class, lock);
             // Verify the user exists before doing this work. Otherwise, it just throws errors.
             Directory directory = getDirectory(study);
             Account account = getUserAccountByEmail(directory, user.getEmail());
@@ -197,7 +197,7 @@ public class StormPathUserAdminService implements UserAdminService {
             }
         } finally {
             if (uuid != null) {
-                lockDao.releaseLock(User.class, lock, uuid);
+                lockDao.release(User.class, lock, uuid);
             }
         }
     }
