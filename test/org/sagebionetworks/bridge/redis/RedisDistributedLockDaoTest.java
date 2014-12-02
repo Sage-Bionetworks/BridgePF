@@ -37,7 +37,7 @@ public class RedisDistributedLockDaoTest {
     @Test
     public void test() {
         // Acquire lock
-        String lockId = lockDao.acquire(getClass(), id, 60);
+        String lockId = lockDao.acquireLock(getClass(), id, 60);
         String redisKey = RedisKey.LOCK.getRedisKey(
                 id + RedisKey.SEPARATOR + getClass().getCanonicalName());
         String redisLockId = strOps.get(redisKey).execute();
@@ -46,19 +46,19 @@ public class RedisDistributedLockDaoTest {
         assertTrue(strOps.ttl(redisKey).execute() > 0);
         // Acquire again should fail
         try {
-            lockDao.acquire(getClass(), id);
+            lockDao.acquireLock(getClass(), id);
         } catch (ConcurrentModificationException e) {
             assertTrue("ConcurrentModificationException expected", true);
         } catch (Throwable e) {
             fail(e.getMessage());
         }
         // Release lock
-        boolean released = lockDao.release(getClass(), id, "incorrect lock id");
+        boolean released = lockDao.releaseLock(getClass(), id, "incorrect lock id");
         assertFalse(released);
-        released = lockDao.release(getClass(), id, lockId);
+        released = lockDao.releaseLock(getClass(), id, lockId);
         assertTrue(released);
         // Once released, can be acquired
-        lockId = lockDao.acquire(getClass(), id, 1);
-        lockDao.release(getClass(), id, lockId);
+        lockId = lockDao.acquireLock(getClass(), id, 1);
+        lockDao.releaseLock(getClass(), id, lockId);
     }
 }
