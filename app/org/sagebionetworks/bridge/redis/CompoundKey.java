@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.redis;
 
+/**
+ * Keys of multiple suffixes (domains, name spaces).
+ */
 class CompoundKey extends AbstractRedisKey {
 
     private final String suffix;

@@ -7,10 +7,9 @@ package org.sagebionetworks.bridge.dao;
  */
 public interface DistributedLockDao {
 
-    public String createLock(Class<?> clazz, String identifier);
+    String acquire(Class<?> clazz, String identifier);
 
-    public void releaseLock(Class<?> clazz, String identifier, String lockId);
-    
-    public boolean isLocked(Class<?> clazz, String identifier);
+    String acquire(Class<?> clazz, String identifier, int expireInSeconds);
 
+    void release(Class<?> clazz, String identifier, String lockId);
 }

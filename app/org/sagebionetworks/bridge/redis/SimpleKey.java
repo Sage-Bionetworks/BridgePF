@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.redis;
 
+/**
+ * Single suffix (domain, name space) key.
+ */
 class SimpleKey extends AbstractRedisKey {
 
     private final String name;

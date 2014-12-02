@@ -129,7 +129,7 @@ public class StudyServiceImpl extends CacheLoader<String,Study> implements Study
         String id = study.getIdentifier();
         String lockId = null;
         try {
-            lockId = lockDao.createLock(Study.class, id);
+            lockId = lockDao.acquire(Study.class, id);
             
             if (studyDao.doesIdentifierExist(study.getIdentifier())) {
                 throw new EntityAlreadyExistsException(study);
@@ -153,7 +153,7 @@ public class StudyServiceImpl extends CacheLoader<String,Study> implements Study
             }
             study = studyDao.createStudy(study);    
         } finally {
-            lockDao.releaseLock(Study.class, id, lockId);
+            lockDao.release(Study.class, id, lockId);
         }
         return study;
     }
@@ -178,7 +178,7 @@ public class StudyServiceImpl extends CacheLoader<String,Study> implements Study
         
         String lockId = null;
         try {
-            lockId = lockDao.createLock(Study.class, identifier);
+            lockId = lockDao.acquire(Study.class, identifier);
             
             if (!config.isLocal()) {
                 herokuApi.unregisterDomainForStudy(identifier);
@@ -188,7 +188,7 @@ public class StudyServiceImpl extends CacheLoader<String,Study> implements Study
             studyDao.deleteStudy(identifier);
             studyCache.invalidate(identifier);
         } finally {
-            lockDao.releaseLock(Study.class, identifier, lockId);
+            lockDao.release(Study.class, identifier, lockId);
         }
     }
 }
