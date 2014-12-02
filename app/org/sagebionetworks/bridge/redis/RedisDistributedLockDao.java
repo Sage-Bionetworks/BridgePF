@@ -40,24 +40,25 @@ public class RedisDistributedLockDao implements DistributedLockDao {
     }
 
     @Override
-    public void release(Class<?> clazz, String identifier, String lockId) {
+    public boolean release(Class<?> clazz, String identifier, String lockId) {
         checkNotNull(clazz);
         checkNotNull(identifier);
         checkNotNull(lockId);
         final String redisKey = createRedisKey(clazz, identifier);
         final String redisLockId = stringOps.get(redisKey).execute();
         if (!lockId.equals(redisLockId)) {
-            return;
+            return false;
         }
         Long result = stringOps.delete(redisKey).execute();
         if (result != 1L) {
             throw new BridgeServiceException("Lock not released.");
         }
+        return true;
     }
 
     private String createRedisKey(Class<?> clazz, String identifier) {
         String key = identifier + RedisKey.SEPARATOR + clazz.getCanonicalName();
-        return RedisKey.SESSION.getRedisKey(key);
+        return RedisKey.LOCK.getRedisKey(key);
     }
 
     private void expire(final String redisKey, final int expireInSeconds) {

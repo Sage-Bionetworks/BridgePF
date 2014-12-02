@@ -11,5 +11,5 @@ public interface DistributedLockDao {
 
     String acquire(Class<?> clazz, String identifier, int expireInSeconds);
 
-    void release(Class<?> clazz, String identifier, String lockId);
+    boolean release(Class<?> clazz, String identifier, String lockId);
 }
