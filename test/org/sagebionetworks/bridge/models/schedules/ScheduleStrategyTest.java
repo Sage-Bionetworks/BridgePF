@@ -102,11 +102,6 @@ public class ScheduleStrategyTest {
                 countsByLabel.put(schedule.getLabel(), ++count);
             }
         }
-        /*
-        System.out.println("A: " + countsByLabel.get("A").intValue());
-        System.out.println("B: " + countsByLabel.get("B").intValue());
-        System.out.println("C: " + countsByLabel.get("C").intValue());
-        */
         assertTrue("40% users assigned to A", Math.abs(countsByLabel.get("A").intValue()-400) < 50);
         assertTrue("40% users assigned to B", Math.abs(countsByLabel.get("B").intValue()-400) < 50);
         assertTrue("20% users assigned to C", Math.abs(countsByLabel.get("C").intValue()-200) < 50);
