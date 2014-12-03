@@ -62,7 +62,7 @@ public class DynamoSurveyResponseDaoTest {
 
     @After
     public void after() {
-        surveyDao.deleteSurvey(survey.getGuid(), survey.getCreatedOn());
+        surveyDao.deleteSurvey(null, survey.getGuid(), survey.getCreatedOn());
         survey = null;
     }
 
@@ -121,12 +121,15 @@ public class DynamoSurveyResponseDaoTest {
     
     @Test
     public void createSurveyResponse() {
+        assertTrue("Survey is not in use", noResponses(survey));
+        
         List<SurveyAnswer> answers = Lists.newArrayList();
 
         SurveyResponse response = surveyResponseDao.createSurveyResponse(survey.getGuid(), survey.getCreatedOn(),
                 HEALTH_DATA_CODE, answers);
         assertTrue("Has been assigned a GUID", response.getGuid() != null);
-
+        assertFalse("Survey is now in use", noResponses(survey));
+        
         SurveyResponse newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
 
         assertEquals("Has right guid", response.getGuid(), newResponse.getGuid());
@@ -156,6 +159,7 @@ public class DynamoSurveyResponseDaoTest {
         assertTrue("startedOn isn't 0", newResponse.getStartedOn() > 0L);
         assertTrue("completedOn is 0", newResponse.getCompletedOn() == 0L);
 
+        assertFalse("Survey is still in use", noResponses(survey));
         // You can't append answers to questions that have already been answered.
         surveyResponseDao.appendSurveyAnswers(newResponse, answers);
         newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
@@ -173,11 +177,16 @@ public class DynamoSurveyResponseDaoTest {
         // delete it
         surveyResponseDao.deleteSurveyResponse(newResponse);
         try {
+            assertTrue("After deleting of response survey is again not in use", noResponses(survey));
             surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
             fail("Should have thrown an EntityNotFoundException");
         } catch (EntityNotFoundException nfe) {
 
         }
+    }
+    
+    private boolean noResponses(Survey survey) {
+        return surveyResponseDao.getResponsesForSurvey(survey.getGuid(), survey.getCreatedOn()).isEmpty();
     }
 
 }

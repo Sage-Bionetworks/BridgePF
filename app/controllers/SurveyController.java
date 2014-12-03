@@ -70,7 +70,7 @@ public class SurveyController extends BaseController {
         getAuthenticatedResearcherOrAdminSession(study);
         
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
-        surveyService.deleteSurvey(surveyGuid, createdOn);
+        surveyService.deleteSurvey(study, surveyGuid, createdOn);
         return okResult("Survey deleted.");
     }
     
