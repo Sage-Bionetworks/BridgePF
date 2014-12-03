@@ -8,7 +8,6 @@ import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.models.Backfill;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountEncryptionService;
-import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
@@ -30,7 +29,6 @@ public class HealthIdEncryptionBackfill implements BackfillService {
     private StudyService studyService;
     private BridgeEncryptor healthCodeEncryptorOld;
     private AesGcmEncryptor healthCodeEncryptor;
-    private HealthCodeService healthCodeService;
     private AccountEncryptionService accountEncryptionService;
 
     public void setStormpathClient(Client client) {
@@ -44,9 +42,6 @@ public class HealthIdEncryptionBackfill implements BackfillService {
     }
     public void setHealthCodeEncryptor(AesGcmEncryptor encryptor) {
         this.healthCodeEncryptor = encryptor;
-    }
-    public void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
     }
     public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
         this.accountEncryptionService = accountEncryptionService;
