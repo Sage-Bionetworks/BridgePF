@@ -23,7 +23,6 @@ import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 
 public class StudyServiceImpl implements StudyService {
 
@@ -83,12 +82,7 @@ public class StudyServiceImpl implements StudyService {
     @Override
     public Study getStudyByIdentifier(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
-
-        try {
-            return studyDao.getStudy(identifier);
-        } catch (UncheckedExecutionException e) {
-            throw new EntityNotFoundException(Study.class);
-        }
+        return studyDao.getStudy(identifier);
     }
     @Override
     public Study getStudyByHostname(String hostname) {
