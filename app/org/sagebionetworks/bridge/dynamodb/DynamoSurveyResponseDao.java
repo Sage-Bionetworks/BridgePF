@@ -20,6 +20,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -27,8 +31,13 @@ import com.google.common.collect.Lists;
 public class DynamoSurveyResponseDao implements SurveyResponseDao {
 
     private DynamoDBMapper responseMapper;
-    
     private DynamoSurveyDao surveyDao;
+    private Function<DynamoSurveyResponse,SurveyResponse> TRANSFORMER = new Function<DynamoSurveyResponse,SurveyResponse>() {
+        @Override
+        public SurveyResponse apply(DynamoSurveyResponse res) {
+            return res;
+        }
+    };
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
@@ -90,6 +99,24 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     @Override
     public void deleteSurveyResponse(SurveyResponse response) {
         responseMapper.delete(response);
+    }
+    
+    @Override
+    public List<SurveyResponse> getResponsesForSurvey(String surveyGuid, long surveyCreatedOn) {
+        DynamoDBScanExpression scan = new DynamoDBScanExpression();
+
+        Condition condition = new Condition();
+        condition.withComparisonOperator(ComparisonOperator.EQ);
+        condition.withAttributeValueList(new AttributeValue().withS(surveyGuid));
+        scan.addFilterCondition("surveyGuid", condition);
+        
+        Condition condition2 = new Condition();
+        condition2.withComparisonOperator(ComparisonOperator.EQ);
+        condition2.withAttributeValueList(new AttributeValue().withN(Long.toString(surveyCreatedOn)));
+        scan.addFilterCondition("surveyCreatedOn", condition2);
+
+        List<DynamoSurveyResponse> mappings = responseMapper.scan(DynamoSurveyResponse.class, scan);
+        return Lists.transform(mappings, TRANSFORMER);
     }
     
     private SurveyResponse createSurveyResponseInternal(String surveyGuid, long surveyCreatedOn, String healthCode,

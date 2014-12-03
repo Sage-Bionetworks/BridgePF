@@ -9,14 +9,19 @@ import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dao.SurveyDao;
+import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -170,6 +175,16 @@ public class DynamoSurveyDao implements SurveyDao {
 
     private DynamoDBMapper surveyMapper;
     private DynamoDBMapper surveyQuestionMapper;
+    private SurveyResponseDao responseDao;
+    private SchedulePlanDao schedulePlanDao;
+    
+    public void setSurveyResponseDao(SurveyResponseDao responseDao) {
+        this.responseDao = responseDao;
+    }
+    
+    public void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
+        this.schedulePlanDao = schedulePlanDao;
+    }
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
@@ -182,7 +197,7 @@ public class DynamoSurveyDao implements SurveyDao {
                 .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoSurveyQuestion.class)).build();
         surveyQuestionMapper = new DynamoDBMapper(client, mapperConfig);
     }
-    
+
     @Override
     public Survey createSurvey(Survey survey) {
         checkNotNull(survey.getStudyKey(), "Survey study key is null");
@@ -289,10 +304,22 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurvey(String surveyGuid, long createdOn) {
+    public void deleteSurvey(Study study, String surveyGuid, long createdOn) {
         Survey existing = getSurvey(surveyGuid, createdOn);
         if (existing.isPublished()) {
             throw new PublishedSurveyException(existing);
+        }
+        // If there are responses to this survey, it can't be deleted.
+        List<SurveyResponse> responses = responseDao.getResponsesForSurvey(surveyGuid, createdOn);
+        if (!responses.isEmpty()) {
+            throw new IllegalStateException("Survey has been answered by participants; it cannot be deleted.");
+        }
+        // If there are schedule plans for this survey, it can't be deleted. Would need to delete them all first. 
+        if (study != null) {
+            List<SchedulePlan> plans = schedulePlanDao.getSchedulePlansForSurvey(study, surveyGuid, createdOn);
+            if (!plans.isEmpty()) {
+                throw new IllegalStateException("Survey has been scheduled; it cannot be deleted.");
+            }
         }
         deleteAllQuestions(existing.getGuid(), existing.getCreatedOn());
         surveyMapper.delete(existing);
@@ -300,8 +327,6 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey closeSurvey(String surveyGuid, long createdOn) {
-        // TODO: Eventually this must do much more than this, it must 
-        // also close out any existing survey response records.
         Survey existing = getSurvey(surveyGuid, createdOn);
         existing.setPublished(false);
         existing.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());

@@ -19,4 +19,6 @@ public interface SurveyResponseDao {
     
     public void deleteSurveyResponse(SurveyResponse response);
     
+    public List<SurveyResponse> getResponsesForSurvey(String surveyGuid, long surveyCreatedOn);
+    
 }

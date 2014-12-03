@@ -109,7 +109,7 @@ public class SurveyServiceTest {
         survey = surveyService.getSurvey(survey.getGuid(), survey.getCreatedOn());
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
 
-        surveyService.deleteSurvey(survey.getGuid(), survey.getCreatedOn());
+        surveyService.deleteSurvey(study, survey.getGuid(), survey.getCreatedOn());
 
         try {
             survey = surveyService.getSurvey(survey.getGuid(), survey.getCreatedOn());
@@ -362,7 +362,7 @@ public class SurveyServiceTest {
         Survey survey = surveyService.createSurvey(testSurvey);
         surveyService.publishSurvey(survey.getGuid(), survey.getCreatedOn());
 
-        surveyService.deleteSurvey(survey.getGuid(), survey.getCreatedOn());
+        surveyService.deleteSurvey(study, survey.getGuid(), survey.getCreatedOn());
     }
     
 }
