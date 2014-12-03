@@ -28,6 +28,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.collect.Lists;
 
 public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventPublisherAware {
 
@@ -115,6 +116,18 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
         SchedulePlan plan = getSchedulePlan(study, guid);
         mapper.delete(plan);
         publisher.publishEvent(new SchedulePlanDeletedEvent(plan));
+    }
+    
+    @Override
+    public List<SchedulePlan> getSchedulePlansForSurvey(Study study, String surveyGuid, long surveyCreatedOn) {
+        List<SchedulePlan> results = Lists.newArrayList();
+        
+        for (SchedulePlan plan : getSchedulePlans(study)) {
+            if (plan.getStrategy().doesScheduleSurvey(surveyGuid, surveyCreatedOn)) {
+                results.add(plan);
+            }
+        }
+        return results;
     }
 
 }

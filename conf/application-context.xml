@@ -102,6 +102,8 @@
 
     <bean id="surveyDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
+        <property name="surveyResponseDao" ref="surveyResponseDao" />
+        <property name="schedulePlanDao" ref="schedulePlanDao" />
     </bean>
     
     <bean id="surveyResponseDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponseDao">
