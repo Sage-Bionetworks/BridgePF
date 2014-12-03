@@ -30,6 +30,12 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
         clone.setStudyAndUser(study, user);
         return clone;
     }
+
+    @Override
+    public boolean doesScheduleSurvey(String surveyGuid, long surveyCreatedOn) {
+        return schedule.isScheduleFor(surveyGuid, surveyCreatedOn);
+    }
+    
     @Override
     public void validate(Errors errors) {
         if (schedule == null) {
