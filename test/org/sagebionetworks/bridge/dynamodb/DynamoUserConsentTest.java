@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
+
 public class DynamoUserConsentTest {
 
     @Test
@@ -15,6 +17,7 @@ public class DynamoUserConsentTest {
         assertEquals(healthCode + ":" + studyKey, userConsent.getHealthCodeStudy());
         assertEquals(healthCode, userConsent.getHealthCode());
         assertEquals(studyKey, userConsent.getStudyKey());
+
         // Test constructor 2
         long consentTimestamp = 789L;
         DynamoStudyConsent1 studyConsent = new DynamoStudyConsent1();
@@ -25,11 +28,15 @@ public class DynamoUserConsentTest {
         assertEquals(healthCode, userConsent.getHealthCode());
         assertEquals(studyKey, userConsent.getStudyKey());
         assertEquals(consentTimestamp, userConsent.getConsentCreatedOn());
+
         // Test copy constructor
         userConsent.setSignedOn(555L);
         userConsent.setName("name");
         userConsent.setBirthdate("birthdate");
+        userConsent.setImageData(TestConstants.DUMMY_IMAGE_DATA);
+        userConsent.setImageMimeType("image/gif");
         userConsent.setVersion(777L);
+
         DynamoUserConsent2 userConsentCopy = new DynamoUserConsent2(userConsent);
         assertEquals(healthCode + ":" + studyKey, userConsent.getHealthCodeStudy());
         assertEquals(healthCode, userConsent.getHealthCode());
@@ -38,6 +45,8 @@ public class DynamoUserConsentTest {
         assertEquals(555L, userConsent.getSignedOn());
         assertEquals("name", userConsent.getName());
         assertEquals("birthdate", userConsent.getBirthdate());
+        assertEquals(TestConstants.DUMMY_IMAGE_DATA, userConsent.getImageData());
+        assertEquals("image/gif", userConsent.getImageMimeType());
         assertEquals(userConsent.getVersion(), userConsentCopy.getVersion());
     }
 }

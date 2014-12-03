@@ -24,9 +24,16 @@ public class ConsentController extends BaseController {
         this.optionsService = optionsService;
     }
 
+    public Result getConsentSignature() throws Exception {
+        final UserSession session = getAuthenticatedAndConsentedSession();
+        final Study study = studyService.getStudyByHostname(getHostname());
+        ConsentSignature sig = consentService.getConsentSignature(session.getUser(), study);
+        return okResult(sig);
+    }
+
     public Result give() throws Exception {
         final UserSession session = getAuthenticatedSession();
-        final ConsentSignature consent = ConsentSignature.fromJson(requestToJSON(request()));
+        final ConsentSignature consent = ConsentSignature.createFromJson(requestToJSON(request()));
         final Study study = studyService.getStudyByHostname(getHostname());
         final User user = consentService.consentToResearch(session.getUser(), consent, study, true);
         updateSessionUser(session, user);

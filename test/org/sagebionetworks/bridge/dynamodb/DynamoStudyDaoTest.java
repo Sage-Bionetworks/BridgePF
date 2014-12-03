@@ -9,14 +9,13 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.studies.Study2;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -32,25 +31,32 @@ public class DynamoStudyDaoTest {
     @Before
     public void before() {
         DynamoInitializer.init(DynamoStudy.class);
-        DynamoTestUtil.clearTable(DynamoStudy.class);
+        // We need to leave the test study in the database.
+        List<Study> studies = studyDao.getStudies();
+        for (Study study : studies) {
+            if (!"api".equals(study.getIdentifier())) {
+                studyDao.deleteStudy(study.getIdentifier());
+            }
+        }
     }
     
     @Test
     public void crudOneStudy() {
-        Study2 study = createStudy();
+        Study study = createStudy();
         
         study = studyDao.createStudy(study);
         assertNotNull("Study was assigned a version", study.getVersion());
         
         study.setName("This is a test name");
-        study.setMaxParticipants(10);
+        study.setMaxNumOfParticipants(10);
         study = studyDao.updateStudy(study);
         
         study = studyDao.getStudy(study.getIdentifier());
         assertEquals("Name was set", "This is a test name", study.getName());
-        assertEquals("Max participants was set", 10, study.getMaxParticipants());
-        assertNotNull("Study deployment was set", study.getStormpathUrl());
-        assertTrue("Contains tracker", study.getTrackerIdentifiers().contains("sage:bp"));
+        assertEquals("Max participants was set", 10, study.getMaxNumOfParticipants());
+        assertNotNull("Study deployment was set", study.getStormpathHref());
+        assertNotNull("Study hostname was set", study.getHostname());
+        assertTrue("Contains tracker", study.getTrackers().contains("sage:bp"));
         
         String identifier = study.getIdentifier();
         studyDao.deleteStudy(study.getIdentifier());
@@ -71,21 +77,23 @@ public class DynamoStudyDaoTest {
             identifiers.add(studyDao.createStudy(createStudy()).getIdentifier());
             identifiers.add(studyDao.createStudy(createStudy()).getIdentifier());
             
-            List<Study2> studies = studyDao.getStudies();
-            assertEquals("There are five studies", 5, studies.size());
+            List<Study> studies = studyDao.getStudies();
+            // The five studies, plus the API study we refuse to delete...
+            assertEquals("There are five studies", 6, studies.size());
             
         } finally {
             for (String identifier : identifiers) {
                 studyDao.deleteStudy(identifier);
             }
         }
-        List<Study2> studies = studyDao.getStudies();
-        assertEquals("There are no studies", 0, studies.size());
+        List<Study> studies = studyDao.getStudies();
+        assertEquals("There should be only one study", 1, studies.size());
+        assertEquals("That should be the test study study", "api", studies.get(0).getIdentifier());
     }
     
     @Test
     public void willNotSaveTwoStudiesWithSameIdentifier() {
-        Study2 study = null;
+        Study study = null;
         try {
             study = createStudy();
             study = studyDao.createStudy(study);
@@ -101,26 +109,25 @@ public class DynamoStudyDaoTest {
     
     @Test(expected=EntityAlreadyExistsException.class)
     public void identifierUniquenessEnforcedByVersionChecks() throws Exception {
-        Study2 study = createStudy();
+        Study study = createStudy();
         studyDao.createStudy(study);
         
         study.setVersion(null); // This is now a "new study"
         studyDao.createStudy(study);
     }
     
-    private Study2 createStudy() {
-        Study2 study = new DynamoStudy();
-        study.setIdentifier(RandomStringUtils.randomAlphabetic(5));
-        study.setMaxParticipants(100);
+    private Study createStudy() {
+        Study study = new DynamoStudy();
+        study.setIdentifier(TestUtils.randomName());
+        study.setMaxNumOfParticipants(100);
         study.setMinAgeOfConsent(18);
-        study.setName(RandomStringUtils.randomAlphabetic(5));
+        study.setName(TestUtils.randomName());
         study.setResearcherRole("researcher");
-        study.setStormpathUrl(Environment.LOCAL, "http://local/null");
-        study.setStormpathUrl(Environment.DEV, "http://dev/null");
-        study.setStormpathUrl(Environment.UAT, "http://uat/null");
-        study.setStormpathUrl(Environment.PROD, "http://prod/null");
-        study.getTrackerIdentifiers().add("sage:med");
-        study.getTrackerIdentifiers().add("sage:bp");
+        study.getTrackers().add("sage:med");
+        study.getTrackers().add("sage:bp");
+        study.setHostname("test.sagebridge.org");
+        study.setStormpathHref("http://test/local/");
         return study;
     }
+    
 }

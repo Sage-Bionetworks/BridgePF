@@ -1,14 +1,10 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.springframework.validation.Errors;
-
-import com.google.common.collect.Lists;
 
 /**
  * Each schedule plan has a strategy for creating schedules that can take contextual 
@@ -29,26 +25,19 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
     }
     
     @Override
-    public Schedule scheduleNewUser(Study study, User user) {
-        Schedule sch = schedule.copy();
-        sch.setStudyAndUser(study, user);
-        return sch;
-    }
-
-    @Override
-    public List<Schedule> scheduleExistingUsers(Study study, ArrayList<User> users) {
-        List<Schedule> schedules = Lists.newArrayListWithCapacity(users.size());
-        for (User user : users) {
-            Schedule sch = schedule.copy();
-            sch.setStudyAndUser(study, user);
-            schedules.add(sch);
-        }
-        return schedules;
+    public Schedule getScheduleForUser(Study study, SchedulePlan plan, User user) {
+        Schedule clone = schedule.copy();
+        clone.setStudyAndUser(study, user);
+        return clone;
     }
     @Override
     public void validate(Errors errors) {
         if (schedule == null) {
             errors.reject("simple schedule plan is missing a schedule");
+        } else {
+            errors.pushNestedPath("schedule");
+            new ScheduleValidator().validate(schedule, errors);
+            errors.popNestedPath();
         }
     }
 

@@ -1,9 +1,10 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.upload;
 
 import java.net.URL;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 

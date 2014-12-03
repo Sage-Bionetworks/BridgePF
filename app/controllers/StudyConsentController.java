@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.services.StudyConsentService;
 
 import play.mvc.Result;
 
-public class StudyConsentController extends ResearcherController {
+public class StudyConsentController extends BaseController {
 
     private StudyConsentService studyConsentService;
 
@@ -21,14 +21,14 @@ public class StudyConsentController extends ResearcherController {
     public Result getAllConsents() throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
-        List<StudyConsent> consents = studyConsentService.getAllConsents(study.getKey());
+        List<StudyConsent> consents = studyConsentService.getAllConsents(study.getIdentifier());
         return okResult(consents);
     }
 
     public Result getActiveConsent() throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
-        StudyConsent consent = studyConsentService.getActiveConsent(study.getKey());
+        StudyConsent consent = studyConsentService.getActiveConsent(study.getIdentifier());
         return okResult(consent);
     }
 
@@ -36,7 +36,7 @@ public class StudyConsentController extends ResearcherController {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
-        StudyConsent consent = studyConsentService.getConsent(study.getKey(), timestamp);
+        StudyConsent consent = studyConsentService.getConsent(study.getIdentifier(), timestamp);
         return okResult(consent);
     }
 
@@ -44,7 +44,7 @@ public class StudyConsentController extends ResearcherController {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
         StudyConsentForm form = StudyConsentForm.fromJson(requestToJSON(request()));
-        StudyConsent studyConsent = studyConsentService.addConsent(study.getKey(), form);
+        StudyConsent studyConsent = studyConsentService.addConsent(study.getIdentifier(), form);
         return createdResult(studyConsent);
     }
 
@@ -52,7 +52,7 @@ public class StudyConsentController extends ResearcherController {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
-        studyConsentService.activateConsent(study.getKey(), timestamp);
+        studyConsentService.activateConsent(study.getIdentifier(), timestamp);
         return okResult("Consent document set as active.");
     }
 }

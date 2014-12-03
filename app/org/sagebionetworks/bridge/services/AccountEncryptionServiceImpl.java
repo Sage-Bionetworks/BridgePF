@@ -32,7 +32,7 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
         final CustomData customData = account.getCustomData();
         final HealthId healthId = healthCodeService.create();
         final String encryptedHealthId = healthCodeEncryptor.encrypt(healthId.getId());
-        final String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+        final String healthIdKey = study.getIdentifier() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
         customData.put(healthIdKey, encryptedHealthId);
         customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 2);
         customData.save();
@@ -42,7 +42,7 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
     @Override
     public HealthId getHealthCode(Study study, Account account) {
         final CustomData customData = account.getCustomData();
-        final String healthIdKey = study.getKey() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+        final String healthIdKey = study.getIdentifier() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
         final Object healthIdObj = customData.get(healthIdKey);
         if (healthIdObj != null) {
             int version = 1;

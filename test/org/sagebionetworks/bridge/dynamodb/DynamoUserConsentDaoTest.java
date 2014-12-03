@@ -11,8 +11,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -47,25 +49,17 @@ public class DynamoUserConsentDaoTest {
         assertNull(userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
 
         // Give consent
-        final ConsentSignature consentSignature = new ConsentSignature("John Smith", "1999-12-01");
+        final ConsentSignature consentSignature = ConsentSignature.create("John Smith", "1999-12-01",
+                TestConstants.DUMMY_IMAGE_DATA, "image/gif");
         userConsentDao.giveConsent(healthCode, consent, consentSignature);
         assertTrue(userConsentDao.hasConsented(healthCode, consent));
         assertTrue(userConsentDao.hasConsented2(healthCode, consent));
         assertEquals(Long.valueOf(123), userConsentDao.getConsentCreatedOn(healthCode, consent.getStudyKey()));
         ConsentSignature cs = userConsentDao.getConsentSignature(healthCode, consent);
         assertEquals(consentSignature.getName(), cs.getName());
-
-        // Cannot give consent again if already consented
-        try {
-            userConsentDao.giveConsent(healthCode, consent, consentSignature);
-        } catch (EntityAlreadyExistsException e) {
-            assertTrue(true); // Expected
-        }
-        try {
-            userConsentDao.giveConsent2(healthCode, consent, consentSignature);
-        } catch (EntityAlreadyExistsException e) {
-            assertTrue(true); // Expected
-        }
+        assertEquals(consentSignature.getBirthdate(), cs.getBirthdate());
+        assertEquals(consentSignature.getImageData(), cs.getImageData());
+        assertEquals(consentSignature.getImageMimeType(), cs.getImageMimeType());
 
         // Withdraw
         userConsentDao.withdrawConsent(healthCode, consent);

@@ -11,9 +11,11 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -94,6 +96,34 @@ public abstract class BaseController extends Controller {
         return session;
     }
 
+    /**
+     * Checks if the user is in the "admin" group.
+     */
+    protected UserSession getAuthenticatedAdminSession() throws BridgeServiceException {
+        UserSession session = getAuthenticatedSession();
+        if (!session.getUser().isInRole(BridgeConstants.ADMIN_GROUP)) {
+            throw new UnauthorizedException();
+        }
+        return session;
+    }
+    
+    protected UserSession getAuthenticatedResearcherOrAdminSession(Study study) {
+        UserSession session = getAuthenticatedSession();
+        User user = session.getUser();
+        if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
+            return session;
+        }
+        throw new UnauthorizedException();
+    }
+    
+    protected UserSession getAuthenticatedResearchOrAdminSession(Study study) {
+        UserSession session = getAuthenticatedSession();
+        User user = session.getUser();
+        if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
+            return session;
+        }
+        throw new UnauthorizedException();
+    }
     /**
      * Return a session if it exists, or null otherwise. Will not throw exception if user is not authorized or has not
      * consented to research.

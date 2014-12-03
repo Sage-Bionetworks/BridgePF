@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -35,7 +36,9 @@ public class SendMailViaAmazonServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        Study study = new Study(null, "teststudy", 17, null, null, null, null);
+        Study study = new DynamoStudy();
+        study.setIdentifier("api");
+        study.setMinAgeOfConsent(17);
         
         studyService = mock(StudyService.class);
         when(studyService.getStudyByIdentifier(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
@@ -47,7 +50,7 @@ public class SendMailViaAmazonServiceTest {
         service.setEmailClient(emailClient);
         service.setStudyService(studyService);
         
-        consent = new ConsentSignature("Test 2", "1950-05-05");
+        consent = ConsentSignature.create("Test 2", "1950-05-05", TestConstants.DUMMY_IMAGE_DATA, "image/fake");
         studyConsent = new StudyConsent() {
             @Override
             public String getStudyKey() {
@@ -63,7 +66,7 @@ public class SendMailViaAmazonServiceTest {
             }
             @Override
             public String getPath() {
-                return "conf/email-templates/teststudy-consent.html";
+                return "conf/email-templates/api-consent.html";
             }
             @Override
             public int getMinAge() {
@@ -86,9 +89,9 @@ public class SendMailViaAmazonServiceTest {
         String html = message.getBody().getHtml().getData();
         
         assertEquals("Correct sender", recipientEmail, destination.getToAddresses().get(0));
-        assertTrue("Contains consent content", html.indexOf("Had this been a real study") > -1);
-        assertTrue("Date transposed to document", html.indexOf("May 5, 1950") > -1);
-        assertTrue("Name transposed to document", html.indexOf("Test 2") > -1);
+        assertTrue("Contains consent content", html.contains("Had this been a real study"));
+        assertTrue("Date transposed to document", html.contains("May 5, 1950"));
+        assertTrue("Name transposed to document", html.contains("Test 2"));
     }
     
 }

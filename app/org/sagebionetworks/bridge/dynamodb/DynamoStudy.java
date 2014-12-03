@@ -1,18 +1,11 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.models.studies.Study2;
-import org.sagebionetworks.bridge.validators.Validate;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -20,53 +13,50 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 @DynamoDBTable(tableName = "Study")
-public class DynamoStudy implements Study2, DynamoTable {
+public class DynamoStudy implements Study, DynamoTable {
 
     // We need the unconfigured mapper for setData/getData.
     private static ObjectMapper mapper = new ObjectMapper();
-    private static TypeReference<HashMap<Environment,StudyEnvironment>> typeRef = new TypeReference<HashMap<Environment,StudyEnvironment>>() {};
 
-    private static final String ENVIRONMENTS_PROPERTY = "environments";
+    private static final String IDENTIFIER_PROPERTY = "identifier";
+    private static final String NAME_PROPERTY = "name";
     private static final String TRACKERS_PROPERTY = "trackers";
-    private static final String MAXIMUM_NUMBER_OF_PARTICIPANTS_PROPERTY = "maxNumOfParticipants";
-    private static final String MINIMUM_AGE_OF_CONSENT_PROPERTY = "minAgeOfConsent";
+    private static final String MAX_NUM_OF_PARTICIPANTS_PROPERTY = "maxNumOfParticipants";
+    private static final String MIN_AGE_OF_CONSENT_PROPERTY = "minAgeOfConsent";
     private static final String RESEARCHER_ROLE_PROPERTY = "researcherRole";
+    private static final String HOSTNAME_PROPERTY = "hostname";
+    private static final String STORMPATH_HREF_PROPERTY = "stormpathHref";
+    private static final String VERSION_PROPERTY = "version";
     
     private String name;
     private String identifier;
     private String researcherRole;
+    private String stormpathHref;
+    private String hostname;
     private int minAgeOfConsent;
-    private int maxNumberOfParticipants;
+    private int maxNumOfParticipants;
     private List<String> trackers = Lists.newArrayList();
-    private Map<Environment,StudyEnvironment> environments = Maps.newHashMap();
     private Long version;
 
-    public static class StudyEnvironment {
-        private String stormpathHref;
-        public String getStormpathHref() {
-            return stormpathHref;
-        }
-        public void setStormpathHref(String stormpathHref) {
-            this.stormpathHref = stormpathHref;
-        }
-        @Override public String toString() {
-            return "StudyEnvironments [stormpathHref=" + stormpathHref + "]";
-        }
-    };
-    
+    public static DynamoStudy fromJson(JsonNode node) {
+        DynamoStudy study = new DynamoStudy();
+        study.setIdentifier(JsonUtils.asText(node, IDENTIFIER_PROPERTY));
+        study.setName(JsonUtils.asText(node, NAME_PROPERTY));
+        study.setMinAgeOfConsent(JsonUtils.asInt(node, MIN_AGE_OF_CONSENT_PROPERTY));
+        study.setMaxNumOfParticipants(JsonUtils.asInt(node, MAX_NUM_OF_PARTICIPANTS_PROPERTY));
+        study.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
+        study.getTrackers().addAll(JsonUtils.asStringList(node, TRACKERS_PROPERTY));
+        return study;
+    }
+
     public DynamoStudy() {
-        for (Environment env : Environment.values()) {
-            environments.put(env, new StudyEnvironment());    
-        }
     }
     
     @Override
@@ -95,17 +85,6 @@ public class DynamoStudy implements Study2, DynamoTable {
     public void setVersion(Long version) {
         this.version = version;
     }
-    @Override
-    @DynamoDBIgnore
-    public String getStormpathUrl() {
-        Environment env = BridgeConfigFactory.getConfig().getEnvironment();
-        return environments.get(env).getStormpathHref();
-    }
-    @Override
-    public void setStormpathUrl(Environment env, String value) {
-        checkNotNull(env, Validate.CANNOT_BE_NULL, "environment");
-        environments.get(env).setStormpathHref(value);
-    }
     @DynamoDBIgnore
     @Override
     public String getResearcherRole() {
@@ -126,22 +105,36 @@ public class DynamoStudy implements Study2, DynamoTable {
     }
     @DynamoDBIgnore
     @Override
-    public int getMaxParticipants() {
-        return maxNumberOfParticipants;
+    public int getMaxNumOfParticipants() {
+        return maxNumOfParticipants;
     }
     @Override
-    public void setMaxParticipants(int maxParticipants) {
-        this.maxNumberOfParticipants = maxParticipants;
+    public void setMaxNumOfParticipants(int maxParticipants) {
+        this.maxNumOfParticipants = maxParticipants;
     }
     @DynamoDBIgnore
     @Override
-    public List<String> getTrackerIdentifiers() {
-        return trackers;
-    }
-    @DynamoDBIgnore
     @JsonIgnore
-    public Map<Environment,StudyEnvironment> getStudyEnvironments() {
-        return environments;
+    public String getStormpathHref() {
+        return stormpathHref;
+    }
+    @Override
+    public void setStormpathHref(String stormpathHref) {
+        this.stormpathHref = stormpathHref;
+    }
+    @DynamoDBIgnore
+    @Override
+    public String getHostname() {
+        return hostname;
+    }
+    @Override
+    public void setHostname(String hostname) {
+        this.hostname = hostname;
+    }
+    @DynamoDBIgnore
+    @Override
+    public List<String> getTrackers() {
+        return trackers;
     }
     
     @DynamoDBAttribute
@@ -149,21 +142,22 @@ public class DynamoStudy implements Study2, DynamoTable {
     public String getData() {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put(RESEARCHER_ROLE_PROPERTY, researcherRole);
-        node.put(MINIMUM_AGE_OF_CONSENT_PROPERTY, minAgeOfConsent);
-        node.put(MAXIMUM_NUMBER_OF_PARTICIPANTS_PROPERTY, maxNumberOfParticipants);
+        node.put(MIN_AGE_OF_CONSENT_PROPERTY, minAgeOfConsent);
+        node.put(MAX_NUM_OF_PARTICIPANTS_PROPERTY, maxNumOfParticipants);
         node.set(TRACKERS_PROPERTY, mapper.valueToTree(trackers));
-        node.set(ENVIRONMENTS_PROPERTY, mapper.valueToTree(environments));
+        node.put(STORMPATH_HREF_PROPERTY, stormpathHref);
+        node.put(HOSTNAME_PROPERTY, hostname);
         return node.toString();
     }
     public void setData(String data) {
         try {
             JsonNode node = mapper.readTree(data);
             this.researcherRole = JsonUtils.asText(node, RESEARCHER_ROLE_PROPERTY);
-            this.minAgeOfConsent = JsonUtils.asIntPrimitive(node, MINIMUM_AGE_OF_CONSENT_PROPERTY);
-            this.maxNumberOfParticipants = JsonUtils.asIntPrimitive(node, MAXIMUM_NUMBER_OF_PARTICIPANTS_PROPERTY);
+            this.minAgeOfConsent = JsonUtils.asIntPrimitive(node, MIN_AGE_OF_CONSENT_PROPERTY);
+            this.maxNumOfParticipants = JsonUtils.asIntPrimitive(node, MAX_NUM_OF_PARTICIPANTS_PROPERTY);
             this.trackers = JsonUtils.asStringList(node, TRACKERS_PROPERTY);
-            JsonNode depNode = JsonUtils.asJsonNode(node, ENVIRONMENTS_PROPERTY);
-            this.environments = mapper.convertValue(depNode, typeRef);
+            this.stormpathHref = JsonUtils.asText(node, STORMPATH_HREF_PROPERTY);
+            this.hostname = JsonUtils.asText(node, HOSTNAME_PROPERTY);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         }
@@ -173,12 +167,13 @@ public class DynamoStudy implements Study2, DynamoTable {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((environments == null) ? 0 : environments.hashCode());
+        result = prime * result + ((hostname == null) ? 0 : hostname.hashCode());
         result = prime * result + ((identifier == null) ? 0 : identifier.hashCode());
-        result = prime * result + maxNumberOfParticipants;
+        result = prime * result + maxNumOfParticipants;
         result = prime * result + minAgeOfConsent;
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((researcherRole == null) ? 0 : researcherRole.hashCode());
+        result = prime * result + ((stormpathHref == null) ? 0 : stormpathHref.hashCode());
         result = prime * result + ((trackers == null) ? 0 : trackers.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
         return result;
@@ -193,17 +188,17 @@ public class DynamoStudy implements Study2, DynamoTable {
         if (getClass() != obj.getClass())
             return false;
         DynamoStudy other = (DynamoStudy) obj;
-        if (environments == null) {
-            if (other.environments != null)
+        if (hostname == null) {
+            if (other.hostname != null)
                 return false;
-        } else if (!environments.equals(other.environments))
+        } else if (!hostname.equals(other.hostname))
             return false;
         if (identifier == null) {
             if (other.identifier != null)
                 return false;
         } else if (!identifier.equals(other.identifier))
             return false;
-        if (maxNumberOfParticipants != other.maxNumberOfParticipants)
+        if (maxNumOfParticipants != other.maxNumOfParticipants)
             return false;
         if (minAgeOfConsent != other.minAgeOfConsent)
             return false;
@@ -216,6 +211,11 @@ public class DynamoStudy implements Study2, DynamoTable {
             if (other.researcherRole != null)
                 return false;
         } else if (!researcherRole.equals(other.researcherRole))
+            return false;
+        if (stormpathHref == null) {
+            if (other.stormpathHref != null)
+                return false;
+        } else if (!stormpathHref.equals(other.stormpathHref))
             return false;
         if (trackers == null) {
             if (other.trackers != null)
@@ -233,8 +233,8 @@ public class DynamoStudy implements Study2, DynamoTable {
     @Override
     public String toString() {
         return "DynamoStudy [name=" + name + ", identifier=" + identifier + ", researcherRole=" + researcherRole
-                + ", minimumAgeOfConsent=" + minAgeOfConsent + ", maximumNumberOfParticipants="
-                + maxNumberOfParticipants + ", trackers=" + trackers + ", environments=" + environments
+                + ", stormpathHref=" + stormpathHref + ", hostname=" + hostname + ", minAgeOfConsent="
+                + minAgeOfConsent + ", maxNumOfParticipants=" + maxNumOfParticipants + ", trackers=" + trackers
                 + ", version=" + version + "]";
     }
 }

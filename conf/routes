@@ -33,17 +33,19 @@ GET    /api/v1/profile      @controllers.UserProfileController.getUserProfile
 POST   /api/v1/profile      @controllers.UserProfileController.updateUserProfile
 
 # API - Survey Responses
-GET    /api/v1/surveys/response/:guid          @controllers.SurveyResponseController.getSurveyResponse(guid: String)
-POST   /api/v1/surveys/response/:guid          @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
-DELETE /api/v1/surveys/response/:guid          @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
-GET    /api/v1/surveys/:surveyGuid/:createdOn  @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
-POST   /api/v1/surveys/:surveyGuid/:createdOn  @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
+GET    /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.getSurveyResponse(guid: String)
+POST   /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
+DELETE /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
+GET    /api/v1/surveys/:surveyGuid/:createdOn              @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
+POST   /api/v1/surveys/:surveyGuid/:createdOn              @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
+POST   /api/v1/surveys/:surveyGuid/:createdOn/:identifier  @controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
 
 # API - Schedules
 GET    /api/v1/schedules   @controllers.ScheduleController.getSchedules
 
 # API - Consent
 POST   /api/v1/consent                       @controllers.ConsentController.give
+GET    /api/v1/consent                       @controllers.ConsentController.getConsentSignature
 POST   /api/v1/consent/email                 @controllers.ConsentController.emailCopy
 POST   /api/v1/consent/dataSharing/suspend   @controllers.ConsentController.suspendDataSharing
 POST   /api/v1/consent/dataSharing/resume    @controllers.ConsentController.resumeDataSharing
@@ -78,6 +80,17 @@ GET    /researcher/v1/consents/active               @controllers.StudyConsentCon
 GET    /researcher/v1/consents/:timestamp           @controllers.StudyConsentController.getConsent(timestamp: String)
 POST   /researcher/v1/consents                      @controllers.StudyConsentController.addConsent
 POST   /researcher/v1/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: String)
+
+# Researchers - Studies
+GET    /researcher/v1/study           @controllers.StudyController.getStudyForResearcher          
+POST   /researcher/v1/study           @controllers.StudyController.updateStudyForResearcher
+
+# Admin - Studies
+GET    /admin/v1/studies/:identifier  @controllers.StudyController.getStudy(identifier: String)
+POST   /admin/v1/studies/:identifier  @controllers.StudyController.updateStudy(identifier: String)
+GET    /admin/v1/studies              @controllers.StudyController.getAllStudies
+POST   /admin/v1/studies              @controllers.StudyController.createStudy 
+DELETE /admin/v1/studies/:identifier  @controllers.StudyController.deleteStudy(identifier: String)
 
 # Admin - Backfill
 GET    /admin/v1/backfill/:name    @controllers.BackfillController.backfill(name: String)

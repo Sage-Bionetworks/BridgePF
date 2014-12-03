@@ -12,7 +12,7 @@ import org.sagebionetworks.bridge.services.SurveyService;
 
 import play.mvc.Result;
 
-public class SurveyController extends ResearcherController {
+public class SurveyController extends BaseController {
 
     private SurveyService surveyService;
     
@@ -87,7 +87,7 @@ public class SurveyController extends ResearcherController {
         getAuthenticatedResearcherOrAdminSession(study);
         
         Survey survey = DynamoSurvey.fromJson(requestToJSON(request()));
-        survey.setStudyKey(study.getKey());
+        survey.setStudyKey(study.getIdentifier());
         
         survey = surveyService.createSurvey(survey);
         return createdResult(new GuidCreatedOnVersionHolder(survey));
@@ -112,7 +112,7 @@ public class SurveyController extends ResearcherController {
         Survey survey = DynamoSurvey.fromJson(requestToJSON(request()));
         survey.setGuid(surveyGuid);
         survey.setCreatedOn(createdOn);
-        survey.setStudyKey(study.getKey());
+        survey.setStudyKey(study.getIdentifier());
         
         survey = surveyService.updateSurvey(survey);
         return okResult(new GuidCreatedOnVersionHolder(survey));

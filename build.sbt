@@ -12,6 +12,7 @@ libraryDependencies ++= Seq(
   "org.springframework" % "spring-test" % "4.0.7.RELEASE",
   "org.apache.commons" % "commons-lang3" % "3.3.2",
   "commons-validator" % "commons-validator" % "1.4.0",
+  "commons-io" % "commons-io" % "2.4",
   "org.codehaus.jackson" % "jackson-mapper-asl" % "1.9.13",
   "com.fasterxml.jackson.core" % "jackson-annotations" % "2.4.2",
   "com.fasterxml.jackson.core" % "jackson-core" % "2.4.2",

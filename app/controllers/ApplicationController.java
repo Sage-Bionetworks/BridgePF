@@ -1,5 +1,6 @@
 package controllers;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
@@ -34,14 +35,21 @@ public class ApplicationController extends BaseController {
     public Result loadPublicApp() throws Exception {
         UserSessionInfo info = new UserSessionInfo(new UserSession());
         
-        // There's probably a non-crappy way of doing this in Play, but I couldn't find it.
-        Study study = studyService.getStudyByHostname(getHostname());
-        if (study == null || "neurod".equals(study.getKey())) {
-            return ok(views.html.neurod.render(Json.toJson(info).toString()));    
-        } else if ("teststudy".equals(study.getKey())) {
-            return ok(views.html.test.render(Json.toJson(info).toString()));
+        // We need to default to a study or the integration tests in Play will fail 
+        // (localhost:3333 won't match anything).
+        try {
+            Study study = studyService.getStudyByHostname(getHostname());
+            if ("pd".equals(study.getIdentifier()) || "neurod".equals(study.getIdentifier()) || "parkinson".equals(study.getIdentifier())) {
+                return ok(views.html.neurod.render(Json.toJson(info).toString()));    
+            } else if ("api".equals(study.getIdentifier())) {
+                return ok(views.html.api.render(Json.toJson(info).toString()));
+            }
+            String apiHost = "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix();
+            return ok(views.html.nosite.render(study.getName(), apiHost));
+        } catch(EntityNotFoundException e) {
+            // Go with the API study
+            return ok(views.html.api.render(Json.toJson(info).toString()));
         }
-        throw new EntityNotFoundException(Study.class, "Cannot determine study from the host name: " + getHostname());
     }
     
     public Result loadConsent(String sessionToken) throws Exception {
