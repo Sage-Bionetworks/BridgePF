@@ -6,6 +6,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.models.Backfill;
+import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountEncryptionService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -72,6 +73,7 @@ public class HealthIdEncryptionBackfill implements BackfillService {
                 final String healthIdKey = studyKey + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
                 final Object healthIdObj = customData.get(healthIdKey);
                 if (healthIdObj == null) {
+                    // Backfill accounts that have no health id
                     accountEncryptionService.createAndSaveHealthCode(study, account);
                     count++;
                     logger.info("Created health code for account " + account.getEmail() + " in study " + study.getName());
@@ -82,13 +84,23 @@ public class HealthIdEncryptionBackfill implements BackfillService {
                         version = (Integer)versionObj;
                     }
                     if (version < 2) {
+                        // Backfill accounts that still use old encryption
                         String healthId = healthCodeEncryptorOld.decrypt((String) healthIdObj);
                         String encryptedHealthId = healthCodeEncryptor.encrypt(healthId);
                         customData.put(healthIdKey, encryptedHealthId);
                         customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 2);
                         customData.save();
                         count++;
-                        logger.info("Backfilled health code for account " + account.getEmail() + " in study " + study.getName());
+                        logger.info("Backfilled encryption for account " + account.getEmail() + " in study " + study.getName());
+                    }
+                    // Backfill accounts that are missing health codes -- this should be only test artifacts and
+                    // should not exist in staging and prod
+                    HealthId healthId = accountEncryptionService.getHealthCode(study, account);
+                    String healthCode = healthId.getCode();
+                    if (healthCode == null) {
+                        customData.remove(healthIdKey);
+                        accountEncryptionService.createAndSaveHealthCode(study, account);
+                        logger.info("Re-created health code for account " + account.getEmail() + " in study " + study.getName());
                     }
                 }
             }
