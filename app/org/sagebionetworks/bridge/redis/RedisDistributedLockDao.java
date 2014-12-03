@@ -23,8 +23,8 @@ public class RedisDistributedLockDao implements DistributedLockDao {
         checkNotNull(identifier);
         checkArgument(expireInSeconds > 0);
         final String redisKey = createRedisKey(clazz, identifier);
-        final String lockId = BridgeUtils.generateGuid();
-        final Long result = stringOps.setnx(redisKey, lockId).execute();
+        final String lock = BridgeUtils.generateGuid();
+        final Long result = stringOps.setnx(redisKey, lock).execute();
         if (result != 1L) {
             Long expire = stringOps.ttl(redisKey).execute();
             if (expire < 0L) {
@@ -33,17 +33,17 @@ public class RedisDistributedLockDao implements DistributedLockDao {
             return null;
         }
         expire(redisKey, expireInSeconds);
-        return lockId;
+        return lock;
     }
 
     @Override
-    public boolean releaseLock(Class<?> clazz, String identifier, String lockId) {
+    public boolean releaseLock(Class<?> clazz, String identifier, String lock) {
         checkNotNull(clazz);
         checkNotNull(identifier);
-        checkNotNull(lockId);
+        checkNotNull(lock);
         final String redisKey = createRedisKey(clazz, identifier);
         final String redisLockId = stringOps.get(redisKey).execute();
-        if (!lockId.equals(redisLockId)) {
+        if (!lock.equals(redisLockId)) {
             return false;
         }
         Long result = stringOps.delete(redisKey).execute();
