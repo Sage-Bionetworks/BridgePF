@@ -42,7 +42,7 @@ public class DynamoInitializerTest {
         }
         BridgeConfig config = BridgeConfigFactory.getConfig();
         Environment env = config.getEnvironment();
-        String tableName = env.getEnvName() + "-" + config.getUser() + "-" + "HealthDataRecord";
+        String tableName = env.name().toLowerCase() + "-" + config.getUser() + "-" + "HealthDataRecord";
         TableDescription table = tableMap.get(tableName);
         assertNotNull(table);
         assertEquals(2, table.getKeySchema().size());

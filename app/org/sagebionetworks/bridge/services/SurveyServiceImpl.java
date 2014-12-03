@@ -31,17 +31,17 @@ public class SurveyServiceImpl implements SurveyService {
     @Override
     public List<Survey> getSurveys(Study study) {
         checkNotNull(study, "Study cannot be null");
-        checkArgument(StringUtils.isNotBlank(study.getKey()), "Study key cannot be blank or null");
+        checkArgument(StringUtils.isNotBlank(study.getIdentifier()), "Study key cannot be blank or null");
 
-        return surveyDao.getSurveys(study.getKey());
+        return surveyDao.getSurveys(study.getIdentifier());
     }
     
     @Override
     public List<Survey> getMostRecentlyPublishedSurveys(Study study) {
         checkNotNull(study, "Study cannot be null");
-        checkArgument(StringUtils.isNotBlank(study.getKey()), "Study key cannot be blank or null");
+        checkArgument(StringUtils.isNotBlank(study.getIdentifier()), "Study key cannot be blank or null");
         
-        return surveyDao.getMostRecentlyPublishedSurveys(study.getKey());
+        return surveyDao.getMostRecentlyPublishedSurveys(study.getIdentifier());
     }
 
     @Override
@@ -54,9 +54,9 @@ public class SurveyServiceImpl implements SurveyService {
     @Override
     public List<Survey> getMostRecentSurveys(Study study) {
         checkNotNull(study, "Study cannot be null");
-        checkArgument(StringUtils.isNotBlank(study.getKey()), "Study key cannot be blank or null");
+        checkArgument(StringUtils.isNotBlank(study.getIdentifier()), "Study key cannot be blank or null");
         
-        return surveyDao.getMostRecentSurveys(study.getKey());
+        return surveyDao.getMostRecentSurveys(study.getIdentifier());
     }
 
     @Override

@@ -24,12 +24,14 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import play.libs.WS;
 import play.libs.WS.Response;
+import play.libs.WS.WSRequestHolder;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -61,7 +63,10 @@ public class AuthenticationControllerTest {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 node.put(USERNAME, testUser.getUsername());
                 node.put(PASSWORD, testUser.getPassword());
-                Response response = WS.url(TEST_BASE_URL + SIGN_IN_URL).post(node).get(TIMEOUT);
+                
+                WSRequestHolder holder = WS.url(TEST_BASE_URL + SIGN_IN_URL);
+                holder.setHeader("Bridge-Host", "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix());
+                Response response = holder.post(node).get(TIMEOUT);
                 
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 

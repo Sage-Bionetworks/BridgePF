@@ -1,29 +1,29 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.Tracker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 public class ScheduleStrategyTest {
 
@@ -34,34 +34,15 @@ public class ScheduleStrategyTest {
     @Before
     public void before() {
         users = Lists.newArrayList();
-        for (int i=0; i < 10; i++) {
-            users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
+        for (int i=0; i < 1000; i++) {
+        	User user = new User(Integer.toString(i), "test"+i+"@sagebridge.org");
+        	user.setHealthCode(BridgeUtils.generateGuid());
+            users.add(user);
         }
-        study = new Study("name", TestConstants.TEST_STUDY_IDENTIFIER, 18, null, Collections.<String>emptyList(), Collections.<Tracker>emptyList(), null);
-    }
-    
-    public void createContextWithRemainderUsers() {
-        users = Lists.newArrayList();
-        for (int i=0; i < 14; i++) {
-            users.add(new User(Integer.toString(i), "test"+i+"@sagebridge.org"));
-        }
-    }
-    
-    @Test
-    public void testSimpleScheduleStrategy() {
-        Schedule schedule = createSchedule("AAA");
-        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
-        strategy.setSchedule(schedule);
-        
-        List<Schedule> schedules = strategy.scheduleExistingUsers(study, users);
-        
-        Set<String> identifiers = Sets.newHashSet();
-        for (Schedule sch : schedules) {
-            identifiers.add(sch.getStudyUserCompoundKey());
-        }
-        
-        assertEquals("There are ten schedules", 10, schedules.size());
-        assertEquals("Each assigned to a different person", 10, identifiers.size());
+        study = new DynamoStudy();
+        study.setName("name");
+        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        study.setMinAgeOfConsent(18);
     }
     
     @Test
@@ -72,7 +53,7 @@ public class ScheduleStrategyTest {
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(study.getKey());
+        plan.setStudyKey(study.getIdentifier());
         plan.setStrategy(strategy);
         
         String output = JsonUtils.toJSON(plan);
@@ -104,7 +85,11 @@ public class ScheduleStrategyTest {
     public void verifyABTestingStrategyWorks() {
         DynamoSchedulePlan plan = createABSchedulePlan();
 
-        List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
+        List<Schedule> schedules = Lists.newArrayList();
+        for (User user : users) {
+        	Schedule schedule = plan.getStrategy().getScheduleForUser(study, plan, user);
+        	schedules.add(schedule);
+        }
         
         // We want 4 in A, 4 in B and 2 in C
         // and they should not be in order...
@@ -117,32 +102,17 @@ public class ScheduleStrategyTest {
                 countsByLabel.put(schedule.getLabel(), ++count);
             }
         }
-        assertEquals("Four users assigned to A", 4, countsByLabel.get("A").intValue());
-        assertEquals("Four users assigned to B", 4, countsByLabel.get("B").intValue());
-        assertEquals("Four users assigned to C", 2, countsByLabel.get("C").intValue());
-
-        // This fails, not all that rarely, due to actual randomness.
-        /*
-        List<Schedule> newSchedules = plan.getStrategy().generateSchedules(context);
-        assertNotEquals("A has random users", schedules.get(0), newSchedules.get(0));
-        assertNotEquals("B has random users", schedules.get(1), newSchedules.get(1));
-        assertNotEquals("C has random users", schedules.get(2), newSchedules.get(2));
-        */
-    }
-    
-    @Test
-    public void abScheduleStrategyAssignsRemainders() {
-        DynamoSchedulePlan plan = createABSchedulePlan();
-        createContextWithRemainderUsers();
-        
-        List<Schedule> schedules = plan.getStrategy().scheduleExistingUsers(study, users);
-        assertEquals("All users have schedules", 14, schedules.size());
+        assertTrue("40% users assigned to A", Math.abs(countsByLabel.get("A").intValue()-400) < 50);
+        assertTrue("40% users assigned to B", Math.abs(countsByLabel.get("B").intValue()-400) < 50);
+        assertTrue("20% users assigned to C", Math.abs(countsByLabel.get("C").intValue()-200) < 50);
     }
 
     private DynamoSchedulePlan createABSchedulePlan() {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
+        // plan.setGuid("a71eecc3-5e75-4a11-91f4-c587999cbb20");
+        plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(study.getKey());
+        plan.setStudyKey(study.getIdentifier());
         plan.setStrategy(createABTestStrategy());
         return plan;
     }

@@ -71,7 +71,7 @@ public class ExceptionInterceptor implements MethodInterceptor {
                     String bodyContent = request.body().asText();
                     logger.debug(throwable.getMessage() + ": " + bodyContent);
                 } else {
-                    logger.debug(throwable.getMessage());    
+                    logger.debug(throwable.getMessage());
                 }
             } else {
                 // stuff we don't expect, log the stacktrace at the error level

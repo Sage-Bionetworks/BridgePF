@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.models.studies.Study2;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -9,29 +9,24 @@ public class StudyValidator implements Validator {
 
     @Override
     public boolean supports(Class<?> clazz) {
-        return Study2.class.isAssignableFrom(clazz);
+        return Study.class.isAssignableFrom(clazz);
     }
 
     @Override
     public void validate(Object obj, Errors errors) {
-        Study2 study = (Study2)obj;
+        Study study = (Study)obj;
         if (StringUtils.isBlank(study.getIdentifier())) {
-            errors.reject("identifier", "is null or blank");
+            errors.rejectValue("identifier", "is null or blank");
         } else {
             if (!study.getIdentifier().matches("^[a-z-]+$")) {
-                errors.reject("identifier", "must contain only letters with optional dashes");
+                errors.rejectValue("identifier", "must contain only lower-case letters with optional dashes");
             }
             if (study.getIdentifier().length() < 2) {
-                errors.reject("identifier", "must be at least 2 characters");
+                errors.rejectValue("identifier", "must be at least 2 characters");
             }
         }
         if (StringUtils.isBlank(study.getName())) {
-            errors.reject("name", "is null or blank");
-        }
-        if (!errors.hasErrors()) {
-            // Normalize this, if an identifier exists.
-            study.setIdentifier(study.getIdentifier().toLowerCase());
-            study.setResearcherRole(study.getIdentifier() + "_researcher");
+            errors.rejectValue("name", "is null or blank");
         }
     }
 

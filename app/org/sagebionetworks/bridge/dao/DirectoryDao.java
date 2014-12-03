@@ -1,13 +1,13 @@
 package org.sagebionetworks.bridge.dao;
 
-import org.sagebionetworks.bridge.config.Environment;
+import com.stormpath.sdk.directory.Directory;
 
 public interface DirectoryDao {
 
-    public String createDirectory(Environment env, String identifier);
+    public String createDirectoryForStudy(String identifier);
     
-    public void renameStudyIdentifier(Environment env, String oldIdentifier, String newIdentifier);
+    public Directory getDirectoryForStudy(String identifier);
     
-    public void deleteDirectory(Environment env, String directoryHref);
+    public void deleteDirectoryForStudy(String identifier);
     
 }

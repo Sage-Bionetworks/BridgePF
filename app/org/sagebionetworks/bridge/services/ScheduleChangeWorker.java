@@ -1,52 +1,22 @@
 package org.sagebionetworks.bridge.services;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Callable;
 
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
-import org.sagebionetworks.bridge.events.SchedulePlanCreatedEvent;
-import org.sagebionetworks.bridge.events.SchedulePlanDeletedEvent;
-import org.sagebionetworks.bridge.events.SchedulePlanUpdatedEvent;
-import org.sagebionetworks.bridge.events.UserEnrolledEvent;
-import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
-import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.stormpath.StormpathFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEvent;
 
-import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
-import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.account.AccountList;
-import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
 
 public class ScheduleChangeWorker implements Callable<Boolean> {
     
-    private static Logger logger = LoggerFactory.getLogger(ScheduleChangeWorker.class);
-    
-    private static final Random rand = new Random();
-    
-    private interface Command {
-        void execute();
-    }
-
-    private ApplicationEvent event;
-    private Client stormpathClient;
-    private DistributedLockDao lockDao;
-    private ScheduleService scheduleService;
-    private SchedulePlanService schedulePlanService;
-    private ConsentService consentService;
-    private StudyService studyService;
-    private AuthenticationService authenticationService;
+    @SuppressWarnings("unused") private ApplicationEvent event;
+    @SuppressWarnings("unused") private Client stormpathClient;
+    @SuppressWarnings("unused") private DistributedLockDao lockDao;
+    @SuppressWarnings("unused") private ScheduleService scheduleService;
+    @SuppressWarnings("unused") private SchedulePlanService schedulePlanService;
+    @SuppressWarnings("unused") private ConsentService consentService;
+    @SuppressWarnings("unused") private StudyService studyService;
+    @SuppressWarnings("unused") private AuthenticationService authenticationService;
    
     public void setStormpathClient(Client stormpathClient) {
         this.stormpathClient = stormpathClient;
@@ -75,6 +45,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
     
     @Override
     public Boolean call() throws Exception {
+/*
         try {
             if (event instanceof SchedulePlanCreatedEvent) {
                 schedulePlanCreated((SchedulePlanCreatedEvent)event);
@@ -96,9 +67,10 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
             Throwables.propagateIfInstanceOf(throwable,  InterruptedException.class);
             return false;
         }
+*/
         return true;
     }
-
+/*
     private void schedulePlanCreated(SchedulePlanCreatedEvent event) throws InterruptedException {
         logger.info("EVENT: Schedule plan "+event.getSchedulePlan().getGuid()+" created");
         
@@ -145,14 +117,14 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         });
     }
     private void userEnrolled(final UserEnrolledEvent event) throws InterruptedException {
-        logger.info("EVENT: Participant " + event.getUser().getHealthCode() + " enrolled in study " + event.getStudy().getKey());
+        logger.info("EVENT: Participant " + event.getUser().getHealthCode() + " enrolled in study " + event.getStudy().getIdentifier());
         
         final Study study = event.getStudy();
         final User user = event.getUser();
         final List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(event.getStudy());
         final List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size()); 
         for (SchedulePlan plan : plans) {
-            Schedule schedule = plan.getStrategy().scheduleNewUser(study, user);
+            Schedule schedule = plan.getStrategy().getScheduleForUser(study, user);
             if (schedule != null) {
                 // The constraint doesn't know the plan GUID, so it's set after scheduling method
                 schedule.setSchedulePlanGuid(plan.getGuid());
@@ -167,7 +139,7 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         });
     }
     private void userUnenrolled(final UserUnenrolledEvent event) throws InterruptedException {
-        logger.info("EVENT: Participant " + event.getUser().getHealthCode() + " withdrawn from study " + event.getStudy().getKey());
+        logger.info("EVENT: Participant " + event.getUser().getHealthCode() + " withdrawn from study " + event.getStudy().getIdentifier());
 
         final Study study = event.getStudy();
         final User user = event.getUser();
@@ -217,4 +189,5 @@ public class ScheduleChangeWorker implements Callable<Boolean> {
         }
         return users;
     }
+*/
 }

@@ -27,9 +27,8 @@ import com.google.common.io.CharStreams;
 
 public class SendMailViaAmazonService implements SendMailService {
 
-    private static Region region = Region.getRegion(Regions.US_EAST_1);
-
-    private static DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
+    private static final DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
+    private static final Region region = Region.getRegion(Regions.US_EAST_1);
 
     private String fromEmail;
     private AmazonSimpleEmailServiceClient emailClient;
@@ -79,6 +78,12 @@ public class SendMailViaAmazonService implements SendMailService {
         String html = consentAgreementHTML.replace("@@name@@", consent.getName());
         html = html.replace("@@birth.date@@", birthdate);
         html = html.replace("@@signing.date@@", signingDate);
+
+        // TODO: Attach signature image to email.
+        // This will require a non-trivial re-write of this class, because SES.sendEmail() doesn't support attachments.
+        // Rather, we have to build an email by hand and call sendRawEmail().
+        // Furthermore, embedding the image as inline Base64 is blocked by Google.
+
         Content textBody = new Content().withData(html); 
         return new Body().withHtml(textBody);
     }

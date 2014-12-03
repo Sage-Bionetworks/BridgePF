@@ -11,7 +11,6 @@ import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
@@ -59,6 +58,19 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     }
 
     @Override
+    public ConsentSignature getConsentSignature(final User caller, final Study study) {
+        checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+
+        final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
+        if (consent == null) {
+            throw new EntityNotFoundException(StudyConsent.class);
+        }
+        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
+        return consentSignature;
+    }
+
+    @Override
     public User consentToResearch(final User caller, final ConsentSignature consentSignature, 
         final Study study, final boolean sendEmail) throws BridgeServiceException {
         
@@ -69,19 +81,16 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         if (caller.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
-        if (consentSignature.getBirthdate() == null) {
-            throw new InvalidEntityException(consentSignature, "Consent birth date is required.");
-        }
         // Stormpath account
         final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
         HealthId hid = accountEncryptionService.getHealthCode(study, account);
         if (hid == null) {
-            accountEncryptionService.createAndSaveHealthCode(study, account);
+            hid = accountEncryptionService.createAndSaveHealthCode(study, account);
         }
         
         final HealthId healthId = hid;
         // Give consent
-        final StudyConsent studyConsent = studyConsentDao.getConsent(study.getKey());
+        final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
         userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
         // Publish event
         publisher.publishEvent(new UserEnrolledEvent(caller, study));
@@ -101,7 +110,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
         final String healthCode = caller.getHealthCode();
-        List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
+        List<StudyConsent> consents = studyConsentDao.getConsents(study.getIdentifier());
         for (StudyConsent consent : consents) {
             if (userConsentDao.hasConsented(healthCode, consent)) {
                 return true;
@@ -117,7 +126,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         boolean withdrawn = false;
 
         String healthCode = caller.getHealthCode();
-        List<StudyConsent> consents = studyConsentDao.getConsents(study.getKey());
+        List<StudyConsent> consents = studyConsentDao.getConsents(study.getIdentifier());
         for (StudyConsent consent : consents) {
             if (userConsentDao.hasConsented(healthCode, consent)) {
                 userConsentDao.withdrawConsent(healthCode, consent);
@@ -136,7 +145,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
-        final StudyConsent consent = studyConsentDao.getConsent(study.getKey());
+        final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }

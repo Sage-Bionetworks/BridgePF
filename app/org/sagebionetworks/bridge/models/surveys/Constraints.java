@@ -26,12 +26,12 @@ import com.google.common.collect.Lists;
     @Type(name="time", value=TimeConstraints.class),
     @Type(name="duration", value=DurationConstraints.class)
 })
-public abstract class Constraints {
+public class Constraints {
 
     private EnumSet<UIHint> hints;
     private List<SurveyRule> rules = Lists.newArrayList();
     private DataType dataType;
-    
+
     @JsonIgnore
     public EnumSet<UIHint> getSupportedHints() {
         return hints;
@@ -53,8 +53,8 @@ public abstract class Constraints {
     public void setRules(List<SurveyRule> rules) {
         this.rules = rules;
     }
-    // NOTE: This shouldn't be necessary as I understand it. When we serialize this, 
-    // we use the BridgeObjectMapper which adds the "type" property to all objects, 
+    // NOTE: This shouldn't be necessary as I understand it. When we serialize this,
+    // we use the BridgeObjectMapper which adds the "type" property to all objects,
     // or it's supposed to. But SurveyControllerTest says otherwise.
     public String getType() {
         return this.getClass().getSimpleName();

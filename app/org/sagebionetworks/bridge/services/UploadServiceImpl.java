@@ -10,9 +10,9 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.models.UploadRequest;
-import org.sagebionetworks.bridge.models.UploadSession;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.upload.UploadRequest;
+import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +28,7 @@ public class UploadServiceImpl implements UploadService {
     private final Logger logger = LoggerFactory.getLogger(UploadServiceImpl.class);
 
     private static final long EXPIRATION = 60 * 1000; // 1 minute
-    private static final String BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket.pd");
+    private static final String BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
 
     private UploadSessionCredentialsService uploadCredentailsService;
     private AmazonS3 s3UploadClient;
