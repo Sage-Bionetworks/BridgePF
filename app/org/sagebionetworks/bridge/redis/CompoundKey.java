@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.redis;
 /**
  * Keys of multiple suffixes (domains, name spaces).
  */
-class CompoundKey extends AbstractRedisKey {
+final class CompoundKey extends AbstractRedisKey {
 
     private final String suffix;
 
@@ -15,7 +15,7 @@ class CompoundKey extends AbstractRedisKey {
         // Loop backward
         for (int i = keys.length - 1; i >= 0; i--) {
             RedisKey key = keys[i];
-            suffixBuilder.append(RedisKey.SEPARATOR);
+            suffixBuilder.append(SEPARATOR);
             suffixBuilder.append(key.getSuffix());
         }
         // Remove the ':' at the beginning
