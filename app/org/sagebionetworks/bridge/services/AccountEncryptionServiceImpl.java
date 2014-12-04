@@ -7,11 +7,15 @@ import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
 
 public class AccountEncryptionServiceImpl implements AccountEncryptionService {
+
+    private final Logger logger = LoggerFactory.getLogger(AccountEncryptionServiceImpl.class);
 
     private static final int CURRENT_VERSION = 2;
     private BridgeEncryptor healthCodeEncryptorOld;
@@ -69,15 +73,26 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
         if (healthIdObj == null) {
             return null;
         }
+
+        logger.info("healthIdObj: " + healthIdObj);
+        logger.info("versionObj: " + versionObj);
+
         final int version = versionObj == null ? 1 : (Integer)versionObj;
         String hid = null;
-        try {
-            hid = version == CURRENT_VERSION ?
-                    healthCodeEncryptor.decrypt((String) healthIdObj) :
-                    healthCodeEncryptorOld.decrypt((String) healthIdObj);
-        } catch(Exception e) {
-            // TODO: Remove me
-            hid = healthCodeEncryptorOld.decrypt((String) healthIdObj);
+        if (version == CURRENT_VERSION) {
+            try {
+                hid = healthCodeEncryptor.decrypt((String) healthIdObj);
+            } catch(Exception e) {
+                logger.info(e.getMessage());
+                hid = healthCodeEncryptorOld.decrypt((String) healthIdObj);
+            }
+        } else {
+            try {
+                hid = healthCodeEncryptorOld.decrypt((String) healthIdObj);
+            } catch(Exception e) {
+                logger.info(e.getMessage());
+                hid = healthCodeEncryptorOld.decrypt((String) healthIdObj);
+            }
         }
         if (hid == null) {
             return null;
