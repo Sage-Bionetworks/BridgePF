@@ -51,9 +51,14 @@ public class SurveyController extends BaseController {
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
         Survey survey = surveyService.getSurvey(keys);
-        if (!survey.isPublished()) {
-            throw new EntityNotFoundException(Survey.class);
-        }
+        return okResult(survey);
+    }
+
+    public Result getSurveyMostRecentlyPublishedVersionForUser(String surveyGuid) throws Exception {
+        Study study = studyService.getStudyByHostname(getHostname());
+        getAuthenticatedAndConsentedSession();
+        
+        Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(study, surveyGuid);
         return okResult(survey);
     }
     
