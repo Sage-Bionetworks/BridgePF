@@ -254,64 +254,6 @@ public class DynamoSurveyDao implements SurveyDao {
         }
         return saveSurvey(copy);
     }
-    // --------------------------------------------------------------------------------------
-
-    @Override
-    public List<Survey> getSurveyAllVersions(String studyKey, String guid) {
-        return new QueryBuilder().setStudy(studyKey).setSurvey(guid).getAll(false);
-    }
-    
-    
-    // ------------------------- HEREIN LIES THE GET DIVIDING LINE -------------------------
-    
-    @Override
-    public List<Survey> getSurveys(String studyKey) {
-        return new QueryBuilder().setStudy(studyKey).getAll(false);
-    }
-    
-    @Override
-    public List<Survey> getSurveyVersions(String surveyGuid) {
-        return new QueryBuilder().setSurvey(surveyGuid).getAll(true);
-    }
-
-    @Override
-    public Survey getSurvey(GuidCreatedOnVersionHolder keys) {
-        return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn()).getOne(true);
-    }
-
-    @Override
-    public List<Survey> getMostRecentlyPublishedSurveys(String studyKey) {
-        List<Survey> surveys = new QueryBuilder().setStudy(studyKey).isPublished().getAll(false);
-        if (surveys.isEmpty()) {
-            return surveys;
-        }
-        // Find the most recent. I believe they will all be at the front of the list, FWIW.
-        Map<String, Survey> map = Maps.newLinkedHashMap();
-        for (Survey survey : surveys) {
-            Survey stored = map.get(survey.getGuid());
-            if (stored == null || survey.getCreatedOn() > stored.getCreatedOn()) {
-                map.put(survey.getGuid(), survey);
-            }
-        }
-        return new ArrayList<Survey>(map.values());
-    }    
-
-    @Override
-    public List<Survey> getMostRecentSurveys(String studyKey) {
-        List<Survey> surveys = new QueryBuilder().setStudy(studyKey).getAll(false);
-        if (surveys.isEmpty()) {
-            return surveys;
-        }
-        // Find the most recent. I believe they will all be at the front of the list, FWIW.
-        Map<String, Survey> map = Maps.newLinkedHashMap();
-        for (Survey survey : surveys) {
-            Survey stored = map.get(survey.getGuid());
-            if (stored == null || survey.getCreatedOn() > stored.getCreatedOn()) {
-                map.put(survey.getGuid(), survey);
-            }
-        }
-        return new ArrayList<Survey>(map.values());
-    }
 
     @Override
     public void deleteSurvey(Study study, GuidCreatedOnVersionHolder keys) {
@@ -346,6 +288,51 @@ public class DynamoSurveyDao implements SurveyDao {
             throw new ConcurrentModificationException(existing);
         }
         return existing;
+    }
+
+    @Override
+    public List<Survey> getSurveyAllVersions(String studyKey, String guid) {
+        return new QueryBuilder().setStudy(studyKey).setSurvey(guid).getAll(true);
+    }
+    
+    @Override
+    public Survey getSurveyMostRecentVersion(String studyIdentifier, String guid) {
+        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).getOne(true);
+    }
+
+    @Override
+    public Survey getSurveyMostRecentlyPublishedVersion(String studyIdentifier, String guid) {
+        return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).getOne(true);
+    }
+    
+    @Override
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(String studyIdentifier) {
+        return new QueryBuilder().setStudy(studyIdentifier).isPublished().getAll(false);
+    }
+    
+    @Override
+    public List<Survey> getAllSurveysMostRecentVersion(String studyIdentifier) {
+        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).getAll(false);
+        if (surveys.isEmpty()) {
+            return surveys;
+        }
+        // If you knew the number of unique guids, you could iterate until you had found
+        // that many unique GUIDs, and stop, since they're ordered from largest timestamp 
+        // to smaller. This would be faster with many versions to go through.
+        Map<String, Survey> map = Maps.newLinkedHashMap();
+        for (Survey survey : surveys) {
+            Survey stored = map.get(survey.getGuid());
+            if (stored == null || survey.getCreatedOn() > stored.getCreatedOn()) {
+                map.put(survey.getGuid(), survey);
+            }
+        }
+        return new ArrayList<Survey>(map.values());
+        
+    }
+    
+    @Override
+    public Survey getSurvey(GuidCreatedOnVersionHolder keys) {
+        return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn()).getOne(true);
     }
     
     private Survey saveSurvey(Survey survey) {

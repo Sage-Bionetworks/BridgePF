@@ -225,7 +225,7 @@ public class SurveyServiceTest {
 
         assertTrue("Survey is marked published", survey.isPublished());
 
-        Survey pubSurvey = surveyService.getMostRecentlyPublishedSurveys(study).get(0);
+        Survey pubSurvey = surveyService.getAllSurveysMostRecentlyPublishedVersion(study).get(0);
 
         assertEquals("Same testSurvey GUID", survey.getGuid(), pubSurvey.getGuid());
         assertEquals("Same testSurvey createdOn", survey.getCreatedOn(), pubSurvey.getCreatedOn());
@@ -233,7 +233,7 @@ public class SurveyServiceTest {
 
         // Publishing again is harmless
         survey = surveyService.publishSurvey(survey);
-        pubSurvey = surveyService.getMostRecentlyPublishedSurveys(study).get(0);
+        pubSurvey = surveyService.getAllSurveysMostRecentlyPublishedVersion(study).get(0);
         assertEquals("Same testSurvey GUID", survey.getGuid(), pubSurvey.getGuid());
         assertEquals("Same testSurvey createdOn", survey.getCreatedOn(), pubSurvey.getCreatedOn());
         assertTrue("Published testSurvey is marked published", pubSurvey.isPublished());
@@ -250,7 +250,7 @@ public class SurveyServiceTest {
 
         laterSurvey = surveyService.publishSurvey(laterSurvey);
 
-        Survey pubSurvey = surveyService.getMostRecentlyPublishedSurveys(study).get(0);
+        Survey pubSurvey = surveyService.getAllSurveysMostRecentlyPublishedVersion(study).get(0);
         assertEquals("Later testSurvey is the published testSurvey", laterSurvey.getCreatedOn(), pubSurvey.getCreatedOn());
     }
 
@@ -263,7 +263,7 @@ public class SurveyServiceTest {
         study.setIdentifier("foo");
         study.setMinAgeOfConsent(17);
         study.setResearcherRole("foo_researcher");
-        List<Survey> surveys = surveyService.getSurveys(study);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(study);
         assertEquals("No surveys", 0, surveys.size());
     }
 
@@ -279,20 +279,20 @@ public class SurveyServiceTest {
         surveyService.versionSurvey(survey);
 
         // Get all surveys
-        List<Survey> surveys = surveyService.getSurveys(study);
-
-        assertEquals("All surveys are returned", 6, surveys.size());
+        
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(study);
+        assertEquals("All surveys are returned", 5, surveys.size());
 
         // Get all surveys of a version
-        surveys = surveyService.getAllVersionsOfSurvey(survey.getGuid());
+        surveys = surveyService.getSurveyAllVersions(study, survey.getGuid());
         assertEquals("All surveys are returned", 2, surveys.size());
 
-        Survey survey1 = surveys.get(0);
-        Survey survey2 = surveys.get(1);
-        assertEquals("Surveys have same GUID", survey1.getGuid(), survey2.getGuid());
-        assertEquals("Surveys have same Study key", survey1.getStudyIdentifier(), survey2.getStudyIdentifier());
-        assertNotEquals("Surveys have different createdOn attribute", survey1.getCreatedOn(),
-                survey2.getCreatedOn());
+        Survey version1 = surveys.get(0);
+        Survey version2 = surveys.get(1);
+        assertEquals("Surveys have same GUID", version1.getGuid(), version2.getGuid());
+        assertEquals("Surveys have same Study key", version1.getStudyIdentifier(), version2.getStudyIdentifier());
+        assertNotEquals("Surveys have different createdOn attribute", version1.getCreatedOn(),
+                version2.getCreatedOn());
     }
 
     // CLOSE SURVEY
@@ -325,14 +325,14 @@ public class SurveyServiceTest {
         // Publish one version
         surveyService.publishSurvey(survey1);
 
-        List<Survey> surveys = surveyService.getMostRecentlyPublishedSurveys(study);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(study);
         assertEquals("Retrieved published testSurvey v1", survey1.getCreatedOn(), surveys.get(0).getCreatedOn());
 
         // Publish a later version
         surveyService.publishSurvey(survey2);
 
         // Now the most recent version of this testSurvey should be survey2.
-        surveys = surveyService.getMostRecentlyPublishedSurveys(study);
+        surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(study);
         assertEquals("Retrieved published testSurvey v2", survey2.getCreatedOn(), surveys.get(0).getCreatedOn());
     }
 
@@ -347,7 +347,7 @@ public class SurveyServiceTest {
         Survey survey3 = surveyService.createSurvey(new TestSurvey(true));
         surveyService.publishSurvey(survey3);
 
-        List<Survey> published = surveyService.getMostRecentlyPublishedSurveys(study);
+        List<Survey> published = surveyService.getAllSurveysMostRecentlyPublishedVersion(study);
 
         assertEquals("There are three published surveys", 3, published.size());
         assertEquals("The first is survey3", survey3.getGuid(), published.get(0).getGuid());
