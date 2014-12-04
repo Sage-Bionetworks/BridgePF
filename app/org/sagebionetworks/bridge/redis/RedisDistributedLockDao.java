@@ -6,6 +6,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 
 public class RedisDistributedLockDao implements DistributedLockDao {
 
@@ -30,7 +31,7 @@ public class RedisDistributedLockDao implements DistributedLockDao {
             if (expire < 0L) {
                 expire(redisKey, expireInSeconds);
             }
-            return null;
+            throw new ConcurrentModificationException("Lock already set.");
         }
         expire(redisKey, expireInSeconds);
         return lock;

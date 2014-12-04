@@ -176,31 +176,33 @@ public class StormPathUserAdminService implements UserAdminService {
                 throw new BridgeServiceException(ie);
             }
         }
+        throw new RuntimeException("Cannot delete user " + user.getEmail()
+                + " in study " + study.getName() + " after all the retries.");
     }
 
     private boolean deleteUserInStudy(User user, Study study) throws BridgeServiceException {
         checkNotNull(user);
         checkNotNull(study);
         final String lockId = user.getId() + RedisKey.SEPARATOR + study.getIdentifier();
-        final String lock = lockDao.acquireLock(User.class, lockId);
-        if (lock == null) {
-            return false;
-        }
+        String lock = null;
         try {
+            lock = lockDao.acquireLock(User.class, lockId);
             // Verify the user exists before doing this work. Otherwise, it just throws errors.
             Directory directory = getDirectory(study);
             Account account = getUserAccountByEmail(directory, user.getEmail());
             if (account != null) {
+                deleteUserAccount(study, user.getEmail());
                 revokeAllConsentRecords(user, study);
                 removeParticipantOptions(user);
                 removeAllHealthDataRecords(user, study);
                 removeHealthCodeAndIdMappings(user);
-                deleteUserAccount(study, user.getEmail());
             }
+            return true;
+        } catch (Throwable e) {
+            return false;
         } finally {
             lockDao.releaseLock(User.class, lockId, lock);
         }
-        return true;
     }
 
     private void removeParticipantOptions(User user) {
