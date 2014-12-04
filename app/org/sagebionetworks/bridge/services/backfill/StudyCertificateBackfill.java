@@ -7,6 +7,9 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
 
+/**
+ * Backfills CMS certificates for studies.
+ */
 public class StudyCertificateBackfill implements BackfillService {
 
     private StudyService studyService;
