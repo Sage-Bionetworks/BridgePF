@@ -43,7 +43,7 @@ public class DynamoSurveyTest {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(string);
         survey = DynamoSurvey.fromJson(node);
-        survey.setStudyKey(newSurvey.getStudyKey());
+        survey.setStudyIdentifier(newSurvey.getStudyIdentifier());
         survey.setGuid(newSurvey.getGuid());
         survey.setCreatedOn(newSurvey.getCreatedOn());
         survey.setModifiedOn(newSurvey.getModifiedOn());

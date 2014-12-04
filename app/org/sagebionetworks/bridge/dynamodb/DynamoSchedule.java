@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 import org.sagebionetworks.bridge.json.PeriodJsonDeserializer;
 import org.sagebionetworks.bridge.json.PeriodJsonSerializer;
 import org.sagebionetworks.bridge.json.ScheduleTypeDeserializer;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -179,9 +180,9 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     }
     @JsonIgnore
     @DynamoDBIgnore
-    public boolean isScheduleFor(String surveyGuid, long surveyCreatedOn) {
-        String timestamp = DateUtils.convertToISODateTime(surveyCreatedOn);
-        return (activityRef != null && activityRef.contains(surveyGuid) && activityRef.contains(timestamp));
+    public boolean isScheduleFor(GuidCreatedOnVersionHolder keys) {
+        String timestamp = DateUtils.convertToISODateTime(keys.getCreatedOn());
+        return (activityRef != null && activityRef.contains(keys.getGuid()) && activityRef.contains(timestamp));
     }
     @Override
     public int hashCode() {
