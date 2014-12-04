@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 
 public class RedisDistributedLockDaoTest {
 
@@ -44,8 +46,14 @@ public class RedisDistributedLockDaoTest {
         assertNotNull(redisLockId);
         assertEquals(redisLockId, lockId);
         assertTrue(strOps.ttl(redisKey).execute() > 0);
-        // Acquire again should fail
-        assertNull(lockDao.acquireLock(getClass(), id));
+        // Acquire again should get back an exception
+        try {
+            assertNull(lockDao.acquireLock(getClass(), id));
+        } catch (ConcurrentModificationException e) {
+            assertTrue("ConcurrentModificationException expected.", true);
+        } catch (Throwable e) {
+            fail();
+        }
         // Release lock
         boolean released = lockDao.releaseLock(getClass(), id, "incorrect lock id");
         assertFalse(released);
