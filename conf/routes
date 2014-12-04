@@ -55,11 +55,13 @@ POST   /api/v1/upload                  @controllers.UploadController.upload
 POST   /api/v1/upload/:id/complete     @controllers.UploadController.uploadComplete(id: String)
 
 # Researchers - Surveys
-GET    /researchers/v1/surveys                                 @controllers.SurveyController.getAllSurveysAllVersions
+GET    /researchers/v1/surveys                                 @controllers.SurveyController.getAllSurveysMostRecentVersion
 POST   /researchers/v1/surveys                                 @controllers.SurveyController.createSurvey
-GET    /researchers/v1/surveys/recent                          @controllers.SurveyController.getMostRecentSurveys
-GET    /researchers/v1/surveys/published                       @controllers.SurveyController.getMostRecentlyPublishedSurveys
-GET    /researchers/v1/surveys/:surveyGuid/versions            @controllers.SurveyController.getAllVersionsOfASurvey(surveyGuid: String)
+GET    /researchers/v1/surveys/recent                          @controllers.SurveyController.getAllSurveysMostRecentVersion2
+GET    /researchers/v1/surveys/published                       @controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersion
+GET    /researchers/v1/surveys/:surveyGuid/versions            @controllers.SurveyController.getSurveyAllVersions(surveyGuid: String)
+GET    /researchers/v1/surveys/:surveyGuid/recent              @controllers.SurveyController.getSurveyMostRecentVersion(surveyGuid: String)
+GET    /researchers/v1/surveys/:surveyGuid/published           @controllers.SurveyController.getSurveyMostRecentlyPublishedVersion(surveyGuid: String)
 POST   /researchers/v1/surveys/:surveyGuid/:createdOn/version  @controllers.SurveyController.versionSurvey(surveyGuid: String, createdOn: String)
 POST   /researchers/v1/surveys/:surveyGuid/:createdOn/publish  @controllers.SurveyController.publishSurvey(surveyGuid: String, createdOn: String)
 POST   /researchers/v1/surveys/:surveyGuid/:createdOn/close    @controllers.SurveyController.closeSurvey(surveyGuid: String, createdOn: String)

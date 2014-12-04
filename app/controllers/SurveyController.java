@@ -21,27 +21,27 @@ public class SurveyController extends BaseController {
         this.surveyService = surveyService;
     }
     
-    public Result getAllSurveysAllVersions() throws Exception {
-        Study study = studyService.getStudyByHostname(getHostname());
-        getAuthenticatedResearcherOrAdminSession(study);
-        
-        List<Survey> surveys = surveyService.getSurveys(study);
-        return okResult(surveys);
-    }
-    
-    public Result getMostRecentSurveys() throws Exception {
+    public Result getAllSurveysMostRecentVersion() throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
 
-        List<Survey> surveys = surveyService.getMostRecentSurveys(study);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(study);
         return okResult(surveys);
     }
     
-    public Result getMostRecentlyPublishedSurveys() throws Exception {
+    public Result getAllSurveysMostRecentVersion2() throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
 
-        List<Survey> surveys = surveyService.getMostRecentlyPublishedSurveys(study);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(study);
+        return okResult(surveys);
+    }
+    
+    public Result getAllSurveysMostRecentlyPublishedVersion() throws Exception {
+        Study study = studyService.getStudyByHostname(getHostname());
+        getAuthenticatedResearcherOrAdminSession(study);
+
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(study);
         return okResult(surveys);
     }
     
@@ -68,6 +68,22 @@ public class SurveyController extends BaseController {
         return okResult(survey);
     }
     
+    public Result getSurveyMostRecentVersion(String surveyGuid) throws Exception {
+        Study study = studyService.getStudyByHostname(getHostname());
+        getAuthenticatedResearcherOrAdminSession(study);
+        
+        Survey survey = surveyService.getSurveyMostRecentVersion(study, surveyGuid);
+        return okResult(survey);
+    }
+    
+    public Result getSurveyMostRecentlyPublishedVersion(String surveyGuid) throws Exception {
+        Study study = studyService.getStudyByHostname(getHostname());
+        getAuthenticatedResearcherOrAdminSession(study);
+        
+        Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(study, surveyGuid);
+        return okResult(survey);
+    }
+    
     public Result deleteSurvey(String surveyGuid, String createdOnString) throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
@@ -78,11 +94,11 @@ public class SurveyController extends BaseController {
         return okResult("Survey deleted.");
     }
     
-    public Result getAllVersionsOfASurvey(String surveyGuid) throws Exception {
+    public Result getSurveyAllVersions(String surveyGuid) throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
         
-        List<Survey> surveys = surveyService.getAllVersionsOfSurvey(surveyGuid);
+        List<Survey> surveys = surveyService.getSurveyAllVersions(study, surveyGuid);
         return okResult(surveys);
     }
     
