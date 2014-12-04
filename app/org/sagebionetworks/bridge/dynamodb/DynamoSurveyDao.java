@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -200,7 +201,7 @@ public class DynamoSurveyDao implements SurveyDao {
 
     @Override
     public Survey createSurvey(Survey survey) {
-        checkNotNull(survey.getStudyKey(), "Survey study key is null");
+        checkNotNull(survey.getStudyIdentifier(), "Survey study key is null");
         if (survey.getGuid() == null) {
             survey.setGuid(BridgeUtils.generateGuid());
         }
@@ -211,8 +212,8 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public Survey publishSurvey(String surveyGuid, long createdOn) {
-        Survey survey = getSurvey(surveyGuid, createdOn);
+    public Survey publishSurvey(GuidCreatedOnVersionHolder keys) {
+        Survey survey = getSurvey(keys);
         if (!survey.isPublished()) {
             survey.setPublished(true);
             survey.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
@@ -227,7 +228,7 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey updateSurvey(Survey survey) {
-        Survey existing = getSurvey(survey.getGuid(), survey.getCreatedOn());
+        Survey existing = getSurvey(survey);
         if (existing.isPublished()) {
             throw new PublishedSurveyException(survey);
         }
@@ -240,8 +241,8 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     @Override
-    public Survey versionSurvey(String surveyGuid, long createdOn) {
-        DynamoSurvey existing = (DynamoSurvey)getSurvey(surveyGuid, createdOn);
+    public Survey versionSurvey(GuidCreatedOnVersionHolder keys) {
+        DynamoSurvey existing = (DynamoSurvey)getSurvey(keys);
         DynamoSurvey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
         copy.setVersion(null);
@@ -253,7 +254,16 @@ public class DynamoSurveyDao implements SurveyDao {
         }
         return saveSurvey(copy);
     }
+    // --------------------------------------------------------------------------------------
 
+    @Override
+    public List<Survey> getSurveyAllVersions(String studyKey, String guid) {
+        return new QueryBuilder().setStudy(studyKey).setSurvey(guid).getAll(false);
+    }
+    
+    
+    // ------------------------- HEREIN LIES THE GET DIVIDING LINE -------------------------
+    
     @Override
     public List<Survey> getSurveys(String studyKey) {
         return new QueryBuilder().setStudy(studyKey).getAll(false);
@@ -265,8 +275,8 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public Survey getSurvey(String surveyGuid, long createdOn) {
-        return new QueryBuilder().setSurvey(surveyGuid).setCreatedOn(createdOn).getOne(true);
+    public Survey getSurvey(GuidCreatedOnVersionHolder keys) {
+        return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn()).getOne(true);
     }
 
     @Override
@@ -304,19 +314,19 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurvey(Study study, String surveyGuid, long createdOn) {
-        Survey existing = getSurvey(surveyGuid, createdOn);
+    public void deleteSurvey(Study study, GuidCreatedOnVersionHolder keys) {
+        Survey existing = getSurvey(keys);
         if (existing.isPublished()) {
             throw new PublishedSurveyException(existing);
         }
         // If there are responses to this survey, it can't be deleted.
-        List<SurveyResponse> responses = responseDao.getResponsesForSurvey(surveyGuid, createdOn);
+        List<SurveyResponse> responses = responseDao.getResponsesForSurvey(keys);
         if (!responses.isEmpty()) {
             throw new IllegalStateException("Survey has been answered by participants; it cannot be deleted.");
         }
         // If there are schedule plans for this survey, it can't be deleted. Would need to delete them all first. 
         if (study != null) {
-            List<SchedulePlan> plans = schedulePlanDao.getSchedulePlansForSurvey(study, surveyGuid, createdOn);
+            List<SchedulePlan> plans = schedulePlanDao.getSchedulePlansForSurvey(study, keys);
             if (!plans.isEmpty()) {
                 throw new IllegalStateException("Survey has been scheduled; it cannot be deleted.");
             }
@@ -326,8 +336,8 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     @Override
-    public Survey closeSurvey(String surveyGuid, long createdOn) {
-        Survey existing = getSurvey(surveyGuid, createdOn);
+    public Survey closeSurvey(GuidCreatedOnVersionHolder keys) {
+        Survey existing = getSurvey(keys);
         existing.setPublished(false);
         existing.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         try {

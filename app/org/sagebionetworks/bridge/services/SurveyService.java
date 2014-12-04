@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
@@ -34,18 +35,18 @@ public interface SurveyService {
     /**
      * Get one instance of a survey. This call alone does not require the study's researcher role.
      */
-    public Survey getSurvey(String surveyGuid, long createdOn);
+    public Survey getSurvey(GuidCreatedOnVersionHolder keys);
     
     public Survey createSurvey(Survey survey);
     
     public Survey updateSurvey(Survey survey);
     
-    public Survey publishSurvey(String surveyGuid, long createdOn);
+    public Survey publishSurvey(GuidCreatedOnVersionHolder keys);
     
-    public void deleteSurvey(Study study, String surveyGuid, long createdOn);
+    public void deleteSurvey(Study study, GuidCreatedOnVersionHolder keys);
     
-    public Survey closeSurvey(String surveyGuid, long createdOn);
+    public Survey closeSurvey(GuidCreatedOnVersionHolder keys);
     
-    public Survey versionSurvey(String surveyGuid, long createdOn);
+    public Survey versionSurvey(GuidCreatedOnVersionHolder keys);
     
 }

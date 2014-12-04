@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -60,11 +61,11 @@ public class SurveyServiceImpl implements SurveyService {
     }
 
     @Override
-    public Survey getSurvey(String surveyGuid, long createdOn) {
-        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
+    public Survey getSurvey(GuidCreatedOnVersionHolder keys) {
+        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
+        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.getSurvey(surveyGuid, createdOn);
+        return surveyDao.getSurvey(keys);
     }
 
     @Override
@@ -87,35 +88,35 @@ public class SurveyServiceImpl implements SurveyService {
     }
 
     @Override
-    public Survey publishSurvey(String surveyGuid, long createdOn) {
-        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
+    public Survey publishSurvey(GuidCreatedOnVersionHolder keys) {
+        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
+        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.publishSurvey(surveyGuid, createdOn);
+        return surveyDao.publishSurvey(keys);
     }
 
     @Override
-    public Survey closeSurvey(String surveyGuid, long createdOn) {
-        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
+    public Survey closeSurvey(GuidCreatedOnVersionHolder keys) {
+        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
+        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.closeSurvey(surveyGuid, createdOn);
+        return surveyDao.closeSurvey(keys);
     }
     
     @Override
-    public Survey versionSurvey(String surveyGuid, long createdOn) {
-        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
+    public Survey versionSurvey(GuidCreatedOnVersionHolder keys) {
+        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
+        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.versionSurvey(surveyGuid, createdOn);
+        return surveyDao.versionSurvey(keys);
     }
     
     @Override
-    public void deleteSurvey(Study study, String surveyGuid, long createdOn) {
+    public void deleteSurvey(Study study, GuidCreatedOnVersionHolder keys) {
         checkNotNull(study, "study cannot be null");
-        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
+        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
+        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
 
-        surveyDao.deleteSurvey(study, surveyGuid, createdOn);
+        surveyDao.deleteSurvey(study, keys);
     }
 }

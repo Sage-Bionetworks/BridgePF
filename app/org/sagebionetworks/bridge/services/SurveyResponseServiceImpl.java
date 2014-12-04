@@ -12,6 +12,7 @@ import java.util.Map;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
@@ -37,30 +38,30 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     }
 
     @Override
-    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode,
+    public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder survey, String healthCode,
             List<SurveyAnswer> answers) {
-        checkArgument(isNotBlank(surveyGuid), CANNOT_BE_BLANK, "survey guid");
+        checkArgument(isNotBlank(survey.getGuid()), CANNOT_BE_BLANK, "survey guid");
         checkArgument(isNotBlank(healthCode), CANNOT_BE_BLANK, "health code");
-        checkArgument(surveyCreatedOn != 0L, "Survey createdOn cannot be 0");
+        checkArgument(survey.getCreatedOn() != 0L, "Survey createdOn cannot be 0");
         checkNotNull(answers, CANNOT_BE_NULL, "survey answers");
         
-        Survey survey = surveyDao.getSurvey(surveyGuid, surveyCreatedOn);
-        validate(answers, survey);
-        return surveyResponseDao.createSurveyResponse(surveyGuid, surveyCreatedOn, healthCode, answers);
+        Survey existing = surveyDao.getSurvey(survey);
+        validate(answers, existing);
+        return surveyResponseDao.createSurveyResponse(existing, healthCode, answers);
     }
 
     @Override
-    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode,
+    public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder survey, String healthCode,
             List<SurveyAnswer> answers, String identifier) {
-        checkArgument(isNotBlank(surveyGuid), CANNOT_BE_BLANK, "survey guid");
+        checkArgument(isNotBlank(survey.getGuid()), CANNOT_BE_BLANK, "survey guid");
         checkArgument(isNotBlank(identifier), CANNOT_BE_BLANK, "identifier");
         checkArgument(isNotBlank(healthCode), CANNOT_BE_BLANK, "health code");
-        checkArgument(surveyCreatedOn != 0L, "Survey createdOn cannot be 0");
+        checkArgument(survey.getCreatedOn() != 0L, "Survey createdOn cannot be 0");
         checkNotNull(answers, CANNOT_BE_NULL, "survey answers");
 
-        Survey survey = surveyDao.getSurvey(surveyGuid, surveyCreatedOn);
-        validate(answers, survey);
-        return surveyResponseDao.createSurveyResponse(surveyGuid, surveyCreatedOn, healthCode, answers, identifier);
+        Survey existing = surveyDao.getSurvey(survey);
+        validate(answers, existing);
+        return surveyResponseDao.createSurveyResponse(existing, healthCode, answers, identifier);
     }
     
     @Override

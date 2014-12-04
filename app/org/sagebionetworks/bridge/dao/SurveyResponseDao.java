@@ -2,15 +2,15 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 
 public interface SurveyResponseDao {
 
-    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode,
-            List<SurveyAnswer> answers);
+    public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder survey, String healthCode, List<SurveyAnswer> answers);
     
-    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode,
+    public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder survey, String healthCode,
             List<SurveyAnswer> answers, String identifier);
     
     public SurveyResponse getSurveyResponse(String healthCode, String identifier);
@@ -19,6 +19,6 @@ public interface SurveyResponseDao {
     
     public void deleteSurveyResponse(SurveyResponse response);
     
-    public List<SurveyResponse> getResponsesForSurvey(String surveyGuid, long surveyCreatedOn);
+    public List<SurveyResponse> getResponsesForSurvey(GuidCreatedOnVersionHolder keys);
     
 }
