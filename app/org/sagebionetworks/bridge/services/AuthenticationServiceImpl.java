@@ -295,7 +295,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             String healthIdKey = study.getIdentifier() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
             customData.remove(healthIdKey);
             healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
-            logger.warn("Health code re-created for account " + account.getEmail() + " in study " + study.getName());
+            logger.error("Health code re-created for account " + account.getEmail() + " in study " + study.getName());
             healthCode = healthId.getCode();
         }
         checkNotNull(healthCode);

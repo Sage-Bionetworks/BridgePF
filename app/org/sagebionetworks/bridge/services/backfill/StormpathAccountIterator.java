@@ -10,7 +10,7 @@ import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.impl.account.DefaultAccountCriteria;
 
-public class StormpathAccountIterator implements Iterator<List<Account>> {
+class StormpathAccountIterator implements Iterator<List<Account>> {
 
     private static final int PAGE_SIZE = 50;
     private final Application app;
