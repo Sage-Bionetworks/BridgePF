@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.Tracker;
+import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.validation.Validator;
 
@@ -163,42 +164,44 @@ public class StormPathUserAdminService implements UserAdminService {
         int retryCount = 0;
         boolean shouldRetry = true;
         while (shouldRetry) {
-            try {
-                deleteUserInStudy(user, study);
+            boolean deleted = deleteUserInStudy(user, study);
+            if (deleted) {
                 return;
-            } catch(ConcurrentModificationException e) {
-                shouldRetry = retryCount < 5;
-                retryCount++;
-                try {
-                    Thread.sleep(100 * 2 ^ retryCount);
-                } catch(InterruptedException ie) {
-                    throw new BridgeServiceException(ie);
-                }
+            }
+            shouldRetry = retryCount < 5;
+            retryCount++;
+            try {
+                Thread.sleep(100 * 2 ^ retryCount);
+            } catch(InterruptedException ie) {
+                throw new BridgeServiceException(ie);
             }
         }
+        throw new RuntimeException("Cannot delete user " + user.getEmail()
+                + " in study " + study.getName() + " after all the retries.");
     }
 
-    private void deleteUserInStudy(User user, Study study) throws BridgeServiceException {
-        checkNotNull(user, "User cannot be null");
-        checkNotNull(study, "Study cannot be null");
-        final String lock = study.getIdentifier() + ":" + user.getId();
-        String uuid = null;
+    private boolean deleteUserInStudy(User user, Study study) throws BridgeServiceException {
+        checkNotNull(user);
+        checkNotNull(study);
+        final String lockId = user.getId() + RedisKey.SEPARATOR + study.getIdentifier();
+        String lock = null;
         try {
-            uuid = lockDao.createLock(User.class, lock);
+            lock = lockDao.acquireLock(User.class, lockId);
             // Verify the user exists before doing this work. Otherwise, it just throws errors.
             Directory directory = getDirectory(study);
             Account account = getUserAccountByEmail(directory, user.getEmail());
             if (account != null) {
+                deleteUserAccount(study, user.getEmail());
                 revokeAllConsentRecords(user, study);
                 removeParticipantOptions(user);
                 removeAllHealthDataRecords(user, study);
                 removeHealthCodeAndIdMappings(user);
-                deleteUserAccount(study, user.getEmail());
             }
+            return true;
+        } catch (Throwable e) {
+            return false;
         } finally {
-            if (uuid != null) {
-                lockDao.releaseLock(User.class, lock, uuid);
-            }
+            lockDao.releaseLock(User.class, lockId, lock);
         }
     }
 

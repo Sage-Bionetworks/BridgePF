@@ -169,8 +169,7 @@
     </bean>
 
     <!-- Redis -->
-    
-    <bean id="userLockDao" class="org.sagebionetworks.bridge.redis.RedisUserLockDao"/>
+
     <bean id="distributedLockDao" class="org.sagebionetworks.bridge.redis.RedisDistributedLockDao"/>
 
     <!-- Stormpath identity service -->

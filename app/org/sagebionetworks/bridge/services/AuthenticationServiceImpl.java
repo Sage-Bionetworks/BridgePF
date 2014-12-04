@@ -39,6 +39,7 @@ import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
 import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupList;
@@ -235,30 +236,25 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
         return null;
     }
-   
+
     private UserSession createSessionFromAccount(Study study, Account account) {
+
         final UserSession session = new UserSession();
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment().name().toLowerCase());
         session.setSessionToken(BridgeUtils.generateGuid());
+
         final User user = new User(account);
         user.setStudyKey(study.getIdentifier());
 
-        HealthId healthId = accountEncryptionService.getHealthCode(study, account);
-        if (healthId != null) {
-            String healthCode = healthId.getCode();
-            user.setHealthCode(healthCode);
+        final String healthCode = getHealthCode(study, account);
+        user.setHealthCode(healthCode);
 
-            boolean consent = consentService.hasUserConsentedToResearch(user, study);
-            user.setConsent(consent);
-            
-            if (healthCode != null) { // haven't consented yet.
-                boolean dataSharing = optionsService.getBooleanOption(healthCode, Option.DATA_SHARING);
-                user.setDataSharing(dataSharing);
-            }
-        }
+        user.setConsent(consentService.hasUserConsentedToResearch(user, study));
+        user.setDataSharing(optionsService.getBooleanOption(healthCode, Option.DATA_SHARING));
+
         // And now for some exceptions...
-        
+
         // All administrators and all researchers are assumed to consent when using any API.
         // This is needed so they can sign in without facing a 412 exception.
         if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
@@ -269,7 +265,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (adminUser != null && adminUser.equals(account.getEmail())) {
             user.setConsent(true);
         }
-        
+
         session.setUser(user);
         return session;
     }
@@ -283,5 +279,26 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 }
             }
         }
+    }
+
+    private String getHealthCode(Study study, Account account) {
+        HealthId healthId = accountEncryptionService.getHealthCode(study, account);
+        if (healthId == null) {
+            healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
+        }
+        String healthCode = healthId.getCode();
+        if (healthCode == null) {
+            // TODO: Temporary patch for inconsistent data likely caused by
+            // an obsolete bug in StormPathUserAdminService. Remove me after all the repositories
+            // have been synced and run all the tests.
+            CustomData customData = account.getCustomData();
+            String healthIdKey = study.getIdentifier() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+            customData.remove(healthIdKey);
+            healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
+            logger.error("Health code re-created for account " + account.getEmail() + " in study " + study.getName());
+            healthCode = healthId.getCode();
+        }
+        checkNotNull(healthCode);
+        return healthCode;
     }
 }

@@ -108,7 +108,7 @@ public class StudyServiceImpl implements StudyService {
         String id = study.getIdentifier();
         String lockId = null;
         try {
-            lockId = lockDao.createLock(Study.class, id);
+            lockId = lockDao.acquireLock(Study.class, id);
 
             if (studyDao.doesIdentifierExist(study.getIdentifier())) {
                 throw new EntityAlreadyExistsException(study);
@@ -156,8 +156,7 @@ public class StudyServiceImpl implements StudyService {
 
         String lockId = null;
         try {
-            lockId = lockDao.createLock(Study.class, identifier);
-
+            lockId = lockDao.acquireLock(Study.class, identifier);
             if (!config.isLocal()) {
                 herokuApi.unregisterDomainForStudy(identifier);
                 dnsDao.deleteDnsRecordForStudy(identifier);
