@@ -111,10 +111,11 @@ public class SurveyServiceImpl implements SurveyService {
     }
     
     @Override
-    public void deleteSurvey(String surveyGuid, long createdOn) {
+    public void deleteSurvey(Study study, String surveyGuid, long createdOn) {
+        checkNotNull(study, "study cannot be null");
         checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
         checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
 
-        surveyDao.deleteSurvey(surveyGuid, createdOn);
+        surveyDao.deleteSurvey(study, surveyGuid, createdOn);
     }
 }

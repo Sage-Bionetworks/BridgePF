@@ -17,4 +17,6 @@ public interface SchedulePlanDao {
     
     public void deleteSchedulePlan(Study study, String guid);
     
+    public List<SchedulePlan> getSchedulePlansForSurvey(Study study, String surveyGuid, long surveyCreatedOn);
+    
 }
