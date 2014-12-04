@@ -37,6 +37,7 @@ GET    /api/v1/surveys/response/:guid                      @controllers.SurveyRe
 POST   /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
 DELETE /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
 GET    /api/v1/surveys/:surveyGuid/:createdOn              @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
+GET    /api/v1/surveys/:surveyGuid/published               @controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
 POST   /api/v1/surveys/:surveyGuid/:createdOn              @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
 POST   /api/v1/surveys/:surveyGuid/:createdOn/:identifier  @controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
 
