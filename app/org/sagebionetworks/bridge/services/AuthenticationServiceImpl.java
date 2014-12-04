@@ -291,9 +291,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             // TODO: Temporary patch for inconsistent data likely caused by
             // an obsolete bug in StormPathUserAdminService. Remove me after all the repositories
             // have been synced and run all the tests.
-            CustomData customData = account.getCustomData();
-            String healthIdKey = study.getIdentifier() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
-            customData.remove(healthIdKey);
             healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
             logger.error("Health code re-created for account " + account.getEmail() + " in study " + study.getName());
             healthCode = healthId.getCode();
