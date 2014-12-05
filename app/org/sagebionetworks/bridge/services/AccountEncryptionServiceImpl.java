@@ -91,7 +91,7 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
                 hid = healthCodeEncryptorOld.decrypt((String) healthIdObj);
             } catch(Exception e) {
                 logger.info(e.getMessage());
-                hid = healthCodeEncryptorOld.decrypt((String) healthIdObj);
+                hid = healthCodeEncryptor.decrypt((String) healthIdObj);
             }
         }
         if (hid == null) {
