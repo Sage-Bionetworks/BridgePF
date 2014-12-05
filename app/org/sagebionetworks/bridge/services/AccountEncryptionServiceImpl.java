@@ -73,10 +73,6 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
         if (healthIdObj == null) {
             return null;
         }
-
-        logger.info("healthIdObj: " + healthIdObj);
-        logger.info("versionObj: " + versionObj);
-
         final int version = versionObj == null ? 1 : (Integer)versionObj;
         String hid = null;
         if (version == CURRENT_VERSION) {
