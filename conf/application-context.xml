@@ -495,7 +495,7 @@
     </bean>
 
     <bean id="healthIdVersionBackfill" class="org.sagebionetworks.bridge.services.backfill.HealthIdVersionBackfill">
-        <property name="stormpathClient" ref="" />
+        <property name="stormpathClient" ref="stormpathClient" />
         <property name="studyService" ref="studyService" />
         <property name="healthCodeEncryptorOld" ref="healthCodeEncryptorOld" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
