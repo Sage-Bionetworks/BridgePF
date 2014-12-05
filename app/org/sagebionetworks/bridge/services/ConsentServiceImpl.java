@@ -17,7 +17,7 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
-import org.sagebionetworks.bridge.redis.JedisLongOps;
+import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.context.ApplicationEventPublisher;
@@ -30,7 +30,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
 
     private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
     
-    private JedisLongOps longOps = new JedisLongOps();
+    private JedisStringOps stringOps = new JedisStringOps();
     private Client stormpathClient;
     private AccountEncryptionService accountEncryptionService;
     private SendMailService sendMailService;
@@ -138,12 +138,12 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         List<StudyConsent> consents = studyConsentDao.getConsents(study.getIdentifier());
         for (StudyConsent consent : consents) {
             if (userConsentDao.hasConsented(healthCode, consent)) {
+                decrementStudyEnrollment(study);
                 userConsentDao.withdrawConsent(healthCode, consent);
                 withdrawn = true;
             }
         }
         if (withdrawn) {
-            decrementStudyEnrollment(study);
             publisher.publishEvent(new UserUnenrolledEvent(caller, study));
             caller.setConsent(false);
         }
@@ -173,11 +173,14 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         }
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
         
-        Long count = longOps.get(key).execute();
-        if (count == null) {
+        long count = Long.MAX_VALUE;
+        String countString = stringOps.get(key).execute();
+        if (countString == null) {
             // This is expensive but don't lock, it's better to do it twice slowly, than to throw an exception here.
             count = userConsentDao.getNumberOfParticipants(study.getIdentifier());
-            longOps.setex(key, TWENTY_FOUR_HOURS, count);
+            stringOps.setex(key, TWENTY_FOUR_HOURS, Long.toString(count));
+        } else {
+            count = Long.parseLong(countString);
         }
         return (count >= study.getMaxNumOfParticipants());
     }
@@ -191,7 +194,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             throw new StudyLimitExceededException(study);
         }
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        longOps.increment(key).execute();
+        stringOps.increment(key).execute();
     }
 
     @Override
@@ -200,9 +203,9 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             return;
         }
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        Long count = longOps.get(key).execute();
-        if (count != null && count > 0) {
-            longOps.decrement(key).execute();    
+        String count = stringOps.get(key).execute();
+        if (count != null && Long.parseLong(count) > 0) {
+            stringOps.decrement(key).execute();    
         }
     }
 
