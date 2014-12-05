@@ -11,11 +11,14 @@ import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.redis.JedisIntegerOps;
+import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -25,6 +28,9 @@ import com.stormpath.sdk.client.Client;
 
 public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
 
+    private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
+    
+    private JedisIntegerOps integerOps = new JedisIntegerOps();
     private Client stormpathClient;
     private AccountEncryptionService accountEncryptionService;
     private SendMailService sendMailService;
@@ -35,7 +41,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
     }
-
+    
     public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
         this.accountEncryptionService = accountEncryptionService;
     }
@@ -81,16 +87,19 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         if (caller.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
+        incrementStudyEnrollment(study);
+        
         // Stormpath account
         final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
         HealthId hid = accountEncryptionService.getHealthCode(study, account);
         if (hid == null) {
             hid = accountEncryptionService.createAndSaveHealthCode(study, account);
         }
-        
+
         final HealthId healthId = hid;
         // Give consent
         final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
+        
         userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
         // Publish event
         publisher.publishEvent(new UserEnrolledEvent(caller, study));
@@ -154,6 +163,46 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             throw new EntityNotFoundException(ConsentSignature.class);
         }
         sendMailService.sendConsentAgreement(caller, consentSignature, consent);
+    }
+    
+    @Override
+    public boolean isStudyAtEnrollmentLimit(Study study) {
+        if (study.getMaxNumOfParticipants() == 0) {
+            return false;
+        }
+        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
+        
+        Long count = integerOps.get(key).execute();
+        if (count == null) {
+            // This is expensive but don't lock, it's better to do it twice slowly, than to throw an exception here.
+            count = userConsentDao.getNumberOfParticipants(study.getIdentifier());
+            integerOps.setex(key, TWENTY_FOUR_HOURS, count);
+        }
+        return (count >= study.getMaxNumOfParticipants());
+    }
+    
+    @Override
+    public void incrementStudyEnrollment(Study study) throws StudyLimitExceededException {
+        if (study.getMaxNumOfParticipants() == 0) {
+            return;
+        }
+        if (isStudyAtEnrollmentLimit(study)) {
+            throw new StudyLimitExceededException(study);
+        }
+        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
+        integerOps.increment(key).execute();
+    }
+
+    @Override
+    public void decrementStudyEnrollment(Study study) {
+        if (study.getMaxNumOfParticipants() == 0) {
+            return;
+        }
+        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
+        Long count = integerOps.get(key).execute();
+        if (count != null && count > 0) {
+            integerOps.decrement(key).execute();    
+        }
     }
 
 }
