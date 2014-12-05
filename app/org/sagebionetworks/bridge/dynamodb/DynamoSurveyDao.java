@@ -201,7 +201,7 @@ public class DynamoSurveyDao implements SurveyDao {
 
     @Override
     public Survey createSurvey(Survey survey) {
-        checkNotNull(survey.getStudyIdentifier(), "Survey study key is null");
+        checkNotNull(survey.getStudyIdentifier(), "Survey study identifier is null");
         if (survey.getGuid() == null) {
             survey.setGuid(BridgeUtils.generateGuid());
         }
