@@ -78,17 +78,18 @@ public class HealthIdEncryptionBackfill implements BackfillService {
                     count++;
                     logger.info("Created health code for account " + account.getEmail() + " in study " + study.getName());
                 } else {
+                    final String versionKey = studyKey + BridgeConstants.CUSTOM_DATA_VERSION;
                     int version = 1;
-                    Object versionObj = customData.get(BridgeConstants.CUSTOM_DATA_VERSION);
+                    Object versionObj = customData.get(versionKey);
                     if (versionObj != null) {
                         version = (Integer)versionObj;
                     }
-                    if (version < 2) {
+                    if (version != 2) {
                         // Backfill accounts that still use old encryption
                         String healthId = healthCodeEncryptorOld.decrypt((String) healthIdObj);
                         String encryptedHealthId = healthCodeEncryptor.encrypt(healthId);
                         customData.put(healthIdKey, encryptedHealthId);
-                        customData.put(BridgeConstants.CUSTOM_DATA_VERSION, 2);
+                        customData.put(versionKey, 2);
                         customData.save();
                         count++;
                         logger.info("Backfilled encryption for account " + account.getEmail() + " in study " + study.getName());
@@ -98,7 +99,6 @@ public class HealthIdEncryptionBackfill implements BackfillService {
                     HealthId healthId = accountEncryptionService.getHealthCode(study, account);
                     String healthCode = healthId.getCode();
                     if (healthCode == null) {
-                        customData.remove(healthIdKey);
                         accountEncryptionService.createAndSaveHealthCode(study, account);
                         logger.info("Re-created health code for account " + account.getEmail() + " in study " + study.getName());
                     }
