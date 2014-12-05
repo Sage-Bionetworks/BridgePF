@@ -21,11 +21,6 @@
         <constructor-arg value="#{bridgeConfig.healthCodeKey}" />
     </bean>
 
-    <!-- TODO: Remove after deployed to the develop stack -->
-    <bean id="healthCodeEncryptorLocal" class="org.sagebionetworks.bridge.crypto.AesGcmEncryptor">
-        <constructor-arg value="KST6Md7/phHLZg+1FBgbmngKi53K/e7gLptQOEDii0M=" />
-    </bean>
-
     <bean id="awsCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
         <constructor-arg index="0" value="#{bridgeConfig.getProperty('aws.key')}"/>
         <constructor-arg index="1" value="#{bridgeConfig.getProperty('aws.secret.key')}"/>
@@ -494,12 +489,12 @@
         <property name="participantOptionsDao" ref="participantOptionsDao"/>
     </bean>
 
-    <bean id="healthIdVersionBackfill" class="org.sagebionetworks.bridge.services.backfill.HealthIdVersionBackfill">
+    <bean id="healthIdEncryptionBackfill" class="org.sagebionetworks.bridge.services.backfill.HealthIdEncryptionBackfill">
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="studyService" ref="studyService" />
         <property name="healthCodeEncryptorOld" ref="healthCodeEncryptorOld" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
-        <property name="healthCodeEncryptorLocal" ref="healthCodeEncryptorLocal" />
+        <property name="accountEncryptionService" ref="accountEncryptionService" />
     </bean>
 
 </beans>
