@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import org.sagebionetworks.bridge.json.ActivityTypeDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 import org.sagebionetworks.bridge.json.PeriodJsonDeserializer;
@@ -176,7 +177,12 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     public void setExpires(Long expires) {
         this.expires = expires;
     }
-
+    @JsonIgnore
+    @DynamoDBIgnore
+    public boolean isScheduleFor(String surveyGuid, long surveyCreatedOn) {
+        String timestamp = DateUtils.convertToISODateTime(surveyCreatedOn);
+        return (activityRef != null && activityRef.contains(surveyGuid) && activityRef.contains(timestamp));
+    }
     @Override
     public int hashCode() {
         final int prime = 31;

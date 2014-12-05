@@ -17,6 +17,8 @@ public interface ScheduleStrategy {
     
     public Schedule getScheduleForUser(Study study, SchedulePlan plan, User user);
     
+    public boolean doesScheduleSurvey(String surveyGuid, long surveyCreatedOn);
+    
     public void validate(Errors errors);
 
 }

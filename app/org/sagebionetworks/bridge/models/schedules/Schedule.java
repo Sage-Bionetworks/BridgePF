@@ -35,6 +35,8 @@ public interface Schedule extends BridgeEntity {
     public ScheduleType getScheduleType();
     public void setScheduleType(ScheduleType scheduleType);
     
+    public boolean isScheduleFor(String surveyGuid, long surveyCreatedOn);
+    
     public Long getStartsOn();
     public void setStartsOn(Long startsOn);
     

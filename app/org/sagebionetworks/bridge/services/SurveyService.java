@@ -42,7 +42,7 @@ public interface SurveyService {
     
     public Survey publishSurvey(String surveyGuid, long createdOn);
     
-    public void deleteSurvey(String surveyGuid, long createdOn);
+    public void deleteSurvey(Study study, String surveyGuid, long createdOn);
     
     public Survey closeSurvey(String surveyGuid, long createdOn);
     
