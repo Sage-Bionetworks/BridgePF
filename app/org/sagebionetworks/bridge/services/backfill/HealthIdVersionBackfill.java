@@ -88,7 +88,7 @@ public class HealthIdVersionBackfill implements BackfillService {
                         customData.save();
                         updated = true;
                     } catch (Exception e) {
-                        logger.info(e.getMessage());
+                        updated = false;
                     }
                     if (!updated) {
                         try {
@@ -97,7 +97,7 @@ public class HealthIdVersionBackfill implements BackfillService {
                             customData.save();
                             updated = true;
                         } catch (Exception e) {
-                            logger.info(e.getMessage());
+                            updated = false;
                         }
                     }
                     if (!updated) {
@@ -109,7 +109,7 @@ public class HealthIdVersionBackfill implements BackfillService {
                             customData.save();
                             updated = true;
                         } catch (Exception e) {
-                            logger.info(e.getMessage());
+                            updated = false;
                         }
                     }
                     if (!updated) {
