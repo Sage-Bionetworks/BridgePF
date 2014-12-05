@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.List;
+import java.util.Set;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
@@ -12,9 +15,14 @@ import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.google.common.collect.Sets;
 
 public class DynamoUserConsentDao implements UserConsentDao {
 
@@ -109,5 +117,22 @@ public class DynamoUserConsentDao implements UserConsentDao {
         }
         return ConsentSignature.create(consent.getName(), consent.getBirthdate(), consent.getImageData(),
                 consent.getImageMimeType());
+    }
+
+    @Override
+    public long getNumberOfParticipants(String studyKey) {
+        DynamoDBScanExpression scan = new DynamoDBScanExpression();
+        
+        Condition condition = new Condition();
+        condition.withComparisonOperator(ComparisonOperator.EQ);
+        condition.withAttributeValueList(new AttributeValue().withS(studyKey));
+        scan.addFilterCondition("studyKey", condition);
+        
+        Set<String> healthCodes = Sets.newHashSet();
+        List<DynamoUserConsent2> mappings = mapper.scan(DynamoUserConsent2.class, scan);
+        for (DynamoUserConsent2 consent : mappings) {
+            healthCodes.add(consent.getHealthCode());
+        }
+        return healthCodes.size();
     }
 }

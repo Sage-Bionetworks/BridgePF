@@ -40,4 +40,11 @@ public interface UserConsentDao {
      * EntityNotFoundException if no consent signature is found.
      */
     ConsentSignature getConsentSignature(String healthCode, StudyConsent consent);
+
+    /**
+     * @param studyKey
+     * @return
+     */
+    long getNumberOfParticipants(String studyKey);
+    
 }
