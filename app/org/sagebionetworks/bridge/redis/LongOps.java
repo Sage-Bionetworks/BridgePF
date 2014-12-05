@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.redis;
 
-public interface IntegerOps {
+public interface LongOps {
 
     RedisOp<Long> increment(String key);
     

@@ -24,7 +24,7 @@ import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
-import org.sagebionetworks.bridge.redis.JedisIntegerOps;
+import org.sagebionetworks.bridge.redis.JedisLongOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -147,9 +147,9 @@ public class ConsentServiceImplTest {
         
         // Set the cache so we avoid going to DynamoDB. We're testing the caching layer 
         // in the service test, we'll test the DAO in the DAO test.
-        JedisIntegerOps integerOps = new JedisIntegerOps();
+        JedisLongOps longOps = new JedisLongOps();
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        integerOps.set(key, 0).execute();
+        longOps.set(key, 0).execute();
         
         boolean limit = consentService.isStudyAtEnrollmentLimit(study);
         assertFalse("No limit reached", limit);
@@ -164,6 +164,6 @@ public class ConsentServiceImplTest {
         } catch(StudyLimitExceededException e) {
             assertEquals("This is a 473 error", 473, e.getStatusCode());
         }
-        integerOps.delete(key).execute();
+        longOps.delete(key).execute();
     }
 }

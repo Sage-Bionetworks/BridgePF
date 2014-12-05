@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.redis;
 
 import redis.clients.jedis.Jedis;
 
-public class JedisIntegerOps implements IntegerOps {
+public class JedisLongOps implements LongOps {
 
     @Override
     public RedisOp<Long> increment(final String key) {
