@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.List;
-
 import java.util.UUID;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
@@ -100,9 +100,9 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
         return clone;
     }
     @Override
-    public boolean doesScheduleSurvey(String surveyGuid, long surveyCreatedOn) {
+    public boolean doesScheduleSurvey(GuidCreatedOnVersionHolder keys) {
         for (ScheduleGroup group : groups) {
-            if (group.getSchedule().isScheduleFor(surveyGuid, surveyCreatedOn)) {
+            if (group.getSchedule().isScheduleFor(keys)) {
                 return true;
             }
         }

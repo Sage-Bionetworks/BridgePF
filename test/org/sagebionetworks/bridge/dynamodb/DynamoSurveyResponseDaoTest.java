@@ -62,7 +62,7 @@ public class DynamoSurveyResponseDaoTest {
 
     @After
     public void after() {
-        surveyDao.deleteSurvey(null, survey.getGuid(), survey.getCreatedOn());
+        surveyDao.deleteSurvey(null, survey);
         survey = null;
     }
 
@@ -96,16 +96,14 @@ public class DynamoSurveyResponseDaoTest {
         String identifier = RandomStringUtils.randomAlphanumeric(10);
         List<SurveyAnswer> answers = Lists.newArrayList();
 
-        SurveyResponse response = surveyResponseDao.createSurveyResponse(survey.getGuid(), survey.getCreatedOn(),
-                HEALTH_DATA_CODE, answers, identifier);
+        SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers, identifier);
         assertEquals("Has been assigned the supplied identifier", identifier, response.getIdentifier());
         assertNotNull("Has a GUID", response.getGuid());
         assertTrue("GUID contains identifier", response.getGuid().contains(identifier));
 
         // Do it again, it should fail.
         try {
-            surveyResponseDao.createSurveyResponse(survey.getGuid(), survey.getCreatedOn(), HEALTH_DATA_CODE, answers,
-                    identifier);
+            surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers, identifier);
             fail("Should have thrown an exception");
         } catch(EntityAlreadyExistsException e) {
             
@@ -125,8 +123,7 @@ public class DynamoSurveyResponseDaoTest {
         
         List<SurveyAnswer> answers = Lists.newArrayList();
 
-        SurveyResponse response = surveyResponseDao.createSurveyResponse(survey.getGuid(), survey.getCreatedOn(),
-                HEALTH_DATA_CODE, answers);
+        SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers);
         assertTrue("Has been assigned a GUID", response.getGuid() != null);
         assertFalse("Survey is now in use", noResponses(survey));
         
@@ -186,7 +183,7 @@ public class DynamoSurveyResponseDaoTest {
     }
     
     private boolean noResponses(Survey survey) {
-        return surveyResponseDao.getResponsesForSurvey(survey.getGuid(), survey.getCreatedOn()).isEmpty();
+        return surveyResponseDao.getResponsesForSurvey(survey).isEmpty();
     }
 
 }

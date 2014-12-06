@@ -2,50 +2,68 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
 public interface SurveyService {
 
-    public List<Survey> getSurveys(Study study);
-    
     /**
-     * Gets all published versions of all surveys. If a survey has not been published, 
-     * it is not included in this list.
+     * Get all versions of a specific survey, ordered by most recent version 
+     * first in the list.
+     * @param study
+     * @param guid
      * @return
      */
-    public List<Survey> getMostRecentlyPublishedSurveys(Study study);
+    public List<Survey> getSurveyAllVersions(Study study, String guid);    
     
     /**
-     * Gets the most recent version of all surveys, whether published or not. 
+     * Get the most recent version of a survey, regardless of whether it is published
+     * or not.
+     * @param study
+     * @param guid
      * @return
      */
-    public List<Survey> getMostRecentSurveys(Study study);
+    public Survey getSurveyMostRecentVersion(Study study, String guid);
     
     /**
-     * Get the entire history of versions for one survey, sorted from most to least recently 
-     * issued.
-     * @param caller
-     * @param surveyGuid
+     * Get the most recent version of a survey that is published. More recent, unpublished 
+     * versions of the survey will be ignored. 
+     * @param study
+     * @param guid
      * @return
      */
-    public List<Survey> getAllVersionsOfSurvey(String surveyGuid);
+    public Survey getSurveyMostRecentlyPublishedVersion(Study study, String guid);
+    
+    /**
+     * Get the most recent version of each survey in the study, that has been published. 
+     * @param study
+     * @return
+     */
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(Study study);
+    
+    /**
+     * Get the most recent version of each survey in the study, whether published or not.
+     * @param study
+     * @return
+     */
+    public List<Survey> getAllSurveysMostRecentVersion(Study study);
     
     /**
      * Get one instance of a survey. This call alone does not require the study's researcher role.
      */
-    public Survey getSurvey(String surveyGuid, long createdOn);
+    public Survey getSurvey(GuidCreatedOnVersionHolder keys);
     
     public Survey createSurvey(Survey survey);
     
     public Survey updateSurvey(Survey survey);
     
-    public Survey publishSurvey(String surveyGuid, long createdOn);
+    public Survey publishSurvey(GuidCreatedOnVersionHolder keys);
     
-    public void deleteSurvey(Study study, String surveyGuid, long createdOn);
+    public void deleteSurvey(Study study, GuidCreatedOnVersionHolder keys);
     
-    public Survey closeSurvey(String surveyGuid, long createdOn);
+    public Survey closeSurvey(GuidCreatedOnVersionHolder keys);
     
-    public Survey versionSurvey(String surveyGuid, long createdOn);
+    public Survey versionSurvey(GuidCreatedOnVersionHolder keys);
     
 }

@@ -121,19 +121,19 @@ public class DynamoSchedulePlanDaoTest {
         
         plan = schedulePlanDao.createSchedulePlan(plan);
         
-        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlansForSurvey(study, survey.getGuid(), survey.getCreatedOn());
+        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlansForSurvey(study, survey);
         assertEquals("There should be one plan returned", 1, plans.size());
         
         try {
             // Should not be able to delete a survey at this opint
-            surveyDao.deleteSurvey(study, survey.getGuid(), survey.getCreatedOn());
+            surveyDao.deleteSurvey(study, survey);
             fail("Was able to delete without a problem");
         } catch(IllegalStateException e) {
         }
         
         schedulePlanDao.deleteSchedulePlan(study, plan.getGuid());
         // Now you can delete the survey
-        surveyDao.deleteSurvey(study, survey.getGuid(), survey.getCreatedOn());
+        surveyDao.deleteSurvey(study, survey);
         
         // Verify both have been deleted.
         try {
@@ -142,7 +142,7 @@ public class DynamoSchedulePlanDaoTest {
         } catch(EntityNotFoundException e) {
         }
         try {
-            surveyDao.getSurvey(survey.getGuid(), survey.getCreatedOn());
+            surveyDao.getSurvey(survey);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
         }

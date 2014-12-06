@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.events.SchedulePlanDeletedEvent;
 import org.sagebionetworks.bridge.events.SchedulePlanUpdatedEvent;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.context.ApplicationEventPublisher;
@@ -119,11 +120,11 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
     }
     
     @Override
-    public List<SchedulePlan> getSchedulePlansForSurvey(Study study, String surveyGuid, long surveyCreatedOn) {
+    public List<SchedulePlan> getSchedulePlansForSurvey(Study study, GuidCreatedOnVersionHolder keys) {
         List<SchedulePlan> results = Lists.newArrayList();
         
         for (SchedulePlan plan : getSchedulePlans(study)) {
-            if (plan.getStrategy().doesScheduleSurvey(surveyGuid, surveyCreatedOn)) {
+            if (plan.getStrategy().doesScheduleSurvey(keys)) {
                 results.add(plan);
             }
         }
