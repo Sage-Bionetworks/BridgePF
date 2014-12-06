@@ -78,4 +78,24 @@ public class JedisStringOps implements StringOps {
             }
         };
     }
+
+    @Override
+    public RedisOp<Long> increment(final String key) {
+        return new AbstractJedisTemplate<Long>() {
+            @Override
+            Long execute(Jedis jedis) {
+                return jedis.incr(key);
+            }
+        };
+    }
+
+    @Override
+    public RedisOp<Long> decrement(final String key) {
+        return new AbstractJedisTemplate<Long>() {
+            @Override
+            Long execute(Jedis jedis) {
+                return jedis.decr(key);
+            }
+        };
+    }
 }

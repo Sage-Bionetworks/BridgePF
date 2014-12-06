@@ -13,15 +13,19 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.redis.JedisStringOps;
+import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -84,7 +88,7 @@ public class ConsentServiceImplTest {
     }
 
     @Test
-    public void test() {
+    public void canConsent() {
         // Consent and verify.
         ConsentSignature researchConsent = ConsentSignature.create("John Smith", "2011-11-11", null, null);
         consentService.consentToResearch(testUser.getUser(), researchConsent, testUser.getStudy(), false);
@@ -109,7 +113,7 @@ public class ConsentServiceImplTest {
     }
 
     @Test
-    public void withSignatureImage() {
+    public void canConsentWithSignatureImage() {
         // Consent and verify.
         ConsentSignature researchConsent = ConsentSignature.create("Eggplant McTester", "1970-01-01",
                 TestConstants.DUMMY_IMAGE_DATA, "image/fake");
@@ -132,5 +136,34 @@ public class ConsentServiceImplTest {
             thrownEx = ex;
         }
         assertNotNull(thrownEx);
+    }
+    
+    @Test
+    public void enforcesStudyEnrollmentLimit() {
+        Study study = new DynamoStudy();
+        study.setIdentifier("test");
+        study.setName("Test Study");
+        study.setMaxNumOfParticipants(2);
+        
+        // Set the cache so we avoid going to DynamoDB. We're testing the caching layer 
+        // in the service test, we'll test the DAO in the DAO test.
+        JedisStringOps stringOps = new JedisStringOps();
+        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
+        stringOps.delete(key).execute();
+        
+        boolean limit = consentService.isStudyAtEnrollmentLimit(study);
+        assertFalse("No limit reached", limit);
+        
+        consentService.incrementStudyEnrollment(study);
+        consentService.incrementStudyEnrollment(study);
+        limit = consentService.isStudyAtEnrollmentLimit(study);
+        assertTrue("Limit reached", limit);
+        try {
+            consentService.incrementStudyEnrollment(study);
+            fail("Should have thrown an exception");
+        } catch(StudyLimitExceededException e) {
+            assertEquals("This is a 473 error", 473, e.getStatusCode());
+        }
+        stringOps.delete(key).execute();
     }
 }
