@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -16,4 +17,9 @@ public interface ConsentService {
 
     public void emailConsentAgreement(User caller, Study study);
 
+    public boolean isStudyAtEnrollmentLimit(Study study);
+    
+    public void incrementStudyEnrollment(Study study) throws StudyLimitExceededException;
+    
+    public void decrementStudyEnrollment(Study study);
 }
