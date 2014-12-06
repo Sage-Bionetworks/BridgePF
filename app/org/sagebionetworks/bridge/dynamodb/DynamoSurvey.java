@@ -67,7 +67,7 @@ public class DynamoSurvey implements Survey, DynamoTable {
     
     public DynamoSurvey(DynamoSurvey survey) {
         this();
-        setStudyKey(survey.getStudyKey());
+        setStudyIdentifier(survey.getStudyIdentifier());
         setGuid(survey.getGuid());
         setCreatedOn(survey.getCreatedOn());
         setModifiedOn(survey.getModifiedOn());
@@ -82,14 +82,14 @@ public class DynamoSurvey implements Survey, DynamoTable {
     }
 
     @Override
-    @DynamoDBAttribute
+    @DynamoDBAttribute(attributeName = "studyKey")
     @JsonIgnore
-    public String getStudyKey() {
+    public String getStudyIdentifier() {
         return studyKey;
     }
 
     @Override
-    public void setStudyKey(String studyKey) {
+    public void setStudyIdentifier(String studyKey) {
         this.studyKey = studyKey;
     }
 

@@ -10,6 +10,8 @@ import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
@@ -51,20 +53,19 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     @Override
-    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode,
+    public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
             List<SurveyAnswer> answers) {
-        return createSurveyResponseInternal(surveyGuid, surveyCreatedOn, healthCode, answers,
-                BridgeUtils.generateGuid());
+        return createSurveyResponseInternal(keys, healthCode, answers, BridgeUtils.generateGuid());
     }
 
     @Override
-    public SurveyResponse createSurveyResponse(String surveyGuid, long surveyCreatedOn, String healthCode,
+    public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
             List<SurveyAnswer> answers, String identifier) {
         try {
             SurveyResponse response = getSurveyResponseInternal(healthCode, identifier);
             if (response == null) {
                 // This is the response we want. This is good, carry on.
-                return createSurveyResponseInternal(surveyGuid, surveyCreatedOn, healthCode, answers, identifier);
+                return createSurveyResponseInternal(keys, healthCode, answers, identifier);
             }
             throw new EntityAlreadyExistsException(response);
         } catch(ConcurrentModificationException e) {
@@ -102,27 +103,27 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     @Override
-    public List<SurveyResponse> getResponsesForSurvey(String surveyGuid, long surveyCreatedOn) {
+    public List<SurveyResponse> getResponsesForSurvey(GuidCreatedOnVersionHolder keys) {
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
 
         Condition condition = new Condition();
         condition.withComparisonOperator(ComparisonOperator.EQ);
-        condition.withAttributeValueList(new AttributeValue().withS(surveyGuid));
+        condition.withAttributeValueList(new AttributeValue().withS(keys.getGuid()));
         scan.addFilterCondition("surveyGuid", condition);
         
         Condition condition2 = new Condition();
         condition2.withComparisonOperator(ComparisonOperator.EQ);
-        condition2.withAttributeValueList(new AttributeValue().withN(Long.toString(surveyCreatedOn)));
+        condition2.withAttributeValueList(new AttributeValue().withN(Long.toString(keys.getCreatedOn())));
         scan.addFilterCondition("surveyCreatedOn", condition2);
 
         List<DynamoSurveyResponse> mappings = responseMapper.scan(DynamoSurveyResponse.class, scan);
         return Lists.transform(mappings, TRANSFORMER);
     }
     
-    private SurveyResponse createSurveyResponseInternal(String surveyGuid, long surveyCreatedOn, String healthCode,
+    private SurveyResponse createSurveyResponseInternal(GuidCreatedOnVersionHolder keys, String healthCode,
             List<SurveyAnswer> answers, String identifier) {
         
-        Survey survey = surveyDao.getSurvey(surveyGuid, surveyCreatedOn);
+        Survey survey = surveyDao.getSurvey(keys);
         List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, Collections.<SurveyAnswer>emptyList(), answers);
         
         SurveyResponse response = new DynamoSurveyResponse();
@@ -150,7 +151,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         }
         // Now add survey
         DynamoSurveyResponse response = results.get(0);
-        Survey survey = surveyDao.getSurvey(response.getSurveyGuid(), response.getSurveyCreatedOn());
+        Survey survey = surveyDao.getSurvey(new GuidCreatedOnVersionHolderImpl(response.getSurveyGuid(), response.getSurveyCreatedOn()));
         response.setSurvey(survey);
         return response;
     }

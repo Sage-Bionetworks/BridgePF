@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.IdentifierHolder;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
@@ -29,8 +31,9 @@ public class SurveyResponseController extends BaseController {
         List<SurveyAnswer> answers = deserializeSurveyAnswers();
         Long version = DateUtils.convertToMillisFromEpoch(versionString);
         
-        SurveyResponse response = responseService.createSurveyResponse(
-            surveyGuid, version, session.getUser().getHealthCode(), answers);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, version);
+        SurveyResponse response = responseService
+                .createSurveyResponse(keys, session.getUser().getHealthCode(), answers);
         return createdResult(new IdentifierHolder(response.getIdentifier()));
     }
     
@@ -41,8 +44,9 @@ public class SurveyResponseController extends BaseController {
         List<SurveyAnswer> answers = deserializeSurveyAnswers();
         Long version = DateUtils.convertToMillisFromEpoch(versionString);
 
-        SurveyResponse response = responseService.createSurveyResponse(
-            surveyGuid, version, session.getUser().getHealthCode(), answers, identifier);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, version);
+        SurveyResponse response = responseService.createSurveyResponse(keys, session.getUser().getHealthCode(),
+                answers, identifier);
         return createdResult(new IdentifierHolder(response.getIdentifier()));
     }
 

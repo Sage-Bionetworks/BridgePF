@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
@@ -9,6 +10,7 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -29,42 +31,11 @@ public class SurveyServiceImpl implements SurveyService {
     }
 
     @Override
-    public List<Survey> getSurveys(Study study) {
-        checkNotNull(study, "Study cannot be null");
-        checkArgument(StringUtils.isNotBlank(study.getIdentifier()), "Study key cannot be blank or null");
-
-        return surveyDao.getSurveys(study.getIdentifier());
-    }
-    
-    @Override
-    public List<Survey> getMostRecentlyPublishedSurveys(Study study) {
-        checkNotNull(study, "Study cannot be null");
-        checkArgument(StringUtils.isNotBlank(study.getIdentifier()), "Study key cannot be blank or null");
+    public Survey getSurvey(GuidCreatedOnVersionHolder keys) {
+        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
+        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.getMostRecentlyPublishedSurveys(study.getIdentifier());
-    }
-
-    @Override
-    public List<Survey> getAllVersionsOfSurvey(String surveyGuid) {
-        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID is required");
-        
-        return surveyDao.getSurveyVersions(surveyGuid);
-    }
-
-    @Override
-    public List<Survey> getMostRecentSurveys(Study study) {
-        checkNotNull(study, "Study cannot be null");
-        checkArgument(StringUtils.isNotBlank(study.getIdentifier()), "Study key cannot be blank or null");
-        
-        return surveyDao.getMostRecentSurveys(study.getIdentifier());
-    }
-
-    @Override
-    public Survey getSurvey(String surveyGuid, long createdOn) {
-        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
-        
-        return surveyDao.getSurvey(surveyGuid, createdOn);
+        return surveyDao.getSurvey(keys);
     }
 
     @Override
@@ -87,35 +58,74 @@ public class SurveyServiceImpl implements SurveyService {
     }
 
     @Override
-    public Survey publishSurvey(String surveyGuid, long createdOn) {
-        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
+    public Survey publishSurvey(GuidCreatedOnVersionHolder keys) {
+        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
+        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.publishSurvey(surveyGuid, createdOn);
+        return surveyDao.publishSurvey(keys);
     }
 
     @Override
-    public Survey closeSurvey(String surveyGuid, long createdOn) {
-        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
+    public Survey closeSurvey(GuidCreatedOnVersionHolder keys) {
+        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
+        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.closeSurvey(surveyGuid, createdOn);
+        return surveyDao.closeSurvey(keys);
     }
     
     @Override
-    public Survey versionSurvey(String surveyGuid, long createdOn) {
-        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
+    public Survey versionSurvey(GuidCreatedOnVersionHolder keys) {
+        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
+        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.versionSurvey(surveyGuid, createdOn);
+        return surveyDao.versionSurvey(keys);
     }
     
     @Override
-    public void deleteSurvey(Study study, String surveyGuid, long createdOn) {
+    public void deleteSurvey(Study study, GuidCreatedOnVersionHolder keys) {
         checkNotNull(study, "study cannot be null");
-        checkArgument(StringUtils.isNotBlank(surveyGuid), "Survey GUID cannot be null/blank");
-        checkArgument(createdOn != 0L, "Survey createdOn timestamp cannot be 0");
+        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
+        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
 
-        surveyDao.deleteSurvey(study, surveyGuid, createdOn);
+        surveyDao.deleteSurvey(study, keys);
     }
+
+    @Override
+    public List<Survey> getSurveyAllVersions(Study study, String guid) {
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
+
+        return surveyDao.getSurveyAllVersions(study.getIdentifier(), guid);
+    }
+
+    @Override
+    public Survey getSurveyMostRecentVersion(Study study, String guid) {
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
+
+        return surveyDao.getSurveyMostRecentVersion(study.getIdentifier(), guid);
+    }
+
+    @Override
+    public Survey getSurveyMostRecentlyPublishedVersion(Study study, String guid) {
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
+
+        return surveyDao.getSurveyMostRecentlyPublishedVersion(study.getIdentifier(), guid);
+    }
+
+    @Override
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(Study study) {
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+
+        return surveyDao.getAllSurveysMostRecentlyPublishedVersion(study.getIdentifier());
+    }
+
+    @Override
+    public List<Survey> getAllSurveysMostRecentVersion(Study study) {
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+
+        return surveyDao.getAllSurveysMostRecentVersion(study.getIdentifier());
+    }
+
 }
