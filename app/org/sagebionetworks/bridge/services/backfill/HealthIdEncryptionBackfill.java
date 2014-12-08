@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
-import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.models.Backfill;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -28,7 +27,6 @@ public class HealthIdEncryptionBackfill implements BackfillService {
 
     private Client stormpathClient;
     private StudyService studyService;
-    private BridgeEncryptor healthCodeEncryptorOld;
     private AesGcmEncryptor healthCodeEncryptor;
     private AccountEncryptionService accountEncryptionService;
 
@@ -37,9 +35,6 @@ public class HealthIdEncryptionBackfill implements BackfillService {
     }
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
-    }
-    public void setHealthCodeEncryptorOld(BridgeEncryptor encryptor) {
-        this.healthCodeEncryptorOld = encryptor;
     }
     public void setHealthCodeEncryptor(AesGcmEncryptor encryptor) {
         this.healthCodeEncryptor = encryptor;
@@ -78,22 +73,6 @@ public class HealthIdEncryptionBackfill implements BackfillService {
                     count++;
                     logger.info("Created health code for account " + account.getEmail() + " in study " + study.getName());
                 } else {
-                    final String versionKey = studyKey + BridgeConstants.CUSTOM_DATA_VERSION;
-                    int version = 1;
-                    Object versionObj = customData.get(versionKey);
-                    if (versionObj != null) {
-                        version = (Integer)versionObj;
-                    }
-                    if (version != 2) {
-                        // Backfill accounts that still use old encryption
-                        String healthId = healthCodeEncryptorOld.decrypt((String) healthIdObj);
-                        String encryptedHealthId = healthCodeEncryptor.encrypt(healthId);
-                        customData.put(healthIdKey, encryptedHealthId);
-                        customData.put(versionKey, 2);
-                        customData.save();
-                        count++;
-                        logger.info("Backfilled encryption for account " + account.getEmail() + " in study " + study.getName());
-                    }
                     // Backfill accounts that are missing health codes -- this should be only test artifacts and
                     // should not exist in staging and prod
                     HealthId healthId = accountEncryptionService.getHealthCode(study, account);
