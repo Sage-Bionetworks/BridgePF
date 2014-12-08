@@ -13,7 +13,7 @@ public interface UserConsentDao {
     void giveConsent(String healthCode, StudyConsent consent, ConsentSignature consentSignature);
 
     /**
-     * Withdraws consent to the specified study.
+     * Withdraws consent to the specified study. Currently this is only used by tests. 
      */
     void withdrawConsent(String healthCode, StudyConsent consent);
 
