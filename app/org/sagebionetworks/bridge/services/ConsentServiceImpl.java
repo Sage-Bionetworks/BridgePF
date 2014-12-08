@@ -140,20 +140,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             caller.setConsent(false);
         };
         return caller;
-        /*
-        List<StudyConsent> consents = studyConsentDao.getConsents(study.getIdentifier());
-        for (StudyConsent consent : consents) {
-            if (userConsentDao.hasConsented(healthCode, consent)) {
-                decrementStudyEnrollment(study);
-                
-                withdrawn = true;
-            }
-        }
-        if (withdrawn) {
-            publisher.publishEvent(new UserUnenrolledEvent(caller, study));
-            caller.setConsent(false);
-        }
-        */
     }
 
     @Override

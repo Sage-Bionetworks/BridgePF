@@ -90,5 +90,12 @@ public class HealthDataServiceImpl implements HealthDataService {
 
         healthDataDao.deleteHealthDataRecord(key, guid);
     }
+    
+    @Override
+    public void deleteHealthDataRecords(HealthDataKey key) {
+        checkNotNull(key, "HealthDataKey cannot be null");
+        
+        healthDataDao.deleteHealthDataRecords(key);
+    }
 
 }
