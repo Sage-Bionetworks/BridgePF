@@ -6,6 +6,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
@@ -27,10 +30,13 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.stormpath.sdk.account.Account;
+import com.stormpath.sdk.account.AccountList;
+import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
 
@@ -188,20 +194,23 @@ public class AuthenticationServiceImplTest {
     }
 
     private boolean isInStore(Directory directory, SignUp signUp) {
-        for (Account account : directory.getAccounts()) {
-            if (account.getEmail().equals(signUp.getEmail())) {
-                return true;
-            }
-        }
-        return false;
+        Application app = StormpathFactory.getStormpathApplication(stormpathClient);
+        Map<String, Object> queryParams = new HashMap<String, Object>();
+        queryParams.put("email", signUp.getEmail());
+        AccountList accounts = app.getAccounts(queryParams);
+        
+        return (accounts.iterator().hasNext());
     }
 
     private boolean hasHealthCode(Study study, Directory directory, SignUp signUp) {
-        for (Account account : directory.getAccounts()) {
-            if (account.getEmail().equals(signUp.getEmail())) {
-                return hasHealthCode(study, account);
-            }
-        }
+        Application app = StormpathFactory.getStormpathApplication(stormpathClient);
+        Map<String, Object> queryParams = new HashMap<String, Object>();
+        queryParams.put("email", signUp.getEmail());
+        AccountList accounts = app.getAccounts(queryParams);
+        
+        if (accounts.iterator().hasNext()){
+            return hasHealthCode(study, accounts.iterator().next());
+        };
         return false;
     }
 

@@ -241,7 +241,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return null;
     }
 
-    private UserSession createSessionFromAccount(Study study, Account account) {
+    @Override
+    public UserSession createSessionFromAccount(Study study, Account account) {
 
         final UserSession session = new UserSession();
         session.setAuthenticated(true);

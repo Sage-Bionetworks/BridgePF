@@ -11,6 +11,8 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 
+import com.stormpath.sdk.account.Account;
+
 public interface AuthenticationService {
 
     public UserSession getSession(String sessionToken);
@@ -29,4 +31,5 @@ public interface AuthenticationService {
     
     public User getUser(Study study, String email);
     
+    public UserSession createSessionFromAccount(Study study, Account account);
 }
