@@ -26,8 +26,13 @@ public interface RedisKey {
     /** User health code. */
     RedisKey HEALTH_CODE = new SimpleKey("health-code");
 
+    /** User (email). */
+    RedisKey USER = new SimpleKey("user");
+    
     /** Health code lock. */
     RedisKey HEALTH_CODE_LOCK = new CompoundKey((SimpleKey)HEALTH_CODE, (SimpleKey)LOCK);
+    
+    RedisKey USER_LOCK = new CompoundKey((SimpleKey)HEALTH_CODE, (SimpleKey)LOCK);
 
     String SEPARATOR = ":";
 

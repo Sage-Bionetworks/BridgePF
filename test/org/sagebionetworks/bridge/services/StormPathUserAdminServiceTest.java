@@ -79,7 +79,7 @@ public class StormPathUserAdminServiceTest {
     @After
     public void after() {
         if (testUser != null) {
-            userAdminService.deleteUser(testUser);
+            userAdminService.deleteUser(testUser.getEmail());
         }
     }
 
@@ -97,7 +97,7 @@ public class StormPathUserAdminServiceTest {
     public void deletedUserHasBeenDeleted() {
         testUser = service.createUser(signUp, study, true, true).getUser();
         
-        service.deleteUser(testUser);
+        service.deleteUser(testUser.getEmail());
         
         // This should fail with a 404.
         authService.signIn(study, new SignIn(signUp.getEmail(), signUp.getPassword()));
