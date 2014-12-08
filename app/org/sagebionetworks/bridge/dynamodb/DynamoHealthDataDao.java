@@ -149,5 +149,12 @@ public class DynamoHealthDataDao implements HealthDataDao {
         DynamoHealthDataRecord dynamoRecord = new DynamoHealthDataRecord(key.toString(), guid, record);
         mapper.delete(dynamoRecord);
     }
+    
+    @Override
+    public void deleteHealthDataRecords(HealthDataKey key) {
+        List<HealthDataRecord> data = getAllHealthData(key);
+        List<FailedBatch> failures = mapper.batchDelete(data);
+        BridgeUtils.ifFailuresThrowException(failures);
+    }
 
 }

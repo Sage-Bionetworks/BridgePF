@@ -26,9 +26,15 @@ public interface RedisKey {
     /** User health code. */
     RedisKey HEALTH_CODE = new SimpleKey("health-code");
 
+    /** User (email). */
+    RedisKey USER = new SimpleKey("user");
+    
     /** Health code lock. */
     RedisKey HEALTH_CODE_LOCK = new CompoundKey((SimpleKey)HEALTH_CODE, (SimpleKey)LOCK);
     
+    /** Lock on user account. */
+    RedisKey USER_LOCK = new CompoundKey((SimpleKey)USER, (SimpleKey)LOCK);
+
     /** Number of participants in a study */
     RedisKey NUM_OF_PARTICIPANTS = new SimpleKey("num-of-participants");
 

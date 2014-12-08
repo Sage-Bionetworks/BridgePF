@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -45,6 +46,19 @@ public class DynamoUserConsentDao implements UserConsentDao {
         withdrawConsent2(healthCode, consent);
     }
 
+    @Override
+    public boolean withdrawConsent(String healthCode, Study study) {
+        // DynamoUserConsent2 has the healthCodeStudy as a hash key and no range key; so 
+        // there can be only one consent right now per study. Just find it and delete it.
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, study.getIdentifier());
+        consent = mapper.load(consent);
+        if (consent != null) {
+            mapper.delete(consent);
+            return true;
+        }
+        return false;
+    }
+    
     @Override
     public Long getConsentCreatedOn(String healthCode, String studyKey) {
         return getConsentCreatedOn2(healthCode, studyKey);
@@ -96,7 +110,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         }
         mapper.delete(consentToDelete);
     }
-
+    
     Long getConsentCreatedOn2(String healthCode, String studyKey) {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyKey);
         consent = mapper.load(consent);
