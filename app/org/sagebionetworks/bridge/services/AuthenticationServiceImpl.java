@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.HealthId;
@@ -151,6 +152,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(signUp, "Sign up cannot be null");
         
         Validate.entityThrowingException(signUpValidator, signUp);
+        if (consentService.isStudyAtEnrollmentLimit(study)) {
+            throw new StudyLimitExceededException(study);
+        }
         
         try {
             Directory directory = stormpathClient.getResource(study.getStormpathHref(), Directory.class);
@@ -161,6 +165,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             account.setEmail(signUp.getEmail());
             account.setUsername(signUp.getUsername());
             account.setPassword(signUp.getPassword());
+            
             directory.createAccount(account, sendEmail);
             
             addAccountToGroups(directory, account, signUp.getRoles());

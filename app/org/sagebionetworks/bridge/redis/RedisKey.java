@@ -32,7 +32,11 @@ public interface RedisKey {
     /** Health code lock. */
     RedisKey HEALTH_CODE_LOCK = new CompoundKey((SimpleKey)HEALTH_CODE, (SimpleKey)LOCK);
     
-    RedisKey USER_LOCK = new CompoundKey((SimpleKey)HEALTH_CODE, (SimpleKey)LOCK);
+    /** Lock on user account. */
+    RedisKey USER_LOCK = new CompoundKey((SimpleKey)USER, (SimpleKey)LOCK);
+
+    /** Number of participants in a study */
+    RedisKey NUM_OF_PARTICIPANTS = new SimpleKey("num-of-participants");
 
     String SEPARATOR = ":";
 
