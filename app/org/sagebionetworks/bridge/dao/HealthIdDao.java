@@ -15,6 +15,4 @@ public interface HealthIdDao {
      */
     String getCode(String id);
     
-    void deleteMapping(String healthCode);
-    
 }
