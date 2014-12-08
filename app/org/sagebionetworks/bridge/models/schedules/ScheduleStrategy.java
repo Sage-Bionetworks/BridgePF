@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.validation.Errors;
@@ -17,7 +18,7 @@ public interface ScheduleStrategy {
     
     public Schedule getScheduleForUser(Study study, SchedulePlan plan, User user);
     
-    public boolean doesScheduleSurvey(String surveyGuid, long surveyCreatedOn);
+    public boolean doesScheduleSurvey(GuidCreatedOnVersionHolder keys);
     
     public void validate(Errors errors);
 

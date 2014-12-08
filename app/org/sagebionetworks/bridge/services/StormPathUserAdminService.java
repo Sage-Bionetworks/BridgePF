@@ -141,7 +141,9 @@ public class StormPathUserAdminService implements UserAdminService {
             if (account != null) {
                 for (Study study : studyService.getStudies()) {
                     User user = authenticationService.createSessionFromAccount(study, account).getUser();
-                    deleteUserInStudy(study, account, user);
+                    if (user.getHealthCode() != null) {
+                        deleteUserInStudy(study, account, user);    
+                    }
                 }
                 account.delete();
             }
@@ -156,15 +158,14 @@ public class StormPathUserAdminService implements UserAdminService {
         checkNotNull(user);
         
         try {
-            // Are these things ever divorced? If you have a health code, you have a consent record
+            String healthCode = user.getHealthCode();
             consentService.withdrawConsent(user, study);
-            if (user.getHealthCode() != null) {
-                String healthCode = user.getHealthCode();
-                optionsService.deleteAllParticipantOptions(healthCode);
-                removeAllHealthDataRecords(study, user);
-                healthIdDao.deleteMapping(healthCode);
-                healthCodeDao.deleteCode(healthCode);
-            }
+            removeAllHealthDataRecords(study, user);
+            // This might be lightning fast, but we don't have to do any of the following, really.
+            // See if it shaves any time off.
+            optionsService.deleteAllParticipantOptions(healthCode);
+            healthIdDao.deleteMapping(healthCode);
+            healthCodeDao.deleteCode(healthCode);
             return true;
         } catch (Throwable e) {
             logger.error(e.getMessage(), e);
