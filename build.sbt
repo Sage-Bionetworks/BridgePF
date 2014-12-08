@@ -18,7 +18,6 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.2",
   "com.google.guava" % "guava" % "18.0",
   "org.mockito" % "mockito-all" % "1.9.5",
-  "org.jasypt" % "jasypt" % "1.9.2",
   "org.apache.shiro" % "shiro-core" % "1.2.3",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.51",
   "org.bouncycastle" % "bcpkix-jdk15on" % "1.51",
