@@ -4,11 +4,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.SignIn;
@@ -21,18 +19,23 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.redis.RedisKey;
+import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.validation.Validator;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
+import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.Directory;
 
 public class StormPathUserAdminService implements UserAdminService {
 
+    private static final Logger logger = LoggerFactory.getLogger(StormPathUserAdminService.class);
+    
     private AuthenticationService authenticationService;
     private ConsentService consentService;
     private HealthDataService healthDataService;
@@ -93,9 +96,9 @@ public class StormPathUserAdminService implements UserAdminService {
         Validate.entityThrowingException(validator, signUp);
         
         try {
-            Directory directory = getDirectory(study);
+            Application app = StormpathFactory.getStormpathApplication(stormpathClient);
             // Search for email and skip creation if it already exists.
-            if (userDoesNotExist(directory, signUp.getEmail())) {
+            if (userDoesNotExist(app, signUp.getEmail())) {
                 authenticationService.signUp(signUp, study, false);
             }
         } catch (Throwable t) {
@@ -125,139 +128,70 @@ public class StormPathUserAdminService implements UserAdminService {
     }
 
     @Override
-    public void revokeAllConsentRecords(User user, Study study) throws BridgeServiceException {
-        checkNotNull(user, "User cannot be null");
-        checkNotNull(study, "Study cannot be null");
-        
-        consentService.withdrawConsent(user, study);
-    }
-
-    @Override
     public void deleteUser(String userEmail) throws BridgeServiceException {
-        checkNotNull(userEmail, "User emailcannot be null");
-        for (Study study : studyService.getStudies()) {
-            deleteUserInStudyWithRetries(userEmail, study);
-        }
-    }
-
-    @Override
-    public void deleteUser(User user) throws BridgeServiceException {
-        checkNotNull(user, "User cannot be null");
-        for (Study study : studyService.getStudies()) {
-            deleteUserInStudyWithRetries(user, study);
-        }
-    }
-
-    private void deleteUserInStudyWithRetries(String userEmail, Study study) throws BridgeServiceException {
         checkNotNull(userEmail, "User email cannot be null");
-        checkNotNull(study, "Study cannot be null");
-        Directory directory = getDirectory(study);
-        Account account = getUserAccountByEmail(directory, userEmail);
-        if (account != null) {
-            User user = new User(account);
-            deleteUserInStudyWithRetries(user, study);
-        }
-    }
-
-    private void deleteUserInStudyWithRetries(User user, Study study) throws BridgeServiceException {
-        int retryCount = 0;
-        boolean shouldRetry = true;
-        while (shouldRetry) {
-            boolean deleted = deleteUserInStudy(user, study);
-            if (deleted) {
-                return;
-            }
-            shouldRetry = retryCount < 5;
-            retryCount++;
-            try {
-                Thread.sleep(100 * 2 ^ retryCount);
-            } catch(InterruptedException ie) {
-                throw new BridgeServiceException(ie);
-            }
-        }
-        throw new RuntimeException("Cannot delete user " + user.getEmail()
-                + " in study " + study.getName() + " after all the retries.");
-    }
-
-    private boolean deleteUserInStudy(User user, Study study) throws BridgeServiceException {
-        checkNotNull(user);
-        checkNotNull(study);
-        final String lockId = user.getId() + RedisKey.SEPARATOR + study.getIdentifier();
+        
+        String key = RedisKey.USER_LOCK.getRedisKey(userEmail);
         String lock = null;
         try {
-            lock = lockDao.acquireLock(User.class, lockId);
-            // Verify the user exists before doing this work. Otherwise, it just throws errors.
-            Directory directory = getDirectory(study);
-            Account account = getUserAccountByEmail(directory, user.getEmail());
+            lock = lockDao.acquireLock(User.class, key);
+            
+            Application app = StormpathFactory.getStormpathApplication(stormpathClient);
+            Account account = getUserAccountByEmail(app, userEmail);
             if (account != null) {
-                deleteUserAccount(study, user.getEmail());
-                revokeAllConsentRecords(user, study);
-                removeParticipantOptions(user);
-                removeAllHealthDataRecords(user, study);
-                removeHealthCodeAndIdMappings(user);
+                for (Study study : studyService.getStudies()) {
+                    User user = authenticationService.createSessionFromAccount(study, account).getUser();
+                    deleteUserInStudy(study, account, user);
+                }
+                account.delete();
+            }
+        } finally {
+            lockDao.releaseLock(User.class, key, lock);
+        }
+    }
+    
+    private boolean deleteUserInStudy(Study study, Account account, User user) throws BridgeServiceException {
+        checkNotNull(study);
+        checkNotNull(account);
+        checkNotNull(user);
+        
+        try {
+            // Are these things ever divorced? If you have a health code, you have a consent record
+            consentService.withdrawConsent(user, study);
+            if (user.getHealthCode() != null) {
+                String healthCode = user.getHealthCode();
+                optionsService.deleteAllParticipantOptions(healthCode);
+                removeAllHealthDataRecords(study, user);
+                healthIdDao.deleteMapping(healthCode);
+                healthCodeDao.deleteCode(healthCode);
             }
             return true;
         } catch (Throwable e) {
+            logger.error(e.getMessage(), e);
             return false;
-        } finally {
-            lockDao.releaseLock(User.class, lockId, lock);
-        }
-    }
-
-    private void removeParticipantOptions(User user) {
-        String healthCode = user.getHealthCode();
-        if (healthCode != null) {
-            optionsService.deleteAllParticipantOptions(healthCode);    
         }
     }
     
-    private void removeHealthCodeAndIdMappings(User user) {
-        String healthCode = user.getHealthCode();
-        healthIdDao.deleteMapping(healthCode);
-        healthCodeDao.deleteCode(healthCode);
-    }
-    
-    private void removeAllHealthDataRecords(User user, Study userStudy) throws BridgeServiceException {
+    private void removeAllHealthDataRecords(Study study, User user) throws BridgeServiceException {
         // This user may have never consented to research. Ignore if that's the case.
-        if (user.getHealthCode() != null) {
-            for (String trackerId : userStudy.getTrackers()) {
-                Tracker tracker = studyService.getTrackerByIdentifier(trackerId);
-                
-                HealthDataKey key = new HealthDataKey(userStudy, tracker, user);
-                List<HealthDataRecord> records = healthDataService.getAllHealthData(key);
-                for (HealthDataRecord record : records) {
-                    healthDataService.deleteHealthDataRecord(key, record.getGuid());
-                }
+        for (String trackerId : study.getTrackers()) {
+            Tracker tracker = studyService.getTrackerByIdentifier(trackerId);
+            
+            HealthDataKey key = new HealthDataKey(study, tracker, user);
+            List<HealthDataRecord> records = healthDataService.getAllHealthData(key);
+            for (HealthDataRecord record : records) {
+                healthDataService.deleteHealthDataRecord(key, record.getGuid());
             }
         }
     }
 
-    private void deleteUserAccount(Study userStudy, String userEmail) throws BridgeServiceException {
-        if (StringUtils.isBlank(userEmail)) {
-            throw new BadRequestException("User email cannot be blank");
-        }
-        try {
-            Directory directory = getDirectory(userStudy);
-            Account account = getUserAccountByEmail(directory, userEmail);
-            if (account != null) {
-                account.delete();
-            }
-        } catch (Exception e) {
-            throw new BridgeServiceException(e);
-        }
+    private boolean userDoesNotExist(Application app, String email) {
+        return (getUserAccountByEmail(app, email) == null);
     }
 
-    private Directory getDirectory(Study userStudy) {
-        return stormpathClient.getResource(userStudy.getStormpathHref(), Directory.class);
-    }
-
-    private boolean userDoesNotExist(Directory directory, String email) {
-        return (getUserAccountByEmail(directory, email) == null);
-    }
-
-    private Account getUserAccountByEmail(Directory directory, String email) {
+    private Account getUserAccountByEmail(Application app, String email) {
         AccountCriteria criteria = Accounts.where(Accounts.email().eqIgnoreCase(email));
-        AccountList accounts = directory.getAccounts(criteria);
+        AccountList accounts = app.getAccounts(criteria);
         return (accounts.iterator().hasNext()) ? accounts.iterator().next() : null;
     }
 }

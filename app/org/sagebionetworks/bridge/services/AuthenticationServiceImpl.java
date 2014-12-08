@@ -39,7 +39,6 @@ import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.CustomData;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupList;
@@ -237,7 +236,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return null;
     }
 
-    private UserSession createSessionFromAccount(Study study, Account account) {
+    @Override
+    public UserSession createSessionFromAccount(Study study, Account account) {
 
         final UserSession session = new UserSession();
         session.setAuthenticated(true);
