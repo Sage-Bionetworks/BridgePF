@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import org.sagebionetworks.bridge.models.HealthId;
+import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.stormpath.sdk.account.Account;
@@ -17,4 +18,9 @@ public interface AccountEncryptionService {
      * Returns null if the account has no health ID.
      */
     HealthId getHealthCode(Study study, Account account);
+
+    /**
+     * Encrypts and saves the consent signature.
+     */
+    void saveConsentSignature(ConsentSignature consentSignature, Account account);
 }

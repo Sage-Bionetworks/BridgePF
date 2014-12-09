@@ -25,6 +25,7 @@ import org.springframework.context.ApplicationEventPublisherAware;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.directory.CustomData;
 
 public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
 
@@ -101,6 +102,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
 
             final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
             userConsentDao.giveConsent(healthCode, studyConsent, consentSignature);
+            accountEncryptionService.save(consentSignature, account);
 
             publisher.publishEvent(new UserEnrolledEvent(caller, study));
 

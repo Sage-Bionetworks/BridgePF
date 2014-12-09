@@ -5,8 +5,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.models.HealthId;
+import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
 
@@ -48,6 +51,13 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
         }
         Object versionObj = customData.get(getVersionKey(study));
         return (getHealthId(healthIdObj, versionObj));
+    }
+
+    @Override
+    public void saveConsentSignature(ConsentSignature consentSignature, Account account) {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode json = mapper.valueToTree(consentSignature);
+        healthCodeEncryptor.encrypt(json.asText());
     }
 
     private String getHealthIdKey(Study study) {
