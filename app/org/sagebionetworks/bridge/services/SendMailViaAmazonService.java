@@ -6,35 +6,37 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Properties;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.PreencodedMimeBodyPart;
 
 import com.amazonaws.AmazonClientException;
-import com.amazonaws.services.simpleemail.model.*;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
+import com.amazonaws.services.simpleemail.model.RawMessage;
+import com.amazonaws.services.simpleemail.model.SendRawEmailRequest;
+import com.amazonaws.services.simpleemail.model.SendRawEmailResult;
 import com.google.common.base.Charsets;
-import org.apache.commons.codec.binary.Base64;
+import com.google.common.io.CharStreams;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.io.FileSystemResource;
+
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.core.io.FileSystemResource;
-
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
-import com.google.common.io.CharStreams;
-
-import javax.mail.*;
-import javax.mail.Message;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
 
 public class SendMailViaAmazonService implements SendMailService {
 
@@ -43,10 +45,8 @@ public class SendMailViaAmazonService implements SendMailService {
     private static final String HEADER_CONTENT_DISPOSITION = "Content-Disposition";
     private static final String HEADER_CONTENT_DISPOSITION_VALUE = "inline";
     private static final String HEADER_CONTENT_ID_VALUE = "<consentSignature>";
-    private static final String HEADER_CONTENT_TRANSFER_ENCODING = "Content-Transfer-Encoding";
     private static final String HEADER_CONTENT_TRANSFER_ENCODING_VALUE = "base64";
     private static final Logger LOG = LoggerFactory.getLogger(SendMailViaAmazonService.class);
-    private static final String MIME_TYPE_IMAGE_PREFIX = "image/";
     private static final String MIME_TYPE_TEXT_HTML = "text/html";
     private static final Region region = Region.getRegion(Regions.US_EAST_1);
 
@@ -91,15 +91,11 @@ public class SendMailViaAmazonService implements SendMailService {
             // We need to send the signature image as an embedded image in an attachment because some email providers
             // (notably Gmail) block inline Base64 images.
             if (consentSignature.getImageData() != null) {
-                MimeBodyPart attachmentPart = new MimeBodyPart();
+                // Use pre-encoded MIME part since our image data is already base64 encoded.
+                MimeBodyPart attachmentPart = new PreencodedMimeBodyPart(HEADER_CONTENT_TRANSFER_ENCODING_VALUE);
                 attachmentPart.setContentID(HEADER_CONTENT_ID_VALUE);
                 attachmentPart.setHeader(HEADER_CONTENT_DISPOSITION, HEADER_CONTENT_DISPOSITION_VALUE);
-                attachmentPart.setHeader(HEADER_CONTENT_TRANSFER_ENCODING, HEADER_CONTENT_TRANSFER_ENCODING_VALUE);
-
-                // Java mail automatically base64 encodes image data. Our image data is already base64-encoded. We
-                // don't want to double-encode, so decode the image data before setting it.
-                byte[] signatureImageBytes = Base64.decodeBase64(consentSignature.getImageData());
-                attachmentPart.setContent(signatureImageBytes, consentSignature.getImageMimeType());
+                attachmentPart.setContent(consentSignature.getImageData(), consentSignature.getImageMimeType());
                 mimeMultipart.addBodyPart(attachmentPart);
             }
 
@@ -115,7 +111,7 @@ public class SendMailViaAmazonService implements SendMailService {
             emailClient.setRegion(region);
             SendRawEmailResult result = emailClient.sendRawEmail(req);
 
-            LOG.info(String.format("Received message ID from SES %s", result.getMessageId()));
+            LOG.info(String.format("Sent email to SES with message ID %s", result.getMessageId()));
         } catch (AmazonClientException | IOException | MessagingException ex) {
             throw new BridgeServiceException(ex);
         }
