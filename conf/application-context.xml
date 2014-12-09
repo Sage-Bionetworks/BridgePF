@@ -320,6 +320,7 @@
     </bean>
     
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
+        <property name="uploadCertificateService" ref="uploadCertificateService"/>
         <property name="studyDao" ref="studyDao"/>
         <property name="directoryDao" ref="directoryDao"/>
         <property name="herokuApi" ref="herokuApi"/>
