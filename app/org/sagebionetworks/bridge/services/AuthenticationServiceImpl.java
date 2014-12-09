@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
+import org.sagebionetworks.bridge.validators.SignUpValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private ConsentService consentService;
     private ParticipantOptionsService optionsService;
     private Validator signInValidator;
-    private Validator signUpValidator;
     private Validator passwordResetValidator;
 
     public void setStormpathClient(Client client) {
@@ -87,10 +87,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         this.signInValidator = validator;
     }
     
-    public void setSignUpValidator(Validator validator) {
-        this.signUpValidator = validator;
-    }
-    
     public void setPasswordResetValidator(Validator validator) {
         this.passwordResetValidator = validator;
     }
@@ -119,7 +115,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword());
             Account account = application.authenticateAccount(request).getAccount();
             logger.debug("sign in authenticate " + (System.nanoTime() - start));
-            session = createSessionFromAccount(study, account);
+            session = getSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
             
             if (!session.getUser().doesConsent()) {
@@ -151,11 +147,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
         
-        Validate.entityThrowingException(signUpValidator, signUp);
+        SignUpValidator validator = new SignUpValidator(this);
+        Validate.entityThrowingException(validator, signUp);
+        // This could, in theory, go into validation... but it feels like it's a separate 
+        // issue, insofar as the signUp can be totally valid, but we can't accept it. 
         if (consentService.isStudyAtEnrollmentLimit(study)) {
             throw new StudyLimitExceededException(study);
         }
-        
+
         try {
             Directory directory = stormpathClient.getResource(study.getStormpathHref(), Directory.class);
             // Create Stormpath account
@@ -187,7 +186,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         try {
             Account account = stormpathClient.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
             
-            session = createSessionFromAccount(study, account);
+            session = getSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
             
             if (!session.getUser().doesConsent()) {
@@ -229,21 +228,28 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public User getUser(Study study, String email) {
+        Account account = getAccount(email);
+        if (account != null) {
+            return getSessionFromAccount(study, account).getUser();
+        }
+        return null;
+    }
+    
+    @Override
+    public Account getAccount(String email) {
         Application app = StormpathFactory.getStormpathApplication(stormpathClient);
         Map<String, Object> queryParams = new HashMap<String, Object>();
         queryParams.put("email", email);
         AccountList accounts = app.getAccounts(queryParams);
 
         if (accounts.iterator().hasNext()) {
-            Account account = accounts.iterator().next();
-            return createSessionFromAccount(study, account).getUser();
+            return accounts.iterator().next();
         }
         return null;
     }
 
     @Override
-    public UserSession createSessionFromAccount(Study study, Account account) {
-
+    public UserSession getSessionFromAccount(Study study, Account account) {
         final UserSession session = new UserSession();
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment().name().toLowerCase());
