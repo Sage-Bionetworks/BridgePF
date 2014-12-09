@@ -2,12 +2,15 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.IOException;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stormpath.sdk.account.Account;
@@ -16,6 +19,7 @@ import com.stormpath.sdk.directory.CustomData;
 public class AccountEncryptionServiceImpl implements AccountEncryptionService {
 
     private static final int CURRENT_VERSION = 2;
+    private final ObjectMapper mapper = new ObjectMapper();
     private AesGcmEncryptor healthCodeEncryptor;
     private HealthCodeService healthCodeService;
 
@@ -55,12 +59,30 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
 
     @Override
     public void putConsentSignature(ConsentSignature consentSignature, Study study, Account account) {
-        ObjectMapper mapper = new ObjectMapper();
         JsonNode json = mapper.valueToTree(consentSignature);
         String encrypted = healthCodeEncryptor.encrypt(json.asText());
         CustomData customData = account.getCustomData();
         customData.put(getConsentSignatureKey(study), encrypted);
         customData.save();
+    }
+
+    @Override
+    public ConsentSignature getConsentSignature(Study study, Account account) {
+        CustomData customData = account.getCustomData();
+        Object obj = customData.get(getConsentSignatureKey(study));
+        if (obj == null) {
+            return null;
+        }
+        String encrypted = (String)obj;
+        String jsonText = healthCodeEncryptor.decrypt(encrypted);
+        try {
+            JsonNode json = mapper.readTree(jsonText);
+            return ConsentSignature.createFromJson(json);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String getHealthIdKey(Study study) {
