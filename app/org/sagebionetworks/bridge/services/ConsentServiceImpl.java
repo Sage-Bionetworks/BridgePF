@@ -88,29 +88,32 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             throw new EntityAlreadyExistsException(consentSignature);
         }
 
-        // Stormpath account
-        final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
-        HealthId hid = accountEncryptionService.getHealthCode(study, account);
-        if (hid == null) {
-            hid = accountEncryptionService.createAndSaveHealthCode(study, account);
-        }
-        final HealthId healthId = hid;
-
         incrementStudyEnrollment(study);
 
-        // Give consent
-        final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
-        userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
-        // Publish event
-        publisher.publishEvent(new UserEnrolledEvent(caller, study));
-        // Sent email
-        if (sendEmail) {
-            sendMailService.sendConsentAgreement(caller, consentSignature, studyConsent);
+        try {
+
+            final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+            HealthId hid = accountEncryptionService.getHealthCode(study, account);
+            if (hid == null) {
+                hid = accountEncryptionService.createAndSaveHealthCode(study, account);
+            }
+            final String healthCode = hid.getCode();
+
+            final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
+            userConsentDao.giveConsent(healthCode, studyConsent, consentSignature);
+
+            publisher.publishEvent(new UserEnrolledEvent(caller, study));
+
+            if (sendEmail) {
+                sendMailService.sendConsentAgreement(caller, consentSignature, studyConsent);
+            }
+
+            caller.setConsent(true);
+            caller.setHealthCode(healthCode);
+            return caller;
+        } finally {
+            decrementStudyEnrollment(study);
         }
-        // Update user
-        caller.setConsent(true);
-        caller.setHealthCode(healthId.getCode());
-        return caller;
     }
 
     @Override
