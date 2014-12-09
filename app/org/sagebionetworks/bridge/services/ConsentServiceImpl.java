@@ -79,27 +79,27 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     @Override
     public User consentToResearch(final User caller, final ConsentSignature consentSignature, 
         final Study study, final boolean sendEmail) throws BridgeServiceException {
-        
+
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
+
         if (caller.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
-        
+
         // Stormpath account
         final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
         HealthId hid = accountEncryptionService.getHealthCode(study, account);
         if (hid == null) {
             hid = accountEncryptionService.createAndSaveHealthCode(study, account);
         }
-
         final HealthId healthId = hid;
+
+        incrementStudyEnrollment(study);
+
         // Give consent
         final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
-        
-        incrementStudyEnrollment(study);
         userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
         // Publish event
         publisher.publishEvent(new UserEnrolledEvent(caller, study));
