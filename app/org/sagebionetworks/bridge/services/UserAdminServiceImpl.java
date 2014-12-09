@@ -68,11 +68,6 @@ public class UserAdminServiceImpl implements UserAdminService {
                 String sig = String.format("[Signature for %s]", signUp.getEmail());;
                 ConsentSignature consent = ConsentSignature.create(sig, "1989-08-19", null, null);
                 consentService.consentToResearch(newUserSession.getUser(), consent, study, false);
-
-                // Now, sign in again so you get the consented user into the session
-                // TODO: Is this required? It shouldn't be...
-                //authenticationService.signOut(newUserSession.getSessionToken());
-                //newUserSession = authenticationService.signIn(study, signIn);
             }
         }
         if (!signUserIn) {
