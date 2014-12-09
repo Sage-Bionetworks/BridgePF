@@ -60,10 +60,14 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
     @Override
     public void putConsentSignature(Study study, Account account, ConsentSignature consentSignature) {
         JsonNode json = mapper.valueToTree(consentSignature);
-        String encrypted = healthCodeEncryptor.encrypt(json.asText());
-        CustomData customData = account.getCustomData();
-        customData.put(getConsentSignatureKey(study), encrypted);
-        customData.save();
+        try {
+            String encrypted = healthCodeEncryptor.encrypt(mapper.writeValueAsString(json));
+            CustomData customData = account.getCustomData();
+            customData.put(getConsentSignatureKey(study), encrypted);
+            customData.save();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
