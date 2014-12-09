@@ -22,10 +22,15 @@ public interface AccountEncryptionService {
     /**
      * Encrypts and saves the consent signature.
      */
-    void putConsentSignature(ConsentSignature consentSignature, Study study, Account account);
+    void putConsentSignature(Study study, Account account, ConsentSignature consentSignature);
 
     /**
      * Gets the decrypted consent signature.
      */
     ConsentSignature getConsentSignature(Study study, Account account);
+
+    /**
+     * Removes consent signature.
+     */
+    ConsentSignature removeConsentSignature(Study study, Account account);
 }

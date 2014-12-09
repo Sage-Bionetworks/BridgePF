@@ -25,7 +25,6 @@ import org.springframework.context.ApplicationEventPublisherAware;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.CustomData;
 
 public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
 
@@ -68,12 +67,16 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public ConsentSignature getConsentSignature(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-
+        Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+        ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
+        if (consentSignature != null) {
+            return consentSignature;
+        }
         final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
-        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
+        consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
         return consentSignature;
     }
 
@@ -102,7 +105,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
 
             final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
             userConsentDao.giveConsent(healthCode, studyConsent, consentSignature);
-            accountEncryptionService.save(consentSignature, account);
+            accountEncryptionService.putConsentSignature(study, account, consentSignature);
 
             publisher.publishEvent(new UserEnrolledEvent(caller, study));
 
@@ -138,6 +141,9 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
 
+        Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+        accountEncryptionService.removeConsentSignature(study, account);
+
         String healthCode = caller.getHealthCode();
         if (userConsentDao.withdrawConsent(healthCode, study)) {
             decrementStudyEnrollment(study);
@@ -151,18 +157,23 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public void emailConsentAgreement(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
+
         final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
-        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
+
+        Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+        ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
+        if (consentSignature == null) {
+            consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
+        }
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
         sendMailService.sendConsentAgreement(caller, consentSignature, consent);
     }
-    
+
     @Override
     public boolean isStudyAtEnrollmentLimit(Study study) {
         if (study.getMaxNumOfParticipants() == 0) {
