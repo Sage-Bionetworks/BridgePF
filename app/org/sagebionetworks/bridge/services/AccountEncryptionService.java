@@ -22,5 +22,5 @@ public interface AccountEncryptionService {
     /**
      * Encrypts and saves the consent signature.
      */
-    void saveConsentSignature(ConsentSignature consentSignature, Account account);
+    void putConsentSignature(ConsentSignature consentSignature, Study study, Account account);
 }
