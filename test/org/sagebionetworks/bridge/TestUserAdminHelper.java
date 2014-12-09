@@ -132,7 +132,7 @@ public class TestUserAdminHelper {
         if (testUser.getSession() != null) {
             // Delete using session if it exists
             authService.signOut(testUser.getSessionToken());
-            userAdminService.deleteUser(testUser.getUser());
+            userAdminService.deleteUser(testUser.getUser().getEmail());
         } else {
             // Otherwise delete using the user's email
             deleteUser(testUser.getStudy(), testUser.getEmail());
@@ -145,7 +145,7 @@ public class TestUserAdminHelper {
         
         User user = authService.getUser(study, email);
         if (user != null) {
-            userAdminService.deleteUser(user);
+            userAdminService.deleteUser(user.getEmail());
         }
     }
 

@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
-import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -14,13 +13,8 @@ import com.stormpath.sdk.directory.CustomData;
 public class AccountEncryptionServiceImpl implements AccountEncryptionService {
 
     private static final int CURRENT_VERSION = 2;
-    private BridgeEncryptor healthCodeEncryptorOld;
     private AesGcmEncryptor healthCodeEncryptor;
     private HealthCodeService healthCodeService;
-
-    public void setHealthCodeEncryptorOld(BridgeEncryptor encryptor) {
-        this.healthCodeEncryptorOld = encryptor;
-    }
 
     public void setHealthCodeEncryptor(AesGcmEncryptor encryptor) {
         this.healthCodeEncryptor = encryptor;
@@ -49,6 +43,9 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
         checkNotNull(account);
         CustomData customData = account.getCustomData();
         Object healthIdObj = customData.get(getHealthIdKey(study));
+        if (healthIdObj == null) {
+            return null;
+        }
         Object versionObj = customData.get(getVersionKey(study));
         return (getHealthId(healthIdObj, versionObj));
     }
@@ -62,20 +59,7 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
     }
 
     private HealthId getHealthId(final Object healthIdObj, final Object versionObj) {
-        if (healthIdObj == null) {
-            return null;
-        }
-        final int version = versionObj == null ? 1 : (Integer)versionObj;
-        String hid = null;
-        if (version == CURRENT_VERSION) {
-            hid = healthCodeEncryptor.decrypt((String) healthIdObj);
-        } else {
-            hid = healthCodeEncryptorOld.decrypt((String) healthIdObj);
-        }
-        if (hid == null) {
-            return null;
-        }
-        final String healthId = hid;
+        final String healthId = healthCodeEncryptor.decrypt((String) healthIdObj);;
         final String healthCode = healthCodeService.getHealthCode(healthId);
         return new HealthId() {
             @Override

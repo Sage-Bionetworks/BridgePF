@@ -13,10 +13,6 @@
     <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfigFactory"
             factory-method="getConfig" />
 
-    <bean id="healthCodeEncryptorOld" class="org.sagebionetworks.bridge.crypto.BridgeEncryptor">
-        <constructor-arg value="#{bridgeConfig.healthCodePassword}" />
-    </bean>
-
     <bean id="healthCodeEncryptor" class="org.sagebionetworks.bridge.crypto.AesGcmEncryptor">
         <constructor-arg value="#{bridgeConfig.healthCodeKey}" />
     </bean>
@@ -324,6 +320,7 @@
     </bean>
     
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
+        <property name="uploadCertificateService" ref="uploadCertificateService"/>
         <property name="studyDao" ref="studyDao"/>
         <property name="directoryDao" ref="directoryDao"/>
         <property name="herokuApi" ref="herokuApi"/>
@@ -403,7 +400,6 @@
     </bean>
 
     <bean id="accountEncryptionService" class="org.sagebionetworks.bridge.services.AccountEncryptionServiceImpl">
-        <property name="healthCodeEncryptorOld" ref="healthCodeEncryptorOld" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
     </bean>
@@ -453,9 +449,6 @@
         <property name="studyService" ref="studyService" />
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="distributedLockDao" ref="distributedLockDao"/>
-        <property name="optionsService" ref="optionsService"/>
-        <property name="healthIdDao" ref="healthIdDao"/>
-        <property name="healthCodeDao" ref="healthCodeDao"/>
         <property name="validator">
             <bean class="org.sagebionetworks.bridge.validators.SignUpValidator"/>
         </property>
@@ -492,7 +485,6 @@
     <bean id="healthIdEncryptionBackfill" class="org.sagebionetworks.bridge.services.backfill.HealthIdEncryptionBackfill">
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="studyService" ref="studyService" />
-        <property name="healthCodeEncryptorOld" ref="healthCodeEncryptorOld" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="accountEncryptionService" ref="accountEncryptionService" />
     </bean>

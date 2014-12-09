@@ -241,7 +241,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return null;
     }
 
-    private UserSession createSessionFromAccount(Study study, Account account) {
+    @Override
+    public UserSession createSessionFromAccount(Study study, Account account) {
 
         final UserSession session = new UserSession();
         session.setAuthenticated(true);
@@ -292,9 +293,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
         String healthCode = healthId.getCode();
         if (healthCode == null) {
-            // TODO: Temporary patch for inconsistent data likely caused by
-            // an obsolete bug in StormPathUserAdminService. Remove me after all the repositories
-            // have been synced and run all the tests.
             healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
             logger.error("Health code re-created for account " + account.getEmail() + " in study " + study.getName());
             healthCode = healthId.getCode();
