@@ -14,26 +14,19 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.redis.RedisKey;
-import org.sagebionetworks.bridge.stormpath.StormpathFactory;
-import org.sagebionetworks.bridge.validators.SignUpValidator;
-import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.client.Client;
 
-public class StormPathUserAdminService implements UserAdminService {
+public class UserAdminServiceImpl implements UserAdminService {
 
-    private static final Logger logger = LoggerFactory.getLogger(StormPathUserAdminService.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserAdminServiceImpl.class);
     
     private AuthenticationServiceImpl authenticationService;
     private ConsentService consentService;
     private HealthDataService healthDataService;
     private StudyService studyService;
-    private Client stormpathClient;
-    
     private DistributedLockDao lockDao;
 
     public void setAuthenticationService(AuthenticationServiceImpl authenticationService) {
@@ -52,10 +45,6 @@ public class StormPathUserAdminService implements UserAdminService {
         this.studyService = studyService;
     }
 
-    public void setStormpathClient(Client stormpathClient) {
-        this.stormpathClient = stormpathClient;
-    }
-
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
@@ -63,21 +52,12 @@ public class StormPathUserAdminService implements UserAdminService {
     @Override
     public UserSession createUser(SignUp signUp, Study study, boolean signUserIn, boolean consentUser)
             throws BridgeServiceException {
-        checkNotNull(signUp, "Sign up cannot be null");
         checkNotNull(study, "Study cannot be null");
+        checkNotNull(signUp, "Sign up cannot be null");
+        checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
         
-        SignUpValidator validator = new SignUpValidator(authenticationService);
-        Validate.entityThrowingException(validator, signUp);
+        authenticationService.signUp(signUp, study, false);
         
-        try {
-            Application app = StormpathFactory.getStormpathApplication(stormpathClient);
-            // Search for email and skip creation if it already exists.
-            if (userDoesNotExist(app, signUp.getEmail())) {
-                authenticationService.signUp(signUp, study, false);
-            }
-        } catch (Throwable t) {
-            throw new BridgeServiceException(t);
-        }
         SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
         UserSession newUserSession = null;
         try {
@@ -90,8 +70,9 @@ public class StormPathUserAdminService implements UserAdminService {
                 consentService.consentToResearch(newUserSession.getUser(), consent, study, false);
 
                 // Now, sign in again so you get the consented user into the session
-                authenticationService.signOut(newUserSession.getSessionToken());
-                newUserSession = authenticationService.signIn(study, signIn);
+                // TODO: Is this required? It shouldn't be...
+                //authenticationService.signOut(newUserSession.getSessionToken());
+                //newUserSession = authenticationService.signIn(study, signIn);
             }
         }
         if (!signUserIn) {
@@ -128,7 +109,6 @@ public class StormPathUserAdminService implements UserAdminService {
         try {
             lock = lockDao.acquireLock(User.class, key);
             
-            Application app = StormpathFactory.getStormpathApplication(stormpathClient);
             Account account = authenticationService.getAccount(userEmail);
             if (account != null) {
                 for (Study study : studyService.getStudies()) {
@@ -170,10 +150,6 @@ public class StormPathUserAdminService implements UserAdminService {
             HealthDataKey key = new HealthDataKey(study, tracker, user);
             healthDataService.deleteHealthDataRecords(key);
         }
-    }
-
-    private boolean userDoesNotExist(Application app, String email) {
-        return (authenticationService.getAccount(email) == null);
     }
 
 }

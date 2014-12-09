@@ -38,7 +38,7 @@ public class StormPathUserAdminServiceTest {
     AuthenticationServiceImpl authService;
 
     @Resource
-    StormPathUserAdminService service;
+    UserAdminServiceImpl service;
 
     @Resource
     BridgeConfig bridgeConfig;
@@ -47,7 +47,7 @@ public class StormPathUserAdminServiceTest {
     StudyServiceImpl studyService;
     
     @Resource
-    StormPathUserAdminService userAdminService;
+    UserAdminServiceImpl userAdminService;
     
     private Study study;
     
