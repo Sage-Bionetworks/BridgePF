@@ -141,15 +141,16 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
 
-        Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
-        accountEncryptionService.removeConsentSignature(study, account);
-
         String healthCode = caller.getHealthCode();
         if (userConsentDao.withdrawConsent(healthCode, study)) {
             decrementStudyEnrollment(study);
             publisher.publishEvent(new UserUnenrolledEvent(caller, study));
             caller.setConsent(false);
-        };
+        }
+
+        Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+        accountEncryptionService.removeConsentSignature(study, account);
+
         return caller;
     }
 
