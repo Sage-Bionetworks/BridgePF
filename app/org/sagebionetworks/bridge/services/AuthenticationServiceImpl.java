@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -50,6 +51,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 
+    private DistributedLockDao lockDao;
     private Client stormpathClient;
     private CacheProvider cacheProvider;
     private BridgeConfig config;
@@ -58,6 +60,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private ParticipantOptionsService optionsService;
     private Validator signInValidator;
     private Validator passwordResetValidator;
+
+    public void setDistributedLockDao(DistributedLockDao lockDao) {
+        this.lockDao = lockDao;
+    }
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
@@ -146,16 +152,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public void signUp(SignUp signUp, Study study, boolean sendEmail) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
-        
-        SignUpValidator validator = new SignUpValidator(this);
-        Validate.entityThrowingException(validator, signUp);
-        // This could, in theory, go into validation... but it feels like it's a separate 
-        // issue, insofar as the signUp can be totally valid, but we can't accept it. 
-        if (consentService.isStudyAtEnrollmentLimit(study)) {
-            throw new StudyLimitExceededException(study);
-        }
+        checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
 
+        String lockId = null;
         try {
+            lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail());
+            
+            SignUpValidator validator = new SignUpValidator(this);
+            Validate.entityThrowingException(validator, signUp);
+            
+            if (consentService.isStudyAtEnrollmentLimit(study)) {
+                throw new StudyLimitExceededException(study);
+            }
+            
             Directory directory = stormpathClient.getResource(study.getStormpathHref(), Directory.class);
             // Create Stormpath account
             Account account = stormpathClient.instantiate(Account.class);
@@ -166,7 +175,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             account.setPassword(signUp.getPassword());
             
             directory.createAccount(account, sendEmail);
-            
             addAccountToGroups(directory, account, signUp.getRoles());
             
             // Assign a health code
@@ -174,6 +182,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         } catch (ResourceException re) {
             throw new BadRequestException(re.getDeveloperMessage());
+        } finally {
+            lockDao.releaseLock(SignUp.class, signUp.getEmail(), lockId);
         }
     }
 
