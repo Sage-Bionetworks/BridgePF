@@ -132,21 +132,13 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public User withdrawConsent(User caller, Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        boolean withdrawn = false;
 
         String healthCode = caller.getHealthCode();
-        List<StudyConsent> consents = studyConsentDao.getConsents(study.getIdentifier());
-        for (StudyConsent consent : consents) {
-            if (userConsentDao.hasConsented(healthCode, consent)) {
-                decrementStudyEnrollment(study);
-                userConsentDao.withdrawConsent(healthCode, consent);
-                withdrawn = true;
-            }
-        }
-        if (withdrawn) {
+        if (userConsentDao.withdrawConsent(healthCode, study)) {
+            decrementStudyEnrollment(study);
             publisher.publishEvent(new UserUnenrolledEvent(caller, study));
             caller.setConsent(false);
-        }
+        };
         return caller;
     }
 

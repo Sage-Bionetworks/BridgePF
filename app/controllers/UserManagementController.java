@@ -2,7 +2,6 @@ package controllers;
 
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
@@ -37,9 +36,7 @@ public class UserManagementController extends BaseController {
 
     public Result deleteUser(String email) throws Exception {
         getAuthenticatedAdminSession();
-        Study study = studyService.getStudyByHostname(getHostname());
-        User user = authenticationService.getUser(study, email);
-        userAdminService.deleteUser(user);
+        userAdminService.deleteUser(email);
 
         return okResult("User deleted.");
     }
