@@ -58,7 +58,7 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
     }
 
     @Override
-    public void putConsentSignature(ConsentSignature consentSignature, Study study, Account account) {
+    public void putConsentSignature(Study study, Account account, ConsentSignature consentSignature) {
         JsonNode json = mapper.valueToTree(consentSignature);
         String encrypted = healthCodeEncryptor.encrypt(json.asText());
         CustomData customData = account.getCustomData();
@@ -73,16 +73,17 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
         if (obj == null) {
             return null;
         }
-        String encrypted = (String)obj;
-        String jsonText = healthCodeEncryptor.decrypt(encrypted);
-        try {
-            JsonNode json = mapper.readTree(jsonText);
-            return ConsentSignature.createFromJson(json);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        return decryptConsentSignature((String)obj);
+    }
+
+    @Override
+    public ConsentSignature removeConsentSignature(Study study, Account account) {
+        CustomData customData = account.getCustomData();
+        Object obj = customData.remove(getConsentSignatureKey(study));
+        if (obj == null) {
+            return null;
         }
+        return decryptConsentSignature((String)obj);
     }
 
     private String getHealthIdKey(Study study) {
@@ -110,5 +111,17 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
                 return healthCode;
             }
         };
+    }
+
+    private ConsentSignature decryptConsentSignature(String encrypted) {
+        String jsonText = healthCodeEncryptor.decrypt(encrypted);
+        try {
+            JsonNode json = mapper.readTree(jsonText);
+            return ConsentSignature.createFromJson(json);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
