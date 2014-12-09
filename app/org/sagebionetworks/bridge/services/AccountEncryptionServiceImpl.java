@@ -54,14 +54,21 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
     }
 
     @Override
-    public void saveConsentSignature(ConsentSignature consentSignature, Account account) {
+    public void putConsentSignature(ConsentSignature consentSignature, Study study, Account account) {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode json = mapper.valueToTree(consentSignature);
-        healthCodeEncryptor.encrypt(json.asText());
+        String encrypted = healthCodeEncryptor.encrypt(json.asText());
+        CustomData customData = account.getCustomData();
+        customData.put(getConsentSignatureKey(study), encrypted);
+        customData.save();
     }
 
     private String getHealthIdKey(Study study) {
         return study.getIdentifier() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+    }
+
+    private String getConsentSignatureKey(Study study) {
+        return study.getIdentifier() + BridgeConstants.CUSTOM_DATA_CONSENT_SIGNATURE_SUFFIX;
     }
 
     private String getVersionKey(Study study) {
