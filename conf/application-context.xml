@@ -372,9 +372,6 @@
         <property name="signInValidator">
             <bean class="org.sagebionetworks.bridge.validators.SignInValidator"/>
         </property>
-        <property name="signUpValidator">
-            <bean class="org.sagebionetworks.bridge.validators.SignUpValidator"/>
-        </property>
         <property name="passwordResetValidator">
             <bean class="org.sagebionetworks.bridge.validators.PasswordResetValidator"/>
         </property>
@@ -449,9 +446,6 @@
         <property name="studyService" ref="studyService" />
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="distributedLockDao" ref="distributedLockDao"/>
-        <property name="validator">
-            <bean class="org.sagebionetworks.bridge.validators.SignUpValidator"/>
-        </property>
     </bean>
     
     <bean id="surveyService" class="org.sagebionetworks.bridge.services.SurveyServiceImpl">
