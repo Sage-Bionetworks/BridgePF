@@ -75,12 +75,16 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
-        Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
-        ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
-        if (consentSignature != null) {
-            return consentSignature;
+        try {
+            Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+            ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
+            if (consentSignature != null) {
+                return consentSignature;
+            }
+        } catch (Throwable e) {
+            logger.info("Consent signature not in Stormpath. Fall back to dynamo.");
         }
-        consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
+        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
         return consentSignature;
     }
 
@@ -172,11 +176,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             throw new EntityNotFoundException(StudyConsent.class);
         }
 
-        Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
-        ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
-        if (consentSignature == null) {
-            consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
-        }
+        final ConsentSignature consentSignature = getConsentSignature(caller, study);
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
