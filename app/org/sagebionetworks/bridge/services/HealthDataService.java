@@ -20,4 +20,6 @@ public interface HealthDataService {
 
     public void deleteHealthDataRecord(HealthDataKey key, String guid);
     
+    public void deleteHealthDataRecords(HealthDataKey key);
+    
 }

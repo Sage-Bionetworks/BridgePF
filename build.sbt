@@ -7,6 +7,7 @@ scalaVersion := "2.10.3"
 libraryDependencies ++= Seq(
   filters,
   "com.amazonaws" % "aws-java-sdk" % "1.9.3",
+  "com.newrelic.agent.java" % "newrelic-agent" % "3.12.0",
   "org.springframework" % "spring-context" % "4.0.7.RELEASE",
   "org.springframework" % "spring-test" % "4.0.7.RELEASE",
   "org.apache.commons" % "commons-lang3" % "3.3.2",
@@ -18,7 +19,6 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.2",
   "com.google.guava" % "guava" % "18.0",
   "org.mockito" % "mockito-all" % "1.9.5",
-  "org.jasypt" % "jasypt" % "1.9.2",
   "org.apache.shiro" % "shiro-core" % "1.2.3",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.51",
   "org.bouncycastle" % "bcpkix-jdk15on" % "1.51",

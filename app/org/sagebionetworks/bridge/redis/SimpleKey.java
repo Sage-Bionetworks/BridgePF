@@ -1,11 +1,18 @@
 package org.sagebionetworks.bridge.redis;
 
-class SimpleKey extends AbstractRedisKey {
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkArgument;
+
+/**
+ * Single suffix (domain, name space) key.
+ */
+final class SimpleKey extends AbstractRedisKey {
 
     private final String name;
 
     SimpleKey(String name) {
-        validate(name);
+        checkNotNull(name);
+        checkArgument(!name.contains(SEPARATOR));
         this.name = name;
     }
 

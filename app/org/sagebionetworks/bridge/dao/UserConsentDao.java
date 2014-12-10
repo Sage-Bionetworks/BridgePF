@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dao;
 
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 public interface UserConsentDao {
@@ -12,10 +13,15 @@ public interface UserConsentDao {
     void giveConsent(String healthCode, StudyConsent consent, ConsentSignature consentSignature);
 
     /**
-     * Withdraws consent to the specified study.
+     * Withdraws consent to the specified study. Currently this is only used by tests. 
      */
     void withdrawConsent(String healthCode, StudyConsent consent);
 
+    /**
+     * Withdraws consent to the specified study.
+     */
+    boolean withdrawConsent(String healthCode, Study study);
+    
     /**
      * Gets the time stamp of the consent document the user has consented.
      * Returns null if the user has not consented yet.
@@ -40,4 +46,11 @@ public interface UserConsentDao {
      * EntityNotFoundException if no consent signature is found.
      */
     ConsentSignature getConsentSignature(String healthCode, StudyConsent consent);
+
+    /**
+     * @param studyKey
+     * @return
+     */
+    long getNumberOfParticipants(String studyKey);
+    
 }

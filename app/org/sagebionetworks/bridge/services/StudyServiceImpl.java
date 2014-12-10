@@ -30,6 +30,7 @@ public class StudyServiceImpl implements StudyService {
         return studyDao.getStudy(identifier);
     }
 
+    private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
     private HerokuApi herokuApi;
@@ -39,6 +40,10 @@ public class StudyServiceImpl implements StudyService {
     private StudyValidator validator;
     private Map<String,Tracker> trackersByIdentifier = Maps.newHashMap();
 
+    public void setUploadCertificateService(UploadCertificateService uploadCertService) {
+        this.uploadCertService = uploadCertService;
+    }
+    
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
@@ -108,7 +113,7 @@ public class StudyServiceImpl implements StudyService {
         String id = study.getIdentifier();
         String lockId = null;
         try {
-            lockId = lockDao.createLock(Study.class, id);
+            lockId = lockDao.acquireLock(Study.class, id);
 
             if (studyDao.doesIdentifierExist(study.getIdentifier())) {
                 throw new EntityAlreadyExistsException(study);
@@ -118,6 +123,8 @@ public class StudyServiceImpl implements StudyService {
             String directory = directoryDao.createDirectoryForStudy(study.getIdentifier());
             study.setStormpathHref(directory);
             if (!config.isLocal()) {
+                uploadCertService.createCmsKeyPair(study.getIdentifier());
+
                 String record = dnsDao.createDnsRecordForStudy(study.getIdentifier());
                 String domain = herokuApi.registerDomainForStudy(study.getIdentifier());
 
@@ -131,6 +138,7 @@ public class StudyServiceImpl implements StudyService {
                 study.setHostname(study.getIdentifier() + config.getStudyHostnamePostfix());
             }
             study = studyDao.createStudy(study);
+
         } finally {
             lockDao.releaseLock(Study.class, id, lockId);
         }
@@ -156,8 +164,7 @@ public class StudyServiceImpl implements StudyService {
 
         String lockId = null;
         try {
-            lockId = lockDao.createLock(Study.class, identifier);
-
+            lockId = lockDao.acquireLock(Study.class, identifier);
             if (!config.isLocal()) {
                 herokuApi.unregisterDomainForStudy(identifier);
                 dnsDao.deleteDnsRecordForStudy(identifier);

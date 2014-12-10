@@ -31,7 +31,7 @@ public class SurveyValidator implements Validator {
         if (StringUtils.isBlank(survey.getIdentifier())) {
             errors.reject("missing an identifier");
         }
-        if (StringUtils.isBlank(survey.getStudyKey())) {
+        if (StringUtils.isBlank(survey.getStudyIdentifier())) {
             errors.reject("missing a study key");
         }
         if (StringUtils.isBlank(survey.getGuid())) {
