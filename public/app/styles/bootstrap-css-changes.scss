@@ -24,10 +24,10 @@ $green: #A9D385;
 /* This gets around the failure of sm/lg classes to work through the Angular-UI modal
     API. Setting it on the window instead, and forcing the styling here. */
 .sm .modal-dialog {
-    width: 300px;
+    max-width: 300px;
 }
 .lg .modal-dialog {
-    width: 600px;
+    max-width: 600px;
 }
 
 .well {
