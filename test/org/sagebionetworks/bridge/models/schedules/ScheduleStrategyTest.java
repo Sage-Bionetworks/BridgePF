@@ -125,10 +125,9 @@ public class ScheduleStrategyTest {
     }
     
     private Schedule createSchedule(String label) {
-        Schedule schedule = new DynamoSchedule();
-        schedule.setActivityType(ActivityType.SURVEY);
+        DynamoSchedule schedule = new DynamoSchedule();
         schedule.setLabel(label);
-        schedule.setActivityRef("http://sagebridge.org/survey1");
+        schedule.addActivity(new Activity(ActivityType.SURVEY, "http://sagebridge.org/survey1"));
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("0 */2 * * *");
         return schedule;

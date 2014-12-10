@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
@@ -67,12 +68,11 @@ public class DynamoScheduleDaoTest {
     }
     
     private Schedule createSchedule(Study study, User user, DynamoSchedulePlan plan, String name, String url) {
-        Schedule schedule = new DynamoSchedule();
+        DynamoSchedule schedule = new DynamoSchedule();
         schedule.setStudyAndUser(study, user);
         schedule.setSchedulePlanGuid(plan.getGuid());
         schedule.setLabel(name);
-        schedule.setActivityType(ActivityType.SURVEY);
-        schedule.setActivityRef(url);
+        schedule.addActivity(new Activity(ActivityType.SURVEY, url));
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("* * * * * *");
         schedule.setStartsOn(DateUtils.getCurrentMillisFromEpoch());

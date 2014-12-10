@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
@@ -95,6 +96,16 @@ public class JsonUtils {
             return constraint;
         }
         return null;
+    }
+    
+    public static void addToActivityList(JsonNode parent, List<Activity> list, String property) {
+        ArrayNode array = JsonUtils.asArrayNode(parent, property);
+        if (array != null) {
+            for (int i=0; i < array.size(); i++) {
+                Activity activity = Activity.fromJson(array.get(i));
+                list.add(activity);
+            }
+        }
     }
     
     public static Schedule asSchedule(JsonNode parent, String property) {
@@ -207,6 +218,16 @@ public class JsonUtils {
     public static void write(ObjectNode node, String propertyName, Long l) {
         if (l != null) {
             node.put(propertyName, l);
+        }
+    }
+    
+    public static void write(ObjectNode node, String propertyName, List<?> list) {
+        if (list != null && !list.isEmpty()) {
+            ArrayNode array = JsonNodeFactory.instance.arrayNode();
+            for (int i=0; i < list.size(); i++) {
+                array.insertPOJO(i, list.get(i));
+            }
+            node.set(propertyName, array);
         }
     }
     

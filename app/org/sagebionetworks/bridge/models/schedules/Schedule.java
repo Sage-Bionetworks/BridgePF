@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import java.util.List;
+
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -27,11 +29,14 @@ public interface Schedule extends BridgeEntity {
     public String getLabel();
     public void setLabel(String label);
     
+    public List<Activity> getActivities();
+    public void setActivities(List<Activity> activities);
+    
     public ActivityType getActivityType();
-    public void setActivityType(ActivityType activityType);
+    // public void setActivityType(ActivityType activityType);
     
     public String getActivityRef();
-    public void setActivityRef(String activityRef);
+    // public void setActivityRef(String activityRef);
     
     public ScheduleType getScheduleType();
     public void setScheduleType(ScheduleType scheduleType);
