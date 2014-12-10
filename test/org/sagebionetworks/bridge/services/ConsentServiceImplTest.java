@@ -9,6 +9,7 @@ import static org.junit.Assert.fail;
 
 import javax.annotation.Resource;
 
+import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,8 +59,7 @@ public class ConsentServiceImplTest {
     @Before
     public void before() {
         testUser = helper.createUser(ConsentServiceImplTest.class);
-        studyConsent = studyConsentDao.addConsent(testUser.getStudy().getIdentifier(), "/path/to", testUser.getStudy()
-                .getMinAgeOfConsent());
+        studyConsent = studyConsentDao.addConsent(testUser.getStudy().getIdentifier(), "/path/to", testUser.getStudy().getMinAgeOfConsent());
         studyConsentDao.setActive(studyConsent, true);
 
         // TestUserAdminHelper creates a user with consent. Withdraw consent to make sure we're
@@ -142,14 +142,35 @@ public class ConsentServiceImplTest {
     @Test
     public void cannotConsentIfTooYoung() {
         Study study = new DynamoStudy();
-        study.setIdentifier("test");
+        study.setIdentifier("api");
         study.setName("Test Study");
         study.setMinAgeOfConsent(18);
         
+        LocalDate now = LocalDate.now();
+        int year = now.getYear();
+        int month = now.getMonthOfYear();
+        int day = now.getDayOfMonth();
+        
+        String today18YearsAgo = String.format("%s-%2d-%2d", year-18, month, day).replaceAll(" ","0");
+        String yesterday18YearsAgo = String.format("%s-%2d-%2d", year-18, month, day-1).replaceAll(" ","0");
+        String tomorrow18YearsAgo = String.format("%s-%2d-%2d", year-18, month, day+1).replaceAll(" ","0");
+
+        // This will work
+        ConsentSignature sig = ConsentSignature.create("Test User", today18YearsAgo, null, null);
+        consentService.consentToResearch(testUser.getUser(), sig, study, false);
+        consentService.withdrawConsent(testUser.getUser(), study);
+        
+        // Also okay
+        sig = ConsentSignature.create("Test User", yesterday18YearsAgo, null, null);
+        consentService.consentToResearch(testUser.getUser(), sig, study, false);
+        consentService.withdrawConsent(testUser.getUser(), study);
+
+        // But this is not, one day to go
         try {
-            ConsentSignature sig = ConsentSignature.create("Test User", "2008-08-08", null, null);
+            sig = ConsentSignature.create("Test User", tomorrow18YearsAgo, null, null);
             consentService.consentToResearch(testUser.getUser(), sig, study, false);
         } catch(InvalidEntityException e) {
+            consentService.withdrawConsent(testUser.getUser(), study);
             assertTrue(e.getMessage().contains("years of age or older"));
         }
     }
