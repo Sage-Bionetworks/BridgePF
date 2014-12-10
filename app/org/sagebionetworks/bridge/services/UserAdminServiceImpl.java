@@ -14,33 +14,22 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.redis.RedisKey;
-import org.sagebionetworks.bridge.stormpath.StormpathFactory;
-import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.validation.Validator;
 
 import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.account.AccountCriteria;
-import com.stormpath.sdk.account.AccountList;
-import com.stormpath.sdk.account.Accounts;
-import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.client.Client;
 
-public class StormPathUserAdminService implements UserAdminService {
+public class UserAdminServiceImpl implements UserAdminService {
 
-    private static final Logger logger = LoggerFactory.getLogger(StormPathUserAdminService.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserAdminServiceImpl.class);
     
-    private AuthenticationService authenticationService;
+    private AuthenticationServiceImpl authenticationService;
     private ConsentService consentService;
     private HealthDataService healthDataService;
     private StudyService studyService;
-    private Client stormpathClient;
-    
     private DistributedLockDao lockDao;
-    private Validator validator;
 
-    public void setAuthenticationService(AuthenticationService authenticationService) {
+    public void setAuthenticationService(AuthenticationServiceImpl authenticationService) {
         this.authenticationService = authenticationService;
     }
 
@@ -56,34 +45,19 @@ public class StormPathUserAdminService implements UserAdminService {
         this.studyService = studyService;
     }
 
-    public void setStormpathClient(Client stormpathClient) {
-        this.stormpathClient = stormpathClient;
-    }
-
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
 
-    public void setValidator(Validator validator) {
-        this.validator = validator;
-    }
-    
     @Override
     public UserSession createUser(SignUp signUp, Study study, boolean signUserIn, boolean consentUser)
             throws BridgeServiceException {
-        checkNotNull(signUp, "Sign up cannot be null");
         checkNotNull(study, "Study cannot be null");
-        Validate.entityThrowingException(validator, signUp);
+        checkNotNull(signUp, "Sign up cannot be null");
+        checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
         
-        try {
-            Application app = StormpathFactory.getStormpathApplication(stormpathClient);
-            // Search for email and skip creation if it already exists.
-            if (userDoesNotExist(app, signUp.getEmail())) {
-                authenticationService.signUp(signUp, study, false);
-            }
-        } catch (Throwable t) {
-            throw new BridgeServiceException(t);
-        }
+        authenticationService.signUp(signUp, study, false);
+        
         SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
         UserSession newUserSession = null;
         try {
@@ -91,13 +65,9 @@ public class StormPathUserAdminService implements UserAdminService {
         } catch (ConsentRequiredException e) {
             newUserSession = e.getUserSession();
             if (consentUser) {
-                ConsentSignature consent = ConsentSignature.create("[Signature for " + signUp.getEmail() + "]",
-                        "1989-08-19", null, null);
+                String sig = String.format("[Signature for %s]", signUp.getEmail());;
+                ConsentSignature consent = ConsentSignature.create(sig, "1989-08-19", null, null);
                 consentService.consentToResearch(newUserSession.getUser(), consent, study, false);
-
-                // Now, sign in again so you get the consented user into the session
-                authenticationService.signOut(newUserSession.getSessionToken());
-                newUserSession = authenticationService.signIn(study, signIn);
             }
         }
         if (!signUserIn) {
@@ -134,11 +104,10 @@ public class StormPathUserAdminService implements UserAdminService {
         try {
             lock = lockDao.acquireLock(User.class, key);
             
-            Application app = StormpathFactory.getStormpathApplication(stormpathClient);
-            Account account = getUserAccountByEmail(app, userEmail);
+            Account account = authenticationService.getAccount(userEmail);
             if (account != null) {
                 for (Study study : studyService.getStudies()) {
-                    User user = authenticationService.createSessionFromAccount(study, account).getUser();
+                    User user = authenticationService.getSessionFromAccount(study, account).getUser();
                     deleteUserInStudy(study, account, user);    
                 }
                 account.delete();
@@ -172,20 +141,11 @@ public class StormPathUserAdminService implements UserAdminService {
         // This user may have never consented to research. Ignore if that's the case.
         for (String trackerId : study.getTrackers()) {
             Tracker tracker = studyService.getTrackerByIdentifier(trackerId);
-            if (tracker != null) {
+            if (tracker != null) { // this happens with some tests
                 HealthDataKey key = new HealthDataKey(study, tracker, user);
                 healthDataService.deleteHealthDataRecords(key);
             }
         }
     }
 
-    private boolean userDoesNotExist(Application app, String email) {
-        return (getUserAccountByEmail(app, email) == null);
-    }
-
-    private Account getUserAccountByEmail(Application app, String email) {
-        AccountCriteria criteria = Accounts.where(Accounts.email().eqIgnoreCase(email));
-        AccountList accounts = app.getAccounts(criteria);
-        return (accounts.iterator().hasNext()) ? accounts.iterator().next() : null;
-    }
 }
