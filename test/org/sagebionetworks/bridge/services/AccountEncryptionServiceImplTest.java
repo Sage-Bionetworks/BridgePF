@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import javax.annotation.Resource;
 
@@ -59,6 +61,13 @@ public class AccountEncryptionServiceImplTest {
         assertEquals(consentSignature.getBirthdate(), signature.getBirthdate());
         assertEquals(consentSignature.getImageData(), signature.getImageData());
         assertEquals(consentSignature.getImageMimeType(), signature.getImageMimeType());
+        accountEncryptionService.removeConsentSignature(study, account);
+        try {
+            accountEncryptionService.getConsentSignature(study, account);
+            fail("EntityNotFoundException expected.");
+        } catch (EntityNotFoundException e) {
+            assertTrue("EntityNotFoundException expected.", true);
+        }
     }
 
     @Test(expected = EntityNotFoundException.class)
