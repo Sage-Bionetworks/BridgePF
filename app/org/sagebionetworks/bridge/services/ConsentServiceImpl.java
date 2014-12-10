@@ -29,22 +29,21 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
 import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.client.Client;
 
 public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
 
     private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
     
+    private AuthenticationService authService;
     private JedisStringOps stringOps = new JedisStringOps();
-    private Client stormpathClient;
     private AccountEncryptionService accountEncryptionService;
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
     private ApplicationEventPublisher publisher;
 
-    public void setStormpathClient(Client client) {
-        this.stormpathClient = client;
+    public void setAuthenticationService(AuthenticationService authService) {
+        this.authService = authService;
     }
     
     public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
@@ -101,7 +100,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         }
         
         // Stormpath account
-        final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+        final Account account = authService.getAccount(caller.getEmail());
         HealthId hid = accountEncryptionService.getHealthCode(study, account);
         if (hid == null) {
             hid = accountEncryptionService.createAndSaveHealthCode(study, account);
