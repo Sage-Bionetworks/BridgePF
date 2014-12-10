@@ -20,17 +20,17 @@ public interface AccountEncryptionService {
     HealthId getHealthCode(Study study, Account account);
 
     /**
-     * Encrypts and saves the consent signature.
+     * Encrypts and saves the consent signature. Does both create and update.
      */
     void putConsentSignature(Study study, Account account, ConsentSignature consentSignature);
 
     /**
-     * Gets the decrypted consent signature.
+     * Gets the decrypted consent signature. Throws EntityNotFoundException if the signature does not exist.
      */
     ConsentSignature getConsentSignature(Study study, Account account);
 
     /**
-     * Removes consent signature.
+     * Removes consent signature. Throws EntityNotFoundException if the signature does not exist.
      */
-    ConsentSignature removeConsentSignature(Study study, Account account);
+    void removeConsentSignature(Study study, Account account);
 }

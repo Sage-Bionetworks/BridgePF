@@ -20,6 +20,8 @@ import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
@@ -28,8 +30,10 @@ import com.stormpath.sdk.client.Client;
 
 public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
 
+    private static final Logger logger = LoggerFactory.getLogger(ConsentServiceImpl.class);
+
     private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
-    
+
     private JedisStringOps stringOps = new JedisStringOps();
     private Client stormpathClient;
     private AccountEncryptionService accountEncryptionService;
@@ -67,14 +71,14 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public ConsentSignature getConsentSignature(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
+        if (consent == null) {
+            throw new EntityNotFoundException(StudyConsent.class);
+        }
         Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
         ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
         if (consentSignature != null) {
             return consentSignature;
-        }
-        final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
-        if (consent == null) {
-            throw new EntityNotFoundException(StudyConsent.class);
         }
         consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
         return consentSignature;
@@ -92,33 +96,37 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             throw new EntityAlreadyExistsException(consentSignature);
         }
 
+        final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+        HealthId hid = accountEncryptionService.getHealthCode(study, account);
+        if (hid == null) {
+            hid = accountEncryptionService.createAndSaveHealthCode(study, account);
+        }
+        final String healthCode = hid.getCode();
+
+        final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
+
         incrementStudyEnrollment(study);
+        try {
+            userConsentDao.giveConsent(healthCode, studyConsent, consentSignature);
+        } catch (Throwable e) {
+            decrementStudyEnrollment(study);
+            throw e;
+        }
 
         try {
-
-            final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
-            HealthId hid = accountEncryptionService.getHealthCode(study, account);
-            if (hid == null) {
-                hid = accountEncryptionService.createAndSaveHealthCode(study, account);
-            }
-            final String healthCode = hid.getCode();
-
-            final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
-            userConsentDao.giveConsent(healthCode, studyConsent, consentSignature);
             accountEncryptionService.putConsentSignature(study, account, consentSignature);
-
-            publisher.publishEvent(new UserEnrolledEvent(caller, study));
-
-            if (sendEmail) {
-                sendMailService.sendConsentAgreement(caller, consentSignature, studyConsent);
-            }
-
-            caller.setConsent(true);
-            caller.setHealthCode(healthCode);
-            return caller;
-        } finally {
-            decrementStudyEnrollment(study);
+        } catch (Throwable e) {
+            logger.error("Failed to write consent signature to Stormpath", e);
         }
+
+        publisher.publishEvent(new UserEnrolledEvent(caller, study));
+        if (sendEmail) {
+            sendMailService.sendConsentAgreement(caller, consentSignature, studyConsent);
+        }
+
+        caller.setConsent(true);
+        caller.setHealthCode(healthCode);
+        return caller;
     }
 
     @Override

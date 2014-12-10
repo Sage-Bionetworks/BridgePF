@@ -3,9 +3,11 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -19,7 +21,7 @@ import com.stormpath.sdk.directory.CustomData;
 public class AccountEncryptionServiceImpl implements AccountEncryptionService {
 
     private static final int CURRENT_VERSION = 2;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
     private AesGcmEncryptor healthCodeEncryptor;
     private HealthCodeService healthCodeService;
 
@@ -59,9 +61,8 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
 
     @Override
     public void putConsentSignature(Study study, Account account, ConsentSignature consentSignature) {
-        JsonNode json = mapper.valueToTree(consentSignature);
         try {
-            String encrypted = healthCodeEncryptor.encrypt(mapper.writeValueAsString(json));
+            String encrypted = healthCodeEncryptor.encrypt(MAPPER.writeValueAsString(consentSignature));
             CustomData customData = account.getCustomData();
             customData.put(getConsentSignatureKey(study), encrypted);
             customData.save();
@@ -75,20 +76,16 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
         CustomData customData = account.getCustomData();
         Object obj = customData.get(getConsentSignatureKey(study));
         if (obj == null) {
-            return null;
+            throw new EntityNotFoundException(ConsentSignature.class);
         }
         return decryptConsentSignature((String)obj);
     }
 
     @Override
-    public ConsentSignature removeConsentSignature(Study study, Account account) {
+    public void removeConsentSignature(Study study, Account account) {
         CustomData customData = account.getCustomData();
-        Object obj = customData.remove(getConsentSignatureKey(study));
-        if (obj == null) {
-            return null;
-        }
+        customData.remove(getConsentSignatureKey(study));
         customData.save();
-        return decryptConsentSignature((String)obj);
     }
 
     private String getHealthIdKey(Study study) {
@@ -121,7 +118,7 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
     private ConsentSignature decryptConsentSignature(String encrypted) {
         String jsonText = healthCodeEncryptor.decrypt(encrypted);
         try {
-            JsonNode json = mapper.readTree(jsonText);
+            JsonNode json = MAPPER.readTree(jsonText);
             return ConsentSignature.createFromJson(json);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
