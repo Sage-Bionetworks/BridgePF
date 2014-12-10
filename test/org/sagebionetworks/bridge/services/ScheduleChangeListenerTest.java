@@ -25,6 +25,7 @@ import org.sagebionetworks.bridge.events.UserEnrolledEvent;
 import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -154,12 +155,11 @@ public class ScheduleChangeListenerTest {
     private SchedulePlan createSchedulePlan(Study study, User user) {
         String planGuid = BridgeUtils.generateGuid();
         
-        Schedule schedule = new DynamoSchedule();
+        DynamoSchedule schedule = new DynamoSchedule();
         schedule.setStudyAndUser(study, user);
         schedule.setSchedulePlanGuid(planGuid);
         schedule.setLabel("Task AAA");
-        schedule.setActivityType(ActivityType.TASK);
-        schedule.setActivityRef("task:AAA");
+        schedule.addActivity(new Activity(ActivityType.TASK, "task:AAA"));
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("0 0 6 ? * MON-FRI *");
         

@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
@@ -152,8 +153,7 @@ public class DynamoSchedulePlanDaoTest {
         DynamoSchedule schedule = new DynamoSchedule();
         schedule.setLabel("Take this test survey");
         schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.setActivityType(ActivityType.SURVEY);
-        schedule.setActivityRef(url);
+        schedule.addActivity(new Activity(ActivityType.SURVEY, url));
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
