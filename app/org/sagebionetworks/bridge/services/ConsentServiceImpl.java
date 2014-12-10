@@ -4,6 +4,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 
+import org.joda.time.LocalDate;
+import org.joda.time.Period;
+import org.joda.time.format.PeriodFormatterBuilder;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.events.UserEnrolledEvent;
@@ -11,6 +15,7 @@ import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.User;
@@ -75,6 +80,14 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
         return consentSignature;
     }
+    
+    public boolean isUserOldEnoughForStudy(Study study, ConsentSignature signature) {
+        LocalDate birthdate = LocalDate.parse(signature.getBirthdate());
+        LocalDate now = LocalDate.now();
+        Period period = new Period(birthdate, now);
+        
+        return (period.getYears() >= study.getMinAgeOfConsent());
+    }
 
     @Override
     public User consentToResearch(final User caller, final ConsentSignature consentSignature, 
@@ -84,8 +97,15 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
+        // Both of these are validation and should ideally be in the validator, but that was 
+        // tied to object creation and deserialization, happening multiple places in the 
+        // codebase. 
         if (caller.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
+        }
+        if (!isUserOldEnoughForStudy(study, consentSignature)) {
+            String message = String.format("The study requires participants be %s years of age or older.", study.getMinAgeOfConsent());
+            throw new InvalidEntityException(consentSignature, message);
         }
         
         // Stormpath account
