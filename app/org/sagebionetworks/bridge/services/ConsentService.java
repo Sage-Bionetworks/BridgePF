@@ -9,7 +9,7 @@ public interface ConsentService {
 
     public ConsentSignature getConsentSignature(User caller, Study study);
 
-    public User consentToResearch(User caller, ConsentSignature researchConsent, Study study, boolean sendEmail);
+    public User consentToResearch(User caller, ConsentSignature consentSignature, Study study, boolean sendEmail);
 
     public boolean hasUserConsentedToResearch(User caller, Study study);
 
