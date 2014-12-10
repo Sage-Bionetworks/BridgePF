@@ -87,6 +87,7 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
         if (obj == null) {
             return null;
         }
+        customData.save();
         return decryptConsentSignature((String)obj);
     }
 
