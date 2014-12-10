@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -136,6 +137,21 @@ public class ConsentServiceImplTest {
             thrownEx = ex;
         }
         assertNotNull(thrownEx);
+    }
+    
+    @Test
+    public void cannotConsentIfTooYoung() {
+        Study study = new DynamoStudy();
+        study.setIdentifier("test");
+        study.setName("Test Study");
+        study.setMinAgeOfConsent(18);
+        
+        try {
+            ConsentSignature sig = ConsentSignature.create("Test User", "2008-08-08", null, null);
+            consentService.consentToResearch(testUser.getUser(), sig, study, false);
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("years of age or older"));
+        }
     }
     
     @Test

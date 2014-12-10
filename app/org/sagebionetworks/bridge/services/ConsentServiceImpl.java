@@ -96,7 +96,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             throw new EntityAlreadyExistsException(consentSignature);
         }
         if (!isUserOldEnoughForStudy(study, consentSignature)) {
-            String message = String.format("The study requires participants be %s years of age or older.", study.getMinAgeOfConsent());
+            String message = String.format("The study requires participants to be %s years of age or older.", study.getMinAgeOfConsent());
             throw new InvalidEntityException(consentSignature, message);
         }
         
