@@ -7,12 +7,14 @@ function($scope, $route, authService, formService) {
     $scope.sptoken = formService.retrieveSpToken($route);
     
     authService.verifyEmail({sptoken: $scope.sptoken}).then(function(response) {
-        $scope.setMessage("Your email address has been verified. Thank you!");
+        $scope.setMessage("Your email address has been verified.");
     }, function(response) {
         if (response.status === 412) {
-            authService.initSession(response.data);
+            // authService.initSession(response.data);
+            // Just exactly as if nothing had happened.
+            $scope.setMessage("Your email address has been verified.");
         } else {
-            $scope.setMessage(response.data, "danger");    
+            $scope.setMessage(response.data.message, "danger");    
         }
     });
     
