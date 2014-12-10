@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
@@ -32,8 +33,8 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
     }
 
     @Override
-    public boolean doesScheduleSurvey(String surveyGuid, long surveyCreatedOn) {
-        return schedule.isScheduleFor(surveyGuid, surveyCreatedOn);
+    public boolean doesScheduleSurvey(GuidCreatedOnVersionHolder keys) {
+        return schedule.isScheduleFor(keys);
     }
     
     @Override

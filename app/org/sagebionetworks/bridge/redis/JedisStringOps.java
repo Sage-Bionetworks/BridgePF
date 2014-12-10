@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.redis;
 
+import java.util.Set;
+
 import redis.clients.jedis.Jedis;
 
 public class JedisStringOps implements StringOps {
@@ -60,6 +62,39 @@ public class JedisStringOps implements StringOps {
             @Override
             Long execute(Jedis jedis) {
                 return jedis.ttl(key);
+            }
+        };
+    }
+
+    public RedisOp<Long> clearRedis(final String keyPattern) {
+        return new AbstractJedisTemplate<Long>() {
+            @Override
+            Long execute(Jedis jedis) {
+                Set<String> keys = jedis.keys(keyPattern);
+                for (String key : keys) {
+                    jedis.del(key);
+                }
+                return new Long(keys.size());
+            }
+        };
+    }
+
+    @Override
+    public RedisOp<Long> increment(final String key) {
+        return new AbstractJedisTemplate<Long>() {
+            @Override
+            Long execute(Jedis jedis) {
+                return jedis.incr(key);
+            }
+        };
+    }
+
+    @Override
+    public RedisOp<Long> decrement(final String key) {
+        return new AbstractJedisTemplate<Long>() {
+            @Override
+            Long execute(Jedis jedis) {
+                return jedis.decr(key);
             }
         };
     }

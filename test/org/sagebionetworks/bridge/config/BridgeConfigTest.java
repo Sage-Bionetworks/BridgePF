@@ -15,14 +15,12 @@ public class BridgeConfigTest {
 
     @Before
     public void before() {
-        System.setProperty("bridge.pwd", "when.the.password.is.not.a.password");
         System.setProperty("bridge.user", "unit.test");
         System.setProperty("bridge.env", "local");
     }
 
     @After
     public void after() {
-        System.clearProperty("bridge.pwd");
         System.clearProperty("bridge.salt");
         System.clearProperty("bridge.user");
         System.clearProperty("bridge.env");
@@ -32,14 +30,6 @@ public class BridgeConfigTest {
     public void testNonExisting() {
         BridgeConfig config = new BridgeConfig(CONF_FILE);
         assertNull(config.getProperty("someFakePropertyThatDoesNotExist"));
-    }
-
-    @Test
-    public void testEncryption() {
-        BridgeConfig config = new BridgeConfig(CONF_FILE);
-        assertEquals("example.value", config.getProperty("example.property"));
-        assertEquals("example.value.encrypted",
-                config.getProperty("example.property.encrypted"));
     }
 
     @Test
