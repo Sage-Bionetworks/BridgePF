@@ -80,14 +80,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
         return consentSignature;
     }
-    
-    public boolean isUserOldEnoughForStudy(Study study, ConsentSignature signature) {
-        LocalDate birthdate = LocalDate.parse(signature.getBirthdate());
-        LocalDate now = LocalDate.now();
-        Period period = new Period(birthdate, now);
-        
-        return (period.getYears() >= study.getMinAgeOfConsent());
-    }
 
     @Override
     public User consentToResearch(final User caller, final ConsentSignature consentSignature, 
@@ -220,5 +212,12 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             stringOps.decrement(key).execute();    
         }
     }
-
+    
+    private boolean isUserOldEnoughForStudy(Study study, ConsentSignature signature) {
+        LocalDate birthdate = LocalDate.parse(signature.getBirthdate());
+        LocalDate now = LocalDate.now();
+        Period period = new Period(birthdate, now);
+        
+        return (period.getYears() >= study.getMinAgeOfConsent());
+    }
 }
