@@ -30,7 +30,7 @@ public interface AccountEncryptionService {
     ConsentSignature getConsentSignature(Study study, Account account);
 
     /**
-     * Removes consent signature. Throws EntityNotFoundException if the signature does not exist.
+     * Removes consent signature.
      */
     void removeConsentSignature(Study study, Account account);
 }
