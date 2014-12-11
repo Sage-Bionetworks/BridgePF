@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.LocalDate;
 import org.joda.time.Period;
@@ -22,12 +23,15 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
+import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.stormpath.sdk.account.Account;
 
 public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
@@ -104,10 +108,8 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         if (caller.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
-        if (!isUserOldEnoughForStudy(study, consentSignature)) {
-            String message = String.format("The study requires participants to be %s years of age or older.", study.getMinAgeOfConsent());
-            throw new InvalidEntityException(consentSignature, message);
-        }
+        ConsentAgeValidator validator = new ConsentAgeValidator(study);
+        Validate.entityThrowingException(validator, consentSignature);
         
         // Stormpath account
         final Account account = authService.getAccount(caller.getEmail());
@@ -234,13 +236,5 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         if (count != null && Long.parseLong(count) > 0) {
             stringOps.decrement(key).execute();    
         }
-    }
-    
-    private boolean isUserOldEnoughForStudy(Study study, ConsentSignature signature) {
-        LocalDate birthdate = LocalDate.parse(signature.getBirthdate());
-        LocalDate now = LocalDate.now();
-        Period period = new Period(birthdate, now);
-        
-        return (period.getYears() >= study.getMinAgeOfConsent());
     }
 }
