@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import java.util.List;
-
 import org.sagebionetworks.bridge.dao.HealthIdDao;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;

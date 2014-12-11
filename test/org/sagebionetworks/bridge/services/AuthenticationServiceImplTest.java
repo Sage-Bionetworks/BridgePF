@@ -21,9 +21,11 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
@@ -193,6 +195,28 @@ public class AuthenticationServiceImplTest {
         }
     }
 
+    @Test
+    public void cannotCreateTheSameEmailAccountTwice() {
+        // To really test this, you need to create another study, and then try and add the user to *that*.
+        Study tempStudy = new DynamoStudy();
+        tempStudy.setIdentifier("temp");
+        tempStudy.setName("Temporary Study");
+        tempStudy = studyService.createStudy(tempStudy);
+        
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false);
+        try {
+            authService.signUp(user.getSignUp(), user.getStudy(), false);
+            authService.signUp(user.getSignUp(), tempStudy, false);
+            fail("Should not get here");
+        } catch(InvalidEntityException e) {
+            String message = e.getErrors().get("email").get(0);
+            assertEquals("email has already been registered", message);
+        } finally {
+            studyService.deleteStudy(tempStudy.getIdentifier());
+            helper.deleteUser(user);
+        }
+    }
+    
     private boolean isInStore(Directory directory, SignUp signUp) {
         Application app = StormpathFactory.getStormpathApplication(stormpathClient);
         Map<String, Object> queryParams = new HashMap<String, Object>();
