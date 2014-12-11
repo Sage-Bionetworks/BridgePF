@@ -8,7 +8,7 @@ public interface HealthCodeDao {
     boolean setIfNotExist(String code, String studyId);
 
     /**
-     * @return The ID of the study associated with this health code.
+     * @return The ID of the study associated with this health code; or null if the health code does not exist.
      */
     String getStudyIdentifier(String code);
 }
