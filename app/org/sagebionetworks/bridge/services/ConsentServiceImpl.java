@@ -4,6 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 
+import org.joda.time.LocalDate;
+import org.joda.time.Period;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.events.UserEnrolledEvent;
@@ -11,6 +13,7 @@ import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.User;
@@ -26,7 +29,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
 import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.client.Client;
 
 public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
 
@@ -34,16 +36,16 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
 
     private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
 
+    private AuthenticationService authService;
     private JedisStringOps stringOps = new JedisStringOps();
-    private Client stormpathClient;
     private AccountEncryptionService accountEncryptionService;
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
     private ApplicationEventPublisher publisher;
 
-    public void setStormpathClient(Client client) {
-        this.stormpathClient = client;
+    public void setAuthenticationService(AuthenticationService authService) {
+        this.authService = authService;
     }
     
     public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
@@ -76,7 +78,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             throw new EntityNotFoundException(StudyConsent.class);
         }
         try {
-            Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+            Account account = authService.getAccount(caller.getEmail());
             ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
             if (consentSignature != null) {
                 return consentSignature;
@@ -96,11 +98,19 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
 
+        // Both of these are validation and should ideally be in the validator, but that was 
+        // tied to object creation and deserialization, happening multiple places in the 
+        // codebase. 
         if (caller.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
-
-        final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+        if (!isUserOldEnoughForStudy(study, consentSignature)) {
+            String message = String.format("The study requires participants to be %s years of age or older.", study.getMinAgeOfConsent());
+            throw new InvalidEntityException(consentSignature, message);
+        }
+        
+        // Stormpath account
+        final Account account = authService.getAccount(caller.getEmail());
         HealthId hid = accountEncryptionService.getHealthCode(study, account);
         if (hid == null) {
             hid = accountEncryptionService.createAndSaveHealthCode(study, account);
@@ -160,7 +170,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             caller.setConsent(false);
         }
 
-        Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+        Account account = authService.getAccount(caller.getEmail());
         accountEncryptionService.removeConsentSignature(study, account);
 
         return caller;
@@ -225,5 +235,12 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             stringOps.decrement(key).execute();    
         }
     }
-
+    
+    private boolean isUserOldEnoughForStudy(Study study, ConsentSignature signature) {
+        LocalDate birthdate = LocalDate.parse(signature.getBirthdate());
+        LocalDate now = LocalDate.now();
+        Period period = new Period(birthdate, now);
+        
+        return (period.getYears() >= study.getMinAgeOfConsent());
+    }
 }
