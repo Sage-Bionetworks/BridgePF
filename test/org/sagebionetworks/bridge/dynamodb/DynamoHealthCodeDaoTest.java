@@ -31,7 +31,7 @@ public class DynamoHealthCodeDaoTest {
 
     @Test
     public void test() {
-        assertTrue(healthCodeDao.setIfNotExist("123"));
-        assertFalse(healthCodeDao.setIfNotExist("123"));
+        assertTrue(healthCodeDao.setIfNotExist("123", "789"));
+        assertFalse(healthCodeDao.setIfNotExist("123", "789"));
     }
 }

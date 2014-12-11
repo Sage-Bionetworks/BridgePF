@@ -1,10 +1,13 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.UUID;
 
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.models.HealthId;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,9 +26,9 @@ public class HealthCodeServiceImpl implements HealthCodeService {
     }
 
     @Override
-    public HealthId create() {
-        logger.debug("Creating a new health ID.");
-        final String healthCode = generateHealthCode();
+    public HealthId create(Study study) {
+        checkNotNull(study);
+        final String healthCode = generateHealthCode(study.getIdentifier());
         final String healthId = generateHealthId(healthCode);
         return new HealthId() {
             @Override
@@ -44,14 +47,19 @@ public class HealthCodeServiceImpl implements HealthCodeService {
         return healthIdDao.getCode(id);
     }
 
-    private String generateHealthCode() {
+    @Override
+    public String getStudyIdentifier(String healthCode) {
+        return healthCodeDao.getStudyIdentifier(healthCode);
+    }
+
+    private String generateHealthCode(String studyId) {
         String code = UUID.randomUUID().toString();
-        boolean isSet = healthCodeDao.setIfNotExist(code);
+        boolean isSet = healthCodeDao.setIfNotExist(code, studyId);
         while (!isSet) {
-            logger.warn("Health code " + code + " conflicts. This should never happen. " +
+            logger.error("Health code " + code + " conflicts. This should never happen. " +
                     "Make sure the UUID generator is a solid one.");
             code = UUID.randomUUID().toString();
-            isSet = healthCodeDao.setIfNotExist(code);
+            isSet = healthCodeDao.setIfNotExist(code, studyId);
         }
         return code;
     }
@@ -60,7 +68,7 @@ public class HealthCodeServiceImpl implements HealthCodeService {
         String id = UUID.randomUUID().toString();
         boolean isSet = healthIdDao.setIfNotExist(id, code);
         while (!isSet) {
-            logger.warn("Health ID " + id + " conflicts. This should never happen. " +
+            logger.error("Health ID " + id + " conflicts. This should never happen. " +
                     "Make sure the UUID generator is a solid one.");
             id = UUID.randomUUID().toString();
             isSet = healthIdDao.setIfNotExist(id, code);
