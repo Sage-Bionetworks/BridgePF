@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import java.util.List;
 import java.util.Set;
 
@@ -10,15 +14,14 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
@@ -37,20 +40,17 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public void giveConsent(String healthCode, StudyConsent consent, ConsentSignature consentSignature) {
-        giveConsent2(healthCode, consent, consentSignature);
+    public void giveConsent(String healthCode, StudyConsent consent) {
+        checkArgument(isNotBlank(healthCode), "Health code is blank or null");
+        checkNotNull(consent);
+        giveConsent2(healthCode, consent);
     }
 
     @Override
-    public void withdrawConsent(String healthCode, StudyConsent consent) {
-        withdrawConsent2(healthCode, consent);
-    }
-
-    @Override
-    public boolean withdrawConsent(String healthCode, Study study) {
+    public boolean withdrawConsent(String healthCode, String studyIdentifier) {
         // DynamoUserConsent2 has the healthCodeStudy as a hash key and no range key; so 
         // there can be only one consent right now per study. Just find it and delete it.
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, study.getIdentifier());
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyIdentifier);
         consent = mapper.load(consent);
         if (consent != null) {
             mapper.delete(consent);
@@ -58,10 +58,10 @@ public class DynamoUserConsentDao implements UserConsentDao {
         }
         return false;
     }
-    
+
     @Override
-    public Long getConsentCreatedOn(String healthCode, String studyKey) {
-        return getConsentCreatedOn2(healthCode, studyKey);
+    public Long getConsentCreatedOn(String healthCode, String studyIdentifier) {
+        return getConsentCreatedOn2(healthCode, studyIdentifier);
     }
 
     @Override
@@ -83,7 +83,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         return signature;
     }
 
-    void giveConsent2(String healthCode, StudyConsent studyConsent, ConsentSignature researchConsent) {
+    void giveConsent2(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent2 consent = null;
         try {
             consent = new DynamoUserConsent2(healthCode, studyConsent);
@@ -91,10 +91,6 @@ public class DynamoUserConsentDao implements UserConsentDao {
             if (consent == null) { // If the user has not consented yet
                 consent = new DynamoUserConsent2(healthCode, studyConsent);
             }
-            consent.setName(researchConsent.getName());
-            consent.setBirthdate(researchConsent.getBirthdate());
-            consent.setImageData(researchConsent.getImageData());
-            consent.setImageMimeType(researchConsent.getImageMimeType());
             consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
             mapper.save(consent);
         } catch (ConditionalCheckFailedException e) {
