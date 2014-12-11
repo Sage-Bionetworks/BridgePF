@@ -6,6 +6,8 @@ public class BridgeConstants {
 
     public static final String CUSTOM_DATA_HEALTH_CODE_SUFFIX = "_code";
 
+    public static final String CUSTOM_DATA_CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
+
     public static final String CUSTOM_DATA_VERSION = "version";
 
     public static final String ADMIN_GROUP = "admin";

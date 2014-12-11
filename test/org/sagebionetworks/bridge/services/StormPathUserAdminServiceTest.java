@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
@@ -20,6 +18,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.User;
@@ -39,7 +38,7 @@ public class StormPathUserAdminServiceTest {
     AuthenticationServiceImpl authService;
 
     @Resource
-    StormPathUserAdminService service;
+    UserAdminServiceImpl service;
 
     @Resource
     BridgeConfig bridgeConfig;
@@ -48,7 +47,7 @@ public class StormPathUserAdminServiceTest {
     StudyServiceImpl studyService;
     
     @Resource
-    StormPathUserAdminService userAdminService;
+    UserAdminServiceImpl userAdminService;
     
     private Study study;
     
@@ -83,14 +82,10 @@ public class StormPathUserAdminServiceTest {
         }
     }
 
-    @Test
-    public void canCreateUserIdempotently() {
+    @Test(expected = InvalidEntityException.class)
+    public void cannotCreateUserIdempotently() {
         testUser = service.createUser(signUp, study, true, true).getUser();
         testUser = service.createUser(signUp, study, true, true).getUser();
-
-        assertEquals("Correct email", signUp.getEmail(), testUser.getEmail());
-        assertEquals("Correct username", signUp.getUsername(), testUser.getUsername());
-        assertTrue("Has consented", testUser.doesConsent());
     }
 
     @Test(expected = BridgeServiceException.class)

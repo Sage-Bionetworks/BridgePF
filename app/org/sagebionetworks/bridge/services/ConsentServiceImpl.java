@@ -3,7 +3,10 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
+import java.util.Map;
 
+import org.joda.time.LocalDate;
+import org.joda.time.Period;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.events.UserEnrolledEvent;
@@ -11,6 +14,7 @@ import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.User;
@@ -19,27 +23,33 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
+import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.client.Client;
 
 public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
 
+    private static final Logger logger = LoggerFactory.getLogger(ConsentServiceImpl.class);
+
     private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
-    
+
+    private AuthenticationService authService;
     private JedisStringOps stringOps = new JedisStringOps();
-    private Client stormpathClient;
     private AccountEncryptionService accountEncryptionService;
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
     private ApplicationEventPublisher publisher;
 
-    public void setStormpathClient(Client client) {
-        this.stormpathClient = client;
+    public void setAuthenticationService(AuthenticationService authService) {
+        this.authService = authService;
     }
     
     public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
@@ -67,10 +77,18 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public ConsentSignature getConsentSignature(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-
         final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
+        }
+        try {
+            Account account = authService.getAccount(caller.getEmail());
+            ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
+            if (consentSignature != null) {
+                return consentSignature;
+            }
+        } catch (Throwable e) {
+            logger.info("Consent signature not in Stormpath. Fall back to dynamo.");
         }
         ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
         return consentSignature;
@@ -79,37 +97,51 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     @Override
     public User consentToResearch(final User caller, final ConsentSignature consentSignature, 
         final Study study, final boolean sendEmail) throws BridgeServiceException {
-        
+
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
+
+        // Both of these are validation and should ideally be in the validator, but that was 
+        // tied to object creation and deserialization, happening multiple places in the 
+        // codebase. 
         if (caller.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
+        ConsentAgeValidator validator = new ConsentAgeValidator(study);
+        Validate.entityThrowingException(validator, consentSignature);
         
         // Stormpath account
-        final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+        final Account account = authService.getAccount(caller.getEmail());
         HealthId hid = accountEncryptionService.getHealthCode(study, account);
         if (hid == null) {
             hid = accountEncryptionService.createAndSaveHealthCode(study, account);
         }
+        final String healthCode = hid.getCode();
 
-        final HealthId healthId = hid;
-        // Give consent
         final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
-        
+
         incrementStudyEnrollment(study);
-        userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
-        // Publish event
+        try {
+            userConsentDao.giveConsent(healthCode, studyConsent, consentSignature);
+        } catch (Throwable e) {
+            decrementStudyEnrollment(study);
+            throw e;
+        }
+
+        try {
+            accountEncryptionService.putConsentSignature(study, account, consentSignature);
+        } catch (Throwable e) {
+            logger.error("Failed to write consent signature to Stormpath", e);
+        }
+
         publisher.publishEvent(new UserEnrolledEvent(caller, study));
-        // Sent email
         if (sendEmail) {
             sendMailService.sendConsentAgreement(caller, consentSignature, studyConsent);
         }
-        // Update user
+
         caller.setConsent(true);
-        caller.setHealthCode(healthId.getCode());
+        caller.setHealthCode(healthCode);
         return caller;
     }
 
@@ -138,7 +170,11 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             decrementStudyEnrollment(study);
             publisher.publishEvent(new UserUnenrolledEvent(caller, study));
             caller.setConsent(false);
-        };
+        }
+
+        Account account = authService.getAccount(caller.getEmail());
+        accountEncryptionService.removeConsentSignature(study, account);
+
         return caller;
     }
 
@@ -146,18 +182,19 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public void emailConsentAgreement(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
+
         final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
-        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
+
+        final ConsentSignature consentSignature = getConsentSignature(caller, study);
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
         sendMailService.sendConsentAgreement(caller, consentSignature, consent);
     }
-    
+
     @Override
     public boolean isStudyAtEnrollmentLimit(Study study) {
         if (study.getMaxNumOfParticipants() == 0) {
@@ -200,5 +237,4 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             stringOps.decrement(key).execute();    
         }
     }
-
 }
