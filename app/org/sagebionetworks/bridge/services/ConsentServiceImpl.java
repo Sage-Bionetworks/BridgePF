@@ -3,10 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
-import java.util.Map;
 
-import org.joda.time.LocalDate;
-import org.joda.time.Period;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.events.UserEnrolledEvent;
@@ -14,7 +11,6 @@ import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.User;
@@ -30,8 +26,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.stormpath.sdk.account.Account;
 
 public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
@@ -123,7 +117,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
 
         incrementStudyEnrollment(study);
         try {
-            userConsentDao.giveConsent(healthCode, studyConsent, consentSignature);
+            userConsentDao.giveConsent(healthCode, studyConsent);
         } catch (Throwable e) {
             decrementStudyEnrollment(study);
             throw e;
@@ -166,7 +160,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
 
         String healthCode = caller.getHealthCode();
-        if (userConsentDao.withdrawConsent(healthCode, study)) {
+        if (userConsentDao.withdrawConsent(healthCode, study.getIdentifier())) {
             decrementStudyEnrollment(study);
             publisher.publishEvent(new UserUnenrolledEvent(caller, study));
             caller.setConsent(false);
