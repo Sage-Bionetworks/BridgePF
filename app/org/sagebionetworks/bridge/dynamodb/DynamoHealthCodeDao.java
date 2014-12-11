@@ -24,8 +24,9 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
     }
 
     @Override
-    public boolean setIfNotExist(String code) {
+    public boolean setIfNotExist(String code, String studyId) {
         checkArgument(isNotBlank(code));
+        checkArgument(isNotBlank(studyId));
         try {
             DynamoHealthCode toSave = new DynamoHealthCode(code);
             mapper.save(toSave);
@@ -33,5 +34,10 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
         } catch(ConditionalCheckFailedException e) {
             return false;
         }
+    }
+
+    @Override
+    public String getStudyIdentifier(String code) {
+        return "not-an-id";
     }
 }
