@@ -33,10 +33,8 @@ public interface Schedule extends BridgeEntity {
     public void setActivities(List<Activity> activities);
     
     public ActivityType getActivityType();
-    // public void setActivityType(ActivityType activityType);
     
     public String getActivityRef();
-    // public void setActivityRef(String activityRef);
     
     public ScheduleType getScheduleType();
     public void setScheduleType(ScheduleType scheduleType);

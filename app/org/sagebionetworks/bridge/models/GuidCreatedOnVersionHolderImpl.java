@@ -4,12 +4,14 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+@BridgeTypeName("GuidCreatedOnHolder")
 public class GuidCreatedOnVersionHolderImpl implements GuidCreatedOnVersionHolder {
 
     private final String guid;

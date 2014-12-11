@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.json.ActivityTypeDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -46,18 +47,15 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     private Long endsOn;
     private Long expires;
     private List<Activity> activities = Lists.newArrayList();
-    /*
+
     private ActivityType activityType;
     private String activityRef;
-    */
     
     public Schedule copy() {
         Schedule schedule = new DynamoSchedule();
         schedule.setStudyUserCompoundKey(getStudyUserCompoundKey());
         schedule.setSchedulePlanGuid(getSchedulePlanGuid());
         schedule.setLabel(getLabel());
-        //schedule.setActivityType(getActivityType());
-        //schedule.setActivityRef(getActivityRef());
         schedule.setActivities(getActivities());
         schedule.setScheduleType(getScheduleType());
         schedule.setCronTrigger(getCronTrigger());
@@ -119,9 +117,6 @@ public class DynamoSchedule implements DynamoTable, Schedule {
         if (activityType != null && activityRef != null) {
             this.activities.add(new Activity(activityType, activityRef));
         }
-        //this.activityType = JsonUtils.asActivityType(data, "activityType");
-        //this.activityRef = JsonUtils.asText(data, "activityRef");
-        
         this.scheduleType = JsonUtils.asScheduleType(data, "scheduleType");
         this.cronTrigger = JsonUtils.asText(data, "cronTrigger");
         this.startsOn = JsonUtils.asLong(data, "startsOn");
@@ -152,21 +147,10 @@ public class DynamoSchedule implements DynamoTable, Schedule {
     public ActivityType getActivityType() {
         return (activities == null || activities.isEmpty()) ? null : activities.get(0).getType();
     }
-    /*
-    @JsonDeserialize(using = ActivityTypeDeserializer.class)
-    public void setActivityType(ActivityType activityType) {
-        this.activityType = activityType;
-    }
-    */
     @DynamoDBIgnore
     public String getActivityRef() {
         return (activities == null || activities.isEmpty()) ? null : activities.get(0).getRef();
     }
-    /*
-    public void setActivityRef(String activityRef) {
-        this.activityRef = activityRef;
-    }
-    */
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     @DynamoDBIgnore
     public ScheduleType getScheduleType() {
@@ -221,4 +205,22 @@ public class DynamoSchedule implements DynamoTable, Schedule {
         return false;
     }
     
+    // Version1 deserialization support: convert these two fields to an array item.
+    
+    @JsonDeserialize(using = ActivityTypeDeserializer.class)
+    public void setActivityType(ActivityType activityType) {
+        this.activityType = activityType;
+        convertToArrayElement();
+    }
+    public void setActivityRef(String activityRef) {
+        this.activityRef = activityRef;
+        convertToArrayElement();
+    }
+    private void convertToArrayElement() {
+        if (activityType != null && activityRef != null) {
+            activities.add(new Activity(activityType, activityRef));
+            activityType = null;
+            activityRef = null;
+        }
+    }
 }
