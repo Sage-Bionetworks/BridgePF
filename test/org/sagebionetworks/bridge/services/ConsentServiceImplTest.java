@@ -91,12 +91,12 @@ public class ConsentServiceImplTest {
     @Test
     public void canConsent() {
         // Consent and verify.
-        ConsentSignature researchConsent = ConsentSignature.create("John Smith", "2011-11-11", null, null);
+        ConsentSignature researchConsent = ConsentSignature.create("John Smith", "1990-11-11", null, null);
         consentService.consentToResearch(testUser.getUser(), researchConsent, testUser.getStudy(), false);
         assertTrue(consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy()));
         ConsentSignature returnedSig = consentService.getConsentSignature(testUser.getUser(), testUser.getStudy());
         assertEquals("John Smith", returnedSig.getName());
-        assertEquals("2011-11-11", returnedSig.getBirthdate());
+        assertEquals("1990-11-11", returnedSig.getBirthdate());
         assertNull(returnedSig.getImageData());
         assertNull(returnedSig.getImageMimeType());
 
