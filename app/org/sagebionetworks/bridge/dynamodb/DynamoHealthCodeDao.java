@@ -28,7 +28,7 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
         checkArgument(isNotBlank(code));
         checkArgument(isNotBlank(studyId));
         try {
-            DynamoHealthCode toSave = new DynamoHealthCode(code);
+            DynamoHealthCode toSave = new DynamoHealthCode(code, studyId);
             mapper.save(toSave);
             return true;
         } catch(ConditionalCheckFailedException e) {
@@ -38,6 +38,11 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
 
     @Override
     public String getStudyIdentifier(String code) {
-        return "not-an-id";
+        DynamoHealthCode key = new DynamoHealthCode(code);
+        DynamoHealthCode loaded = mapper.load(key);
+        if (loaded == null) {
+            return null;
+        }
+        return loaded.getStudyIdentifier();
     }
 }
