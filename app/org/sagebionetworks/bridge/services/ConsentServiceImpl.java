@@ -6,8 +6,6 @@ import java.util.List;
 
 import org.joda.time.LocalDate;
 import org.joda.time.Period;
-import org.joda.time.format.PeriodFormatterBuilder;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.events.UserEnrolledEvent;
@@ -25,6 +23,8 @@ import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
@@ -32,8 +32,10 @@ import com.stormpath.sdk.account.Account;
 
 public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
 
+    private static final Logger logger = LoggerFactory.getLogger(ConsentServiceImpl.class);
+
     private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
-    
+
     private AuthenticationService authService;
     private JedisStringOps stringOps = new JedisStringOps();
     private AccountEncryptionService accountEncryptionService;
@@ -71,10 +73,18 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public ConsentSignature getConsentSignature(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-
         final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
+        }
+        try {
+            Account account = authService.getAccount(caller.getEmail());
+            ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
+            if (consentSignature != null) {
+                return consentSignature;
+            }
+        } catch (Throwable e) {
+            logger.info("Consent signature not in Stormpath. Fall back to dynamo.");
         }
         ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
         return consentSignature;
@@ -83,11 +93,11 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     @Override
     public User consentToResearch(final User caller, final ConsentSignature consentSignature, 
         final Study study, final boolean sendEmail) throws BridgeServiceException {
-        
+
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
+
         // Both of these are validation and should ideally be in the validator, but that was 
         // tied to object creation and deserialization, happening multiple places in the 
         // codebase. 
@@ -105,22 +115,31 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         if (hid == null) {
             hid = accountEncryptionService.createAndSaveHealthCode(study, account);
         }
+        final String healthCode = hid.getCode();
 
-        final HealthId healthId = hid;
-        // Give consent
         final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
-        
+
         incrementStudyEnrollment(study);
-        userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
-        // Publish event
+        try {
+            userConsentDao.giveConsent(healthCode, studyConsent, consentSignature);
+        } catch (Throwable e) {
+            decrementStudyEnrollment(study);
+            throw e;
+        }
+
+        try {
+            accountEncryptionService.putConsentSignature(study, account, consentSignature);
+        } catch (Throwable e) {
+            logger.error("Failed to write consent signature to Stormpath", e);
+        }
+
         publisher.publishEvent(new UserEnrolledEvent(caller, study));
-        // Sent email
         if (sendEmail) {
             sendMailService.sendConsentAgreement(caller, consentSignature, studyConsent);
         }
-        // Update user
+
         caller.setConsent(true);
-        caller.setHealthCode(healthId.getCode());
+        caller.setHealthCode(healthCode);
         return caller;
     }
 
@@ -149,7 +168,11 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             decrementStudyEnrollment(study);
             publisher.publishEvent(new UserUnenrolledEvent(caller, study));
             caller.setConsent(false);
-        };
+        }
+
+        Account account = authService.getAccount(caller.getEmail());
+        accountEncryptionService.removeConsentSignature(study, account);
+
         return caller;
     }
 
@@ -157,18 +180,19 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public void emailConsentAgreement(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
+
         final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
-        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
+
+        final ConsentSignature consentSignature = getConsentSignature(caller, study);
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
         sendMailService.sendConsentAgreement(caller, consentSignature, consent);
     }
-    
+
     @Override
     public boolean isStudyAtEnrollmentLimit(Study study) {
         if (study.getMaxNumOfParticipants() == 0) {
