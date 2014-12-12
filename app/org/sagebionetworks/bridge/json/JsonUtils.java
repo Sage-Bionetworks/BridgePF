@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
@@ -15,7 +14,6 @@ import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -68,6 +66,20 @@ public class JsonUtils {
         return 0;
     }
     
+    public static long asMillisDuration(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            return DateUtils.convertToMillisFromDuration(parent.get(property).asText());
+        }
+        return 0L;
+    }
+    
+    public static Long asMillisDurationLong(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            return DateUtils.convertToMillisFromDuration(parent.get(property).asText());
+        }
+        return null;
+    }
+    
     public static long asMillisSinceEpoch(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             return DateUtils.convertToMillisFromEpoch(parent.get(property).asText());
@@ -98,16 +110,6 @@ public class JsonUtils {
         return null;
     }
     
-    public static void addToActivityList(JsonNode parent, List<Activity> list, String property) {
-        ArrayNode array = JsonUtils.asArrayNode(parent, property);
-        if (array != null) {
-            for (int i=0; i < array.size(); i++) {
-                Activity activity = Activity.fromJson(array.get(i));
-                list.add(activity);
-            }
-        }
-    }
-    
     public static Schedule asSchedule(JsonNode parent, String property) {
         JsonNode schedule = JsonUtils.asJsonNode(parent, property);
         if (schedule != null) {
@@ -123,7 +125,7 @@ public class JsonUtils {
     
     @SuppressWarnings("unchecked")
     public static <T> List<T> asEntityList(JsonNode list, Class<T> clazz) {
-        ObjectMapper mapper = BridgeObjectMapper.get();
+        BridgeObjectMapper mapper = BridgeObjectMapper.get();
         if (list != null && list.isArray()) {
             return (List<T>) mapper.convertValue(list,
                     mapper.getTypeFactory().constructCollectionType(ArrayList.class, clazz));

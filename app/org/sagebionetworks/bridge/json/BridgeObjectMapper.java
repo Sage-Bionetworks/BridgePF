@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.surveys.DataType;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -14,6 +18,8 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.impl.ObjectIdWriter;
@@ -26,8 +32,8 @@ import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
  * to create a singleton available via <code>BridgeObjectMapper.get()</code>.
  *
  */
+@SuppressWarnings("serial")
 public class BridgeObjectMapper extends ObjectMapper {
-   private static final long serialVersionUID = 7329223290649069703L;
     
     private static final BridgeObjectMapper INSTANCE = new BridgeObjectMapper();
     
@@ -39,7 +45,6 @@ public class BridgeObjectMapper extends ObjectMapper {
         this.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         this.registerModule(new SimpleModule() {
-            private static final long serialVersionUID = 8900953081295761099L;
             public void setupModule(SetupContext context) {
                 super.setupModule(context);
                 BeanSerializerModifier bsm = new BeanSerializerModifier() {
@@ -54,6 +59,21 @@ public class BridgeObjectMapper extends ObjectMapper {
                 context.addBeanSerializerModifier(bsm);
             }
         });
+        SimpleModule serializers = new SimpleModule();
+        
+        serializers.addDeserializer(Schedule.class, new ScheduleDeserializer());
+        serializers.addSerializer(Schedule.class, new ScheduleSerializer());
+        
+        serializers.addDeserializer(ActivityType.class, new ActivityTypeDeserializer());
+        serializers.addSerializer(ActivityType.class, new LowercaseEnumJsonSerializer());
+        
+        serializers.addDeserializer(DataType.class, new DataTypeJsonDeserializer());
+        serializers.addSerializer(DataType.class, new LowercaseEnumJsonSerializer());
+        
+        serializers.addDeserializer(Operator.class, new OperatorJsonDeserializer());
+        serializers.addSerializer(Operator.class, new LowercaseEnumJsonSerializer());
+
+        this.registerModule(serializers);
     }
     
     private class ExtraFieldSerializer extends BeanSerializerBase {

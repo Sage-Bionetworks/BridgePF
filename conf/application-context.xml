@@ -115,10 +115,6 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
     
-    <bean id="scheduleDao" class="org.sagebionetworks.bridge.dynamodb.DynamoScheduleDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-    </bean>
-    
     <bean id="healthDataDao" class="org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
@@ -150,9 +146,6 @@
     </bean>
     
     <bean id="loggingInterceptor" class="interceptors.LoggingInterceptor"/>
-    
-    <bean id="scheduleChangeListener" class="org.sagebionetworks.bridge.services.ScheduleChangeListener" destroy-method="destroy">
-    </bean>
     
     <!-- Redis -->
 
@@ -396,13 +389,6 @@
         <property name="studyConsentDao" ref="studyConsentDao" />
         <property name="validator">
             <bean class="org.sagebionetworks.bridge.validators.StudyConsentValidator"/>
-        </property>
-    </bean>
-
-    <bean id="scheduleService" class="org.sagebionetworks.bridge.services.ScheduleServiceImpl">
-        <property name="scheduleDao" ref="scheduleDao" />
-        <property name="validator">
-            <bean class="org.sagebionetworks.bridge.validators.ScheduleValidator" />
         </property>
     </bean>
 

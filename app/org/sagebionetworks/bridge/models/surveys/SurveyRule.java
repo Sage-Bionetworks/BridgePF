@@ -31,11 +31,9 @@ public class SurveyRule {
         this.value = value;
         this.skipToTarget = skipToTarget;
     }
-    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public Operator getOperator() {
         return operator;
     }
-    @JsonDeserialize(using = OperatorJsonDeserializer.class)
     public void setOperator(Operator operator) {
         this.operator = operator;
     }
