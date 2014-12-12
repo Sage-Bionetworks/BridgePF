@@ -5,10 +5,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @BridgeTypeName("GuidCreatedOnHolder")
@@ -25,7 +29,9 @@ public class GuidCreatedOnVersionHolderImpl implements GuidCreatedOnVersionHolde
         this.version = survey.getVersion();
     }
     
-    public GuidCreatedOnVersionHolderImpl(String guid, long createdOn) {
+    @JsonCreator
+    public GuidCreatedOnVersionHolderImpl(@JsonProperty("guid") String guid,
+            @JsonProperty("createdOn") @JsonDeserialize(using = DateTimeJsonDeserializer.class) long createdOn) {
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "guid");
         checkArgument(createdOn != 0, "createdOn cannot be zero");
         this.guid = guid;
@@ -33,17 +39,25 @@ public class GuidCreatedOnVersionHolderImpl implements GuidCreatedOnVersionHolde
         this.version = null;
     }
     
+    @Override
     public String getGuid() {
         return guid;
     }
 
+    @Override
     @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getCreatedOn() {
         return createdOn;
     }
     
+    @Override
     public Long getVersion() {
         return version;
+    }
+
+    @Override
+    public boolean keysEqual(GuidCreatedOnVersionHolder keys) {
+        return (keys != null && keys.getGuid().equals(guid) && keys.getCreatedOn() == createdOn);
     }
 
     @Override

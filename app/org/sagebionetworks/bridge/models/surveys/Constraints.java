@@ -39,11 +39,9 @@ public class Constraints {
     public void setSupportedHints(EnumSet<UIHint> hints) {
         this.hints = hints;
     }
-    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public DataType getDataType() {
         return dataType;
     };
-    @JsonDeserialize(using = DataTypeJsonDeserializer.class)
     public void setDataType(DataType dataType) {
         this.dataType = dataType;
     }

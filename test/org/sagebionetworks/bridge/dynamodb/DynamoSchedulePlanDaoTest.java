@@ -16,9 +16,11 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
@@ -37,7 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoSchedulePlanDaoTest {
 
-    ObjectMapper mapping = new ObjectMapper();
+    ObjectMapper mapping = BridgeObjectMapper.get();
     
     @Resource
     DynamoSchedulePlanDao schedulePlanDao;
@@ -150,10 +152,9 @@ public class DynamoSchedulePlanDaoTest {
     }
 
     private SchedulePlan createASchedulePlan(String url) {
-        DynamoSchedule schedule = new DynamoSchedule();
-        schedule.setLabel("Take this test survey");
+        Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.addActivity(new Activity(ActivityType.SURVEY, url));
+        schedule.addActivity(new Activity("Take this test survey", ActivityType.SURVEY, url));
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);

@@ -3,18 +3,12 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
-import java.util.Map;
 
-import org.joda.time.LocalDate;
-import org.joda.time.Period;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.events.UserEnrolledEvent;
-import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.User;
@@ -27,14 +21,10 @@ import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.stormpath.sdk.account.Account;
 
-public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
+public class ConsentServiceImpl implements ConsentService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConsentServiceImpl.class);
 
@@ -46,7 +36,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
-    private ApplicationEventPublisher publisher;
 
     public void setAuthenticationService(AuthenticationService authService) {
         this.authService = authService;
@@ -67,12 +56,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
-
-    @Override
-    public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
-        this.publisher = publisher;
-    }
-
+    
     @Override
     public ConsentSignature getConsentSignature(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
@@ -135,7 +119,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
             logger.error("Failed to write consent signature to Stormpath", e);
         }
 
-        publisher.publishEvent(new UserEnrolledEvent(caller, study));
         if (sendEmail) {
             sendMailService.sendConsentAgreement(caller, consentSignature, studyConsent);
         }
@@ -168,7 +151,6 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         String healthCode = caller.getHealthCode();
         if (userConsentDao.withdrawConsent(healthCode, study)) {
             decrementStudyEnrollment(study);
-            publisher.publishEvent(new UserUnenrolledEvent(caller, study));
             caller.setConsent(false);
         }
 
