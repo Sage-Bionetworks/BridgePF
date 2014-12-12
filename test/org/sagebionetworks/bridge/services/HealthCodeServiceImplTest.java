@@ -57,7 +57,6 @@ public class HealthCodeServiceImplTest {
 
     private void clearDynamo() {
         DynamoTestUtil.clearTable(DynamoHealthCode.class);
-        DynamoTestUtil.clearTable(DynamoHealthCode2.class);
         DynamoTestUtil.clearTable(DynamoHealthId.class);
     }
 }
