@@ -13,7 +13,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode2;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthId;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.models.HealthId;
