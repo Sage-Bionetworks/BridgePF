@@ -37,7 +37,7 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
         checkNotNull(study);
         checkNotNull(account);
         final CustomData customData = account.getCustomData();
-        final HealthId healthId = healthCodeService.create();
+        final HealthId healthId = healthCodeService.create(study);
         final String encryptedHealthId = healthCodeEncryptor.encrypt(healthId.getId());
         customData.put(getHealthIdKey(study), encryptedHealthId);
         customData.put(getVersionKey(study), CURRENT_VERSION);

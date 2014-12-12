@@ -24,14 +24,26 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
     }
 
     @Override
-    public boolean setIfNotExist(String code) {
+    public boolean setIfNotExist(String code, String studyId) {
         checkArgument(isNotBlank(code));
+        checkArgument(isNotBlank(studyId));
         try {
-            DynamoHealthCode toSave = new DynamoHealthCode(code);
+            DynamoHealthCode toSave = new DynamoHealthCode(code, studyId);
             mapper.save(toSave);
             return true;
         } catch(ConditionalCheckFailedException e) {
             return false;
         }
+    }
+
+    @Override
+    public String getStudyIdentifier(final String code) {
+        DynamoHealthCode key = new DynamoHealthCode();
+        key.setCode(code);
+        DynamoHealthCode loaded = mapper.load(key);
+        if (loaded == null) {
+            return null;
+        }
+        return loaded.getStudyIdentifier();
     }
 }
