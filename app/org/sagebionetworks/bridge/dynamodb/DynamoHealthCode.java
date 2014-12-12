@@ -27,6 +27,7 @@ public class DynamoHealthCode implements DynamoTable {
     public DynamoHealthCode(String code, String studyId) {
         checkArgument(StringUtils.isNotBlank(code), "code cannot be null or empty.");
         checkArgument(StringUtils.isNotBlank(studyId), "study identifier cannot be null or empty.");
+        this.code = code;
         this.studyId = studyId;
     }
 
