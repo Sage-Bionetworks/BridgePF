@@ -42,7 +42,7 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
             mapper.save(toSave);
             saved = true;
         } catch(ConditionalCheckFailedException e) {
-            saved = false;
+            return false;
         }
         try {
             DynamoHealthCode2 toSave2 = new DynamoHealthCode2(code, studyId);
