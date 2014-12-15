@@ -14,6 +14,7 @@ public class ActivityTypeDeserializer extends JsonDeserializer<ActivityType> {
     @Override
     public ActivityType deserialize(JsonParser parser, DeserializationContext arg1) throws IOException,
             JsonProcessingException {
+        
         String value = parser.getText();
         return ActivityType.valueOf(value.toUpperCase());
     }

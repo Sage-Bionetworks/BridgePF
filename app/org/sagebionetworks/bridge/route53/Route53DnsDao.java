@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.route53;
 
 import java.util.List;
 
-
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.DnsDao;
 

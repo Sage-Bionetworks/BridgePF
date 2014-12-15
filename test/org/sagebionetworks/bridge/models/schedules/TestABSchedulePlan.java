@@ -1,43 +1,39 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.DateUtils;
 
 public class TestABSchedulePlan extends DynamoSchedulePlan {
 
-    private Schedule schedule1 = new DynamoSchedule() {
+    private Schedule schedule1 = new Schedule() {
         {
             setGuid("AAA");
             setScheduleType(ScheduleType.RECURRING);
             setCronTrigger("* * *");
-            setActivityType(ActivityType.TASK);
-            setActivityRef("task:AAA");
+            addActivity(new Activity("Do AAA task", ActivityType.TASK, "task:AAA"));
             setExpires(new Long(60000));
-            setLabel("Test label for the user");
+            setLabel("Schedule 1");
         }
     };
-    private Schedule schedule2 = new DynamoSchedule() {
+    private Schedule schedule2 = new Schedule() {
         {
             setGuid("BBB");
             setScheduleType(ScheduleType.RECURRING);
             setCronTrigger("* * *");
-            setActivityType(ActivityType.TASK);
-            setActivityRef("task:BBB");
+            addActivity(new Activity("Do BBB task", ActivityType.TASK, "task:BBB"));
             setExpires(new Long(60000));
-            setLabel("Test label for the user");
+            setLabel("Schedule 2");
         }
     };
-    private Schedule schedule3 = new DynamoSchedule() {
+    private Schedule schedule3 = new Schedule() {
         {
             setGuid("CCC");
             setScheduleType(ScheduleType.RECURRING);
             setCronTrigger("* * *");
-            setActivityType(ActivityType.TASK);
-            setActivityRef("task:CCC");
+            addActivity(new Activity("Do CCC task", ActivityType.TASK, "task:CCC"));
             setExpires(new Long(60000));
-            setLabel("Test label for the user");
+            setLabel("Schedule 3");
         }
     };
     

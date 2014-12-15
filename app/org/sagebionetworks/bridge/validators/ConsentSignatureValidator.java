@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.validators;
 
-import com.google.common.base.Strings;
+import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import com.google.common.base.Strings;
 
 public class ConsentSignatureValidator implements Validator {
     @Override

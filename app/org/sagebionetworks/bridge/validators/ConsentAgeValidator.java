@@ -1,18 +1,11 @@
 package org.sagebionetworks.bridge.validators;
 
-import java.util.List;
-import java.util.Map;
-
 import org.joda.time.LocalDate;
 import org.joda.time.Period;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 public class ConsentAgeValidator implements Validator {
 
