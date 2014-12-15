@@ -98,6 +98,7 @@ GET    /admin/v1/backfill/:name    @controllers.BackfillController.backfill(name
 # Admin - User Management
 POST      /admin/v1/users           @controllers.UserManagementController.createUser
 DELETE    /admin/v1/users           @controllers.UserManagementController.deleteUser(email: java.lang.String ?= null)
+DELETE    /admin/v1/alltestusers        @controllers.UserManagementController.deleteAllTestUsers
 
 # AngularJS application
 GET    /*file      controllers.Assets.at(path="/public", file)
