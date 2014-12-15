@@ -47,10 +47,10 @@ public class TestUserAdminHelper {
 
             if (roleList == null) {
                 this.roles = new String[1];
-                this.roles[0] = "test_users";
+                this.roles[0] = BridgeConstants.TEST_USERS_GROUP;
             } else {
-                if (!roleList.contains("test_users")) {
-                    roleList.add("test_users");
+                if (!roleList.contains(BridgeConstants.TEST_USERS_GROUP)) {
+                    roleList.add(BridgeConstants.TEST_USERS_GROUP);
                 }
                 this.roles = roleList.toArray(new String[roleList.size()]);
             }
