@@ -12,7 +12,7 @@ public class LunchController extends BaseController {
         String[] places = new String[] {
                 "http://www.yelp.com/biz/yellow-dot-cafe-seattle",
                 "http://www.yelp.com/biz/veggie-grill-seattle",
-                "http://www.yelp.com/biz/portage-bay-café-seattle-8",
+                "http://www.yelp.com/biz/portage-bay-cafe-seattle-8",
                 "http://www.yelp.com/biz/brave-horse-tavern-seattle",
                 "http://www.yelp.com/biz/cuoco-seattle",
                 "http://www.yelp.com/biz/lunchbox-laboratory-seattle-2",
