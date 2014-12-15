@@ -19,6 +19,6 @@ public class LunchController extends BaseController {
                 "http://www.yelp.com/biz/jade-garden-seattle",
                 "http://www.yelp.com/biz/saffron-grill-seattle"
         };
-        return okResult(places[random.nextInt(places.length)]);
+        return temporaryRedirect(places[random.nextInt(places.length)]);
     }
 }
