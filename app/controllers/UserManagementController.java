@@ -44,4 +44,11 @@ public class UserManagementController extends BaseController {
         return okResult("User deleted.");
     }
 
+    public Result deleteAllTestUsers() throws Exception {
+        getAuthenticatedAdminSession();
+        userAdminService.deleteAllTestUsers();
+
+        return okResult("All test users deleted.");
+    }
+
 }

@@ -30,6 +30,8 @@ import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
+import com.stormpath.sdk.group.Group;
+import com.stormpath.sdk.group.GroupList;
 
 public class StormPathUserAdminService implements UserAdminService {
 
@@ -41,7 +43,7 @@ public class StormPathUserAdminService implements UserAdminService {
     private ParticipantOptionsService optionsService;
     private DistributedLockDao lockDao;
     private Validator validator;
-    
+
     private HealthIdDao healthIdDao;
     private HealthCodeDao healthCodeDao;
 
@@ -52,7 +54,7 @@ public class StormPathUserAdminService implements UserAdminService {
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
-    
+
     public void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
@@ -76,11 +78,11 @@ public class StormPathUserAdminService implements UserAdminService {
     public void setValidator(Validator validator) {
         this.validator = validator;
     }
-    
+
     public void setHealthIdDao(HealthIdDao healthIdDao) {
         this.healthIdDao = healthIdDao;
     }
-    
+
     public void setHealthCodeDao(HealthCodeDao healthCodeDao) {
         this.healthCodeDao = healthCodeDao;
     }
@@ -91,7 +93,7 @@ public class StormPathUserAdminService implements UserAdminService {
         checkNotNull(signUp, "Sign up cannot be null");
         checkNotNull(study, "Study cannot be null");
         Validate.entityThrowingException(validator, signUp);
-        
+
         try {
             Directory directory = getDirectory(study);
             // Search for email and skip creation if it already exists.
@@ -128,13 +130,13 @@ public class StormPathUserAdminService implements UserAdminService {
     public void revokeAllConsentRecords(User user, Study study) throws BridgeServiceException {
         checkNotNull(user, "User cannot be null");
         checkNotNull(study, "Study cannot be null");
-        
+
         consentService.withdrawConsent(user, study);
     }
 
     @Override
     public void deleteUser(String userEmail) throws BridgeServiceException {
-        checkNotNull(userEmail, "User emailcannot be null");
+        checkNotNull(userEmail, "User email cannot be null");
         for (Study study : studyService.getStudies()) {
             deleteUserInStudyWithRetries(userEmail, study);
         }
@@ -146,6 +148,18 @@ public class StormPathUserAdminService implements UserAdminService {
         for (Study study : studyService.getStudies()) {
             deleteUserInStudyWithRetries(user, study);
         }
+    }
+
+    @Override
+    public void deleteAllTestUsers() throws BridgeServiceException {
+        for (Study study : studyService.getStudies()) {
+            Group testUsers = getGroup("test_users", getDirectory(study));
+            AccountList accounts = testUsers.getAccounts();
+            for (Account account : accounts) {
+                deleteUserInStudyWithRetries(new User(account), study);
+            }
+        }
+
     }
 
     private void deleteUserInStudyWithRetries(String userEmail, Study study) throws BridgeServiceException {
@@ -171,12 +185,12 @@ public class StormPathUserAdminService implements UserAdminService {
             retryCount++;
             try {
                 Thread.sleep(100 * 2 ^ retryCount);
-            } catch(InterruptedException ie) {
+            } catch (InterruptedException ie) {
                 throw new BridgeServiceException(ie);
             }
         }
-        throw new RuntimeException("Cannot delete user " + user.getEmail()
-                + " in study " + study.getName() + " after all the retries.");
+        throw new RuntimeException("Cannot delete user " + user.getEmail() + " in study " + study.getName()
+                + " after all the retries.");
     }
 
     private boolean deleteUserInStudy(User user, Study study) throws BridgeServiceException {
@@ -207,22 +221,22 @@ public class StormPathUserAdminService implements UserAdminService {
     private void removeParticipantOptions(User user) {
         String healthCode = user.getHealthCode();
         if (healthCode != null) {
-            optionsService.deleteAllParticipantOptions(healthCode);    
+            optionsService.deleteAllParticipantOptions(healthCode);
         }
     }
-    
+
     private void removeHealthCodeAndIdMappings(User user) {
         String healthCode = user.getHealthCode();
         healthIdDao.deleteMapping(healthCode);
         healthCodeDao.deleteCode(healthCode);
     }
-    
+
     private void removeAllHealthDataRecords(User user, Study userStudy) throws BridgeServiceException {
         // This user may have never consented to research. Ignore if that's the case.
         if (user.getHealthCode() != null) {
             for (String trackerId : userStudy.getTrackers()) {
                 Tracker tracker = studyService.getTrackerByIdentifier(trackerId);
-                
+
                 HealthDataKey key = new HealthDataKey(userStudy, tracker, user);
                 List<HealthDataRecord> records = healthDataService.getAllHealthData(key);
                 for (HealthDataRecord record : records) {
@@ -249,6 +263,22 @@ public class StormPathUserAdminService implements UserAdminService {
 
     private Directory getDirectory(Study userStudy) {
         return stormpathClient.getResource(userStudy.getStormpathHref(), Directory.class);
+    }
+
+    private Group getGroup(String groupName, Directory directory) {
+        GroupList groups = directory.getGroups();
+        Group result = null;
+        for (Group group : groups) {
+            if (group.getName().equals(groupName)) {
+                result = group;
+                break;
+            }
+        }
+        if (result == null) {
+            throw new BridgeServiceException("Specified group name not available in the given directory. groupName="
+                    + groupName + ", directory=" + directory.getName());
+        }
+        return result;
     }
 
     private boolean userDoesNotExist(Directory directory, String email) {
