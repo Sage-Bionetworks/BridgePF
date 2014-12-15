@@ -1,5 +1,12 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
+import java.util.List;
+import java.util.Set;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
@@ -14,7 +21,12 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.google.common.collect.Sets;
 
 public class DynamoUserConsentDao implements UserConsentDao {
 
@@ -28,18 +40,28 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public void giveConsent(String healthCode, StudyConsent consent, ConsentSignature consentSignature) {
-        giveConsent2(healthCode, consent, consentSignature);
+    public void giveConsent(String healthCode, StudyConsent consent) {
+        checkArgument(isNotBlank(healthCode), "Health code is blank or null");
+        checkNotNull(consent);
+        giveConsent2(healthCode, consent);
     }
 
     @Override
-    public void withdrawConsent(String healthCode, StudyConsent consent) {
-        withdrawConsent2(healthCode, consent);
+    public boolean withdrawConsent(String healthCode, String studyIdentifier) {
+        // DynamoUserConsent2 has the healthCodeStudy as a hash key and no range key; so 
+        // there can be only one consent right now per study. Just find it and delete it.
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyIdentifier);
+        consent = mapper.load(consent);
+        if (consent != null) {
+            mapper.delete(consent);
+            return true;
+        }
+        return false;
     }
 
     @Override
-    public Long getConsentCreatedOn(String healthCode, String studyKey) {
-        return getConsentCreatedOn2(healthCode, studyKey);
+    public Long getConsentCreatedOn(String healthCode, String studyIdentifier) {
+        return getConsentCreatedOn2(healthCode, studyIdentifier);
     }
 
     @Override
@@ -61,7 +83,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         return signature;
     }
 
-    void giveConsent2(String healthCode, StudyConsent studyConsent, ConsentSignature researchConsent) {
+    void giveConsent2(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent2 consent = null;
         try {
             consent = new DynamoUserConsent2(healthCode, studyConsent);
@@ -69,10 +91,6 @@ public class DynamoUserConsentDao implements UserConsentDao {
             if (consent == null) { // If the user has not consented yet
                 consent = new DynamoUserConsent2(healthCode, studyConsent);
             }
-            consent.setName(researchConsent.getName());
-            consent.setBirthdate(researchConsent.getBirthdate());
-            consent.setImageData(researchConsent.getImageData());
-            consent.setImageMimeType(researchConsent.getImageMimeType());
             consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
             mapper.save(consent);
         } catch (ConditionalCheckFailedException e) {
@@ -88,7 +106,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         }
         mapper.delete(consentToDelete);
     }
-
+    
     Long getConsentCreatedOn2(String healthCode, String studyKey) {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyKey);
         consent = mapper.load(consent);
@@ -109,5 +127,22 @@ public class DynamoUserConsentDao implements UserConsentDao {
         }
         return ConsentSignature.create(consent.getName(), consent.getBirthdate(), consent.getImageData(),
                 consent.getImageMimeType());
+    }
+
+    @Override
+    public long getNumberOfParticipants(String studyKey) {
+        DynamoDBScanExpression scan = new DynamoDBScanExpression();
+        
+        Condition condition = new Condition();
+        condition.withComparisonOperator(ComparisonOperator.EQ);
+        condition.withAttributeValueList(new AttributeValue().withS(studyKey));
+        scan.addFilterCondition("studyKey", condition);
+        
+        Set<String> healthCodes = Sets.newHashSet();
+        List<DynamoUserConsent2> mappings = mapper.scan(DynamoUserConsent2.class, scan);
+        for (DynamoUserConsent2 consent : mappings) {
+            healthCodes.add(consent.getHealthCode());
+        }
+        return healthCodes.size();
     }
 }

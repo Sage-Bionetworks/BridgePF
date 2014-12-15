@@ -6,6 +6,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
@@ -18,19 +21,24 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.stormpath.sdk.account.Account;
+import com.stormpath.sdk.account.AccountList;
+import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
 
@@ -187,21 +195,46 @@ public class AuthenticationServiceImplTest {
         }
     }
 
-    private boolean isInStore(Directory directory, SignUp signUp) {
-        for (Account account : directory.getAccounts()) {
-            if (account.getEmail().equals(signUp.getEmail())) {
-                return true;
-            }
+    @Test
+    public void cannotCreateTheSameEmailAccountTwice() {
+        // To really test this, you need to create another study, and then try and add the user to *that*.
+        Study tempStudy = new DynamoStudy();
+        tempStudy.setIdentifier("temp");
+        tempStudy.setName("Temporary Study");
+        tempStudy = studyService.createStudy(tempStudy);
+        
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false);
+        try {
+            authService.signUp(user.getSignUp(), user.getStudy(), false);
+            authService.signUp(user.getSignUp(), tempStudy, false);
+            fail("Should not get here");
+        } catch(InvalidEntityException e) {
+            String message = e.getErrors().get("email").get(0);
+            assertEquals("email has already been registered", message);
+        } finally {
+            studyService.deleteStudy(tempStudy.getIdentifier());
+            helper.deleteUser(user);
         }
-        return false;
+    }
+    
+    private boolean isInStore(Directory directory, SignUp signUp) {
+        Application app = StormpathFactory.getStormpathApplication(stormpathClient);
+        Map<String, Object> queryParams = new HashMap<String, Object>();
+        queryParams.put("email", signUp.getEmail());
+        AccountList accounts = app.getAccounts(queryParams);
+        
+        return (accounts.iterator().hasNext());
     }
 
     private boolean hasHealthCode(Study study, Directory directory, SignUp signUp) {
-        for (Account account : directory.getAccounts()) {
-            if (account.getEmail().equals(signUp.getEmail())) {
-                return hasHealthCode(study, account);
-            }
-        }
+        Application app = StormpathFactory.getStormpathApplication(stormpathClient);
+        Map<String, Object> queryParams = new HashMap<String, Object>();
+        queryParams.put("email", signUp.getEmail());
+        AccountList accounts = app.getAccounts(queryParams);
+        
+        if (accounts.iterator().hasNext()){
+            return hasHealthCode(study, accounts.iterator().next());
+        };
         return false;
     }
 
