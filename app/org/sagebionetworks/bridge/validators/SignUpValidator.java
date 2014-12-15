@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
 import org.apache.commons.lang3.StringUtils;
-
 import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.services.AuthenticationService;

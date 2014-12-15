@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.crypto;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import java.security.cert.Certificate;
 import java.security.KeyPair;
+import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.Iterator;
 
