@@ -9,18 +9,18 @@ public interface UserConsentDao {
     /**
      * Gives consent to the specified study.
      */
-    void giveConsent(String healthCode, StudyConsent consent, ConsentSignature consentSignature);
+    void giveConsent(String healthCode, StudyConsent consent);
 
     /**
      * Withdraws consent to the specified study.
      */
-    void withdrawConsent(String healthCode, StudyConsent consent);
-
+    boolean withdrawConsent(String healthCode, String studyIdentifier);
+    
     /**
      * Gets the time stamp of the consent document the user has consented.
      * Returns null if the user has not consented yet.
      */
-    Long getConsentCreatedOn(String healthCode, String studyKey);
+    Long getConsentCreatedOn(String healthCode, String studyIdentifier);
 
     /**
      * Whether the user has consented to the specified study.
@@ -40,4 +40,10 @@ public interface UserConsentDao {
      * EntityNotFoundException if no consent signature is found.
      */
     ConsentSignature getConsentSignature(String healthCode, StudyConsent consent);
+
+    /**
+     * @param studyKey
+     * @return
+     */
+    long getNumberOfParticipants(String studyKey);
 }

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
@@ -11,55 +12,22 @@ public interface SurveyDao {
     
     public Survey updateSurvey(Survey survey);
     
-    public Survey versionSurvey(String surveyGuid, long createdOn);
+    public Survey versionSurvey(GuidCreatedOnVersionHolder keys);
     
-    public Survey publishSurvey(String surveyGuid, long createdOn);
-    
-    public List<Survey> getSurveys(String studyKey);
+    public Survey publishSurvey(GuidCreatedOnVersionHolder keys);
     
     /**
-     * Get the most recently published version of each survey that has been 
-     * published. These are the survey instances that would be shown to a 
-     * researcher when creating schedule plans.
-     * 
-     * @param studyKey
-     * @return a list of surveys, each with a different guid, where is is the most
-     *  recently published instance of a survey.
-     */
-    public List<Survey> getMostRecentlyPublishedSurveys(String studyKey);
-    
-    /**
-     * Get the most recent version of each survey in the study, whether 
-     * published or not.
-     * @param studyKey
-     * @return a list of surveys, each with a different guid, each of which is the 
-     * most recent instance of that survey.
-     */
-    public List<Survey> getMostRecentSurveys(String studyKey);    
-    
-    /**
-     * Get all versions of a specific survey, published or not.
-     * @param surveyGuid
-     * @return
-     */
-    public List<Survey> getSurveyVersions(String surveyGuid);
-    
-    /**
-     * Delete a survey. A survey cannot be deleted if it has been published. 
-     * You must first close the survey, which will address any links to the 
-     * survey before it is unpublished; then it can be deleted.
-     * 
-     * NOTE: If there are any references to this survey (survey responses or 
-     * survey plans that schedule the survey), then it may not be deleted. 
-     * It may be necessary to delete both kinds of entities before this 
-     * method will work. Generally this method will only be used by tests.
+     * Delete a survey. If a survey is published, or if there is a schedule plan
+     * that references the survey or a survey response based on the survey, then 
+     * the survey cannot be deleted. The survey responses and schedule plans must 
+     * first be deleted, and the survey closed (unpublished), before the survey 
+     * can be deleted.
      *  
      * @param study
-     * @param surveyGuid
-     * @param createdOn
+     * @param keys
      */
-    public void deleteSurvey(Study study, String surveyGuid, long createdOn);
-
+    public void deleteSurvey(Study study, GuidCreatedOnVersionHolder keys);
+    
     /**
      * Unpublish the survey, closing out any active records that are still 
      * pointing to this survey. 
@@ -67,15 +35,54 @@ public interface SurveyDao {
      * @param createdOn
      * @return
      */
-    public Survey closeSurvey(String surveyGuid, long createdOn);
-    
-    
+    public Survey closeSurvey(GuidCreatedOnVersionHolder keys);
+
     /**
-     * Get a particular survey by version, regardless of publication state.
-     * @param surveyGuid
-     * @param createdOn
+     * Get a specific version of a survey.
+     * @param keys
      * @return
      */
-    public Survey getSurvey(String surveyGuid, long createdOn);
+    public Survey getSurvey(GuidCreatedOnVersionHolder keys);
+    
+    /**
+     * Get all versions of a specific survey, ordered by most recent version 
+     * first in the list.
+     * @param studyIdentifier
+     * @param guid
+     * @return
+     */
+    public List<Survey> getSurveyAllVersions(String studyIdentifier, String guid);    
+    
+    /**
+     * Get the most recent version of a survey, regardless of whether it is published
+     * or not.
+     * @param studyIdentifier
+     * @param guid
+     * @return
+     */
+    public Survey getSurveyMostRecentVersion(String studyIdentifier, String guid);
+    
+    /**
+     * Get the most recent version of a survey that is published. More recent, unpublished 
+     * versions of the survey will be ignored. 
+     * @param studyIdentifier
+     * @param guid
+     * @return
+     */
+    public Survey getSurveyMostRecentlyPublishedVersion(String studyIdentifier, String guid);
+    
+    /**
+     * Get the most recent version of each survey in the study, that has been published. 
+     * @param studyIdentifier
+     * @return
+     */
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(String studyIdentifier);
+    
+    /**
+     * Get the most recent version of each survey in the study, whether published or not.
+     * @param studyIdentifier
+     * @return
+     */
+    public List<Survey> getAllSurveysMostRecentVersion(String studyIdentifier);
     
 }

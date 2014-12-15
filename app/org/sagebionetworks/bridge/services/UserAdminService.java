@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -28,20 +27,6 @@ public interface UserAdminService {
             throws BridgeServiceException;
 
     /**
-     * Remove all consent records from the target user. The user's session (if the target user is signed in) will be
-     * updated to reflect this new state.
-     *
-     * @param user
-     *            target user
-     * @param userStudy
-     *            the study of the target user
-     * @return UserSession for user with updated consent state
-     *
-     * @throws BridgeServiceException
-     */
-    public void revokeAllConsentRecords(User user, Study userStudy) throws BridgeServiceException;
-
-    /**
      * Delete the target user.
      *
      * @param userEmail
@@ -49,15 +34,6 @@ public interface UserAdminService {
      * @throws BridgeServiceException
      */
     public void deleteUser(String userEmail) throws BridgeServiceException;
-
-    /**
-     * Delete the target user.
-     *
-     * @param user
-     *            target user
-     * @throws BridgeServiceException
-     */
-    public void deleteUser(User user) throws BridgeServiceException;
 
     /**
      * Deletes all all users in the "test users" group in Stormpath.

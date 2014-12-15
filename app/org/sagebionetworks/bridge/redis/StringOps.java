@@ -4,7 +4,7 @@ package org.sagebionetworks.bridge.redis;
  * For Redis strings (simple key-value pairs).
  */
 public interface StringOps {
-
+    
     /**
      * The specified key will expire after seconds.
      * 
@@ -68,5 +68,20 @@ public interface StringOps {
      *      positive value if ttl is set, zero if not, negative if there was an error
      */
     RedisOp<Long> ttl(String key);
+
+    /**
+     * Decrement the value by one
+     * @param key
+     * @return the new value of the key (after incrementing).
+     */
+    
+    RedisOp<Long> increment(String key);
+    
+    /**
+     * Decrement the value by one.
+     * @param key
+     * @return the new value of the key (after decrementing).
+     */
+    RedisOp<Long> decrement(String key);
 
 }

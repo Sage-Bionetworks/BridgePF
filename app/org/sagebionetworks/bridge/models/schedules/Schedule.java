@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedule;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -35,7 +36,7 @@ public interface Schedule extends BridgeEntity {
     public ScheduleType getScheduleType();
     public void setScheduleType(ScheduleType scheduleType);
     
-    public boolean isScheduleFor(String surveyGuid, long surveyCreatedOn);
+    public boolean isScheduleFor(GuidCreatedOnVersionHolder keys);
     
     public Long getStartsOn();
     public void setStartsOn(Long startsOn);

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
@@ -25,10 +24,11 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
     }
 
     @Override
-    public boolean setIfNotExist(String code) {
+    public boolean setIfNotExist(String code, String studyId) {
         checkArgument(isNotBlank(code));
+        checkArgument(isNotBlank(studyId));
         try {
-            DynamoHealthCode toSave = new DynamoHealthCode(code);
+            DynamoHealthCode toSave = new DynamoHealthCode(code, studyId);
             mapper.save(toSave);
             return true;
         } catch(ConditionalCheckFailedException e) {
@@ -37,12 +37,13 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
     }
 
     @Override
-    public void deleteCode(String healthCode) {
-        checkNotNull(healthCode);
-        DynamoHealthCode code = new DynamoHealthCode(healthCode);
-        DynamoHealthCode dynamoHealthCode = mapper.load(code);
-        if (dynamoHealthCode != null) {
-            mapper.delete(dynamoHealthCode);
+    public String getStudyIdentifier(final String code) {
+        DynamoHealthCode key = new DynamoHealthCode();
+        key.setCode(code);
+        DynamoHealthCode loaded = mapper.load(key);
+        if (loaded == null) {
+            return null;
         }
+        return loaded.getStudyIdentifier();
     }
 }

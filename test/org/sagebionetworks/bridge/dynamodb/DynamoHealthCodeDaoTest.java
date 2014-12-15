@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import javax.annotation.Resource;
@@ -31,7 +33,9 @@ public class DynamoHealthCodeDaoTest {
 
     @Test
     public void test() {
-        assertTrue(healthCodeDao.setIfNotExist("123"));
-        assertFalse(healthCodeDao.setIfNotExist("123"));
+        assertTrue(healthCodeDao.setIfNotExist("123", "789"));
+        assertFalse(healthCodeDao.setIfNotExist("123", "789"));
+        assertEquals("789", healthCodeDao.getStudyIdentifier("123"));
+        assertNull(healthCodeDao.getStudyIdentifier("xyz"));
     }
 }

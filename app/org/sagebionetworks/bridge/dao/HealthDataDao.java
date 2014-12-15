@@ -19,4 +19,6 @@ public interface HealthDataDao {
     
     public void deleteHealthDataRecord(HealthDataKey key, String guid);
     
+    public void deleteHealthDataRecords(HealthDataKey key);
+    
 }

@@ -10,8 +10,6 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
 
-import org.jasypt.properties.EncryptableProperties;
-import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,12 +113,7 @@ public class BridgeConfig {
 
         // Collapse the properties for the current environment
         Properties collapsed = collapse(properties, environment.name().toLowerCase());
-
-        final String pwd = read(PASSWORD, properties);
-        final BridgeEncryptor encryptor = new BridgeEncryptor(pwd);
-
-        // Decryptable properties
-        this.properties = new EncryptableProperties(collapsed, encryptor);
+        this.properties = new Properties(collapsed);
     }
     
     // Creating configuration for tests
