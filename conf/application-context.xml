@@ -345,6 +345,12 @@
         <property name="schemaFile" value="file:conf/schemas/medication.json"/>
     </bean>
 
+    <bean id="controllers.LunchController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.LunchController" parent="BaseController" />
+        </property>
+    </bean>
+ 
     <!-- Services -->
 
     <bean id="healthCodeService" class="org.sagebionetworks.bridge.services.HealthCodeServiceImpl">
