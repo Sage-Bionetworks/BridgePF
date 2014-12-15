@@ -32,15 +32,6 @@ public class Schedule implements BridgeEntity {
     private Long expires;
     private List<Activity> activities = Lists.newArrayList();
     
-    public Schedule copy() {
-        Schedule schedule = new Schedule();
-        schedule.setLabel(getLabel());
-        schedule.setActivities(getActivities());
-        schedule.setScheduleType(getScheduleType());
-        schedule.setCronTrigger(getCronTrigger());
-        schedule.setExpires(getExpires());
-        return schedule;
-    }
     public List<Activity> getActivities() {
         return activities;
     }

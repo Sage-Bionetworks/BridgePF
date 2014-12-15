@@ -95,7 +95,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
             group = groups.get(i++);
             perc -= group.getPercentage();
         }
-        return group.getSchedule().copy();
+        return group.getSchedule();
     }
     @Override
     public boolean doesScheduleSurvey(GuidCreatedOnVersionHolder keys) {

@@ -223,16 +223,6 @@ public class JsonUtils {
         }
     }
     
-    public static void write(ObjectNode node, String propertyName, List<?> list) {
-        if (list != null && !list.isEmpty()) {
-            ArrayNode array = JsonNodeFactory.instance.arrayNode();
-            for (int i=0; i < list.size(); i++) {
-                array.insertPOJO(i, list.get(i));
-            }
-            node.set(propertyName, array);
-        }
-    }
-    
     public static String toJSON(Object object) {
         try {
             return new BridgeObjectMapper().writeValueAsString(object);

@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.json;
 
 import static org.sagebionetworks.bridge.models.schedules.Schedule.ACTIVITIES_PROPERTY;
+import static org.sagebionetworks.bridge.models.schedules.Schedule.ACTIVITY_REF_PROPERTY;
+import static org.sagebionetworks.bridge.models.schedules.Schedule.ACTIVITY_TYPE_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.CRON_TRIGGER_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.ENDS_ON_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.EXPIRES_PROPERTY;
@@ -46,6 +48,9 @@ public class ScheduleSerializer extends JsonSerializer<Schedule> {
                 gen.writeObject(activity);
             }
             gen.writeEndArray();
+            Activity act = schedule.getActivities().get(0);
+            writeString(gen, ACTIVITY_TYPE_PROPERTY, act.getActivityType().name().toLowerCase());
+            writeString(gen, ACTIVITY_REF_PROPERTY, act.getRef());
         }
         gen.writeStringField(TYPE_PROPERTY_NAME, SCHEDULE_TYPE_NAME);
         gen.writeEndObject();

@@ -27,7 +27,7 @@ public class SimpleScheduleStrategy implements ScheduleStrategy {
     
     @Override
     public Schedule getScheduleForUser(Study study, SchedulePlan plan, User user) {
-        return (schedule == null) ? null : schedule.copy();
+        return schedule;
     }
 
     @Override

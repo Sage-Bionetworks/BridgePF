@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.ACTIVITIES_PROPERTY;
 
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
@@ -15,7 +16,7 @@ import org.springframework.validation.Validator;
 public class ScheduleValidator implements Validator {
 
     public static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
-    public static final String CANNOT_BE_NULL = "cannot be missing or null";
+    public static final String CANNOT_BE_NULL = "cannot be null";
     
     public static final String ACTIVITY_TYPE_PROPERTY = "activityType";
     public static final String REF_PROPERTY = "ref";
@@ -63,18 +64,32 @@ public class ScheduleValidator implements Validator {
                         if (keys.getCreatedOn() == 0L) {
                             errors.rejectValue(CREATED_ON_PROPERTY, CANNOT_BE_NULL);
                         }
+                        if (!activity.getRef().contains(keys.getGuid())) {
+                            errors.rejectValue(GUID_PROPERTY, "does not match the URL for this activity");
+                        }
+                        String timestamp = DateUtils.convertToISODateTime(keys.getCreatedOn());
+                        if (!activity.getRef().contains(timestamp)) {
+                            errors.rejectValue(CREATED_ON_PROPERTY, "does not match the URL for this activity");
+                        }
                         errors.popNestedPath();    
                     }
                 }
                 errors.popNestedPath();
             }
         }
-        if (schedule.getScheduleType() == ScheduleType.ONCE) {
+        if (schedule.getStartsOn() != null && schedule.getEndsOn() != null) {
+            long oneHourLater = schedule.getStartsOn() + (1000 * 60 * 60);
+            if (schedule.getEndsOn() < oneHourLater) {
+                errors.rejectValue(Schedule.ENDS_ON_PROPERTY, "should be at least an hour after the startsOn time");
+            }
+        }
+        if (schedule.getScheduleType() == null) {
+            errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, CANNOT_BE_NULL);
+        } else if (schedule.getScheduleType() == ScheduleType.ONCE) {
             if (isNotBlank(schedule.getCronTrigger())) {
                 errors.rejectValue(Schedule.CRON_TRIGGER_PROPERTY, "One-time schedule should not have a cron trigger");
             }
-        }
-        if (schedule.getScheduleType() == ScheduleType.RECURRING) {
+        } else if (schedule.getScheduleType() == ScheduleType.RECURRING) {
             // Pretty much everything is valid
             if (isBlank(schedule.getCronTrigger())) {
                 errors.rejectValue(Schedule.CRON_TRIGGER_PROPERTY, "Recurring schedule must have a cron trigger");

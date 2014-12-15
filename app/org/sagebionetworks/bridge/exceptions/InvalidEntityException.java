@@ -6,8 +6,8 @@ import java.util.Map;
 import org.apache.commons.httpclient.HttpStatus;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+@SuppressWarnings("serial")
 public class InvalidEntityException extends BridgeServiceException {
-    private static final long serialVersionUID = 8206007689868153093L;
 
     private BridgeEntity entity;
     private Map<String,List<String>> errors;
@@ -76,7 +76,7 @@ public class InvalidEntityException extends BridgeServiceException {
 
     @Override
     public String toString() {
-        return "InvalidEntityException [entity=" + entity + ", errors=" + errors + "]";
+        return "InvalidEntityException [message=" + getMessage() + ", entity=" + entity + ", errors=" + errors + "]";
     }
 
 }
