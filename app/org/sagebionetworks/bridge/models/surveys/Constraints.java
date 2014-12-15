@@ -3,15 +3,10 @@ package org.sagebionetworks.bridge.models.surveys;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.sagebionetworks.bridge.json.DataTypeJsonDeserializer;
-import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
 
 @JsonTypeInfo( use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "dataType")

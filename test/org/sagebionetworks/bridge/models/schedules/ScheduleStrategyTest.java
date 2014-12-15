@@ -68,6 +68,7 @@ public class ScheduleStrategyTest {
     public void canRountripABTestingPlan() throws Exception {
         DynamoSchedulePlan plan = createABSchedulePlan();
         String output = JsonUtils.toJSON(plan);
+        
         JsonNode node = mapper.readTree(output);
         DynamoSchedulePlan newPlan = DynamoSchedulePlan.fromJson(node);
         
@@ -123,6 +124,8 @@ public class ScheduleStrategyTest {
         Schedule schedule = createSchedule("new variant");
         
         String json = mapper.writeValueAsString(schedule);
+        
+        System.out.println(json);
         schedule = mapper.readValue(json, Schedule.class);
         
         assertEquals("http://sagebridge.org/survey1", schedule.getActivityRef());
