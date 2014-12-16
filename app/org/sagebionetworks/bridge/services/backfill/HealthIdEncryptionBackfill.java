@@ -1,17 +1,20 @@
 package org.sagebionetworks.bridge.services.backfill;
 
 import java.util.List;
+import java.util.UUID;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
-import org.sagebionetworks.bridge.models.Backfill;
+import org.sagebionetworks.bridge.models.BackfillRecord;
+import org.sagebionetworks.bridge.models.BackfillStatus;
+import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountEncryptionService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
@@ -21,9 +24,7 @@ import com.stormpath.sdk.directory.CustomData;
 /**
  * Backfills health ID encryption (for example, with a new key).
  */
-public class HealthIdEncryptionBackfill implements BackfillService {
-
-    private final Logger logger = LoggerFactory.getLogger(HealthIdEncryptionBackfill.class);
+public class HealthIdEncryptionBackfill extends AsyncBackfillTemplate {
 
     private Client stormpathClient;
     private StudyService studyService;
@@ -44,25 +45,52 @@ public class HealthIdEncryptionBackfill implements BackfillService {
     }
 
     @Override
-    public Backfill backfill() {
-        int count = 0;
+    void doBackfill(final String user, final String name, BackfillCallback callback) {
+        final String taskId = UUID.randomUUID().toString();
+        callback.start(new BackfillTask() {
+            @Override
+            public String getId() {
+                return taskId;
+            }
+            @Override
+            public long getTimestamp() {
+                return DateTime.now(DateTimeZone.UTC).getMillis();
+            }
+            @Override
+            public String getName() {
+                return name;
+            }
+            @Override
+            public String getDescription() {
+                return "Backfills health ID encryption.";
+            }
+            @Override
+            public String getUser() {
+                return user;
+            }
+            @Override
+            public String getStatus() {
+                return BackfillStatus.SUBMITTED.name();
+            }
+        });
         List<Study> studies = studyService.getStudies();
         for (Study study : studies) {
-            count = count + backfillForStudy(study);
+            backfillForStudy(study, taskId, callback);
         }
-        Backfill backfill = new Backfill("healthIdEncryptionBackfill");
-        backfill.setCompleted(true);
-        backfill.setCount(count);
-        return backfill;
+        callback.done();
     }
 
-    private int backfillForStudy(Study study) {
-        int count = 0;
+    @Override
+    int getExpireInSeconds() {
+        return 30 * 60;
+    }
+
+    private void backfillForStudy(final Study study, final String taskId, final BackfillCallback callback) {
         Application application = StormpathFactory.getStormpathApplication(stormpathClient);
         StormpathAccountIterator iterator = new StormpathAccountIterator(application);
         while (iterator.hasNext()) {
             List<Account> accountList = iterator.next();
-            for (Account account : accountList) {
+            for (final Account account : accountList) {
                 final CustomData customData = account.getCustomData();
                 final String studyKey = study.getIdentifier();
                 final String healthIdKey = studyKey + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
@@ -70,8 +98,22 @@ public class HealthIdEncryptionBackfill implements BackfillService {
                 if (healthIdObj == null) {
                     // Backfill accounts that have no health id
                     accountEncryptionService.createAndSaveHealthCode(study, account);
-                    count++;
-                    logger.info("Created health code for account " + account.getEmail() + " in study " + study.getName());
+                    callback.newRecords(new BackfillRecord() {
+                        @Override
+                        public String getTaskId() {
+                            return taskId;
+                        }
+                        @Override
+                        public long getTimestamp() {
+                            return DateTime.now(DateTimeZone.UTC).getMillis();
+                        }
+                        @Override
+                        public String getRecord() {
+                            return "{\"study\": \"" + study.getIdentifier()
+                                    + "\", \"account\": \"" + account.getEmail()
+                                    + "\", \"operation\": \"created\"}";
+                        }
+                    });
                 } else {
                     // Backfill accounts that are missing health codes -- this should be only test artifacts and
                     // should not exist in staging and prod
@@ -79,11 +121,25 @@ public class HealthIdEncryptionBackfill implements BackfillService {
                     String healthCode = healthId.getCode();
                     if (healthCode == null) {
                         accountEncryptionService.createAndSaveHealthCode(study, account);
-                        logger.info("Re-created health code for account " + account.getEmail() + " in study " + study.getName());
+                        callback.newRecords(new BackfillRecord() {
+                            @Override
+                            public String getTaskId() {
+                                return taskId;
+                            }
+                            @Override
+                            public long getTimestamp() {
+                                return DateTime.now(DateTimeZone.UTC).getMillis();
+                            }
+                            @Override
+                            public String getRecord() {
+                                return "{\"study\": \"" + study.getIdentifier()
+                                        + "\", \"account\": \"" + account.getEmail()
+                                        + "\", \"operation\": \"recreated\"}";
+                            }
+                        });
                     }
                 }
             }
         }
-        return count;
     }
 }

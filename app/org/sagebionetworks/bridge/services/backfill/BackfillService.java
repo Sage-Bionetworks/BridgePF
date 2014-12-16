@@ -1,8 +1,11 @@
 package org.sagebionetworks.bridge.services.backfill;
 
-import org.sagebionetworks.bridge.models.Backfill;
-
 public interface BackfillService {
 
-    Backfill backfill();
+    /**
+     * @param user User email or user name of the user who starts the backfill
+     * @param name The name of the backfill bean
+     * @param callback Callback for backfill record updates
+     */
+    void backfill(String user, String name, BackfillCallback callback);
 }
