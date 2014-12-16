@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
-import java.util.List;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.SignIn;
@@ -15,6 +15,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+
+import com.google.common.collect.Sets;
 
 /**
  * A support class that can be injected into any SpringJUnit4ClassRunner test that needs to
@@ -34,26 +36,18 @@ public class TestUserAdminHelper {
         private final String username;
         private final String email;
         private final String password;
-        private final String[] roles;
+        private final Set<String> roles;
         private final Study study;
         private final UserSession session;
 
-        public TestUser(String username, String email, String password, List<String> roleList, Study study, UserSession session) {
+        public TestUser(String username, String email, String password, Set<String> roleList, Study study, UserSession session) {
             this.username = username;
             this.email = email;
             this.password = password;
             this.study = study;
             this.session = session;
-
-            if (roleList == null) {
-                this.roles = new String[1];
-                this.roles[0] = BridgeConstants.TEST_USERS_GROUP;
-            } else {
-                if (!roleList.contains(BridgeConstants.TEST_USERS_GROUP)) {
-                    roleList.add(BridgeConstants.TEST_USERS_GROUP);
-                }
-                this.roles = roleList.toArray(new String[roleList.size()]);
-            }
+            this.roles = (roleList == null) ? Sets.<String>newHashSet() : roleList;
+            this.roles.add(BridgeConstants.TEST_USERS_GROUP);
 
         }
         public SignUp getSignUp() {
@@ -108,16 +102,16 @@ public class TestUserAdminHelper {
     }
 
     public TestUser createUser(Class<?> cls) {
-        return createUser(cls, (String[])null);
+        return createUser(cls, null);
     }
 
-    public TestUser createUser(Class<?> cls, String... roles) {
+    public TestUser createUser(Class<?> cls, Set<String> roles) {
         checkNotNull(cls, "Class must not be null");
 
         return createUser(cls, true, true, roles);
     }
 
-    public TestUser createUser(Class<?> cls, boolean signIn, boolean consent, String...roles) {
+    public TestUser createUser(Class<?> cls, boolean signIn, boolean consent, Set<String> roles) {
         checkNotNull(cls, "Class must not be null");
 
         String name = makeRandomUserName(cls);

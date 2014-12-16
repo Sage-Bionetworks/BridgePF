@@ -436,7 +436,6 @@
         <property name="healthDataService" ref="healthDataService" />
         <property name="studyService" ref="studyService" />
         <property name="distributedLockDao" ref="distributedLockDao"/>
-        <property name="directoryDao" ref="directoryDao"/>
     </bean>
     
     <bean id="surveyService" class="org.sagebionetworks.bridge.services.SurveyServiceImpl">
