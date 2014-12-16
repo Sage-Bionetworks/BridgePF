@@ -38,40 +38,40 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 @Ignore // Sadly, this still doesn't pass on Travis. Don't know why.
 public class ScheduleChangeListenerTest {
-    
+
     private static final String CRON_TRIGGER = "* * * * * *";
 
     @Resource
     private TestUserAdminHelper helper;
-    
+
     @Resource
     private ScheduleChangeListener listener;
-    
+
     @Resource
     private DynamoScheduleDao scheduleDao;
-    
+
     @Resource
     private DynamoSchedulePlanDao schedulePlanDao;
-    
+
     @Before
     public void before() {
         DynamoInitializer.init(DynamoSchedule.class, DynamoSchedulePlan.class);
         DynamoTestUtil.clearTable(DynamoSchedule.class);
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
     }
-    
+
     @Test
     public void addPlanThenEnrollUnenrollUser() throws Exception {
-        TestUser testUser = helper.createUser(ScheduleChangeListenerTest.class, true, false); // not consented
+        TestUser testUser = helper.createUser(ScheduleChangeListenerTest.class, true, false, null); // not consented
         final User user = testUser.getUser();
         final Study study = testUser.getStudy();
         SchedulePlan plan = null;
         try {
             plan = createSchedulePlan(study, user);
-            
+
             List<Schedule> schedules = scheduleDao.getSchedules(study, user);
             assertEquals("No schedules because the user hasn't joined the study", 0, schedules.size());
-            
+
             listener.onApplicationEvent(new UserEnrolledEvent(user, study));
             waitFor(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
@@ -80,7 +80,7 @@ public class ScheduleChangeListenerTest {
             });
             schedules = scheduleDao.getSchedules(study, user);
             assertEquals("User joined study and has a schedule", 1, schedules.size());
-            
+
             listener.onApplicationEvent(new UserUnenrolledEvent(user, study));
             waitFor(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
@@ -94,7 +94,7 @@ public class ScheduleChangeListenerTest {
             helper.deleteUser(testUser);
         }
     }
-    
+
     @Test
     public void addUserThenCrudPlan() throws Exception {
         TestUser testUser = helper.createUser(ScheduleChangeListenerTest.class);
@@ -135,25 +135,25 @@ public class ScheduleChangeListenerTest {
             });
             schedules = scheduleDao.getSchedules(study, user);
             assertEquals("Now there is no schedule after the one plan was deleted", 0, schedules.size());
-            
+
         } finally {
             if (!deleted) {
-                schedulePlanDao.deleteSchedulePlan(study, plan.getGuid());    
+                schedulePlanDao.deleteSchedulePlan(study, plan.getGuid());
             }
             helper.deleteUser(testUser);
         }
     }
-    
+
     private void updateSchedulePlan(SchedulePlan plan) {
         SimpleScheduleStrategy strategy = (SimpleScheduleStrategy)plan.getStrategy();
         Schedule schedule = strategy.getSchedule();
         schedule.setCronTrigger(CRON_TRIGGER);
         schedulePlanDao.updateSchedulePlan(plan);
     }
-    
+
     private SchedulePlan createSchedulePlan(Study study, User user) {
         String planGuid = BridgeUtils.generateGuid();
-        
+
         Schedule schedule = new DynamoSchedule();
         schedule.setStudyAndUser(study, user);
         schedule.setSchedulePlanGuid(planGuid);
@@ -162,13 +162,13 @@ public class ScheduleChangeListenerTest {
         schedule.setActivityRef("task:AAA");
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("0 0 6 ? * MON-FRI *");
-        
-        long oneDay = (24 * 60 * 60 * 1000); 
+
+        long oneDay = (24 * 60 * 60 * 1000);
         schedule.setExpires(DateUtils.getCurrentMillisFromEpoch() + oneDay);
-        
+
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
-        
+
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid(planGuid);
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());

@@ -4,8 +4,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -291,7 +291,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return session;
     }
 
-    private void addAccountToGroups(Directory directory, Account account, List<String> roles) {
+    private void addAccountToGroups(Directory directory, Account account, Set<String> roles) {
         if (roles != null) {
             GroupList groups = directory.getGroups();
             for (Group group : groups) {

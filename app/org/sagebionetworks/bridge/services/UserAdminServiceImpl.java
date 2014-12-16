@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -15,17 +14,12 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.redis.RedisKey;
-import org.sagebionetworks.bridge.stormpath.StormpathDirectoryDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
-import com.stormpath.sdk.account.Accounts;
-import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.group.Group;
-import com.stormpath.sdk.group.GroupList;
 
 public class UserAdminServiceImpl implements UserAdminService {
 
@@ -36,7 +30,6 @@ public class UserAdminServiceImpl implements UserAdminService {
     private HealthDataService healthDataService;
     private StudyService studyService;
     private DistributedLockDao lockDao;
-    private StormpathDirectoryDao directoryDao;
 
     public void setAuthenticationService(AuthenticationServiceImpl authenticationService) {
         this.authenticationService = authenticationService;
@@ -56,10 +49,6 @@ public class UserAdminServiceImpl implements UserAdminService {
 
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
-    }
-
-    public void setDirectoryDao(StormpathDirectoryDao directoryDao) {
-        this.directoryDao = directoryDao;
     }
 
     @Override
@@ -112,36 +101,10 @@ public class UserAdminServiceImpl implements UserAdminService {
     }
 
     @Override
-    public void deleteAllTestUsers() throws BridgeServiceException {
-        for (Study study : studyService.getStudies()) {
-            Directory directory = directoryDao.getDirectoryForStudy(study.getIdentifier());
-            Group testUsers = getTestUsersGroup(directory);
-            addAllOrphanedTestUsersToGroup(testUsers, directory);
-            AccountList accounts = testUsers.getAccounts();
-            for (Account account : accounts) {
-                deleteUser(account.getEmail());
-            }
-        }
-    }
-
-    private Group getTestUsersGroup(Directory directory) {
-        GroupList groups = directory.getGroups();
-        Group testUsers = null;
-        for (Group group : groups) {
-            if (group.getName().equalsIgnoreCase(BridgeConstants.TEST_USERS_GROUP)) {
-                testUsers = group;
-            }
-        }
-        return testUsers;
-    }
-
-    private void addAllOrphanedTestUsersToGroup(Group testUsers, Directory directory) {
-        AccountCriteria criteria = Accounts.where(Accounts.email().startsWithIgnoreCase("bridge-testing"));
-        AccountList accounts = directory.getAccounts(criteria);
+    public void deleteAllUsers(Group group) throws BridgeServiceException {
+        AccountList accounts = group.getAccounts();
         for (Account account : accounts) {
-            if (!account.isMemberOfGroup(BridgeConstants.TEST_USERS_GROUP)) {
-                testUsers.addAccount(account);
-            }
+            deleteUser(account.getEmail());
         }
     }
 
