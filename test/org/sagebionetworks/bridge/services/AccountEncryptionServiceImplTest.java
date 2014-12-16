@@ -40,7 +40,7 @@ public class AccountEncryptionServiceImplTest {
 
     @Before
     public void before() {
-        testUser = helper.createUser(AccountEncryptionServiceImplTest.class, true, false);
+        testUser = helper.createUser(AccountEncryptionServiceImplTest.class, true, false, null);
     }
 
     @After

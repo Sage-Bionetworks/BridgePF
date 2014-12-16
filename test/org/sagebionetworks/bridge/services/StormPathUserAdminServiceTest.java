@@ -31,9 +31,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StormPathUserAdminServiceTest {
 
-    // Decided not to use the helper class for this test because so many edge conditions are 
+    // Decided not to use the helper class for this test because so many edge conditions are
     // being tested here.
-    
+
     @Resource
     AuthenticationServiceImpl authService;
 
@@ -42,19 +42,19 @@ public class StormPathUserAdminServiceTest {
 
     @Resource
     BridgeConfig bridgeConfig;
-    
+
     @Resource
     StudyServiceImpl studyService;
-    
+
     @Resource
     UserAdminServiceImpl userAdminService;
-    
+
     private Study study;
-    
+
     private SignUp signUp;
-    
+
     private User testUser;
-    
+
     @BeforeClass
     public static void initialSetUp() {
         DynamoTestUtil.clearTable(DynamoUserConsent2.class);
@@ -69,8 +69,8 @@ public class StormPathUserAdminServiceTest {
     public void before() {
         study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
         String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
-        signUp = new SignUp(name, name+"@sagebridge.org", "P4ssword");
-        
+        signUp = new SignUp(name, name+"@sagebridge.org", "P4ssword", null);
+
         SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         authService.signIn(study, signIn).getUser();
     }
@@ -91,9 +91,9 @@ public class StormPathUserAdminServiceTest {
     @Test(expected = BridgeServiceException.class)
     public void deletedUserHasBeenDeleted() {
         testUser = service.createUser(signUp, study, true, true).getUser();
-        
+
         service.deleteUser(testUser.getEmail());
-        
+
         // This should fail with a 404.
         authService.signIn(study, new SignIn(signUp.getEmail(), signUp.getPassword()));
     }
@@ -102,7 +102,7 @@ public class StormPathUserAdminServiceTest {
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
         UserSession session1 = service.createUser(signUp, study, false, false);
         assertNull("No session", session1);
-        
+
         try {
             authService.signIn(study, new SignIn(signUp.getEmail(), signUp.getPassword()));
             fail("Should throw a consent required exception");

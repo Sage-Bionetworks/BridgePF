@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.models;
 
-import java.util.List;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class SignUp implements BridgeEntity {
 
@@ -13,24 +13,24 @@ public class SignUp implements BridgeEntity {
     private static final String USERNAME_FIELD = "username";
     private static final String PASSWORD_FIELD = "password";
     private static final String ROLES_FIELD = "roles";
-    
+
     private final String username;
     private final String email;
     private final String password;
-    private final List<String> roles;
-    
-    public SignUp(String username, String email, String password, String... roles) {
+    private final Set<String> roles;
+
+    public SignUp(String username, String email, String password, Set<String> roles) {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.roles = (roles == null) ? null : Lists.newArrayList(roles);
+        this.roles = (roles == null) ? null : Sets.newHashSet(roles);
     }
-    
+
     public static final SignUp fromJson(JsonNode node, boolean allowRoles) {
         String username = JsonUtils.asText(node, USERNAME_FIELD);
         String email = JsonUtils.asText(node, EMAIL_FIELD);
         String password = JsonUtils.asText(node, PASSWORD_FIELD);
-        String[] roles = (allowRoles) ? JsonUtils.asStringList(node, ROLES_FIELD).toArray(new String[] {}) : null;
+        Set<String> roles = (allowRoles) ? JsonUtils.asStringSet(node, ROLES_FIELD) : null;
         return new SignUp(username, email, password, roles);
     }
 
@@ -41,12 +41,12 @@ public class SignUp implements BridgeEntity {
     public String getEmail() {
         return email;
     }
-    
+
     public String getPassword() {
         return password;
     }
 
-    public List<String> getRoles() {
+    public Set<String> getRoles() {
         return roles;
     }
 
@@ -55,5 +55,5 @@ public class SignUp implements BridgeEntity {
         return "SignUp [username=" + username + ", email=" + email + ", password=" + password + ", roles=" + roles
                 + "]";
     }
-    
+
 }
