@@ -124,6 +124,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             session = getSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
 
+
             if (!session.getUser().doesConsent()) {
                 throw new ConsentRequiredException(session);
             }
@@ -271,6 +272,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final String healthCode = getHealthCode(study, account);
         user.setHealthCode(healthCode);
 
+        user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(user, study));
         user.setConsent(consentService.hasUserConsentedToResearch(user, study));
         user.setDataSharing(optionsService.getBooleanOption(healthCode, Option.DATA_SHARING));
 
