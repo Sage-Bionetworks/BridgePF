@@ -40,7 +40,7 @@ public class ConsentServiceImpl implements ConsentService {
     public void setAuthenticationService(AuthenticationService authService) {
         this.authService = authService;
     }
-    
+
     public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
         this.accountEncryptionService = accountEncryptionService;
     }
@@ -56,7 +56,7 @@ public class ConsentServiceImpl implements ConsentService {
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
-    
+
     @Override
     public ConsentSignature getConsentSignature(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
@@ -79,22 +79,22 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public User consentToResearch(final User caller, final ConsentSignature consentSignature, 
+    public User consentToResearch(final User caller, final ConsentSignature consentSignature,
         final Study study, final boolean sendEmail) throws BridgeServiceException {
 
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
 
-        // Both of these are validation and should ideally be in the validator, but that was 
-        // tied to object creation and deserialization, happening multiple places in the 
-        // codebase. 
+        // Both of these are validation and should ideally be in the validator, but that was
+        // tied to object creation and deserialization, happening multiple places in the
+        // codebase.
         if (caller.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
         ConsentAgeValidator validator = new ConsentAgeValidator(study);
         Validate.entityThrowingException(validator, consentSignature);
-        
+
         // Stormpath account
         final Account account = authService.getAccount(caller.getEmail());
         HealthId hid = accountEncryptionService.getHealthCode(study, account);
@@ -132,7 +132,7 @@ public class ConsentServiceImpl implements ConsentService {
     public boolean hasUserConsentedToResearch(User caller, Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
+
         final String healthCode = caller.getHealthCode();
         List<StudyConsent> consents = studyConsentDao.getConsents(study.getIdentifier());
         for (StudyConsent consent : consents) {
@@ -142,7 +142,17 @@ public class ConsentServiceImpl implements ConsentService {
         }
         return false;
     }
-    
+
+    @Override
+    public boolean hasUserSignedMostRecentConsent(User caller, Study study) {
+        checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+
+        final String healthCode = caller.getHealthCode();
+        StudyConsent mostRecentConsent = studyConsentDao.getConsent(study.getIdentifier());
+        return userConsentDao.hasConsented(healthCode, mostRecentConsent);
+    }
+
     @Override
     public User withdrawConsent(User caller, Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
@@ -183,7 +193,7 @@ public class ConsentServiceImpl implements ConsentService {
             return false;
         }
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        
+
         long count = Long.MAX_VALUE;
         String countString = stringOps.get(key).execute();
         if (countString == null) {
@@ -195,7 +205,7 @@ public class ConsentServiceImpl implements ConsentService {
         }
         return (count >= study.getMaxNumOfParticipants());
     }
-    
+
     @Override
     public void incrementStudyEnrollment(Study study) throws StudyLimitExceededException {
         if (study.getMaxNumOfParticipants() == 0) {
@@ -216,7 +226,7 @@ public class ConsentServiceImpl implements ConsentService {
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
         String count = stringOps.get(key).execute();
         if (count != null && Long.parseLong(count) > 0) {
-            stringOps.decrement(key).execute();    
+            stringOps.decrement(key).execute();
         }
     }
 }

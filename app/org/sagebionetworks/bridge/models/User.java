@@ -20,6 +20,7 @@ public class User implements BridgeEntity {
     private String healthCode;
     private String studyKey;
     private boolean consent;
+    private boolean signedMostRecentConsent;
     private boolean dataSharing;
     private Set<String> roles = Sets.newHashSet();
 
@@ -36,7 +37,7 @@ public class User implements BridgeEntity {
             roles.add(group.getName());
         }
     }
-    
+
     public User(String id, String email) {
         setId(id);
         setEmail(email);
@@ -118,11 +119,24 @@ public class User implements BridgeEntity {
     public void setConsent(boolean consent) {
         this.consent = consent;
     }
-    
+
+    public boolean hasSignedMostRecentConsent() {
+        return this.signedMostRecentConsent;
+    }
+
+    // Need "is" for Jackson serialization.
+    public boolean isSignedMostRecentConsent() {
+        return this.signedMostRecentConsent;
+    }
+
+    public void setSignedMostRecentConsent(boolean signedMostRecentConsent) {
+        this.signedMostRecentConsent = signedMostRecentConsent;
+    }
+
     public boolean isDataSharing() {
         return dataSharing;
     }
-    
+
     public void setDataSharing(boolean dataSharing) {
         this.dataSharing = dataSharing;
     }
@@ -130,7 +144,7 @@ public class User implements BridgeEntity {
     public boolean isInRole(String role) {
         return this.roles.contains(role);
     }
-    
+
     @JsonIgnore
     public String getStormpathHref() {
         return (id == null) ? null : ("https://api.stormpath.com/v1/accounts/" + id);
