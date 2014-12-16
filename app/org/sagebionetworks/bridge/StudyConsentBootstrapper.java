@@ -18,6 +18,7 @@ public class StudyConsentBootstrapper {
             study.getTrackers().add("pb-tracker");
             study.getTrackers().add("med-tracker");
             study.setHostname("api-local.sagebridge.org");
+            study.setMinAgeOfConsent(18);
             study.setResearcherRole("api_researcher");
             study.setStormpathHref("https://api.stormpath.com/v1/directories/shHutmsq4TcjyJQ5ayMoQ");
             studyService.createStudy(study);

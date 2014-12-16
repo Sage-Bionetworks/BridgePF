@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
-
 import org.sagebionetworks.bridge.TestConstants;
 
 public class DynamoUserConsentTest {

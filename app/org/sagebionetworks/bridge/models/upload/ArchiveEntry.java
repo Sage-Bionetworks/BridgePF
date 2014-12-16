@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.upload;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class ArchiveEntry {

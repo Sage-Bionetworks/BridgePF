@@ -1,12 +1,7 @@
 package org.sagebionetworks.bridge.models.surveys;
 
-import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
-import org.sagebionetworks.bridge.json.OperatorJsonDeserializer;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 public class SurveyRule {
 
@@ -31,11 +26,9 @@ public class SurveyRule {
         this.value = value;
         this.skipToTarget = skipToTarget;
     }
-    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public Operator getOperator() {
         return operator;
     }
-    @JsonDeserialize(using = OperatorJsonDeserializer.class)
     public void setOperator(Operator operator) {
         this.operator = operator;
     }
