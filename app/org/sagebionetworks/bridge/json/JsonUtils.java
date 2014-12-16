@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -69,6 +68,20 @@ public class JsonUtils {
         return 0;
     }
 
+    public static long asMillisDuration(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            return DateUtils.convertToMillisFromDuration(parent.get(property).asText());
+        }
+        return 0L;
+    }
+
+    public static Long asMillisDurationLong(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            return DateUtils.convertToMillisFromDuration(parent.get(property).asText());
+        }
+        return null;
+    }
+
     public static long asMillisSinceEpoch(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             return DateUtils.convertToMillisFromEpoch(parent.get(property).asText());
@@ -114,7 +127,7 @@ public class JsonUtils {
 
     @SuppressWarnings("unchecked")
     public static <T> List<T> asEntityList(JsonNode list, Class<T> clazz) {
-        ObjectMapper mapper = BridgeObjectMapper.get();
+        BridgeObjectMapper mapper = BridgeObjectMapper.get();
         if (list != null && list.isArray()) {
             return (List<T>) mapper.convertValue(list,
                     mapper.getTypeFactory().constructCollectionType(ArrayList.class, clazz));
