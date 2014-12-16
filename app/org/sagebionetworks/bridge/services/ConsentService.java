@@ -11,6 +11,8 @@ public interface ConsentService {
 
     public User consentToResearch(User caller, ConsentSignature consentSignature, Study study, boolean sendEmail);
 
+    public boolean hasUserSignedMostRecentConsent(User caller, Study study);
+
     public boolean hasUserConsentedToResearch(User caller, Study study);
 
     public User withdrawConsent(User caller, Study study);
@@ -18,8 +20,8 @@ public interface ConsentService {
     public void emailConsentAgreement(User caller, Study study);
 
     public boolean isStudyAtEnrollmentLimit(Study study);
-    
+
     public void incrementStudyEnrollment(Study study) throws StudyLimitExceededException;
-    
+
     public void decrementStudyEnrollment(Study study);
 }
