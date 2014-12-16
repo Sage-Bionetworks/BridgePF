@@ -18,11 +18,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
+import com.stormpath.sdk.account.AccountList;
+import com.stormpath.sdk.group.Group;
 
 public class UserAdminServiceImpl implements UserAdminService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserAdminServiceImpl.class);
-    
+
     private AuthenticationServiceImpl authenticationService;
     private ConsentService consentService;
     private HealthDataService healthDataService;
@@ -36,7 +38,7 @@ public class UserAdminServiceImpl implements UserAdminService {
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
-    
+
     public void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
     }
@@ -55,9 +57,9 @@ public class UserAdminServiceImpl implements UserAdminService {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
         checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
-        
+
         authenticationService.signUp(signUp, study, false);
-        
+
         SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
         UserSession newUserSession = null;
         try {
@@ -80,7 +82,7 @@ public class UserAdminServiceImpl implements UserAdminService {
     @Override
     public void deleteUser(String userEmail) throws BridgeServiceException {
         checkNotNull(userEmail, "User email cannot be null");
-        
+
         int retryCount = 0;
         boolean shouldRetry = true;
         while (shouldRetry) {
@@ -97,18 +99,26 @@ public class UserAdminServiceImpl implements UserAdminService {
             }
         }
     }
-    
+
+    @Override
+    public void deleteAllUsers(Group group) throws BridgeServiceException {
+        AccountList accounts = group.getAccounts();
+        for (Account account : accounts) {
+            deleteUser(account.getEmail());
+        }
+    }
+
     private boolean deleteUserAttempt(String userEmail) {
         String key = RedisKey.USER_LOCK.getRedisKey(userEmail);
         String lock = null;
         try {
             lock = lockDao.acquireLock(User.class, key);
-            
+
             Account account = authenticationService.getAccount(userEmail);
             if (account != null) {
                 for (Study study : studyService.getStudies()) {
                     User user = authenticationService.getSessionFromAccount(study, account).getUser();
-                    deleteUserInStudy(study, account, user);    
+                    deleteUserInStudy(study, account, user);
                 }
                 account.delete();
             }
@@ -119,12 +129,12 @@ public class UserAdminServiceImpl implements UserAdminService {
             lockDao.releaseLock(User.class, key, lock);
         }
     }
-    
+
     private boolean deleteUserInStudy(Study study, Account account, User user) throws BridgeServiceException {
         checkNotNull(study);
         checkNotNull(account);
         checkNotNull(user);
-        
+
         try {
             consentService.withdrawConsent(user, study);
             removeAllHealthDataRecords(study, user);
@@ -136,7 +146,7 @@ public class UserAdminServiceImpl implements UserAdminService {
             return false;
         }
     }
-    
+
     private void removeAllHealthDataRecords(Study study, User user) throws BridgeServiceException {
         // This user may have never consented to research. Ignore if that's the case.
         for (String trackerId : study.getTrackers()) {

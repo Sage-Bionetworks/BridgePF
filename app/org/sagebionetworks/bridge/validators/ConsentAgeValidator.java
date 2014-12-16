@@ -10,11 +10,11 @@ import org.springframework.validation.Validator;
 public class ConsentAgeValidator implements Validator {
 
     private final Study study;
-    
+
     public ConsentAgeValidator(Study study) {
         this.study = study;
     }
-    
+
     @Override
     public boolean supports(Class<?> clazz) {
         return ConsentSignature.class.isAssignableFrom(clazz);
