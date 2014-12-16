@@ -1,8 +1,13 @@
 package org.sagebionetworks.bridge.services.backfill;
 
 import java.util.List;
+import java.util.UUID;
 
-import org.sagebionetworks.bridge.models.Backfill;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.models.BackfillRecord;
+import org.sagebionetworks.bridge.models.BackfillStatus;
+import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
@@ -10,7 +15,7 @@ import org.sagebionetworks.bridge.services.UploadCertificateService;
 /**
  * Backfills CMS certificates for studies.
  */
-public class StudyCertificateBackfill implements BackfillService {
+public class StudyCertificateBackfill extends AsyncBackfillTemplate {
 
     private StudyService studyService;
     public void setStudyService(StudyService studyService) {
@@ -23,14 +28,57 @@ public class StudyCertificateBackfill implements BackfillService {
     }
 
     @Override
-    public Backfill backfill() {
+    void doBackfill(final String user, final String name, BackfillCallback callback) {
+        final String taskId = UUID.randomUUID().toString();
+        callback.start(new BackfillTask() {
+            @Override
+            public String getId() {
+                return taskId;
+            }
+            @Override
+            public long getTimestamp() {
+                return DateTime.now(DateTimeZone.UTC).getMillis();
+            }
+            @Override
+            public String getName() {
+                return name;
+            }
+            @Override
+            public String getDescription() {
+                return "Backfills key pairs for studies.";
+            }
+            @Override
+            public String getUser() {
+                return user;
+            }
+            @Override
+            public String getStatus() {
+                return BackfillStatus.SUBMITTED.name();
+            }
+        });
         List<Study> studies = studyService.getStudies();
-        for (Study study : studies) {
+        for (final Study study : studies) {
             uploadCertService.createCmsKeyPair(study.getIdentifier());
+            callback.newRecords(new BackfillRecord() {
+                @Override
+                public String getTaskId() {
+                    return taskId;
+                }
+                @Override
+                public long getTimestamp() {
+                    return DateTime.now(DateTimeZone.UTC).getMillis();
+                }
+                @Override
+                public String getRecord() {
+                    return "{\"studyIdentifier\": " + study.getIdentifier();
+                }
+            });
         }
-        Backfill backfill = new Backfill("studyCertificateBackfill");
-        backfill.setCompleted(true);
-        backfill.setCount(studies.size());
-        return backfill;
+        callback.done();
+    }
+
+    @Override
+    int getExpireInSeconds() {
+        return 30 * 60;
     }
 }
