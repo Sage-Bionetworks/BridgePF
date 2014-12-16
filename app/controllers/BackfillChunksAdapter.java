@@ -24,6 +24,7 @@ class BackfillChunksAdapter implements BackfillCallback {
 
     @Override
     public void start(BackfillTask task) {
+        checkNotNull(task);
         chunksOut.write(task.getName()
                 + " started by " + task.getUser()
                 + " on " + new DateTime(task.getTimestamp(), DateTimeZone.UTC).toString("YYYY-MM-dd HH:mm:ss"));
@@ -31,6 +32,7 @@ class BackfillChunksAdapter implements BackfillCallback {
 
     @Override
     public void newRecords(BackfillRecord... records) {
+        checkNotNull(records);
         checkNotNull(records);
         for (BackfillRecord record : records) {
             chunksOut.write(record.getRecord());
