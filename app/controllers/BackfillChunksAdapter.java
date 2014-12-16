@@ -11,7 +11,7 @@ import org.sagebionetworks.bridge.services.backfill.BackfillCallback;
 import play.mvc.Results.Chunks;
 
 /**
- * Adapts backfill callback to chunked responses.
+ * Adapts backfill callback to Play chunked responses.
  */
 class BackfillChunksAdapter implements BackfillCallback {
 
