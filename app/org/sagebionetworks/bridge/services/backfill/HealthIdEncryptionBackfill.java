@@ -1,14 +1,12 @@
 package org.sagebionetworks.bridge.services.backfill;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.models.BackfillRecord;
-import org.sagebionetworks.bridge.models.BackfillStatus;
 import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -16,6 +14,9 @@ import org.sagebionetworks.bridge.services.AccountEncryptionService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
@@ -25,6 +26,8 @@ import com.stormpath.sdk.directory.CustomData;
  * Backfills health ID encryption (for example, with a new key).
  */
 public class HealthIdEncryptionBackfill extends AsyncBackfillTemplate {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private Client stormpathClient;
     private StudyService studyService;
@@ -45,44 +48,17 @@ public class HealthIdEncryptionBackfill extends AsyncBackfillTemplate {
     }
 
     @Override
-    void doBackfill(final String user, final String name, BackfillCallback callback) {
-        final String taskId = UUID.randomUUID().toString();
-        callback.start(new BackfillTask() {
-            @Override
-            public String getId() {
-                return taskId;
-            }
-            @Override
-            public long getTimestamp() {
-                return DateTime.now(DateTimeZone.UTC).getMillis();
-            }
-            @Override
-            public String getName() {
-                return name;
-            }
-            @Override
-            public String getDescription() {
-                return "Backfills health ID encryption.";
-            }
-            @Override
-            public String getUser() {
-                return user;
-            }
-            @Override
-            public String getStatus() {
-                return BackfillStatus.SUBMITTED.name();
-            }
-        });
-        List<Study> studies = studyService.getStudies();
-        for (Study study : studies) {
-            backfillForStudy(study, taskId, callback);
-        }
-        callback.done();
+    int getLockExpireInSeconds() {
+        return 30 * 60;
     }
 
     @Override
-    int getExpireInSeconds() {
-        return 30 * 60;
+    void doBackfill(final BackfillTask task, BackfillCallback callback) {
+        List<Study> studies = studyService.getStudies();
+        for (Study study : studies) {
+            backfillForStudy(study, task.getId(), callback);
+        }
+        callback.done();
     }
 
     private void backfillForStudy(final Study study, final String taskId, final BackfillCallback callback) {
@@ -109,9 +85,15 @@ public class HealthIdEncryptionBackfill extends AsyncBackfillTemplate {
                         }
                         @Override
                         public String getRecord() {
-                            return "{\"study\": \"" + study.getIdentifier()
-                                    + "\", \"account\": \"" + account.getEmail()
-                                    + "\", \"operation\": \"created\"}";
+                            ObjectNode node = MAPPER.createObjectNode();
+                            node.put("studyIdentifier", study.getIdentifier());
+                            node.put("account", account.getEmail());
+                            node.put("operation", "Backfilled");
+                            try {
+                                return MAPPER.writeValueAsString(node);
+                            } catch (JsonProcessingException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     });
                 } else {
@@ -132,9 +114,15 @@ public class HealthIdEncryptionBackfill extends AsyncBackfillTemplate {
                             }
                             @Override
                             public String getRecord() {
-                                return "{\"study\": \"" + study.getIdentifier()
-                                        + "\", \"account\": \"" + account.getEmail()
-                                        + "\", \"operation\": \"recreated\"}";
+                                ObjectNode node = MAPPER.createObjectNode();
+                                node.put("studyIdentifier", study.getIdentifier());
+                                node.put("account", account.getEmail());
+                                node.put("operation", "Recreated");
+                                try {
+                                    return MAPPER.writeValueAsString(node);
+                                } catch (JsonProcessingException e) {
+                                    throw new RuntimeException(e);
+                                }
                             }
                         });
                     }
