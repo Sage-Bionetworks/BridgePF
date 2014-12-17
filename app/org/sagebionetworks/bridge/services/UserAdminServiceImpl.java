@@ -111,6 +111,7 @@ public class UserAdminServiceImpl implements UserAdminService {
     private boolean deleteUserAttempt(String userEmail) {
         String key = RedisKey.USER_LOCK.getRedisKey(userEmail);
         String lock = null;
+        boolean success = false;
         try {
             lock = lockDao.acquireLock(User.class, key);
 
@@ -122,13 +123,15 @@ public class UserAdminServiceImpl implements UserAdminService {
                 }
                 account.delete();
             }
-            return true;
+            // Check if the delete succeeded in Stormpath.
+            success = authenticationService.getAccount(userEmail) == null ? true : false;
         } catch(Throwable t) {
+            success = false;
             logger.error(t.getMessage(), t);
-            return false;
         } finally {
             lockDao.releaseLock(User.class, key, lock);
         }
+        return success;
     }
 
     private boolean deleteUserInStudy(Study study, Account account, User user) throws BridgeServiceException {
