@@ -127,6 +127,7 @@ public class UserAdminServiceImpl implements UserAdminService {
             success = authenticationService.getAccount(userEmail) == null ? true : false;
         } catch(Throwable t) {
             success = false;
+            logger.error(t.getMessage(), t);
         } finally {
             lockDao.releaseLock(User.class, key, lock);
         }
