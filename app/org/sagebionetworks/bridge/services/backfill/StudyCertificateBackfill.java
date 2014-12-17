@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BackfillRecord;
 import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -19,7 +20,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 public class StudyCertificateBackfill extends AsyncBackfillTemplate {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = BridgeObjectMapper.get();
 
     private StudyService studyService;
     public void setStudyService(StudyService studyService) {

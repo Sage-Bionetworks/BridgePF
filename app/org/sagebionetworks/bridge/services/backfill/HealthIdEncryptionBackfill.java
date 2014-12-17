@@ -6,6 +6,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BackfillRecord;
 import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.HealthId;
@@ -27,7 +28,7 @@ import com.stormpath.sdk.directory.CustomData;
  */
 public class HealthIdEncryptionBackfill extends AsyncBackfillTemplate {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = BridgeObjectMapper.get();
 
     private Client stormpathClient;
     private StudyService studyService;
@@ -58,7 +59,6 @@ public class HealthIdEncryptionBackfill extends AsyncBackfillTemplate {
         for (Study study : studies) {
             backfillForStudy(study, task.getId(), callback);
         }
-        callback.done();
     }
 
     private void backfillForStudy(final Study study, final String taskId, final BackfillCallback callback) {
