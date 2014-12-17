@@ -18,4 +18,8 @@
         <property name="studyService" ref="studyService"/>
     </bean>
 
+    <bean id="testBackfillService" class="org.sagebionetworks.bridge.services.backfill.TestBackfillService">
+        <property name="distributedLockDao" ref="distributedLockDao" />
+    </bean>
+
 </beans>
