@@ -37,5 +37,11 @@ public class DynamoHealthCodeDaoTest {
         assertFalse(healthCodeDao.setIfNotExist("123", "789"));
         assertEquals("789", healthCodeDao.getStudyIdentifier("123"));
         assertNull(healthCodeDao.getStudyIdentifier("xyz"));
+        healthCodeDao.setStudyId("123", "789");
+        try {
+            healthCodeDao.setStudyId("123", "456");
+        } catch (RuntimeException e) {
+            assertTrue("Expected", true);
+        }
     }
 }

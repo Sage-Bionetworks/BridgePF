@@ -465,4 +465,11 @@
         <property name="accountEncryptionService" ref="accountEncryptionService" />
     </bean>
 
+    <bean id="studyIdBackfill" class="org.sagebionetworks.bridge.services.backfill.StudyIdBackfill">
+        <property name="stormpathClient" ref="stormpathClient" />
+        <property name="studyService" ref="studyService" />
+        <property name="healthCodeDao" ref="healthCodeDao" />
+        <property name="accountEncryptionService" ref="accountEncryptionService" />
+    </bean>
+
 </beans>
