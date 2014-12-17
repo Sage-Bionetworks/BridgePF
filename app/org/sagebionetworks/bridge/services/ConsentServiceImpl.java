@@ -150,7 +150,12 @@ public class ConsentServiceImpl implements ConsentService {
 
         final String healthCode = caller.getHealthCode();
         StudyConsent mostRecentConsent = studyConsentDao.getConsent(study.getIdentifier());
-        return userConsentDao.hasConsented(healthCode, mostRecentConsent);
+
+        if (mostRecentConsent == null) {
+            return false;
+        } else {
+            return userConsentDao.hasConsented(healthCode, mostRecentConsent);
+        }
     }
 
     @Override
