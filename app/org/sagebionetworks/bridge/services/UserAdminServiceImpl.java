@@ -111,23 +111,26 @@ public class UserAdminServiceImpl implements UserAdminService {
     private boolean deleteUserAttempt(String userEmail) {
         String key = RedisKey.USER_LOCK.getRedisKey(userEmail);
         String lock = null;
+        boolean success = false;
         try {
             lock = lockDao.acquireLock(User.class, key);
 
             Account account = authenticationService.getAccount(userEmail);
             if (account != null) {
                 for (Study study : studyService.getStudies()) {
+                    System.out.println("STUDY NAME: " + study.getName());
                     User user = authenticationService.getSessionFromAccount(study, account).getUser();
                     deleteUserInStudy(study, account, user);
                 }
                 account.delete();
             }
-            return true;
+            success = authenticationService.getAccount(userEmail) == null ? true : false;
         } catch(Throwable t) {
-            return false;
+            success = false;
         } finally {
             lockDao.releaseLock(User.class, key, lock);
         }
+        return success;
     }
 
     private boolean deleteUserInStudy(Study study, Account account, User user) throws BridgeServiceException {
