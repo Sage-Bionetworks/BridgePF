@@ -124,6 +124,7 @@ public class UserAdminServiceImpl implements UserAdminService {
             }
             return true;
         } catch(Throwable t) {
+            logger.error(t.getMessage(), t);
             return false;
         } finally {
             lockDao.releaseLock(User.class, key, lock);
