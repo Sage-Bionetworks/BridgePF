@@ -118,12 +118,12 @@ public class UserAdminServiceImpl implements UserAdminService {
             Account account = authenticationService.getAccount(userEmail);
             if (account != null) {
                 for (Study study : studyService.getStudies()) {
-                    System.out.println("STUDY NAME: " + study.getName());
                     User user = authenticationService.getSessionFromAccount(study, account).getUser();
                     deleteUserInStudy(study, account, user);
                 }
                 account.delete();
             }
+            // Check if the delete succeeded in Stormpath.
             success = authenticationService.getAccount(userEmail) == null ? true : false;
         } catch(Throwable t) {
             success = false;
