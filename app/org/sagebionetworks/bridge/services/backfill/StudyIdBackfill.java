@@ -12,6 +12,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountEncryptionService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,6 +26,8 @@ import com.stormpath.sdk.client.Client;
  * Backfills study IDs to the health code table.
  */
 public class StudyIdBackfill extends AsyncBackfillTemplate  {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(StudyIdBackfill.class);
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -80,7 +84,9 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
                             }
                         });
                     } catch (final RuntimeException e) {
-                        final String recordString = getRecordString(study, account, e.getMessage());
+                        LOGGER.error(e.getMessage(), e);
+                        final String recordString = getRecordString(study, account,
+                                e.getClass().getName() + " " + e.getMessage());
                         callback.newRecords(new BackfillRecord() {
                             @Override
                             public String getTaskId() {
