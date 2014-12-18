@@ -55,13 +55,13 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
 
     @Override
     void doBackfill(final BackfillTask task, final BackfillCallback callback) {
-        List<Study> studies = studyService.getStudies();
-        for (final Study study : studies) {
-            Application application = StormpathFactory.getStormpathApplication(stormpathClient);
-            StormpathAccountIterator iterator = new StormpathAccountIterator(application);
-            while (iterator.hasNext()) {
-                List<Account> accountList = iterator.next();
-                for (final Account account : accountList) {
+        final List<Study> studies = studyService.getStudies();
+        Application application = StormpathFactory.getStormpathApplication(stormpathClient);
+        StormpathAccountIterator iterator = new StormpathAccountIterator(application);
+        while (iterator.hasNext()) {
+            List<Account> accountList = iterator.next();
+            for (final Account account : accountList) {
+                for (final Study study : studies) {
                     HealthId healthId = accountEncryptionService.getHealthCode(study, account);
                     try {
                         healthCodeDao.setStudyId(healthId.getCode(), study.getIdentifier());
