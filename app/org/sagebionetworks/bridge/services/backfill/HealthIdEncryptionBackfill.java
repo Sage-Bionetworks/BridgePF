@@ -28,7 +28,7 @@ import com.stormpath.sdk.directory.CustomData;
  */
 public class HealthIdEncryptionBackfill extends AsyncBackfillTemplate {
 
-    private static final ObjectMapper MAPPER = BridgeObjectMapper.get();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private Client stormpathClient;
     private StudyService studyService;
