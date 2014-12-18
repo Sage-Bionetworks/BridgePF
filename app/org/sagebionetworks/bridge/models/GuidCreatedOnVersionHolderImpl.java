@@ -15,7 +15,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-@BridgeTypeName("GuidCreatedOnHolder")
+@BridgeTypeName("GuidCreatedOnVersionHolder")
 public class GuidCreatedOnVersionHolderImpl implements GuidCreatedOnVersionHolder {
 
     private final String guid;
