@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import javax.annotation.Resource;
 
@@ -40,6 +41,7 @@ public class DynamoHealthCodeDaoTest {
         healthCodeDao.setStudyId("123", "789");
         try {
             healthCodeDao.setStudyId("123", "456");
+            fail();
         } catch (RuntimeException e) {
             assertTrue("Expected", true);
         }
