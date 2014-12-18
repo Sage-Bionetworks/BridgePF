@@ -32,7 +32,7 @@ public class BackfillController extends BaseController implements ApplicationCon
                 }
             };
         logger.info("Backfill " + name + " submitted.");
-        return okResult(chunks);
+        return ok(chunks);
     }
 
     private String checkUser() throws Exception {
