@@ -6,7 +6,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BackfillRecord;
 import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.HealthId;
