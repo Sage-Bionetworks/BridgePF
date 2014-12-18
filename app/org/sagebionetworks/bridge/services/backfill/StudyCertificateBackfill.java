@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 public class StudyCertificateBackfill extends AsyncBackfillTemplate {
 
-    private static final ObjectMapper MAPPER = BridgeObjectMapper.get();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private StudyService studyService;
     public void setStudyService(StudyService studyService) {
