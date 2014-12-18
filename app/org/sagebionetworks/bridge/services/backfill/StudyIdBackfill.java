@@ -65,6 +65,7 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
                     HealthId healthId = accountEncryptionService.getHealthCode(study, account);
                     try {
                         healthCodeDao.setStudyId(healthId.getCode(), study.getIdentifier());
+                        final String recordString = getRecordString(study, account, "backfilled");
                         callback.newRecords(new BackfillRecord() {
                             @Override
                             public String getTaskId() {
@@ -76,18 +77,11 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
                             }
                             @Override
                             public String getRecord() {
-                                ObjectNode node = MAPPER.createObjectNode();
-                                node.put("studyIdentifier", study.getIdentifier());
-                                node.put("account", account.getEmail());
-                                node.put("operation", "Study ID backfilled");
-                                try {
-                                    return MAPPER.writeValueAsString(node);
-                                } catch (JsonProcessingException e) {
-                                    throw new RuntimeException(e);
-                                }
+                                return recordString;
                             }
                         });
                     } catch (final RuntimeException e) {
+                        final String recordString = getRecordString(study, account, e.getMessage());
                         callback.newRecords(new BackfillRecord() {
                             @Override
                             public String getTaskId() {
@@ -99,20 +93,24 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
                             }
                             @Override
                             public String getRecord() {
-                                ObjectNode node = MAPPER.createObjectNode();
-                                node.put("studyIdentifier", study.getIdentifier());
-                                node.put("account", account.getEmail());
-                                node.put("operation", e.getMessage());
-                                try {
-                                    return MAPPER.writeValueAsString(node);
-                                } catch (JsonProcessingException e) {
-                                    throw new RuntimeException(e);
-                                }
+                                return recordString;
                             }
                         });
                     }
                 }
             }
+        }
+    }
+
+    private String getRecordString(Study study, Account account, String operation) {
+        ObjectNode node = MAPPER.createObjectNode();
+        node.put("studyIdentifier", study.getIdentifier());
+        node.put("account", account.getEmail());
+        node.put("operation", operation);
+        try {
+            return MAPPER.writeValueAsString(node);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 }
