@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.List;
-
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -133,14 +131,7 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
 
-        final String healthCode = caller.getHealthCode();
-        List<StudyConsent> consents = studyConsentDao.getConsents(study.getIdentifier());
-        for (StudyConsent consent : consents) {
-            if (userConsentDao.hasConsented(healthCode, consent)) {
-                return true;
-            }
-        }
-        return false;
+        return userConsentDao.hasConsented(caller.getHealthCode(), study.getIdentifier());
     }
 
     @Override
