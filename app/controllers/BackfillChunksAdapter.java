@@ -33,7 +33,6 @@ class BackfillChunksAdapter implements BackfillCallback {
     @Override
     public void newRecords(BackfillRecord... records) {
         checkNotNull(records);
-        checkNotNull(records);
         for (BackfillRecord record : records) {
             chunksOut.write(record.getRecord());
         }

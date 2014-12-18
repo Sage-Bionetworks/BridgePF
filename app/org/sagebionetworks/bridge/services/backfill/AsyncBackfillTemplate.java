@@ -12,8 +12,12 @@ import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.BackfillStatus;
 import org.sagebionetworks.bridge.models.BackfillTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 abstract class AsyncBackfillTemplate implements BackfillService {
+
+    private final Logger logger = LoggerFactory.getLogger(AsyncBackfillTemplate.class);
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -49,6 +53,7 @@ abstract class AsyncBackfillTemplate implements BackfillService {
             backfillTemplate(user, name, callback);
         } catch (ConcurrentModificationException e) {
             // TODO: Query DynamoDB and report back progress
+            logger.info("Backfill " + name + " already in process.");
         } finally {
             if (lock != null) {
                 lockDao.releaseLock(clazz, identifier, lock);
