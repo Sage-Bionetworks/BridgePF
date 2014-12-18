@@ -65,4 +65,17 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
             throw new RuntimeException("DynamoDB has a different study ID for the health code");
         }
     }
+
+    // TODO: To be removed after backfill
+    boolean setIfNotExist(String code) {
+        checkArgument(isNotBlank(code));
+        try {
+            DynamoHealthCode toSave = new DynamoHealthCode();
+            toSave.setCode(code);
+            mapper.save(toSave);
+            return true;
+        } catch(ConditionalCheckFailedException e) {
+            return false;
+        }
+    }
 }
