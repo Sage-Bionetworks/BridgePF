@@ -46,4 +46,36 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
         }
         return loaded.getStudyIdentifier();
     }
+
+    @Override
+    public void setStudyId(String code, String studyId) {
+        checkArgument(isNotBlank(code));
+        checkArgument(isNotBlank(studyId));
+        DynamoHealthCode key = new DynamoHealthCode();
+        key.setCode(code);
+        DynamoHealthCode loaded = mapper.load(key);
+        if (loaded == null) {
+            throw new RuntimeException("Can't find health code in DynamoDB");
+        }
+        String oldStudyId = loaded.getStudyIdentifier();
+        if (oldStudyId == null) {
+            loaded.setStudyIdentifier(studyId);
+            mapper.save(loaded);
+        } else if (!oldStudyId.equals(studyId)) {
+            throw new RuntimeException("DynamoDB has a different study ID for the health code");
+        }
+    }
+
+    // TODO: To be removed after backfill
+    boolean setIfNotExist(String code) {
+        checkArgument(isNotBlank(code));
+        try {
+            DynamoHealthCode toSave = new DynamoHealthCode();
+            toSave.setCode(code);
+            mapper.save(toSave);
+            return true;
+        } catch(ConditionalCheckFailedException e) {
+            return false;
+        }
+    }
 }

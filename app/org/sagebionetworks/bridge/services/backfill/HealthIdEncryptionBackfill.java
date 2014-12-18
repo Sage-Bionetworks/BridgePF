@@ -2,17 +2,22 @@ package org.sagebionetworks.bridge.services.backfill;
 
 import java.util.List;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
-import org.sagebionetworks.bridge.models.Backfill;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.BackfillRecord;
+import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountEncryptionService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
@@ -21,9 +26,9 @@ import com.stormpath.sdk.directory.CustomData;
 /**
  * Backfills health ID encryption (for example, with a new key).
  */
-public class HealthIdEncryptionBackfill implements BackfillService {
+public class HealthIdEncryptionBackfill extends AsyncBackfillTemplate {
 
-    private final Logger logger = LoggerFactory.getLogger(HealthIdEncryptionBackfill.class);
+    private static final ObjectMapper MAPPER = BridgeObjectMapper.get();
 
     private Client stormpathClient;
     private StudyService studyService;
@@ -44,25 +49,24 @@ public class HealthIdEncryptionBackfill implements BackfillService {
     }
 
     @Override
-    public Backfill backfill() {
-        int count = 0;
-        List<Study> studies = studyService.getStudies();
-        for (Study study : studies) {
-            count = count + backfillForStudy(study);
-        }
-        Backfill backfill = new Backfill("healthIdEncryptionBackfill");
-        backfill.setCompleted(true);
-        backfill.setCount(count);
-        return backfill;
+    int getLockExpireInSeconds() {
+        return 30 * 60;
     }
 
-    private int backfillForStudy(Study study) {
-        int count = 0;
+    @Override
+    void doBackfill(final BackfillTask task, BackfillCallback callback) {
+        List<Study> studies = studyService.getStudies();
+        for (Study study : studies) {
+            backfillForStudy(study, task.getId(), callback);
+        }
+    }
+
+    private void backfillForStudy(final Study study, final String taskId, final BackfillCallback callback) {
         Application application = StormpathFactory.getStormpathApplication(stormpathClient);
         StormpathAccountIterator iterator = new StormpathAccountIterator(application);
         while (iterator.hasNext()) {
             List<Account> accountList = iterator.next();
-            for (Account account : accountList) {
+            for (final Account account : accountList) {
                 final CustomData customData = account.getCustomData();
                 final String studyKey = study.getIdentifier();
                 final String healthIdKey = studyKey + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
@@ -70,8 +74,28 @@ public class HealthIdEncryptionBackfill implements BackfillService {
                 if (healthIdObj == null) {
                     // Backfill accounts that have no health id
                     accountEncryptionService.createAndSaveHealthCode(study, account);
-                    count++;
-                    logger.info("Created health code for account " + account.getEmail() + " in study " + study.getName());
+                    callback.newRecords(new BackfillRecord() {
+                        @Override
+                        public String getTaskId() {
+                            return taskId;
+                        }
+                        @Override
+                        public long getTimestamp() {
+                            return DateTime.now(DateTimeZone.UTC).getMillis();
+                        }
+                        @Override
+                        public String getRecord() {
+                            ObjectNode node = MAPPER.createObjectNode();
+                            node.put("studyIdentifier", study.getIdentifier());
+                            node.put("account", account.getEmail());
+                            node.put("operation", "Backfilled");
+                            try {
+                                return MAPPER.writeValueAsString(node);
+                            } catch (JsonProcessingException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    });
                 } else {
                     // Backfill accounts that are missing health codes -- this should be only test artifacts and
                     // should not exist in staging and prod
@@ -79,11 +103,31 @@ public class HealthIdEncryptionBackfill implements BackfillService {
                     String healthCode = healthId.getCode();
                     if (healthCode == null) {
                         accountEncryptionService.createAndSaveHealthCode(study, account);
-                        logger.info("Re-created health code for account " + account.getEmail() + " in study " + study.getName());
+                        callback.newRecords(new BackfillRecord() {
+                            @Override
+                            public String getTaskId() {
+                                return taskId;
+                            }
+                            @Override
+                            public long getTimestamp() {
+                                return DateTime.now(DateTimeZone.UTC).getMillis();
+                            }
+                            @Override
+                            public String getRecord() {
+                                ObjectNode node = MAPPER.createObjectNode();
+                                node.put("studyIdentifier", study.getIdentifier());
+                                node.put("account", account.getEmail());
+                                node.put("operation", "Recreated");
+                                try {
+                                    return MAPPER.writeValueAsString(node);
+                                } catch (JsonProcessingException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        });
                     }
                 }
             }
         }
-        return count;
     }
 }
