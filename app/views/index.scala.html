@@ -6,37 +6,28 @@
     <meta name="viewport" content="width=device-width" />
     <base href="/app/"/>
     <!-- These file names are updated by the grunt build; do not modify directly. -->
-    <link rel="stylesheet" href="../shared/build/bridge-shared.min.aabcc93c.css" />
-    <link rel="stylesheet" href="build/bridge.min.176f683b.css" />
+    <style>
+    	* { margin: 0; padding: 0; font-family: Helvetica, Droid Sans, sans-serif; background-color: #F9F9F9;  }
+    	
+		div.banner {
+			margin: 100px auto; 
+			max-width: 640px;
+			height: 300px;
+		}
+		div.banner p {
+			margin-top: 20px;
+		}
+		div.banner.loaded {
+			background: #F9F9F9 url(/app/images/mobile/@study-email-verification.png) center top no-repeat;
+			background-size: 140%;
+		}
+    </style>
     <script>window._session = @Html(auth);</script>
 </head>
 <body ng-app="bridge" ng-controller="ApplicationController">
-    <div class="container">
-        <div class="row header">
-            <div class="col-xs-6">@study</div>
-            <div class="col-xs-6 bridge-header" ng-cloak>
-                <div class="loadingclock" ng-show="loading"></div>
-                <bg-user-menu></bg-user-menu>
-            </div>
-        </div>
-        <div class="row main-pane">
-        <!-- 
-            <ul class="nav nav-tabs" ng-show="session.authenticated && session.consented" ng-cloak>
-                <li ng-class="{active: tabClass(tab)}" ng-repeat="tab in tabs">
-                    <a href="{{tab.link}}">{{tab.label}}</a>
-                </li>
-            </ul>
-        -->
-            <div id="content-pane" ng-view></div>
-        </div>
-        <div class="footer-break">
-            <!-- <p>&copy; 2014 <a href="http://www.sagebase.org">Sage Bionetworks</a></p> -->
-        </div>
-    </div>
-
-    <!-- These file names are updated by the grunt build; do not modify directly. -->
+    <div id="content-pane" ng-view></div>
     <script src="../shared/build/bridge-shared.min.35def929.js"></script>
-    <script src="build/bridge.min.0ccaa719.js"></script>
+    <script src="build/bridge.min.d35b07c5.js"></script>
 </body>
 </html>
 
