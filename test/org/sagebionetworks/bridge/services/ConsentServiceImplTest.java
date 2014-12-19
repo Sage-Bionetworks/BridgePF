@@ -53,13 +53,14 @@ public class ConsentServiceImplTest {
 
     @Resource
     private TestUserAdminHelper helper;
-    
+
     private TestUser testUser;
 
     @Before
     public void before() {
         testUser = helper.createUser(ConsentServiceImplTest.class);
-        studyConsent = studyConsentDao.addConsent(testUser.getStudy().getIdentifier(), "/path/to", testUser.getStudy().getMinAgeOfConsent());
+        studyConsent = studyConsentDao.addConsent(testUser.getStudy().getIdentifier(), "/path/to", testUser.getStudy()
+                .getMinAgeOfConsent());
         studyConsentDao.setActive(studyConsent, true);
 
         // TestUserAdminHelper creates a user with consent. Withdraw consent to make sure we're
@@ -138,28 +139,28 @@ public class ConsentServiceImplTest {
         }
         assertNotNull(thrownEx);
     }
-    
+
     @Test
     public void cannotConsentIfTooYoung() {
         Study study = new DynamoStudy();
         study.setIdentifier("api");
         study.setName("Test Study");
         study.setMinAgeOfConsent(18);
-        
+
         LocalDate now = LocalDate.now();
         int year = now.getYear();
         int month = now.getMonthOfYear();
         int day = now.getDayOfMonth();
-        
-        String today18YearsAgo = String.format("%s-%2d-%2d", year-18, month, day).replaceAll(" ","0");
-        String yesterday18YearsAgo = String.format("%s-%2d-%2d", year-18, month, day-1).replaceAll(" ","0");
-        String tomorrow18YearsAgo = String.format("%s-%2d-%2d", year-18, month, day+1).replaceAll(" ","0");
+
+        String today18YearsAgo = String.format("%s-%2d-%2d", year - 18, month, day).replaceAll(" ", "0");
+        String yesterday18YearsAgo = String.format("%s-%2d-%2d", year - 18, month, day - 1).replaceAll(" ", "0");
+        String tomorrow18YearsAgo = String.format("%s-%2d-%2d", year - 18, month, day + 1).replaceAll(" ", "0");
 
         // This will work
         ConsentSignature sig = ConsentSignature.create("Test User", today18YearsAgo, null, null);
         consentService.consentToResearch(testUser.getUser(), sig, study, false);
         consentService.withdrawConsent(testUser.getUser(), study);
-        
+
         // Also okay
         sig = ConsentSignature.create("Test User", yesterday18YearsAgo, null, null);
         consentService.consentToResearch(testUser.getUser(), sig, study, false);
@@ -169,28 +170,28 @@ public class ConsentServiceImplTest {
         try {
             sig = ConsentSignature.create("Test User", tomorrow18YearsAgo, null, null);
             consentService.consentToResearch(testUser.getUser(), sig, study, false);
-        } catch(InvalidEntityException e) {
+        } catch (InvalidEntityException e) {
             consentService.withdrawConsent(testUser.getUser(), study);
             assertTrue(e.getMessage().contains("years of age or older"));
         }
     }
-    
+
     @Test
     public void enforcesStudyEnrollmentLimit() {
         Study study = new DynamoStudy();
         study.setIdentifier("test");
         study.setName("Test Study");
         study.setMaxNumOfParticipants(2);
-        
-        // Set the cache so we avoid going to DynamoDB. We're testing the caching layer 
+
+        // Set the cache so we avoid going to DynamoDB. We're testing the caching layer
         // in the service test, we'll test the DAO in the DAO test.
         JedisStringOps stringOps = new JedisStringOps();
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
         stringOps.delete(key).execute();
-        
+
         boolean limit = consentService.isStudyAtEnrollmentLimit(study);
         assertFalse("No limit reached", limit);
-        
+
         consentService.incrementStudyEnrollment(study);
         consentService.incrementStudyEnrollment(study);
         limit = consentService.isStudyAtEnrollmentLimit(study);
@@ -198,9 +199,50 @@ public class ConsentServiceImplTest {
         try {
             consentService.incrementStudyEnrollment(study);
             fail("Should have thrown an exception");
-        } catch(StudyLimitExceededException e) {
+        } catch (StudyLimitExceededException e) {
             assertEquals("This is a 473 error", 473, e.getStatusCode());
         }
         stringOps.delete(key).execute();
+    }
+
+    @Test
+    public void checkConsentUpToDate() {
+        System.out.println("Start Test");
+        ConsentSignature researchConsent = ConsentSignature.create("John Smith", "1990-11-11", null, null);
+        consentService.consentToResearch(testUser.getUser(), researchConsent, testUser.getStudy(), false);
+
+        assertTrue("Should be consented",
+                consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy()));
+        assertTrue("Should have signed most recent consent.",
+                consentService.hasUserSignedMostRecentConsent(testUser.getUser(), testUser.getStudy()));
+
+        // Create new study consent, but do not activate it. User is consented and has still signed most recent consent.
+        StudyConsent newStudyConsent = studyConsentDao.addConsent(testUser.getStudy().getIdentifier(), "/path/to2",
+                testUser.getStudy().getMinAgeOfConsent());
+
+        assertTrue("Should be consented.",
+                consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy()));
+        assertTrue("Should have signed most recent consent, even though new consent is added.",
+                consentService.hasUserSignedMostRecentConsent(testUser.getUser(), testUser.getStudy()));
+
+        // Activate new study consent. User is consented and but has not signed most recent consent.
+        newStudyConsent = studyConsentDao.setActive(newStudyConsent, true);
+
+        assertTrue("Should still be consented.",
+                consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy()));
+        assertFalse("New consent activated. Should no longer have signed most recent consent. ",
+                consentService.hasUserSignedMostRecentConsent(testUser.getUser(), testUser.getStudy()));
+
+        // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
+        consentService.withdrawConsent(testUser.getUser(), testUser.getStudy());
+        consentService.consentToResearch(testUser.getUser(), researchConsent, testUser.getStudy(), false);
+
+        assertTrue("Should still be consented.",
+                consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy()));
+        assertTrue("Should again have signed most recent consent.",
+                consentService.hasUserSignedMostRecentConsent(testUser.getUser(), testUser.getStudy()));
+
+        // cleanup
+        studyConsentDao.deleteConsent(testUser.getStudy().getIdentifier(), newStudyConsent.getCreatedOn());
     }
 }
