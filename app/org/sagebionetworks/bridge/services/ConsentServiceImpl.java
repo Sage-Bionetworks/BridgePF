@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
@@ -77,8 +78,8 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public User consentToResearch(final User caller, final ConsentSignature consentSignature,
-        final Study study, final boolean sendEmail) throws BridgeServiceException {
+    public User consentToResearch(final User caller, final ConsentSignature consentSignature, final Study study,
+            final boolean sendEmail) throws BridgeServiceException {
 
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
@@ -139,14 +140,17 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
 
-        final String healthCode = caller.getHealthCode();
+        UserConsent userConsent = userConsentDao.getUserConsent(caller.getHealthCode(), study.getIdentifier());
         StudyConsent mostRecentConsent = studyConsentDao.getConsent(study.getIdentifier());
 
-        if (mostRecentConsent == null) {
-            return false;
+        if (mostRecentConsent != null && userConsent != null) {
+            // If the user signed the StudyConsent after the time the most recent StudyConsent was created, then the
+            // user has signed the most recent StudyConsent.
+            return userConsent.getSignedOn() > mostRecentConsent.getCreatedOn();
         } else {
-            return userConsentDao.hasConsented(healthCode, mostRecentConsent);
+            return false;
         }
+
     }
 
     @Override
