@@ -8,8 +8,8 @@ import java.util.UUID;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.base.Function;
@@ -78,5 +78,4 @@ public class BridgeUtils {
             throw new EntityAlreadyExistsException(entity, message);
         }
     }
-    
 }

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.route53;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import javax.annotation.Resource;
 

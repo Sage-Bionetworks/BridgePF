@@ -276,7 +276,6 @@ public class DynamoInitializer {
             logger.info("Existing tables: " + builder.toString());
         }
         for (TableDescription table : tables) {
-            logger.info("Checking table " + table.getTableName());
             if (!existingTables.containsKey(table.getTableName())) {
                 CreateTableRequest createTableRequest = getCreateTableRequest(table);
                 logger.info("Creating table " + table.getTableName());

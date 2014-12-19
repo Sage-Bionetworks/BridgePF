@@ -4,8 +4,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -29,6 +30,7 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
+import org.sagebionetworks.bridge.validators.SignUpValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +51,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 
+    private DistributedLockDao lockDao;
     private Client stormpathClient;
     private CacheProvider cacheProvider;
     private BridgeConfig config;
@@ -56,8 +59,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private ConsentService consentService;
     private ParticipantOptionsService optionsService;
     private Validator signInValidator;
-    private Validator signUpValidator;
     private Validator passwordResetValidator;
+
+    public void setDistributedLockDao(DistributedLockDao lockDao) {
+        this.lockDao = lockDao;
+    }
 
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
@@ -78,19 +84,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
-    
+
     public void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
-    
+
     public void setSignInValidator(Validator validator) {
         this.signInValidator = validator;
     }
-    
-    public void setSignUpValidator(Validator validator) {
-        this.signUpValidator = validator;
-    }
-    
+
     public void setPasswordResetValidator(Validator validator) {
         this.passwordResetValidator = validator;
     }
@@ -109,7 +111,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(signIn, "Sign in cannot be null");
 
         Validate.entityThrowingException(signInValidator, signIn);
-        
+
         final long start = System.nanoTime();
         AuthenticationRequest<?, ?> request = null;
         UserSession session = null;
@@ -119,9 +121,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword());
             Account account = application.authenticateAccount(request).getAccount();
             logger.debug("sign in authenticate " + (System.nanoTime() - start));
-            session = createSessionFromAccount(study, account);
+            session = getSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
-            
+
+
             if (!session.getUser().doesConsent()) {
                 throw new ConsentRequiredException(session);
             }
@@ -150,13 +153,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public void signUp(SignUp signUp, Study study, boolean sendEmail) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
-        
-        Validate.entityThrowingException(signUpValidator, signUp);
-        if (consentService.isStudyAtEnrollmentLimit(study)) {
-            throw new StudyLimitExceededException(study);
-        }
-        
+        checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
+
+        String lockId = null;
         try {
+            lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail());
+
+            SignUpValidator validator = new SignUpValidator(this);
+            Validate.entityThrowingException(validator, signUp);
+
+            if (consentService.isStudyAtEnrollmentLimit(study)) {
+                throw new StudyLimitExceededException(study);
+            }
+
             Directory directory = stormpathClient.getResource(study.getStormpathHref(), Directory.class);
             // Create Stormpath account
             Account account = stormpathClient.instantiate(Account.class);
@@ -165,16 +174,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             account.setEmail(signUp.getEmail());
             account.setUsername(signUp.getUsername());
             account.setPassword(signUp.getPassword());
-            
+
             directory.createAccount(account, sendEmail);
-            
             addAccountToGroups(directory, account, signUp.getRoles());
-            
+
             // Assign a health code
             accountEncryptionService.createAndSaveHealthCode(study, account);
 
         } catch (ResourceException re) {
             throw new BadRequestException(re.getDeveloperMessage());
+        } finally {
+            lockDao.releaseLock(SignUp.class, signUp.getEmail(), lockId);
         }
     }
 
@@ -182,14 +192,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public UserSession verifyEmail(Study study, EmailVerification verification) throws ConsentRequiredException {
         checkNotNull(verification, "Verification object cannot be null");
         checkNotNull(verification.getSptoken(), "Email verification token is required");
-        
+
         UserSession session = null;
         try {
             Account account = stormpathClient.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
-            
-            session = createSessionFromAccount(study, account);
+
+            session = getSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
-            
+
             if (!session.getUser().doesConsent()) {
                 throw new ConsentRequiredException(session);
             }
@@ -203,7 +213,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public void requestResetPassword(Email email) throws BridgeServiceException {
         checkNotNull(email, "Email object cannot cannot be null");
         checkArgument(StringUtils.isNotBlank(email.getEmail()), "Email is required");
-        
+
         try {
             Application application = StormpathFactory.getStormpathApplication(stormpathClient);
             application.sendPasswordResetEmail(email.getEmail());
@@ -215,7 +225,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public void resetPassword(PasswordReset passwordReset) throws BridgeServiceException {
         checkNotNull(passwordReset, "Password reset object required");
-        
+
         Validate.entityThrowingException(passwordResetValidator, passwordReset);
         try {
             Application application = StormpathFactory.getStormpathApplication(stormpathClient);
@@ -229,21 +239,28 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public User getUser(Study study, String email) {
+        Account account = getAccount(email);
+        if (account != null) {
+            return getSessionFromAccount(study, account).getUser();
+        }
+        return null;
+    }
+
+    @Override
+    public Account getAccount(String email) {
         Application app = StormpathFactory.getStormpathApplication(stormpathClient);
         Map<String, Object> queryParams = new HashMap<String, Object>();
         queryParams.put("email", email);
         AccountList accounts = app.getAccounts(queryParams);
 
         if (accounts.iterator().hasNext()) {
-            Account account = accounts.iterator().next();
-            return createSessionFromAccount(study, account).getUser();
+            return accounts.iterator().next();
         }
         return null;
     }
 
     @Override
-    public UserSession createSessionFromAccount(Study study, Account account) {
-
+    public UserSession getSessionFromAccount(Study study, Account account) {
         final UserSession session = new UserSession();
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment().name().toLowerCase());
@@ -255,6 +272,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final String healthCode = getHealthCode(study, account);
         user.setHealthCode(healthCode);
 
+        user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(user, study));
         user.setConsent(consentService.hasUserConsentedToResearch(user, study));
         user.setDataSharing(optionsService.getBooleanOption(healthCode, Option.DATA_SHARING));
 
@@ -275,7 +293,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return session;
     }
 
-    private void addAccountToGroups(Directory directory, Account account, List<String> roles) {
+    private void addAccountToGroups(Directory directory, Account account, Set<String> roles) {
         if (roles != null) {
             GroupList groups = directory.getGroups();
             for (Group group : groups) {

@@ -8,9 +8,9 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 
-import com.google.common.collect.Lists;
-
 import play.mvc.Result;
+
+import com.google.common.collect.Lists;
 
 public class ScheduleController extends BaseController {
 

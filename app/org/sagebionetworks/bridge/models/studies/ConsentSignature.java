@@ -3,13 +3,13 @@ package org.sagebionetworks.bridge.models.studies;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.validators.ConsentSignatureValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class ConsentSignature implements BridgeEntity {
 

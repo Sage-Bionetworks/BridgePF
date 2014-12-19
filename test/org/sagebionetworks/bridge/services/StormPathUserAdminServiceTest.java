@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
@@ -20,6 +18,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.User;
@@ -32,30 +31,30 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StormPathUserAdminServiceTest {
 
-    // Decided not to use the helper class for this test because so many edge conditions are 
+    // Decided not to use the helper class for this test because so many edge conditions are
     // being tested here.
-    
+
     @Resource
     AuthenticationServiceImpl authService;
 
     @Resource
-    StormPathUserAdminService service;
+    UserAdminServiceImpl service;
 
     @Resource
     BridgeConfig bridgeConfig;
-    
+
     @Resource
     StudyServiceImpl studyService;
-    
+
     @Resource
-    StormPathUserAdminService userAdminService;
-    
+    UserAdminServiceImpl userAdminService;
+
     private Study study;
-    
+
     private SignUp signUp;
-    
+
     private User testUser;
-    
+
     @BeforeClass
     public static void initialSetUp() {
         DynamoTestUtil.clearTable(DynamoUserConsent2.class);
@@ -70,8 +69,8 @@ public class StormPathUserAdminServiceTest {
     public void before() {
         study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
         String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
-        signUp = new SignUp(name, name+"@sagebridge.org", "P4ssword");
-        
+        signUp = new SignUp(name, name+"@sagebridge.org", "P4ssword", null);
+
         SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         authService.signIn(study, signIn).getUser();
     }
@@ -83,22 +82,18 @@ public class StormPathUserAdminServiceTest {
         }
     }
 
-    @Test
-    public void canCreateUserIdempotently() {
+    @Test(expected = InvalidEntityException.class)
+    public void cannotCreateUserIdempotently() {
         testUser = service.createUser(signUp, study, true, true).getUser();
         testUser = service.createUser(signUp, study, true, true).getUser();
-
-        assertEquals("Correct email", signUp.getEmail(), testUser.getEmail());
-        assertEquals("Correct username", signUp.getUsername(), testUser.getUsername());
-        assertTrue("Has consented", testUser.doesConsent());
     }
 
     @Test(expected = BridgeServiceException.class)
     public void deletedUserHasBeenDeleted() {
         testUser = service.createUser(signUp, study, true, true).getUser();
-        
+
         service.deleteUser(testUser.getEmail());
-        
+
         // This should fail with a 404.
         authService.signIn(study, new SignIn(signUp.getEmail(), signUp.getPassword()));
     }
@@ -107,7 +102,7 @@ public class StormPathUserAdminServiceTest {
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
         UserSession session1 = service.createUser(signUp, study, false, false);
         assertNull("No session", session1);
-        
+
         try {
             authService.signIn(study, new SignIn(signUp.getEmail(), signUp.getPassword()));
             fail("Should throw a consent required exception");

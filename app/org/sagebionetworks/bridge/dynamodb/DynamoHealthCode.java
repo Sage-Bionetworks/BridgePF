@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
@@ -18,14 +19,16 @@ public class DynamoHealthCode implements DynamoTable {
 
     private String code;
     private Long version;
+    private String studyId;
 
     public DynamoHealthCode() {
     }
-    
-    public DynamoHealthCode(String code) {
-        checkArgument(StringUtils.isNotBlank(code), "code cannot be null or empty.");
 
+    public DynamoHealthCode(String code, String studyId) {
+        checkArgument(StringUtils.isNotBlank(code), "code cannot be null or empty.");
+        checkArgument(StringUtils.isNotBlank(studyId), "study identifier cannot be null or empty.");
         this.code = code;
+        this.studyId = studyId;
     }
 
     @DynamoDBHashKey
@@ -44,5 +47,13 @@ public class DynamoHealthCode implements DynamoTable {
     }
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    @DynamoDBAttribute
+    public String getStudyIdentifier() {
+        return studyId;
+    }
+    public void setStudyIdentifier(String studyId) {
+        this.studyId = studyId;
     }
 }

@@ -1,6 +1,6 @@
 package controllers;
 
-import org.sagebionetworks.bridge.models.Backfill;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.services.backfill.BackfillService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,16 +21,22 @@ public class BackfillController extends BaseController implements ApplicationCon
         this.appContext = appContext;
     }
 
-    public Result backfill(String name) throws Exception {
-        checkUser();
-        BackfillService backfillService = appContext.getBean(name, BackfillService.class);
-        logger.info("Backfilling " + name);
-        Backfill backfill = backfillService.backfill();
-        logger.info("Backfilling " + name + " done.");
-        return okResult(backfill);
+    public Result backfill(final String name) throws Exception {
+        final String user = checkUser();
+        final BackfillService backfillService = appContext.getBean(name, BackfillService.class);
+        Chunks<String> chunks = new StringChunks() {
+                @Override
+                public void onReady(final Chunks.Out<String> out) {
+                    BackfillChunksAdapter chunksAdapter = new BackfillChunksAdapter(out);
+                    backfillService.backfill(user, name, chunksAdapter);
+                }
+            };
+        logger.info("Backfill " + name + " submitted.");
+        return ok(chunks);
     }
 
-    private void checkUser() throws Exception {
-        getAuthenticatedAdminSession();
+    private String checkUser() throws Exception {
+        UserSession session = getAuthenticatedAdminSession();
+        return session.getUser().getEmail();
     }
 }

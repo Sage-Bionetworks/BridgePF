@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.redis;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Single suffix (domain, name space) key.

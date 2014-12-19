@@ -9,16 +9,11 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
-import org.sagebionetworks.bridge.events.SchedulePlanCreatedEvent;
-import org.sagebionetworks.bridge.events.SchedulePlanDeletedEvent;
-import org.sagebionetworks.bridge.events.SchedulePlanUpdatedEvent;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -31,10 +26,9 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.Lists;
 
-public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventPublisherAware {
+public class DynamoSchedulePlanDao implements SchedulePlanDao {
 
     private DynamoDBMapper mapper;
-    private ApplicationEventPublisher publisher;
 
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
@@ -43,11 +37,6 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 
-    @Override
-    public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
-        this.publisher = publisher;
-    }
-    
     @Override
     public List<SchedulePlan> getSchedulePlans(Study study) {
         checkNotNull(study, "Study is null");
@@ -95,7 +84,6 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
-        publisher.publishEvent(new SchedulePlanCreatedEvent(plan));
         return plan;
     }
 
@@ -105,7 +93,6 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
         
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         mapper.save(plan);
-        publisher.publishEvent(new SchedulePlanUpdatedEvent(plan));
         return plan;
     }
 
@@ -116,7 +103,6 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao, ApplicationEventP
         
         SchedulePlan plan = getSchedulePlan(study, guid);
         mapper.delete(plan);
-        publisher.publishEvent(new SchedulePlanDeletedEvent(plan));
     }
     
     @Override

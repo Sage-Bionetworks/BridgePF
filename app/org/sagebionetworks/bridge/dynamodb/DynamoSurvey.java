@@ -6,6 +6,7 @@ import java.util.List;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 
@@ -183,6 +184,11 @@ public class DynamoSurvey implements Survey, DynamoTable {
     @Override
     public void setQuestions(List<SurveyQuestion> questions) {
         this.questions = questions;
+    }
+    
+    @Override
+    public boolean keysEqual(GuidCreatedOnVersionHolder keys) {
+        return (keys != null && keys.getGuid().equals(guid) && keys.getCreatedOn() == createdOn);
     }
 
     @Override
