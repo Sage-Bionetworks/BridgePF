@@ -31,5 +31,7 @@ public interface AuthenticationService {
     
     public User getUser(Study study, String email);
     
-    public UserSession createSessionFromAccount(Study study, Account account);
+    public Account getAccount(String email);
+    
+    public UserSession getSessionFromAccount(Study study, Account account);
 }

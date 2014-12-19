@@ -6,8 +6,6 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.events.UserEnrolledEvent;
-import org.sagebionetworks.bridge.events.UserUnenrolledEvent;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -19,29 +17,30 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
+import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.client.Client;
 
-public class ConsentServiceImpl implements ConsentService, ApplicationEventPublisherAware {
+public class ConsentServiceImpl implements ConsentService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ConsentServiceImpl.class);
 
     private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
-    
+
+    private AuthenticationService authService;
     private JedisStringOps stringOps = new JedisStringOps();
-    private Client stormpathClient;
     private AccountEncryptionService accountEncryptionService;
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
-    private ApplicationEventPublisher publisher;
 
-    public void setStormpathClient(Client client) {
-        this.stormpathClient = client;
+    public void setAuthenticationService(AuthenticationService authService) {
+        this.authService = authService;
     }
-    
+
     public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
         this.accountEncryptionService = accountEncryptionService;
     }
@@ -59,57 +58,73 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     }
 
     @Override
-    public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
-        this.publisher = publisher;
-    }
-
-    @Override
     public ConsentSignature getConsentSignature(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-
         final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
+        }
+        try {
+            Account account = authService.getAccount(caller.getEmail());
+            ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
+            if (consentSignature != null) {
+                return consentSignature;
+            }
+        } catch (Throwable e) {
+            logger.info("Consent signature not in Stormpath. Fall back to dynamo.");
         }
         ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
         return consentSignature;
     }
 
     @Override
-    public User consentToResearch(final User caller, final ConsentSignature consentSignature, 
+    public User consentToResearch(final User caller, final ConsentSignature consentSignature,
         final Study study, final boolean sendEmail) throws BridgeServiceException {
-        
+
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
+
+        // Both of these are validation and should ideally be in the validator, but that was
+        // tied to object creation and deserialization, happening multiple places in the
+        // codebase.
         if (caller.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
-        
+        ConsentAgeValidator validator = new ConsentAgeValidator(study);
+        Validate.entityThrowingException(validator, consentSignature);
+
         // Stormpath account
-        final Account account = stormpathClient.getResource(caller.getStormpathHref(), Account.class);
+        final Account account = authService.getAccount(caller.getEmail());
         HealthId hid = accountEncryptionService.getHealthCode(study, account);
         if (hid == null) {
             hid = accountEncryptionService.createAndSaveHealthCode(study, account);
         }
+        final String healthCode = hid.getCode();
 
-        final HealthId healthId = hid;
-        // Give consent
         final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
-        
+
         incrementStudyEnrollment(study);
-        userConsentDao.giveConsent(healthId.getCode(), studyConsent, consentSignature);
-        // Publish event
-        publisher.publishEvent(new UserEnrolledEvent(caller, study));
-        // Sent email
+        try {
+            userConsentDao.giveConsent(healthCode, studyConsent);
+        } catch (Throwable e) {
+            decrementStudyEnrollment(study);
+            throw e;
+        }
+
+        try {
+            accountEncryptionService.putConsentSignature(study, account, consentSignature);
+        } catch (Throwable e) {
+            logger.error("Failed to write consent signature to Stormpath", e);
+        }
+
         if (sendEmail) {
             sendMailService.sendConsentAgreement(caller, consentSignature, studyConsent);
         }
-        // Update user
+
         caller.setConsent(true);
-        caller.setHealthCode(healthId.getCode());
+        caller.setHealthCode(healthCode);
         return caller;
     }
 
@@ -117,7 +132,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public boolean hasUserConsentedToResearch(User caller, Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
+
         final String healthCode = caller.getHealthCode();
         List<StudyConsent> consents = studyConsentDao.getConsents(study.getIdentifier());
         for (StudyConsent consent : consents) {
@@ -127,18 +142,36 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         }
         return false;
     }
-    
+
+    @Override
+    public boolean hasUserSignedMostRecentConsent(User caller, Study study) {
+        checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+
+        final String healthCode = caller.getHealthCode();
+        StudyConsent mostRecentConsent = studyConsentDao.getConsent(study.getIdentifier());
+
+        if (mostRecentConsent == null) {
+            return false;
+        } else {
+            return userConsentDao.hasConsented(healthCode, mostRecentConsent);
+        }
+    }
+
     @Override
     public User withdrawConsent(User caller, Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
 
         String healthCode = caller.getHealthCode();
-        if (userConsentDao.withdrawConsent(healthCode, study)) {
+        if (userConsentDao.withdrawConsent(healthCode, study.getIdentifier())) {
             decrementStudyEnrollment(study);
-            publisher.publishEvent(new UserUnenrolledEvent(caller, study));
             caller.setConsent(false);
-        };
+        }
+
+        Account account = authService.getAccount(caller.getEmail());
+        accountEncryptionService.removeConsentSignature(study, account);
+
         return caller;
     }
 
@@ -146,25 +179,26 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
     public void emailConsentAgreement(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        
+
         final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
-        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
+
+        final ConsentSignature consentSignature = getConsentSignature(caller, study);
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
         sendMailService.sendConsentAgreement(caller, consentSignature, consent);
     }
-    
+
     @Override
     public boolean isStudyAtEnrollmentLimit(Study study) {
         if (study.getMaxNumOfParticipants() == 0) {
             return false;
         }
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        
+
         long count = Long.MAX_VALUE;
         String countString = stringOps.get(key).execute();
         if (countString == null) {
@@ -176,7 +210,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         }
         return (count >= study.getMaxNumOfParticipants());
     }
-    
+
     @Override
     public void incrementStudyEnrollment(Study study) throws StudyLimitExceededException {
         if (study.getMaxNumOfParticipants() == 0) {
@@ -197,8 +231,7 @@ public class ConsentServiceImpl implements ConsentService, ApplicationEventPubli
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
         String count = stringOps.get(key).execute();
         if (count != null && Long.parseLong(count) > 0) {
-            stringOps.decrement(key).execute();    
+            stringOps.decrement(key).execute();
         }
     }
-
 }

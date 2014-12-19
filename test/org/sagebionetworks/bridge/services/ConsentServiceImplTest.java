@@ -9,6 +9,7 @@ import static org.junit.Assert.fail;
 
 import javax.annotation.Resource;
 
+import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,6 +21,7 @@ import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -57,8 +59,7 @@ public class ConsentServiceImplTest {
     @Before
     public void before() {
         testUser = helper.createUser(ConsentServiceImplTest.class);
-        studyConsent = studyConsentDao.addConsent(testUser.getStudy().getIdentifier(), "/path/to", testUser.getStudy()
-                .getMinAgeOfConsent());
+        studyConsent = studyConsentDao.addConsent(testUser.getStudy().getIdentifier(), "/path/to", testUser.getStudy().getMinAgeOfConsent());
         studyConsentDao.setActive(studyConsent, true);
 
         // TestUserAdminHelper creates a user with consent. Withdraw consent to make sure we're
@@ -90,12 +91,12 @@ public class ConsentServiceImplTest {
     @Test
     public void canConsent() {
         // Consent and verify.
-        ConsentSignature researchConsent = ConsentSignature.create("John Smith", "2011-11-11", null, null);
+        ConsentSignature researchConsent = ConsentSignature.create("John Smith", "1990-11-11", null, null);
         consentService.consentToResearch(testUser.getUser(), researchConsent, testUser.getStudy(), false);
         assertTrue(consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy()));
         ConsentSignature returnedSig = consentService.getConsentSignature(testUser.getUser(), testUser.getStudy());
         assertEquals("John Smith", returnedSig.getName());
-        assertEquals("2011-11-11", returnedSig.getBirthdate());
+        assertEquals("1990-11-11", returnedSig.getBirthdate());
         assertNull(returnedSig.getImageData());
         assertNull(returnedSig.getImageMimeType());
 
@@ -136,6 +137,42 @@ public class ConsentServiceImplTest {
             thrownEx = ex;
         }
         assertNotNull(thrownEx);
+    }
+    
+    @Test
+    public void cannotConsentIfTooYoung() {
+        Study study = new DynamoStudy();
+        study.setIdentifier("api");
+        study.setName("Test Study");
+        study.setMinAgeOfConsent(18);
+        
+        LocalDate now = LocalDate.now();
+        int year = now.getYear();
+        int month = now.getMonthOfYear();
+        int day = now.getDayOfMonth();
+        
+        String today18YearsAgo = String.format("%s-%2d-%2d", year-18, month, day).replaceAll(" ","0");
+        String yesterday18YearsAgo = String.format("%s-%2d-%2d", year-18, month, day-1).replaceAll(" ","0");
+        String tomorrow18YearsAgo = String.format("%s-%2d-%2d", year-18, month, day+1).replaceAll(" ","0");
+
+        // This will work
+        ConsentSignature sig = ConsentSignature.create("Test User", today18YearsAgo, null, null);
+        consentService.consentToResearch(testUser.getUser(), sig, study, false);
+        consentService.withdrawConsent(testUser.getUser(), study);
+        
+        // Also okay
+        sig = ConsentSignature.create("Test User", yesterday18YearsAgo, null, null);
+        consentService.consentToResearch(testUser.getUser(), sig, study, false);
+        consentService.withdrawConsent(testUser.getUser(), study);
+
+        // But this is not, one day to go
+        try {
+            sig = ConsentSignature.create("Test User", tomorrow18YearsAgo, null, null);
+            consentService.consentToResearch(testUser.getUser(), sig, study, false);
+        } catch(InvalidEntityException e) {
+            consentService.withdrawConsent(testUser.getUser(), study);
+            assertTrue(e.getMessage().contains("years of age or older"));
+        }
     }
     
     @Test

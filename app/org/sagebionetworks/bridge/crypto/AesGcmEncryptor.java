@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.crypto;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Security;
 
 import org.apache.shiro.codec.Base64;
@@ -42,7 +43,7 @@ public class AesGcmEncryptor {
         if (text == null) {
             throw new IllegalArgumentException("Text to encrypt cannot be null.");
         }
-        byte[] base64 = Base64.encode(text.getBytes());
+        byte[] base64 = Base64.encode(text.getBytes(StandardCharsets.UTF_8));
         ByteSource bytes = aesCipher.encrypt(base64, Base64.decode(key));
         return bytes.toBase64();
     }
