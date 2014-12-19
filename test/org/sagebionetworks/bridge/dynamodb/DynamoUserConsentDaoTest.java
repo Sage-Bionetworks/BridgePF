@@ -64,7 +64,7 @@ public class DynamoUserConsentDaoTest {
         assertFalse(userConsentDao.hasConsented2(HEALTH_CODE, consent));
 
     }
-    
+
     @Test
     public void canCountStudyParticipants() {
         final DynamoStudyConsent1 consent = createStudyConsent();
@@ -82,6 +82,19 @@ public class DynamoUserConsentDaoTest {
         userConsentDao.giveConsent(HEALTH_CODE+"5", consent);
         count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
         assertEquals("Correct number of participants", 5, count);
+    }
+
+    @Test
+    public void hasConsentedMethodsEquivalent() {
+        final DynamoStudyConsent1 consent = createStudyConsent();
+
+        userConsentDao.giveConsent(HEALTH_CODE, consent);
+        assertTrue("Both methods should be equivalent.", userConsentDao.hasConsented(HEALTH_CODE, consent)
+        		&& userConsentDao.hasConsented(HEALTH_CODE, STUDY_IDENTIFIER));
+
+        userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+        assertFalse("Both methods should be equivalent.", userConsentDao.hasConsented(HEALTH_CODE, consent)
+                        && userConsentDao.hasConsented(HEALTH_CODE, STUDY_IDENTIFIER));
     }
 
     private DynamoStudyConsent1 createStudyConsent() {
