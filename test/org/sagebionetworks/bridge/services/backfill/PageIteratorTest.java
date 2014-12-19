@@ -36,7 +36,7 @@ public class PageIteratorTest {
                 end = words.size();
             }
             List<String> page = words.subList(start, end);
-            start += end;
+            start += pageSize;
             if (start > words.size()) {
                 start = words.size();
             }
@@ -47,20 +47,39 @@ public class PageIteratorTest {
     @Test
     public void test() {
         Iterator<List<String>> iterator = new WordIterator(
-                new String[] {"1", "2", "3"}, 2);
+                new String[] {"1", "2", "3", "4"}, 3);
         // Start
         assertTrue("Before the first next() call, always has next", iterator.hasNext());
         // First page
         List<String> page = iterator.next();
-        assertEquals(2, page.size());
+        assertEquals(3, page.size());
         assertEquals("1", page.get(0));
         assertEquals("2", page.get(1));
+        assertEquals("3", page.get(2));
         // Second page
         assertTrue(iterator.hasNext());
         page = iterator.next();
         assertEquals(1, page.size());
-        assertEquals("3", page.get(0));
+        assertEquals("4", page.get(0));
         // No more pages
+        assertFalse(iterator.hasNext());
+    }
+
+    @Test
+    public void testManyPages() {
+        Iterator<List<String>> iterator = new WordIterator(
+                new String[] {"1", "2", "3", "4", "5", "6", "7", "8", "9"}, 1);
+        assertTrue(iterator.hasNext());
+        assertEquals("1", iterator.next().get(0));
+        assertEquals("2", iterator.next().get(0));
+        assertEquals("3", iterator.next().get(0));
+        assertEquals("4", iterator.next().get(0));
+        assertEquals("5", iterator.next().get(0));
+        assertEquals("6", iterator.next().get(0));
+        assertEquals("7", iterator.next().get(0));
+        assertEquals("8", iterator.next().get(0));
+        assertEquals("9", iterator.next().get(0));
+        assertEquals(0, iterator.next().size());
         assertFalse(iterator.hasNext());
     }
 

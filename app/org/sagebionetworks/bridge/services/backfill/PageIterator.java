@@ -9,7 +9,7 @@ import java.util.List;
  * Iterates page by page. A page is a list of items.
  * That is the page is of known size and the items are in order.
  */
-abstract class PageIterator<T> implements Iterator<List<T>> {
+abstract class PageIterator<T> implements Iterator<List<T>>, Iterable<List<T>> {
 
     private int pageStart = 0;
     private boolean hasNext = true;
@@ -38,6 +38,11 @@ abstract class PageIterator<T> implements Iterator<List<T>> {
     @Override
     public void remove() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Iterator<List<T>> iterator() {
+        return this;
     }
 
     int pageStart() {
