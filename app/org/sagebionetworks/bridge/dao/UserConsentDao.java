@@ -17,31 +17,12 @@ public interface UserConsentDao {
     boolean withdrawConsent(String healthCode, String studyIdentifier);
 
     /**
-     * Gets the time stamp of the consent document the user has consented.
-     * Returns null if the user has not consented yet.
-     */
-    Long getConsentCreatedOn(String healthCode, String studyIdentifier);
-
-    /**
-     * Whether the user has consented to the specified study consent document.
-     */
-    boolean hasConsented(String healthCode, StudyConsent consent);
-
-    /**
      * Whether the user has consented to the specified study.
      * @param healthCode
      * @param studyIdentifier
      * @return
      */
     boolean hasConsented(String healthCode, String studyIdentifier);
-
-    /**
-     * Get the user consent record that consents the user to this study.
-     * @param healthCode
-     * @param consent
-     * @return
-     */
-    UserConsent getUserConsent(String healthCode, StudyConsent consent);
 
     /**
      * Get the user consent record that consents the user to this study.
