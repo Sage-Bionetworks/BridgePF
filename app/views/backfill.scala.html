@@ -1,0 +1,25 @@
+@(name: String)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Bridge Backfill - Sage Bionetworks</title>
+</head>
+<body style="background-color:#000000;color:#00CC00;font-family:monospace">
+  <div id="view-port" style="margin: 20px 20px">
+  </div>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+  <script>
+    $(function(){
+      var data, xhr = new XMLHttpRequest();
+      xhr.open("POST", "/admin/v1/backfill/@name/start", true);
+      xhr.seenBytes = 0;
+      xhr.addEventListener("progress", function () {
+        data = xhr.responseText.substr(xhr.seenBytes);
+        $("#view-port").append(data);
+        xhr.seenBytes = xhr.responseText.length;
+      });
+      xhr.send();
+    });
+  </script>
+</body>

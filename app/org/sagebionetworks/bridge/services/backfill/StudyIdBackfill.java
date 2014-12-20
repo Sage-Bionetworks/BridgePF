@@ -2,10 +2,7 @@ package org.sagebionetworks.bridge.services.backfill;
 
 import java.util.List;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
-import org.sagebionetworks.bridge.models.BackfillRecord;
 import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -15,9 +12,6 @@ import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
@@ -29,7 +23,6 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StudyIdBackfill.class);
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private StudyService studyService;
     public void setStudyService(StudyService studyService) {
@@ -70,55 +63,18 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
                         healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
                     }
                     try {
-                        healthCodeDao.setStudyId(healthId.getCode(), study.getIdentifier());
-                        final String recordString = getRecordString(study, account, "backfilled");
-                        callback.newRecords(new BackfillRecord() {
-                            @Override
-                            public String getTaskId() {
-                                return task.getId();
-                            }
-                            @Override
-                            public long getTimestamp() {
-                                return DateTime.now(DateTimeZone.UTC).getMillis();
-                            }
-                            @Override
-                            public String getRecord() {
-                                return recordString;
-                            }
-                        });
+                        String healthCode = healthId.getCode();
+                        if (healthCode != null) {
+                            healthCodeDao.setStudyId(healthCode, study.getIdentifier());
+                            callback.newRecords(BackfillUtils.createRecord(task, study, account, "backfilled"));
+                        }
                     } catch (final RuntimeException e) {
                         LOGGER.error(e.getMessage(), e);
-                        final String recordString = getRecordString(study, account,
-                                e.getClass().getName() + " " + e.getMessage());
-                        callback.newRecords(new BackfillRecord() {
-                            @Override
-                            public String getTaskId() {
-                                return task.getId();
-                            }
-                            @Override
-                            public long getTimestamp() {
-                                return DateTime.now(DateTimeZone.UTC).getMillis();
-                            }
-                            @Override
-                            public String getRecord() {
-                                return recordString;
-                            }
-                        });
+                        String operation = e.getClass().getName() + " " + e.getMessage();
+                        callback.newRecords(BackfillUtils.createRecord(task, study, account, operation));
                     }
                 }
             }
-        }
-    }
-
-    private String getRecordString(Study study, Account account, String operation) {
-        ObjectNode node = MAPPER.createObjectNode();
-        node.put("studyIdentifier", study.getIdentifier());
-        node.put("account", account.getEmail());
-        node.put("operation", operation);
-        try {
-            return MAPPER.writeValueAsString(node);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
         }
     }
 }
