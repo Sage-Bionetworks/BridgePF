@@ -59,26 +59,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public Long getConsentCreatedOn(String healthCode, String studyIdentifier) {
-        return getConsentCreatedOn2(healthCode, studyIdentifier);
-    }
-
-    @Override
-    public boolean hasConsented(String healthCode, StudyConsent consent) {
-        boolean hasConsented = hasConsented2(healthCode, consent);
-        return hasConsented;
-    }
-
-    @Override
     public boolean hasConsented(String healthCode, String studyIdentifier) {
         return getUserConsent(healthCode, studyIdentifier) != null;
-    }
-
-    @Override
-    public UserConsent getUserConsent(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
-        consent = mapper.load(consent);
-        return consent;
     }
 
     @Override
@@ -93,47 +75,6 @@ public class DynamoUserConsentDao implements UserConsentDao {
     public ConsentSignature getConsentSignature(String healthCode, StudyConsent consent) {
         ConsentSignature signature = getConsentSignature2(healthCode, consent);
         return signature;
-    }
-
-    void giveConsent2(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consent = null;
-        try {
-            consent = (DynamoUserConsent2) getUserConsent(healthCode, studyConsent);
-            if (consent == null) { // If the user has not consented yet
-                consent = new DynamoUserConsent2(healthCode, studyConsent);
-            }
-            consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
-            mapper.save(consent);
-        } catch (ConditionalCheckFailedException e) {
-            throw new EntityAlreadyExistsException(consent);
-        }
-    }
-
-    void withdrawConsent2(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consentToDelete = (DynamoUserConsent2) getUserConsent(healthCode, studyConsent);
-        if (consentToDelete == null) {
-            return;
-        }
-        mapper.delete(consentToDelete);
-    }
-
-    Long getConsentCreatedOn2(String healthCode, String studyKey) {
-        DynamoUserConsent2 consent = (DynamoUserConsent2) getUserConsent(healthCode, studyKey);
-        return consent == null ? null : consent.getConsentCreatedOn();
-    }
-
-    boolean hasConsented2(String healthCode, StudyConsent studyConsent) {
-        return getUserConsent(healthCode, studyConsent) != null;
-    }
-
-    /** Returns a non-null consent signature. Throws EntityNotFoundException if no consent signature is found. */
-    ConsentSignature getConsentSignature2(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consent = (DynamoUserConsent2) getUserConsent(healthCode, studyConsent);
-        if (consent == null) {
-            throw new EntityNotFoundException(DynamoUserConsent2.class);
-        }
-        return ConsentSignature.create(consent.getName(), consent.getBirthdate(), consent.getImageData(),
-                consent.getImageMimeType());
     }
 
     @Override
@@ -151,5 +92,52 @@ public class DynamoUserConsentDao implements UserConsentDao {
             healthCodes.add(consent.getHealthCode());
         }
         return healthCodes.size();
+    }
+
+    UserConsent getUserConsent2(String healthCode, StudyConsent studyConsent) {
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
+        consent = mapper.load(consent);
+        return consent;
+    }
+
+    void giveConsent2(String healthCode, StudyConsent studyConsent) {
+        DynamoUserConsent2 consent = null;
+        try {
+            consent = (DynamoUserConsent2) getUserConsent2(healthCode, studyConsent);
+            if (consent == null) { // If the user has not consented yet
+                consent = new DynamoUserConsent2(healthCode, studyConsent);
+            }
+            consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
+            mapper.save(consent);
+        } catch (ConditionalCheckFailedException e) {
+            throw new EntityAlreadyExistsException(consent);
+        }
+    }
+
+    void withdrawConsent2(String healthCode, StudyConsent studyConsent) {
+        DynamoUserConsent2 consentToDelete = (DynamoUserConsent2) getUserConsent2(healthCode, studyConsent);
+        if (consentToDelete == null) {
+            return;
+        }
+        mapper.delete(consentToDelete);
+    }
+
+    Long getConsentCreatedOn2(String healthCode, String studyKey) {
+        DynamoUserConsent2 consent = (DynamoUserConsent2) getUserConsent(healthCode, studyKey);
+        return consent == null ? null : consent.getConsentCreatedOn();
+    }
+
+    boolean hasConsented2(String healthCode, StudyConsent studyConsent) {
+        return getUserConsent2(healthCode, studyConsent) != null;
+    }
+
+    /** Returns a non-null consent signature. Throws EntityNotFoundException if no consent signature is found. */
+    ConsentSignature getConsentSignature2(String healthCode, StudyConsent studyConsent) {
+        DynamoUserConsent2 consent = (DynamoUserConsent2) getUserConsent2(healthCode, studyConsent);
+        if (consent == null) {
+            throw new EntityNotFoundException(DynamoUserConsent2.class);
+        }
+        return ConsentSignature.create(consent.getName(), consent.getBirthdate(), consent.getImageData(),
+                consent.getImageMimeType());
     }
 }
