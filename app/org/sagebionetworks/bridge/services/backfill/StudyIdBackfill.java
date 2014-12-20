@@ -116,7 +116,7 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
         node.put("account", account.getEmail());
         node.put("operation", operation);
         try {
-            return MAPPER.writeValueAsString(node);
+            return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(node);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
