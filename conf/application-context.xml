@@ -463,6 +463,7 @@
         <property name="studyService" ref="studyService" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="accountEncryptionService" ref="accountEncryptionService" />
+        <property name="distributedLockDao" ref="distributedLockDao" />
     </bean>
 
     <bean id="studyIdBackfill" class="org.sagebionetworks.bridge.services.backfill.StudyIdBackfill">
