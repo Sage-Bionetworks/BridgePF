@@ -458,20 +458,19 @@
         <property name="participantOptionsDao" ref="participantOptionsDao"/>
     </bean>
 
-    <bean id="healthIdEncryptionBackfill" class="org.sagebionetworks.bridge.services.backfill.HealthIdEncryptionBackfill">
+    <bean id="healthCodeBackfill" class="org.sagebionetworks.bridge.services.backfill.HealthCodeBackfill">
+        <property name="distributedLockDao" ref="distributedLockDao" />
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="studyService" ref="studyService" />
-        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="accountEncryptionService" ref="accountEncryptionService" />
-        <property name="distributedLockDao" ref="distributedLockDao" />
     </bean>
 
     <bean id="studyIdBackfill" class="org.sagebionetworks.bridge.services.backfill.StudyIdBackfill">
+        <property name="distributedLockDao" ref="distributedLockDao" />
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="studyService" ref="studyService" />
         <property name="healthCodeDao" ref="healthCodeDao" />
         <property name="accountEncryptionService" ref="accountEncryptionService" />
-        <property name="distributedLockDao" ref="distributedLockDao" />
     </bean>
 
 </beans>
