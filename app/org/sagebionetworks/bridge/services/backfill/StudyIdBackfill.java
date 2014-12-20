@@ -67,7 +67,7 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
                 for (final Study study : studies) {
                     HealthId healthId = accountEncryptionService.getHealthCode(study, account);
                     if (healthId == null) {
-                        accountEncryptionService.createAndSaveHealthCode(study, account);
+                        healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
                     }
                     try {
                         healthCodeDao.setStudyId(healthId.getCode(), study.getIdentifier());
