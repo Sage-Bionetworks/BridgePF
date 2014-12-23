@@ -1,0 +1,24 @@
+{
+    "type": "object",
+    "required": ["startDate", "endDate", "data"],
+    "additionalProperties": false,
+    "properties": {
+        "key": {"type": "string"},
+        "guid": {"type": "string"},
+        "startDate": {"type": "string"},
+        "endDate": {"type": "string"},
+        "version": {"type": "number"},
+        "data": {
+            "type": "object",
+            "required": ["endDate", "identifier", "questionType", "startDate"],
+            "additionalProperties": false,
+            "properties": {
+                "answer": {},
+                "endDate": {"type": "string"},
+                "identifier": {"type": "string"},
+                "questionType": {"type": "string"},
+                "startDate": {"type": "string"}
+            }
+        }
+    }
+}

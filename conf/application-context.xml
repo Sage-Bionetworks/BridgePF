@@ -316,8 +316,13 @@
         <property name="trackers">
             <list>
                 <ref bean="pb-tracker"/>
+                <ref bean="cardio-walk-tracker"/>
+                <ref bean="diabetes-glucose-tracker"/>
+                <ref bean="ios-survey-tracker"/>
                 <ref bean="med-tracker"/>
-            </list>            
+                <ref bean="parkinson-tapping-tracker"/>
+                <ref bean="parkinson-walk-tracker"/>
+            </list>
         </property>
     </bean>
 
@@ -331,11 +336,46 @@
         <property name="schemaFile" value="file:conf/schemas/bloodpressure.json"/>
     </bean>
 
+    <bean id="cardio-walk-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
+        <property name="name" value="6-Min Walk Test"/>
+        <property name="type" value="CardioWalk"/>
+        <property name="identifier" value="cardio-walk-tracker"/>
+        <property name="schemaFile" value="file:conf/schemas/cardio-walk-tracker.json"/>
+    </bean>
+
+    <bean id="diabetes-glucose-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
+        <property name="name" value="Glucose Levels"/>
+        <property name="type" value="DiabetesGlucose"/>
+        <property name="identifier" value="diabetes-glucose-tracker"/>
+        <property name="schemaFile" value="file:conf/schemas/diabetes-glucose-tracker.json"/>
+    </bean>
+
+    <bean id="ios-survey-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
+        <property name="name" value="iOS Survey Response"/>
+        <property name="type" value="IosSurvey"/>
+        <property name="identifier" value="ios-survey-tracker"/>
+        <property name="schemaFile" value="file:conf/schemas/ios-survey-tracker.json"/>
+    </bean>
+
     <bean id="med-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
         <property name="name" value="Medication"/>
         <property name="type" value="Medication"/>
         <property name="identifier" value="med-tracker"/>
         <property name="schemaFile" value="file:conf/schemas/medication.json"/>
+    </bean>
+
+    <bean id="parkinson-tapping-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
+        <property name="name" value="Tapping Activity"/>
+        <property name="type" value="ParkinsonTapping"/>
+        <property name="identifier" value="parkinson-tapping-tracker"/>
+        <property name="schemaFile" value="file:conf/schemas/parkinson-tapping-tracker.json"/>
+    </bean>
+
+    <bean id="parkinson-walk-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
+        <property name="name" value="Timed Walking Task"/>
+        <property name="type" value="ParkinsonWalk"/>
+        <property name="identifier" value="parkinson-walk-tracker"/>
+        <property name="schemaFile" value="file:conf/schemas/parkinson-walk-tracker.json"/>
     </bean>
 
     <bean id="controllers.LunchController" parent="proxiedController">
