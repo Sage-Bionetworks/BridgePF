@@ -8,14 +8,14 @@ libraryDependencies ++= Seq(
   filters,
   "com.amazonaws" % "aws-java-sdk" % "1.9.13",
   "com.newrelic.agent.java" % "newrelic-agent" % "3.12.1",
-  "org.springframework" % "spring-context" % "4.1.3.RELEASE",
-  "org.springframework" % "spring-test" % "4.1.3.RELEASE",
+  "org.springframework" % "spring-context" % "4.0.7.RELEASE",
+  "org.springframework" % "spring-test" % "4.0.7.RELEASE",
   "org.apache.commons" % "commons-lang3" % "3.3.2",
   "commons-validator" % "commons-validator" % "1.4.0",
   "commons-io" % "commons-io" % "2.4",
-  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.4.4",
-  "com.fasterxml.jackson.core" % "jackson-core" % "2.4.4",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4",
+  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.4.2",
+  "com.fasterxml.jackson.core" % "jackson-core" % "2.4.2",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.2",
   "com.google.guava" % "guava" % "18.0",
   "org.mockito" % "mockito-all" % "1.9.5",
   "org.apache.shiro" % "shiro-core" % "1.2.3",
@@ -25,8 +25,7 @@ libraryDependencies ++= Seq(
   "commons-httpclient" % "commons-httpclient" % "3.1",
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC2.1",
   "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC2.1",
-  "redis.clients" % "jedis" % "2.6.1",
-  "com.github.detro.ghostdriver" % "phantomjsdriver" % "1.1.0" % "test"
+  "redis.clients" % "jedis" % "2.6.1"
 )
 
 // To avoid reloading the Spring context
