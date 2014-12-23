@@ -1,8 +1,5 @@
 package org.sagebionetworks.bridge;
 
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.phantomjs.PhantomJSDriver;
-
 public class TestConstants {
     public static final String DUMMY_IMAGE_DATA = "VGhpcyBpc24ndCBhIHJlYWwgaW1hZ2Uu";
 
@@ -78,7 +75,4 @@ public class TestConstants {
     public static final String CANCEL_ACTION = "#cancelAct";
     public static final String CLOSE_ACTION = ".close";
     public static final String TOAST_DIALOG = ".humane";
-
-    public static final Class<PhantomJSDriver> PHANTOMJS_DRIVER = org.openqa.selenium.phantomjs.PhantomJSDriver.class;
-    public static final Class<FirefoxDriver> FIREFOX_DRIVER = FirefoxDriver.class;
 }
