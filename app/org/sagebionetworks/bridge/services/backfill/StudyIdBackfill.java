@@ -66,12 +66,12 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
                         String healthCode = healthId.getCode();
                         if (healthCode != null) {
                             healthCodeDao.setStudyId(healthCode, study.getIdentifier());
-                            callback.newRecords(BackfillUtils.createRecord(task, study, account, "backfilled"));
+                            callback.newRecords(createRecord(task, study, account, "backfilled"));
                         }
                     } catch (final RuntimeException e) {
                         LOGGER.error(e.getMessage(), e);
                         String operation = e.getClass().getName() + " " + e.getMessage();
-                        callback.newRecords(BackfillUtils.createRecord(task, study, account, operation));
+                        callback.newRecords(createRecord(task, study, account, operation));
                     }
                 }
             }

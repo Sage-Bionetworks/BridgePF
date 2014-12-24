@@ -2,18 +2,19 @@ package org.sagebionetworks.bridge.services.backfill;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.dao.BackfillDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.models.BackfillStatus;
+import org.sagebionetworks.bridge.models.BackfillRecord;
 import org.sagebionetworks.bridge.models.BackfillTask;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.stormpath.sdk.account.Account;
 
 abstract class AsyncBackfillTemplate implements BackfillService {
 
@@ -22,9 +23,13 @@ abstract class AsyncBackfillTemplate implements BackfillService {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private DistributedLockDao lockDao;
-
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
+    }
+
+    private BackfillDao backfillDao;
+    public void setBackfillDao(BackfillDao backfillDao) {
+        this.backfillDao = backfillDao;
     }
 
     @Override
@@ -63,7 +68,7 @@ abstract class AsyncBackfillTemplate implements BackfillService {
 
     private void backfillTemplate(final String user, final String name, final BackfillCallback callback) {
         try {
-            BackfillTask task = createBackfillTask(user, name);
+            BackfillTask task = backfillDao.createTask(user, name);
             callback.start(task);
             doBackfill(task, callback);
         } finally {
@@ -71,34 +76,9 @@ abstract class AsyncBackfillTemplate implements BackfillService {
         }
     }
 
-    private BackfillTask createBackfillTask(final String user, final String name) {
-        final String taskId = UUID.randomUUID().toString();
-        return new BackfillTask() {
-            @Override
-            public String getId() {
-                return taskId;
-            }
-            @Override
-            public long getTimestamp() {
-                return DateTime.now(DateTimeZone.UTC).getMillis();
-            }
-            @Override
-            public String getName() {
-                return name;
-            }
-            @Override
-            public String getDescription() {
-                return name;
-            }
-            @Override
-            public String getUser() {
-                return user;
-            }
-            @Override
-            public String getStatus() {
-                return BackfillStatus.SUBMITTED.name();
-            }
-        };
+    protected BackfillRecord createRecord(final BackfillTask task, final Study study,
+            final Account account, final String operation) {
+        return backfillDao.createRecord(task.getId(), study.getIdentifier(), account.getEmail(), operation);
     }
 
     /**
