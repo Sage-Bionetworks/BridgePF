@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.BackfillRecord;
@@ -26,8 +27,7 @@ public interface BackfillDao {
 
     /**
      * Gets the list of tasks of the specified name
-     * since a particular time point. Note this returns only a single page.
-     * If there are multiple pages, make sure the time point is recent.
+     * since a particular time point.
      */
     List<? extends BackfillTask> getTasks(String taskName, long since);
 
@@ -39,10 +39,10 @@ public interface BackfillDao {
     /**
      * Gets the list of records of a particular task.
      */
-    List<? extends BackfillRecord> getRecords(String taskId);
+    Iterator<? extends BackfillRecord> getRecords(String taskId);
 
     /**
      * Gets the number of records of a particular task.
      */
-    long getRecordCount(String taskId);
+    int getRecordCount(String taskId);
 }

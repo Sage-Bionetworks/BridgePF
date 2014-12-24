@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.BackfillDao;
@@ -19,6 +20,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveB
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 
 public class DynamoBackfillDao implements BackfillDao {
@@ -32,7 +34,7 @@ public class DynamoBackfillDao implements BackfillDao {
                 .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoBackfillTask.class)).build();
         taskMapper = new DynamoDBMapper(client, mapperConfig);
         mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
-                .withConsistentReads(ConsistentReads.EVENTUAL)
+                .withConsistentReads(ConsistentReads.CONSISTENT)
                 .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoBackfillRecord.class)).build();
         recordMapper = new DynamoDBMapper(client, mapperConfig);
     }
@@ -65,11 +67,11 @@ public class DynamoBackfillDao implements BackfillDao {
     }
 
     @Override
-    public List<? extends BackfillTask> getTasks(String taskName, long since) {
+    public List<DynamoBackfillTask> getTasks(String taskName, long since) {
         DynamoBackfillTask hashKey = new DynamoBackfillTask();
         hashKey.setName(taskName);
         Condition rangeKeyCondition = new Condition().withAttributeValueList(
-                new AttributeValue().withN(Long.toString(since)));
+                new AttributeValue().withN(Long.toString(since))).withComparisonOperator(ComparisonOperator.GE);
         DynamoDBQueryExpression<DynamoBackfillTask> queryExpression = new DynamoDBQueryExpression<DynamoBackfillTask>()
                 .withHashKeyValues(hashKey)
                 .withRangeKeyCondition("timestamp", rangeKeyCondition);
@@ -89,14 +91,28 @@ public class DynamoBackfillDao implements BackfillDao {
     }
 
     @Override
-    public List<BackfillRecord> getRecords(String taskId) {
-        // TODO Auto-generated method stub
-        return null;
+    public Iterator<DynamoBackfillRecord> getRecords(String taskId) {
+        DynamoDBQueryExpression<DynamoBackfillRecord> queryExpression = getRecordQueryExpression(taskId, 0);
+        PaginatedQueryList<DynamoBackfillRecord> results = recordMapper.query(DynamoBackfillRecord.class, queryExpression);
+        return results.iterator();
     }
 
     @Override
-    public long getRecordCount(String taskId) {
-        // TODO Auto-generated method stub
-        return 0;
+    public int getRecordCount(String taskId) {
+        DynamoDBQueryExpression<DynamoBackfillRecord> queryExpression = getRecordQueryExpression(taskId, 0);
+        int count = recordMapper.count(DynamoBackfillRecord.class, queryExpression);
+        return count;
+    }
+
+    private DynamoDBQueryExpression<DynamoBackfillRecord> getRecordQueryExpression(String taskId, long since) {
+        final DynamoBackfillRecord hashKey = new DynamoBackfillRecord();
+        hashKey.setTaskId(taskId);
+        final Condition rangeKeyCondition = new Condition()
+                .withAttributeValueList(new AttributeValue().withN(Long.toString(since)))
+                .withComparisonOperator(ComparisonOperator.GE);
+        final DynamoDBQueryExpression<DynamoBackfillRecord> queryExpression = new DynamoDBQueryExpression<DynamoBackfillRecord>()
+                .withHashKeyValues(hashKey)
+                .withRangeKeyCondition("timestamp", rangeKeyCondition);
+        return queryExpression;
     }
 }
