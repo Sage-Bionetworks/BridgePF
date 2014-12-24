@@ -59,19 +59,20 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
             for (final Account account : accountList) {
                 for (final Study study : studies) {
                     HealthId healthId = accountEncryptionService.getHealthCode(study, account);
-                    if (healthId == null) {
-                        healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
-                    }
-                    try {
-                        String healthCode = healthId.getCode();
-                        if (healthCode != null) {
-                            healthCodeDao.setStudyId(healthCode, study.getIdentifier());
-                            callback.newRecords(createRecord(task, study, account, "backfilled"));
+                    if (healthId != null) {
+                        try {
+                            String healthCode = healthId.getCode();
+                            if (healthCode != null) {
+                                boolean set = healthCodeDao.setStudyId(healthCode, study.getIdentifier());
+                                if (set) {
+                                    callback.newRecords(createRecord(task, study, account, "backfilled"));
+                                }
+                            }
+                        } catch (final RuntimeException e) {
+                            LOGGER.error(e.getMessage(), e);
+                            String operation = e.getClass().getName() + " " + e.getMessage();
+                            callback.newRecords(createRecord(task, study, account, operation));
                         }
-                    } catch (final RuntimeException e) {
-                        LOGGER.error(e.getMessage(), e);
-                        String operation = e.getClass().getName() + " " + e.getMessage();
-                        callback.newRecords(createRecord(task, study, account, operation));
                     }
                 }
             }
