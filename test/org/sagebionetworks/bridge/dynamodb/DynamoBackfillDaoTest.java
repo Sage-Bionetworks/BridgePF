@@ -97,7 +97,7 @@ public class DynamoBackfillDaoTest {
         // Create record in a different study
         backfillDao.createRecord("task3", "study3", "account3", "op3");
         assertEquals(2, backfillDao.getRecordCount("task1"));
-        assertEquals(1, backfillDao.getRecordCount("task2"));
+        assertEquals(1, backfillDao.getRecordCount("task3"));
         // Test iterator
         Iterator<? extends BackfillRecord> iterator = backfillDao.getRecords("task1");
         assertTrue(iterator.hasNext());
