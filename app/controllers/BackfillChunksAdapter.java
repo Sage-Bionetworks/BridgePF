@@ -25,10 +25,10 @@ class BackfillChunksAdapter implements BackfillCallback {
     @Override
     public void start(BackfillTask task) {
         checkNotNull(task);
-        chunksOut.write("<h5>" + task.getName()
+        chunksOut.write("<h4>" + task.getName()
                 + " started by " + task.getUser()
                 + " on " + new DateTime(task.getTimestamp(), DateTimeZone.UTC).toString("YYYY-MM-dd HH:mm:ss")
-                + "</h5>");
+                + "</h4>");
     }
 
     @Override
@@ -41,7 +41,7 @@ class BackfillChunksAdapter implements BackfillCallback {
 
     @Override
     public void done() {
-        chunksOut.write("Done!");
+        chunksOut.write("<h4>Done!<h4>");
         chunksOut.close();
     }
 }
