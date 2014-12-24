@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.dao.BackfillDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.BackfillRecord;
+import org.sagebionetworks.bridge.models.BackfillStatus;
 import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.slf4j.Logger;
@@ -44,40 +45,46 @@ abstract class AsyncBackfillTemplate implements BackfillService {
         executor.execute(new Runnable() {
             @Override
             public void run() {
-                backfillWithLock(user, name, callback);
+                lock(user, name, callback);
             }
         });
     }
 
-    private void backfillWithLock(final String user, final String name, final BackfillCallback callback) {
+    private void lock(final String user, final String name, final BackfillCallback callback) {
         final Class<? extends AsyncBackfillTemplate> clazz = getClass();
-        final String identifier = getClass().getSimpleName();
+        final String obj = clazz.getSimpleName();
         String lock = null;
         try {
-            lock = lockDao.acquireLock(clazz, identifier, getLockExpireInSeconds());
-            backfillTemplate(user, name, callback);
+            lock = lockDao.acquireLock(clazz, obj, getLockExpireInSeconds());
+            backfillTask(user, name, callback);
         } catch (ConcurrentModificationException e) {
             // TODO: Query DynamoDB and report back progress
             logger.info("Backfill " + name + " already in process.");
         } finally {
             if (lock != null) {
-                lockDao.releaseLock(clazz, identifier, lock);
+                lockDao.releaseLock(clazz, obj, lock);
             }
         }
     }
 
-    private void backfillTemplate(final String user, final String name, final BackfillCallback callback) {
+    private void backfillTask(final String user, final String name, final BackfillCallback callback) {
+        BackfillTask task = null;
         try {
-            BackfillTask task = backfillDao.createTask(name, user);
+            task = backfillDao.createTask(name, user);
             callback.start(task);
+            backfillDao.updateTaskStatus(task.getId(), BackfillStatus.IN_PROCESS);
             doBackfill(task, callback);
+            backfillDao.updateTaskStatus(task.getId(), BackfillStatus.COMPLETED);
+        } catch (Throwable t) {
+            if (task != null) {
+                backfillDao.updateTaskStatus(task.getId(), BackfillStatus.FAILED);
+            }
         } finally {
             callback.done();
         }
     }
 
-    protected BackfillRecord createRecord(final BackfillTask task, final Study study,
-            final Account account, final String operation) {
+    protected BackfillRecord createRecord(BackfillTask task, Study study, Account account, String operation) {
         return backfillDao.createRecord(task.getId(), study.getIdentifier(), account.getEmail(), operation);
     }
 
@@ -87,7 +94,7 @@ abstract class AsyncBackfillTemplate implements BackfillService {
     abstract int getLockExpireInSeconds();
 
     /**
-     * Does the actual backfill for the task. Reports back progress as backfill goes.
+     * Does the actual backfill for the task. Reports back progress as the backfill goes.
      */
     abstract void doBackfill(BackfillTask task, BackfillCallback callback);
 }
