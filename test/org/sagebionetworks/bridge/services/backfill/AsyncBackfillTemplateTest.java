@@ -20,16 +20,24 @@ public class AsyncBackfillTemplateTest {
     @Test
     public void test() throws Exception {
 
-        AsyncBackfillTemplate backfillTemplate = new TestBackfillService();
-        DistributedLockDao lockDao = mock(DistributedLockDao.class);
-        when(lockDao.acquireLock(TestBackfillService.class, TestBackfillService.class.getSimpleName()))
-                .thenReturn("abc");
+        final AsyncBackfillTemplate backfillTemplate = new TestBackfillService();
+
+        // Mock lock
+        final Class<TestBackfillService> lockClazz = TestBackfillService.class;
+        final String lockObject = TestBackfillService.class.getSimpleName();
+        final String lock = "lock";
+        final DistributedLockDao lockDao = mock(DistributedLockDao.class);
+        when(lockDao.acquireLock(lockClazz, lockObject, TestBackfillService.EXPIRE)).thenReturn(lock);
         backfillTemplate.setDistributedLockDao(lockDao);
 
+        // Mock task and backfill dao
+        final String taskName = "taskName";
+        final String taskId = "taskId";
+        final String user = "user";
         BackfillTask backfillTask = new BackfillTask() {
             @Override
             public String getId() {
-                return "taskId";
+                return taskId;
             }
             @Override
             public long getTimestamp() {
@@ -37,11 +45,11 @@ public class AsyncBackfillTemplateTest {
             }
             @Override
             public String getName() {
-                return "test backfill";
+                return taskName;
             }
             @Override
             public String getUser() {
-                return "test user";
+                return user;
             }
             @Override
             public String getStatus() {
@@ -49,15 +57,27 @@ public class AsyncBackfillTemplateTest {
             }
         };
         BackfillDao backfillDao = mock(BackfillDao.class);
-        when(backfillDao.createTask("test backfill", "test user")).thenReturn(backfillTask);
+        when(backfillDao.createTask(taskName, user)).thenReturn(backfillTask);
         backfillTemplate.setBackfillDao(backfillDao);
 
+        // Mock callback
         BackfillCallback callback = mock(BackfillCallback.class);
-        backfillTemplate.backfill("test user", "test backfill", callback);
-        Thread.sleep(1000L);
-        verify(callback, times(1)).start(any(BackfillTask.class));
+        backfillTemplate.backfill(user, taskName, callback);
+        Thread.sleep(100L);
+
+        // Verify callback
+        verify(callback, times(1)).start(backfillTask);
         verify(callback, times(1)).newRecords(any(BackfillRecord.class));
         verify(callback, times(1)).newRecords(any(BackfillRecord.class), any(BackfillRecord.class));
         verify(callback, times(1)).done();
+
+        // Verify lock
+        verify(lockDao, times(1)).acquireLock(lockClazz, lockObject, TestBackfillService.EXPIRE);
+        verify(lockDao, times(1)).releaseLock(lockClazz, lockObject, lock);
+
+        // Verify backfill dao
+        verify(backfillDao, times(1)).createTask(taskName, user);
+        verify(backfillDao, times(1)).updateTaskStatus(taskId, BackfillStatus.IN_PROCESS);
+        verify(backfillDao, times(1)).updateTaskStatus(taskId, BackfillStatus.COMPLETED);
     }
 }
