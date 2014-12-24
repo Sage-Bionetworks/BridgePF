@@ -2,9 +2,12 @@ package org.sagebionetworks.bridge.services.backfill;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.BackfillDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -58,8 +61,29 @@ abstract class AsyncBackfillTemplate implements BackfillService {
             lock = lockDao.acquireLock(clazz, obj, getLockExpireInSeconds());
             backfillTask(user, name, callback);
         } catch (ConcurrentModificationException e) {
-            // TODO: Query DynamoDB and report back progress
-            logger.info("Backfill " + name + " already in process.");
+            long since = DateTime.now(DateTimeZone.UTC).getMillis() - getLockExpireInSeconds();
+            List<? extends BackfillTask> tasks = backfillDao.getTasks(name, since);
+            if (tasks.isEmpty()) {
+                throw new RuntimeException("Failed to acquire lock but there is not recent backfill of " + name);
+            }
+            final BackfillTask recentTask = tasks.get(tasks.size() - 1);
+            final int count = backfillDao.getRecordCount(recentTask.getId());
+            callback.newRecords(new BackfillRecord() {
+                @Override
+                public String getTaskId() {
+                    return recentTask.getId();
+                }
+                @Override
+                public long getTimestamp() {
+                    return recentTask.getTimestamp();
+                }
+                @Override
+                public String getRecord() {
+                    return "Found a recent task of " + name
+                            + " started at " + (new DateTime(recentTask.getTimestamp())).toString()
+                            + " with status " + recentTask.getStatus()
+                            + " and " + count + " records processed.";
+                }});
         } finally {
             if (lock != null) {
                 lockDao.releaseLock(clazz, obj, lock);
@@ -76,6 +100,7 @@ abstract class AsyncBackfillTemplate implements BackfillService {
             doBackfill(task, callback);
             backfillDao.updateTaskStatus(task.getId(), BackfillStatus.COMPLETED);
         } catch (Throwable t) {
+            logger.error("Backfill task " + name + " has failed.", t);
             if (task != null) {
                 backfillDao.updateTaskStatus(task.getId(), BackfillStatus.FAILED);
             }
