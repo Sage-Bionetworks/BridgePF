@@ -1,8 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.models.BackfillRecord;
@@ -29,11 +26,10 @@ public class DynamoBackfillRecord implements BackfillRecord, DynamoTable {
     private String accountId;
     private String operation;
 
+    public DynamoBackfillRecord() {
+    }
+
     DynamoBackfillRecord(String taskId, String studyId, String accountId, String operation) {
-        checkArgument(isNotBlank(taskId));
-        checkArgument(isNotBlank(studyId));
-        checkArgument(isNotBlank(accountId));
-        checkArgument(isNotBlank(operation));
         this.taskId = taskId;
         this.timestamp = DateTime.now(DateTimeZone.UTC).getMillis();
         this.studyId = studyId;
