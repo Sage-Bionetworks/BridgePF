@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -17,6 +16,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 @DynamoDBTable(tableName = "BackfillTask")
 public class DynamoBackfillTask implements BackfillTask, DynamoTable {
 
+    private static final String SEPARATOR = ":";
+
     private String name;
     private long timestamp;
     private Long version;
@@ -24,12 +25,20 @@ public class DynamoBackfillTask implements BackfillTask, DynamoTable {
     private String user;
     private String status;
 
-    DynamoBackfillTask(String user, String name) {
-        checkArgument(isNotBlank(user));
-        checkArgument(isNotBlank(name));
-        this.user = user;
+    public DynamoBackfillTask() {
+    }
+
+    DynamoBackfillTask(String id) {
+        String[] splits = id.split(SEPARATOR);
+        checkArgument(splits.length == 2, "Invalid ID");
+        this.name = splits[0];
+        this.timestamp = Long.parseLong(splits[1]);
+    }
+
+    DynamoBackfillTask(String name, String user) {
         this.name = name;
         this.timestamp = DateTime.now(DateTimeZone.UTC).getMillis();
+        this.user = user;
         this.status = BackfillStatus.SUBMITTED.name();
     }
 
@@ -78,6 +87,6 @@ public class DynamoBackfillTask implements BackfillTask, DynamoTable {
     @DynamoDBIgnore
     @Override
     public String getId() {
-        return name + ":" + timestamp;
+        return name + SEPARATOR + timestamp;
     }
 }

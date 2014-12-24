@@ -137,6 +137,10 @@
         <property name="amazonRoute53Client" ref="r5client"/>
     </bean>
 
+    <bean id="backfillDao" class="org.sagebionetworks.bridge.dynamodb.DynamoBackfillDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+
     <bean id="herokuApi" class="org.sagebionetworks.bridge.heroku.HerokuApiImpl">
         <property name="bridgeConfig" ref="bridgeConfig"/>
     </bean>

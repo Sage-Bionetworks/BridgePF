@@ -17,18 +17,19 @@ public interface BackfillDao {
     /**
      * Updates the status of the backfill task.
      */
-    void updateTaskStatus(String staskId, BackfillStatus status);
+    void updateTaskStatus(String taskId, BackfillStatus status);
 
     /**
      * Gets the backfill task by ID.
      */
-    BackfillTask getTask(String id);
+    BackfillTask getTask(String taskId);
 
     /**
      * Gets the list of tasks of the specified name
-     * since a particular time point.
+     * since a particular time point. Note this returns only a single page.
+     * If there are multiple pages, make sure the time point is recent.
      */
-    List<BackfillTask> getTasks(String name, long since);
+    List<? extends BackfillTask> getTasks(String taskName, long since);
 
     /**
      * Creates a new backfill record for the specified task.
@@ -38,7 +39,7 @@ public interface BackfillDao {
     /**
      * Gets the list of records of a particular task.
      */
-    List<BackfillRecord> getRecords(String taskId);
+    List<? extends BackfillRecord> getRecords(String taskId);
 
     /**
      * Gets the number of records of a particular task.

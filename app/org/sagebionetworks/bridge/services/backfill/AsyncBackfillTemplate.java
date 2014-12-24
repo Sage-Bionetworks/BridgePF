@@ -68,7 +68,7 @@ abstract class AsyncBackfillTemplate implements BackfillService {
 
     private void backfillTemplate(final String user, final String name, final BackfillCallback callback) {
         try {
-            BackfillTask task = backfillDao.createTask(user, name);
+            BackfillTask task = backfillDao.createTask(name, user);
             callback.start(task);
             doBackfill(task, callback);
         } finally {
