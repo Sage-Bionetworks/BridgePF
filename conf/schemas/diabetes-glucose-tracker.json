@@ -1,0 +1,24 @@
+{
+    "type": "object",
+    "required": ["startDate", "endDate", "data"],
+    "additionalProperties": false,
+    "properties": {
+        "key": {"type": "string"},
+        "guid": {"type": "string"},
+        "startDate": {"type": "string"},
+        "endDate": {"type": "string"},
+        "version": {"type": "number"},
+        "data": {
+            "type": "object",
+            "required": ["indexPath", "period", "scheduledHour", "timeOfDay", "value"],
+            "additionalProperties": false,
+            "properties": {
+                "indexPath": {"type": "string"},
+                "period": {"type": "string"},
+                "scheduledHour": {"type": "number"},
+                "timeOfDay": {"type": "string"},
+                "value": {"type": "number"}
+            }
+        }
+    }
+}
