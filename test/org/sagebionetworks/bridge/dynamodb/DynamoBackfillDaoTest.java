@@ -68,10 +68,14 @@ public class DynamoBackfillDaoTest {
         assertTrue(task.getId().startsWith("name:"));
         assertEquals(BackfillStatus.SUBMITTED.name(), task.getStatus());
         // Get list
+        backfillDao.createTask("name", "user2");
         List<? extends BackfillTask> tasks = backfillDao.getTasks("name",
                 DateTime.now(DateTimeZone.UTC).getMillis() - 1000L);
         assertNotNull(tasks);
-        assertEquals(1, tasks.size());
+        assertEquals(2, tasks.size());
+        // Make sure getting back the correct order
+        assertEquals("user", tasks.get(0).getUser());
+        assertEquals("user2", tasks.get(1).getUser());
         // Update
         backfillDao.updateTaskStatus(task.getId(), BackfillStatus.COMPLETED);
         task = backfillDao.getTask(task.getId());

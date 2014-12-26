@@ -26,6 +26,9 @@ public class DynamoBackfillRecord implements BackfillRecord, DynamoTable {
     private String accountId;
     private String operation;
 
+    /**
+     * Needed by the DynamoDB mapper.
+     */
     public DynamoBackfillRecord() {
     }
 
@@ -63,6 +66,9 @@ public class DynamoBackfillRecord implements BackfillRecord, DynamoTable {
         this.version = version;
     }
 
+    /**
+     * Study identifier.
+     */
     public String getStudyId() {
         return studyId;
     }
@@ -70,6 +76,9 @@ public class DynamoBackfillRecord implements BackfillRecord, DynamoTable {
         this.studyId = studyId;
     }
 
+    /**
+     * User account identifier, e.g. email address.
+     */
     public String getAccountId() {
         return accountId;
     }

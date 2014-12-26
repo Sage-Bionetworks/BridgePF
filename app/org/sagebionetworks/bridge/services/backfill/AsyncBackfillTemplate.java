@@ -61,11 +61,15 @@ abstract class AsyncBackfillTemplate implements BackfillService {
             lock = lockDao.acquireLock(clazz, obj, getLockExpireInSeconds());
             backfillTask(user, name, callback);
         } catch (ConcurrentModificationException e) {
-            long since = DateTime.now(DateTimeZone.UTC).getMillis() - getLockExpireInSeconds();
+            long since = DateTime.now(DateTimeZone.UTC).getMillis() - getLockExpireInSeconds() * 1000L;
             List<? extends BackfillTask> tasks = backfillDao.getTasks(name, since);
             if (tasks.isEmpty()) {
                 throw new RuntimeException("Failed to acquire lock but there is not recent backfill of " + name);
             }
+            // A backfill task may complete well within the lock expiration. If we look back over the
+            // duration of lock expiration, we could get more than one backfill tasks. Only the most
+            // recent one is blocking us; the rest should have finished. Check the most recent one and
+            // report back the progress.
             final BackfillTask recentTask = tasks.get(tasks.size() - 1);
             final int count = backfillDao.getRecordCount(recentTask.getId());
             callback.newRecords(new BackfillRecord() {

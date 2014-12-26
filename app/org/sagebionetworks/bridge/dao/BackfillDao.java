@@ -26,8 +26,8 @@ public interface BackfillDao {
     BackfillTask getTask(String taskId);
 
     /**
-     * Gets the list of tasks of the specified name
-     * since a particular time point.
+     * Gets the list of tasks of the specified name since a particular time point.
+     * The list is in ascending order of the timestamp.
      */
     List<? extends BackfillTask> getTasks(String taskName, long since);
 
