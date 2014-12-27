@@ -47,8 +47,9 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
         return loaded.getStudyIdentifier();
     }
 
+    // TODO: To be removed after backfill
     @Override
-    public void setStudyId(String code, String studyId) {
+    public boolean setStudyId(String code, String studyId) {
         checkArgument(isNotBlank(code));
         checkArgument(isNotBlank(studyId));
         DynamoHealthCode key = new DynamoHealthCode();
@@ -61,9 +62,11 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
         if (oldStudyId == null) {
             loaded.setStudyIdentifier(studyId);
             mapper.save(loaded);
+            return true;
         } else if (!oldStudyId.equals(studyId)) {
             throw new RuntimeException("DynamoDB has a different study ID for the health code");
         }
+        return false;
     }
 
     // TODO: To be removed after backfill

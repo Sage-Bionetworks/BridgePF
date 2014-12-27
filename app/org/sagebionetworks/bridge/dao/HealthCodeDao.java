@@ -12,8 +12,9 @@ public interface HealthCodeDao {
      */
     String getStudyIdentifier(String code);
 
+    // TODO: To be removed after backfill
     /**
      * For backfilling study ID.
      */
-    void setStudyId(String code, String studyId);
+    boolean setStudyId(String code, String studyId);
 }

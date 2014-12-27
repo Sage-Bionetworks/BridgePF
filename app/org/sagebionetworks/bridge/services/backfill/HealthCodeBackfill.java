@@ -52,7 +52,7 @@ public class HealthCodeBackfill extends AsyncBackfillTemplate {
                         // This happens when the user creates a new account and consents in a study
                         // and has not consented in other studies yet.
                         healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
-                        callback.newRecords(BackfillUtils.createRecord(task, study, account, "health code created"));
+                        callback.newRecords(createRecord(task, study, account, "health code created"));
                     } 
                 }
             }
