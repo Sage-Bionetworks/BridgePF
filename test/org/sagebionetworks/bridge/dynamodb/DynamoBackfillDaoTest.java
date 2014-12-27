@@ -23,13 +23,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoBackfillDaoTest {
-
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Resource
     private DynamoBackfillDao backfillDao;
@@ -91,7 +88,7 @@ public class DynamoBackfillDaoTest {
         assertEquals(1, backfillDao.getRecordCount("task1"));
         assertEquals("task1", record.getTaskId());
         assertTrue(record.getTimestamp() >= timestamp);
-        JsonNode json = MAPPER.readTree(record.getRecord());
+        JsonNode json = record.toJsonNode();
         assertEquals("study1", json.get("study").asText());
         assertEquals("account1", json.get("account").asText());
         assertEquals("op1", json.get("operation").asText());
@@ -107,14 +104,14 @@ public class DynamoBackfillDaoTest {
         assertTrue(iterator.hasNext());
         BackfillRecord record1 = iterator.next();
         assertEquals("task1", record1.getTaskId());
-        json = MAPPER.readTree(record1.getRecord());
+        json = record1.toJsonNode();
         assertEquals("study1", json.get("study").asText());
         assertEquals("account1", json.get("account").asText());
         assertEquals("op1", json.get("operation").asText());
         assertTrue(iterator.hasNext());
         BackfillRecord record2 = iterator.next();
         assertEquals("task1", record2.getTaskId());
-        json = MAPPER.readTree(record2.getRecord());
+        json = record2.toJsonNode();
         assertEquals("study1", json.get("study").asText());
         assertEquals("account2", json.get("account").asText());
         assertEquals("op2", json.get("operation").asText());
@@ -123,7 +120,7 @@ public class DynamoBackfillDaoTest {
         assertTrue(iterator.hasNext());
         BackfillRecord record3 = iterator.next();
         assertEquals("task3", record3.getTaskId());
-        json = MAPPER.readTree(record3.getRecord());
+        json = record3.toJsonNode();
         assertEquals("study3", json.get("study").asText());
         assertEquals("account3", json.get("account").asText());
         assertEquals("op3", json.get("operation").asText());

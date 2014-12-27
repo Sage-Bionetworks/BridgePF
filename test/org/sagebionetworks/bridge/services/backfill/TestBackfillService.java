@@ -5,7 +5,7 @@ import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.models.BackfillRecord;
 import org.sagebionetworks.bridge.models.BackfillTask;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -41,15 +41,11 @@ public class TestBackfillService extends AsyncBackfillTemplate {
                 return DateTime.now(DateTimeZone.UTC).getMillis();
             }
             @Override
-            public String getRecord() {
+            public JsonNode toJsonNode() {
                 ObjectNode node = MAPPER.createObjectNode();
                 node.put(RECORD_FIELD, RECORD_1);
                 node.put(OPERATION_FIELD, OPERATION_1);
-                try {
-                    return MAPPER.writeValueAsString(node);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
+                return node;
             }
         });
 
@@ -63,15 +59,11 @@ public class TestBackfillService extends AsyncBackfillTemplate {
                 return DateTime.now(DateTimeZone.UTC).getMillis();
             }
             @Override
-            public String getRecord() {
+            public JsonNode toJsonNode() {
                 ObjectNode node = MAPPER.createObjectNode();
                 node.put(RECORD_FIELD, RECORD_2);
                 node.put(OPERATION_FIELD, OPERATION_2);
-                try {
-                    return MAPPER.writeValueAsString(node);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
+                return node;
             }
         };
 
@@ -85,15 +77,11 @@ public class TestBackfillService extends AsyncBackfillTemplate {
                 return DateTime.now(DateTimeZone.UTC).getMillis();
             }
             @Override
-            public String getRecord() {
+            public JsonNode toJsonNode() {
                 ObjectNode node = MAPPER.createObjectNode();
                 node.put(RECORD_FIELD, RECORD_3);
                 node.put(OPERATION_FIELD, OPERATION_3);
-                try {
-                    return MAPPER.writeValueAsString(node);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
+                return node;
             }
         };
 
