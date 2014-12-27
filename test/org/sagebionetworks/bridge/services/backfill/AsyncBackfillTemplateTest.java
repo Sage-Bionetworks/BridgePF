@@ -4,7 +4,9 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.longThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,7 +48,7 @@ public class AsyncBackfillTemplateTest {
         final String user = "user";
         final long timestamp = DateTime.now(DateTimeZone.UTC).getMillis();
         final String taskId = "taskId";
-        BackfillTask backfillTask = createBackfillTask(taskName, user, timestamp, taskId, BackfillStatus.SUBMITTED);
+        final BackfillTask backfillTask = createBackfillTask(taskName, user, timestamp, taskId, BackfillStatus.SUBMITTED);
         BackfillDao backfillDao = mock(BackfillDao.class);
         when(backfillDao.createTask(taskName, user)).thenReturn(backfillTask);
         backfillTemplate.setBackfillDao(backfillDao);
@@ -119,11 +121,50 @@ public class AsyncBackfillTemplateTest {
             public boolean matches(Object item) {
                 long since = ((Long)item).longValue();
                 long expireInMillis = TestBackfillService.EXPIRE * 1000L;
+                // Make sure the time point after which we look for the list of backfill tasks
+                // goes back for the duration of lock expiration
                 return beforeBackfill - expireInMillis < since && since < afterBackfill - expireInMillis;
             }
         };
         verify(backfillDao, times(1)).getTasks(eq(taskName), longThat(sinceMatcher));
         verify(backfillDao, times(1)).getRecordCount(taskId2);
+    }
+
+    @Test
+    public void testFailure() throws Exception {
+
+        final AsyncBackfillTemplate testBackfillService = new TestBackfillService();
+        final AsyncBackfillTemplate backfillTemplate = spy(testBackfillService);
+        when(backfillTemplate.getLockExpireInSeconds()).thenReturn(TestBackfillService.EXPIRE);
+
+        // Mock lock
+        final Class<TestBackfillService> lockClazz = TestBackfillService.class;
+        final String lockObject = TestBackfillService.class.getSimpleName();
+        final String lock = "lock";
+        final DistributedLockDao lockDao = mock(DistributedLockDao.class);
+        when(lockDao.acquireLock(lockClazz, lockObject, TestBackfillService.EXPIRE)).thenReturn(lock);
+        backfillTemplate.setDistributedLockDao(lockDao);
+
+        // Mock task and backfill dao
+        final String taskName = "taskName";
+        final String user = "user";
+        final long timestamp = DateTime.now(DateTimeZone.UTC).getMillis();
+        final String taskId = "taskId";
+        final BackfillTask backfillTask = createBackfillTask(taskName, user, timestamp, taskId, BackfillStatus.SUBMITTED);
+        BackfillDao backfillDao = mock(BackfillDao.class);
+        when(backfillDao.createTask(taskName, user)).thenReturn(backfillTask);
+        backfillTemplate.setBackfillDao(backfillDao);
+
+        // Mock a failure
+        BackfillCallback callback = mock(BackfillCallback.class);
+        doThrow(RuntimeException.class).when(backfillTemplate).doBackfill(
+                any(BackfillTask.class), any(BackfillCallback.class));
+
+        backfillTemplate.backfill(user, taskName, callback);
+        Thread.sleep(100L);
+
+        // Verify
+        verify(backfillDao, times(1)).updateTaskStatus(taskId, BackfillStatus.FAILED);
     }
 
     private BackfillTask createBackfillTask(final String taskName, final String user, final long timestamp,
