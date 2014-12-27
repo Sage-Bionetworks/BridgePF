@@ -25,6 +25,10 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StudyIdBackfill.class);
 
+    private BackfillRecordFactory backfillRecordFactory;
+    public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
+        this.backfillRecordFactory = backfillRecordFactory;
+    }
 
     private StudyService studyService;
     public void setStudyService(StudyService studyService) {
@@ -65,16 +69,19 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
                         try {
                             String healthCode = healthId.getCode();
                             if (healthCode != null) {
-                                String studyId = healthCodeDao.getStudyIdentifier(healthCode);
+                                final String studyId = healthCodeDao.getStudyIdentifier(healthCode);
                                 if (isBlank(studyId)) {
-                                    String operation = "Backfill needed as study ID is blank.";
-                                    callback.newRecords(createRecord(task, study, account, operation));
+                                    String msg = "Backfill needed as study ID is blank.";
+                                    callback.newRecords(backfillRecordFactory.createOnly(task, study, account, msg));
+                                } else {
+                                    String msg = "Study ID already exists.";
+                                    callback.newRecords(backfillRecordFactory.createOnly(task, study, account, msg));
                                 }
                             }
                         } catch (final RuntimeException e) {
                             LOGGER.error(e.getMessage(), e);
-                            String operation = e.getClass().getName() + " " + e.getMessage();
-                            callback.newRecords(createRecord(task, study, account, operation));
+                            String msg = e.getClass().getName() + " " + e.getMessage();
+                            callback.newRecords(backfillRecordFactory.createOnly(task, study, account, msg));
                         }
                     }
                 }
