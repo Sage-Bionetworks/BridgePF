@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services.backfill;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
@@ -63,9 +65,10 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
                         try {
                             String healthCode = healthId.getCode();
                             if (healthCode != null) {
-                                boolean set = healthCodeDao.setStudyId(healthCode, study.getIdentifier());
-                                if (set) {
-                                    callback.newRecords(createRecord(task, study, account, "backfilled"));
+                                String studyId = healthCodeDao.getStudyIdentifier(healthCode);
+                                if (isBlank(studyId)) {
+                                    String operation = "Backfill needed as study ID is blank.";
+                                    callback.newRecords(createRecord(task, study, account, operation));
                                 }
                             }
                         } catch (final RuntimeException e) {
