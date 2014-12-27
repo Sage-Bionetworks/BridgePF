@@ -28,7 +28,12 @@ import org.sagebionetworks.bridge.models.BackfillRecord;
 import org.sagebionetworks.bridge.models.BackfillStatus;
 import org.sagebionetworks.bridge.models.BackfillTask;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class AsyncBackfillTemplateTest {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Test
     public void test() throws Exception {
@@ -106,9 +111,29 @@ public class AsyncBackfillTemplateTest {
         when(backfillDao.getTasks(eq(taskName), anyLong())).thenAnswer(tasks);
         backfillTemplate.setBackfillDao(backfillDao);
 
+        // Mock
+        BackfillRecordFactory recordFactory = mock(BackfillRecordFactory.class);
+        BackfillRecord record = new BackfillRecord() {
+            @Override
+            public String getTaskId() {
+                return taskId2;
+            }
+            @Override
+            public long getTimestamp() {
+                return task2.getTimestamp();
+            }
+            @Override
+            public JsonNode toJsonNode() {
+                return MAPPER.createObjectNode();
+            }
+        };
+        when(recordFactory.createOnly(any(BackfillTask.class), any(String.class))).thenReturn(record);
+        backfillTemplate.setBackfillRecordFactory(recordFactory);
+
         // Do backfill
         final long beforeBackfill = DateTime.now(DateTimeZone.UTC).getMillis();
-        backfillTemplate.backfill(user, taskName, mock(BackfillCallback.class));
+        BackfillCallback callback = mock(BackfillCallback.class);
+        backfillTemplate.backfill(user, taskName, callback);
         Thread.sleep(100L);
         final long afterBackfill = DateTime.now(DateTimeZone.UTC).getMillis();
 
@@ -128,6 +153,9 @@ public class AsyncBackfillTemplateTest {
         };
         verify(backfillDao, times(1)).getTasks(eq(taskName), longThat(sinceMatcher));
         verify(backfillDao, times(1)).getRecordCount(taskId2);
+
+        // Verify callback
+        verify(callback, times(1)).newRecords(record);
     }
 
     @Test
