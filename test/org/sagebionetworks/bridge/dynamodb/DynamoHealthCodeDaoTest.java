@@ -43,8 +43,8 @@ public class DynamoHealthCodeDaoTest {
     @Test
     public void testSetStudyId() {
         healthCodeDao.setIfNotExist("123");
-        healthCodeDao.setStudyId("123", "789");
-        healthCodeDao.setStudyId("123", "789");
+        assertTrue(healthCodeDao.setStudyId("123", "789"));
+        assertFalse(healthCodeDao.setStudyId("123", "789"));
         try {
             healthCodeDao.setStudyId("123", "456");
             fail();

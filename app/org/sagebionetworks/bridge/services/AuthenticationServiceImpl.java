@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -38,6 +36,7 @@ import org.springframework.validation.Validator;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountList;
+import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
@@ -249,10 +248,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public Account getAccount(String email) {
         Application app = StormpathFactory.getStormpathApplication(stormpathClient);
-        Map<String, Object> queryParams = new HashMap<String, Object>();
-        queryParams.put("email", email);
-        AccountList accounts = app.getAccounts(queryParams);
-
+        AccountList accounts = app.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email)));
         if (accounts.iterator().hasNext()) {
             return accounts.iterator().next();
         }

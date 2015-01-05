@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import javax.annotation.Resource;
@@ -38,33 +37,26 @@ public class DynamoUserConsentDaoTest {
     public void canConsentToStudy() {
         // Not consented yet
         final DynamoStudyConsent1 consent = createStudyConsent();
-        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent));
         assertFalse(userConsentDao.hasConsented2(HEALTH_CODE, consent));
-        assertNull(userConsentDao.getConsentCreatedOn(HEALTH_CODE, consent.getStudyKey()));
 
         // Give consent
         userConsentDao.giveConsent(HEALTH_CODE, consent);
-        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, consent));
         assertTrue(userConsentDao.hasConsented2(HEALTH_CODE, consent));
-        assertEquals(Long.valueOf(123), userConsentDao.getConsentCreatedOn(HEALTH_CODE, consent.getStudyKey()));
 
         // Withdraw
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent));
         assertFalse(userConsentDao.hasConsented2(HEALTH_CODE, consent));
 
         // Can give consent again if the previous consent is withdrawn
         userConsentDao.giveConsent(HEALTH_CODE, consent);
-        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, consent));
         assertTrue(userConsentDao.hasConsented2(HEALTH_CODE, consent));
 
         // Withdraw again
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent));
         assertFalse(userConsentDao.hasConsented2(HEALTH_CODE, consent));
 
     }
-    
+
     @Test
     public void canCountStudyParticipants() {
         final DynamoStudyConsent1 consent = createStudyConsent();

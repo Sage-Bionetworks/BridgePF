@@ -48,10 +48,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     @Override
     public boolean withdrawConsent(String healthCode, String studyIdentifier) {
-        // DynamoUserConsent2 has the healthCodeStudy as a hash key and no range key; so 
+        // DynamoUserConsent2 has the healthCodeStudy as a hash key and no range key; so
         // there can be only one consent right now per study. Just find it and delete it.
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyIdentifier);
-        consent = mapper.load(consent);
+        DynamoUserConsent2 consent = (DynamoUserConsent2) getUserConsent(healthCode, studyIdentifier);
         if (consent != null) {
             mapper.delete(consent);
             return true;
@@ -60,20 +59,15 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public Long getConsentCreatedOn(String healthCode, String studyIdentifier) {
-        return getConsentCreatedOn2(healthCode, studyIdentifier);
+    public boolean hasConsented(String healthCode, String studyIdentifier) {
+        return getUserConsent(healthCode, studyIdentifier) != null;
     }
 
     @Override
-    public boolean hasConsented(String healthCode, StudyConsent consent) {
-        boolean hasConsented = hasConsented2(healthCode, consent);
-        return hasConsented;
-    }
-
-    @Override
-    public UserConsent getUserConsent(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
-        return mapper.load(consent);
+    public UserConsent getUserConsent(String healthCode, String studyIdentifier) {
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyIdentifier);
+        consent = mapper.load(consent);
+        return consent;
     }
 
     /** Returns a non-null consent signature. Throws EntityNotFoundException if no consent signature is found. */
@@ -83,11 +77,33 @@ public class DynamoUserConsentDao implements UserConsentDao {
         return signature;
     }
 
+    @Override
+    public long getNumberOfParticipants(String studyKey) {
+        DynamoDBScanExpression scan = new DynamoDBScanExpression();
+
+        Condition condition = new Condition();
+        condition.withComparisonOperator(ComparisonOperator.EQ);
+        condition.withAttributeValueList(new AttributeValue().withS(studyKey));
+        scan.addFilterCondition("studyKey", condition);
+
+        Set<String> healthCodes = Sets.newHashSet();
+        List<DynamoUserConsent2> mappings = mapper.scan(DynamoUserConsent2.class, scan);
+        for (DynamoUserConsent2 consent : mappings) {
+            healthCodes.add(consent.getHealthCode());
+        }
+        return healthCodes.size();
+    }
+
+    UserConsent getUserConsent2(String healthCode, StudyConsent studyConsent) {
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
+        consent = mapper.load(consent);
+        return consent;
+    }
+
     void giveConsent2(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent2 consent = null;
         try {
-            consent = new DynamoUserConsent2(healthCode, studyConsent);
-            consent = mapper.load(consent);
+            consent = (DynamoUserConsent2) getUserConsent2(healthCode, studyConsent);
             if (consent == null) { // If the user has not consented yet
                 consent = new DynamoUserConsent2(healthCode, studyConsent);
             }
@@ -99,50 +115,29 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     void withdrawConsent2(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consentToDelete = new DynamoUserConsent2(healthCode, studyConsent);
-        consentToDelete = mapper.load(consentToDelete);
+        DynamoUserConsent2 consentToDelete = (DynamoUserConsent2) getUserConsent2(healthCode, studyConsent);
         if (consentToDelete == null) {
             return;
         }
         mapper.delete(consentToDelete);
     }
-    
+
     Long getConsentCreatedOn2(String healthCode, String studyKey) {
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyKey);
-        consent = mapper.load(consent);
+        DynamoUserConsent2 consent = (DynamoUserConsent2) getUserConsent(healthCode, studyKey);
         return consent == null ? null : consent.getConsentCreatedOn();
     }
 
     boolean hasConsented2(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
-        return mapper.load(consent) != null;
+        return getUserConsent2(healthCode, studyConsent) != null;
     }
 
     /** Returns a non-null consent signature. Throws EntityNotFoundException if no consent signature is found. */
     ConsentSignature getConsentSignature2(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
-        consent = mapper.load(consent);
+        DynamoUserConsent2 consent = (DynamoUserConsent2) getUserConsent2(healthCode, studyConsent);
         if (consent == null) {
             throw new EntityNotFoundException(DynamoUserConsent2.class);
         }
         return ConsentSignature.create(consent.getName(), consent.getBirthdate(), consent.getImageData(),
                 consent.getImageMimeType());
-    }
-
-    @Override
-    public long getNumberOfParticipants(String studyKey) {
-        DynamoDBScanExpression scan = new DynamoDBScanExpression();
-        
-        Condition condition = new Condition();
-        condition.withComparisonOperator(ComparisonOperator.EQ);
-        condition.withAttributeValueList(new AttributeValue().withS(studyKey));
-        scan.addFilterCondition("studyKey", condition);
-        
-        Set<String> healthCodes = Sets.newHashSet();
-        List<DynamoUserConsent2> mappings = mapper.scan(DynamoUserConsent2.class, scan);
-        for (DynamoUserConsent2 consent : mappings) {
-            healthCodes.add(consent.getHealthCode());
-        }
-        return healthCodes.size();
     }
 }
