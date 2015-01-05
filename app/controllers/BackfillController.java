@@ -22,6 +22,10 @@ public class BackfillController extends BaseController implements ApplicationCon
     }
 
     public Result backfill(final String name) throws Exception {
+        return ok(views.html.backfill.render(name));
+    }
+
+    public Result start(final String name) throws Exception {
         final String user = checkUser();
         final BackfillService backfillService = appContext.getBean(name, BackfillService.class);
         Chunks<String> chunks = new StringChunks() {

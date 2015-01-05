@@ -11,8 +11,6 @@ public interface BackfillTask extends BridgeEntity {
 
     String getName();
 
-    String getDescription();
-
     String getUser();
 
     String getStatus();
