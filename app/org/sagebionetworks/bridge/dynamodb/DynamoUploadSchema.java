@@ -4,26 +4,28 @@ import java.io.IOException;
 import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMappingException;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshaller;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
-@BridgeTypeName("UploadSchema")
 @DynamoDBTable(tableName = "UploadSchema")
-public class DynamoUploadSchema implements UploadSchema {
+public class DynamoUploadSchema implements DynamoTable, UploadSchema {
     private List<UploadFieldDefinition> fieldDefList;
-    private String id;
     private String name;
     private int rev;
+    private String schemaId;
+    private String studyId;
 
     @DynamoDBMarshalling(marshallerClass = FieldDefinitionListMarshaller.class)
     @Override
@@ -36,13 +38,17 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     @DynamoDBHashKey
-    @Override
-    public String getId() {
-        return id;
+    @JsonIgnore
+    public String getKey() {
+        return String.format("%s-%s", studyId, schemaId);
     }
 
-    public void setId(String id) {
-        this.id = id;
+    @JsonIgnore
+    public void setKey(String key) {
+        String[] parts = key.split("-", 2);
+        // TODO: validate parts
+        this.studyId = parts[0];
+        this.schemaId = parts[1];
     }
 
     @Override
@@ -67,7 +73,28 @@ public class DynamoUploadSchema implements UploadSchema {
         this.rev = rev;
     }
 
-    private static class FieldDefinitionListMarshaller implements DynamoDBMarshaller<List<UploadFieldDefinition>> {
+    @DynamoDBIgnore
+    @Override
+    public String getSchemaId() {
+        return schemaId;
+    }
+
+    public void setSchemaId(String schemaId) {
+        this.schemaId = schemaId;
+    }
+
+    // TODO: Implement global secondary indices in DynamoInitializer
+    @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-index")
+    @Override
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public void setStudyId(String studyId) {
+        this.studyId = studyId;
+    }
+
+    public static class FieldDefinitionListMarshaller implements DynamoDBMarshaller<List<UploadFieldDefinition>> {
         private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper();
 
         @Override

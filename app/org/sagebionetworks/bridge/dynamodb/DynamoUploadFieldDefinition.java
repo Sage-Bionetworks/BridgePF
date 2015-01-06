@@ -46,11 +46,11 @@ public class DynamoUploadFieldDefinition implements UploadFieldDefinition {
             return this;
         }
 
-        public Boolean getRequired() {
+        public Boolean isRequired() {
             return required;
         }
 
-        public Builder setRequired(Boolean required) {
+        public Builder withRequired(Boolean required) {
             this.required = required;
             return this;
         }
@@ -64,8 +64,12 @@ public class DynamoUploadFieldDefinition implements UploadFieldDefinition {
             return this;
         }
 
-        public UploadFieldDefinition build() {
-            // TODO validate
+        public DynamoUploadFieldDefinition build() {
+            if (required == null) {
+                required = true;
+            }
+
+            // TODO more validation
             return new DynamoUploadFieldDefinition(name, required, type);
         }
     }

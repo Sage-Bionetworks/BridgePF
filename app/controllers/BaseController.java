@@ -2,6 +2,7 @@ package controllers;
 
 import java.util.Collection;
 
+import com.google.common.base.Strings;
 import models.StatusMessage;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -222,5 +223,25 @@ public abstract class BaseController extends Controller {
             throw new InvalidEntityException("Expected JSON in the request body is missing or malformed");
         }
     }
-    
+
+    protected static <T> T parseJson(Request request, Class<? extends T> clazz) {
+        try {
+            // Whether asText() or asJson() works depends on the content-type header of the request
+            String jsonText = request.body().asText();
+            if (!Strings.isNullOrEmpty(jsonText)) {
+                return mapper.readValue(jsonText, clazz);
+            }
+
+            JsonNode jsonNode = request.body().asJson();
+            if (jsonNode != null) {
+                return mapper.convertValue(jsonNode, clazz);
+            }
+        } catch (Throwable ex) {
+            // TODO: remove this print stack trace
+            ex.printStackTrace();
+            throw new InvalidEntityException("Error parsing JSON in request body");
+        }
+
+        throw new InvalidEntityException("Expected JSON in the request body is missing");
+    }
 }
