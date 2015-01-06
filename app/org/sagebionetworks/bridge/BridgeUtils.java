@@ -9,6 +9,8 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -18,6 +20,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class BridgeUtils {
+    public static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper();
 
     public static String generateGuid() {
         return UUID.randomUUID().toString();

@@ -10,6 +10,8 @@
         http://www.springframework.org/schema/mvc
         http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
+    <context:component-scan base-package="org.sagebionetworks.bridge" />
+
     <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfigFactory"
             factory-method="getConfig" />
 
@@ -220,6 +222,12 @@
             <bean class="controllers.UserProfileController" parent="BaseController">
                 <property name="userProfileService" ref="userProfileService"/>
             </bean>
+        </property>
+    </bean>
+
+    <bean id="controllers.UploadSchemaController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.UploadSchemaController" parent="BaseController" />
         </property>
     </bean>
 
