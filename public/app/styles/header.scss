@@ -6,15 +6,16 @@ $black: #000000;
 .header {
     font-family: 'Helvetica Neue', sans-serif;
     font-weight: 700;
-    background: $green url(/neurod/images/bridge_logo.svg) left center no-repeat;
-    background-size: 9rem;
+    line-height: 70px;
+    /*background: $green url(/neurod/images/bridge_logo.svg) left center no-repeat;*/
+    /*background-size: 9rem;*/
 
     > * {
         height: 7rem;
         vertical-align: middle;
     }
     a, a:visited, a:active {
-        color: $white;
+        /*color: $white;*/
         padding-left: 8.7rem;
         padding-top: 0.4rem;
         text-decoration: none;

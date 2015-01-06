@@ -25,7 +25,7 @@ public class ApplicationController extends BaseController {
         }
         UserSessionInfo info = new UserSessionInfo(session);
         Study study = studyService.getStudyByHostname(getHostname());
-        return ok(views.html.index.render(Json.toJson(info).toString(), study.getName()));
+        return ok(views.html.index.render(Json.toJson(info).toString(), study.getIdentifier()));
     }
 
     public Result redirectToPublicApp() {
