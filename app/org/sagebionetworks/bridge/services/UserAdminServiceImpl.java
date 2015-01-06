@@ -129,7 +129,11 @@ public class UserAdminServiceImpl implements UserAdminService {
             success = false;
             logger.error(t.getMessage(), t);
         } finally {
-            lockDao.releaseLock(User.class, key, lock);
+            // This used to silently fail, not there is a precondition check that
+            // throws an exception. If there has been an exception, lock == null
+            if (lock != null) {
+                lockDao.releaseLock(User.class, key, lock);
+            }
         }
         return success;
     }
