@@ -11,10 +11,4 @@ public interface HealthCodeDao {
      * @return The ID of the study associated with this health code; or null if the health code does not exist.
      */
     String getStudyIdentifier(String code);
-
-    // TODO: To be removed after backfill
-    /**
-     * For backfilling study ID.
-     */
-    boolean setStudyId(String code, String studyId);
 }

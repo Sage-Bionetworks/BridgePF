@@ -32,6 +32,11 @@ public class HealthCodeBackfill extends AsyncBackfillTemplate {
         this.accountEncryptionService = accountEncryptionService;
     }
 
+    private BackfillRecordFactory backfillRecordFactory;
+    public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
+        this.backfillRecordFactory = backfillRecordFactory;
+    }
+
     @Override
     int getLockExpireInSeconds() {
         return 30 * 60;
@@ -52,7 +57,8 @@ public class HealthCodeBackfill extends AsyncBackfillTemplate {
                         // This happens when the user creates a new account and consents in a study
                         // and has not consented in other studies yet.
                         healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
-                        callback.newRecords(createRecord(task, study, account, "health code created"));
+                        callback.newRecords(backfillRecordFactory.createAndSave(
+                                task, study, account, "health code created"));
                     } 
                 }
             }

@@ -9,7 +9,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -95,15 +95,11 @@ public class DynamoBackfillRecord implements BackfillRecord, DynamoTable {
 
     @Override
     @DynamoDBIgnore
-    public String getRecord() {
+    public JsonNode toJsonNode() {
         ObjectNode node = MAPPER.createObjectNode();
         node.put("study", studyId);
         node.put("account", accountId);
         node.put("operation", operation);
-        try {
-            return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(node);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        return node;
     }
 }
