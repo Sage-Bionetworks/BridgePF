@@ -24,7 +24,7 @@ public class BackfillRecordFactory {
     }
 
     /**
-     * Creates a new entry and saves it into permanent storage.
+     * Creates a new entry and saves it into permanent storage. Use this for real backfills.
      */
     public BackfillRecord createAndSave(BackfillTask task, Study study, Account account, String operation) {
         checkNotNull(task);
