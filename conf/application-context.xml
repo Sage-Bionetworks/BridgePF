@@ -462,18 +462,25 @@
         <property name="participantOptionsDao" ref="participantOptionsDao"/>
     </bean>
 
-    <bean id="backfillTemplate" abstract="true" class="org.sagebionetworks.bridge.services.backfill.AsyncBackfillTemplate">
-        <property name="distributedLockDao" ref="distributedLockDao" />
+    <bean id="backfillRecordFactory" class="org.sagebionetworks.bridge.services.backfill.BackfillRecordFactory">
         <property name="backfillDao" ref="backfillDao" />
     </bean>
 
+    <bean id="backfillTemplate" abstract="true" class="org.sagebionetworks.bridge.services.backfill.AsyncBackfillTemplate">
+        <property name="distributedLockDao" ref="distributedLockDao" />
+        <property name="backfillDao" ref="backfillDao" />
+        <property name="backfillRecordFactory" ref="backfillRecordFactory" />
+    </bean>
+
     <bean id="healthCodeBackfill" parent="backfillTemplate" class="org.sagebionetworks.bridge.services.backfill.HealthCodeBackfill">
+        <property name="backfillRecordFactory" ref="backfillRecordFactory" />
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="studyService" ref="studyService" />
         <property name="accountEncryptionService" ref="accountEncryptionService" />
     </bean>
 
     <bean id="studyIdBackfill" parent="backfillTemplate" class="org.sagebionetworks.bridge.services.backfill.StudyIdBackfill">
+        <property name="backfillRecordFactory" ref="backfillRecordFactory" />
         <property name="stormpathClient" ref="stormpathClient" />
         <property name="studyService" ref="studyService" />
         <property name="healthCodeDao" ref="healthCodeDao" />

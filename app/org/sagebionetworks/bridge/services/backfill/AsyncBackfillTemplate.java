@@ -11,14 +11,10 @@ import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.BackfillDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.models.BackfillRecord;
 import org.sagebionetworks.bridge.models.BackfillStatus;
 import org.sagebionetworks.bridge.models.BackfillTask;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.stormpath.sdk.account.Account;
 
 abstract class AsyncBackfillTemplate implements BackfillService {
 
@@ -34,6 +30,11 @@ abstract class AsyncBackfillTemplate implements BackfillService {
     private BackfillDao backfillDao;
     public void setBackfillDao(BackfillDao backfillDao) {
         this.backfillDao = backfillDao;
+    }
+
+    private BackfillRecordFactory backfillRecordFactory;
+    public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
+        this.backfillRecordFactory = backfillRecordFactory;
     }
 
     @Override
@@ -72,22 +73,11 @@ abstract class AsyncBackfillTemplate implements BackfillService {
             // report back the progress.
             final BackfillTask recentTask = tasks.get(tasks.size() - 1);
             final int count = backfillDao.getRecordCount(recentTask.getId());
-            callback.newRecords(new BackfillRecord() {
-                @Override
-                public String getTaskId() {
-                    return recentTask.getId();
-                }
-                @Override
-                public long getTimestamp() {
-                    return recentTask.getTimestamp();
-                }
-                @Override
-                public String getRecord() {
-                    return "Found a recent task of " + name
-                            + " started at " + (new DateTime(recentTask.getTimestamp())).toString()
-                            + " with status " + recentTask.getStatus()
-                            + " and " + count + " records processed.";
-                }});
+            final String msg = "Found a recent task of " + name
+                    + " started at " + (new DateTime(recentTask.getTimestamp())).toString()
+                    + " with status " + recentTask.getStatus()
+                    + " and " + count + " records processed.";
+            callback.newRecords(backfillRecordFactory.createOnly(recentTask, msg));
         } finally {
             if (lock != null) {
                 lockDao.releaseLock(clazz, obj, lock);
@@ -111,10 +101,6 @@ abstract class AsyncBackfillTemplate implements BackfillService {
         } finally {
             callback.done();
         }
-    }
-
-    protected BackfillRecord createRecord(BackfillTask task, Study study, Account account, String operation) {
-        return backfillDao.createRecord(task.getId(), study.getIdentifier(), account.getEmail(), operation);
     }
 
     /**

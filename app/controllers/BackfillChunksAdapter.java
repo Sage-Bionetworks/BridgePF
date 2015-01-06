@@ -8,12 +8,18 @@ import org.sagebionetworks.bridge.models.BackfillRecord;
 import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.services.backfill.BackfillCallback;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import play.mvc.Results.Chunks;
 
 /**
  * Adapts backfill callback to Play chunked responses.
  */
 class BackfillChunksAdapter implements BackfillCallback {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final Chunks.Out<String> chunksOut;
 
@@ -35,7 +41,13 @@ class BackfillChunksAdapter implements BackfillCallback {
     public void newRecords(BackfillRecord... records) {
         checkNotNull(records);
         for (BackfillRecord record : records) {
-            chunksOut.write("<pre>" + record.getRecord() + "</pre>");
+            try {
+                JsonNode node = record.toJsonNode();
+                String prettyPrinted = MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(node);
+                chunksOut.write("<pre>" + prettyPrinted + "</pre>");
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
