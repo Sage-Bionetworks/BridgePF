@@ -487,4 +487,12 @@
         <property name="accountEncryptionService" ref="accountEncryptionService" />
     </bean>
 
+    <bean id="consentSignatureBackfill" parent="backfillTemplate" class="org.sagebionetworks.bridge.services.backfill.ConsentSignatureBackfill">
+        <property name="backfillRecordFactory" ref="backfillRecordFactory" />
+        <property name="stormpathClient" ref="stormpathClient" />
+        <property name="studyService" ref="studyService" />
+        <property name="accountEncryptionService" ref="accountEncryptionService" />
+        <property name="userConsentDao" ref="userConsentDao" />
+    </bean>
+
 </beans>
