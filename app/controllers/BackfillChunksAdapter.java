@@ -19,7 +19,7 @@ import play.mvc.Results.Chunks;
  */
 class BackfillChunksAdapter implements BackfillCallback {
 
-    private final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final Chunks.Out<String> chunksOut;
 
