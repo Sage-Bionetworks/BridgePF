@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
@@ -26,26 +27,32 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
     private static final Logger LOGGER = LoggerFactory.getLogger(StudyIdBackfill.class);
 
     private BackfillRecordFactory backfillRecordFactory;
+    private StudyService studyService;
+    private Client stormpathClient;
+    private AccountEncryptionService accountEncryptionService;
+    private HealthCodeDao healthCodeDao;
+
+    @Autowired
     public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
         this.backfillRecordFactory = backfillRecordFactory;
     }
 
-    private StudyService studyService;
+    @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
 
-    private Client stormpathClient;
+    @Autowired
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
     }
 
-    private AccountEncryptionService accountEncryptionService;
+    @Autowired
     public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
         this.accountEncryptionService = accountEncryptionService;
     }
 
-    private HealthCodeDao healthCodeDao;
+    @Autowired
     public void setHealthCodeDao(HealthCodeDao healthCodeDao) {
         this.healthCodeDao = healthCodeDao;
     }

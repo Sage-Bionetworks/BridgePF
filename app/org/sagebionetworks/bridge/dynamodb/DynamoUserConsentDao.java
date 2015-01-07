@@ -72,8 +72,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     /** Returns a non-null consent signature. Throws EntityNotFoundException if no consent signature is found. */
     @Override
-    public ConsentSignature getConsentSignature(String healthCode, StudyConsent consent) {
-        ConsentSignature signature = getConsentSignature2(healthCode, consent);
+    public ConsentSignature getConsentSignature(String healthCode, String studyIdentifier) {
+        ConsentSignature signature = getConsentSignature2(healthCode, studyIdentifier);
         return signature;
     }
 
@@ -132,8 +132,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     /** Returns a non-null consent signature. Throws EntityNotFoundException if no consent signature is found. */
-    ConsentSignature getConsentSignature2(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consent = (DynamoUserConsent2) getUserConsent2(healthCode, studyConsent);
+    ConsentSignature getConsentSignature2(String healthCode, String studyIdentifier) {
+        DynamoUserConsent2 consent = (DynamoUserConsent2) getUserConsent(healthCode, studyIdentifier);
         if (consent == null) {
             throw new EntityNotFoundException(DynamoUserConsent2.class);
         }
