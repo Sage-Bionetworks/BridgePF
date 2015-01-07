@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountEncryptionService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
@@ -21,26 +22,33 @@ import com.stormpath.sdk.client.Client;
 public class ConsentSignatureBackfill extends AsyncBackfillTemplate  {
 
     private BackfillRecordFactory backfillRecordFactory;
+
+    private StudyService studyService;
+    private Client stormpathClient;
+    private AccountEncryptionService accountEncryptionService;
+    private UserConsentDao userConsentDao;
+
+    @Autowired
     public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
         this.backfillRecordFactory = backfillRecordFactory;
     }
 
-    private StudyService studyService;
+    @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
 
-    private Client stormpathClient;
+    @Autowired
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
     }
 
-    private AccountEncryptionService accountEncryptionService;
+    @Autowired
     public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
         this.accountEncryptionService = accountEncryptionService;
     }
 
-    private UserConsentDao userConsentDao;
+    @Autowired
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
