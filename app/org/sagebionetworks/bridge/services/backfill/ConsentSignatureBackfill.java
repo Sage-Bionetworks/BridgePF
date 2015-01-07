@@ -1,18 +1,15 @@
 package org.sagebionetworks.bridge.services.backfill;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
-
 import java.util.List;
 
-import org.sagebionetworks.bridge.dao.HealthCodeDao;
+import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.HealthId;
+import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountEncryptionService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.stormpath.sdk.account.Account;
@@ -20,17 +17,16 @@ import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
 
 /**
- * Backfills study IDs to the health code table.
+ * Backfills consent signatures to Stormpath.
  */
-public class StudyIdBackfill extends AsyncBackfillTemplate  {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(StudyIdBackfill.class);
+public class ConsentSignatureBackfill extends AsyncBackfillTemplate  {
 
     private BackfillRecordFactory backfillRecordFactory;
+
     private StudyService studyService;
     private Client stormpathClient;
     private AccountEncryptionService accountEncryptionService;
-    private HealthCodeDao healthCodeDao;
+    private UserConsentDao userConsentDao;
 
     @Autowired
     public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
@@ -53,17 +49,17 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
     }
 
     @Autowired
-    public void setHealthCodeDao(HealthCodeDao healthCodeDao) {
-        this.healthCodeDao = healthCodeDao;
+    public void setUserConsentDao(UserConsentDao userConsentDao) {
+        this.userConsentDao = userConsentDao;
     }
 
     @Override
     int getLockExpireInSeconds() {
-        return 30 * 60;
+        return 60 * 60;
     }
 
     @Override
-    void doBackfill(final BackfillTask task, final BackfillCallback callback) {
+    void doBackfill(BackfillTask task, BackfillCallback callback) {
         final List<Study> studies = studyService.getStudies();
         Application application = StormpathFactory.getStormpathApplication(stormpathClient);
         StormpathAccountIterator iterator = new StormpathAccountIterator(application);
@@ -71,24 +67,20 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
             List<Account> accountList = iterator.next();
             for (final Account account : accountList) {
                 for (final Study study : studies) {
-                    HealthId healthId = accountEncryptionService.getHealthCode(study, account);
-                    if (healthId != null) {
-                        try {
-                            String healthCode = healthId.getCode();
-                            if (healthCode != null) {
-                                final String studyId = healthCodeDao.getStudyIdentifier(healthCode);
-                                if (isBlank(studyId)) {
-                                    String msg = "Backfill needed as study ID is blank.";
-                                    callback.newRecords(backfillRecordFactory.createOnly(task, study, account, msg));
-                                } else {
-                                    String msg = "Study ID already exists.";
-                                    callback.newRecords(backfillRecordFactory.createOnly(task, study, account, msg));
-                                }
-                            }
-                        } catch (final RuntimeException e) {
-                            LOGGER.error(e.getMessage(), e);
-                            String msg = e.getClass().getName() + " " + e.getMessage();
-                            callback.newRecords(backfillRecordFactory.createOnly(task, study, account, msg));
+                    ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
+                    if (consentSignature != null) {
+                        backfillRecordFactory.createOnly(task, study, account, "Already in Stormpath.");
+                    } else {
+                        HealthId healthId = accountEncryptionService.getHealthCode(study, account);
+                        if (healthId == null) {
+                            backfillRecordFactory.createOnly(task, study, account, "Missing health code. Backfill skipped.");
+                        }
+                        consentSignature = userConsentDao.getConsentSignature(healthId.getCode(), study.getIdentifier());
+                        if (consentSignature == null) {
+                            backfillRecordFactory.createOnly(task, study, account, "Missing consent signature in DynamoDB. Backfill skipped.");
+                        } else {
+                            accountEncryptionService.putConsentSignature(study, account, consentSignature);
+                            backfillRecordFactory.createAndSave(task, study, account, "Backfilled from DynamoDB to Stormpath.");
                         }
                     }
                 }
