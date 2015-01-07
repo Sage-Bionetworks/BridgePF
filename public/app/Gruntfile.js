@@ -25,10 +25,11 @@ module.exports = function(grunt) {
         concat: {
             js: {
                 src: [
-                    'bower_components/dygraphs/dygraph.dev.js',
+                    /*'bower_components/dygraphs/dygraph.dev.js',*/
                     'scripts/app.js',
-                    'scripts/services/*.js',
-                    'scripts/directives/*.js',
+                    /*'scripts/services/*.js',*/
+                    /*'scripts/directives/*.js',*/
+                    'scripts/directives/bg-user-menu.js',
                     'scripts/controllers/*.js',
                     'scripts/controllers/directives/*.js'
                 ],

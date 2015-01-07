@@ -14,14 +14,7 @@ import com.google.common.collect.Lists;
 
 public class ScheduleController extends BaseController {
 
-    //private ScheduleService scheduleService;
     private SchedulePlanService schedulePlanService;
-    
-    /*
-    public void setScheduleService(ScheduleService scheduleService) {
-        this.scheduleService = scheduleService;
-    }
-    */
     
     public void setSchedulePlanService(SchedulePlanService schedulePlanService) {
         this.schedulePlanService = schedulePlanService;
@@ -37,7 +30,6 @@ public class ScheduleController extends BaseController {
             Schedule schedule = plan.getStrategy().getScheduleForUser(study, plan, session.getUser());
             schedules.add(schedule);
         }
-        //List<Schedule> schedules = scheduleService.getSchedules(study, session.getUser());
         return okResult(schedules);
     }
     
