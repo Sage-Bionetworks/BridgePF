@@ -1,4 +1,5 @@
 var titles = {
+    'api': 'API',
     'asthma': 'Asthma Study',
     'breastcancer': 'Share the Journey',
     'cardiovascular': 'MyHeartCounts',
@@ -12,5 +13,10 @@ location.search.substr(1).split("&").forEach(function(item) {var k = item.split(
 var host = document.location.hostname;
 host = host.split(".")[0];
 if (!titles[host]) {
-    host = "breastcancer";
+    host = "api";
 }
+
+setTimeout(function() {
+    document.title = titles[host] + " " + document.title;
+    $("#logo").attr("src","/mobile/images/"+host+".svg");
+}, 1);
