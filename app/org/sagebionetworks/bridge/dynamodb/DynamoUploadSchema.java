@@ -14,11 +14,19 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.validators.Validate;
 
+/**
+ * The DynamoDB implementation of UploadSchema. This is a mutable class with getters and setters so that it can work
+ * with the DynamoDB mapper.
+ */
 @DynamoDBTable(tableName = "UploadSchema")
 public class DynamoUploadSchema implements DynamoTable, UploadSchema {
     private List<UploadFieldDefinition> fieldDefList;
@@ -27,39 +35,67 @@ public class DynamoUploadSchema implements DynamoTable, UploadSchema {
     private String schemaId;
     private String studyId;
 
+    /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = FieldDefinitionListMarshaller.class)
     @Override
     public List<UploadFieldDefinition> getFieldDefinitions() {
         return fieldDefList;
     }
 
+    /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getFieldDefinitions */
     public void setFieldDefinitions(List<UploadFieldDefinition> fieldDefList) {
         this.fieldDefList = fieldDefList;
     }
 
+    /**
+     * This is the DynamoDB key. It is used by the DynamoDB mapper. This should not be used directly. The key format is
+     * "[studyID]-[schemaID]". The schema ID may contain dashes. The study ID may not. Since the key is created from
+     * the study ID and schema ID, this will throw an InvalidEntityException if either one is blank.
+     */
     @DynamoDBHashKey
     @JsonIgnore
-    public String getKey() {
+    public String getKey() throws InvalidEntityException {
+        if (Strings.isNullOrEmpty(studyId)) {
+            throw new InvalidEntityException(this, String.format(Validate.CANNOT_BE_BLANK, "studyId"));
+        }
+        if (Strings.isNullOrEmpty(schemaId)) {
+            throw new InvalidEntityException(this, String.format(Validate.CANNOT_BE_BLANK, "schemaId"));
+        }
         return String.format("%s-%s", studyId, schemaId);
     }
 
+    /**
+     * Sets the DynamoDB key. This is generally only called by the DynamoDB mapper. If the key is null, empty, or
+     * malformatted, this will throw.
+     *
+     * @see #getKey
+     */
     @JsonIgnore
     public void setKey(String key) {
+        Preconditions.checkNotNull(key, Validate.CANNOT_BE_NULL, "key");
+        Preconditions.checkArgument(!key.isEmpty(), Validate.CANNOT_BE_EMPTY_STRING, "key");
+
         String[] parts = key.split("-", 2);
-        // TODO: validate parts
+        Preconditions.checkArgument(parts.length == 2, "key has wrong number of parts");
+        Preconditions.checkArgument(!parts[0].isEmpty(), "key has empty study ID");
+        Preconditions.checkArgument(!parts[1].isEmpty(), "key has empty schema ID");
+
         this.studyId = parts[0];
         this.schemaId = parts[1];
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return name;
     }
 
+    /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getName */
     public void setName(String name) {
         this.name = name;
     }
 
+    /** {@inheritDoc} */
     // We don't use the DynamoDBVersionAttribute here because we want to keep multiple versions of the schema so we can
     // parse older versions of the data. Similarly, we make this a range key so that we can always find the latest
     // version of the schema.
@@ -69,20 +105,24 @@ public class DynamoUploadSchema implements DynamoTable, UploadSchema {
         return rev;
     }
 
+    /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getRevision */
     public void setRevision(int rev) {
         this.rev = rev;
     }
 
+    /** {@inheritDoc} */
     @DynamoDBIgnore
     @Override
     public String getSchemaId() {
         return schemaId;
     }
 
+    /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getSchemaId */
     public void setSchemaId(String schemaId) {
         this.schemaId = schemaId;
     }
 
+    /** {@inheritDoc} */
     // TODO: Implement global secondary indices in DynamoInitializer
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-index")
     @Override
@@ -90,26 +130,30 @@ public class DynamoUploadSchema implements DynamoTable, UploadSchema {
         return studyId;
     }
 
+    /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getStudyId */
     public void setStudyId(String studyId) {
         this.studyId = studyId;
     }
 
+    /** Custom DynamoDB marshaller for the field definition list. This uses Jackson to convert to and from JSON. */
     public static class FieldDefinitionListMarshaller implements DynamoDBMarshaller<List<UploadFieldDefinition>> {
-        private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper();
-
+        /** {@inheritDoc} */
         @Override
         public String marshall(List<UploadFieldDefinition> fieldDefList) {
             try {
-                return JSON_OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(fieldDefList);
+                return JsonUtils.INTERNAL_OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(
+                        fieldDefList);
             } catch (JsonProcessingException ex) {
                 throw new DynamoDBMappingException(ex);
             }
         }
 
+        /** {@inheritDoc} */
         @Override
         public List<UploadFieldDefinition> unmarshall(Class<List<UploadFieldDefinition>> clazz, String json) {
             try {
-                return JSON_OBJECT_MAPPER.readValue(json, new TypeReference<List<UploadFieldDefinition>>() {});
+                return JsonUtils.INTERNAL_OBJECT_MAPPER.readValue(json,
+                        new TypeReference<List<UploadFieldDefinition>>() {});
             } catch (IOException ex) {
                 throw new DynamoDBMappingException(ex);
             }
