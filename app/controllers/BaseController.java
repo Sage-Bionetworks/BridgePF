@@ -182,7 +182,7 @@ public abstract class BaseController extends Controller {
         return ok(Json.toJson(new StatusMessage(message)));
     }
     
-    protected Result okResult(Object obj) throws Exception {
+    protected Result okResult(Object obj) {
         return ok(mapper.valueToTree(obj));
     }
     
@@ -224,6 +224,15 @@ public abstract class BaseController extends Controller {
         }
     }
 
+    /**
+     * Parses the JSON from the given request as the given class. This is a wrapper around Jackson.
+     *
+     * @param request
+     *         Play framework request
+     * @param clazz
+     *         class to parse the JSON as
+     * @return object parsed from JSON
+     */
     protected static <T> T parseJson(Request request, Class<? extends T> clazz) {
         try {
             // Whether asText() or asJson() works depends on the content-type header of the request
