@@ -72,7 +72,12 @@ public class ConsentSignatureBackfill extends AsyncBackfillTemplate  {
                         accountEncryptionService.getConsentSignature(study, account);
                         backfillRecordFactory.createOnly(task, study, account, "Already in Stormpath.");
                     } catch (EntityNotFoundException e) {
-                        HealthId healthId = accountEncryptionService.getHealthCode(study, account);
+                        HealthId healthId = null;
+                        try {
+                            healthId = accountEncryptionService.getHealthCode(study, account);
+                        } catch (Exception ex) {
+                            backfillRecordFactory.createOnly(task, study, account, ex.getMessage());
+                        }
                         if (healthId == null) {
                             backfillRecordFactory.createOnly(task, study, account, "Missing health code. Backfill skipped.");
                         } else {
