@@ -314,6 +314,7 @@
         <property name="dnsDao" ref="dnsDao"/>
         <property name="distributedLockDao" ref="distributedLockDao"/>
         <property name="bridgeConfig" ref="bridgeConfig"/>
+        <property name="cacheProvider" ref="cacheProvider"/>
         <property name="validator">
             <bean class="org.sagebionetworks.bridge.validators.StudyValidator"/>
         </property>

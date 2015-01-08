@@ -114,7 +114,6 @@ public class DynamoStudy implements Study, DynamoTable {
     }
     @DynamoDBIgnore
     @Override
-    @JsonIgnore
     public String getStormpathHref() {
         return stormpathHref;
     }

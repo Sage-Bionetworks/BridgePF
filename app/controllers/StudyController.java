@@ -3,9 +3,13 @@ package controllers;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.models.StudyInfo;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 import play.mvc.Result;
 
@@ -22,7 +26,7 @@ public class StudyController extends BaseController {
         // getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearchOrAdminSession(study);
-        return okResult(study);
+        return okResult(new StudyInfo(study));
     }
 
     public Result updateStudyForResearcher() throws Exception {
@@ -49,13 +53,18 @@ public class StudyController extends BaseController {
         getAuthenticatedAdminSession();
 
         Study study = studyService.getStudyByIdentifier(identifier);
-        return okResult(study);
+        return okResult(new StudyInfo(study));
     }
 
     public Result getAllStudies() throws Exception {
         getAuthenticatedAdminSession();
 
-        List<Study> studies = studyService.getStudies();
+        List<StudyInfo> studies = Lists.transform(studyService.getStudies(), new Function<Study,StudyInfo>() {
+            @Override
+            public StudyInfo apply(Study study) {
+                return new StudyInfo(study);
+            }
+        });
         return okResult(studies);
     }
 
