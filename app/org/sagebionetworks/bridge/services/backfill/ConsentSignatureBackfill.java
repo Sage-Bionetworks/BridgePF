@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services.backfill;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
@@ -67,20 +68,21 @@ public class ConsentSignatureBackfill extends AsyncBackfillTemplate  {
             List<Account> accountList = iterator.next();
             for (final Account account : accountList) {
                 for (final Study study : studies) {
-                    ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
-                    if (consentSignature != null) {
+                    try {
+                        accountEncryptionService.getConsentSignature(study, account);
                         backfillRecordFactory.createOnly(task, study, account, "Already in Stormpath.");
-                    } else {
+                    } catch (EntityNotFoundException e) {
                         HealthId healthId = accountEncryptionService.getHealthCode(study, account);
                         if (healthId == null) {
                             backfillRecordFactory.createOnly(task, study, account, "Missing health code. Backfill skipped.");
-                        }
-                        consentSignature = userConsentDao.getConsentSignature(healthId.getCode(), study.getIdentifier());
-                        if (consentSignature == null) {
-                            backfillRecordFactory.createOnly(task, study, account, "Missing consent signature in DynamoDB. Backfill skipped.");
                         } else {
-                            accountEncryptionService.putConsentSignature(study, account, consentSignature);
-                            backfillRecordFactory.createAndSave(task, study, account, "Backfilled from DynamoDB to Stormpath.");
+                            try {
+                                ConsentSignature consentSignature = userConsentDao.getConsentSignature(healthId.getCode(), study.getIdentifier());
+                                accountEncryptionService.putConsentSignature(study, account, consentSignature);
+                                backfillRecordFactory.createAndSave(task, study, account, "Backfilled from DynamoDB to Stormpath.");
+                            } catch (EntityNotFoundException ex) {
+                                backfillRecordFactory.createOnly(task, study, account, "Missing consent signature in DynamoDB. Backfill skipped.");
+                            }
                         }
                     }
                 }
