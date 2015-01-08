@@ -20,7 +20,7 @@ import com.stormpath.sdk.client.Client;
 /**
  * Backfills consent signatures to Stormpath.
  */
-public class ConsentSignatureBackfill extends AsyncBackfillTemplate  {
+public class ConsentSignatureBackfill extends AsyncBackfillTemplate {
 
     private BackfillRecordFactory backfillRecordFactory;
 
@@ -68,28 +68,36 @@ public class ConsentSignatureBackfill extends AsyncBackfillTemplate  {
             List<Account> accountList = iterator.next();
             for (final Account account : accountList) {
                 for (final Study study : studies) {
-                    try {
-                        accountEncryptionService.getConsentSignature(study, account);
-                        backfillRecordFactory.createOnly(task, study, account, "Already in Stormpath.");
-                    } catch (EntityNotFoundException e) {
-                        HealthId healthId = null;
-                        try {
-                            healthId = accountEncryptionService.getHealthCode(study, account);
-                        } catch (Exception ex) {
-                            backfillRecordFactory.createOnly(task, study, account, ex.getMessage());
-                        }
-                        if (healthId == null) {
-                            backfillRecordFactory.createOnly(task, study, account, "Missing health code. Backfill skipped.");
-                        } else {
-                            try {
-                                ConsentSignature consentSignature = userConsentDao.getConsentSignature(healthId.getCode(), study.getIdentifier());
-                                accountEncryptionService.putConsentSignature(study, account, consentSignature);
-                                backfillRecordFactory.createAndSave(task, study, account, "Backfilled from DynamoDB to Stormpath.");
-                            } catch (EntityNotFoundException ex) {
-                                backfillRecordFactory.createOnly(task, study, account, "Missing consent signature in DynamoDB. Backfill skipped.");
-                            }
-                        }
-                    }
+                    backfillAccount(task, callback, study, account);
+                }
+            }
+        }
+    }
+
+    private void backfillAccount(BackfillTask task, BackfillCallback callback, Study study, Account account) {
+        try {
+            accountEncryptionService.getConsentSignature(study, account);
+            callback.newRecords(backfillRecordFactory.createOnly(task, study, account, "Already in Stormpath."));
+        } catch (EntityNotFoundException e) {
+            HealthId healthId = null;
+            try {
+                healthId = accountEncryptionService.getHealthCode(study, account);
+            } catch (Exception ex) {
+                callback.newRecords(backfillRecordFactory.createOnly(task, study, account, ex.getMessage()));
+            }
+            if (healthId == null) {
+                callback.newRecords(backfillRecordFactory.createOnly(
+                        task, study, account, "Missing health code. Backfill skipped."));
+            } else {
+                try {
+                    ConsentSignature consentSignature = userConsentDao.getConsentSignature(
+                            healthId.getCode(), study.getIdentifier());
+                    accountEncryptionService.putConsentSignature(study, account, consentSignature);
+                    callback.newRecords(backfillRecordFactory.createAndSave(
+                            task, study, account, "Backfilled from DynamoDB to Stormpath."));
+                } catch (EntityNotFoundException ex) {
+                    callback.newRecords(backfillRecordFactory.createOnly(
+                            task, study, account, "Missing consent signature in DynamoDB. Backfill skipped."));
                 }
             }
         }
