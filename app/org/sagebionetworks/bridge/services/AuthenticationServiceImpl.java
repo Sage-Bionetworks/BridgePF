@@ -144,7 +144,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public void signOut(String sessionToken) {
         if (sessionToken != null) {
-            cacheProvider.remove(sessionToken);
+            cacheProvider.removeSession(sessionToken);
         }
     }
 
