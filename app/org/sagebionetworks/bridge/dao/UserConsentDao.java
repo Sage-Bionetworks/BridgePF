@@ -36,7 +36,7 @@ public interface UserConsentDao {
      * Returns a non-null consent signature, consisting of the signature name and birthdate. Throws
      * EntityNotFoundException if no consent signature is found.
      */
-    ConsentSignature getConsentSignature(String healthCode, StudyConsent consent);
+    ConsentSignature getConsentSignature(String healthCode, String studyIdentifier);
 
     /**
      * @param studyKey
