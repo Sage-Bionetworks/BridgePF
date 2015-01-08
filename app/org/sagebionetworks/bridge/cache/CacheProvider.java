@@ -77,7 +77,7 @@ public class CacheProvider {
             String ser = stringOps.get(redisKey).execute();
             if (ser != null) {
                 stringOps.expire(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-                return DynamoStudy.fromJson(BridgeObjectMapper.get().readTree(ser));
+                return DynamoStudy.fromCacheJson(BridgeObjectMapper.get().readTree(ser));
             }
         } catch (Throwable e) {
             promptToStartRedisIfLocalEnv(e);
