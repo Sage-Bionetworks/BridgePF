@@ -10,6 +10,8 @@
         http://www.springframework.org/schema/mvc
         http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
+    <context:annotation-config />
+
     <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfigFactory"
             factory-method="getConfig" />
 
