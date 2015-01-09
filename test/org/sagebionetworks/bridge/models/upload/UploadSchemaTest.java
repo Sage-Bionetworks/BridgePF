@@ -4,15 +4,21 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+import org.springframework.validation.MapBindingResult;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.validators.Validate;
 
 @SuppressWarnings("unchecked")
 public class UploadSchemaTest {
@@ -21,7 +27,7 @@ public class UploadSchemaTest {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setStudyId("api");
         ddbUploadSchema.setSchemaId("test");
-        assertEquals("api-test", ddbUploadSchema.getKey());
+        assertEquals("api$test", ddbUploadSchema.getKey());
     }
 
     @Test(expected = InvalidEntityException.class)
@@ -57,7 +63,7 @@ public class UploadSchemaTest {
     @Test
     public void getStudyAndSchemaFromKey() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setKey("api-test");
+        ddbUploadSchema.setKey("api$test");
         assertEquals("api", ddbUploadSchema.getStudyId());
         assertEquals("test", ddbUploadSchema.getSchemaId());
     }
@@ -83,29 +89,253 @@ public class UploadSchemaTest {
     @Test(expected = IllegalArgumentException.class)
     public void keyWithEmptyStudy() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setKey("-test");
+        ddbUploadSchema.setKey("$test");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void keyWithEmptySchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setKey("api-");
+        ddbUploadSchema.setKey("api$");
     }
 
     @Test
-    public void getKeyWithDashesInSchema() {
+    public void getKeyWithDollarSignsInSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setStudyId("api");
-        ddbUploadSchema.setSchemaId("test-schema");
-        assertEquals("api-test-schema", ddbUploadSchema.getKey());
+        ddbUploadSchema.setSchemaId("test$schema");
+        assertEquals("api$test$schema", ddbUploadSchema.getKey());
     }
 
     @Test
     public void setKeyWithDashesInSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setKey("api-test-schema");
+        ddbUploadSchema.setKey("api$test$schema");
         assertEquals("api", ddbUploadSchema.getStudyId());
-        assertEquals("test-schema", ddbUploadSchema.getSchemaId());
+        assertEquals("test$schema", ddbUploadSchema.getSchemaId());
+    }
+
+    // branch coverage
+    @Test
+    public void validatorSupportsClass() {
+        assertTrue(UploadSchema.Validator.INSTANCE.supports(UploadSchema.class));
+    }
+
+    // branch coverage
+    @Test
+    public void validatorSupportsSubclass() {
+        assertTrue(UploadSchema.Validator.INSTANCE.supports(DynamoUploadSchema.class));
+    }
+
+    // branch coverage
+    @Test
+    public void validatorDoesntSupportClass() {
+        assertFalse(UploadSchema.Validator.INSTANCE.supports(String.class));
+    }
+
+    // branch coverage
+    // we call the validator directly, since Validate.validateThrowingException filters out nulls and wrong types
+    @Test
+    public void validateNull() {
+        MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadSchema");
+        UploadSchema.Validator.INSTANCE.validate(null, errors);
+        assertTrue(errors.hasErrors());
+    }
+
+    // branch coverage
+    // we call the validator directly, since Validate.validateThrowingException filters out nulls and wrong types
+    @Test
+    public void validateWrongClass() {
+        MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadSchema");
+        UploadSchema.Validator.INSTANCE.validate("this is the wrong class", errors);
+        assertTrue(errors.hasErrors());
+    }
+
+    @Test
+    public void validateHappyCase() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("happy schema");
+        schema.setSchemaId("happy-schema");
+        schema.setStudyId("test-study");
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("test-field")
+                .withType(UploadFieldType.BLOB).build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+    }
+
+    @Test
+    public void validateHappyCase2() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("happy schema 2");
+        schema.setRevision(1);
+        schema.setSchemaId("happy-schema-2");
+        schema.setStudyId("test-study");
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("foo-field")
+                .withType(UploadFieldType.INT).build());
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("bar-field")
+                .withType(UploadFieldType.STRING).build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void validateNullFieldDefList() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("test schema");
+        schema.setSchemaId("test-schema");
+        schema.setStudyId("test-study");
+
+        // validate
+        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void validateEmptyFieldDefList() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("test schema");
+        schema.setSchemaId("test-schema");
+        schema.setStudyId("test-study");
+        schema.setFieldDefinitions((List) Collections.emptyList());
+
+        // validate
+        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void validateNullName() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setSchemaId("test-schema");
+        schema.setStudyId("test-study");
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
+                .withType(UploadFieldType.BLOB).build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void validateEmptyName() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("");
+        schema.setSchemaId("test-schema");
+        schema.setStudyId("test-study");
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
+                .withType(UploadFieldType.BLOB).build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void validateNegativeRev() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("test schema");
+        schema.setRevision(-1);
+        schema.setSchemaId("test-schema");
+        schema.setStudyId("test-study");
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
+                .withType(UploadFieldType.BLOB).build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void validateNullSchemaId() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("test schema");
+        schema.setStudyId("test-study");
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
+                .withType(UploadFieldType.BLOB).build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void validateEmptySchemaId() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("test schema");
+        schema.setSchemaId("");
+        schema.setStudyId("test-study");
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
+                .withType(UploadFieldType.BLOB).build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void validateNullStudyId() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("test schema");
+        schema.setSchemaId("test-schema");
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
+                .withType(UploadFieldType.BLOB).build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void validateEmptyStudyId() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("test schema");
+        schema.setSchemaId("test-schema");
+        schema.setStudyId("");
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
+                .withType(UploadFieldType.BLOB).build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
     }
 
     @Test

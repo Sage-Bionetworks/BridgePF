@@ -90,7 +90,7 @@ POST   /researcher/v1/study           @controllers.StudyController.updateStudyFo
 
 # Researchers - Upload Schemas
 GET    /researcher/v1/uploadSchema/:schemaId  @controllers.UploadSchemaController.getUploadSchema(schemaId: String)
-POST   /researcher/v1/uploadSchema/:schemaId  @controllers.UploadSchemaController.createOrUpdateUploadSchema(schemaId: String)
+POST   /researcher/v1/uploadSchema            @controllers.UploadSchemaController.createOrUpdateUploadSchema
 
 # Admin - Studies
 GET    /admin/v1/studies/:identifier  @controllers.StudyController.getStudy(identifier: String)

@@ -18,18 +18,17 @@ public class UploadSchemaController extends BaseController {
     }
 
     /**
-     * Play controller for POST /researcher/v1/uploadSchema/:schemaId. This API creates an upload schema for the
-     * given schema ID, or updates it if it already exists.
+     * Play controller for POST /researcher/v1/uploadSchema/:schemaId. This API creates an upload schema, using the
+     * study for the current service endpoint and the schema of the specified schema. If the schema already exists,
+     * this method updates it instead.
      *
-     * @param schemaId
-     *         schema ID to create or update
      * @return Play result, with the created or updated schema in JSON format
      */
-    public Result createOrUpdateUploadSchema(String schemaId) {
+    public Result createOrUpdateUploadSchema() {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
         UploadSchema uploadSchema = parseJson(request(), UploadSchema.class);
-        UploadSchema createdSchema = uploadSchemaService.createOrUpdateUploadSchema(study, schemaId, uploadSchema);
+        UploadSchema createdSchema = uploadSchemaService.createOrUpdateUploadSchema(study, uploadSchema);
         return okResult(createdSchema);
     }
 

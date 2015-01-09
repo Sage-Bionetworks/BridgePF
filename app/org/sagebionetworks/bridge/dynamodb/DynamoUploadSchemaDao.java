@@ -21,8 +21,8 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 public class DynamoUploadSchemaDao implements UploadSchemaDao {
     /**
      * DynamoDB save expression for conditional puts if and only if the row doesn't already exist. This save expression
-     * is executed on the row that would be written to. This idiom only checks for the existence of the key, which
-     * won't exist if the row doesn't exist.
+     * is executed on the row that would be written to. We only need to check the hash key, since the entire row won't
+     * exist (including both the hash key and the range key).
      */
     private static final DynamoDBSaveExpression DOES_NOT_EXIST_EXPRESSION = new DynamoDBSaveExpression()
             .withExpectedEntry("key", new ExpectedAttributeValue(false));
@@ -40,10 +40,10 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
 
     /** {@inheritDoc} */
     @Override
-    public @Nonnull UploadSchema createOrUpdateUploadSchema(@Nonnull String studyId, @Nonnull String schemaId,
-            @Nonnull UploadSchema uploadSchema) {
+    public @Nonnull UploadSchema createOrUpdateUploadSchema(@Nonnull UploadSchema uploadSchema) {
         // Get the current version of the uploadSchema, if it exists
-        DynamoUploadSchema oldUploadSchema = getUploadSchemaNoThrow(studyId, schemaId);
+        DynamoUploadSchema oldUploadSchema = getUploadSchemaNoThrow(uploadSchema.getStudyId(),
+                uploadSchema.getSchemaId());
         int oldRev;
         if (oldUploadSchema != null) {
             oldRev = oldUploadSchema.getRevision();

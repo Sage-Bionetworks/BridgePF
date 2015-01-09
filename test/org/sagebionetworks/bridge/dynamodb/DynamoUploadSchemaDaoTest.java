@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 @SuppressWarnings("unchecked")
@@ -41,27 +42,17 @@ public class DynamoUploadSchemaDaoTest {
     }
 
     private static void testCreateUpdate(String studyId, String schemaId, Integer oldRev, int newRev) {
-        // mock get result
-        PaginatedQueryList<DynamoUploadSchema> mockGetResult = mock(PaginatedQueryList.class);
-        if (oldRev != null) {
-            // mock result should contain the old rev
-            when(mockGetResult.isEmpty()).thenReturn(false);
-            when(mockGetResult.get(0)).thenReturn(makeUploadSchema(studyId, schemaId, oldRev));
-        } else {
-            // no old rev means no old result
-            when(mockGetResult.isEmpty()).thenReturn(true);
-        }
-
         // mock DDB mapper
-        DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
-        when(mockMapper.query(eq(DynamoUploadSchema.class), notNull(DynamoDBQueryExpression.class))).thenReturn(
-                mockGetResult);
+        DynamoUploadSchema schema = null;
+        if (oldRev != null) {
+            schema = makeUploadSchema(studyId, schemaId, oldRev);
+        }
+        DynamoDBMapper mockMapper = setupMockMapperWithSchema(schema);
 
-        // set up test and execute
+        // set up test dao and execute
         DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
         dao.setDdbMapper(mockMapper);
-        UploadSchema retVal = dao.createOrUpdateUploadSchema(studyId, schemaId, makeUploadSchema(studyId, schemaId,
-                newRev));
+        UploadSchema retVal = dao.createOrUpdateUploadSchema(makeUploadSchema(studyId, schemaId, newRev));
 
         // Validate call to DDB - we can't compare if the captured argument is equal to the passed in upload
         // schema since DDB objects are mutable.
@@ -77,9 +68,52 @@ public class DynamoUploadSchemaDaoTest {
         assertSame(arg.getValue(), retVal);
     }
 
-    // TODO get schema
+    @Test
+    public void testGetSchema() {
+        // mock DDB mapper
+        DynamoDBMapper mockMapper = setupMockMapperWithSchema(makeUploadSchema("getStudy", "testSchema", 1));
 
-    // TODO schema not found
+        // set up test dao and execute
+        DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
+        dao.setDdbMapper(mockMapper);
+        UploadSchema retVal = dao.getUploadSchema("getStudy", "testSchema");
+
+        // Validate call to DDB - we can't compare if the captured argument is equal to the passed in upload
+        // schema since DDB objects are mutable.
+        assertEquals("getStudy", retVal.getStudyId());
+        assertEquals("testSchema", retVal.getSchemaId());
+        assertEquals(1, retVal.getRevision());
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void schemaNotFound() {
+        // mock DDB mapper
+        DynamoDBMapper mockMapper = setupMockMapperWithSchema(null);
+
+        // set up test dao and execute
+        DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
+        dao.setDdbMapper(mockMapper);
+        dao.getUploadSchema("getStudy", "testSchema");
+    }
+
+    private static DynamoDBMapper setupMockMapperWithSchema(DynamoUploadSchema schema) {
+        // mock get result
+        PaginatedQueryList<DynamoUploadSchema> mockGetResult = mock(PaginatedQueryList.class);
+        if (schema != null) {
+            // mock result should contain the old rev
+            when(mockGetResult.isEmpty()).thenReturn(false);
+            when(mockGetResult.get(0)).thenReturn(schema);
+        } else {
+            // no old rev means no old result
+            when(mockGetResult.isEmpty()).thenReturn(true);
+        }
+
+        // mock DDB mapper
+        DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
+        when(mockMapper.query(eq(DynamoUploadSchema.class), notNull(DynamoDBQueryExpression.class))).thenReturn(
+                mockGetResult);
+        return mockMapper;
+    }
 
     private static DynamoUploadSchema makeUploadSchema(String studyId, String schemaId, int rev) {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
