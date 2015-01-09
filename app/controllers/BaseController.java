@@ -1,5 +1,6 @@
 package controllers;
 
+import javax.annotation.Nonnull;
 import java.util.Collection;
 
 import com.google.common.base.Strings;
@@ -225,17 +226,22 @@ public abstract class BaseController extends Controller {
     }
 
     /**
-     * Parses the JSON from the given request as the given class. This is a wrapper around Jackson.
+     * Static utility function that parses the JSON from the given request as the given class. This is a wrapper around
+     * Jackson.
      *
      * @param request
      *         Play framework request
      * @param clazz
      *         class to parse the JSON as
-     * @return object parsed from JSON
+     * @return object parsed from JSON, will be non-null
      */
-    protected static <T> T parseJson(Request request, Class<? extends T> clazz) {
+    protected static @Nonnull <T> T parseJson(Request request, Class<? extends T> clazz) {
         try {
+            // Calling request.body() twice is safe. (Has been confirmed using "play debug" and stepping through this
+            // code in a debugger.)
             // Whether asText() or asJson() works depends on the content-type header of the request
+            // asText() returns data if the content-type is text/plain. asJson() returns data if the content-type is
+            // text/json or application/json.
             String jsonText = request.body().asText();
             if (!Strings.isNullOrEmpty(jsonText)) {
                 return mapper.readValue(jsonText, clazz);

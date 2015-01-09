@@ -77,6 +77,7 @@ public class UploadFieldDefinitionTest {
     }
 
     // branch coverage
+    // we call the validator directly, since Validate.validateThrowingException filters out nulls and wrong types
     @Test
     public void validateNull() {
         MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadFieldDefinition");
@@ -85,6 +86,7 @@ public class UploadFieldDefinitionTest {
     }
 
     // branch coverage
+    // we call the validator directly, since Validate.validateThrowingException filters out nulls and wrong types
     @Test
     public void validateWrongClass() {
         MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadFieldDefinition");

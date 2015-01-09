@@ -16,6 +16,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -44,13 +45,13 @@ public class DynamoUploadSchema implements DynamoTable, UploadSchema {
 
     /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getFieldDefinitions */
     public void setFieldDefinitions(List<UploadFieldDefinition> fieldDefList) {
-        this.fieldDefList = fieldDefList;
+        this.fieldDefList = ImmutableList.copyOf(fieldDefList);
     }
 
     /**
      * This is the DynamoDB key. It is used by the DynamoDB mapper. This should not be used directly. The key format is
-     * "[studyID]-[schemaID]". The schema ID may contain dashes. The study ID may not. Since the key is created from
-     * the study ID and schema ID, this will throw an InvalidEntityException if either one is blank.
+     * "[studyID]$[schemaID]". The schema ID may contain dollar signs. The study ID may not. Since the key is created
+     * from the study ID and schema ID, this will throw an InvalidEntityException if either one is blank.
      */
     @DynamoDBHashKey
     @JsonIgnore
@@ -61,7 +62,7 @@ public class DynamoUploadSchema implements DynamoTable, UploadSchema {
         if (Strings.isNullOrEmpty(schemaId)) {
             throw new InvalidEntityException(this, String.format(Validate.CANNOT_BE_BLANK, "schemaId"));
         }
-        return String.format("%s-%s", studyId, schemaId);
+        return String.format("%s$%s", studyId, schemaId);
     }
 
     /**
@@ -75,7 +76,7 @@ public class DynamoUploadSchema implements DynamoTable, UploadSchema {
         Preconditions.checkNotNull(key, Validate.CANNOT_BE_NULL, "key");
         Preconditions.checkArgument(!key.isEmpty(), Validate.CANNOT_BE_EMPTY_STRING, "key");
 
-        String[] parts = key.split("-", 2);
+        String[] parts = key.split("\\$", 2);
         Preconditions.checkArgument(parts.length == 2, "key has wrong number of parts");
         Preconditions.checkArgument(!parts[0].isEmpty(), "key has empty study ID");
         Preconditions.checkArgument(!parts[1].isEmpty(), "key has empty schema ID");
@@ -99,6 +100,8 @@ public class DynamoUploadSchema implements DynamoTable, UploadSchema {
     // We don't use the DynamoDBVersionAttribute here because we want to keep multiple versions of the schema so we can
     // parse older versions of the data. Similarly, we make this a range key so that we can always find the latest
     // version of the schema.
+    // Additionally, we don't need to use the version attribute to do optimistic locking, since we use a save
+    // expression that checks whether the row already exists. (See DynamoUploadSchemaDao for further details.)
     @DynamoDBRangeKey
     @Override
     public int getRevision() {
@@ -124,6 +127,9 @@ public class DynamoUploadSchema implements DynamoTable, UploadSchema {
 
     /** {@inheritDoc} */
     // TODO: Implement global secondary indices in DynamoInitializer
+    // This index is needed by:
+    // * the exporter will want all schemas for a particular study to match a particular upload
+    // * researchers may want to list all schemas in their study for schema management
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-index")
     @Override
     public String getStudyId() {

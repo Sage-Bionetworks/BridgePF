@@ -34,9 +34,7 @@ public interface UploadFieldDefinition extends BridgeEntity {
         /** Singleton instance of this validator. */
         public static final Validator INSTANCE = new Validator();
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public boolean supports(Class<?> clazz) {
             return UploadFieldDefinition.class.isAssignableFrom(clazz);
