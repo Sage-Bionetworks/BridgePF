@@ -147,6 +147,17 @@ public class AuthenticationServiceImplTest {
             helper.deleteUser(user);
         }
     }
+    
+    @Test
+    public void canResendEmailVerification() throws Exception {
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
+        try {
+            Email email = new Email(user.getEmail());
+            authService.resendEmailVerification(user.getStudy(), email);
+        } catch (ConsentRequiredException e) {
+            helper.deleteUser(user);
+        }
+    }
 
     @Test
     @Ignore

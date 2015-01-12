@@ -66,6 +66,14 @@ public class AuthenticationController extends BaseController {
         setSessionToken(session.getSessionToken());
         return okResult(new UserSessionInfo(session));
     }
+    
+    public Result resendEmailVerification() throws Exception {
+        Study study = studyService.getStudyByHostname(getHostname());
+        Email email = Email.fromJson(requestToJSON(request()));
+        
+        authenticationService.resendEmailVerification(study, email);
+        return okResult("A request to verify an email address was re-sent.");
+    }
 
     public Result requestResetPassword() throws Exception {
         Email email = Email.fromJson(requestToJSON(request()));

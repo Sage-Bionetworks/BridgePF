@@ -25,4 +25,12 @@ public class StormpathFactory {
 
         return client.getResource(config.getStormpathApplicationHref().trim(), Application.class);
     }
+    
+    public static String getApplicationId() {
+        BridgeConfig config = BridgeConfigFactory.getConfig();
+        String url = config.getStormpathApplicationHref().trim();
+        String[] parts = url.split("/");
+        return parts[parts.length-1];
+    }
+    
 }
