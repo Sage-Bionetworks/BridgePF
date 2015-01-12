@@ -11,27 +11,23 @@ public class UserProfile {
     private String firstName;
     private String lastName;
     private String username;
+    private String phone;
     private String email;
     
     private static final String FIRST_NAME_FIELD = "firstName";
     private static final String LAST_NAME_FIELD = "lastName";
-
-    public UserProfile(User user) {
-        this.firstName = removeEmpty(user.getFirstName());
-        this.lastName = removeEmpty(user.getLastName());
-        this.username = removeEmpty(user.getUsername());
-        this.email = removeEmpty(user.getEmail());
-    }
+    private static final String PHONE_NAME_FIELD = "phone";
     
     public UserProfile() {
     }
-    
+
     public static UserProfile fromJson(JsonNode node) {
         UserProfile profile = new UserProfile();
         String firstName = JsonUtils.asText(node, FIRST_NAME_FIELD);
         String lastName = JsonUtils.asText(node, LAST_NAME_FIELD);
         profile.setFirstName(replaceWithEmpty(firstName));
         profile.setLastName(replaceWithEmpty(lastName));
+        profile.setPhone(JsonUtils.asText(node, PHONE_NAME_FIELD));
         return profile;
     }
     
@@ -67,18 +63,20 @@ public class UserProfile {
     public String getEmail() {
         return this.email;
     }
+    public void setEmail(String email) {
+        this.email = email;
+    }
+    
+    public String getPhone() {
+        return phone;
+    }
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
     
     private static String replaceWithEmpty(String s) {
         if (StringUtils.isBlank(s)) {
             return "<EMPTY>";
-        } else {
-            return s;
-        }
-    }
-    
-    private String removeEmpty(String s) {
-        if (StringUtils.isBlank(s) || s.equalsIgnoreCase("<EMPTY>")) {
-            return "";
         } else {
             return s;
         }
