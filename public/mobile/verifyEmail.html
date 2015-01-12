@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width" />
+	<title>Email Verification</title>
+	<link href="styles/normalize.css" type="text/css" rel="stylesheet"/>
+	<link href="styles/mobile.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+
+<div class="logo_box"><img id="logo" onerror="this.style.visibility='hidden'"/></div>
+<div class="message" id="m1">Verifying...</div>
+<div class="message" id="m2"></div>
+
+<script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
+<script src="script.js"></script>
+<script>
+function success() {
+    $("#m1").text("Your email address has now been verified.");
+    $("#m2").text("You can now use the "+titles[host]+" application.");
+}
+function failure() {
+    $("#m1").text("Your email address could not be verified.");
+    $("#m2").text("Contact technical support for this study to receive further assistance.");
+}
+
+try {
+    var p = $.ajax({
+        type: "POST",
+        url: "/api/v1/auth/verifyEmail",
+        data: JSON.stringify({"sptoken":qd.sptoken[0]}),
+        contentType: "application/json, charset=utf-8",
+        dataType: "json"
+    });
+	// The response in the success case is 412, accept terms of study
+    p.done(success).fail(function(response) {
+        if (response.status === 412) {
+            success();
+        } else {
+            try {
+                var message = response.responseJSON.message;
+                if (message === "The requested resource does not exist.") {
+                    $("#m1").text("Your email address has already been verified.");
+                    $("#m2").text("You can currently use the "+titles[host]+" application.");
+                } else {
+                    failure();
+                }
+            } catch(e) {
+                failure();
+            }
+        }
+    });
+} catch(e) { // happens if the query string is wrong.
+    console.log(e);
+    failure();
+}
+
+</script>
+</body>
+</html>
