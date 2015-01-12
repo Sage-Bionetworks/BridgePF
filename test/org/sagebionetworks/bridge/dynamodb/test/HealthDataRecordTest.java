@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
@@ -24,6 +25,7 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
     private String guid;
     private long startDate;
     private long endDate;
+    private String secondaryKey;
     private Long version;
     private JsonNode data;
 
@@ -98,6 +100,15 @@ public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
     @JsonDeserialize(using = DateTimeJsonDeserializer.class)
     public void setEndDate(long endDate) {
         this.endDate = endDate;
+    }
+
+    @DynamoDBIndexHashKey(attributeName = "secondaryKey", globalSecondaryIndexName = "secondary-index")
+    public String getSecondaryKey() {
+        return secondaryKey;
+    }
+
+    public void setSecondaryKey(String secondaryKey) {
+        this.secondaryKey = secondaryKey;
     }
 
     @Override
