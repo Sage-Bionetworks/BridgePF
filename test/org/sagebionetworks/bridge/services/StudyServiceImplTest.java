@@ -4,13 +4,18 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 import javax.annotation.Resource;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -31,9 +36,17 @@ public class StudyServiceImplTest {
     @Resource
     Client stormpathClient;
     
+    private CacheProvider cache;
+    
     private Study study;
     
     private String identifier;
+    
+    @Before
+    public void before() {
+        cache = mock(CacheProvider.class);
+        studyService.setCacheProvider(cache);
+    }
     
     @After
     public void after() {
@@ -89,17 +102,11 @@ public class StudyServiceImplTest {
     @Test
     public void crudStudy() {
         identifier = TestUtils.randomName();
-        study = new DynamoStudy();
-        study.setIdentifier(identifier);
-        study.setName("Test of study creation");
-        study.setMaxNumOfParticipants(100);
-        study.setMinAgeOfConsent(18);
-        study.setResearcherRole(identifier+"_researcher");
-        study.setStormpathHref("http://dev-test-junk");
-        study.setHostname("dev-hostname-test-junk");
+        study = createStudy();
 
         study = studyService.createStudy(study);
         assertNotNull("Version has been set", study.getVersion());
+        verify(cache).setStudy(study);
         
         study = studyService.getStudyByIdentifier(identifier);
         assertEquals(identifier, study.getIdentifier());
@@ -110,14 +117,28 @@ public class StudyServiceImplTest {
         assertEquals(identifier+"_researcher", study.getResearcherRole());
         assertNotEquals("http://local-test-junk", study.getStormpathHref());
         assertNotEquals("local-hostname-test-junk", study.getHostname());
+        verify(cache).getStudy(study.getIdentifier());
 
         studyService.deleteStudy(identifier);
+        verify(cache).removeStudy(study.getIdentifier());
         try {
             studyService.getStudyByIdentifier(study.getIdentifier());
             fail("Should have thrown an exception");
         } catch(EntityNotFoundException e) {
         }
         identifier = null;
+    }
+    
+    private Study createStudy() {
+        study = new DynamoStudy();
+        study.setIdentifier(identifier);
+        study.setName("Test of study creation");
+        study.setMaxNumOfParticipants(100);
+        study.setMinAgeOfConsent(18);
+        study.setResearcherRole(identifier+"_researcher");
+        study.setStormpathHref("http://dev-test-junk");
+        study.setHostname("dev-hostname-test-junk");
+        return study;
     }
 
 }
