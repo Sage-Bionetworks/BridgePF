@@ -8,16 +8,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.config.Environment;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -25,6 +20,7 @@ import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
+import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
 import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndexDescription;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
@@ -43,6 +39,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 import com.google.common.reflect.ClassPath.ClassInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.exceptions.BridgeInitializationException;
 
 public class DynamoInitializer {
 
@@ -160,24 +163,52 @@ public class DynamoInitializer {
             if (hashKey == null) {
                 throw new RuntimeException("Missing hash key for DynamoDBTable " + clazz);
             }
-            // TODO: Global secondary indices
-            // Local secondary indices
+            // TODO: The secondary indices code only supports local indices and hash-only global indices.
+            // hash-and-range global indices would require rewriting this code to consider indices across multiple
+            // methods.
+            // secondary indices (local (range) and global (hash-only))
             for (Method method : methods) {
+                boolean isLocalIndexKey = false;
+                boolean isGlobalIndexKey = false;
+                String attrName = null;
+                String indexName = null;
                 if (method.isAnnotationPresent(DynamoDBIndexRangeKey.class)) {
                     DynamoDBIndexRangeKey indexKey = method.getAnnotation(DynamoDBIndexRangeKey.class);
-                    String attrName = indexKey.attributeName();
+                    attrName = indexKey.attributeName();
+                    indexName = indexKey.localSecondaryIndexName();
+                    isLocalIndexKey = true;
+                } else if (method.isAnnotationPresent(DynamoDBIndexHashKey.class)) {
+                    DynamoDBIndexHashKey indexKey = method.getAnnotation(DynamoDBIndexHashKey.class);
+                    attrName = indexKey.attributeName();
+                    indexName = indexKey.globalSecondaryIndexName();
+                    isGlobalIndexKey = true;
+                }
+
+                if (isLocalIndexKey || isGlobalIndexKey) {
                     if (attrName == null || attrName.isEmpty()) {
                         attrName = getAttributeName(method);
                     }
                     ScalarAttributeType attrType = getAttributeType(method);
                     AttributeDefinition attribute = new AttributeDefinition(attrName, attrType);
                     attributes.add(attribute);
-                    String indexName = indexKey.localSecondaryIndexName();
-                    LocalSecondaryIndexDescription localIndex = new LocalSecondaryIndexDescription()
-                            .withIndexName(indexName)
-                            .withKeySchema(hashKey, new KeySchemaElement(attrName, KeyType.RANGE))
-                            .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
-                    localIndices.add(localIndex);
+
+                    if (isLocalIndexKey) {
+                        LocalSecondaryIndexDescription localIndex = new LocalSecondaryIndexDescription()
+                                .withIndexName(indexName)
+                                .withKeySchema(hashKey, new KeySchemaElement(attrName, KeyType.RANGE))
+                                .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
+                        localIndices.add(localIndex);
+                    } else {
+                        // isGlobalIndexKey is always true in this branch
+                        GlobalSecondaryIndexDescription globalIndex = new GlobalSecondaryIndexDescription()
+                                .withIndexName(indexName)
+                                .withKeySchema(new KeySchemaElement(attrName, KeyType.HASH))
+                                .withProjection(new Projection().withProjectionType(ProjectionType.ALL))
+                                .withProvisionedThroughput(new ProvisionedThroughputDescription()
+                                        .withReadCapacityUnits(READ_CAPACITY)
+                                        .withWriteCapacityUnits(WRITE_CAPACITY));
+                        globalIndices.add(globalIndex);
+                    }
                 }
             }
             final String tableName = getTableName(
@@ -316,7 +347,24 @@ public class DynamoInitializer {
                 table.getProvisionedThroughput().getReadCapacityUnits(),
                 table.getProvisionedThroughput().getWriteCapacityUnits());
         request.setProvisionedThroughput(throughput);
-        // TODO: GlobalSecondaryIndexDescription -> GlobalSecondaryIndex
+
+        // GlobalSecondaryIndexDescription -> GlobalSecondaryIndex
+        List<GlobalSecondaryIndex> globalIndices = new ArrayList<>();
+        List<GlobalSecondaryIndexDescription> globalIndexDescs = table.getGlobalSecondaryIndexes();
+        for (GlobalSecondaryIndexDescription globalIndexDesc : globalIndexDescs) {
+            GlobalSecondaryIndex globalIndex = new GlobalSecondaryIndex()
+                    .withIndexName(globalIndexDesc.getIndexName())
+                    .withKeySchema(globalIndexDesc.getKeySchema())
+                    .withProjection(globalIndexDesc.getProjection())
+                    .withProvisionedThroughput(new ProvisionedThroughput(
+                            globalIndexDesc.getProvisionedThroughput().getReadCapacityUnits(),
+                            globalIndexDesc.getProvisionedThroughput().getWriteCapacityUnits()));
+            globalIndices.add(globalIndex);
+        }
+        if (globalIndices.size() > 0) {
+            request.setGlobalSecondaryIndexes(globalIndices);
+        }
+
         // LocalSecondaryIndexDescription -> LocalSecondaryIndex
         List<LocalSecondaryIndex> localIndices = new ArrayList<LocalSecondaryIndex>();
         List<LocalSecondaryIndexDescription> localIndexDescs = table.getLocalSecondaryIndexes();
@@ -330,6 +378,7 @@ public class DynamoInitializer {
         if (localIndices.size() > 0) {
             request.setLocalSecondaryIndexes(localIndices);
         }
+
         return request;
     }
 
@@ -340,7 +389,10 @@ public class DynamoInitializer {
     static void compareSchema(TableDescription table1, TableDescription table2) {
         if (table1.getTableName().equals(table2.getTableName())) {
             compareKeySchema(table1, table2);
-            compareLocalIndices(table1, table2);
+            compareSecondaryIndices(table1.getTableName(), table1.getGlobalSecondaryIndexes(),
+                    table2.getGlobalSecondaryIndexes(), true);
+            compareSecondaryIndices(table1.getTableName(), table1.getLocalSecondaryIndexes(),
+                    table2.getLocalSecondaryIndexes(), false);
         }
     }
 
@@ -352,7 +404,7 @@ public class DynamoInitializer {
 
     private static void compareKeySchema(List<KeySchemaElement> keySchema1, List<KeySchemaElement> keySchema2) {
         if (keySchema1.size() != keySchema2.size()) {
-            throw new RuntimeException("Key schemas have different number of key elements.");
+            throw new BridgeInitializationException("Key schemas have different number of key elements.");
         }
         Map<String, KeySchemaElement> keySchemaMap1 = new HashMap<String, KeySchemaElement>();
         for (KeySchemaElement ele1 : keySchema1) {
@@ -361,59 +413,94 @@ public class DynamoInitializer {
         for (KeySchemaElement ele2 : keySchema2) {
             KeySchemaElement ele1 = keySchemaMap1.get(ele2.getAttributeName());
             if (ele1 == null) {
-                throw new RuntimeException("Missing key " + ele2.getAttributeName() + " in schema 1.");
+                throw new BridgeInitializationException("Missing key " + ele2.getAttributeName() + " in schema 1.");
             }
             if (!ele1.equals(ele2)) {
-                throw new RuntimeException("Different key schema for key " + ele2.getAttributeName());
+                throw new BridgeInitializationException("Different key schema for key " + ele2.getAttributeName());
             }
         }
     }
 
-    static void compareGlobalIndices(TableDescription table1, TableDescription table2) {
-        // TODO
-    }
-
-    static void compareLocalIndices(TableDescription table1, TableDescription table2) {
-        List<LocalSecondaryIndexDescription> indices1 = table1.getLocalSecondaryIndexes();
-        List<LocalSecondaryIndexDescription> indices2 = table2.getLocalSecondaryIndexes();
+    /**
+     * Compare lists of indices from 2 different tables. If isGlobal is true, then this function compares global
+     * secondary indices, and the elements of the list should be GlobalSecondaryIndexDescriptions. If isGlobal is
+     * false, then this function compares local secondary indices, and the elements of the list should be
+     * LocalSecondaryIndexDescriptions.
+     *
+     * @param tableName
+     *         name of table to compare against (generally table 1, but they should be the same)
+     * @param indices1
+     *         a list of index descriptions from table 1
+     * @param indices2
+     *         a list of index descriptions from table 2
+     * @param isGlobal
+     *         true if these are glocal indices, false otherwise
+     */
+    static void compareSecondaryIndices(String tableName, List<?> indices1, List<?> indices2, boolean isGlobal) {
         // Check for size first
-        if (indices1 == null || indices1.size() == 0) {
-            if (indices2 != null && indices2.size() > 0) {
-                throw new RuntimeException("Table " + table1.getTableName() +
-                        " is changing the number of local indices.");
-            }
-            if (indices2 == null) {
-                return;
-            }
+        int numIndices1 = indices1 == null ? 0 : indices1.size();
+        int numIndices2 = indices2 == null ? 0 : indices2.size();
+        if (numIndices1 != numIndices2) {
+            throw new BridgeInitializationException("Table " + tableName + " is changing the number of secondary indices.");
         }
-        if (indices2 == null || indices2.size() == 0) {
-            if (indices1 != null && indices1.size() > 0) {
-                throw new RuntimeException("Table " + table1.getTableName() +
-                        " is changing the number of local indices.");
-            }
-            if (indices1 == null) {
-                return;
-            }
+
+        // if there are zero indices, short-circuit
+        if (numIndices1 == 0) {
+            return;
         }
-        if (indices1.size() != indices2.size()) {
-            throw new RuntimeException("Table " + table1.getTableName() +
-                    " is changing the number of local indices.");
-        }
+
         // Check one by one
-        Map<String, LocalSecondaryIndexDescription> indexMap1 = new HashMap<String, LocalSecondaryIndexDescription>();
-        for (LocalSecondaryIndexDescription index1 : indices1) {
-            indexMap1.put(index1.getIndexName(), index1);
-        }
-        for (LocalSecondaryIndexDescription index2 : indices2) {
-            LocalSecondaryIndexDescription index1 = indexMap1.get(index2.getIndexName());
-            if (index1 == null) {
-                throw new RuntimeException("Table " + table1.getTableName() +
-                        " is changing the local indices.");
+        Map<String, Object> indexMap1 = new HashMap<>();
+        for (Object index1 : indices1) {
+            String indexName;
+            if (isGlobal) {
+                indexName = ((GlobalSecondaryIndexDescription) index1).getIndexName();
+            } else {
+                indexName = ((LocalSecondaryIndexDescription) index1).getIndexName();
             }
-            compareKeySchema(index1.getKeySchema(), index2.getKeySchema());
-            if (!index1.getProjection().equals(index2.getProjection())) {
-                throw new RuntimeException("Table " + table1.getTableName() +
-                        " local index " + index2.getIndexName() + " is changing the projection.");
+            indexMap1.put(indexName, index1);
+        }
+
+        // Compare table 2 indices against table 1
+        for (Object index2 : indices2) {
+            String indexName;
+            if (isGlobal) {
+                indexName = ((GlobalSecondaryIndexDescription) index2).getIndexName();
+            } else {
+                indexName = ((LocalSecondaryIndexDescription) index2).getIndexName();
+            }
+
+            // make sure there's a corresponding table 1 index
+            Object index1 = indexMap1.get(indexName);
+            if (index1 == null) {
+                throw new BridgeInitializationException("Table " + tableName + " is changing the secondary indices.");
+            }
+
+            if (isGlobal) {
+                // compare global index attributes: key schema, projection, provisioned throughput
+                GlobalSecondaryIndexDescription globalIndex1 = (GlobalSecondaryIndexDescription) index1;
+                GlobalSecondaryIndexDescription globalIndex2 = (GlobalSecondaryIndexDescription) index2;
+                compareKeySchema(globalIndex1.getKeySchema(), globalIndex2.getKeySchema());
+
+                if (!globalIndex1.getProjection().equals(globalIndex2.getProjection())) {
+                    throw new BridgeInitializationException("Table " + tableName + " global index " + indexName +
+                            " is changing the projection.");
+                }
+
+                if (!globalIndex1.getProvisionedThroughput().equals(globalIndex2.getProvisionedThroughput())) {
+                    throw new BridgeInitializationException("Table " + tableName + " global index " + indexName +
+                            " is changing the provisioned throughput.");
+                }
+            } else {
+                // compare global index attributes: key schema, projection
+                LocalSecondaryIndexDescription localIndex1 = (LocalSecondaryIndexDescription) index1;
+                LocalSecondaryIndexDescription localIndex2 = (LocalSecondaryIndexDescription) index2;
+                compareKeySchema(localIndex1.getKeySchema(), localIndex2.getKeySchema());
+
+                if (!localIndex1.getProjection().equals(localIndex2.getProjection())) {
+                    throw new BridgeInitializationException("Table " + tableName + " local index " + indexName +
+                            " is changing the projection.");
+                }
             }
         }
     }
