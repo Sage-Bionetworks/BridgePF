@@ -25,6 +25,9 @@ public class UserProfileServiceImplTest {
     @Resource
     private TestUserAdminHelper helper;
     
+    @Resource
+    private UserProfileService profileService;
+    
     private TestUser testUser;
     
     @Before
@@ -39,13 +42,20 @@ public class UserProfileServiceImplTest {
     
     @Test
     public void canUpdateUserProfile() {
-        UserProfile userProfile = testUser.getUserProfile();
+        UserProfile userProfile = profileService.getProfile(testUser.getEmail());
         userProfile.setFirstName("Test");
         userProfile.setLastName("Powers");
-        
+        userProfile.setPhone("123-456-7890");
+
         User updatedUser = service.updateProfile(testUser.getUser(), userProfile);
+        
+        userProfile = profileService.getProfile(testUser.getEmail());
         
         assertEquals("Test", updatedUser.getFirstName());
         assertEquals("Powers", updatedUser.getLastName());
+        
+        assertEquals("Test", userProfile.getFirstName());
+        assertEquals("Powers", userProfile.getLastName());
+        assertEquals("123-456-7890", userProfile.getPhone());
     }
 }

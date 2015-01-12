@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -73,9 +72,6 @@ public class TestUserAdminHelper {
         }
         public User getUser() {
             return (session == null) ? null : session.getUser();
-        }
-        public UserProfile getUserProfile() {
-            return (session == null) ? null : new UserProfile(session.getUser());
         }
         public Study getStudy() {
             return study;
