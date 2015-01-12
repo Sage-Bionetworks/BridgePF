@@ -18,7 +18,7 @@ public interface ConsentService {
     public User withdrawConsent(User caller, Study study);
 
     public void emailConsentAgreement(User caller, Study study);
-
+    
     public boolean isStudyAtEnrollmentLimit(Study study);
 
     public void incrementStudyEnrollment(Study study) throws StudyLimitExceededException;

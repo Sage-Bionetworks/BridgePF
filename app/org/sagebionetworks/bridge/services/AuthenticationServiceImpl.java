@@ -2,9 +2,16 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.httpclient.auth.AuthScope.ANY;
 
+import java.io.IOException;
 import java.util.Set;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.UsernamePasswordCredentials;
+import org.apache.commons.httpclient.auth.AuthPolicy;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -18,6 +25,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.HealthId;
@@ -34,6 +42,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.validation.Validator;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
@@ -205,6 +216,59 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             return session;
         } catch (ResourceException re) {
             throw new BadRequestException(re.getDeveloperMessage());
+        }
+    }
+    
+    @Override
+    public void resendEmailVerification(Study study, Email email) {
+        checkNotNull(email, "Email object cannnot be null");
+        checkNotNull(email.getEmail(), "Email is required");
+        
+        // This is painful, it's not in the Java SDK. I hope we can come back to this when it's in their SDK
+        // and move it over.
+        int status = 202; // The Stormpath resend method returns 202 "Accepted" when successful
+        byte[] responseBody = new byte[0];
+        try {
+            BridgeConfig config = BridgeConfigFactory.getConfig();
+            
+            String bodyJson = "{\"login\":\""+email.getEmail()+"\"}";
+            String applicationId = StormpathFactory.getApplicationId();
+            
+            HttpClient client = new HttpClient();
+            PostMethod post = new PostMethod("https://api.stormpath.com/v1/applications/"+applicationId+"/verificationEmails");
+            post.setRequestHeader("Accept", "application/json");
+            post.setRequestHeader("Content-Type", "application/json");
+            post.setRequestEntity(new StringRequestEntity(bodyJson, "application/json", "UTF-8"));
+
+            UsernamePasswordCredentials creds = new UsernamePasswordCredentials(
+                    config.getStormpathId().trim(), config.getStormpathSecret().trim());
+            
+            client.getState().setCredentials(ANY, creds);
+            client.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, Lists.newArrayList(AuthPolicy.DIGEST));
+            client.getParams().setAuthenticationPreemptive(true);
+            
+            status = client.executeMethod(post);
+            responseBody = post.getResponseBody();
+            
+        } catch(Throwable throwable) {
+            throw new BridgeServiceException(throwable);
+        }
+        // If it *wasn't* a 202, then there should be a JSON message included with the response...
+        if (status != 202) {
+            // One common response, that the email no longer exists, we have mapped to a 404, so do that 
+            // here as well. Otherwise we treat it on the API side as a 500 error, a server problem.
+            try {
+                JsonNode node = BridgeObjectMapper.get().readTree(responseBody);
+                String message = node.get("message").asText();
+                if (message.contains("does not match a known resource")) {
+                    status = 404;
+                } else {
+                    status = 500;
+                }
+                throw new BridgeServiceException(message, status);
+            } catch(IOException e) {
+                throw new BridgeServiceException(e);
+            }
         }
     }
 

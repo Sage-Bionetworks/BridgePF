@@ -8,12 +8,13 @@ GET    /index.html                 @controllers.ApplicationController.redirectTo
 GET    /consent/:sessionToken      @controllers.ApplicationController.loadConsent(sessionToken: String)
 
 # API - Authentication
-POST   /api/v1/auth/signIn                @controllers.AuthenticationController.signIn
-GET    /api/v1/auth/signOut               @controllers.AuthenticationController.signOut
-POST   /api/v1/auth/requestResetPassword  @controllers.AuthenticationController.requestResetPassword
-POST   /api/v1/auth/resetPassword         @controllers.AuthenticationController.resetPassword
-POST   /api/v1/auth/signUp                @controllers.AuthenticationController.signUp
-POST   /api/v1/auth/verifyEmail           @controllers.AuthenticationController.verifyEmail
+POST   /api/v1/auth/signIn                  @controllers.AuthenticationController.signIn
+GET    /api/v1/auth/signOut                 @controllers.AuthenticationController.signOut
+POST   /api/v1/auth/requestResetPassword    @controllers.AuthenticationController.requestResetPassword
+POST   /api/v1/auth/resetPassword           @controllers.AuthenticationController.resetPassword
+POST   /api/v1/auth/signUp                  @controllers.AuthenticationController.signUp
+POST   /api/v1/auth/verifyEmail             @controllers.AuthenticationController.verifyEmail
+POST   /api/v1/auth/resendEmailVerification @controllers.AuthenticationController.resendEmailVerification
 
 # API - Individual Health Data Record
 GET    /api/v1/healthdata/:identifier/record/:guid @controllers.HealthDataController.getHealthDataRecord(identifier: String, guid: String)
