@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 import java.util.List;
 import java.util.Map;
 
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
@@ -38,6 +39,7 @@ public class StudyServiceImpl implements StudyService {
     private DistributedLockDao lockDao;
     private BridgeConfig config;
     private StudyValidator validator;
+    private CacheProvider cacheProvider;
     private Map<String,Tracker> trackersByIdentifier = Maps.newHashMap();
 
     public void setUploadCertificateService(UploadCertificateService uploadCertService) {
@@ -71,6 +73,10 @@ public class StudyServiceImpl implements StudyService {
     public void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.config = bridgeConfig;
     }
+    
+    public void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
+    }
 
     public void setTrackers(List<Tracker> trackers) {
         if (trackers != null) {
@@ -87,7 +93,13 @@ public class StudyServiceImpl implements StudyService {
     @Override
     public Study getStudyByIdentifier(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
-        return studyDao.getStudy(identifier);
+        
+        Study study = cacheProvider.getStudy(identifier);
+        if (study == null) {
+            study = studyDao.getStudy(identifier);
+            cacheProvider.setStudy(study);
+        }
+        return study;
     }
     @Override
     public Study getStudyByHostname(String hostname) {
@@ -100,8 +112,7 @@ public class StudyServiceImpl implements StudyService {
     }
     @Override
     public List<Study> getStudies() {
-        List<Study> studies = studyDao.getStudies();
-        return studies;
+        return studyDao.getStudies();
     }
     @Override
     public Study createStudy(Study study) {
@@ -138,6 +149,7 @@ public class StudyServiceImpl implements StudyService {
                 study.setHostname(study.getIdentifier() + config.getStudyHostnamePostfix());
             }
             study = studyDao.createStudy(study);
+            cacheProvider.setStudy(study);
 
         } finally {
             lockDao.releaseLock(Study.class, id, lockId);
@@ -156,6 +168,8 @@ public class StudyServiceImpl implements StudyService {
         study.setResearcherRole(originalStudy.getResearcherRole());
 
         Study updatedStudy = studyDao.updateStudy(study);
+        cacheProvider.setStudy(updatedStudy);
+        
         return updatedStudy;
     }
     @Override
@@ -171,6 +185,7 @@ public class StudyServiceImpl implements StudyService {
             }
             directoryDao.deleteDirectoryForStudy(identifier);
             studyDao.deleteStudy(identifier);
+            cacheProvider.removeStudy(identifier);
         } finally {
             lockDao.releaseLock(Study.class, identifier, lockId);
         }
