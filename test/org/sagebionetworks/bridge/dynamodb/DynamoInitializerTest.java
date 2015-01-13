@@ -279,7 +279,24 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    public void compareGlobalIndicesDifferentProvisionedThroughputs() {
+    public void compareGlobalIndicesDifferentReadCapacity() {
+        // indices
+        GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
+                ProjectionType.ALL, 25, 20);
+        GlobalSecondaryIndexDescription diffIndex1 = makeGlobalIndex("diff-index", "diff-key",
+                ProjectionType.ALL, 25, 20);
+        GlobalSecondaryIndexDescription diffIndex2 = makeGlobalIndex("diff-index", "diff-key",
+                ProjectionType.ALL, 24, 20);
+
+        List<GlobalSecondaryIndexDescription> indexList1 = ImmutableList.of(sameIndex, diffIndex1);
+        List<GlobalSecondaryIndexDescription> indexList2 = ImmutableList.of(sameIndex, diffIndex2);
+
+        // execute (expected exception)
+        DynamoInitializer.compareSecondaryIndices("test-table", indexList1, indexList2, true);
+    }
+
+    @Test(expected = BridgeInitializationException.class)
+    public void compareGlobalIndicesDifferentWriteCapacity() {
         // indices
         GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
                 ProjectionType.ALL, 25, 20);

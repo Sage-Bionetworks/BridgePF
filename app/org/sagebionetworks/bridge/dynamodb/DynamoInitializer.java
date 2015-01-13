@@ -487,9 +487,16 @@ public class DynamoInitializer {
                             " is changing the projection.");
                 }
 
-                if (!globalIndex1.getProvisionedThroughput().equals(globalIndex2.getProvisionedThroughput())) {
+                if (!globalIndex1.getProvisionedThroughput().getReadCapacityUnits().equals(
+                        globalIndex2.getProvisionedThroughput().getReadCapacityUnits())) {
                     throw new BridgeInitializationException("Table " + tableName + " global index " + indexName +
-                            " is changing the provisioned throughput.");
+                            " is changing the provisioned read capacity.");
+                }
+
+                if (!globalIndex1.getProvisionedThroughput().getWriteCapacityUnits().equals(
+                        globalIndex2.getProvisionedThroughput().getWriteCapacityUnits())) {
+                    throw new BridgeInitializationException("Table " + tableName + " global index " + indexName +
+                            " is changing the provisioned write capacity.");
                 }
             } else {
                 // compare global index attributes: key schema, projection
