@@ -24,6 +24,8 @@ public interface AuthenticationService {
     public void signUp(SignUp signUp, Study study, boolean sendEmail);
 
     public UserSession verifyEmail(Study study, EmailVerification verification) throws ConsentRequiredException;
+    
+    public void resendEmailVerification(Study study, Email email);
 
     public void requestResetPassword(Email email);
 
