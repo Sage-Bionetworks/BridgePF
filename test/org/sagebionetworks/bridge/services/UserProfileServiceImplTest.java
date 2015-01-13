@@ -56,6 +56,8 @@ public class UserProfileServiceImplTest {
         
         assertEquals("Test", userProfile.getFirstName());
         assertEquals("Powers", userProfile.getLastName());
+        assertEquals(testUser.getEmail(), userProfile.getEmail());
+        assertEquals(testUser.getUsername(), userProfile.getUsername());
         assertEquals("123-456-7890", userProfile.getPhone());
     }
 }

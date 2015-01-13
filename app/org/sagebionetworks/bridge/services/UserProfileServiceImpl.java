@@ -10,6 +10,8 @@ import com.stormpath.sdk.directory.CustomData;
 
 public class UserProfileServiceImpl implements UserProfileService {
 
+    private static final String PHONE_ATTRIBUTE = "phone";
+
     private AuthenticationService authService;
     
     private AesGcmEncryptor healthCodeEncryptor;
@@ -29,10 +31,10 @@ public class UserProfileServiceImpl implements UserProfileService {
         UserProfile profile = new UserProfile();
         profile.setFirstName(removeEmpty(account.getGivenName()));
         profile.setLastName(removeEmpty(account.getSurname()));
-        profile.setUsername(removeEmpty(account.getUsername()));
-        profile.setEmail(removeEmpty(account.getEmail()));
+        profile.setUsername(account.getUsername());
+        profile.setEmail(account.getEmail());
         
-        String encryptedPhone = (String)account.getCustomData().get("phone");
+        String encryptedPhone = (String)account.getCustomData().get(PHONE_ATTRIBUTE);
         if (encryptedPhone != null) {
             profile.setPhone(healthCodeEncryptor.decrypt(encryptedPhone));
         }
@@ -48,7 +50,7 @@ public class UserProfileServiceImpl implements UserProfileService {
             CustomData data = account.getCustomData();
             // encrypt
             String encryptedPhone = healthCodeEncryptor.encrypt(profile.getPhone());
-            data.put("phone", encryptedPhone);
+            data.put(PHONE_ATTRIBUTE, encryptedPhone);
         }
         account.save();
         user.setFirstName(profile.getFirstName());
@@ -58,7 +60,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     
     private String removeEmpty(String s) {
         if (StringUtils.isBlank(s) || s.equalsIgnoreCase("<EMPTY>")) {
-            return "";
+            return null;
         } else {
             return s;
         }
