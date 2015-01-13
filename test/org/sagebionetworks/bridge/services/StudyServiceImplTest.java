@@ -5,7 +5,9 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import javax.annotation.Resource;
 
@@ -106,6 +108,8 @@ public class StudyServiceImplTest {
         study = studyService.createStudy(study);
         assertNotNull("Version has been set", study.getVersion());
         verify(cache).setStudy(study);
+        verifyNoMoreInteractions(cache);
+        reset(cache);
         
         study = studyService.getStudyByIdentifier(identifier);
         assertEquals(identifier, study.getIdentifier());
@@ -117,9 +121,13 @@ public class StudyServiceImplTest {
         assertNotEquals("http://local-test-junk", study.getStormpathHref());
         assertNotEquals("local-hostname-test-junk", study.getHostname());
         verify(cache).getStudy(study.getIdentifier());
+        verify(cache).setStudy(study);
+        verifyNoMoreInteractions(cache);
+        reset(cache);
 
         studyService.deleteStudy(identifier);
         verify(cache).removeStudy(study.getIdentifier());
+        verifyNoMoreInteractions(cache);
         try {
             studyService.getStudyByIdentifier(study.getIdentifier());
             fail("Should have thrown an exception");
