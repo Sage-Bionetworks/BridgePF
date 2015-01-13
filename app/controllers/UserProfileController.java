@@ -16,14 +16,14 @@ public class UserProfileController extends BaseController {
     }
 
     public Result getUserProfile() throws Exception {
-        UserSession session = getAuthenticatedAndConsentedSession();
+        UserSession session = getAuthenticatedSession();
 
         UserProfile profile = userProfileService.getProfile(session.getUser().getEmail());
         return okResult(profile);
     }
 
     public Result updateUserProfile() throws Exception {
-        UserSession session = getAuthenticatedAndConsentedSession();
+        UserSession session = getAuthenticatedSession();
 
         User user = session.getUser();
         UserProfile profile = UserProfile.fromJson(requestToJSON(request()));
