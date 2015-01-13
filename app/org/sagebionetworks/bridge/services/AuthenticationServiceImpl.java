@@ -123,7 +123,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             session = getSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
 
-
             if (!session.getUser().doesConsent()) {
                 throw new ConsentRequiredException(session);
             }

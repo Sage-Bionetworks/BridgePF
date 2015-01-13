@@ -59,6 +59,7 @@ public class DynamoStudy implements Study, DynamoTable {
     public static DynamoStudy fromCacheJson(JsonNode node) {
         DynamoStudy study = fromJson(node);
         study.setStormpathHref(JsonUtils.asText(node, STORMPATH_HREF_PROPERTY));
+        study.setResearcherRole(JsonUtils.asText(node, RESEARCHER_ROLE_PROPERTY));
         return study;
     }
     

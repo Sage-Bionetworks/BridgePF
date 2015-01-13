@@ -2,14 +2,8 @@ package org.sagebionetworks.bridge.models.studies;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
-@BridgeTypeName("Study")
 public interface Study extends BridgeEntity {
 
     public String getName();
