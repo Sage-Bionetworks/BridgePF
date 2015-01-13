@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.SimpleHttpConnectionManager;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.apache.commons.httpclient.auth.AuthPolicy;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -226,6 +227,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         // This is painful, it's not in the Java SDK. I hope we can come back to this when it's in their SDK
         // and move it over.
+        SimpleHttpConnectionManager manager = new SimpleHttpConnectionManager();
         int status = 202; // The Stormpath resend method returns 202 "Accepted" when successful
         byte[] responseBody = new byte[0];
         try {
@@ -234,7 +236,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             String bodyJson = "{\"login\":\""+email.getEmail()+"\"}";
             String applicationId = StormpathFactory.getApplicationId();
             
-            HttpClient client = new HttpClient();
+            HttpClient client = new HttpClient(manager);
+            
             PostMethod post = new PostMethod("https://api.stormpath.com/v1/applications/"+applicationId+"/verificationEmails");
             post.setRequestHeader("Accept", "application/json");
             post.setRequestHeader("Content-Type", "application/json");
@@ -249,9 +252,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             
             status = client.executeMethod(post);
             responseBody = post.getResponseBody();
-            
+
         } catch(Throwable throwable) {
             throw new BridgeServiceException(throwable);
+        } finally {
+            manager.shutdown();
         }
         // If it *wasn't* a 202, then there should be a JSON message included with the response...
         if (status != 202) {
