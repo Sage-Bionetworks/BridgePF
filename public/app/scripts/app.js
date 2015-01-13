@@ -1,6 +1,6 @@
 var bridge = angular.module('bridge', ['bridge.shared'])
 .config(['$routeProvider', function($routeProvider) {
-	$routeProvider.when('/health/tracker/BloodPressure', {
+	$routeProvider/*.when('/health/tracker/BloodPressure', {
 	    templateUrl: 'views/trackers/bloodpressure.html',
 	    controller: 'BloodPressureController'
 	})
@@ -19,7 +19,7 @@ var bridge = angular.module('bridge', ['bridge.shared'])
 	.when('/journal', {
 		templateUrl: 'views/journal.html',
 		controller: 'JournalController'
-	})
+	})*/
 	.when('/resetPassword', {
         templateUrl: 'views/reset-password.html',
         controller: 'ResetPasswordController'

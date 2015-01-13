@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountEncryptionService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
@@ -18,16 +19,27 @@ import com.stormpath.sdk.client.Client;
  */
 public class HealthCodeBackfill extends AsyncBackfillTemplate {
 
+    private BackfillRecordFactory backfillRecordFactory;
     private Client stormpathClient;
     private StudyService studyService;
     private AccountEncryptionService accountEncryptionService;
 
+    @Autowired
+    public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
+        this.backfillRecordFactory = backfillRecordFactory;
+    }
+
+    @Autowired
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
     }
+
+    @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
+
+    @Autowired
     public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
         this.accountEncryptionService = accountEncryptionService;
     }
@@ -52,7 +64,8 @@ public class HealthCodeBackfill extends AsyncBackfillTemplate {
                         // This happens when the user creates a new account and consents in a study
                         // and has not consented in other studies yet.
                         healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
-                        callback.newRecords(BackfillUtils.createRecord(task, study, account, "health code created"));
+                        callback.newRecords(backfillRecordFactory.createAndSave(
+                                task, study, account, "health code created"));
                     } 
                 }
             }

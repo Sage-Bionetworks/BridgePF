@@ -140,6 +140,10 @@
         <property name="amazonRoute53Client" ref="r5client"/>
     </bean>
 
+    <bean id="backfillDao" class="org.sagebionetworks.bridge.dynamodb.DynamoBackfillDao">
+        <property name="dynamoDbClient" ref="dynamoDbClient" />
+    </bean>
+
     <bean id="herokuApi" class="org.sagebionetworks.bridge.heroku.HerokuApiImpl">
         <property name="bridgeConfig" ref="bridgeConfig"/>
     </bean>
@@ -319,6 +323,7 @@
         <property name="dnsDao" ref="dnsDao"/>
         <property name="distributedLockDao" ref="distributedLockDao"/>
         <property name="bridgeConfig" ref="bridgeConfig"/>
+        <property name="cacheProvider" ref="cacheProvider"/>
         <property name="validator">
             <bean class="org.sagebionetworks.bridge.validators.StudyValidator"/>
         </property>
@@ -385,6 +390,7 @@
 
     <bean id="userProfileService" class="org.sagebionetworks.bridge.services.UserProfileServiceImpl">
         <property name="authenticationService" ref="authenticationService" />
+        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
     </bean>
 
     <bean id="consentService" class="org.sagebionetworks.bridge.services.ConsentServiceImpl">
@@ -467,19 +473,20 @@
         <property name="participantOptionsDao" ref="participantOptionsDao"/>
     </bean>
 
-    <bean id="healthCodeBackfill" class="org.sagebionetworks.bridge.services.backfill.HealthCodeBackfill">
-        <property name="distributedLockDao" ref="distributedLockDao" />
-        <property name="stormpathClient" ref="stormpathClient" />
-        <property name="studyService" ref="studyService" />
-        <property name="accountEncryptionService" ref="accountEncryptionService" />
+    <bean id="backfillRecordFactory" class="org.sagebionetworks.bridge.services.backfill.BackfillRecordFactory">
+        <property name="backfillDao" ref="backfillDao" />
     </bean>
 
-    <bean id="studyIdBackfill" class="org.sagebionetworks.bridge.services.backfill.StudyIdBackfill">
+    <bean id="backfillTemplate" abstract="true" class="org.sagebionetworks.bridge.services.backfill.AsyncBackfillTemplate">
         <property name="distributedLockDao" ref="distributedLockDao" />
-        <property name="stormpathClient" ref="stormpathClient" />
-        <property name="studyService" ref="studyService" />
-        <property name="healthCodeDao" ref="healthCodeDao" />
-        <property name="accountEncryptionService" ref="accountEncryptionService" />
+        <property name="backfillDao" ref="backfillDao" />
+        <property name="backfillRecordFactory" ref="backfillRecordFactory" />
     </bean>
+
+    <bean id="healthCodeBackfill" parent="backfillTemplate" class="org.sagebionetworks.bridge.services.backfill.HealthCodeBackfill" />
+
+    <bean id="studyIdBackfill" parent="backfillTemplate" class="org.sagebionetworks.bridge.services.backfill.StudyIdBackfill" />
+
+    <bean id="consentSignatureBackfill" parent="backfillTemplate" class="org.sagebionetworks.bridge.services.backfill.ConsentSignatureBackfill" />
 
 </beans>
