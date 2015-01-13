@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services.backfill;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
@@ -11,6 +13,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
@@ -23,23 +26,33 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StudyIdBackfill.class);
 
-
+    private BackfillRecordFactory backfillRecordFactory;
     private StudyService studyService;
+    private Client stormpathClient;
+    private AccountEncryptionService accountEncryptionService;
+    private HealthCodeDao healthCodeDao;
+
+    @Autowired
+    public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
+        this.backfillRecordFactory = backfillRecordFactory;
+    }
+
+    @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
 
-    private Client stormpathClient;
+    @Autowired
     public void setStormpathClient(Client client) {
         this.stormpathClient = client;
     }
 
-    private AccountEncryptionService accountEncryptionService;
+    @Autowired
     public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
         this.accountEncryptionService = accountEncryptionService;
     }
 
-    private HealthCodeDao healthCodeDao;
+    @Autowired
     public void setHealthCodeDao(HealthCodeDao healthCodeDao) {
         this.healthCodeDao = healthCodeDao;
     }
@@ -59,19 +72,24 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
             for (final Account account : accountList) {
                 for (final Study study : studies) {
                     HealthId healthId = accountEncryptionService.getHealthCode(study, account);
-                    if (healthId == null) {
-                        healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
-                    }
-                    try {
-                        String healthCode = healthId.getCode();
-                        if (healthCode != null) {
-                            healthCodeDao.setStudyId(healthCode, study.getIdentifier());
-                            callback.newRecords(BackfillUtils.createRecord(task, study, account, "backfilled"));
+                    if (healthId != null) {
+                        try {
+                            String healthCode = healthId.getCode();
+                            if (healthCode != null) {
+                                final String studyId = healthCodeDao.getStudyIdentifier(healthCode);
+                                if (isBlank(studyId)) {
+                                    String msg = "Backfill needed as study ID is blank.";
+                                    callback.newRecords(backfillRecordFactory.createOnly(task, study, account, msg));
+                                } else {
+                                    String msg = "Study ID already exists.";
+                                    callback.newRecords(backfillRecordFactory.createOnly(task, study, account, msg));
+                                }
+                            }
+                        } catch (final RuntimeException e) {
+                            LOGGER.error(e.getMessage(), e);
+                            String msg = e.getClass().getName() + " " + e.getMessage();
+                            callback.newRecords(backfillRecordFactory.createOnly(task, study, account, msg));
                         }
-                    } catch (final RuntimeException e) {
-                        LOGGER.error(e.getMessage(), e);
-                        String operation = e.getClass().getName() + " " + e.getMessage();
-                        callback.newRecords(BackfillUtils.createRecord(task, study, account, operation));
                     }
                 }
             }

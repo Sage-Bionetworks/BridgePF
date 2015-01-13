@@ -60,10 +60,6 @@ public class ConsentServiceImpl implements ConsentService {
     public ConsentSignature getConsentSignature(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
-        if (consent == null) {
-            throw new EntityNotFoundException(StudyConsent.class);
-        }
         try {
             Account account = authService.getAccount(caller.getEmail());
             ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
@@ -73,7 +69,7 @@ public class ConsentServiceImpl implements ConsentService {
         } catch (Throwable e) {
             logger.info("Consent signature not in Stormpath. Fall back to dynamo.");
         }
-        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), consent);
+        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), study.getIdentifier());
         return consentSignature;
     }
 
