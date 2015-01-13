@@ -22,6 +22,9 @@ public interface RedisKey {
 
     /** User sessions. */
     RedisKey SESSION = new SimpleKey("session");
+    
+    /** Study */
+    RedisKey STUDY = new SimpleKey("study");
 
     /** User health code. */
     RedisKey HEALTH_CODE = new SimpleKey("health-code");

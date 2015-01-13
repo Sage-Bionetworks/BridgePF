@@ -123,7 +123,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             session = getSessionFromAccount(study, account);
             cacheProvider.setUserSession(session.getSessionToken(), session);
 
-
             if (!session.getUser().doesConsent()) {
                 throw new ConsentRequiredException(session);
             }
@@ -144,7 +143,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public void signOut(String sessionToken) {
         if (sessionToken != null) {
-            cacheProvider.remove(sessionToken);
+            cacheProvider.removeSession(sessionToken);
         }
     }
 

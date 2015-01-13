@@ -5,8 +5,7 @@ function($scope, $route, authService, formService) {
     $scope.setMessage("Verifying...");
     $scope.succeeded = false;
     $scope.sptoken = formService.retrieveSpToken($route);
-    console.log("1");
-    
+
     authService.verifyEmail({sptoken: $scope.sptoken}).then(function(response) {
         $scope.setMessage("");
         $scope.succeeded = 'loaded';
