@@ -50,16 +50,19 @@ public class DynamoUploadSchemaDaoTest {
         DynamoDBMapper mockMapper = setupMockMapperWithSchema(schema);
 
         // set up test dao and execute
+        // pass in null for the study ID in the schema, since schemas from callers won't contain the study ID
         DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
         dao.setDdbMapper(mockMapper);
-        UploadSchema retVal = dao.createOrUpdateUploadSchema(makeUploadSchema(studyId, schemaId, newRev));
+        UploadSchema retVal = dao.createOrUpdateUploadSchema(studyId, makeUploadSchema(null, schemaId, newRev));
 
         // Validate call to DDB - we can't compare if the captured argument is equal to the passed in upload
         // schema since DDB objects are mutable.
         ArgumentCaptor<DynamoUploadSchema> arg = ArgumentCaptor.forClass(DynamoUploadSchema.class);
         verify(mockMapper).save(arg.capture(), notNull(DynamoDBSaveExpression.class));
-        assertEquals(studyId, arg.getValue().getStudyId());
         assertEquals(schemaId, arg.getValue().getSchemaId());
+
+        // validate that study ID was injected
+        assertEquals(studyId, arg.getValue().getStudyId());
 
         // DAO auto-increments the revision
         assertEquals(newRev + 1, arg.getValue().getRevision());
@@ -76,7 +79,7 @@ public class DynamoUploadSchemaDaoTest {
         // set up test dao and execute
         DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
         dao.setDdbMapper(mockMapper);
-        UploadSchema retVal = dao.getUploadSchema("getStudy", "testSchema");
+        DynamoUploadSchema retVal = (DynamoUploadSchema) dao.getUploadSchema("getStudy", "testSchema");
 
         // Validate call to DDB - we can't compare if the captured argument is equal to the passed in upload
         // schema since DDB objects are mutable.

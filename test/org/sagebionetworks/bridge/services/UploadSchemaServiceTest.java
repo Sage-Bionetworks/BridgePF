@@ -33,24 +33,6 @@ public class UploadSchemaServiceTest {
         new UploadSchemaService().createOrUpdateUploadSchema(makeTestStudy(), new DynamoUploadSchema());
     }
 
-    @Test(expected = InvalidEntityException.class)
-    public void createSchemaWrongStudyId() {
-        // create an otherwise valid schema with the wrong study ID
-        DynamoUploadSchema schema = new DynamoUploadSchema();
-        schema.setName("otherwise valid schema");
-        schema.setSchemaId("mostly-valid-schema");
-        schema.setStudyId("wrong-study");
-
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("test-field")
-                .withType(UploadFieldType.BLOB).build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // execute
-        new UploadSchemaService().createOrUpdateUploadSchema(makeTestStudy(), schema);
-    }
-
     // Since UploadSchemaService is just a call through to the DAO, verify the input value is passed to the DAO, and
     // that the value returned by the DAO is returned by the service.
     @Test
@@ -59,7 +41,6 @@ public class UploadSchemaServiceTest {
         DynamoUploadSchema schema = new DynamoUploadSchema();
         schema.setName("happy schema");
         schema.setSchemaId("happy-schema");
-        schema.setStudyId("test-study");
 
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -70,7 +51,7 @@ public class UploadSchemaServiceTest {
         // mock dao
         UploadSchema daoRetVal = new DynamoUploadSchema();
         UploadSchemaDao mockDao = mock(UploadSchemaDao.class);
-        when(mockDao.createOrUpdateUploadSchema(schema)).thenReturn(daoRetVal);
+        when(mockDao.createOrUpdateUploadSchema("test-study", schema)).thenReturn(daoRetVal);
 
         // execute and validate
         UploadSchemaService svc = new UploadSchemaService();

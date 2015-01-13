@@ -125,18 +125,24 @@ public class DynamoUploadSchema implements DynamoTable, UploadSchema {
         this.schemaId = schemaId;
     }
 
-    /** {@inheritDoc} */
-    // TODO: Implement global secondary indices in DynamoInitializer
-    // This index is needed by:
-    // * the exporter will want all schemas for a particular study to match a particular upload
-    // * researchers may want to list all schemas in their study for schema management
+    /**
+     * <p>
+     * The ID of the study that this schema lives in. This is not exposed to the callers of the upload schema API, but
+     * is needed internally to create a secondary index on the study. This index is needed by:
+     *   <ul>
+     *     <li>the exporter will want all schemas for a particular study to match a particular upload</li>
+     *     <li>researchers may want to list all schemas in their study for schema management</li>
+     *   </ul>
+     * </p>
+     */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-index")
-    @Override
+    @JsonIgnore
     public String getStudyId() {
         return studyId;
     }
 
-    /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getStudyId */
+    /** @see #getStudyId */
+    @JsonIgnore
     public void setStudyId(String studyId) {
         this.studyId = studyId;
     }

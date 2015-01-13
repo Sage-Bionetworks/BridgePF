@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
+import org.sagebionetworks.bridge.validators.UploadFieldDefinitionValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /**
@@ -83,7 +84,7 @@ public class DynamoUploadFieldDefinition implements UploadFieldDefinition {
             }
 
             DynamoUploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition(name, required, type);
-            Validate.entityThrowingException(Validator.INSTANCE, fieldDef);
+            Validate.entityThrowingException(UploadFieldDefinitionValidator.INSTANCE, fieldDef);
             return fieldDef;
         }
     }

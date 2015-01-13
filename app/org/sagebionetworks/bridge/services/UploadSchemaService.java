@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.validators.UploadSchemaValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /**
@@ -30,17 +31,13 @@ public class UploadSchemaService {
      * ID and schema ID of the specified schema, or updates an existing one if it already exists.
      * </p>
      * <p>
-     * Preconditions: The study (provided and validated by the controller) is compared against the schema to ensure
-     * that the schema is being created under the correct study.
-     * </p>
-     * <p>
      * This method validates the schema. However, it does not validate the study, as that is not user input.
      * </p>
      *
      * @param study
-     *         the study for this endpoint, provided by the controller, used for validation
+     *         the study this schema should be created or updated in, provided by the controller
      * @param uploadSchema
-     *         schema to create or update, must be non-null, must contain a valid study ID and a valid schema ID
+     *         schema to create or update, must be non-null, must contain a valid schema ID
      * @return the created or updated schema, will be non-null
      */
     public UploadSchema createOrUpdateUploadSchema(Study study, UploadSchema uploadSchema) {
@@ -48,17 +45,10 @@ public class UploadSchemaService {
         if (uploadSchema == null) {
             throw new InvalidEntityException(String.format(Validate.CANNOT_BE_NULL, "upload schema"));
         }
-        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, uploadSchema);
-
-        // validate that the schema's study ID matches the server endpoint's study
-        if (!uploadSchema.getStudyId().equals(study.getIdentifier())) {
-            throw new InvalidEntityException(uploadSchema, String.format(
-                    "Schema for study %s cannot be created for study %s", uploadSchema.getStudyId(),
-                    study.getIdentifier()));
-        }
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, uploadSchema);
 
         // call through to DAO
-        return uploadSchemaDao.createOrUpdateUploadSchema(uploadSchema);
+        return uploadSchemaDao.createOrUpdateUploadSchema(study.getIdentifier(), uploadSchema);
     }
 
     /**

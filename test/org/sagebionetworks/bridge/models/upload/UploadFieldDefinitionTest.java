@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.validators.UploadFieldDefinitionValidator;
 
 public class UploadFieldDefinitionTest {
     @Test
@@ -61,19 +62,19 @@ public class UploadFieldDefinitionTest {
     // branch coverage
     @Test
     public void validatorSupportsClass() {
-        assertTrue(UploadFieldDefinition.Validator.INSTANCE.supports(UploadFieldDefinition.class));
+        assertTrue(UploadFieldDefinitionValidator.INSTANCE.supports(UploadFieldDefinition.class));
     }
 
     // branch coverage
     @Test
     public void validatorSupportsSubclass() {
-        assertTrue(UploadFieldDefinition.Validator.INSTANCE.supports(DynamoUploadFieldDefinition.class));
+        assertTrue(UploadFieldDefinitionValidator.INSTANCE.supports(DynamoUploadFieldDefinition.class));
     }
 
     // branch coverage
     @Test
     public void validatorDoesntSupport() {
-        assertFalse(UploadFieldDefinition.Validator.INSTANCE.supports(String.class));
+        assertFalse(UploadFieldDefinitionValidator.INSTANCE.supports(String.class));
     }
 
     // branch coverage
@@ -81,7 +82,7 @@ public class UploadFieldDefinitionTest {
     @Test
     public void validateNull() {
         MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadFieldDefinition");
-        UploadFieldDefinition.Validator.INSTANCE.validate(null, errors);
+        UploadFieldDefinitionValidator.INSTANCE.validate(null, errors);
         assertTrue(errors.hasErrors());
     }
 
@@ -90,7 +91,7 @@ public class UploadFieldDefinitionTest {
     @Test
     public void validateWrongClass() {
         MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadFieldDefinition");
-        UploadFieldDefinition.Validator.INSTANCE.validate("this is the wrong class", errors);
+        UploadFieldDefinitionValidator.INSTANCE.validate("this is the wrong class", errors);
         assertTrue(errors.hasErrors());
     }
 

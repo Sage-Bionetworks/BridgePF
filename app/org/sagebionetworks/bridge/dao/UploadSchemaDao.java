@@ -10,11 +10,13 @@ public interface UploadSchemaDao {
      * DAO method for creating and updating upload schemas. This method creates an upload schema, using the study ID
      * and schema ID of the specified schema, or updates an existing one if it already exists.
      *
+     * @param studyId
+     *         study that the schema should be created or updated in, must be non-null and empty
      * @param uploadSchema
      *         schema to create or update, must be non-null, must contain a valid study ID and a valid schema ID
      * @return the created or updated schema, will be non-null
      */
-    @Nonnull UploadSchema createOrUpdateUploadSchema(@Nonnull UploadSchema uploadSchema);
+    @Nonnull UploadSchema createOrUpdateUploadSchema(@Nonnull String studyId, @Nonnull UploadSchema uploadSchema);
 
     /**
      * DAO method for fetching upload schemas. This method fetches an upload schema for the specified study and schema
