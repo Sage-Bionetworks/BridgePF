@@ -6,7 +6,6 @@ import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.HealthId;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountEncryptionService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -90,11 +89,9 @@ public class ConsentSignatureBackfill extends AsyncBackfillTemplate {
                         task, study, account, "Missing health code. Backfill skipped."));
             } else {
                 try {
-                    ConsentSignature consentSignature = userConsentDao.getConsentSignature(
-                            healthId.getCode(), study.getIdentifier());
-                    accountEncryptionService.putConsentSignature(study, account, consentSignature);
+                    userConsentDao.removeConsentSignature(healthId.getCode(), study.getIdentifier());
                     callback.newRecords(backfillRecordFactory.createAndSave(
-                            task, study, account, "Backfilled from DynamoDB to Stormpath."));
+                            task, study, account, "Consent signature removed from DynamoDB."));
                 } catch (EntityNotFoundException ex) {
                     callback.newRecords(backfillRecordFactory.createOnly(
                             task, study, account, "Missing consent signature in DynamoDB. Backfill skipped."));
