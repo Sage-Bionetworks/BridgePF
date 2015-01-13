@@ -75,6 +75,14 @@ public class DynamoUserConsentDaoTest {
         count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
         assertEquals("Correct number of participants", 5, count);
     }
+    
+    @Test
+    public void testRemoveConsentSignature() {
+        DynamoStudyConsent1 studyConsent = createStudyConsent();
+        userConsentDao.giveConsent(HEALTH_CODE, studyConsent);
+        DynamoUserConsent2 consent = (DynamoUserConsent2)userConsentDao.getUserConsent(HEALTH_CODE, STUDY_IDENTIFIER);
+        userConsentDao.removeConsentSignature(HEALTH_CODE, STUDY_IDENTIFIER);
+    }
 
     private DynamoStudyConsent1 createStudyConsent() {
         final DynamoStudyConsent1 consent = new DynamoStudyConsent1();
