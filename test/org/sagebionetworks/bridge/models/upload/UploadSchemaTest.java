@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.validators.UploadSchemaValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @SuppressWarnings("unchecked")
@@ -117,19 +118,19 @@ public class UploadSchemaTest {
     // branch coverage
     @Test
     public void validatorSupportsClass() {
-        assertTrue(UploadSchema.Validator.INSTANCE.supports(UploadSchema.class));
+        assertTrue(UploadSchemaValidator.INSTANCE.supports(UploadSchema.class));
     }
 
     // branch coverage
     @Test
     public void validatorSupportsSubclass() {
-        assertTrue(UploadSchema.Validator.INSTANCE.supports(DynamoUploadSchema.class));
+        assertTrue(UploadSchemaValidator.INSTANCE.supports(DynamoUploadSchema.class));
     }
 
     // branch coverage
     @Test
     public void validatorDoesntSupportClass() {
-        assertFalse(UploadSchema.Validator.INSTANCE.supports(String.class));
+        assertFalse(UploadSchemaValidator.INSTANCE.supports(String.class));
     }
 
     // branch coverage
@@ -137,7 +138,7 @@ public class UploadSchemaTest {
     @Test
     public void validateNull() {
         MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadSchema");
-        UploadSchema.Validator.INSTANCE.validate(null, errors);
+        UploadSchemaValidator.INSTANCE.validate(null, errors);
         assertTrue(errors.hasErrors());
     }
 
@@ -146,7 +147,7 @@ public class UploadSchemaTest {
     @Test
     public void validateWrongClass() {
         MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadSchema");
-        UploadSchema.Validator.INSTANCE.validate("this is the wrong class", errors);
+        UploadSchemaValidator.INSTANCE.validate("this is the wrong class", errors);
         assertTrue(errors.hasErrors());
     }
 
@@ -165,7 +166,7 @@ public class UploadSchemaTest {
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
-        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test
@@ -186,7 +187,7 @@ public class UploadSchemaTest {
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
-        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
@@ -198,7 +199,7 @@ public class UploadSchemaTest {
         schema.setStudyId("test-study");
 
         // validate
-        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
@@ -211,7 +212,7 @@ public class UploadSchemaTest {
         schema.setFieldDefinitions((List) Collections.emptyList());
 
         // validate
-        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
@@ -228,7 +229,7 @@ public class UploadSchemaTest {
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
-        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
@@ -246,7 +247,7 @@ public class UploadSchemaTest {
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
-        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
@@ -265,7 +266,7 @@ public class UploadSchemaTest {
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
-        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
@@ -282,7 +283,7 @@ public class UploadSchemaTest {
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
-        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
@@ -300,42 +301,7 @@ public class UploadSchemaTest {
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
-        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void validateNullStudyId() {
-        // set up schema to validate
-        DynamoUploadSchema schema = new DynamoUploadSchema();
-        schema.setName("test schema");
-        schema.setSchemaId("test-schema");
-
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.BLOB).build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
-        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void validateEmptyStudyId() {
-        // set up schema to validate
-        DynamoUploadSchema schema = new DynamoUploadSchema();
-        schema.setName("test schema");
-        schema.setSchemaId("test-schema");
-        schema.setStudyId("");
-
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.BLOB).build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
-        Validate.entityThrowingException(UploadSchema.Validator.INSTANCE, schema);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test
@@ -345,7 +311,6 @@ public class UploadSchemaTest {
                 "   \"name\":\"Test Schema\",\n" +
                 "   \"revision\":3,\n" +
                 "   \"schemaId\":\"test-schema\",\n" +
-                "   \"studyId\":\"api\",\n" +
                 "   \"fieldDefinitions\":[\n" +
                 "       {\n" +
                 "           \"name\":\"foo\",\n" +
@@ -365,7 +330,6 @@ public class UploadSchemaTest {
         assertEquals("Test Schema", uploadSchema.getName());
         assertEquals(3, uploadSchema.getRevision());
         assertEquals("test-schema", uploadSchema.getSchemaId());
-        assertEquals("api", uploadSchema.getStudyId());
 
         UploadFieldDefinition fooFieldDef = uploadSchema.getFieldDefinitions().get(0);
         assertEquals("foo", fooFieldDef.getName());
@@ -377,17 +341,19 @@ public class UploadSchemaTest {
         assertFalse(barFieldDef.isRequired());
         assertEquals(UploadFieldType.STRING, barFieldDef.getType());
 
+        // Add study ID and verify that it doesn't get leaked into the JSON
+        ((DynamoUploadSchema) uploadSchema).setStudyId("test-study");
+
         // convert back to JSON
         String convertedJson = BridgeObjectMapper.get().writeValueAsString(uploadSchema);
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(6, jsonMap.size());
+        assertEquals(5, jsonMap.size());
         assertEquals("Test Schema", jsonMap.get("name"));
         assertEquals(3, jsonMap.get("revision"));
         assertEquals("test-schema", jsonMap.get("schemaId"));
         assertEquals("UploadSchema", jsonMap.get("type"));
-        assertEquals("api", jsonMap.get("studyId"));
 
         List<Map<String, Object>> fieldDefJsonList = (List) jsonMap.get("fieldDefinitions");
         assertEquals(2, fieldDefJsonList.size());

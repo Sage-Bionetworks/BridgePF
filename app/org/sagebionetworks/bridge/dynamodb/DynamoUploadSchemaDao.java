@@ -40,10 +40,10 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
 
     /** {@inheritDoc} */
     @Override
-    public @Nonnull UploadSchema createOrUpdateUploadSchema(@Nonnull UploadSchema uploadSchema) {
+    public @Nonnull UploadSchema createOrUpdateUploadSchema(@Nonnull String studyId,
+            @Nonnull UploadSchema uploadSchema) {
         // Get the current version of the uploadSchema, if it exists
-        DynamoUploadSchema oldUploadSchema = getUploadSchemaNoThrow(uploadSchema.getStudyId(),
-                uploadSchema.getSchemaId());
+        DynamoUploadSchema oldUploadSchema = getUploadSchemaNoThrow(studyId, uploadSchema.getSchemaId());
         int oldRev;
         if (oldUploadSchema != null) {
             oldRev = oldUploadSchema.getRevision();
@@ -58,10 +58,11 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
             throw new ConcurrentModificationException(uploadSchema);
         }
 
-        // Use Jackson to build a DynamoUploadSchema object, so we can update the rev.
+        // We need to (a) increment the rev and (b) inject the study ID (for the DDB index)
         // Currently, all UploadSchemas are DynamoUploadSchemas, so we don't need to validate this class cast.
         DynamoUploadSchema ddbUploadSchema = (DynamoUploadSchema) uploadSchema;
         ddbUploadSchema.setRevision(oldRev + 1);
+        ddbUploadSchema.setStudyId(studyId);
 
         try {
             mapper.save(uploadSchema, DOES_NOT_EXIST_EXPRESSION);
