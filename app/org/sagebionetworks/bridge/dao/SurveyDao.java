@@ -72,6 +72,12 @@ public interface SurveyDao {
     public Survey getSurveyMostRecentlyPublishedVersion(String studyIdentifier, String guid);
     
     /**
+     * Get the most recently published version of a survey using its identifier.
+     * @return
+     */
+    public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(String studyIdentifier, String identifier);
+    
+    /**
      * Get the most recent version of each survey in the study, that has been published. 
      * @param studyIdentifier
      * @return

@@ -53,9 +53,11 @@ public class DynamoSurveyDao implements SurveyDao {
         private static final String PUBLISHED_PROPERTY = "published";
         private static final String CREATED_ON_PROPERTY = "versionedOn";
         private static final String STUDY_KEY_PROPERTY = "studyKey";
+        private static final String IDENTIFIER_PROPERTY = "identifier";
         
         String surveyGuid;
         String studyKey;
+        String identifier;
         long createdOn;
         boolean published;
         
@@ -65,6 +67,10 @@ public class DynamoSurveyDao implements SurveyDao {
         }
         QueryBuilder setStudy(String studyKey) {
             this.studyKey = studyKey;
+            return this;
+        }
+        QueryBuilder setIdentifier(String identifier) {
+            this.identifier = identifier;
             return this;
         }
         QueryBuilder setCreatedOn(long createdOn) {
@@ -129,6 +135,10 @@ public class DynamoSurveyDao implements SurveyDao {
             if (published) {
                 scan.addFilterCondition(PUBLISHED_PROPERTY, publishedCondition());
             }
+            if (identifier != null) {
+                scan.addFilterCondition(IDENTIFIER_PROPERTY, identifierCondition());
+            }
+                
             // Scans will not sort as queries do. Sort Manually.
             List<DynamoSurvey> surveys = Lists.newArrayList(surveyMapper.scan(DynamoSurvey.class, scan));
             Collections.sort(surveys, VERSIONED_ON_DESC_SORTER);
@@ -149,6 +159,13 @@ public class DynamoSurveyDao implements SurveyDao {
             return studyCond;
         }
 
+        private Condition identifierCondition() {
+            Condition studyCond = new Condition();
+            studyCond.withComparisonOperator(ComparisonOperator.EQ);
+            studyCond.withAttributeValueList(new AttributeValue().withS(identifier));
+            return studyCond;
+        }
+        
         private Condition createdOnCondition() {
             Condition rangeCond = new Condition();
             rangeCond.withComparisonOperator(ComparisonOperator.EQ);
@@ -303,6 +320,11 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey getSurveyMostRecentlyPublishedVersion(String studyIdentifier, String guid) {
         return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).getOne(true);
+    }
+    
+    @Override
+    public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(String studyIdentifier, String identifier) {
+        return new QueryBuilder().setStudy(studyIdentifier).setIdentifier(identifier).isPublished().getOne(true);
     }
     
     @Override

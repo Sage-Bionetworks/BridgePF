@@ -88,6 +88,14 @@ public class SurveyController extends BaseController {
         return okResult(survey);
     }
     
+    public Result getMostRecentPublishedSurveyVersionByIdentifier(String identifier) throws Exception {
+        Study study = studyService.getStudyByHostname(getHostname());
+        getAuthenticatedResearcherOrAdminSession(study);
+        
+        Survey survey = surveyService.getSurveyMostRecentlyPublishedVersionByIdentifier(study, identifier);
+        return okResult(survey);
+    }
+    
     public Result deleteSurvey(String surveyGuid, String createdOnString) throws Exception {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearcherOrAdminSession(study);
