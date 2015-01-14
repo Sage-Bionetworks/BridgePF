@@ -11,6 +11,7 @@
         http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
     <context:annotation-config />
+    <bean class="org.sagebionetworks.bridge.config.BridgeSpringConfig" />
 
     <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfigFactory"
             factory-method="getConfig" />
@@ -229,6 +230,12 @@
         </property>
     </bean>
 
+    <bean id="controllers.UploadSchemaController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.UploadSchemaController" parent="BaseController" />
+        </property>
+    </bean>
+
     <bean id="controllers.ConsentController" parent="proxiedController">
         <property name="target">
             <bean class="controllers.ConsentController" parent="BaseController">
@@ -324,7 +331,7 @@
             <list>
                 <ref bean="pb-tracker"/>
                 <ref bean="med-tracker"/>
-            </list>            
+            </list>
         </property>
     </bean>
 

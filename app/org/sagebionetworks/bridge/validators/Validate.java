@@ -33,8 +33,11 @@ public class Validate {
     
     public static final String CANNOT_BE_BLANK = "%s cannot be missing, null, or blank";
     public static final String CANNOT_BE_EMPTY_STRING = "%s cannot be an empty string";
+    public static final String CANNOT_BE_NEGATIVE = "%s cannot be negative";
     public static final String CANNOT_BE_NULL = "%s cannot be missing or null";
-  
+    public static final String CANNOT_BE_NULL_OR_EMPTY = "%s cannot be null or empty";
+    public static final String WRONG_TYPE = "%s is the wrong type";
+
     public static void jsonWithSchema(Tracker tracker, JsonNode node) {
         MapBindingResult errors = new MapBindingResult(Maps.newHashMap(), tracker.getName());
         try {
