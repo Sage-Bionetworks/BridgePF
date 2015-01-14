@@ -6,6 +6,7 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class StudyValidator implements Validator {
+    public static final StudyValidator INSTANCE = new StudyValidator();
 
     @Override
     public boolean supports(Class<?> clazz) {
