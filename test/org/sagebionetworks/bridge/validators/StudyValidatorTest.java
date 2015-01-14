@@ -1,48 +1,40 @@
 package org.sagebionetworks.bridge.validators;
 
-import org.junit.Before;
 import org.junit.Test;
+
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.springframework.validation.Validator;
 
 public class StudyValidatorTest {
-
-    private Validator validator;
-    private DynamoStudy study;
-
-    @Before
-    public void before() {
-        validator = new StudyValidator();
-        study = new DynamoStudy();
-    }
-    
-    @Test(expected=InvalidEntityException.class)
+    @Test(expected = InvalidEntityException.class)
     public void cannotCreateIdentifierWithUppercase() {
+        DynamoStudy study = new DynamoStudy();
         study.setIdentifier("Test");
         study.setName("Belgium Waffles [Test]");
-        Validate.entityThrowingException(validator, study);
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
-    
-    @Test(expected=InvalidEntityException.class)
+
+    @Test(expected = InvalidEntityException.class)
     public void cannotCreateInvalidWithSpaces() {
+        DynamoStudy study = new DynamoStudy();
         study.setIdentifier("test test");
         study.setName("Belgium Waffles [Test]");
-        Validate.entityThrowingException(validator, study);
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
-    
-    @Test(expected=InvalidEntityException.class)
+
+    @Test(expected = InvalidEntityException.class)
     public void cannotCreateInvalidWithNumbers() {
+        DynamoStudy study = new DynamoStudy();
         study.setIdentifier("test3");
         study.setName("Belgium Waffles [Test]");
-        Validate.entityThrowingException(validator, study);
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
-    
+
     @Test
     public void identifierCanContainDashes() {
+        DynamoStudy study = new DynamoStudy();
         study.setIdentifier("sage-pd");
         study.setName("Belgium Waffles [Test]");
-        Validate.entityThrowingException(validator, study);
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
-    
 }

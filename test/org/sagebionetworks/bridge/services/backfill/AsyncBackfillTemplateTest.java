@@ -61,7 +61,7 @@ public class AsyncBackfillTemplateTest {
         // Mock callback
         BackfillCallback callback = mock(BackfillCallback.class);
         backfillTemplate.backfill(user, taskName, callback);
-        Thread.sleep(100L);
+        Thread.sleep(200L);
 
         // Verify callback
         verify(callback, times(1)).start(backfillTask);
@@ -134,7 +134,7 @@ public class AsyncBackfillTemplateTest {
         final long beforeBackfill = DateTime.now(DateTimeZone.UTC).getMillis();
         BackfillCallback callback = mock(BackfillCallback.class);
         backfillTemplate.backfill(user, taskName, callback);
-        Thread.sleep(100L);
+        Thread.sleep(200L);
         final long afterBackfill = DateTime.now(DateTimeZone.UTC).getMillis();
 
         // Verify lock
@@ -189,7 +189,7 @@ public class AsyncBackfillTemplateTest {
                 any(BackfillTask.class), any(BackfillCallback.class));
 
         backfillTemplate.backfill(user, taskName, callback);
-        Thread.sleep(100L);
+        Thread.sleep(200L);
 
         // Verify
         verify(backfillDao, times(1)).updateTaskStatus(taskId, BackfillStatus.FAILED);

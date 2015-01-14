@@ -1,7 +1,9 @@
 package controllers;
 
+import javax.annotation.Nonnull;
 import java.util.Collection;
 
+import com.google.common.base.Strings;
 import models.StatusMessage;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -181,7 +183,7 @@ public abstract class BaseController extends Controller {
         return ok(Json.toJson(new StatusMessage(message)));
     }
     
-    protected Result okResult(Object obj) throws Exception {
+    protected Result okResult(Object obj) {
         return ok(mapper.valueToTree(obj));
     }
     
@@ -222,5 +224,37 @@ public abstract class BaseController extends Controller {
             throw new InvalidEntityException("Expected JSON in the request body is missing or malformed");
         }
     }
-    
+
+    /**
+     * Static utility function that parses the JSON from the given request as the given class. This is a wrapper around
+     * Jackson.
+     *
+     * @param request
+     *         Play framework request
+     * @param clazz
+     *         class to parse the JSON as
+     * @return object parsed from JSON, will be non-null
+     */
+    protected static @Nonnull <T> T parseJson(Request request, Class<? extends T> clazz) {
+        try {
+            // Calling request.body() twice is safe. (Has been confirmed using "play debug" and stepping through this
+            // code in a debugger.)
+            // Whether asText() or asJson() works depends on the content-type header of the request
+            // asText() returns data if the content-type is text/plain. asJson() returns data if the content-type is
+            // text/json or application/json.
+            String jsonText = request.body().asText();
+            if (!Strings.isNullOrEmpty(jsonText)) {
+                return mapper.readValue(jsonText, clazz);
+            }
+
+            JsonNode jsonNode = request.body().asJson();
+            if (jsonNode != null) {
+                return mapper.convertValue(jsonNode, clazz);
+            }
+        } catch (Throwable ex) {
+            throw new InvalidEntityException("Error parsing JSON in request body");
+        }
+
+        throw new InvalidEntityException("Expected JSON in the request body is missing");
+    }
 }

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.json;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -15,12 +16,15 @@ import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+
 
 /**
  * There are actually a number of ways to indicate a null value,
@@ -33,6 +37,14 @@ public class JsonUtils {
     private static final String DATA_TYPE_PROPERTY = "dataType";
     private static final String ENUM_PROPERTY = "enumeration";
     private static final String MULTIVALUE_PROPERTY = "multivalue";
+    public static final TypeReference<Map<String, Object>> TYPE_REF_RAW_MAP =
+            new TypeReference<Map<String, Object>>(){};
+
+    /**
+     * This Jackson object mapper should be used for internal JSON conversion (such as to/from DynamoDB), where we
+     * don't need the special features provided by {@link org.sagebionetworks.bridge.json.BridgeObjectMapper}.
+     */
+    public static final ObjectMapper INTERNAL_OBJECT_MAPPER = new ObjectMapper();
 
     public static String asText(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
