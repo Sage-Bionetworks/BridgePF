@@ -203,7 +203,7 @@ public class DynamoInitializer {
                         GlobalSecondaryIndexDescription globalIndex = new GlobalSecondaryIndexDescription()
                                 .withIndexName(indexName)
                                 .withKeySchema(new KeySchemaElement(attrName, KeyType.HASH))
-                                .withProjection(new Projection().withProjectionType(ProjectionType.ALL))
+                                .withProjection(new Projection().withProjectionType(ProjectionType.KEYS_ONLY))
                                 .withProvisionedThroughput(new ProvisionedThroughputDescription()
                                         .withReadCapacityUnits(READ_CAPACITY)
                                         .withWriteCapacityUnits(WRITE_CAPACITY));
