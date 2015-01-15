@@ -12,7 +12,6 @@ import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.UserConsent;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -39,16 +38,24 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public void giveConsent(String healthCode, StudyConsent consent) {
+    public void giveConsent(String healthCode, StudyConsent studyConsent) {
         checkArgument(isNotBlank(healthCode), "Health code is blank or null");
-        checkNotNull(consent);
-        giveConsent2(healthCode, consent);
+        checkNotNull(studyConsent);
+        DynamoUserConsent2 consent = null;
+        try {
+            consent = getUserConsent(healthCode, studyConsent);
+            if (consent == null) {
+                consent = new DynamoUserConsent2(healthCode, studyConsent);
+            }
+            consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
+            mapper.save(consent);
+        } catch (ConditionalCheckFailedException e) {
+            throw new EntityAlreadyExistsException(consent);
+        }
     }
 
     @Override
     public boolean withdrawConsent(String healthCode, String studyIdentifier) {
-        // DynamoUserConsent2 has the healthCodeStudy as a hash key and no range key; so
-        // there can be only one consent right now per study. Just find it and delete it.
         DynamoUserConsent2 consent = (DynamoUserConsent2) getUserConsent(healthCode, studyIdentifier);
         if (consent != null) {
             mapper.delete(consent);
@@ -86,63 +93,13 @@ public class DynamoUserConsentDao implements UserConsentDao {
         return healthCodes.size();
     }
 
-    // TODO: Remove after backfill
-    @Override
-    public void removeConsentSignature(String healthCode, String studyIdentifier) {
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyIdentifier);
-        consent = mapper.load(consent);
-        consent.setBirthdate(null);
-        consent.setImageData(null);
-        consent.setImageMimeType(null);
-        consent.setName(null);
-        mapper.save(consent);
-    }
-
-    // TODO: Remove after backfill
-    void putConsentSignature(String healthCode, String studyIdentifier, ConsentSignature consentSignature) {
-        DynamoUserConsent2 consent = (DynamoUserConsent2)getUserConsent(healthCode, studyIdentifier);
-        consent = mapper.load(consent);
-        consent.setName(consentSignature.getName());
-        consent.setBirthdate(consentSignature.getBirthdate());
-        consent.setImageData(consentSignature.getImageData());
-        consent.setImageMimeType(consentSignature.getImageMimeType());
-        mapper.save(consent);
-    }
-
-    UserConsent getUserConsent2(String healthCode, StudyConsent studyConsent) {
+    private DynamoUserConsent2 getUserConsent(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
         consent = mapper.load(consent);
         return consent;
     }
 
-    void giveConsent2(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consent = null;
-        try {
-            consent = (DynamoUserConsent2) getUserConsent2(healthCode, studyConsent);
-            if (consent == null) { // If the user has not consented yet
-                consent = new DynamoUserConsent2(healthCode, studyConsent);
-            }
-            consent.setSignedOn(DateTime.now(DateTimeZone.UTC).getMillis());
-            mapper.save(consent);
-        } catch (ConditionalCheckFailedException e) {
-            throw new EntityAlreadyExistsException(consent);
-        }
-    }
-
-    void withdrawConsent2(String healthCode, StudyConsent studyConsent) {
-        DynamoUserConsent2 consentToDelete = (DynamoUserConsent2) getUserConsent2(healthCode, studyConsent);
-        if (consentToDelete == null) {
-            return;
-        }
-        mapper.delete(consentToDelete);
-    }
-
-    Long getConsentCreatedOn2(String healthCode, String studyKey) {
-        DynamoUserConsent2 consent = (DynamoUserConsent2) getUserConsent(healthCode, studyKey);
-        return consent == null ? null : consent.getConsentCreatedOn();
-    }
-
-    boolean hasConsented2(String healthCode, StudyConsent studyConsent) {
-        return getUserConsent2(healthCode, studyConsent) != null;
+    boolean hasConsented(String healthCode, StudyConsent studyConsent) {
+        return getUserConsent(healthCode, studyConsent) != null;
     }
 }
