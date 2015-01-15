@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
-import org.joda.time.Period;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.BooleanConstraints;
@@ -14,6 +12,7 @@ import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DecimalConstraints;
 import org.sagebionetworks.bridge.models.surveys.DurationConstraints;
+import org.sagebionetworks.bridge.models.surveys.DurationToIntegerConverter;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
@@ -112,6 +111,7 @@ public class SurveyAnswerValidator implements Validator {
         }
         errors.popNestedPath();
     }
+    
     private boolean maybeConstrainedToEnumeratedValue() {
         return (question.getConstraints() instanceof MultiValueConstraints);
     }
@@ -203,53 +203,24 @@ public class SurveyAnswerValidator implements Validator {
     }
 
     private void validateType(Errors errors, DurationConstraints con, String answer) {
-        double seconds = 0L;
-        try {
-            seconds = new DateTime(0L).plus(Period.parse(answer)).toDateTime().getMillis()/1000L;
-        } catch(Throwable t) {
-            rejectField(errors, "constraints", "%s is not a valid ISO 8601 duration string", answer);
-            return;
-        }
-        if (con.getUnit() != null) {
-            double value = convertPeriodToDurationUnits(con, seconds);
-            if (value > 0) {
-                if (con.getMinValue() != null && value < con.getMinValue()) {
-                    rejectField(errors, "constraints", "%s is lower than the minimum value of %s %s", answer,
-                            con.getMinValue(), con.getUnit().name().toLowerCase());
-                }
-                if (con.getMaxValue() != null && value > con.getMaxValue()) {
-                    rejectField(errors, "constraints", "%s is higher than the maximum value of %s %s", answer,
-                            con.getMaxValue(), con.getUnit().name().toLowerCase());
-                }
+        if (con.getUnit() == null) {
+            rejectField(errors, "constraints", "%s does not have a specified unit", answer);
+        } else {
+            try {
+                answer = new DurationToIntegerConverter().convert(answer, con.getUnit());
+                validateType(errors, (IntegerConstraints)con, answer);
+            } catch(IllegalArgumentException e) {
+                rejectField(errors, "constraints", e.getMessage());
             }
         }
     }
-
-    private double convertPeriodToDurationUnits(DurationConstraints con, double seconds) {
-        switch(con.getUnit()) {
-        case SECONDS:
-            return seconds;
-        case MINUTES:
-            return seconds/60;
-        case HOURS:
-            return seconds/60/60;
-        case DAYS:
-            return seconds/60/60/24;
-        case WEEKS:
-            return seconds/60/60/24/7;
-        case MONTHS:
-            return seconds/60/60/24/7/4;
-        case YEARS:
-            return seconds/60/60/24/7/4/12;
-        default:
-            return 0.0;
-        }
-    }
+    
     private void validateType(Errors errors, BooleanConstraints con, String answer) {
         if (!BOOLEAN_VALUES.contains(answer)) {
             rejectField(errors, "constraints", "%s is not a boolean", answer);
         }
     }
+    
     private void validateType(Errors errors, MultiValueConstraints con, List<String> answers) {
         // Then we're concerned with the array of values under "answers"
         for (int i=0; i < answers.size(); i++) {

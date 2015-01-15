@@ -141,6 +141,7 @@ public class SurveyAnswerValidatorTest {
     @Test
     public void validateValidDuration() {
         DurationConstraints constraints = new DurationConstraints();
+        constraints.setUnit(DurationUnit.HOURS);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("PT2H");
@@ -168,17 +169,17 @@ public class SurveyAnswerValidatorTest {
             Validate.entityThrowingException(validator, answer);    
         } catch(InvalidEntityException e) {
             String message = e.getErrors().get("Test Question.constraints").get(0);
-            assertEquals("PT2H is lower than the minimum value of 3 hours", message);
+            assertEquals("2 is lower than the minimum value of 3", message);
         }
     }
-    @Test
-    public void validateDurationInRangeInDifferentUnits() {
+    @Test(expected = InvalidEntityException.class)
+    public void validateDurationInDifferentUnitsIsInvalid() {
         DurationConstraints constraints = new DurationConstraints();
         constraints.setUnit(DurationUnit.HOURS);
         constraints.setMinValue(3L);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
-        SurveyAnswer answer = createAnswer("PT180M"); // in minutes, but this should be okay
+        SurveyAnswer answer = createAnswer("PT190M");
         Validate.entityThrowingException(validator, answer);
     }
     @Test(expected = InvalidEntityException.class)
