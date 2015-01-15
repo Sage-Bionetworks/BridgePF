@@ -25,12 +25,6 @@ public class DynamoUserConsent2 implements DynamoTable, UserConsent {
     private long signedOn;          // Time stamp is epoch time in milliseconds
     private boolean dataSharing;    // Whether the user agrees to share data for the study
 
-    // User consent signature
-    private String name;
-    private String birthdate;
-    private String imageData;
-    private String imageMimeType;
-
     // Composite key parts copied over to avoid parsing
     private String healthCode;
     private String studyKey;
@@ -56,10 +50,6 @@ public class DynamoUserConsent2 implements DynamoTable, UserConsent {
         healthCodeStudy = consent.healthCodeStudy;
         signedOn = consent.signedOn;
         version = consent.version;
-        name = consent.name;
-        birthdate = consent.birthdate;
-        imageData = consent.imageData;
-        imageMimeType = consent.imageMimeType;
         healthCode = consent.healthCode;
         studyKey = consent.studyKey;
         consentCreatedOn = consent.consentCreatedOn;
@@ -118,43 +108,6 @@ public class DynamoUserConsent2 implements DynamoTable, UserConsent {
         this.consentCreatedOn = consentCreatedOn;
     }
 
-    @DynamoDBAttribute
-    public String getName() {
-        return this.name;
-    }
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    @DynamoDBAttribute
-    public String getBirthdate() {
-        return this.birthdate;
-    }
-    public void setBirthdate(String birthdate) {
-        this.birthdate = birthdate;
-    }
-
-    /** Image data, represented as a Base64 encoded string. May be null. Must be non-empty. */
-    @DynamoDBAttribute
-    public String getImageData() {
-        return imageData;
-    }
-    public void setImageData(String imageData) {
-        this.imageData = imageData;
-    }
-
-    /**
-     * MIME type of the image data (ex: "image/gif"). May be null. Must be non-empty. Must be present if imageData is
-     * present. Must be absent if imageData is absent.
-     */
-    @DynamoDBAttribute
-    public String getImageMimeType() {
-        return imageMimeType;
-    }
-    public void setImageMimeType(String imageMimeType) {
-        this.imageMimeType = imageMimeType;
-    }
-
     @DynamoDBVersionAttribute
     public Long getVersion() {
         return version;
@@ -166,8 +119,6 @@ public class DynamoUserConsent2 implements DynamoTable, UserConsent {
     @Override
     public String toString() {
         return "DynamoUserConsent2 [version=" + version + ", signedOn=" + signedOn + ", dataSharing=" + dataSharing
-                + ", name=" + name + ", birthdate=" + birthdate + ", hasImageData=" + (imageData != null)
-                + ", imageMimeType=" + imageMimeType + ", studyKey=" + studyKey + ", consentCreatedOn="
-                + consentCreatedOn + "]";
+                + ", studyKey=" + studyKey + ", consentCreatedOn=" + consentCreatedOn + "]";
     }
 }

@@ -36,7 +36,4 @@ public interface UserConsentDao {
      * @return
      */
     long getNumberOfParticipants(String studyKey);
-
-    // TODO: To be removed after backfill
-    void removeConsentSignature(String healthCode, String studyIdentifier);
 }
