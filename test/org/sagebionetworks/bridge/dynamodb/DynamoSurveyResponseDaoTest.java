@@ -136,14 +136,14 @@ public class DynamoSurveyResponseDaoTest {
 
         // Now push some answers through the answer API
         SurveyAnswer answer = new SurveyAnswer();
-        answer.setAnswer("false");
+        answer.addAnswer("false");
         answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
         answer.setClient("mobile");
         answer.setQuestionGuid(survey.getQuestions().get(0).getGuid());
         answers.add(answer);
 
         answer = new SurveyAnswer();
-        answer.setAnswer(DateUtils.getCurrentISODate());
+        answer.addAnswer(DateUtils.getCurrentISODate());
         answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
         answer.setClient("mobile");
         answer.setQuestionGuid(survey.getQuestions().get(1).getGuid());
@@ -164,12 +164,12 @@ public class DynamoSurveyResponseDaoTest {
 
         // But if you update a timestamp, it looks new and it will be updated.
         answers.get(0).setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
-        answers.get(0).setAnswer("true");
+        answers.get(0).getAnswers().set(0, "true"); // eek
         surveyResponseDao.appendSurveyAnswers(newResponse, answers);
         newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
 
         newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
-        assertEquals("Answer was updated due to more recent timestamp", "true", answers.get(0).getAnswer());
+        assertEquals("Answer was updated due to more recent timestamp", "true", answers.get(0).getAnswers().get(0));
 
         // delete it
         surveyResponseDao.deleteSurveyResponse(newResponse);
