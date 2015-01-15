@@ -12,6 +12,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -43,12 +45,14 @@ public class DynamoUploadDaoTest {
         String healthCode = "fakeHealthCode";
         String uploadId = uploadDao.createUpload(uploadRequest, healthCode);
         assertNotNull(uploadId);
-        assertFalse(uploadDao.isComplete(uploadId));
-        String objectId = uploadDao.getObjectId(uploadId);
+        Upload upload = uploadDao.getUpload(uploadId);
+        assertFalse(upload.isComplete());
+        String objectId = upload.getObjectId();
         assertNotNull(objectId);
-        assertFalse(uploadId.equals(objectId));
+        assertTrue(uploadId.equals(objectId));
         uploadDao.uploadComplete(uploadId);
-        assertTrue(uploadDao.isComplete(uploadId));
+        upload = uploadDao.getUpload(uploadId);
+        assertTrue(upload.isComplete());
     }
 
     private UploadRequest createUploadRequest() {

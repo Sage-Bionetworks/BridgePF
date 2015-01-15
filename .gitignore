@@ -6,6 +6,7 @@
 .history
 .grunt
 TODO.txt
+tmp
 phantomjsdriver.log
 target
 application.log
