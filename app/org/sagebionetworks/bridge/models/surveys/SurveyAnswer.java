@@ -9,16 +9,16 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.Lists;
 
 @BridgeTypeName("SurveyAnswer")
 public class SurveyAnswer implements BridgeEntity {
 
     private String questionGuid;
-    private String answer;
-    private List<String> answers;
     private long answeredOn;
     private String client;
     private boolean declined;
+    private List<String> answers = Lists.newArrayList();
     
     public String getQuestionGuid() {
         return questionGuid;
@@ -26,17 +26,14 @@ public class SurveyAnswer implements BridgeEntity {
     public void setQuestionGuid(String questionGuid) {
         this.questionGuid = questionGuid;
     }
-    public String getAnswer() {
-        return answer;
-    }
-    public void setAnswer(String answer) {
-        this.answer = answer;
-    }
     public List<String> getAnswers() {
         return answers;
     }
     public void setAnswers(List<String> answers) {
         this.answers = answers;
+    }
+    public void addAnswer(String answer) {
+        this.answers.add(answer);
     }
     @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getAnsweredOn() {
@@ -62,7 +59,6 @@ public class SurveyAnswer implements BridgeEntity {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((answer == null) ? 0 : answer.hashCode());
         result = prime * result + (int) (answeredOn ^ (answeredOn >>> 32));
         result = prime * result + ((answers == null) ? 0 : answers.hashCode());
         result = prime * result + ((client == null) ? 0 : client.hashCode());
@@ -79,11 +75,6 @@ public class SurveyAnswer implements BridgeEntity {
         if (getClass() != obj.getClass())
             return false;
         SurveyAnswer other = (SurveyAnswer) obj;
-        if (answer == null) {
-            if (other.answer != null)
-                return false;
-        } else if (!answer.equals(other.answer))
-            return false;
         if (answeredOn != other.answeredOn)
             return false;
         if (answers == null) {
@@ -107,7 +98,7 @@ public class SurveyAnswer implements BridgeEntity {
     }
     @Override
     public String toString() {
-        return "SurveyAnswer [questionGuid=" + questionGuid + ", answer=" + answer + ", answers=" + answers
-                + ", answeredOn=" + answeredOn + ", client=" + client + ", declined=" + declined + "]";
+        return "SurveyAnswer [questionGuid=" + questionGuid + ", answers=" + answers + ", answeredOn=" + answeredOn
+                + ", client=" + client + ", declined=" + declined + "]";
     }
 }
