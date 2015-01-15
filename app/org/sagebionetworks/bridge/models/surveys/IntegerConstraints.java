@@ -2,8 +2,15 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.EnumSet;
 
+import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
+import org.sagebionetworks.bridge.json.UnitDeserializer;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 public class IntegerConstraints extends Constraints {
 
+    private Unit unit;
     private Long minValue;
     private Long maxValue;
     private Long step;
@@ -13,6 +20,17 @@ public class IntegerConstraints extends Constraints {
         setSupportedHints(EnumSet.of(UIHint.NUMBERFIELD, UIHint.SLIDER));
     }
     
+    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
+    public Unit getUnit() {
+        return unit;
+    }
+    public String getShortUnit() {
+        return (unit == null) ? null : unit.getAbbreviation();
+    }
+    @JsonDeserialize(using = UnitDeserializer.class)
+    public void setUnit(Unit unit) {
+        this.unit = unit;
+    }
     public Long getMinValue() {
         return minValue;
     }
@@ -39,6 +57,7 @@ public class IntegerConstraints extends Constraints {
         result = prime * result + ((maxValue == null) ? 0 : maxValue.hashCode());
         result = prime * result + ((minValue == null) ? 0 : minValue.hashCode());
         result = prime * result + ((step == null) ? 0 : step.hashCode());
+        result = prime * result + ((unit == null) ? 0 : unit.hashCode());
         return result;
     }
 
@@ -66,6 +85,9 @@ public class IntegerConstraints extends Constraints {
                 return false;
         } else if (!step.equals(other.step))
             return false;
+        if (unit != other.unit)
+            return false;
         return true;
     }
+    
 }
