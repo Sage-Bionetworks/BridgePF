@@ -123,7 +123,7 @@ public class TestSurvey extends DynamoSurvey {
             DurationConstraints c = new DurationConstraints();
             setPrompt("How log does your appointment take, on average?");
             setIdentifier("time_for_appt");
-            setUiHint(UIHint.TIMEPICKER);
+            setUiHint(UIHint.NUMBERFIELD);
             setConstraints(c);
             setGuid(UUID.randomUUID().toString());
         }

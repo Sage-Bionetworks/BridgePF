@@ -36,6 +36,13 @@ public interface SurveyService {
     public Survey getSurveyMostRecentlyPublishedVersion(Study study, String guid);
     
     /**
+     * Get the most recently published version of a survey, using the identifier for the 
+     * survey.
+     * @return
+     */
+    public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(Study study, String identifier);
+    
+    /**
      * Get the most recent version of each survey in the study, that has been published. 
      * @param study
      * @return

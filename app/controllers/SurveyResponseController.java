@@ -72,7 +72,7 @@ public class SurveyResponseController extends BaseController {
 
     private List<SurveyAnswer> deserializeSurveyAnswers() throws JsonProcessingException, IOException {
         JsonNode node = requestToJSON(request());
-        List<SurveyAnswer> answers = JsonUtils.asEntityList(node, SurveyAnswer.class);
+        List<SurveyAnswer> answers = JsonUtils.asSurveyAnswers(node);
         return answers;
     }
 

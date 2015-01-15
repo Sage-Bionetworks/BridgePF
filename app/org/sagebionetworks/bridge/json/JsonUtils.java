@@ -6,6 +6,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleType;
+import org.sagebionetworks.bridge.models.surveys.Constraints;
+import org.sagebionetworks.bridge.models.surveys.DataType;
+import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
+import org.sagebionetworks.bridge.models.surveys.UIHint;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,14 +24,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang3.StringUtils;
 
-import org.sagebionetworks.bridge.models.schedules.ActivityType;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.schedules.ScheduleType;
-import org.sagebionetworks.bridge.models.surveys.Constraints;
-import org.sagebionetworks.bridge.models.surveys.DataType;
-import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 /**
  * There are actually a number of ways to indicate a null value,
@@ -146,6 +148,18 @@ public class JsonUtils {
         return Lists.newLinkedList();
     }
 
+    public static <T> List<SurveyAnswer> asSurveyAnswers(JsonNode list) {
+        List<SurveyAnswer> answers = asEntityList(list, SurveyAnswer.class);
+        for (int i=0; i < answers.size(); i++) {
+            SurveyAnswer answer = answers.get(0);
+            JsonNode node = list.get(i);
+            if (node.has("answer") && answer.getAnswers().isEmpty()) {
+                answer.addAnswer(node.get("answer").asText());
+            }
+        }
+        return answers;
+    }
+    
     public static ObjectNode asObjectNode(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property) && parent.get(property).isObject()) {
             return (ObjectNode)parent.get(property);
