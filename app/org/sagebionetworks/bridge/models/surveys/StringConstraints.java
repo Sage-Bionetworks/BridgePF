@@ -68,4 +68,8 @@ public class StringConstraints extends Constraints {
             return false;
         return true;
     }
+    @Override
+    public String toString() {
+        return "StringConstraints [minLength=" + minLength + ", maxLength=" + maxLength + ", pattern=" + pattern + "]";
+    }
 }
