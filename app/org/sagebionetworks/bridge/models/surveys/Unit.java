@@ -1,42 +1,46 @@
 package org.sagebionetworks.bridge.models.surveys;
 
+import java.util.EnumSet;
+
 /**
  * Units of measure for integer and decimal constraints. Time units
- * are handled separately for duration constraints.
+ * are grouped in DURATION_UNITS for the duration question type (really 
+ * just a special case of an integer question with a unit). 
  */
 public enum Unit {
     
-    INCH("in"),
-    FOOT("ft"),
-    YARD("yd"),
-    MILE("mi"),
+    SECONDS,
+    MINUTES,
+    HOURS,
+    DAYS,
+    WEEKS,
+    MONTHS,
+    YEARS,
     
-    OUNCE("oz"),
-    POUND("lb"),
+    INCHES,
+    FEET,
+    YARDS,
+    MILES,
     
-    PINT("pt"),
-    QUART("qt"),
-    GALLON("gal"),
+    OUNCES,
+    POUNDS,
     
-    CENTIMETER("cm"),
-    METER("m"),
-    KILOMETER("km"),
+    PINTS,
+    QUARTS,
+    GALLONS,
+    
+    CENTIMETERS,
+    METERS,
+    KILOMETERS,
 
-    GRAM("gm"),
-    KILOGRAM("kg"),
+    GRAMS,
+    KILOGRAMS,
     
-    MILLILITER("mL"),
-    CUBIC_CENTIMETER("ccm"),
-    LITER("L"),
-    CUBIC_METER("cbm");
+    MILLILITERS,
+    CUBIC_CENTIMETERS,
+    LITERS,
+    CUBIC_METERS;
     
-    private String abbreviation;
+    public static EnumSet<Unit> DURATION_UNITS = EnumSet.of(SECONDS, MINUTES, HOURS, DAYS, WEEKS, MONTHS, YEARS);
     
-    private Unit(String abbreviation) {
-        this.abbreviation = abbreviation;
-    }
-    
-    public String getAbbreviation() {
-        return abbreviation;
-    }
 }

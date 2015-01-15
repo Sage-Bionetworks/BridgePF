@@ -15,12 +15,14 @@ import org.sagebionetworks.bridge.models.surveys.DurationConstraints;
 import org.sagebionetworks.bridge.models.surveys.DurationToIntegerConverter;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
+import org.sagebionetworks.bridge.models.surveys.NumericalConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.TimeBasedConstraints;
 import org.sagebionetworks.bridge.models.surveys.TimeConstraints;
+import org.sagebionetworks.bridge.models.surveys.Unit;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -158,17 +160,7 @@ public class SurveyAnswerValidator implements Validator {
     private void validateType(Errors errors, DecimalConstraints con, String answer) {
         try {
             double value = Double.parseDouble(answer);
-            if (con.getMinValue() != null && value < con.getMinValue()) {
-                rejectField(errors, "constraints", "%s is lower than the minimum value of %s", answer, con.getMinValue());
-            }
-            if (con.getMaxValue() != null && value > con.getMaxValue()) {
-                rejectField(errors, "constraints", "%s is higher than the maximum value of %s", answer, con.getMaxValue());
-            }
-            // TODO: Now that we are keeping strings, it should be possible to test steps, and 
-            // introduce a precision constraint as well.
-            /* if (step != null && value % step != 0) {
-                messages.add("%s is not a step value of %s", Double.toString(value), step);
-            }*/
+            validateNumericalConstraint(errors, con, value);
         } catch(NumberFormatException e) {
             rejectField(errors, "constraints", "%s is not a valid decimal number", answer);
         }
@@ -177,20 +169,47 @@ public class SurveyAnswerValidator implements Validator {
     private void validateType(Errors errors, IntegerConstraints con, String answer) {
         try {
             int value = Integer.parseInt(answer);
-            if (con.getMinValue() != null && value < con.getMinValue()) {
-                rejectField(errors, "constraints", "%s is lower than the minimum value of %s", answer, con.getMinValue());
-            }
-            if (con.getMaxValue() != null && value > con.getMaxValue()) {
-                rejectField(errors, "constraints", "%s is higher than the maximum value of %s", answer, con.getMaxValue());
-            }
-            if (con.getStep() != null && value % con.getStep() != 0) {
-                rejectField(errors, "constraints", "%s is not a step value of %s", answer, con.getStep());
-            }
+            validateNumericalConstraint(errors, con, value);
         } catch(NumberFormatException e) {
             rejectField(errors, "constraints", "%s is not a valid integer", answer);
         }
     }
 
+    private void validateType(Errors errors, DurationConstraints con, String answer) {
+        if (con.getUnit() == null) {
+            rejectField(errors, "constraints", "%s does not have a specified unit", answer);
+        } else if (!Unit.DURATION_UNITS.contains(con.getUnit())) {
+            rejectField(errors, "constraints", "%s is not a time unit", answer);
+        } else {
+            try {
+                Integer value = new DurationToIntegerConverter().convert(answer, con.getUnit());
+                validateNumericalConstraint(errors, (NumericalConstraints)con, value);
+            } catch(IllegalArgumentException e) {
+                rejectField(errors, "constraints", e.getMessage());
+            }
+        }
+    }
+    
+    private void validateNumericalConstraint(Errors errors, NumericalConstraints con, Number number) {
+        if (con.getMinValue() != null && number.doubleValue() < con.getMinValue()) {
+            if (con.getUnit() != null) {
+                rejectField(errors, "constraints", "%s is lower than the minimum value of %s %s", number, con.getMinValue(), con.getUnit().name().toLowerCase());
+            } else {
+                rejectField(errors, "constraints", "%s is lower than the minimum value of %s", number, con.getMinValue());
+            }
+        }
+        if (con.getMaxValue() != null && number.doubleValue() > con.getMaxValue()) {
+            if (con.getUnit() != null) {
+                rejectField(errors, "constraints", "%s is higher than the maximum value of %s %s", number, con.getMaxValue(), con.getUnit().name().toLowerCase());
+            } else {
+                rejectField(errors, "constraints", "%s is higher than the maximum value of %s", number, con.getMaxValue());
+            }
+        }
+        if (con.getStep() != null && number.doubleValue() % con.getStep() != 0) {
+            rejectField(errors, "constraints", "%s is not a step value of %s", number, con.getStep());
+        }
+    }
+    
     private void validateType(Errors errors, StringConstraints con, String answer) {
         if (con.getMinLength() != null && answer.length() < con.getMinLength()) {
             rejectField(errors, "constraints", "%s is shorter than %s characters", answer, con.getMinLength());
@@ -199,19 +218,6 @@ public class SurveyAnswerValidator implements Validator {
         }
         if (StringUtils.isNotBlank(con.getPattern()) && answer != null && !answer.matches(con.getPattern())) {
             rejectField(errors, "constraints", "%s does not match the regular expression /%s/", answer, con.getPattern());
-        }
-    }
-
-    private void validateType(Errors errors, DurationConstraints con, String answer) {
-        if (con.getUnit() == null) {
-            rejectField(errors, "constraints", "%s does not have a specified unit", answer);
-        } else {
-            try {
-                answer = new DurationToIntegerConverter().convert(answer, con.getUnit());
-                validateType(errors, (IntegerConstraints)con, answer);
-            } catch(IllegalArgumentException e) {
-                rejectField(errors, "constraints", e.getMessage());
-            }
         }
     }
     

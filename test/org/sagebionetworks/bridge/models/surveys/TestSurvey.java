@@ -132,8 +132,8 @@ public class TestSurvey extends DynamoSurvey {
     private DynamoSurveyQuestion integerQuestion = new DynamoSurveyQuestion() {
         {
             IntegerConstraints c = new IntegerConstraints();
-            c.setMinValue(0L);
-            c.setMaxValue(4L);
+            c.setMinValue(0d);
+            c.setMaxValue(4d);
             c.getRules().add(new SurveyRule(Operator.LE, 2, "name"));
             c.getRules().add(new SurveyRule(Operator.DE, null, "name"));
             

@@ -12,9 +12,9 @@ public class ConstraintTest {
     public void constraintsWithUnits() throws Exception {
         IntegerConstraints c = new IntegerConstraints();
         
-        c.setUnit(Unit.MILLILITER);
-        c.setMinValue(1L);
-        c.setMaxValue(10_000_000L);
+        c.setUnit(Unit.MILLILITERS);
+        c.setMinValue(1d);
+        c.setMaxValue(10_000_000d);
         
         String json = BridgeObjectMapper.get().writeValueAsString(c);
         assertTrue(json.contains("\"shortUnit\":\"mL\""));
@@ -23,8 +23,7 @@ public class ConstraintTest {
         
         c = BridgeObjectMapper.get().readValue(json, IntegerConstraints.class);
         assertEquals(DataType.INTEGER, c.getDataType());
-        assertEquals(Unit.MILLILITER, c.getUnit());
-        assertEquals(Unit.MILLILITER.getAbbreviation(), c.getShortUnit());
+        assertEquals(Unit.MILLILITERS, c.getUnit());
         assertEquals(new Long(1L), c.getMinValue());
         assertEquals(new Long(10_000_000L), c.getMaxValue());
     }
