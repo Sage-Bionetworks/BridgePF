@@ -5,13 +5,14 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalTime;
-import org.joda.time.Period;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.BooleanConstraints;
+import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DecimalConstraints;
 import org.sagebionetworks.bridge.models.surveys.DurationConstraints;
+import org.sagebionetworks.bridge.models.surveys.DurationToIntegerConverter;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
@@ -26,7 +27,7 @@ import org.springframework.validation.Validator;
 import com.google.common.collect.Sets;
 
 public class SurveyAnswerValidator implements Validator {
-
+    
     private static final long FIVE_MINUTES = 5 * 60 * 1000;
     
     private static final DurationConstraints DURATION_CONSTRAINTS = new DurationConstraints();
@@ -71,55 +72,56 @@ public class SurveyAnswerValidator implements Validator {
             rejectField(errors, "questionGuid", "it requires a question GUID", answer.getQuestionGuid());
         }
         if (answer.isDeclined()) {
-            answer.setAnswer(null);
             answer.setAnswers(null);
         } else if (hasNoAnswer(answer)) {
             rejectField(errors, "answer", "it was not declined but has no answer");
-        } else if (expectsMultipleValues()) {
+        } else if (allowsMultipleAnswers()) {
             validateType(errors, (MultiValueConstraints) question.getConstraints(), answer.getAnswers());
-        } else if (isMultiValue()) {
-            validateType(errors, (MultiValueConstraints) question.getConstraints(), answer.getAnswer());
         } else {
-            switch (question.getConstraints().getDataType()) {
-            case DURATION:
-                validateType(errors, (DurationConstraints) question.getConstraints(), answer.getAnswer());
-                break;
-            case STRING:
-                validateType(errors, (StringConstraints) question.getConstraints(), answer.getAnswer());
-                break;
-            case INTEGER:
-                validateType(errors, (IntegerConstraints) question.getConstraints(), answer.getAnswer());
-                break;
-            case DECIMAL:
-                validateType(errors, (DecimalConstraints) question.getConstraints(), answer.getAnswer());
-                break;
-            case BOOLEAN:
-                validateType(errors, (BooleanConstraints) question.getConstraints(), answer.getAnswer());
-                break;
-            case DATE:
-            case DATETIME:
-                validateType(errors, (TimeBasedConstraints) question.getConstraints(), answer.getAnswer());
-                break;
-            case TIME:
-                validateType(errors, (TimeConstraints) question.getConstraints(), answer.getAnswer());
-                break;
+            String firstAnswer = answer.getAnswers().get(0);
+            if (maybeConstrainedToEnumeratedValue()) {
+                validateType(errors, (MultiValueConstraints) question.getConstraints(), firstAnswer);    
+            } else {
+                Constraints con = question.getConstraints();
+                switch (con.getDataType()) {
+                case DURATION:
+                    validateType(errors, (DurationConstraints) con, firstAnswer);
+                    break;
+                case STRING:
+                    validateType(errors, (StringConstraints) con, firstAnswer);
+                    break;
+                case INTEGER:
+                    validateType(errors, (IntegerConstraints) con, firstAnswer);
+                    break;
+                case DECIMAL:
+                    validateType(errors, (DecimalConstraints) con, firstAnswer);
+                    break;
+                case BOOLEAN:
+                    validateType(errors, (BooleanConstraints) con, firstAnswer);
+                    break;
+                case DATE:
+                case DATETIME:
+                    validateType(errors, (TimeBasedConstraints) con, firstAnswer);
+                    break;
+                case TIME:
+                    validateType(errors, (TimeConstraints) con, firstAnswer);
+                    break;
+                }
             }
         }
         errors.popNestedPath();
     }
-    private boolean isMultiValue() {
+    
+    private boolean maybeConstrainedToEnumeratedValue() {
         return (question.getConstraints() instanceof MultiValueConstraints);
     }
     
-    private boolean expectsMultipleValues() {
-        return isMultiValue() && ((MultiValueConstraints)question.getConstraints()).getAllowMultiple();
+    private boolean allowsMultipleAnswers() {
+        return maybeConstrainedToEnumeratedValue() && ((MultiValueConstraints)question.getConstraints()).getAllowMultiple();
     }
     
     private boolean hasNoAnswer(SurveyAnswer answer) {
-        if (expectsMultipleValues()) {
-            return BridgeUtils.isEmpty(answer.getAnswers());
-        }
-        return StringUtils.isEmpty(answer.getAnswer());
+        return BridgeUtils.isEmpty(answer.getAnswers());
     }
 
     private void validateType(Errors errors, TimeConstraints constraints, String answer) {
@@ -195,24 +197,30 @@ public class SurveyAnswerValidator implements Validator {
         } else if (con.getMaxLength() != null && answer.length() > con.getMaxLength()) {
             rejectField(errors, "constraints", "%s is longer than %s characters", answer, con.getMaxLength());
         }
-        if (StringUtils.isNotBlank(con.getPattern()) && !answer.matches(con.getPattern())) {
+        if (StringUtils.isNotBlank(con.getPattern()) && answer != null && !answer.matches(con.getPattern())) {
             rejectField(errors, "constraints", "%s does not match the regular expression /%s/", answer, con.getPattern());
         }
     }
 
-    private void validateType(Errors errors, DurationConstraints constraints, String answer) {
-        try {
-            // TODO: The docs don't say it throws an exception when wrong...
-            Period.parse(answer);
-        } catch(Throwable t) {
-            rejectField(errors, "constraints", "%s is not a valid ISO 8601 duration string", answer);
+    private void validateType(Errors errors, DurationConstraints con, String answer) {
+        if (con.getUnit() == null) {
+            rejectField(errors, "constraints", "%s does not have a specified unit", answer);
+        } else {
+            try {
+                answer = new DurationToIntegerConverter().convert(answer, con.getUnit());
+                validateType(errors, (IntegerConstraints)con, answer);
+            } catch(IllegalArgumentException e) {
+                rejectField(errors, "constraints", e.getMessage());
+            }
         }
     }
+    
     private void validateType(Errors errors, BooleanConstraints con, String answer) {
         if (!BOOLEAN_VALUES.contains(answer)) {
             rejectField(errors, "constraints", "%s is not a boolean", answer);
         }
     }
+    
     private void validateType(Errors errors, MultiValueConstraints con, List<String> answers) {
         // Then we're concerned with the array of values under "answers"
         for (int i=0; i < answers.size(); i++) {

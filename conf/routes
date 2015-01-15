@@ -61,6 +61,7 @@ GET    /researchers/v1/surveys                                 @controllers.Surv
 POST   /researchers/v1/surveys                                 @controllers.SurveyController.createSurvey
 GET    /researchers/v1/surveys/recent                          @controllers.SurveyController.getAllSurveysMostRecentVersion2
 GET    /researchers/v1/surveys/published                       @controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersion
+GET    /researchers/v1/surveys/:identifier                     @controllers.SurveyController.getMostRecentPublishedSurveyVersionByIdentifier(identifier: String)
 GET    /researchers/v1/surveys/:surveyGuid/versions            @controllers.SurveyController.getSurveyAllVersions(surveyGuid: String)
 GET    /researchers/v1/surveys/:surveyGuid/recent              @controllers.SurveyController.getSurveyMostRecentVersion(surveyGuid: String)
 GET    /researchers/v1/surveys/:surveyGuid/published           @controllers.SurveyController.getSurveyMostRecentlyPublishedVersion(surveyGuid: String)
