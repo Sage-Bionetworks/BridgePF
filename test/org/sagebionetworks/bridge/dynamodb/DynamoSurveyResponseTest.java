@@ -63,7 +63,7 @@ public class DynamoSurveyResponseTest {
     private void addFifteenQuestions(List<SurveyAnswer> answers) {
         for (int i=0; i < 15; i++) {
             SurveyAnswer answer = new SurveyAnswer();
-            answer.setAnswer("let's assume that answers can be somewhat long");
+            answer.addAnswer("let's assume that answers can be somewhat long");
             answer.setClient("mobile");
             answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
             answer.setQuestionGuid(UUID.randomUUID().toString());
