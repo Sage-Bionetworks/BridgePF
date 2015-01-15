@@ -8,11 +8,15 @@ import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-public class DurationConstraints extends Constraints {
+/**
+ * This is now a special case of a numeric survey answer that has specified units. In 
+ * a refactor after this, units will be carried up to a NumericConstraints parent class 
+ * for IntegerConstraints, DecimalConstraints, and DurationConstraints. The last could 
+ * be removed if we can confirm it is not used in the API.
+ */
+public class DurationConstraints extends IntegerConstraints {
 
     private DurationUnit unit;
-    private Long minValue;
-    private Long maxValue;
     
     public DurationConstraints() {
         setDataType(DataType.DURATION);
@@ -33,19 +37,4 @@ public class DurationConstraints extends Constraints {
         this.unit = unit;
     }
 
-    public Long getMinValue() {
-        return minValue;
-    }
-
-    public void setMinValue(Long minValue) {
-        this.minValue = minValue;
-    }
-
-    public Long getMaxValue() {
-        return maxValue;
-    }
-
-    public void setMaxValue(Long maxValue) {
-        this.maxValue = maxValue;
-    }
 }
