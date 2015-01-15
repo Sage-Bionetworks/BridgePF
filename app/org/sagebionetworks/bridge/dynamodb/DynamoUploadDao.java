@@ -3,20 +3,18 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import javax.annotation.Resource;
+
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
+
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
-
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
-import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
 
 public class DynamoUploadDao implements UploadDao {
 
@@ -24,16 +22,22 @@ public class DynamoUploadDao implements UploadDao {
     private DynamoDBMapper mapperOld;
     private DynamoDBMapper mapper;
 
-    public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperOldConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
-                .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoUpload.class)).build();
-        mapperOld = new DynamoDBMapper(client, mapperOldConfig);
+    /**
+     * This is the DynamoDB mapper that reads from and writes to our DynamoDB table. This is normally configured by
+     * Spring.
+     */
+    @Resource(name = "UploadDdbMapper")
+    public void setDdbMapper(DynamoDBMapper mapper) {
+        this.mapper = mapper;
+    }
 
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
-                .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoUpload2.class)).build();
-        mapper = new DynamoDBMapper(client, mapperConfig);
+    /**
+     * This DynamoDB mapper writes to the old version of the Upload table. It co-exists with setDdbMapper until the
+     * migration is complete. This is normally configured by Spring.
+     */
+    @Resource(name = "UploadDdbMapperOld")
+    public void setDdbMapperOld(DynamoDBMapper mapperOld) {
+        this.mapperOld = mapperOld;
     }
 
     @Override

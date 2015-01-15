@@ -55,10 +55,10 @@ public class DynamoUploadDaoTest {
         assertTrue(upload.isComplete());
     }
 
-    private UploadRequest createUploadRequest() {
+    /* package-scoped */ static UploadRequest createUploadRequest() {
         final String text = "test upload dao";
         ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put("name", this.getClass().getSimpleName());
+        node.put("name", "test-upload-dao-filename");
         node.put("contentType", "text/plain");
         node.put("contentLength", text.getBytes().length);
         node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(text)));
