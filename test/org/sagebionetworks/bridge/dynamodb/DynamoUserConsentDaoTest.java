@@ -38,24 +38,23 @@ public class DynamoUserConsentDaoTest {
     public void canConsentToStudy() {
         // Not consented yet
         final DynamoStudyConsent1 consent = createStudyConsent();
-        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent));
+        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
 
         // Give consent
         userConsentDao.giveConsent(HEALTH_CODE, consent);
-        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, consent));
+        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
 
         // Withdraw
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent));
+        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
 
         // Can give consent again if the previous consent is withdrawn
         userConsentDao.giveConsent(HEALTH_CODE, consent);
-        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, consent));
+        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
 
         // Withdraw again
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent));
-
+        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
     }
 
     @Test
