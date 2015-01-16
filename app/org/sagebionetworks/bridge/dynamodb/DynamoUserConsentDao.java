@@ -11,6 +11,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
@@ -91,6 +92,9 @@ public class DynamoUserConsentDao implements UserConsentDao {
     public void removeConsentSignature(String healthCode, String studyIdentifier) {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyIdentifier);
         consent = mapper.load(consent);
+        if (consent == null) {
+            throw new EntityNotFoundException(UserConsent.class);
+        }
         consent.setBirthdate(null);
         consent.setImageData(null);
         consent.setImageMimeType(null);
