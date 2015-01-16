@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Set;
 
@@ -31,6 +34,7 @@ import com.google.common.collect.Sets;
 public class SurveyAnswerValidator implements Validator {
     
     private static final long FIVE_MINUTES = 5 * 60 * 1000;
+    private static final MathContext MATH_CONTEXT = new MathContext(2, RoundingMode.HALF_EVEN);
     
     private static final DurationConstraints DURATION_CONSTRAINTS = new DurationConstraints();
     private static final StringConstraints STRING_CONSTRAINTS = new StringConstraints();
@@ -159,8 +163,7 @@ public class SurveyAnswerValidator implements Validator {
 
     private void validateType(Errors errors, DecimalConstraints con, String answer) {
         try {
-            double value = Double.parseDouble(answer);
-            validateNumericalConstraint(errors, con, value);
+            validateNumericalConstraint(errors, con, answer);
         } catch(NumberFormatException e) {
             rejectField(errors, "constraints", "%s is not a valid decimal number", answer);
         }
@@ -168,8 +171,7 @@ public class SurveyAnswerValidator implements Validator {
 
     private void validateType(Errors errors, IntegerConstraints con, String answer) {
         try {
-            int value = Integer.parseInt(answer);
-            validateNumericalConstraint(errors, con, value);
+            validateNumericalConstraint(errors, con, answer);
         } catch(NumberFormatException e) {
             rejectField(errors, "constraints", "%s is not a valid integer", answer);
         }
@@ -182,7 +184,7 @@ public class SurveyAnswerValidator implements Validator {
             rejectField(errors, "constraints", "%s is not a time unit", answer);
         } else {
             try {
-                Integer value = new DurationToIntegerConverter().convert(answer, con.getUnit());
+                String value = new DurationToIntegerConverter().convert(answer, con.getUnit());
                 validateNumericalConstraint(errors, (NumericalConstraints)con, value);
             } catch(IllegalArgumentException e) {
                 rejectField(errors, "constraints", e.getMessage());
@@ -190,23 +192,27 @@ public class SurveyAnswerValidator implements Validator {
         }
     }
     
-    private void validateNumericalConstraint(Errors errors, NumericalConstraints con, Number number) {
-        if (con.getMinValue() != null && number.doubleValue() < con.getMinValue()) {
+    private void validateNumericalConstraint(Errors errors, NumericalConstraints con, String number) {
+        double numberAsDouble = Double.parseDouble(number);
+        if (con.getMinValue() != null && numberAsDouble < con.getMinValue()) {
             if (con.getUnit() != null) {
                 rejectField(errors, "constraints", "%s is lower than the minimum value of %s %s", number, con.getMinValue(), con.getUnit().name().toLowerCase());
             } else {
                 rejectField(errors, "constraints", "%s is lower than the minimum value of %s", number, con.getMinValue());
             }
         }
-        if (con.getMaxValue() != null && number.doubleValue() > con.getMaxValue()) {
+        if (con.getMaxValue() != null && numberAsDouble > con.getMaxValue()) {
             if (con.getUnit() != null) {
                 rejectField(errors, "constraints", "%s is higher than the maximum value of %s %s", number, con.getMaxValue(), con.getUnit().name().toLowerCase());
             } else {
                 rejectField(errors, "constraints", "%s is higher than the maximum value of %s", number, con.getMaxValue());
             }
         }
-        if (con.getStep() != null && number.doubleValue() % con.getStep() != 0) {
-            rejectField(errors, "constraints", "%s is not a step value of %s", number, con.getStep());
+        if (con.getStep() != null) {
+            String result = new BigDecimal(number).remainder(new BigDecimal(con.getStep()), MATH_CONTEXT).toString();
+            if (!result.startsWith("0.0") && !result.equals("0")) { // A simple approach to rounding that works
+                rejectField(errors, "constraints", "%s is not a step value of %s (step is %s)", number, con.getStep(), result);
+            }
         }
     }
     

@@ -18,10 +18,10 @@ import org.joda.time.Period;
  */
 public class DurationToIntegerConverter {
 
-    public int convert(String value, Unit unit) {
+    public String convert(String value, Unit unit) {
         // value is not a ISO 8601 Duration string
         if (StringUtils.isEmpty(value) || NumberUtils.isNumber(value)) {
-            return Integer.parseInt(value, 10);
+            return value;
         }
 
         // Duration string must have the units we are looking for, it cannot measure the duration 
@@ -29,7 +29,7 @@ public class DurationToIntegerConverter {
         Period period = Period.parse(value);
         int periodUnits = periodInUnits(period, unit);
         if (periodUnits > 0) {
-            return periodUnits;
+            return Integer.toString(periodUnits);
         }
 
         // This is the worst case: a duration string has been submitted with units that are different
