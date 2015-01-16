@@ -44,4 +44,3 @@ deploy:
     develop: bridge-develop
     uat: bridge-uat
     prod: bridge-prod
-    
