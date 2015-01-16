@@ -1,8 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Set;
 
@@ -34,7 +31,6 @@ import com.google.common.collect.Sets;
 public class SurveyAnswerValidator implements Validator {
     
     private static final long FIVE_MINUTES = 5 * 60 * 1000;
-    private static final MathContext MATH_CONTEXT = new MathContext(2, RoundingMode.HALF_EVEN);
     
     private static final DurationConstraints DURATION_CONSTRAINTS = new DurationConstraints();
     private static final StringConstraints STRING_CONSTRAINTS = new StringConstraints();
@@ -97,10 +93,10 @@ public class SurveyAnswerValidator implements Validator {
                     validateType(errors, (StringConstraints) con, firstAnswer);
                     break;
                 case INTEGER:
-                    validateType(errors, (IntegerConstraints) con, firstAnswer);
+                    validateType(errors, (NumericalConstraints) con, firstAnswer, "integer");
                     break;
                 case DECIMAL:
-                    validateType(errors, (DecimalConstraints) con, firstAnswer);
+                    validateType(errors, (NumericalConstraints) con, firstAnswer, "decimal");
                     break;
                 case BOOLEAN:
                     validateType(errors, (BooleanConstraints) con, firstAnswer);
@@ -160,58 +156,41 @@ public class SurveyAnswerValidator implements Validator {
             rejectField(errors, "constraints", "%s is not allowed to have a date after %s", time, con.getLatestValue());
         }
     }
-
-    private void validateType(Errors errors, DecimalConstraints con, String answer) {
+    
+    private void validateType(Errors errors, NumericalConstraints con, String answer, String typeName) {
         try {
-            validateNumericalConstraint(errors, con, answer);
+            if (answer != null) {
+                String unitString = (con.getUnit() != null) ? (" " + con.getUnit().name().toLowerCase()) : "";
+                double value = Double.parseDouble(answer);
+                if (con.getMinValue() != null && value < con.getMinValue()) {
+                    rejectField(errors, "constraints", "%s is lower than the minimum value of %s%s", answer, con.getMinValue(), unitString);
+                }
+                if (con.getMaxValue() != null && value > con.getMaxValue()) {
+                    rejectField(errors, "constraints", "%s is higher than the maximum value of %s%s", answer, con.getMaxValue(), unitString);
+                }
+                if (con.getStep() != null) {
+                    double delta = value % con.getStep();
+                    if (delta > con.getStep()) {
+                        rejectField(errors, "constraints", "%s is not a step value of %s", answer, con.getStep());
+                    }
+                }
+            }
         } catch(NumberFormatException e) {
-            rejectField(errors, "constraints", "%s is not a valid decimal number", answer);
-        }
-    }
-
-    private void validateType(Errors errors, IntegerConstraints con, String answer) {
-        try {
-            validateNumericalConstraint(errors, con, answer);
-        } catch(NumberFormatException e) {
-            rejectField(errors, "constraints", "%s is not a valid integer", answer);
+            rejectField(errors, "constraints", "%s is not a valid %s", answer, typeName);
         }
     }
 
     private void validateType(Errors errors, DurationConstraints con, String answer) {
         if (con.getUnit() == null) {
-            rejectField(errors, "constraints", "%s does not have a specified unit", answer);
+            rejectField(errors, "constraints", "unit is required", answer);
         } else if (!Unit.DURATION_UNITS.contains(con.getUnit())) {
-            rejectField(errors, "constraints", "%s is not a time unit", answer);
+            rejectField(errors, "constraints", "%s is not a time unit", con.getUnit().name().toLowerCase());
         } else {
             try {
                 String value = new DurationToIntegerConverter().convert(answer, con.getUnit());
-                validateNumericalConstraint(errors, (NumericalConstraints)con, value);
+                validateType(errors, (NumericalConstraints)con, value, "integer");
             } catch(IllegalArgumentException e) {
                 rejectField(errors, "constraints", e.getMessage());
-            }
-        }
-    }
-    
-    private void validateNumericalConstraint(Errors errors, NumericalConstraints con, String number) {
-        double numberAsDouble = Double.parseDouble(number);
-        if (con.getMinValue() != null && numberAsDouble < con.getMinValue()) {
-            if (con.getUnit() != null) {
-                rejectField(errors, "constraints", "%s is lower than the minimum value of %s %s", number, con.getMinValue(), con.getUnit().name().toLowerCase());
-            } else {
-                rejectField(errors, "constraints", "%s is lower than the minimum value of %s", number, con.getMinValue());
-            }
-        }
-        if (con.getMaxValue() != null && numberAsDouble > con.getMaxValue()) {
-            if (con.getUnit() != null) {
-                rejectField(errors, "constraints", "%s is higher than the maximum value of %s %s", number, con.getMaxValue(), con.getUnit().name().toLowerCase());
-            } else {
-                rejectField(errors, "constraints", "%s is higher than the maximum value of %s", number, con.getMaxValue());
-            }
-        }
-        if (con.getStep() != null) {
-            String result = new BigDecimal(number).remainder(new BigDecimal(con.getStep()), MATH_CONTEXT).toString();
-            if (!result.startsWith("0.0") && !result.equals("0")) { // A simple approach to rounding that works
-                rejectField(errors, "constraints", "%s is not a step value of %s (step is %s)", number, con.getStep(), result);
             }
         }
     }
@@ -263,10 +242,10 @@ public class SurveyAnswerValidator implements Validator {
             validateType(errors, STRING_CONSTRAINTS, answer);
             break;
         case INTEGER:
-            validateType(errors, INTEGER_CONSTRAINTS, answer);
+            validateType(errors, INTEGER_CONSTRAINTS, answer, "integer");
             break;
         case DECIMAL:
-            validateType(errors, DECIMAL_CONSTRAINTS, answer);
+            validateType(errors, DECIMAL_CONSTRAINTS, answer, "decimal");
             break;
         case BOOLEAN:
             validateType(errors, BOOLEAN_CONSTRAINTS, answer);

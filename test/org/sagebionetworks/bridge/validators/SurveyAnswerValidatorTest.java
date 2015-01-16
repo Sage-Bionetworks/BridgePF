@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 
 import java.util.List;
 
@@ -189,6 +191,29 @@ public class SurveyAnswerValidatorTest {
             assertEquals("2 is lower than the minimum value of 3.0 hours", message);
         }
     }
+    @Test
+    public void validateDurationWithoutTimeUnitsIsInvalid() {
+        DurationConstraints constraints = new DurationConstraints();
+        constraints.setUnit(Unit.MILLILITERS);
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+
+        // Wrong type of unit (not a time unit)
+        SurveyAnswer answer = createAnswer("4");
+        try {
+            constraints.setMinValue(3d);
+            Validate.entityThrowingException(validator, answer);    
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("milliliters is not a time unit"));
+        }
+        
+        // No unit at all.
+        try {
+            constraints.setUnit(null);
+            Validate.entityThrowingException(validator, answer);    
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("unit is required"));
+        }
+    }
     @Test(expected = InvalidEntityException.class)
     public void validateDurationInDifferentUnitsIsInvalid() {
         DurationConstraints constraints = new DurationConstraints();
@@ -261,21 +286,41 @@ public class SurveyAnswerValidatorTest {
         Validate.entityThrowingException(validator, answer);
     }
     @Test
-    public void validateIntegerCanHaveUnits() {
-        IntegerConstraints constraints = new IntegerConstraints();
-        constraints.setUnit(Unit.METERS);
-        validator = new SurveyAnswerValidator(createQuestion(constraints));
-        
-        SurveyAnswer answer = createAnswer("12");
-        Validate.entityThrowingException(validator, answer);
-    }
-    @Test
     public void validateIntegerNoConstraints() {
         IntegerConstraints constraints = new IntegerConstraints();
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("12");
         Validate.entityThrowingException(validator, answer);
+    }
+    @Test
+    public void validateIntegerWithNonIntegerValueIsInvalid() {
+        IntegerConstraints constraints = new IntegerConstraints();
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+        
+        try {
+            SurveyAnswer answer = createAnswer("asdf");
+            Validate.entityThrowingException(validator, answer);
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("asdf is not a valid integer"));
+        }
+    }
+    @Test
+    public void validateDecimalWithNonDecimalValueIsInvalid() {
+        DecimalConstraints constraints = new DecimalConstraints();
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+        
+        try {
+            SurveyAnswer answer = createAnswer("asdf");
+            Validate.entityThrowingException(validator, answer);
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("asdf is not a valid decimal"));
+        }
+        
+        // But this is okay, it's treated as 3.0
+        SurveyAnswer answer = createAnswer("3");
+        Validate.entityThrowingException(validator, answer);
+        
     }
     @Test(expected=InvalidEntityException.class)
     public void validateMultiValueWithNoOther() {

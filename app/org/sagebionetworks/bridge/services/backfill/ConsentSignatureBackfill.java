@@ -74,10 +74,6 @@ public class ConsentSignatureBackfill extends AsyncBackfillTemplate {
     }
 
     private void backfillAccount(BackfillTask task, BackfillCallback callback, Study study, Account account) {
-        try {
-            accountEncryptionService.getConsentSignature(study, account);
-            callback.newRecords(backfillRecordFactory.createOnly(task, study, account, "Already in Stormpath."));
-        } catch (EntityNotFoundException e) {
             HealthId healthId = null;
             try {
                 healthId = accountEncryptionService.getHealthCode(study, account);
@@ -97,6 +93,5 @@ public class ConsentSignatureBackfill extends AsyncBackfillTemplate {
                             task, study, account, "Missing consent signature in DynamoDB. Backfill skipped."));
                 }
             }
-        }
     }
 }

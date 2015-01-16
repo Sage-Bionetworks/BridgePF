@@ -23,6 +23,8 @@ env:
   - secure: HepX8b2aoAqu0MPuyEpy+PB2IbkTl/OE8h+CmWoaqDXLEPnYN0tQTdKAmqPk+G5VNb/UzNcCc4b4lMioKyJtx80eQo4io6R68lq/uG9FAkE20J6PhzxB9ZBRULi1BurxrE5lRj3RxU4lXn3bJJYyoormCqTSOai6nCtsIJ4MOaU=
   - secure: hG+O3ytuluFaq+Un3Y7uVrCTlVZWrBufVNd2WluKCNJ62zCUEhFgw43SO3g+/eRuhhPAos0n/y1KeOEpisFdFNCBthlHTA1solk2TVE7pVoJkEtv0DTdt9d5Dg3Rit7XA0QzsMvlErdZrCE7NhfjFe7clwnUQfgIEM7jVlsESro=
   - secure: R0bZSTX5dYjPSv9Skb3EtojMYPkl0hyFjLHknCE8+C1i9jrpT9iQFV3Xb0JrM9MEgdlbKtk19mYGfK7SFL8yjJIXYSR2a/Is5Q5+A7n9HCH1jyEoNDuem9EvCzbY5ywCpb7cHQ0TUK1tMdwDZ/OrMJ6No1eajI/hGRSni4kGcOU=
+  - secure: KB0npSAkE+D8pJqv981/ikmdQissFfp+Kp6NCJvsq0FVpCou37d6p/+FAgdwJw23AgksGnXHEE4hVwTGhAfoGXoWhZHph7ndKrLtA23Flqe1DY3FT7wr8KZ+4ZtaTsvZRO+9Tbw7N+fsuMEzyojMbWySfUFy9M7owiu5lA9ldlQ=
+  
 before_install:
 - npm install -g bower
 - npm install -g grunt-cli
@@ -36,7 +38,7 @@ script:
 deploy:
   provider: heroku
   api_key:
-    secure: UPAKTXICXotsSq+26qzbHy/idlpI/vSAikVaWE0ty+bmRfOYeJDSo8uXXi2LnrxjX01+95aTeElUt8LPi1+FAS9aklokXv3NPl9iIRzJMEtF20nKtuLW2ycNv8rbhSt4J+YVqV2a/OclcWIQ9fX6XTVs/hR4ZOFQMjkmIJviaZU=
+    secure: HNTHs81zm46M8mwHlG3hA3WyZeaui0NOYVe9RodlEBfRCl0tVgdDL2XEQsqEsBovrg3qTTFmOr5KYJlaEtqEg2kelgAPNXqariEOzCOZRBYFPpiL9eR5fkxoQ16QSR9DFAMmdLCVlN/y/TgLmdB5hqLeJE6FuWIvNd45qKU0m3Y=
   strategy: git
   app:
     develop: bridge-develop
