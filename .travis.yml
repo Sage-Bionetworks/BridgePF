@@ -36,7 +36,7 @@ script:
 deploy:
   provider: heroku
   api_key:
-    secure: To9IEKT4ppYgFW7vHVfC5s5FHzxALA+/Krg9fLv8Fx9BI3rMB91yN+MfE0yhWySaTs8BEHfAdOBN/zvWcXGyhpta10TtvKs04DzZt9foP+MPbRDbE5WEQ9M2n3uAy10ACX2Kxj3ebv3d97I8TYD2qfVBArIIOG29FZlJsRDYIWg=
+    secure: UPAKTXICXotsSq+26qzbHy/idlpI/vSAikVaWE0ty+bmRfOYeJDSo8uXXi2LnrxjX01+95aTeElUt8LPi1+FAS9aklokXv3NPl9iIRzJMEtF20nKtuLW2ycNv8rbhSt4J+YVqV2a/OclcWIQ9fX6XTVs/hR4ZOFQMjkmIJviaZU=
   strategy: git
   app:
     develop: bridge-develop
