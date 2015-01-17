@@ -170,7 +170,7 @@ public class SurveyAnswerValidator implements Validator {
                 }
                 if (con.getStep() != null) {
                     double delta = value % con.getStep();
-                    if (delta > con.getStep()) {
+                    if (delta > (con.getStep()/10)) {
                         rejectField(errors, "constraints", "%s is not a step value of %s", answer, con.getStep());
                     }
                 }
