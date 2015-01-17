@@ -182,7 +182,7 @@ public class SurveyAnswerValidator implements Validator {
 
     private void validateType(Errors errors, DurationConstraints con, String answer) {
         if (con.getUnit() == null) {
-            rejectField(errors, "constraints", "unit is required", answer);
+            rejectField(errors, "constraints", "unit is required");
         } else if (!Unit.DURATION_UNITS.contains(con.getUnit())) {
             rejectField(errors, "constraints", "%s is not a time unit", con.getUnit().name().toLowerCase());
         } else {
