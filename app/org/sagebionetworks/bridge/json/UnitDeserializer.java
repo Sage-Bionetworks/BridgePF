@@ -2,24 +2,23 @@ package org.sagebionetworks.bridge.json;
 
 import java.io.IOException;
 
-import org.sagebionetworks.bridge.models.surveys.DurationUnit;
+import org.sagebionetworks.bridge.models.surveys.Unit;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
-public class DurationUnitDeserializer extends JsonDeserializer<DurationUnit> {
+public class UnitDeserializer extends JsonDeserializer<Unit> {
 
     @Override
-    public DurationUnit deserialize(JsonParser parser, DeserializationContext context) throws IOException,
-            JsonProcessingException {
+    public Unit deserialize(JsonParser parser, DeserializationContext context) throws IOException, JsonProcessingException {
         String value = parser.getText();
-        return DurationUnit.valueOf(value.toUpperCase());
+        return Unit.valueOf(value.toUpperCase());
     }
     
     @Override
-    public DurationUnit getNullValue() {
+    public Unit getNullValue() {
         return null;
     }
 

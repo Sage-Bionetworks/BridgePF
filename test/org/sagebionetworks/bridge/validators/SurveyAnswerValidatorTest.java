@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 
 import java.util.List;
 
@@ -16,13 +18,13 @@ import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.DecimalConstraints;
 import org.sagebionetworks.bridge.models.surveys.DurationConstraints;
-import org.sagebionetworks.bridge.models.surveys.DurationUnit;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.TimeConstraints;
+import org.sagebionetworks.bridge.models.surveys.Unit;
 
 import com.google.common.collect.Lists;
 
@@ -125,10 +127,27 @@ public class SurveyAnswerValidatorTest {
     @Test(expected = InvalidEntityException.class)
     public void validateDecimalMaxValue() {
         DecimalConstraints constraints = new DecimalConstraints();
+        constraints.setMaxValue(10d); 
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+        Validate.entityThrowingException(validator, createAnswer("15.0"));
+    }
+    @Test(expected = InvalidEntityException.class)
+    public void validateInvalidDecimalStep() {
+        DecimalConstraints constraints = new DecimalConstraints();
         constraints.setMaxValue(10d);
+        constraints.setStep(0.5d);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
-        Validate.entityThrowingException(validator, createAnswer("15.0"));
+        Validate.entityThrowingException(validator, createAnswer("15.2"));
+    }
+    @Test
+    public void validateValidDecimalStep() {
+        DecimalConstraints constraints = new DecimalConstraints();
+        constraints.setMaxValue(10d);
+        constraints.setStep(0.5d);
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+        
+        Validate.entityThrowingException(validator, createAnswer("8.5"));
     }
     @Test(expected = InvalidEntityException.class)
     public void validateDuration() {
@@ -141,7 +160,7 @@ public class SurveyAnswerValidatorTest {
     @Test
     public void validateValidDuration() {
         DurationConstraints constraints = new DurationConstraints();
-        constraints.setUnit(DurationUnit.HOURS);
+        constraints.setUnit(Unit.HOURS);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("PT2H");
@@ -150,8 +169,8 @@ public class SurveyAnswerValidatorTest {
     @Test
     public void validateDurationInsideUnitRange() {
         DurationConstraints constraints = new DurationConstraints();
-        constraints.setUnit(DurationUnit.HOURS);
-        constraints.setMinValue(3L);
+        constraints.setUnit(Unit.HOURS);
+        constraints.setMinValue(3d);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("PT4H");
@@ -160,8 +179,8 @@ public class SurveyAnswerValidatorTest {
     @Test
     public void validateDurationIsOutsideUnitRange() {
         DurationConstraints constraints = new DurationConstraints();
-        constraints.setUnit(DurationUnit.HOURS);
-        constraints.setMinValue(3L);
+        constraints.setUnit(Unit.HOURS);
+        constraints.setMinValue(3d);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
 
         SurveyAnswer answer = createAnswer("PT2H"); // this should throw an exception
@@ -169,14 +188,37 @@ public class SurveyAnswerValidatorTest {
             Validate.entityThrowingException(validator, answer);    
         } catch(InvalidEntityException e) {
             String message = e.getErrors().get("Test Question.constraints").get(0);
-            assertEquals("2 is lower than the minimum value of 3", message);
+            assertEquals("2 is lower than the minimum value of 3.0 hours", message);
+        }
+    }
+    @Test
+    public void validateDurationWithoutTimeUnitsIsInvalid() {
+        DurationConstraints constraints = new DurationConstraints();
+        constraints.setUnit(Unit.MILLILITERS);
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+
+        // Wrong type of unit (not a time unit)
+        SurveyAnswer answer = createAnswer("4");
+        try {
+            constraints.setMinValue(3d);
+            Validate.entityThrowingException(validator, answer);    
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("milliliters is not a time unit"));
+        }
+        
+        // No unit at all.
+        try {
+            constraints.setUnit(null);
+            Validate.entityThrowingException(validator, answer);    
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("unit is required"));
         }
     }
     @Test(expected = InvalidEntityException.class)
     public void validateDurationInDifferentUnitsIsInvalid() {
         DurationConstraints constraints = new DurationConstraints();
-        constraints.setUnit(DurationUnit.HOURS);
-        constraints.setMinValue(3L);
+        constraints.setUnit(Unit.HOURS);
+        constraints.setMinValue(3d);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("PT190M");
@@ -185,8 +227,8 @@ public class SurveyAnswerValidatorTest {
     @Test(expected = InvalidEntityException.class)
     public void validateDurationOutOfRangeInDifferentUnits() {
         DurationConstraints constraints = new DurationConstraints();
-        constraints.setUnit(DurationUnit.HOURS);
-        constraints.setMinValue(3L);
+        constraints.setUnit(Unit.HOURS);
+        constraints.setMinValue(3d);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("PT20M");
@@ -198,8 +240,8 @@ public class SurveyAnswerValidatorTest {
         // survey asks for something like months, and the answer is returned in a different
         // time unit, like months: P36M instead of P3Y for example.
         DurationConstraints constraints = new DurationConstraints();
-        constraints.setUnit(DurationUnit.YEARS);
-        constraints.setMinValue(3L);
+        constraints.setUnit(Unit.YEARS);
+        constraints.setMinValue(3d);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("P3Y");
@@ -208,7 +250,7 @@ public class SurveyAnswerValidatorTest {
     @Test(expected = InvalidEntityException.class)
     public void validateIntegerMinValue() {
         IntegerConstraints constraints = new IntegerConstraints();
-        constraints.setMinValue(15L);
+        constraints.setMinValue(15d);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         
         SurveyAnswer answer = createAnswer("10");
@@ -217,10 +259,30 @@ public class SurveyAnswerValidatorTest {
     @Test(expected = InvalidEntityException.class)
     public void validateIntegerMaxValue() {
         IntegerConstraints constraints = new IntegerConstraints();
-        constraints.setMaxValue(10L);
+        constraints.setMaxValue(10d);
         validator = new SurveyAnswerValidator(createQuestion(constraints));
 
         SurveyAnswer answer = createAnswer("12");
+        Validate.entityThrowingException(validator, answer);
+    }
+    @Test(expected = InvalidEntityException.class)
+    public void validateIntegerInvalidStep() {
+        IntegerConstraints constraints = new IntegerConstraints();
+        constraints.setMaxValue(10d);
+        constraints.setStep(5d);
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+
+        SurveyAnswer answer = createAnswer("12");
+        Validate.entityThrowingException(validator, answer);
+    }
+    @Test
+    public void validateIntegerValidStep() {
+        IntegerConstraints constraints = new IntegerConstraints();
+        constraints.setMaxValue(20d);
+        constraints.setStep(5d);
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+
+        SurveyAnswer answer = createAnswer("15");
         Validate.entityThrowingException(validator, answer);
     }
     @Test
@@ -230,6 +292,35 @@ public class SurveyAnswerValidatorTest {
         
         SurveyAnswer answer = createAnswer("12");
         Validate.entityThrowingException(validator, answer);
+    }
+    @Test
+    public void validateIntegerWithNonIntegerValueIsInvalid() {
+        IntegerConstraints constraints = new IntegerConstraints();
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+        
+        try {
+            SurveyAnswer answer = createAnswer("asdf");
+            Validate.entityThrowingException(validator, answer);
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("asdf is not a valid integer"));
+        }
+    }
+    @Test
+    public void validateDecimalWithNonDecimalValueIsInvalid() {
+        DecimalConstraints constraints = new DecimalConstraints();
+        validator = new SurveyAnswerValidator(createQuestion(constraints));
+        
+        try {
+            SurveyAnswer answer = createAnswer("asdf");
+            Validate.entityThrowingException(validator, answer);
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("asdf is not a valid decimal"));
+        }
+        
+        // But this is okay, it's treated as 3.0
+        SurveyAnswer answer = createAnswer("3");
+        Validate.entityThrowingException(validator, answer);
+        
     }
     @Test(expected=InvalidEntityException.class)
     public void validateMultiValueWithNoOther() {
