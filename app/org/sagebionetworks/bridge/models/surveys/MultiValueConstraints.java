@@ -5,7 +5,8 @@ import java.util.List;
 
 /**
  * The only way to constrain a multiple value answer is through an enumeration of the 
- * values that are allowed. However, an enumeration is not required. 
+ * values that are allowed. However, an enumeration is not required. This should have 
+ * been called EnumerationConstraint.
  * 
  * Note that if a user can enter an "other" value, even if there is an enumeration of 
  * the allowable values, then there will be no validation on the submitted answer, 

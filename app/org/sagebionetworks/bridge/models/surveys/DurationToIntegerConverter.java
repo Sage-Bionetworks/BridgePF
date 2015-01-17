@@ -18,7 +18,7 @@ import org.joda.time.Period;
  */
 public class DurationToIntegerConverter {
 
-    public String convert(String value, DurationUnit unit) {
+    public String convert(String value, Unit unit) {
         // value is not a ISO 8601 Duration string
         if (StringUtils.isEmpty(value) || NumberUtils.isNumber(value)) {
             return value;
@@ -37,7 +37,7 @@ public class DurationToIntegerConverter {
         throw new IllegalArgumentException("ISO 8601 duration does not specify a duration in the units of the question (e.g. PT60M for a duration measured in hours; use PT1H instead)");
     }
     
-    private int periodInUnits(Period period, DurationUnit units) {
+    private int periodInUnits(Period period, Unit units) {
         switch(units) {
         case SECONDS:
             return period.getSeconds();
