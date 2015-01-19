@@ -487,6 +487,4 @@
 
     <bean id="studyIdBackfill" parent="backfillTemplate" class="org.sagebionetworks.bridge.services.backfill.StudyIdBackfill" />
 
-    <bean id="consentSignatureBackfill" parent="backfillTemplate" class="org.sagebionetworks.bridge.services.backfill.ConsentSignatureBackfill" />
-
 </beans>
