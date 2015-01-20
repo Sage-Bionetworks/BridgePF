@@ -16,7 +16,7 @@ public class LoggingInterceptor implements MethodInterceptor {
         if (logger.isInfoEnabled()) {
             Http.Request request = Http.Context.current().request();
             String[] values = request.headers().get("User-Agent");
-            String userAgent = (values.length > 0) ? values[0] : "<NONE>";
+            String userAgent = (values == null || values.length == 0) ? "<NONE>" : values[0];
             logger.info("User-Agent: " + userAgent);
         }
         return method.proceed();
