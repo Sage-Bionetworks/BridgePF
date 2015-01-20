@@ -1,14 +1,14 @@
-@(auth: String)
+@(auth: String, host: String, build: String)
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <title>Bridge Evaluation Study - Sage Bionetworks</title>
     <meta name="viewport" content="width=device-width" />
-    <base href="/" />
+    <base href="//@host/" />
     <script>window._session = @Html(auth);</script>
-    <link rel="stylesheet" href="../shared/build/bridge-shared.min.aabcc93c.css" />
-    <link rel="stylesheet" href="../test/css/test.css" />
+    <link rel="stylesheet" href="shared/build/@build/bridge-shared.min.css" />
+    <link rel="stylesheet" href="test/css/test.css" />
 </head>
 <body>
     <div class="outer-body">
@@ -16,7 +16,7 @@
             <div class="view-holder" ng-view></div>
         </div>
     </div>
-    <script src="shared/build/bridge-shared.min.35def929.js"></script>
+    <script src="shared/build/@build/bridge-shared.min.js"></script>
     <script src="test/src/test.js"></script>
 </body>
 </html>

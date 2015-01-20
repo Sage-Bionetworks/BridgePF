@@ -13,6 +13,8 @@ import play.mvc.Result;
 public class ApplicationController extends BaseController {
 
     private static final UserSession EMPTY_USER_SESSION = new UserSession();
+    private static final String ASSETS_HOST = "assets.sagebridge.org";
+    private static final String ASSETS_BUILD = "201501191951";
 
     public Result redirectToPublicApp() {
         return redirect("/");
@@ -26,15 +28,15 @@ public class ApplicationController extends BaseController {
         try {
             Study study = studyService.getStudyByHostname(getHostname());
             if ("pd".equals(study.getIdentifier()) || "neurod".equals(study.getIdentifier()) || "parkinson".equals(study.getIdentifier())) {
-                return ok(views.html.neurod.render(Json.toJson(info).toString()));    
+                return ok(views.html.neurod.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));    
             } else if ("api".equals(study.getIdentifier())) {
-                return ok(views.html.api.render(Json.toJson(info).toString()));
+                return ok(views.html.api.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
             }
             String apiHost = "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix();
             return ok(views.html.nosite.render(study.getName(), apiHost));
         } catch(EntityNotFoundException e) {
             // Go with the API study
-            return ok(views.html.api.render(Json.toJson(info).toString()));
+            return ok(views.html.api.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
         }
     }
     
@@ -47,7 +49,7 @@ public class ApplicationController extends BaseController {
             session = EMPTY_USER_SESSION;
         }
         UserSessionInfo info = new UserSessionInfo(session);
-        return ok(views.html.consent.render(Json.toJson(info).toString()));
+        return ok(views.html.consent.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
     }
 
     public Result redirectToConsent() {
