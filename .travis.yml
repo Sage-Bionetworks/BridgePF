@@ -30,7 +30,6 @@ deploy:
   provider: heroku
   api_key:
     secure: HNTHs81zm46M8mwHlG3hA3WyZeaui0NOYVe9RodlEBfRCl0tVgdDL2XEQsqEsBovrg3qTTFmOr5KYJlaEtqEg2kelgAPNXqariEOzCOZRBYFPpiL9eR5fkxoQ16QSR9DFAMmdLCVlN/y/TgLmdB5hqLeJE6FuWIvNd45qKU0m3Y=
-  strategy: git
   app:
     develop: bridge-develop
     uat: bridge-uat
