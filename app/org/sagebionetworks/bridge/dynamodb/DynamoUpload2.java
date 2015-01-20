@@ -84,7 +84,6 @@ public class DynamoUpload2 implements DynamoTable, Upload {
     }
 
     /** Name of the file to upload. */
-    @DynamoDBIndexHashKey(attributeName = "filename", globalSecondaryIndexName = "filename-index")
     public String getFilename() {
         return filename;
     }
@@ -109,7 +108,6 @@ public class DynamoUpload2 implements DynamoTable, Upload {
      * Calendar date the file was uploaded (specifically, the uploadComplete() call. Date is determined using Pacific
      * local time.
      */
-    @DynamoDBIndexHashKey(attributeName = "uploadDate", globalSecondaryIndexName = "uploadDate-index")
     @DynamoDBMarshalling(marshallerClass = LocalDateMarshaller.class)
     public LocalDate getUploadDate() {
         return uploadDate;
