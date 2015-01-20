@@ -28,7 +28,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 
 public class UploadServiceImpl implements UploadService {
 
-    private final Logger logger = LoggerFactory.getLogger(UploadServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(UploadServiceImpl.class);
 
     private static final long EXPIRATION = 60 * 1000; // 1 minute
     private static final String BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
@@ -92,7 +92,8 @@ public class UploadServiceImpl implements UploadService {
         // can't re-complete uploads that are already complete
         Upload upload = uploadDao.getUpload(uploadId);
         if (upload.isComplete()) {
-            throw new BadRequestException(String.format("Upload ID %s is already complete", uploadId));
+            logger.warn("uploadComplete called for upload %s, which is already complete", uploadId);
+            return;
         }
 
         final String objectId = upload.getObjectId();
