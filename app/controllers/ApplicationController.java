@@ -14,20 +14,6 @@ public class ApplicationController extends BaseController {
 
     private static final UserSession EMPTY_USER_SESSION = new UserSession();
 
-    public Result redirectToApp() {
-        return redirect("/app/");
-    }
-
-    public Result loadApp() throws Exception {
-        UserSession session = getSessionIfItExists();
-        if (session == null) {
-            session = new UserSession();
-        }
-        UserSessionInfo info = new UserSessionInfo(session);
-        Study study = studyService.getStudyByHostname(getHostname());
-        return ok(views.html.index.render(Json.toJson(info).toString(), study.getIdentifier()));
-    }
-
     public Result redirectToPublicApp() {
         return redirect("/");
     }

@@ -24,16 +24,7 @@ env:
   - secure: hG+O3ytuluFaq+Un3Y7uVrCTlVZWrBufVNd2WluKCNJ62zCUEhFgw43SO3g+/eRuhhPAos0n/y1KeOEpisFdFNCBthlHTA1solk2TVE7pVoJkEtv0DTdt9d5Dg3Rit7XA0QzsMvlErdZrCE7NhfjFe7clwnUQfgIEM7jVlsESro=
   - secure: R0bZSTX5dYjPSv9Skb3EtojMYPkl0hyFjLHknCE8+C1i9jrpT9iQFV3Xb0JrM9MEgdlbKtk19mYGfK7SFL8yjJIXYSR2a/Is5Q5+A7n9HCH1jyEoNDuem9EvCzbY5ywCpb7cHQ0TUK1tMdwDZ/OrMJ6No1eajI/hGRSni4kGcOU=
   - secure: KB0npSAkE+D8pJqv981/ikmdQissFfp+Kp6NCJvsq0FVpCou37d6p/+FAgdwJw23AgksGnXHEE4hVwTGhAfoGXoWhZHph7ndKrLtA23Flqe1DY3FT7wr8KZ+4ZtaTsvZRO+9Tbw7N+fsuMEzyojMbWySfUFy9M7owiu5lA9ldlQ=
-  
-before_install:
-- npm install -g bower
-- npm install -g grunt-cli
-- gem install sass
 script:
-- cd public
-- bash update-js.sh
-- grunt release
-- cd ..
 - sbt test
 deploy:
   provider: heroku
