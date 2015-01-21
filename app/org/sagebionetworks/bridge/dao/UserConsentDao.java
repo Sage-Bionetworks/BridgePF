@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
 import org.sagebionetworks.bridge.models.UserConsent;
-import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 public interface UserConsentDao {
@@ -31,12 +30,6 @@ public interface UserConsentDao {
      * @return
      */
     UserConsent getUserConsent(String healthCode, String studyIdentifier);
-
-    /**
-     * Returns a non-null consent signature, consisting of the signature name and birthdate. Throws
-     * EntityNotFoundException if no consent signature is found.
-     */
-    ConsentSignature getConsentSignature(String healthCode, String studyIdentifier);
 
     /**
      * @param studyKey

@@ -37,8 +37,8 @@ POST   /api/v1/profile      @controllers.UserProfileController.updateUserProfile
 GET    /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.getSurveyResponse(guid: String)
 POST   /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
 DELETE /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
-GET    /api/v1/surveys/:surveyGuid/:createdOn              @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
 GET    /api/v1/surveys/:surveyGuid/published               @controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
+GET    /api/v1/surveys/:surveyGuid/:createdOn              @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
 POST   /api/v1/surveys/:surveyGuid/:createdOn              @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
 POST   /api/v1/surveys/:surveyGuid/:createdOn/:identifier  @controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
 
@@ -61,6 +61,7 @@ GET    /researchers/v1/surveys                                 @controllers.Surv
 POST   /researchers/v1/surveys                                 @controllers.SurveyController.createSurvey
 GET    /researchers/v1/surveys/recent                          @controllers.SurveyController.getAllSurveysMostRecentVersion2
 GET    /researchers/v1/surveys/published                       @controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersion
+GET    /researchers/v1/surveys/:identifier                     @controllers.SurveyController.getMostRecentPublishedSurveyVersionByIdentifier(identifier: String)
 GET    /researchers/v1/surveys/:surveyGuid/versions            @controllers.SurveyController.getSurveyAllVersions(surveyGuid: String)
 GET    /researchers/v1/surveys/:surveyGuid/recent              @controllers.SurveyController.getSurveyMostRecentVersion(surveyGuid: String)
 GET    /researchers/v1/surveys/:surveyGuid/published           @controllers.SurveyController.getSurveyMostRecentlyPublishedVersion(surveyGuid: String)
