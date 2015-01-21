@@ -110,9 +110,7 @@
         <property name="surveyDao" ref="surveyDao"/>
     </bean>
 
-    <bean id="uploadDao" class="org.sagebionetworks.bridge.dynamodb.DynamoUploadDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-    </bean>
+    <bean id="uploadDao" class="org.sagebionetworks.bridge.dynamodb.DynamoUploadDao" />
 
     <bean id="schedulePlanDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlanDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />

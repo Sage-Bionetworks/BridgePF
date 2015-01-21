@@ -6,11 +6,14 @@ import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE
 import java.net.URL;
 import java.util.Date;
 
+import com.google.common.base.Strings;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.UploadDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -25,7 +28,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 
 public class UploadServiceImpl implements UploadService {
 
-    private final Logger logger = LoggerFactory.getLogger(UploadServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(UploadServiceImpl.class);
 
     private static final long EXPIRATION = 60 * 1000; // 1 minute
     private static final String BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
@@ -55,11 +58,11 @@ public class UploadServiceImpl implements UploadService {
     @Override
     public UploadSession createUpload(User user, UploadRequest uploadRequest) {
         Validate.entityThrowingException(validator, uploadRequest);
-        
+
+        // For all new uploads, the upload ID in DynamoDB is the same as the S3 Object ID
         final String uploadId = uploadDao.createUpload(uploadRequest, user.getHealthCode());
-        final String objectId = uploadDao.getObjectId(uploadId);
-        GeneratePresignedUrlRequest presignedUrlRequest = 
-                new GeneratePresignedUrlRequest(BUCKET, objectId, HttpMethod.PUT);
+        GeneratePresignedUrlRequest presignedUrlRequest =
+                new GeneratePresignedUrlRequest(BUCKET, uploadId, HttpMethod.PUT);
 
         // Expiration
         final Date expiration = DateTime.now(DateTimeZone.UTC).toDate();
@@ -82,7 +85,18 @@ public class UploadServiceImpl implements UploadService {
 
     @Override
     public void uploadComplete(final String uploadId) {
-        final String objectId = uploadDao.getObjectId(uploadId);
+        if (Strings.isNullOrEmpty(uploadId)) {
+            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "uploadId"));
+        }
+
+        // can't re-complete uploads that are already complete
+        Upload upload = uploadDao.getUpload(uploadId);
+        if (upload.isComplete()) {
+            logger.warn("uploadComplete called for upload %s, which is already complete", uploadId);
+            return;
+        }
+
+        final String objectId = upload.getObjectId();
         ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, objectId);
         String sse = obj.getSSEAlgorithm();
         if (!AES_256_SERVER_SIDE_ENCRYPTION.equals(sse)) {

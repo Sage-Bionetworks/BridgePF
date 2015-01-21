@@ -101,14 +101,13 @@ public class UploadServiceTest {
         UploadRequest uploadRequest = createUploadRequest();
         UploadSession uploadSession = uploadService.createUpload(testUser.getUser(), uploadRequest);
         final String uploadId = uploadSession.getId();
-        final String objectId = uploadDao.getObjectId(uploadId);
-        objectsToRemove.add(objectId);
+        objectsToRemove.add(uploadId);
         int reponseCode = upload(uploadSession.getUrl(), uploadRequest);
         assertEquals(200, reponseCode);
         uploadService.uploadComplete(uploadId);
         long expiration = DateTime.now(DateTimeZone.UTC).plusMinutes(1).getMillis();
         assertTrue(expiration > uploadSession.getExpires());
-        ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, objectId);
+        ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, uploadId);
         String sse = obj.getSSEAlgorithm();
         assertTrue(AES_256_SERVER_SIDE_ENCRYPTION.equals(sse));
     }
