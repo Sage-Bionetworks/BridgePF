@@ -44,6 +44,7 @@ public class UploadArchiveService {
     }
 
     public byte[] zipAndEncrypt(Study study, List<ArchiveEntry> entries) {
+        checkNotNull(study);
         checkNotNull(entries);
         byte[] zipped = zip(entries);
         return encrypt(study, zipped);

@@ -10,16 +10,18 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-/** Helper class that simplifies reading S3 files. */
-@Component
+/**
+ * Helper class that simplifies reading S3 files. This is generally created by Spring. However, we don't use the
+ * Component annotation because there are multiple S3 clients, so there may be multiple S3 helpers.
+ */
 public class S3Helper {
     private AmazonS3Client s3Client;
 
-    /** S3 Client. This is configured by Spring. */
-    @Autowired
+    /**
+     * S3 Client. This is configured by Spring. We don't use the Autowired annotation because there are multiple S3
+     * clients.
+     */
     public void setS3Client(AmazonS3Client s3Client) {
         this.s3Client = s3Client;
     }

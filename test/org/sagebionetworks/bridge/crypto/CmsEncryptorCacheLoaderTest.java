@@ -35,7 +35,7 @@ public class CmsEncryptorCacheLoaderTest {
 
         // set up cache loader
         CmsEncryptorCacheLoader testCacheLoader = new CmsEncryptorCacheLoader();
-        testCacheLoader.setS3Helper(s3Helper);
+        testCacheLoader.setS3CmsHelper(s3Helper);
 
         // execute and validate
         CmsEncryptor retVal = testCacheLoader.load("test-study");
