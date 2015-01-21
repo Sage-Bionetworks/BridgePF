@@ -39,6 +39,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 import com.google.common.reflect.ClassPath.ClassInfo;
+import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -274,6 +275,8 @@ public class DynamoInitializer {
         if (String.class.equals(clazz)) {
             return ScalarAttributeType.S;
         } else if (JsonNode.class.equals(clazz)) {
+            return ScalarAttributeType.S;
+        } else if (LocalDate.class.equals(clazz)) {
             return ScalarAttributeType.S;
         } else if (Long.class.equals(clazz)) {
             return ScalarAttributeType.N;

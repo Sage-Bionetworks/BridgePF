@@ -48,7 +48,6 @@ public class DynamoUpload implements Upload, DynamoTable {
     }
 
     @DynamoDBAttribute
-    @Override
     public long getTimestamp() {
         return timestamp;
     }
@@ -66,7 +65,6 @@ public class DynamoUpload implements Upload, DynamoTable {
     }
 
     @DynamoDBAttribute
-    @Override
     public String getHealthCode() {
         return healthCode;
     }
@@ -92,7 +90,6 @@ public class DynamoUpload implements Upload, DynamoTable {
     }
 
     @DynamoDBAttribute
-    @Override
     public String getName() {
         return name;
     }
@@ -101,7 +98,6 @@ public class DynamoUpload implements Upload, DynamoTable {
     }
 
     @DynamoDBAttribute
-    @Override
     public long getContentLength() {
         return contentLength;
     }
@@ -110,7 +106,6 @@ public class DynamoUpload implements Upload, DynamoTable {
     }
 
     @DynamoDBAttribute
-    @Override
     public String getContentType() {
         return contentType;
     }
@@ -119,7 +114,6 @@ public class DynamoUpload implements Upload, DynamoTable {
     }
 
     @DynamoDBAttribute
-    @Override
     public String getContentMd5() {
         return contentMd5;
     }
