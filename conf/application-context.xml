@@ -485,4 +485,8 @@
 
     <bean id="studyIdBackfill" parent="backfillTemplate" class="org.sagebionetworks.bridge.services.backfill.StudyIdBackfill" />
 
+    <!-- CONSTANTS -->
+    <bean id="numAsyncWorkerThreads" class="java.lang.Integer">
+        <constructor-arg value="20" />
+    </bean>
 </beans>
