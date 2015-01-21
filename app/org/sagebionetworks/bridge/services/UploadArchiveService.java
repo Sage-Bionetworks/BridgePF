@@ -5,73 +5,72 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import com.google.common.cache.LoadingCache;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.apache.commons.io.IOUtils;
 import org.bouncycastle.cms.CMSException;
-import org.sagebionetworks.bridge.crypto.BcCmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.ArchiveEntry;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * Archives messages and then encrypts the archive using CMS.
  * Conversely also decrypts the archive and unpacks it.
  */
+@Component
 public class UploadArchiveService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final CmsEncryptor encryptor;
+    private LoadingCache<String, CmsEncryptor> cmsEncryptorCache;
 
-    public UploadArchiveService(X509Certificate cert, PrivateKey privateKey) {
-        try {
-            encryptor = new BcCmsEncryptor(cert, privateKey);
-        } catch (CertificateEncodingException e) {
-            throw new RuntimeException(e);
-        }
+    /** Loading cache for CMS encryptor, keyed by study ID. This is configured by Spring. */
+    @Autowired
+    public void setCmsEncryptorCache(LoadingCache<String, CmsEncryptor> cmsEncryptorCache) {
+        this.cmsEncryptorCache = cmsEncryptorCache;
     }
 
-    public byte[] zipAndEncrypt(List<ArchiveEntry> entries) {
+    public byte[] zipAndEncrypt(Study study, List<ArchiveEntry> entries) {
         checkNotNull(entries);
         byte[] zipped = zip(entries);
-        return encrypt(zipped);
+        return encrypt(study, zipped);
     }
 
-    public List<ArchiveEntry> decryptAndUnzip(byte[] bytes) {
+    public List<ArchiveEntry> decryptAndUnzip(Study study, byte[] bytes) {
         checkNotNull(bytes);
-        byte[] decrypted = decrypt(bytes);
+        byte[] decrypted = decrypt(study, bytes);
         return unzip(decrypted);
     }
 
-    private byte[] encrypt(byte[] bytes) {
+    private byte[] encrypt(Study study, byte[] bytes) {
         try {
+            CmsEncryptor encryptor = cmsEncryptorCache.get(study.getIdentifier());
             return encryptor.encrypt(bytes);
-        } catch (CMSException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (CMSException | ExecutionException | IOException | UncheckedExecutionException ex) {
+            throw new BridgeServiceException(ex);
         }
     }
 
-    private byte[] decrypt(byte[] bytes) {
+    private byte[] decrypt(Study study, byte[] bytes) {
         try {
+            CmsEncryptor encryptor = cmsEncryptorCache.get(study.getIdentifier());
             return encryptor.decrypt(bytes);
-        } catch (CertificateEncodingException e) {
-            throw new RuntimeException(e);
-        } catch (CMSException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (CertificateEncodingException | CMSException | ExecutionException | IOException |
+                UncheckedExecutionException ex) {
+            throw new BridgeServiceException(ex);
         }
     }
 
@@ -87,15 +86,13 @@ public class UploadArchiveService {
             }
             zos.flush();
             return baos.toByteArray();
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (IOException ex) {
+            throw new BridgeServiceException(ex);
         }
     }
 
     private List<ArchiveEntry> unzip(final byte[] bytes) {
-        final List<ArchiveEntry> archive = new ArrayList<ArchiveEntry>();
+        final List<ArchiveEntry> archive = new ArrayList<>();
         try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
                 ZipInputStream zis = new ZipInputStream(bais)) {
             ZipEntry zipEntry = zis.getNextEntry();
@@ -107,7 +104,7 @@ public class UploadArchiveService {
             }
             return archive;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new BridgeServiceException(e);
         }
     }
 }
