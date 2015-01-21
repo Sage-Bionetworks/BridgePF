@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services.backfill;
 
 import java.util.Iterator;
 
+import org.sagebionetworks.bridge.stormpath.PageIterator;
+
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
@@ -21,12 +23,12 @@ class StormpathAccountIterator extends PageIterator<Account> {
     }
 
     @Override
-    int pageSize() {
+    public int pageSize() {
         return PAGE_SIZE;
     }
 
     @Override
-    Iterator<Account> nextPage() {
+    public Iterator<Account> nextPage() {
         AccountCriteria criteria = new DefaultAccountCriteria();
         criteria.offsetBy(pageStart());
         criteria.limitTo(pageSize());
