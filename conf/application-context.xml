@@ -487,4 +487,8 @@
 
     <bean id="consentSignatureBackfill" parent="backfillTemplate" class="org.sagebionetworks.bridge.services.backfill.ConsentSignatureBackfill" />
 
+    <!-- CONSTANTS -->
+    <bean id="numAsyncWorkerThreads" class="java.lang.Integer">
+        <constructor-arg value="20" />
+    </bean>
 </beans>
