@@ -12,11 +12,12 @@ abstract class AbstractJedisTemplate<T> implements RedisOp<T> {
 
     private static final JedisPool JEDIS_POOL;
     static {
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        BridgeConfig config = BridgeConfigFactory.getConfig();
-        String host = config.getProperty("redis.host");
-        int port = config.getPropertyAsInt("redis.port");
-        int timeout = config.getPropertyAsInt("redis.timeout");
+        final BridgeConfig config = BridgeConfigFactory.getConfig();
+        final JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
+        final String host = config.getProperty("redis.host");
+        final int port = config.getPropertyAsInt("redis.port");
+        final int timeout = config.getPropertyAsInt("redis.timeout");
         if (config.isLocal()) {
             JEDIS_POOL = new JedisPool(poolConfig, host, port, timeout);
         } else {
