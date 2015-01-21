@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.TableNameOverrideFactory;
+import org.sagebionetworks.bridge.s3.S3Helper;
 
 @ComponentScan(basePackages = "org.sagebionetworks.bridge")
 @Configuration
@@ -35,6 +37,14 @@ public class BridgeSpringConfig {
     @Autowired
     public LoadingCache<String, CmsEncryptor> cmsEncryptorCache(CmsEncryptorCacheLoader cacheLoader) {
         return CacheBuilder.newBuilder().build(cacheLoader);
+    }
+
+    @Bean(name = "s3CmsHelper")
+    @Resource(name = "s3CmsClient")
+    public S3Helper s3CmsHelper(AmazonS3Client s3CmsClient) {
+        S3Helper s3CmsHelper = new S3Helper();
+        s3CmsHelper.setS3Client(s3CmsClient);
+        return s3CmsHelper;
     }
 
     @Bean(name = "UploadDdbMapper")

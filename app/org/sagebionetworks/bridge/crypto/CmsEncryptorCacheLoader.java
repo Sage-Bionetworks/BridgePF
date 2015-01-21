@@ -1,13 +1,13 @@
 package org.sagebionetworks.bridge.crypto;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 
 import com.google.common.cache.CacheLoader;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -20,30 +20,33 @@ import org.sagebionetworks.bridge.s3.S3Helper;
  */
 @Component
 public class CmsEncryptorCacheLoader extends CacheLoader<String, CmsEncryptor> {
-    public static final String CERT_BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.cms.cert.bucket");
     private static final String PEM_FILENAME_FORMAT = "%s.pem";
-    public static final String PRIV_KEY_BUCKET = BridgeConfigFactory.getConfig().getProperty(
+
+    // These constants are package-scoped to make them accessible to unit tests.
+    /* package-scoped */ static final String CERT_BUCKET = BridgeConfigFactory.getConfig().getProperty(
+            "upload.cms.cert.bucket");
+    /* package-scroped */ static final String PRIV_KEY_BUCKET = BridgeConfigFactory.getConfig().getProperty(
             "upload.cms.priv.bucket");
 
-    private S3Helper s3Helper;
+    private S3Helper s3CmsHelper;
 
     /** S3 helper, configured by Spring. */
-    @Autowired
-    public void setS3Helper(S3Helper s3Helper) {
-        this.s3Helper = s3Helper;
+    @Resource(name = "s3CmsHelper")
+    public void setS3CmsHelper(S3Helper s3CmsHelper) {
+        this.s3CmsHelper = s3CmsHelper;
     }
 
     /** {@inheritDoc} */
     @Override
-    public CmsEncryptor load(@Nonnull String study) throws CertificateEncodingException, IOException {
-        String pemFileName = String.format(PEM_FILENAME_FORMAT, study);
+    public CmsEncryptor load(@Nonnull String studyId) throws CertificateEncodingException, IOException {
+        String pemFileName = String.format(PEM_FILENAME_FORMAT, studyId);
 
         // download certificate
-        String certPem = s3Helper.readS3FileAsString(CERT_BUCKET, pemFileName);
+        String certPem = s3CmsHelper.readS3FileAsString(CERT_BUCKET, pemFileName);
         X509Certificate cert = PemUtils.loadCertificateFromPem(certPem);
 
         // download private key
-        String privKeyPem = s3Helper.readS3FileAsString(PRIV_KEY_BUCKET, pemFileName);
+        String privKeyPem = s3CmsHelper.readS3FileAsString(PRIV_KEY_BUCKET, pemFileName);
         PrivateKey privKey = PemUtils.loadPrivateKeyFromPem(privKeyPem);
 
         return new BcCmsEncryptor(cert, privKey);
