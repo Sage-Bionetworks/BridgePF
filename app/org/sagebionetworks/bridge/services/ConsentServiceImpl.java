@@ -18,14 +18,10 @@ import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
 
 public class ConsentServiceImpl implements ConsentService {
-
-    private static final Logger logger = LoggerFactory.getLogger(ConsentServiceImpl.class);
 
     private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
 
@@ -60,17 +56,12 @@ public class ConsentServiceImpl implements ConsentService {
     public ConsentSignature getConsentSignature(final User caller, final Study study) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        try {
-            Account account = authService.getAccount(caller.getEmail());
-            ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
-            if (consentSignature != null) {
-                return consentSignature;
-            }
-        } catch (Throwable e) {
-            logger.info("Consent signature not in Stormpath. Fall back to dynamo.");
+        Account account = authService.getAccount(caller.getEmail());
+        ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
+        if (consentSignature != null) {
+            return consentSignature;
         }
-        ConsentSignature consentSignature = userConsentDao.getConsentSignature(caller.getHealthCode(), study.getIdentifier());
-        return consentSignature;
+        throw new EntityNotFoundException(ConsentSignature.class);
     }
 
     @Override
@@ -108,11 +99,7 @@ public class ConsentServiceImpl implements ConsentService {
             throw e;
         }
 
-        try {
-            accountEncryptionService.putConsentSignature(study, account, consentSignature);
-        } catch (Throwable e) {
-            logger.error("Failed to write consent signature to Stormpath", e);
-        }
+        accountEncryptionService.putConsentSignature(study, account, consentSignature);
 
         if (sendEmail) {
             sendMailService.sendConsentAgreement(caller, consentSignature, studyConsent);

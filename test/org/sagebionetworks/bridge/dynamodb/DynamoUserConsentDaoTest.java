@@ -6,8 +6,8 @@ import static org.junit.Assert.assertTrue;
 
 import javax.annotation.Resource;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
@@ -19,17 +19,18 @@ public class DynamoUserConsentDaoTest {
 
     private static final String HEALTH_CODE = "hc789";
     private static final String STUDY_IDENTIFIER = "study123";
+
     @Resource
     private DynamoUserConsentDao userConsentDao;
 
-    @BeforeClass
-    public static void initialSetUp() {
+    @Before
+    public void before() {
         DynamoInitializer.init(DynamoUserConsent2.class);
         DynamoTestUtil.clearTable(DynamoUserConsent2.class);
     }
 
-    @AfterClass
-    public static void finalCleanUp() {
+    @After
+    public void after() {
         DynamoTestUtil.clearTable(DynamoUserConsent2.class);
     }
 
@@ -37,24 +38,23 @@ public class DynamoUserConsentDaoTest {
     public void canConsentToStudy() {
         // Not consented yet
         final DynamoStudyConsent1 consent = createStudyConsent();
-        assertFalse(userConsentDao.hasConsented2(HEALTH_CODE, consent));
+        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
 
         // Give consent
         userConsentDao.giveConsent(HEALTH_CODE, consent);
-        assertTrue(userConsentDao.hasConsented2(HEALTH_CODE, consent));
+        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
 
         // Withdraw
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertFalse(userConsentDao.hasConsented2(HEALTH_CODE, consent));
+        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
 
         // Can give consent again if the previous consent is withdrawn
         userConsentDao.giveConsent(HEALTH_CODE, consent);
-        assertTrue(userConsentDao.hasConsented2(HEALTH_CODE, consent));
+        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
 
         // Withdraw again
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertFalse(userConsentDao.hasConsented2(HEALTH_CODE, consent));
-
+        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
     }
 
     @Test
