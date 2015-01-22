@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
@@ -11,6 +14,7 @@ import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
+import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 /**
  * This DynamoDB table stores metadata for Bridge uploads. This class also defines global secondary indices, which can
@@ -18,14 +22,15 @@ import org.sagebionetworks.bridge.models.upload.UploadRequest;
  */
 @DynamoDBTable(tableName = "Upload2")
 public class DynamoUpload2 implements DynamoTable, Upload {
-    private boolean complete;
     private long contentLength;
     private String contentMd5;
     private String contentType;
     private String filename;
     private String healthCode;
+    private UploadStatus status;
     private LocalDate uploadDate;
     private String uploadId;
+    private List<String> validationMessageList;
     private Long version;
 
     /** This empty constructor is needed by the DynamoDB mapper. */
@@ -33,24 +38,23 @@ public class DynamoUpload2 implements DynamoTable, Upload {
 
     /** Construct a DDB Upload object from an upload request and healthcode. */
     public DynamoUpload2(UploadRequest uploadRequest, String healthCode) {
-        complete = false;
         contentLength = uploadRequest.getContentLength();
         contentType = uploadRequest.getContentType();
         contentMd5 = uploadRequest.getContentMd5();
         filename = uploadRequest.getName();
         this.healthCode = healthCode;
+        status = UploadStatus.REQUESTED;
         uploadId = BridgeUtils.generateGuid();
+        validationMessageList = new ArrayList<>();
     }
 
-    /** True if the upload is complete. False if not. */
+    /** {@inheritDoc} */
+    @DynamoDBIgnore
     @Override
-    public boolean isComplete() {
-        return complete;
-    }
-
-    /** @see #isComplete */
-    public void setComplete(boolean complete) {
-        this.complete = complete;
+    public boolean canBeValidated() {
+        // The only status that can be validated is REQUESTED. Once validation happens, the status moves to
+        // VALIDATION_IN_PROGRESS, and the user can no longer call uploadComplete() to kick off validation.
+        return status == UploadStatus.REQUESTED;
     }
 
     /** Upload content length in bytes. */
@@ -83,7 +87,8 @@ public class DynamoUpload2 implements DynamoTable, Upload {
         this.contentType = contentType;
     }
 
-    /** Name of the file to upload. */
+    /** {@inheritDoc} */
+    @Override
     public String getFilename() {
         return filename;
     }
@@ -93,8 +98,9 @@ public class DynamoUpload2 implements DynamoTable, Upload {
         this.filename = filename;
     }
 
-    /** Health code of the user from which this upload originates from. */
+    /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "healthCode", globalSecondaryIndexName = "healthCode-index")
+    @Override
     public String getHealthCode() {
         return healthCode;
     }
@@ -104,11 +110,29 @@ public class DynamoUpload2 implements DynamoTable, Upload {
         this.healthCode = healthCode;
     }
 
-    /**
-     * Calendar date the file was uploaded (specifically, the uploadComplete() call. Date is determined using Pacific
-     * local time.
-     */
+    /** {@inheritDoc} */
+    @DynamoDBIgnore
+    @Override
+    public String getObjectId() {
+        // In DynamoUpload2, object ID and upload ID are the same.
+        return uploadId;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
+    @Override
+    public UploadStatus getStatus() {
+        return status;
+    }
+
+    /** @see #getStatus */
+    public void setStatus(UploadStatus status) {
+        this.status = status;
+    }
+
+    /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = LocalDateMarshaller.class)
+    @Override
     public LocalDate getUploadDate() {
         return uploadDate;
     }
@@ -128,16 +152,20 @@ public class DynamoUpload2 implements DynamoTable, Upload {
         return uploadId;
     }
 
-    // TODO: In the new implementation, this is the same as upload ID. After the migration, remove this method.
-    @Override
-    @DynamoDBIgnore
-    public String getObjectId() {
-        return uploadId;
-    }
-
     /** @see #getUploadId */
     public void setUploadId(String uploadId) {
         this.uploadId = uploadId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<String> getValidationMessageList() {
+        return validationMessageList;
+    }
+
+    /** @see #getValidationMessageList */
+    public void setValidationMessageList(List<String> validationMessageList) {
+        this.validationMessageList = validationMessageList;
     }
 
     /** DynamoDB version, used for optimistic locking */

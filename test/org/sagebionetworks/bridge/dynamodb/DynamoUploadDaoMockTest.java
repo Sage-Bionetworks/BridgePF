@@ -19,6 +19,7 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
+import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 public class DynamoUploadDaoMockTest {
     @Test
@@ -133,10 +134,11 @@ public class DynamoUploadDaoMockTest {
         // validate we passed in the expected key
         assertEquals("test-upload-complete", argLoad.getValue().getUploadId());
 
-        // Verify our mock. We add complete=true and uploadDate on save, so only check for those properties.
+        // Verify our mock. We add status=VALIDATION_IN_PROGRESS and uploadDate on save, so only check for those
+        // properties.
         ArgumentCaptor<DynamoUpload2> argSave = ArgumentCaptor.forClass(DynamoUpload2.class);
         verify(mockMapper).save(argSave.capture());
-        assertTrue(argSave.getValue().isComplete());
+        assertEquals(UploadStatus.VALIDATION_IN_PROGRESS, argSave.getValue().getStatus());
 
         // There is a slim chance that this will fail if it runs just after midnight.
         assertEquals(LocalDate.now(DateTimeZone.forID("America/Los_Angeles")), argSave.getValue().getUploadDate());

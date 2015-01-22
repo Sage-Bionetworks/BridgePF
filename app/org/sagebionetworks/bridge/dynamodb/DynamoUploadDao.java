@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
+import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 public class DynamoUploadDao implements UploadDao {
 
@@ -84,7 +85,7 @@ public class DynamoUploadDao implements UploadDao {
 
         if (upload instanceof DynamoUpload2) {
             DynamoUpload2 upload2 = (DynamoUpload2) upload;
-            upload2.setComplete(true);
+            upload2.setStatus(UploadStatus.VALIDATION_IN_PROGRESS);
 
             // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
             upload2.setUploadDate(LocalDate.now(DateTimeZone.forID(("America/Los_Angeles"))));
