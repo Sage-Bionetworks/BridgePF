@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountEncryptionService;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.stormpath.StormpathAccountIterator;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

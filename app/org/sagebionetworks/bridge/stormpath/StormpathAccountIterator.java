@@ -1,8 +1,6 @@
-package org.sagebionetworks.bridge.services.backfill;
+package org.sagebionetworks.bridge.stormpath;
 
 import java.util.Iterator;
-
-import org.sagebionetworks.bridge.stormpath.PageIterator;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountCriteria;
@@ -13,12 +11,12 @@ import com.stormpath.sdk.impl.account.DefaultAccountCriteria;
 /**
  * Iterates through Stormpath accounts page by page.
  */
-class StormpathAccountIterator extends PageIterator<Account> {
+public class StormpathAccountIterator extends PageIterator<Account> {
 
     private static final int PAGE_SIZE = 50;
     private final Application app;
 
-    StormpathAccountIterator(Application app) {
+    public StormpathAccountIterator(Application app) {
         this.app = app;
     }
 
