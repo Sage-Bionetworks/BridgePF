@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -16,6 +17,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.PreencodedMimeBodyPart;
 
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -40,6 +42,8 @@ import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 
 public class SendMailViaAmazonService implements SendMailService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(SendMailViaAmazonService.class);
 
     private static final String EMAIL_SUBJECT = "Consent Agreement for %s";
     private static final DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
@@ -47,7 +51,6 @@ public class SendMailViaAmazonService implements SendMailService {
     private static final String HEADER_CONTENT_DISPOSITION_VALUE = "inline";
     private static final String HEADER_CONTENT_ID_VALUE = "<consentSignature>";
     private static final String HEADER_CONTENT_TRANSFER_ENCODING_VALUE = "base64";
-    private static final Logger LOG = LoggerFactory.getLogger(SendMailViaAmazonService.class);
     private static final String MIME_TYPE_TEXT_HTML = "text/html";
     private static final Region region = Region.getRegion(Regions.US_EAST_1);
 
@@ -69,35 +72,50 @@ public class SendMailViaAmazonService implements SendMailService {
 
     @Override
     public void sendConsentAgreement(User user, ConsentSignature consentSignature, StudyConsent studyConsent) {
-        Study study = studyService.getStudyByIdentifier(studyConsent.getStudyKey());
-
         try {
-            // Create email using JavaMail
-            Session mailSession = Session.getInstance(new Properties(), null);
-            MimeMessage mimeMessage = new MimeMessage(mailSession);
-            mimeMessage.setFrom(new InternetAddress(fromEmail));
-            mimeMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(user.getEmail()));
-            mimeMessage.setSubject(String.format(EMAIL_SUBJECT, study.getName()), Charsets.UTF_8.name());
-
-            MimeMultipart mimeMultipart = new MimeMultipart();
-
-            // Generate body
+            Study study = studyService.getStudyByIdentifier(studyConsent.getStudyKey());
+            
             String body = createSignedDocument(consentSignature, studyConsent);
             MimeBodyPart bodyPart = new MimeBodyPart();
             bodyPart.setContent(body, MIME_TYPE_TEXT_HTML);
-            mimeMultipart.addBodyPart(bodyPart);
 
             // Write signature image as an attachment, if it exists. Because of the validation in ConsentSignature, if
             // imageData is present, so will imageMimeType.
             // We need to send the signature image as an embedded image in an attachment because some email providers
             // (notably Gmail) block inline Base64 images.
+            MimeBodyPart sigPart = null;
             if (consentSignature.getImageData() != null) {
                 // Use pre-encoded MIME part since our image data is already base64 encoded.
-                MimeBodyPart attachmentPart = new PreencodedMimeBodyPart(HEADER_CONTENT_TRANSFER_ENCODING_VALUE);
-                attachmentPart.setContentID(HEADER_CONTENT_ID_VALUE);
-                attachmentPart.setHeader(HEADER_CONTENT_DISPOSITION, HEADER_CONTENT_DISPOSITION_VALUE);
-                attachmentPart.setContent(consentSignature.getImageData(), consentSignature.getImageMimeType());
-                mimeMultipart.addBodyPart(attachmentPart);
+                sigPart = new PreencodedMimeBodyPart(HEADER_CONTENT_TRANSFER_ENCODING_VALUE);
+                sigPart.setContentID(HEADER_CONTENT_ID_VALUE);
+                sigPart.setHeader(HEADER_CONTENT_DISPOSITION, HEADER_CONTENT_DISPOSITION_VALUE);
+                sigPart.setContent(consentSignature.getImageData(), consentSignature.getImageMimeType());
+            }
+            
+            // As recommended by Amazon, we send the emails separately.
+            sendEmailTo(study.getName(), user.getEmail(), bodyPart, sigPart);
+            Set<String> emailAddresses = commaListToSet(study.getConsentNotificationEmail());
+            for (String email : emailAddresses) {
+                sendEmailTo(study.getName(), email, bodyPart, sigPart);
+            }
+        } catch(IOException | MessagingException e) {
+            throw new BridgeServiceException(e);
+        }
+    }
+
+    private void sendEmailTo(String studyName, String email, MimeBodyPart bodyPart, MimeBodyPart sigPart) {
+        try {
+            // Create email using JavaMail
+            Session mailSession = Session.getInstance(new Properties(), null);
+            MimeMessage mimeMessage = new MimeMessage(mailSession);
+            mimeMessage.setFrom(new InternetAddress(fromEmail));
+            mimeMessage.setSubject(String.format(EMAIL_SUBJECT, studyName), Charsets.UTF_8.name());
+            mimeMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(email));
+
+            MimeMultipart mimeMultipart = new MimeMultipart();
+            mimeMultipart.addBodyPart(bodyPart);
+            if (sigPart != null) {
+                mimeMultipart.addBodyPart(sigPart);
             }
 
             // Convert MimeMessage to raw text to send to SES.
@@ -108,14 +126,21 @@ public class SendMailViaAmazonService implements SendMailService {
 
             SendRawEmailRequest req = new SendRawEmailRequest(sesRawMessage);
             req.setSource(fromEmail);
-            req.setDestinations(Collections.singleton(user.getEmail()));
+            req.setDestinations(Collections.singleton(email));
             emailClient.setRegion(region);
             SendRawEmailResult result = emailClient.sendRawEmail(req);
 
-            LOG.info(String.format("Sent email to SES with message ID %s", result.getMessageId()));
-        } catch (AmazonClientException | IOException | MessagingException ex) {
+            logger.info(String.format("Sent email to SES with message ID %s", result.getMessageId()));
+        } catch (AmazonClientException | MessagingException | IOException ex) {
             throw new BridgeServiceException(ex);
         }
+    }
+    
+    private Set<String> commaListToSet(String commaList) {
+        if (StringUtils.isNotBlank(commaList)) {
+            return org.springframework.util.StringUtils.commaDelimitedListToSet(commaList);    
+        }
+        return Collections.emptySet();
     }
 
     private String createSignedDocument(ConsentSignature consent, StudyConsent studyConsent)
