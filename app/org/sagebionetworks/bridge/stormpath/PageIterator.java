@@ -11,12 +11,12 @@ public abstract class PageIterator<T> implements Iterator<List<T>>, Iterable<Lis
     private boolean hasNext = true;
 
     @Override
-    public boolean hasNext() {
+    public final boolean hasNext() {
         return hasNext;
     }
 
     @Override
-    public List<T> next() {
+    public final List<T> next() {
         if (!hasNext) {
             return Collections.emptyList();
         }
@@ -32,16 +32,16 @@ public abstract class PageIterator<T> implements Iterator<List<T>>, Iterable<Lis
     }
 
     @Override
-    public void remove() {
+    public final void remove() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Iterator<List<T>> iterator() {
+    public final Iterator<List<T>> iterator() {
         return this;
     }
 
-    public int pageStart() {
+    public final int pageStart() {
         return pageStart;
     }
 
