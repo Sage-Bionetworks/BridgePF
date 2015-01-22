@@ -46,13 +46,13 @@ public class DynamoUploadDaoTest {
         String uploadId = uploadDao.createUpload(uploadRequest, healthCode);
         assertNotNull(uploadId);
         Upload upload = uploadDao.getUpload(uploadId);
-        assertFalse(upload.isComplete());
+        assertTrue(upload.canBeValidated());
         String objectId = upload.getObjectId();
         assertNotNull(objectId);
         assertTrue(uploadId.equals(objectId));
         uploadDao.uploadComplete(uploadId);
         upload = uploadDao.getUpload(uploadId);
-        assertTrue(upload.isComplete());
+        assertFalse(upload.canBeValidated());
     }
 
     /* package-scoped */ static UploadRequest createUploadRequest() {
