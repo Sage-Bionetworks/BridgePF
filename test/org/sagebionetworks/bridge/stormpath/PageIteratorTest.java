@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.services.backfill;
+package org.sagebionetworks.bridge.stormpath;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -108,7 +108,7 @@ public class PageIteratorTest {
         // No more pages
         assertFalse(iterator.hasNext());
     }
-    
+
     @Test
     public void testEmpy() {
         Iterator<List<String>> iterator = new WordIterator(
