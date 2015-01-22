@@ -28,14 +28,24 @@ public interface Upload {
     UploadStatus getStatus();
 
     /**
-     * Calendar date the file was uploaded (specifically, the uploadComplete() call. Date is determined using Pacific
-     * local time.
+     * <p>
+     * Calendar date the file was uploaded (specifically, the uploadComplete() call.
+     * </p>
+     * Date is determined using Pacific local time. Pacific local time was chosen because currently, all studies are
+     * done in the US, so if we partitioned based on date using UTC, we'd get a cut-off in the middle of the afternoon,
+     * likely in the middle of peak uploads. In the future, if we have studies outside of the US, the upload date
+     * timezone will be configurable per study.
+     * <p>
      */
     LocalDate getUploadDate();
 
     /** Upload ID. This is the key in the Dynamo DB table that uniquely identifies this upload. */
     String getUploadId();
 
-    /** List of validation messages, generally contains error messages. */
+    /**
+     * List of validation messages, generally contains error messages. Since a single upload file may fail validation
+     * in multiple ways, Bridge server will attempt to return all messages to the user. For example, the upload file
+     * might be unencrypted, uncompressed, and it might not fit any of the expected schemas for the study.
+     */
     List<String> getValidationMessageList();
 }
