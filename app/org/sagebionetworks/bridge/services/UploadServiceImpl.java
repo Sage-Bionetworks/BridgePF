@@ -89,9 +89,9 @@ public class UploadServiceImpl implements UploadService {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "uploadId"));
         }
 
-        // can't re-complete uploads that are already complete
+        // We don't want to kick off upload validation on an upload that already has upload validation.
         Upload upload = uploadDao.getUpload(uploadId);
-        if (upload.isComplete()) {
+        if (!upload.canBeValidated()) {
             logger.warn("uploadComplete called for upload %s, which is already complete", uploadId);
             return;
         }

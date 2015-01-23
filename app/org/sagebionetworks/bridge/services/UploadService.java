@@ -13,7 +13,8 @@ public interface UploadService {
     UploadSession createUpload(User user, UploadRequest uploadRequest);
 
     /**
-     * Client calls back when the upload is complete.
+     * Client calls back when the upload is complete. This also kicks off upload validation. This should not be called
+     * more than once for any given upload ID.
      *
      * @param id Upload ID
      */
