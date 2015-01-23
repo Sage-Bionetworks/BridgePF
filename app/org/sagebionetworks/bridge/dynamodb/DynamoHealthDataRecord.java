@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-@DynamoDBTable(tableName = "HealthDataRecordNSI")
+@DynamoDBTable(tableName = "HealthDataRecord2")
 public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
 
     private static final String GUID_FIELD = "guid";
