@@ -36,7 +36,7 @@ public class HealthDataServiceImpl implements HealthDataService {
         
         for (HealthDataRecord record : records) {
             record.setGuid(BridgeUtils.generateGuid());
-            // Validate.entityThrowingException(validator, record);
+            Validate.entityThrowingException(validator, record);
         }
 
         return healthDataDao.appendHealthData(key, records);
