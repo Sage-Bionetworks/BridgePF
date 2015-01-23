@@ -44,7 +44,7 @@ public class HealthDataController extends BaseController {
         for (int i = 0; i < node.size(); i++) {
             JsonNode child = node.get(i);
 
-            Validate.jsonWithSchema(tracker, child);
+            // Validate.jsonWithSchema(tracker, child);
             records.add(DynamoHealthDataRecord.fromJson(child));
         }
 
