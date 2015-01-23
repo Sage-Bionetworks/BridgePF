@@ -1,6 +1,7 @@
 package controllers;
 
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.services.UploadService;
@@ -24,7 +25,13 @@ public class UploadController extends BaseController {
 
     public Result uploadComplete(String uploadId) throws Exception {
         getAuthenticatedAndConsentedSession();
-        uploadService.uploadComplete(uploadId);
+
+        // mark upload as complete
+        Upload upload = uploadService.getUpload(uploadId);
+        uploadService.uploadComplete(upload);
+
+        // TODO: kick off upload validation
+
         return ok("Upload " + uploadId + " complete!");
     }
     
