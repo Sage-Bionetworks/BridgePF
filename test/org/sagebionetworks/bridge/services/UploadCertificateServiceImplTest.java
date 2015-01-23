@@ -52,8 +52,6 @@ public class UploadCertificateServiceImplTest {
     public void before() {
         assertNotNull(uploadCertificateService);
         assertNotNull(s3Client);
-        cleanBucket(CERT_BUCKET);
-        cleanBucket(PRIV_BUCKET);
     }
 
     @After
