@@ -14,18 +14,38 @@ import com.google.common.base.Charsets;
 import org.junit.Test;
 
 public class S3HelperTest {
-    @Test
-    public void test() throws Exception {
-        // Test strategy is that given a mock input stream from a mock S3 object, the S3Helper can still turn that
-        // input stream into a string.
+    // Test strategy is that given a mock input stream from a mock S3 object, the S3Helper can still turn that
+    // input stream into a byte array or a string.
 
+    @Test
+    public void readAsBytes() throws Exception {
+        String bucket = "bucket-with-bytes";
+        String key = "key-with-bytes";
+        String content = "this is the answer in bytes";
+
+        S3Helper testS3Helper = setupWithMockS3(bucket, key, content);
+        byte[] retValBytes = testS3Helper.readS3FileAsBytes(bucket, key);
+        assertEquals(content, new String(retValBytes, Charsets.UTF_8));
+    }
+
+    @Test
+    public void readAsString() throws Exception {
+        String bucket = "test-bucket";
+        String key = "test-key";
+        String content = "this is the answer";
+
+        S3Helper testS3Helper = setupWithMockS3(bucket, key, content);
+        String retVal = testS3Helper.readS3FileAsString(bucket, key);
+        assertEquals(content, retVal);
+    }
+
+    private static S3Helper setupWithMockS3(String bucket, String key, String content) {
         // mock S3 stream
-        String answer = "This is the answer.";
-        byte[] answerBytes = answer.getBytes(Charsets.UTF_8);
-        InputStream answerStream = new ByteArrayInputStream(answerBytes);
+        byte[] contentBytes = content.getBytes(Charsets.UTF_8);
+        InputStream contentStream = new ByteArrayInputStream(contentBytes);
 
         // not sure this is safe, but this is the easiest way to mock an S3 stream
-        S3ObjectInputStream mockS3Stream = new S3ObjectInputStream(answerStream, null, false);
+        S3ObjectInputStream mockS3Stream = new S3ObjectInputStream(contentStream, null, false);
 
         // mock S3 object
         S3Object mockS3Object = new S3Object();
@@ -33,14 +53,11 @@ public class S3HelperTest {
 
         // mock S3 client
         AmazonS3Client mockS3Client = mock(AmazonS3Client.class);
-        when(mockS3Client.getObject("test-bucket", "test-key")).thenReturn(mockS3Object);
+        when(mockS3Client.getObject(bucket, key)).thenReturn(mockS3Object);
 
         // set up test S3 helper
         S3Helper testS3Helper = new S3Helper();
         testS3Helper.setS3Client(mockS3Client);
-
-        // execute and validate
-        String retVal = testS3Helper.readS3FileAsString("test-bucket", "test-key");
-        assertEquals(answer, retVal);
+        return testS3Helper;
     }
 }
