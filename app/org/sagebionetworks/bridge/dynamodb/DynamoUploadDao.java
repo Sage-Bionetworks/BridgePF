@@ -98,4 +98,36 @@ public class DynamoUploadDao implements UploadDao {
             mapperOld.save(uploadOld);
         }
     }
+
+    /**
+     * Writes validation status and appends messages to Dynamo DB. Only DynamoUpload2 objects can have status and
+     * validation. DynamoUpload objects will be ignored.
+     *
+     * @see org.sagebionetworks.bridge.dao.UploadDao#writeValidationStatus
+     */
+    @Override
+    public void writeValidationStatus(@Nonnull Upload upload, @Nonnull UploadStatus status,
+            @Nonnull List<String> validationMessageList) {
+        // only for DynamoUpload2
+        if (!(upload instanceof DynamoUpload2)) {
+            return;
+        }
+
+        // set upload status
+        DynamoUpload2 upload2 = (DynamoUpload2) upload;
+        upload2.setStatus(status);
+
+        // append message list, create a new message list if it doesn't already exist
+        List<String> oldList = upload2.getValidationMessageList();
+        if (oldList == null) {
+            oldList = new ArrayList<>();
+            upload2.setValidationMessageList(oldList);
+            // warn, since this should never happen
+            LOG.warn("Upload with ID %s has null validation message list", upload2.getUploadId());
+        }
+        oldList.addAll(validationMessageList);
+
+        // persist
+        mapper.save(upload2);
+    }
 }
