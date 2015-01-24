@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.config;
 
 import javax.annotation.Resource;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -11,6 +12,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -23,13 +25,16 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.TableNameOverrideFactory;
 import org.sagebionetworks.bridge.s3.S3Helper;
+import org.sagebionetworks.bridge.upload.DecryptAndUnzipHandler;
+import org.sagebionetworks.bridge.upload.S3DownloadHandler;
+import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 
 @ComponentScan(basePackages = "org.sagebionetworks.bridge")
 @Configuration
 public class BridgeSpringConfig {
     @Bean(name = "AsyncExecutorService")
     @Resource(name = "numAsyncWorkerThreads")
-    public ExecutorService asyncExecutorService(int numAsyncWorkerThreads) {
+    public ExecutorService asyncExecutorService(Integer numAsyncWorkerThreads) {
         return Executors.newFixedThreadPool(numAsyncWorkerThreads);
     }
 
@@ -45,6 +50,14 @@ public class BridgeSpringConfig {
         S3Helper s3CmsHelper = new S3Helper();
         s3CmsHelper.setS3Client(s3CmsClient);
         return s3CmsHelper;
+    }
+
+    @Bean(name = "s3Helper")
+    @Resource(name = "s3Client")
+    public S3Helper s3Helper(AmazonS3Client s3Client) {
+        S3Helper s3Helper = new S3Helper();
+        s3Helper.setS3Client(s3Client);
+        return s3Helper;
     }
 
     @Bean(name = "UploadDdbMapper")
@@ -66,6 +79,16 @@ public class BridgeSpringConfig {
                 .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
                 .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoUpload.class)).build();
         return new DynamoDBMapper(client, mapperConfig);
+    }
+
+    @Bean(name = "UploadValidationHandlerList")
+    @Autowired
+    public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,
+            DecryptAndUnzipHandler decryptAndUnzipHandler) {
+        // TODO: add handlers for the following:
+        // * validate against schemas
+        // * write intermediate artifacts
+        return ImmutableList.of(s3DownloadHandler, decryptAndUnzipHandler);
     }
 
     @Bean(name = "UploadSchemaDdbMapper")
