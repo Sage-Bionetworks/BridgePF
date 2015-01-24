@@ -8,13 +8,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-import java.util.Date;
 
 import javax.annotation.Resource;
 
 import org.apache.commons.io.IOUtils;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,10 +25,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -85,18 +80,6 @@ public class UploadCertificateServiceImplTest {
             return IOUtils.toString(ois, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    private void cleanBucket(String bucket) {
-        // Clean objects older than an hour
-        ObjectListing objList = s3Client.listObjects(bucket);
-        for (S3ObjectSummary obj: objList.getObjectSummaries()) {
-            Date date = obj.getLastModified();
-            Date now = DateTime.now(DateTimeZone.UTC).minusHours(1).toDate();
-            if (now.after(date)) {
-                s3Client.deleteObject(bucket, obj.getKey());
-            }
         }
     }
 }
