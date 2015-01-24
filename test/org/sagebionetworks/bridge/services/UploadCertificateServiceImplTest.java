@@ -50,8 +50,12 @@ public class UploadCertificateServiceImplTest {
     }
 
     @After
-    public void after() {
+    public void cleanupCert() {
         s3Client.deleteObject(CERT_BUCKET, STUDY_ID + ".pem");
+    }
+
+    @After
+    public void cleanupPrivKey() {
         s3Client.deleteObject(PRIV_BUCKET, STUDY_ID + ".pem");
     }
 
