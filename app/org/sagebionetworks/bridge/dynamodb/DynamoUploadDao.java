@@ -6,16 +6,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -24,7 +19,6 @@ import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 public class DynamoUploadDao implements UploadDao {
-    private static final Logger LOG = LoggerFactory.getLogger(DynamoUploadDao.class);
 
     // TODO: remove mapperOld once the migration is complete
     private DynamoDBMapper mapperOld;

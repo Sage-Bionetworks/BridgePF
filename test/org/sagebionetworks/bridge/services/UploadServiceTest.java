@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.UploadDao;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.springframework.test.context.ContextConfiguration;
@@ -104,7 +105,9 @@ public class UploadServiceTest {
         objectsToRemove.add(uploadId);
         int reponseCode = upload(uploadSession.getUrl(), uploadRequest);
         assertEquals(200, reponseCode);
-        uploadService.uploadComplete(uploadId);
+
+        Upload upload = uploadService.getUpload(uploadId);
+        uploadService.uploadComplete(upload);
         long expiration = DateTime.now(DateTimeZone.UTC).plusMinutes(1).getMillis();
         assertTrue(expiration > uploadSession.getExpires());
         ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, uploadId);

@@ -83,6 +83,10 @@ public class UploadService {
         return new UploadSession(uploadId, url, expiration.getTime());
     }
 
+    /**
+     * Get upload service handler. This isn't currently exposed directly to the users, but is currently used by the
+     * controller class to call both uploadComplete() and upload validation APIs.
+     */
     public Upload getUpload(String uploadId) {
         if (Strings.isNullOrEmpty(uploadId)) {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "uploadId"));
