@@ -23,6 +23,12 @@ public interface Study extends BridgeEntity {
     
     public int getMaxNumOfParticipants();
     public void setMaxNumOfParticipants(int maxParticipants);
+
+    public String getSupportEmail();
+    public void setSupportEmail(String email);
+    
+    public String getConsentNotificationEmail();
+    public void setConsentNotificationEmail(String email);
     
     public List<String> getTrackers();
     

@@ -34,12 +34,16 @@ public class DynamoStudy implements Study, DynamoTable {
     private static final String HOSTNAME_PROPERTY = "hostname";
     private static final String STORMPATH_HREF_PROPERTY = "stormpathHref";
     private static final String VERSION_PROPERTY = "version";
+    private static final String SUPPORT_EMAIL_PROPERTY = "supportEmail";
+    private static final String CONSENT_NOTIFICATION_EMAIL_PROPERTY = "consentNotificationEmail";
     
     private String name;
     private String identifier;
     private String researcherRole;
     private String stormpathHref;
     private String hostname;
+    private String supportEmail;
+    private String consentNotificationEmail;
     private int minAgeOfConsent;
     private int maxNumOfParticipants;
     private List<String> trackers = Lists.newArrayList();
@@ -52,6 +56,8 @@ public class DynamoStudy implements Study, DynamoTable {
         study.setMinAgeOfConsent(JsonUtils.asInt(node, MIN_AGE_OF_CONSENT_PROPERTY));
         study.setMaxNumOfParticipants(JsonUtils.asInt(node, MAX_NUM_OF_PARTICIPANTS_PROPERTY));
         study.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
+        study.setSupportEmail(JsonUtils.asText(node, SUPPORT_EMAIL_PROPERTY));
+        study.setConsentNotificationEmail(JsonUtils.asText(node, CONSENT_NOTIFICATION_EMAIL_PROPERTY));
         study.getTrackers().addAll(JsonUtils.asStringList(node, TRACKERS_PROPERTY));
         return study;
     }
@@ -138,6 +144,33 @@ public class DynamoStudy implements Study, DynamoTable {
     public void setHostname(String hostname) {
         this.hostname = hostname;
     }
+    /**
+     * A comma-separated list of email addresses that should be used to send technical 
+     * support email to the research team from the application (optional).
+     */
+    @DynamoDBIgnore
+    @Override
+    public String getSupportEmail() {
+        return supportEmail;
+    }
+    @Override
+    public void setSupportEmail(String supportEmail) {
+        this.supportEmail = supportEmail;
+    }
+    /**
+     * A comma-separated list of email addresses that should be sent consent records 
+     * when a user agrees to participate in research (optional, but should be provided 
+     * for active studies).
+     */
+    @DynamoDBIgnore
+    @Override
+    public String getConsentNotificationEmail() {
+        return consentNotificationEmail;
+    }
+    @Override
+    public void setConsentNotificationEmail(String consentNotificationEmail) {
+        this.consentNotificationEmail = consentNotificationEmail;
+    }
     @DynamoDBIgnore
     @Override
     public List<String> getTrackers() {
@@ -153,6 +186,8 @@ public class DynamoStudy implements Study, DynamoTable {
         node.put(MAX_NUM_OF_PARTICIPANTS_PROPERTY, maxNumOfParticipants);
         node.set(TRACKERS_PROPERTY, mapper.valueToTree(trackers));
         node.put(STORMPATH_HREF_PROPERTY, stormpathHref);
+        node.put(SUPPORT_EMAIL_PROPERTY, supportEmail);
+        node.put(CONSENT_NOTIFICATION_EMAIL_PROPERTY, consentNotificationEmail);
         node.put(HOSTNAME_PROPERTY, hostname);
         return node.toString();
     }
@@ -163,6 +198,8 @@ public class DynamoStudy implements Study, DynamoTable {
             this.minAgeOfConsent = JsonUtils.asIntPrimitive(node, MIN_AGE_OF_CONSENT_PROPERTY);
             this.maxNumOfParticipants = JsonUtils.asIntPrimitive(node, MAX_NUM_OF_PARTICIPANTS_PROPERTY);
             this.trackers = JsonUtils.asStringList(node, TRACKERS_PROPERTY);
+            this.supportEmail = JsonUtils.asText(node, SUPPORT_EMAIL_PROPERTY);
+            this.consentNotificationEmail = JsonUtils.asText(node, CONSENT_NOTIFICATION_EMAIL_PROPERTY);
             this.stormpathHref = JsonUtils.asText(node, STORMPATH_HREF_PROPERTY);
             this.hostname = JsonUtils.asText(node, HOSTNAME_PROPERTY);
         } catch (IOException e) {
@@ -180,6 +217,8 @@ public class DynamoStudy implements Study, DynamoTable {
         result = prime * result + minAgeOfConsent;
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((researcherRole == null) ? 0 : researcherRole.hashCode());
+        result = prime * result + ((supportEmail == null) ? 0 : supportEmail.hashCode());
+        result = prime * result + ((consentNotificationEmail == null) ? 0 : consentNotificationEmail.hashCode());
         result = prime * result + ((stormpathHref == null) ? 0 : stormpathHref.hashCode());
         result = prime * result + ((trackers == null) ? 0 : trackers.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
@@ -224,6 +263,16 @@ public class DynamoStudy implements Study, DynamoTable {
                 return false;
         } else if (!stormpathHref.equals(other.stormpathHref))
             return false;
+        if (supportEmail == null) {
+            if (other.supportEmail != null)
+                return false;
+        } else if (!supportEmail.equals(other.supportEmail))
+            return false;
+        if (consentNotificationEmail == null) {
+            if (other.consentNotificationEmail != null)
+                return false;
+        } else if (!consentNotificationEmail.equals(other.consentNotificationEmail))
+            return false;
         if (trackers == null) {
             if (other.trackers != null)
                 return false;
@@ -241,7 +290,8 @@ public class DynamoStudy implements Study, DynamoTable {
     public String toString() {
         return "DynamoStudy [name=" + name + ", identifier=" + identifier + ", researcherRole=" + researcherRole
                 + ", stormpathHref=" + stormpathHref + ", hostname=" + hostname + ", minAgeOfConsent="
-                + minAgeOfConsent + ", maxNumOfParticipants=" + maxNumOfParticipants + ", trackers=" + trackers
-                + ", version=" + version + "]";
+                + minAgeOfConsent + ", maxNumOfParticipants=" + maxNumOfParticipants + ", supportEmail=" + supportEmail
+                + ", consentNotificationEmail=" + consentNotificationEmail + ", trackers=" + trackers + ", version="
+                + version + "]";
     }
 }
