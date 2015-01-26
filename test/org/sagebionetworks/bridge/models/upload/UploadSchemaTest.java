@@ -137,7 +137,7 @@ public class UploadSchemaTest {
     // we call the validator directly, since Validate.validateThrowingException filters out nulls and wrong types
     @Test
     public void validateNull() {
-        MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadSchema");
+        MapBindingResult errors = new MapBindingResult(new HashMap<>(), "UploadSchema");
         UploadSchemaValidator.INSTANCE.validate(null, errors);
         assertTrue(errors.hasErrors());
     }
@@ -146,7 +146,7 @@ public class UploadSchemaTest {
     // we call the validator directly, since Validate.validateThrowingException filters out nulls and wrong types
     @Test
     public void validateWrongClass() {
-        MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadSchema");
+        MapBindingResult errors = new MapBindingResult(new HashMap<>(), "UploadSchema");
         UploadSchemaValidator.INSTANCE.validate("this is the wrong class", errors);
         assertTrue(errors.hasErrors());
     }
@@ -209,7 +209,7 @@ public class UploadSchemaTest {
         schema.setName("test schema");
         schema.setSchemaId("test-schema");
         schema.setStudyId("test-study");
-        schema.setFieldDefinitions((List) Collections.emptyList());
+        schema.setFieldDefinitions(Collections.<UploadFieldDefinition>emptyList());
 
         // validate
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
@@ -355,7 +355,7 @@ public class UploadSchemaTest {
         assertEquals("test-schema", jsonMap.get("schemaId"));
         assertEquals("UploadSchema", jsonMap.get("type"));
 
-        List<Map<String, Object>> fieldDefJsonList = (List) jsonMap.get("fieldDefinitions");
+        List<Map<String, Object>> fieldDefJsonList = (List<Map<String, Object>>) jsonMap.get("fieldDefinitions");
         assertEquals(2, fieldDefJsonList.size());
 
         Map<String, Object> fooJsonMap = fieldDefJsonList.get(0);
