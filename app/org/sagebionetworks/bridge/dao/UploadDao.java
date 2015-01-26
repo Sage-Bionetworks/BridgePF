@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 
 public interface UploadDao {
@@ -14,7 +15,7 @@ public interface UploadDao {
     /**
      * Gets the object associated with this upload.
      */
-    String getObjectId(String uploadId);
+    Upload getUpload(String uploadId);
 
     /**
      * Marks the specified upload as complete.
@@ -22,9 +23,4 @@ public interface UploadDao {
      * @param uploadId
      */
     void uploadComplete(String uploadId);
-
-    /**
-     * Is the upload complete?
-     */
-    boolean isComplete(String uploadId);
 }

@@ -1,4 +1,5 @@
 .classpath
+.DS_Store
 .idea
 .idea_modules
 .project
@@ -6,6 +7,7 @@
 .history
 .grunt
 TODO.txt
+tmp
 phantomjsdriver.log
 target
 application.log

@@ -1,14 +1,21 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
+import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 
 @DynamoDBTable(tableName = "Upload")
 public class DynamoUpload implements Upload, DynamoTable {
@@ -38,6 +45,7 @@ public class DynamoUpload implements Upload, DynamoTable {
         contentMd5 = uploadRequest.getContentMd5();
     }
 
+    /** {@inheritDoc} */
     @DynamoDBHashKey
     @Override
     public String getUploadId() {
@@ -48,7 +56,6 @@ public class DynamoUpload implements Upload, DynamoTable {
     }
 
     @DynamoDBAttribute
-    @Override
     public long getTimestamp() {
         return timestamp;
     }
@@ -56,6 +63,15 @@ public class DynamoUpload implements Upload, DynamoTable {
         this.timestamp = timestamp;
     }
 
+    /** {@inheritDoc} */
+    @DynamoDBIgnore
+    @Override
+    public LocalDate getUploadDate() {
+        // UploadDate is a synonym for timestamp, except flattened to a calendar date in Pacific local time.
+        return new LocalDate(timestamp, DateTimeZone.forID(("America/Los_Angeles")));
+    }
+
+    /** {@inheritDoc} */
     @DynamoDBAttribute
     @Override
     public String getObjectId() {
@@ -65,6 +81,7 @@ public class DynamoUpload implements Upload, DynamoTable {
         this.objectId = objectId;
     }
 
+    /** {@inheritDoc} */
     @DynamoDBAttribute
     @Override
     public String getHealthCode() {
@@ -75,12 +92,34 @@ public class DynamoUpload implements Upload, DynamoTable {
     }
 
     @DynamoDBAttribute
-    @Override
     public boolean isComplete() {
         return complete;
     }
     public void setComplete(boolean complete) {
         this.complete = complete;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBIgnore
+    @Override
+    public boolean canBeValidated() {
+        // For DynamoUpload uploads, as long as we haven't set the complete flag, we can call uploadComplete() on this
+        // upload and kick off validation.
+        return !complete;
+    }
+
+    /** DynamoUpload does not support getStatus. This method will always return UploadStatus.UNKNOWN. */
+    @DynamoDBIgnore
+    @Override
+    public UploadStatus getStatus() {
+        return UploadStatus.UNKNOWN;
+    }
+
+    /** DynamoUpload does not support validation. This method will always return an empty immutable list. */
+    @DynamoDBIgnore
+    @Override
+    public List<String> getValidationMessageList() {
+        return Collections.emptyList();
     }
 
     @DynamoDBVersionAttribute
@@ -92,7 +131,6 @@ public class DynamoUpload implements Upload, DynamoTable {
     }
 
     @DynamoDBAttribute
-    @Override
     public String getName() {
         return name;
     }
@@ -100,8 +138,15 @@ public class DynamoUpload implements Upload, DynamoTable {
         this.name = name;
     }
 
-    @DynamoDBAttribute
+    /** {@inheritDoc} */
+    @DynamoDBIgnore
     @Override
+    public String getFilename() {
+        // This is a synonym for getName().
+        return name;
+    }
+
+    @DynamoDBAttribute
     public long getContentLength() {
         return contentLength;
     }
@@ -110,7 +155,6 @@ public class DynamoUpload implements Upload, DynamoTable {
     }
 
     @DynamoDBAttribute
-    @Override
     public String getContentType() {
         return contentType;
     }
@@ -119,7 +163,6 @@ public class DynamoUpload implements Upload, DynamoTable {
     }
 
     @DynamoDBAttribute
-    @Override
     public String getContentMd5() {
         return contentMd5;
     }

@@ -4,6 +4,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.List;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
@@ -93,6 +95,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
         checkNotNull(app);
 
         Directory existing = getDirectory(createDirectoryName(identifier));
+        
         // delete the mapping
         AccountStoreMapping mapping = getApplicationMapping(existing.getHref(), app);
         if (mapping != null) {
@@ -133,11 +136,16 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private Application getApplication() {
         return client.getResource(config.getStormpathApplicationHref(), Application.class);
     }
-
+    
     private AccountStoreMapping getApplicationMapping(String href, Application app) {
-        for (AccountStoreMapping mapping : app.getAccountStoreMappings()) {
-            if (mapping.getAccountStore().getHref().equals(href)) {
-                return mapping;
+        // This is tedious but I see no way to search for or make a reference to this 
+        // mapping without iterating through the application's mappings.
+        AccountStoreMappingPageIterator iterator = new AccountStoreMappingPageIterator(app);
+        for (List<AccountStoreMapping> list : iterator) {
+            for (AccountStoreMapping mapping : list) {
+                if (mapping.getAccountStore().getHref().equals(href)) {
+                    return mapping;
+                }
             }
         }
         return null;

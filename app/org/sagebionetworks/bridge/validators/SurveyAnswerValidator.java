@@ -168,12 +168,13 @@ public class SurveyAnswerValidator implements Validator {
                 if (con.getMaxValue() != null && value > con.getMaxValue()) {
                     rejectField(errors, "constraints", "%s is higher than the maximum value of %s%s", answer, con.getMaxValue(), unitString);
                 }
+                /* This is far more difficult than it first appears, disable for the time being.
                 if (con.getStep() != null) {
                     double delta = value % con.getStep();
                     if (delta > (con.getStep()/10)) {
                         rejectField(errors, "constraints", "%s is not a step value of %s", answer, con.getStep());
                     }
-                }
+                }*/
             }
         } catch(NumberFormatException e) {
             rejectField(errors, "constraints", "%s is not a valid %s", answer, typeName);
