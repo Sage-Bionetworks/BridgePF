@@ -1,26 +1,22 @@
-package org.sagebionetworks.bridge.services.backfill;
+package org.sagebionetworks.bridge.stormpath;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Iterates page by page. A page is a list of items.
- * That is the page is of known size and the items are in order.
- */
-abstract class PageIterator<T> implements Iterator<List<T>>, Iterable<List<T>> {
+public abstract class PageIterator<T> implements Iterator<List<T>>, Iterable<List<T>> {
 
     private int pageStart = 0;
     private boolean hasNext = true;
 
     @Override
-    public boolean hasNext() {
+    public final boolean hasNext() {
         return hasNext;
     }
 
     @Override
-    public List<T> next() {
+    public final List<T> next() {
         if (!hasNext) {
             return Collections.emptyList();
         }
@@ -36,20 +32,20 @@ abstract class PageIterator<T> implements Iterator<List<T>>, Iterable<List<T>> {
     }
 
     @Override
-    public void remove() {
+    public final void remove() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Iterator<List<T>> iterator() {
+    public final Iterator<List<T>> iterator() {
         return this;
     }
 
-    int pageStart() {
+    public final int pageStart() {
         return pageStart;
     }
 
-    abstract int pageSize();
+    public abstract int pageSize();
 
-    abstract Iterator<T> nextPage();
+    public abstract Iterator<T> nextPage();
 }
