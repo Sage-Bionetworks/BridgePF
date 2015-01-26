@@ -89,7 +89,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     
     @Override 
     @DynamoDBAttribute
-    // @DynamoDBIndexRangeKey(attributeName="startDate", localSecondaryIndexName="startDate-index")
+    @DynamoDBIndexRangeKey(attributeName="startDate", localSecondaryIndexName="startDate-index")
     @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getStartDate() { 
         return startDate; 
@@ -102,7 +102,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     
     @Override 
     @DynamoDBAttribute
-    // @DynamoDBIndexRangeKey(attributeName="endDate", localSecondaryIndexName="endDate-index")
+    @DynamoDBIndexRangeKey(attributeName="endDate", localSecondaryIndexName="endDate-index")
     @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getEndDate() { 
         return endDate; 
