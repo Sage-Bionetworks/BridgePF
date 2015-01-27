@@ -52,6 +52,9 @@ public class ScheduleValidator implements Validator {
                     errors.rejectValue(REF_PROPERTY, CANNOT_BE_BLANK);
                 }
                 if (activity.getActivityType() == ActivityType.SURVEY) {
+                    if (!activity.getRef().startsWith("http://") && !activity.getRef().startsWith("https://")) {
+                        errors.rejectValue(REF_PROPERTY, "must be an absolute URL to a survey resource API");
+                    }                    
                     // This never should be empty because it is generated from the ref property, which we know is not null.
                     if (activity.getSurvey() == null) {
                         errors.rejectValue(SURVEY_PROPERTY, CANNOT_BE_NULL);

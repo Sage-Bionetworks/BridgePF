@@ -126,7 +126,7 @@ public class ScheduleStrategyTest {
         
         GuidCreatedOnVersionHolder keys = activity.getGuidCreatedOnVersionHolder();
         assertEquals("260666a8-e9fe-46df-8832-75d3e4f7448e", keys.getGuid());
-        assertEquals(DateTime.parse("2014-12-04T18:35:46.587Z"), keys.getCreatedOn());
+        assertEquals(DateUtils.convertToMillisFromEpoch("2014-12-04T18:35:46.587Z"), keys.getCreatedOn());
     }
     
     @Test
