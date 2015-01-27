@@ -22,7 +22,7 @@ public class Activity {
         if (ref == null) {
             this.activityType = null;
         } else {
-            this.activityType = (ref.contains("/surveys/")) ? ActivityType.SURVEY : ActivityType.TASK;    
+            this.activityType = SurveyReference.isSurveyRef(ref) ? ActivityType.SURVEY : ActivityType.TASK;    
         }
     }
     
@@ -39,7 +39,7 @@ public class Activity {
     }
 
     public SurveyReference getSurvey() {
-        return ref.contains("/surveys/") ? new SurveyReference(ref) : null;
+        return SurveyReference.isSurveyRef(ref) ? new SurveyReference(ref) : null;
     }
     
     @JsonIgnore
