@@ -14,7 +14,7 @@ public class ApplicationController extends BaseController {
 
     private static final UserSession EMPTY_USER_SESSION = new UserSession();
     private static final String ASSETS_HOST = "assets.sagebridge.org";
-    private static final String ASSETS_BUILD = "201501191951";
+    private static final String ASSETS_BUILD = "201501270111";
 
     public Result redirectToPublicApp() {
         return redirect("/");
