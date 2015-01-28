@@ -11,7 +11,7 @@ public class TestSimpleSchedulePlan extends DynamoSchedulePlan {
             setGuid("DDD");
             setScheduleType(ScheduleType.RECURRING);
             setCronTrigger("* * *");
-            addActivity(new Activity("Do task CCC", ActivityType.TASK, "task:CCC"));
+            addActivity(new Activity("Do task CCC", "task:CCC"));
             setExpires(new Long(60000));
             setLabel("Test label for the user");
         }
