@@ -43,14 +43,17 @@ public class DynamoUploadDaoTest {
     public void test() {
         UploadRequest uploadRequest = createUploadRequest();
         String healthCode = "fakeHealthCode";
-        String uploadId = uploadDao.createUpload(uploadRequest, healthCode);
+        Upload upload = uploadDao.createUpload(uploadRequest, healthCode);
+        String uploadId = upload.getUploadId();
         assertNotNull(uploadId);
-        Upload upload = uploadDao.getUpload(uploadId);
+
+        upload = uploadDao.getUpload(uploadId);
         assertTrue(upload.canBeValidated());
         String objectId = upload.getObjectId();
         assertNotNull(objectId);
         assertTrue(uploadId.equals(objectId));
-        uploadDao.uploadComplete(uploadId);
+
+        uploadDao.uploadComplete(upload);
         upload = uploadDao.getUpload(uploadId);
         assertFalse(upload.canBeValidated());
     }

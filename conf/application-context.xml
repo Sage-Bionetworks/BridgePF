@@ -415,7 +415,7 @@
         <constructor-arg ref="uploadTokenServiceClient" />
     </bean>
 
-    <bean id="uploadService" class="org.sagebionetworks.bridge.services.UploadServiceImpl">
+    <bean id="uploadService" class="org.sagebionetworks.bridge.services.UploadService">
         <property name="uploadSessionCredentialsService" ref="uploadSessionCredentialsService" />
         <property name="s3UploadClient" ref="s3UploadClient" />
         <property name="s3Client" ref="s3Client" />
