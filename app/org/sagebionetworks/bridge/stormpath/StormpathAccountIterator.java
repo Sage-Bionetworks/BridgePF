@@ -13,16 +13,23 @@ import com.stormpath.sdk.impl.account.DefaultAccountCriteria;
  */
 public class StormpathAccountIterator extends PageIterator<Account> {
 
-    private static final int PAGE_SIZE = 50;
+    private static final int DEFAULT_PAGE_SIZE = 50;
+    
     private final Application app;
+    private final int pageSize;
 
     public StormpathAccountIterator(Application app) {
+        this(app, DEFAULT_PAGE_SIZE);
+    }
+    
+    public StormpathAccountIterator(Application app, int pageSize) {
         this.app = app;
+        this.pageSize = pageSize;
     }
 
     @Override
     public int pageSize() {
-        return PAGE_SIZE;
+        return pageSize;
     }
 
     @Override
@@ -30,6 +37,7 @@ public class StormpathAccountIterator extends PageIterator<Account> {
         AccountCriteria criteria = new DefaultAccountCriteria();
         criteria.offsetBy(pageStart());
         criteria.limitTo(pageSize());
+        criteria.withCustomData();
         AccountList list = app.getAccounts(criteria);
         return list.iterator();
     }

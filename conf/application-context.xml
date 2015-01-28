@@ -309,6 +309,7 @@
         <property name="target">
             <bean class="controllers.StudyController" parent="BaseController">
                 <property name="studyService" ref="studyService" />
+                <property name="userProfileService" ref="userProfileService" />
             </bean>
         </property>
     </bean>
