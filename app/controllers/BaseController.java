@@ -126,6 +126,16 @@ public abstract class BaseController extends Controller {
         }
         throw new UnauthorizedException();
     }
+    
+    protected UserSession getAuthenticatedResearchSession(Study study) {
+        UserSession session = getAuthenticatedSession();
+        User user = session.getUser();
+        if (user.isInRole(study.getResearcherRole())) {
+            return session;
+        }
+        throw new UnauthorizedException();
+    }
+    
     /**
      * Return a session if it exists, or null otherwise. Will not throw exception if user is not authorized or has not
      * consented to research.

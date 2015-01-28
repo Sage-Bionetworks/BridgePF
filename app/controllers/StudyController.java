@@ -6,7 +6,9 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.StudyInfo;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.UserProfileService;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -16,9 +18,15 @@ import play.mvc.Result;
 public class StudyController extends BaseController {
 
     private StudyService studyService;
+    
+    private UserProfileService userProfileService;
 
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+    
+    public void setUserProfileService(UserProfileService userProfileService) {
+        this.userProfileService = userProfileService;
     }
 
     public Result getStudyForResearcher() throws Exception {
@@ -27,6 +35,15 @@ public class StudyController extends BaseController {
         Study study = studyService.getStudyByHostname(getHostname());
         getAuthenticatedResearchOrAdminSession(study);
         return okResult(new StudyInfo(study));
+    }
+    
+    public Result getStudyParticipants() throws Exception {
+        Study study = studyService.getStudyByHostname(getHostname());
+        // Researchers only, administrators cannot get this list so easily
+        getAuthenticatedResearchSession(study);
+        
+        List<StudyParticipant> participants = userProfileService.getStudyParticipants(study);
+        return okResult(participants);
     }
 
     public Result updateStudyForResearcher() throws Exception {
