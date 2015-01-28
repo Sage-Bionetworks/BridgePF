@@ -1,19 +1,17 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.junit.Assert.assertEquals;
-
-import java.util.List;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
+import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 
 public class ScheduleValidatorTest {
 
@@ -36,25 +34,8 @@ public class ScheduleValidatorTest {
     }
     
     @Test
-    public void cannotSubmitScheduleWithDifferentRefAndSurveyKeys() {
-        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("asdf", DateUtils.getCurrentMillisFromEpoch());
-        
-        Activity activity = new Activity("Label", ActivityType.SURVEY, "https://parkinson-staging.sagebridge.org/api/v1/surveys/d28969cc-70d7-40cc-9535-fe3f3120a85f/2014-11-26T21:41:03.819Z", keys);
-        
-        schedule.addActivity(activity);
-        
-        try {
-            Validate.entityThrowingException(validator, schedule);
-        } catch(InvalidEntityException e) {
-            List<String> errors = e.getErrors().get("activities[0].survey.guid");
-            assertEquals(1, errors.size());
-            assertEquals("activities[0].survey.guid does not match the URL for this activity", errors.get(0));
-        }
-    }
-    
-    @Test
     public void activityMustBeFullyInitialized() {
-        Activity activity = new Activity(null, null, null, null);
+        Activity activity = new Activity(null, null);
         
         schedule.addActivity(activity);
         
@@ -70,9 +51,9 @@ public class ScheduleValidatorTest {
     @Test
     public void datesMustBeChronologicallyOrdered() {
         // make it valid except for the dates....
-        schedule.addActivity(new Activity("Label", ActivityType.TASK, "task:AAA"));
+        schedule.addActivity(new Activity("Label", "task:AAA"));
         schedule.setScheduleType(ScheduleType.ONCE);
-        
+
         long startsOn = DateUtils.getCurrentMillisFromEpoch();
         long endsOn = startsOn + 1; // should be at least an hour later
         
@@ -88,6 +69,37 @@ public class ScheduleValidatorTest {
         endsOn = startsOn + (60 * 60 * 1000);
         schedule.setEndsOn(endsOn);
         Validate.entityThrowingException(validator, schedule);
+    }
+    
+    @Test
+    public void surveyRelativePathIsInvalid() {
+        schedule.addActivity(new Activity("Label", "/api/v1/surveys/AAA/published"));
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setStartsOn(DateUtils.getCurrentMillisFromEpoch());
+        schedule.setEndsOn(schedule.getStartsOn() + 1);
+
+        try {
+            Validate.entityThrowingException(validator, schedule);
+        } catch(InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("must be an absolute URL to a survey resource API"));
+        }
+    }
+    
+    @Test
+    public void activityCorrectlyParsesPublishedSurveyPath() {
+        Activity activity = new Activity("Label", "https://server/api/v1/surveys/AAA/published");
+        
+        SurveyReference ref = activity.getSurvey();
+        assertEquals("AAA", ref.getGuid());
+        assertNull(ref.getCreatedOn());
+        
+        activity = new Activity("Label", "task:AAA");
+        assertNull(activity.getSurvey());
+        
+        activity = new Activity("Label", "https://server/api/v1/surveys/AAA/2015-01-27T17:46:31.237Z");
+        ref = activity.getSurvey();
+        assertEquals("AAA", ref.getGuid());
+        assertEquals("2015-01-27T17:46:31.237Z", ref.getCreatedOn());
     }
     
 }
