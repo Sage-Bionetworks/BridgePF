@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -41,21 +42,23 @@ public class DynamoUploadDao implements UploadDao {
         this.mapperOld = mapperOld;
     }
 
+    /** {@inheritDoc} */
     @Override
-    public String createUpload(UploadRequest uploadRequest, String healthCode) {
+    public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull String healthCode) {
         checkNotNull(uploadRequest, "Upload request is null");
         checkArgument(StringUtils.isNotBlank(healthCode), "Health code is null or blank");        
 
         // Always write new uploads to the new upload table.
         DynamoUpload2 upload = new DynamoUpload2(uploadRequest, healthCode);
         mapper.save(upload);
-        return upload.getUploadId();
+        return upload;
     }
 
     // TODO: Cache this, or make it so that calling getUpload() and uploadComplete() in sequence don't cause duplicate
     // calls to DynamoDB.
+    /** {@inheritDoc} */
     @Override
-    public Upload getUpload(String uploadId) {
+    public Upload getUpload(@Nonnull String uploadId) {
         // Fetch upload from DynamoUpload2
         {
             DynamoUpload2 key = new DynamoUpload2();
@@ -79,10 +82,9 @@ public class DynamoUploadDao implements UploadDao {
         throw new BridgeServiceException(String.format("Upload ID %s not found", uploadId), HttpStatus.SC_NOT_FOUND);
     }
 
+    /** {@inheritDoc} */
     @Override
-    public void uploadComplete(String uploadId) {
-        Upload upload = getUpload(uploadId);
-
+    public void uploadComplete(@Nonnull Upload upload) {
         if (upload instanceof DynamoUpload2) {
             DynamoUpload2 upload2 = (DynamoUpload2) upload;
             upload2.setStatus(UploadStatus.VALIDATION_IN_PROGRESS);

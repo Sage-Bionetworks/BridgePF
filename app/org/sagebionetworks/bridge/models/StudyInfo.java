@@ -41,4 +41,10 @@ public class StudyInfo {
     public String getHostname() {
         return study.getHostname();
     }
+    public String getSupportEmail() {
+        return study.getSupportEmail();
+    }
+    public String getConsentNotificationEmail() {
+        return study.getConsentNotificationEmail();
+    }
 }

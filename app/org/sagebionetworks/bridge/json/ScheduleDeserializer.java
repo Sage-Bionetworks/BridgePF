@@ -13,7 +13,6 @@ import static org.sagebionetworks.bridge.models.schedules.Schedule.STARTS_ON_PRO
 import java.io.IOException;
 
 import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -37,8 +36,7 @@ public class ScheduleDeserializer extends JsonDeserializer<Schedule> {
         } else if (node.has(ACTIVITY_TYPE_PROPERTY) && node.has(ACTIVITY_REF_PROPERTY)) {
             String label = JsonUtils.asText(node, LABEL_PROPERTY);
             String ref = JsonUtils.asText(node, ACTIVITY_REF_PROPERTY);
-            ActivityType type = JsonUtils.asActivityType(node, ACTIVITY_TYPE_PROPERTY);
-            Activity activity = new Activity(label, type, ref);
+            Activity activity = new Activity(label, ref);
             schedule.setActivities(Lists.newArrayList(activity));
         }
         schedule.setLabel(JsonUtils.asText(node, LABEL_PROPERTY));

@@ -1,13 +1,16 @@
 package org.sagebionetworks.bridge.validators;
 
+import java.util.Set;
+
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
-
+    
     @Override
     public boolean supports(Class<?> clazz) {
         return Study.class.isAssignableFrom(clazz);
@@ -19,8 +22,8 @@ public class StudyValidator implements Validator {
         if (StringUtils.isBlank(study.getIdentifier())) {
             errors.rejectValue("identifier", "is null or blank");
         } else {
-            if (!study.getIdentifier().matches("^[a-z-]+$")) {
-                errors.rejectValue("identifier", "must contain only lower-case letters with optional dashes");
+            if (!study.getIdentifier().matches("^[a-z0-9-]+$")) {
+                errors.rejectValue("identifier", "must contain only lower-case letters and/or numbers with optional dashes");
             }
             if (study.getIdentifier().length() < 2) {
                 errors.rejectValue("identifier", "must be at least 2 characters");
@@ -29,6 +32,22 @@ public class StudyValidator implements Validator {
         if (StringUtils.isBlank(study.getName())) {
             errors.rejectValue("name", "is null or blank");
         }
+        validateEmails(errors, study.getSupportEmail(), "supportEmail");
+        validateEmails(errors, study.getConsentNotificationEmail(), "consentNotificationEmail");
+    }
+    
+    private void validateEmails(Errors errors, String value, String fieldName) {
+        Set<String> emails = commaListToSet(value);
+        if (!emails.isEmpty()) {
+            for (String email : emails) {
+                if (!EmailValidator.getInstance().isValid(email)) {
+                    errors.rejectValue(fieldName, "'%s' is not a valid email address", email);
+                }
+            }
+        }
     }
 
+    private Set<String> commaListToSet(String commaList) {
+        return org.springframework.util.StringUtils.commaDelimitedListToSet(commaList);
+    }
 }
