@@ -81,7 +81,7 @@ public class UploadFieldDefinitionTest {
     // we call the validator directly, since Validate.validateThrowingException filters out nulls and wrong types
     @Test
     public void validateNull() {
-        MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadFieldDefinition");
+        MapBindingResult errors = new MapBindingResult(new HashMap<>(), "UploadFieldDefinition");
         UploadFieldDefinitionValidator.INSTANCE.validate(null, errors);
         assertTrue(errors.hasErrors());
     }
@@ -90,7 +90,7 @@ public class UploadFieldDefinitionTest {
     // we call the validator directly, since Validate.validateThrowingException filters out nulls and wrong types
     @Test
     public void validateWrongClass() {
-        MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadFieldDefinition");
+        MapBindingResult errors = new MapBindingResult(new HashMap<>(), "UploadFieldDefinition");
         UploadFieldDefinitionValidator.INSTANCE.validate("this is the wrong class", errors);
         assertTrue(errors.hasErrors());
     }

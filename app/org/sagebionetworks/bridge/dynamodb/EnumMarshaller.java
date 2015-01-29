@@ -20,6 +20,7 @@ public class EnumMarshaller implements DynamoDBMarshaller<Enum> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override
     public Enum unmarshall(Class<Enum> clazz, String obj) {
         return Enum.valueOf(clazz, obj);
