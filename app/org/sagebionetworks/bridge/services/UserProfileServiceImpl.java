@@ -30,6 +30,13 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserProfileServiceImpl.class);
     
+    private static final Comparator<StudyParticipant> STUDY_PARTICIPANT_COMPARATOR = new Comparator<StudyParticipant>() {
+        @Override
+        public int compare(StudyParticipant p1, StudyParticipant p2) {
+            return p1.getEmail().compareTo(p2.getEmail());
+        }
+    };
+    
     private AuthenticationService authService;
     
     private AesGcmEncryptor healthCodeEncryptor;
@@ -77,6 +84,13 @@ public class UserProfileServiceImpl implements UserProfileService {
         return user;
     }
     
+    @Override
+    public void sendStudyParticipantRoster(Study study) {
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+
+        executorService.submit(new ParticipantRosterGenerator(study));
+    }
+    
     private class ParticipantRosterGenerator implements Runnable {
         private final Study study;
         
@@ -110,24 +124,12 @@ public class UserProfileServiceImpl implements UserProfileService {
                         }
                     }
                 }
-                Collections.sort(participants, new Comparator<StudyParticipant>() {
-                    @Override
-                    public int compare(StudyParticipant p1, StudyParticipant p2) {
-                        return p1.getEmail().compareTo(p2.getEmail());
-                    }
-                });
-                sendMailService.sendParticipants(study, participants);
+                Collections.sort(participants, STUDY_PARTICIPANT_COMPARATOR);
+                sendMailService.sendStudyParticipantsRoster(study, participants);
             } catch(Exception e) {
                 logger.error(e.getMessage(), e);
             }
         }        
-    }
-    
-    @Override
-    public void sendStudyParticipantRoster(Study study) {
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-
-        executorService.submit(new ParticipantRosterGenerator(study));
     }
 
     private UserProfile profileFromAccount(Account account) {

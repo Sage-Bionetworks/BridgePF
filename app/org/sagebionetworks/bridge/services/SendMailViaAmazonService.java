@@ -49,19 +49,23 @@ public class SendMailViaAmazonService implements SendMailService {
     
     private static final Logger logger = LoggerFactory.getLogger(SendMailViaAmazonService.class);
 
-    private static final String CONSENT_EMAIL_SUBJECT = "Consent Agreement for %s";
-    private static final String PARTICIPANTS_EMAIL_SUBJECT = "Study participants for %s";
     private static final DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
+    private static final String CONSENT_EMAIL_SUBJECT = "Consent Agreement for %s";
+    private static final String HEADER_CONTENT_DISPOSITION_CONSENT_VALUE = "inline";
+    private static final String HEADER_CONTENT_ID_CONSENT_VALUE = "<consentSignature>";
+    
+    private static final String PARTICIPANTS_EMAIL_SUBJECT = "Study participants for %s";
+    private static final String HEADER_CONTENT_DISPOSITION_PARTICIPANTS_VALUE = "attachment; filename=participants.csv";
+    private static final String HEADER_CONTENT_ID_PARTICIPANTS_VALUE = "<participantsCSV>";
+    
     private static final String HEADER_CONTENT_DISPOSITION = "Content-Disposition";
-    private static final String HEADER_CONTENT_DISPOSITION_VALUE = "inline";
-    private static final String HEADER_CONTENT_ID_VALUE = "<consentSignature>";
     private static final String HEADER_CONTENT_TRANSFER_ENCODING = "Content-Transfer-Encoding";
     private static final String HEADER_CONTENT_TRANSFER_ENCODING_VALUE = "base64";
     private static final String MIME_TYPE_TEXT_CSV = "text/csv";
     private static final String MIME_TYPE_TEXT_HTML = "text/html";
     private static final String MIME_TYPE_TEXT_PLAIN = "text/plain";
     private static final String COMMA_DELIMITER = ",";
-    private static final String NLS = "\n";
+    private static final String NEWLINE = "\n";
     private static final Region region = Region.getRegion(Regions.US_EAST_1);
 
     private String fromEmail;
@@ -97,8 +101,8 @@ public class SendMailViaAmazonService implements SendMailService {
             if (consentSignature.getImageData() != null) {
                 // Use pre-encoded MIME part since our image data is already base64 encoded.
                 sigPart = new PreencodedMimeBodyPart(HEADER_CONTENT_TRANSFER_ENCODING_VALUE);
-                sigPart.setContentID(HEADER_CONTENT_ID_VALUE);
-                sigPart.setHeader(HEADER_CONTENT_DISPOSITION, HEADER_CONTENT_DISPOSITION_VALUE);
+                sigPart.setContentID(HEADER_CONTENT_ID_CONSENT_VALUE);
+                sigPart.setHeader(HEADER_CONTENT_DISPOSITION, HEADER_CONTENT_DISPOSITION_CONSENT_VALUE);
                 sigPart.setContent(consentSignature.getImageData(), consentSignature.getImageMimeType());
             }
             
@@ -116,17 +120,17 @@ public class SendMailViaAmazonService implements SendMailService {
     }
     
     @Override
-    public void sendParticipants(Study study, List<StudyParticipant> participants) {
+    public void sendStudyParticipantsRoster(Study study, List<StudyParticipant> participants) {
         try {
             // Very simple for now, let's just see it work.
-            String body = createParticipantRoster(participants);
+            String body = createInlineParticipantRoster(participants);
             MimeBodyPart bodyPart = new MimeBodyPart();
             bodyPart.setContent(body, MIME_TYPE_TEXT_PLAIN);
             
             body = createParticipantCSV(participants);
             MimeBodyPart csvPart = new MimeBodyPart();
-            csvPart.setContentID("<participantCSV>");
-            csvPart.setHeader(HEADER_CONTENT_DISPOSITION, "attachment; filename=participants.csv");
+            csvPart.setContentID(HEADER_CONTENT_ID_PARTICIPANTS_VALUE);
+            csvPart.setHeader(HEADER_CONTENT_DISPOSITION, HEADER_CONTENT_DISPOSITION_PARTICIPANTS_VALUE);
             csvPart.setHeader(HEADER_CONTENT_TRANSFER_ENCODING, HEADER_CONTENT_TRANSFER_ENCODING_VALUE); 
             csvPart.setContent(body, MIME_TYPE_TEXT_CSV);
             
@@ -198,12 +202,12 @@ public class SendMailViaAmazonService implements SendMailService {
         return html;
     }
     
-    private String createParticipantRoster(List<StudyParticipant> participants) {
-        StringBuilder sb = new StringBuilder("There are "+participants.size()+" users enrolled in this study:"+NLS);
+    private String createInlineParticipantRoster(List<StudyParticipant> participants) {
+        StringBuilder sb = new StringBuilder("There are "+participants.size()+" users enrolled in this study:"+NEWLINE);
         for (int i=0; i < participants.size(); i++) {
             StudyParticipant participant = participants.get(i);
             
-            sb.append(NLS).append(participant.getEmail()).append(" (");
+            sb.append(NEWLINE).append(participant.getEmail()).append(" (");
             if (participant.getFirstName() == null && participant.getLastName() == null) {
                 sb.append("No name given");
             } else if (participant.getFirstName() != null && participant.getLastName() != null) {
@@ -213,9 +217,9 @@ public class SendMailViaAmazonService implements SendMailService {
             } else if (participant.getLastName() != null) {
                 sb.append(participant.getLastName());
             }
-            sb.append(")"+NLS);
+            sb.append(")"+NEWLINE);
             if (participant.getPhone() != null) {
-                sb.append("Phone: ").append(participant.getPhone()).append(NLS);    
+                sb.append("Phone: ").append(participant.getPhone()).append(NEWLINE);    
             }
         }
         return sb.toString();
@@ -227,14 +231,14 @@ public class SendMailViaAmazonService implements SendMailService {
         append(sb, "First Name");
         append(sb, "Last Name");
         append(sb, "Phone");
-        sb.append(NLS);
+        sb.append(NEWLINE);
         for (int i=0; i < participants.size(); i++) {
             StudyParticipant participant = participants.get(i);
             append(sb, participant.getEmail());
             append(sb, participant.getFirstName());
             append(sb, participant.getLastName());
             append(sb, participant.getPhone());
-            sb.append(NLS);
+            sb.append(NEWLINE);
         }
         return sb.toString();
     }
