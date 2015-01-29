@@ -1,19 +1,29 @@
 package controllers;
 
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.services.UploadService;
+import org.sagebionetworks.bridge.services.UploadValidationService;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import play.mvc.Result;
 
 public class UploadController extends BaseController {
 
     private UploadService uploadService;
+    private UploadValidationService uploadValidationService;
 
     public void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
+    }
+
+    /** Service handler for upload validation. This is configured by Spring. */
+    @Autowired
+    public void setUploadValidationService(UploadValidationService uploadValidationService) {
+        this.uploadValidationService = uploadValidationService;
     }
 
     public Result upload() throws Exception {
@@ -23,6 +33,10 @@ public class UploadController extends BaseController {
         return okResult(uploadSession);
     }
 
+    /**
+     * Signals to the Bridge server that the upload is complete. This kicks off the asynchronous validation process
+     * through the Upload Validation Service.
+     */
     public Result uploadComplete(String uploadId) throws Exception {
         getAuthenticatedAndConsentedSession();
 
@@ -30,9 +44,12 @@ public class UploadController extends BaseController {
         Upload upload = uploadService.getUpload(uploadId);
         uploadService.uploadComplete(upload);
 
-        // TODO: kick off upload validation
+        // kick off upload validation
+        Study study = studyService.getStudyByHostname(getHostname());
+        uploadValidationService.validateUpload(study, upload);
 
         return ok("Upload " + uploadId + " complete!");
     }
-    
+
+    // TODO: add API for get validation status and messages
 }
