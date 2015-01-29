@@ -6,6 +6,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 
+import java.util.List;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
@@ -19,7 +21,6 @@ import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 public class DynamoUploadDao implements UploadDao {
-
     // TODO: remove mapperOld once the migration is complete
     private DynamoDBMapper mapperOld;
     private DynamoDBMapper mapper;
@@ -28,7 +29,7 @@ public class DynamoUploadDao implements UploadDao {
      * This is the DynamoDB mapper that reads from and writes to our DynamoDB table. This is normally configured by
      * Spring.
      */
-    @Resource(name = "UploadDdbMapper")
+    @Resource(name = "uploadDdbMapper")
     public void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
@@ -37,7 +38,7 @@ public class DynamoUploadDao implements UploadDao {
      * This DynamoDB mapper writes to the old version of the Upload table. It co-exists with setDdbMapper until the
      * migration is complete. This is normally configured by Spring.
      */
-    @Resource(name = "UploadDdbMapperOld")
+    @Resource(name = "uploadDdbMapperOld")
     public void setDdbMapperOld(DynamoDBMapper mapperOld) {
         this.mapperOld = mapperOld;
     }
@@ -113,19 +114,10 @@ public class DynamoUploadDao implements UploadDao {
             return;
         }
 
-        // set upload status
+        // set status and append messages
         DynamoUpload2 upload2 = (DynamoUpload2) upload;
         upload2.setStatus(status);
-
-        // append message list, create a new message list if it doesn't already exist
-        List<String> oldList = upload2.getValidationMessageList();
-        if (oldList == null) {
-            oldList = new ArrayList<>();
-            upload2.setValidationMessageList(oldList);
-            // warn, since this should never happen
-            LOG.warn("Upload with ID %s has null validation message list", upload2.getUploadId());
-        }
-        oldList.addAll(validationMessageList);
+        upload2.appendValidationMessages(validationMessageList);
 
         // persist
         mapper.save(upload2);

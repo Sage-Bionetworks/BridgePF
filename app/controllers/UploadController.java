@@ -20,6 +20,7 @@ public class UploadController extends BaseController {
         this.uploadService = uploadService;
     }
 
+    /** Service handler for upload validation. This is configured by Spring. */
     @Autowired
     public void setUploadValidationService(UploadValidationService uploadValidationService) {
         this.uploadValidationService = uploadValidationService;
@@ -32,15 +33,19 @@ public class UploadController extends BaseController {
         return okResult(uploadSession);
     }
 
+    /**
+     * Signals to the Bridge server that the upload is complete. This kicks off the asynchronous validation process
+     * through the Upload Validation Service.
+     */
     public Result uploadComplete(String uploadId) throws Exception {
         getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudyByHostname(getHostname());
 
         // mark upload as complete
         Upload upload = uploadService.getUpload(uploadId);
         uploadService.uploadComplete(upload);
 
         // kick off upload validation
+        Study study = studyService.getStudyByHostname(getHostname());
         uploadValidationService.validateUpload(study, upload);
 
         return ok("Upload " + uploadId + " complete!");

@@ -32,13 +32,13 @@ import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 @ComponentScan(basePackages = "org.sagebionetworks.bridge")
 @Configuration
 public class BridgeSpringConfig {
-    @Bean(name = "AsyncExecutorService")
+    @Bean(name = "asyncExecutorService")
     @Resource(name = "numAsyncWorkerThreads")
     public ExecutorService asyncExecutorService(Integer numAsyncWorkerThreads) {
         return Executors.newFixedThreadPool(numAsyncWorkerThreads);
     }
 
-    @Bean(name = "CmsEncryptorCache")
+    @Bean(name = "cmsEncryptorCache")
     @Autowired
     public LoadingCache<String, CmsEncryptor> cmsEncryptorCache(CmsEncryptorCacheLoader cacheLoader) {
         return CacheBuilder.newBuilder().build(cacheLoader);
@@ -60,7 +60,7 @@ public class BridgeSpringConfig {
         return s3Helper;
     }
 
-    @Bean(name = "UploadDdbMapper")
+    @Bean(name = "uploadDdbMapper")
     @Autowired
     public DynamoDBMapper uploadDdbMapper(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(
@@ -71,7 +71,7 @@ public class BridgeSpringConfig {
     }
 
     // TODO: Remove this when the migration is done
-    @Bean(name = "UploadDdbMapperOld")
+    @Bean(name = "uploadDdbMapperOld")
     @Autowired
     public DynamoDBMapper uploadDdbMapperOld(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(
@@ -81,7 +81,7 @@ public class BridgeSpringConfig {
         return new DynamoDBMapper(client, mapperConfig);
     }
 
-    @Bean(name = "UploadValidationHandlerList")
+    @Bean(name = "uploadValidationHandlerList")
     @Autowired
     public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,
             DecryptAndUnzipHandler decryptAndUnzipHandler) {
@@ -91,7 +91,7 @@ public class BridgeSpringConfig {
         return ImmutableList.of(s3DownloadHandler, decryptAndUnzipHandler);
     }
 
-    @Bean(name = "UploadSchemaDdbMapper")
+    @Bean(name = "uploadSchemaDdbMapper")
     @Autowired
     public DynamoDBMapper uploadSchemaDdbMapper(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder()
