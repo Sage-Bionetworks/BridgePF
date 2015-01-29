@@ -200,8 +200,8 @@ public class SurveyController extends BaseController {
         Survey survey = surveyService.getSurvey(keys);
         verifySurveyIsInStudy(session, study, survey);
         
-        surveyService.publishSurvey(survey);
-        return okResult("Survey published.");
+        survey = surveyService.publishSurvey(survey);
+        return okResult(new GuidCreatedOnVersionHolderImpl(survey));
     }
     
     public Result closeSurvey(String surveyGuid, String createdOnString) throws Exception {

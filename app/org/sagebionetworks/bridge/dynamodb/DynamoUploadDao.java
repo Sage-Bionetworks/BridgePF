@@ -3,7 +3,10 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Resource;
+
+import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import org.apache.commons.httpclient.HttpStatus;
@@ -18,7 +21,6 @@ import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 public class DynamoUploadDao implements UploadDao {
-
     // TODO: remove mapperOld once the migration is complete
     private DynamoDBMapper mapperOld;
     private DynamoDBMapper mapper;
@@ -27,7 +29,7 @@ public class DynamoUploadDao implements UploadDao {
      * This is the DynamoDB mapper that reads from and writes to our DynamoDB table. This is normally configured by
      * Spring.
      */
-    @Resource(name = "UploadDdbMapper")
+    @Resource(name = "uploadDdbMapper")
     public void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
@@ -36,26 +38,28 @@ public class DynamoUploadDao implements UploadDao {
      * This DynamoDB mapper writes to the old version of the Upload table. It co-exists with setDdbMapper until the
      * migration is complete. This is normally configured by Spring.
      */
-    @Resource(name = "UploadDdbMapperOld")
+    @Resource(name = "uploadDdbMapperOld")
     public void setDdbMapperOld(DynamoDBMapper mapperOld) {
         this.mapperOld = mapperOld;
     }
 
+    /** {@inheritDoc} */
     @Override
-    public String createUpload(UploadRequest uploadRequest, String healthCode) {
+    public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull String healthCode) {
         checkNotNull(uploadRequest, "Upload request is null");
         checkArgument(StringUtils.isNotBlank(healthCode), "Health code is null or blank");        
 
         // Always write new uploads to the new upload table.
         DynamoUpload2 upload = new DynamoUpload2(uploadRequest, healthCode);
         mapper.save(upload);
-        return upload.getUploadId();
+        return upload;
     }
 
     // TODO: Cache this, or make it so that calling getUpload() and uploadComplete() in sequence don't cause duplicate
     // calls to DynamoDB.
+    /** {@inheritDoc} */
     @Override
-    public Upload getUpload(String uploadId) {
+    public Upload getUpload(@Nonnull String uploadId) {
         // Fetch upload from DynamoUpload2
         {
             DynamoUpload2 key = new DynamoUpload2();
@@ -79,10 +83,9 @@ public class DynamoUploadDao implements UploadDao {
         throw new BridgeServiceException(String.format("Upload ID %s not found", uploadId), HttpStatus.SC_NOT_FOUND);
     }
 
+    /** {@inheritDoc} */
     @Override
-    public void uploadComplete(String uploadId) {
-        Upload upload = getUpload(uploadId);
-
+    public void uploadComplete(@Nonnull Upload upload) {
         if (upload instanceof DynamoUpload2) {
             DynamoUpload2 upload2 = (DynamoUpload2) upload;
             upload2.setStatus(UploadStatus.VALIDATION_IN_PROGRESS);
@@ -95,5 +98,28 @@ public class DynamoUploadDao implements UploadDao {
             uploadOld.setComplete(true);
             mapperOld.save(uploadOld);
         }
+    }
+
+    /**
+     * Writes validation status and appends messages to Dynamo DB. Only DynamoUpload2 objects can have status and
+     * validation. DynamoUpload objects will be ignored.
+     *
+     * @see org.sagebionetworks.bridge.dao.UploadDao#writeValidationStatus
+     */
+    @Override
+    public void writeValidationStatus(@Nonnull Upload upload, @Nonnull UploadStatus status,
+            @Nonnull List<String> validationMessageList) {
+        // only for DynamoUpload2
+        if (!(upload instanceof DynamoUpload2)) {
+            return;
+        }
+
+        // set status and append messages
+        DynamoUpload2 upload2 = (DynamoUpload2) upload;
+        upload2.setStatus(status);
+        upload2.appendValidationMessages(validationMessageList);
+
+        // persist
+        mapper.save(upload2);
     }
 }

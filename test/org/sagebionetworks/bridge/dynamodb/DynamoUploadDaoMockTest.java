@@ -10,7 +10,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.dynamodb.DynamoUploadDaoTest.createUploadRequest;
 
+import java.util.Collections;
+import java.util.List;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.junit.Test;
@@ -31,14 +35,14 @@ public class DynamoUploadDaoMockTest {
         DynamoUploadDao dao = new DynamoUploadDao();
         dao.setDdbMapper(mockMapper);
         UploadRequest req = createUploadRequest();
-        String uploadId = dao.createUpload(req, "fakeHealthCode");
+        Upload upload = dao.createUpload(req, "fakeHealthCode");
 
         // Validate that our mock DDB mapper was called.
         ArgumentCaptor<DynamoUpload2> arg = ArgumentCaptor.forClass(DynamoUpload2.class);
         verify(mockMapper).save(arg.capture());
 
         // Validate that our DDB upload object matches our upload request, and that the upload ID matches.
-        assertEquals(uploadId, arg.getValue().getUploadId());
+        assertEquals(upload.getUploadId(), arg.getValue().getUploadId());
         assertEquals(req.getContentLength(), arg.getValue().getContentLength());
         assertEquals(req.getContentMd5(), arg.getValue().getContentMd5());
         assertEquals(req.getContentType(), arg.getValue().getContentType());
@@ -123,16 +127,11 @@ public class DynamoUploadDaoMockTest {
     public void uploadCompleteNew() {
         // mock DDB mapper (new)
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
-        ArgumentCaptor<DynamoUpload2> argLoad = ArgumentCaptor.forClass(DynamoUpload2.class);
-        when(mockMapper.load(argLoad.capture())).thenReturn(new DynamoUpload2());
 
         // execute
         DynamoUploadDao dao = new DynamoUploadDao();
         dao.setDdbMapper(mockMapper);
-        dao.uploadComplete("test-upload-complete");
-
-        // validate we passed in the expected key
-        assertEquals("test-upload-complete", argLoad.getValue().getUploadId());
+        dao.uploadComplete(new DynamoUpload2());
 
         // Verify our mock. We add status=VALIDATION_IN_PROGRESS and uploadDate on save, so only check for those
         // properties.
@@ -146,25 +145,13 @@ public class DynamoUploadDaoMockTest {
 
     @Test
     public void uploadCompleteOld() {
-        // mock DDB mapper (new)
-        DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
-        ArgumentCaptor<DynamoUpload2> argLoad = ArgumentCaptor.forClass(DynamoUpload2.class);
-        when(mockMapper.load(argLoad.capture())).thenReturn(null);
-
         // mock DDB mapper (old)
         DynamoDBMapper mockMapperOld = mock(DynamoDBMapper.class);
-        ArgumentCaptor<DynamoUpload> argLoadOld = ArgumentCaptor.forClass(DynamoUpload.class);
-        when(mockMapperOld.load(argLoadOld.capture())).thenReturn(new DynamoUpload());
 
         // execute
         DynamoUploadDao dao = new DynamoUploadDao();
-        dao.setDdbMapper(mockMapper);
         dao.setDdbMapperOld(mockMapperOld);
-        dao.uploadComplete("test-complete-fallback");
-
-        // validate we passed in the expected key
-        assertEquals("test-complete-fallback", argLoad.getValue().getUploadId());
-        assertEquals("test-complete-fallback", argLoadOld.getValue().getUploadId());
+        dao.uploadComplete(new DynamoUpload());
 
         // Verify our mock. We add complete=true only for the old code path.
         ArgumentCaptor<DynamoUpload> argSave = ArgumentCaptor.forClass(DynamoUpload.class);
@@ -172,36 +159,61 @@ public class DynamoUploadDaoMockTest {
         assertTrue(argSave.getValue().isComplete());
     }
 
+    // branch coverage
     @Test
-    public void uploadCompleteNotFound() {
+    public void writeValidationStatusOld() {
+        new DynamoUploadDao().writeValidationStatus(new DynamoUpload(), UploadStatus.SUCCEEDED,
+                Collections.<String>emptyList());
+    }
+
+    @Test
+    public void writeValidationStatusNew() {
+        // create input
+        DynamoUpload2 upload2 = new DynamoUpload2();
+        upload2.setUploadId("test-upload");
+        upload2.setValidationMessageList(Collections.<String>emptyList());
+
         // mock DDB mapper (new)
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
-        ArgumentCaptor<DynamoUpload2> argLoad = ArgumentCaptor.forClass(DynamoUpload2.class);
-        when(mockMapper.load(argLoad.capture())).thenReturn(null);
-
-        // mock DDB mapper (old)
-        DynamoDBMapper mockMapperOld = mock(DynamoDBMapper.class);
-        ArgumentCaptor<DynamoUpload> argLoadOld = ArgumentCaptor.forClass(DynamoUpload.class);
-        when(mockMapperOld.load(argLoadOld.capture())).thenReturn(null);
 
         // execute
         DynamoUploadDao dao = new DynamoUploadDao();
         dao.setDdbMapper(mockMapper);
-        dao.setDdbMapperOld(mockMapperOld);
+        dao.writeValidationStatus(upload2, UploadStatus.SUCCEEDED, ImmutableList.of("wrote new"));
 
-        Exception thrown = null;
-        try {
-            dao.uploadComplete("test-complete-404");
-            fail();
-        } catch (BridgeServiceException ex) {
-            thrown = ex;
-        }
-        assertNotNull(thrown);
+        // Verify our mock. We set the status and append messages.
+        ArgumentCaptor<DynamoUpload2> argSave = ArgumentCaptor.forClass(DynamoUpload2.class);
+        verify(mockMapper).save(argSave.capture());
+        assertEquals(UploadStatus.SUCCEEDED, argSave.getValue().getStatus());
 
-        // validate we passed in the expected key
-        assertEquals("test-complete-404", argLoad.getValue().getUploadId());
-        assertEquals("test-complete-404", argLoadOld.getValue().getUploadId());
+        List<String> messageList = argSave.getValue().getValidationMessageList();
+        assertEquals(1, messageList.size());
+        assertEquals("wrote new", messageList.get(0));
+    }
 
-        // mapper.save() is never called in this branch
+    @Test
+    public void writeValidationStatusNonEmptyList() {
+        // create input
+        DynamoUpload2 upload2 = new DynamoUpload2();
+        upload2.setUploadId("test-upload");
+        upload2.setValidationMessageList(ImmutableList.of("pre-existing message"));
+
+        // mock DDB mapper (new)
+        DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
+
+        // execute
+        DynamoUploadDao dao = new DynamoUploadDao();
+        dao.setDdbMapper(mockMapper);
+        dao.writeValidationStatus(upload2, UploadStatus.SUCCEEDED, ImmutableList.of("appended this message"));
+
+        // Verify our mock. We set the status and append messages.
+        ArgumentCaptor<DynamoUpload2> argSave = ArgumentCaptor.forClass(DynamoUpload2.class);
+        verify(mockMapper).save(argSave.capture());
+        assertEquals(UploadStatus.SUCCEEDED, argSave.getValue().getStatus());
+
+        List<String> messageList = argSave.getValue().getValidationMessageList();
+        assertEquals(2, messageList.size());
+        assertEquals("pre-existing message", messageList.get(0));
+        assertEquals("appended this message", messageList.get(1));
     }
 }
