@@ -133,6 +133,7 @@ public class AuthenticationServiceImplTest {
             authService.signIn(user.getStudy(), user.getSignIn());
             fail("Should have thrown consent exception");
         } catch (ConsentRequiredException e) {
+        } finally {
             helper.deleteUser(user);
         }
     }
@@ -144,6 +145,7 @@ public class AuthenticationServiceImplTest {
             Email email = new Email(user.getEmail());
             authService.resendEmailVerification(user.getStudy(), email);
         } catch (ConsentRequiredException e) {
+        } finally {
             helper.deleteUser(user);
         }
     }

@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -9,6 +11,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.google.common.collect.ImmutableList;
 import org.joda.time.LocalDate;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -30,7 +33,7 @@ public class DynamoUpload2 implements DynamoTable, Upload {
     private UploadStatus status;
     private LocalDate uploadDate;
     private String uploadId;
-    private List<String> validationMessageList;
+    private final List<String> validationMessageList = new ArrayList<>();
     private Long version;
 
     /** This empty constructor is needed by the DynamoDB mapper. */
@@ -45,7 +48,6 @@ public class DynamoUpload2 implements DynamoTable, Upload {
         this.healthCode = healthCode;
         status = UploadStatus.REQUESTED;
         uploadId = BridgeUtils.generateGuid();
-        validationMessageList = new ArrayList<>();
     }
 
     /** {@inheritDoc} */
@@ -157,15 +159,43 @@ public class DynamoUpload2 implements DynamoTable, Upload {
         this.uploadId = uploadId;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Returns an immutable copy of the validation message list. Changes to the underlying message list will not be
+     * reflected in this copy. Note that the validation message list will be non-null and will not contain null
+     * messages.
+     *
+     * @see org.sagebionetworks.bridge.models.upload.Upload#getValidationMessageList
+     */
     @Override
-    public List<String> getValidationMessageList() {
-        return validationMessageList;
+    public @Nonnull List<String> getValidationMessageList() {
+        return ImmutableList.copyOf(validationMessageList);
     }
 
-    /** @see #getValidationMessageList */
-    public void setValidationMessageList(List<String> validationMessageList) {
-        this.validationMessageList = validationMessageList;
+    /**
+     * <p>
+     * Sets the validation message list. Internally, this clears all messages from the internal validation message
+     * list, then copies all elements from the given validation message list. Note that the validation message list
+     * must be non-null and must not contain null messages.
+     * </p>
+     * <p>
+     * The DynamoDB mapper needs this method, and it needs it to take a List of String.
+     * </p>
+     *
+     * @see org.sagebionetworks.bridge.models.upload.Upload#getValidationMessageList
+     */
+    public void setValidationMessageList(@Nonnull List<String> validationMessageList) {
+        this.validationMessageList.clear();
+        appendValidationMessages(validationMessageList);
+    }
+
+    /**
+     * Appends validation messages to the validation message list. Note that the validation message list must be
+     * non-null and must not contain null messages.
+     *
+     * @see org.sagebionetworks.bridge.models.upload.Upload#getValidationMessageList
+     */
+    public void appendValidationMessages(@Nonnull Collection<? extends String> validationMessageList) {
+        this.validationMessageList.addAll(validationMessageList);
     }
 
     /** DynamoDB version, used for optimistic locking */

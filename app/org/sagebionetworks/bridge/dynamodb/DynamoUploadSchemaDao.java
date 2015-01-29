@@ -33,7 +33,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
      * This is the DynamoDB mapper that reads from and writes to our DynamoDB table. This is normally configured by
      * Spring.
      */
-    @Resource(name = "UploadSchemaDdbMapper")
+    @Resource(name = "uploadSchemaDdbMapper")
     public void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
