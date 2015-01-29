@@ -88,7 +88,7 @@ POST   /researcher/v1/consents/active/:timestamp    @controllers.StudyConsentCon
 
 # Researchers - Studies
 GET    /researcher/v1/study              @controllers.StudyController.getStudyForResearcher
-GET    /researcher/v1/study/participants @controllers.StudyController.getStudyParticipants          
+POST   /researcher/v1/study/participants @controllers.StudyController.sendStudyParticipantsRoster          
 POST   /researcher/v1/study              @controllers.StudyController.updateStudyForResearcher
 
 # Researchers - Upload Schemas

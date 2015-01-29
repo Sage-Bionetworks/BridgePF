@@ -60,4 +60,10 @@ public class UserProfileServiceImplTest {
         assertEquals(testUser.getUsername(), userProfile.getUsername());
         assertEquals("123-456-7890", userProfile.getPhone());
     }
+    
+    @Test
+    public void canRetrieveStudyParticipants() {
+        // All we an really do here is verify no error is thrown.
+        profileService.sendStudyParticipantRoster(testUser.getStudy());
+    }
 }

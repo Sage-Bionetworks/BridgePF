@@ -13,23 +13,19 @@ import com.stormpath.sdk.impl.account.DefaultAccountCriteria;
  */
 public class StormpathAccountIterator extends PageIterator<Account> {
 
-    private static final int DEFAULT_PAGE_SIZE = 50;
+    // 100 is the maximum allowed page size according to the Stormpath API docs.
+    // Eventually iterating through users will be pretty slow.
+    private static final int DEFAULT_PAGE_SIZE = 100;
     
     private final Application app;
-    private final int pageSize;
 
     public StormpathAccountIterator(Application app) {
-        this(app, DEFAULT_PAGE_SIZE);
-    }
-    
-    public StormpathAccountIterator(Application app, int pageSize) {
         this.app = app;
-        this.pageSize = pageSize;
     }
 
     @Override
     public int pageSize() {
-        return pageSize;
+        return DEFAULT_PAGE_SIZE;
     }
 
     @Override
