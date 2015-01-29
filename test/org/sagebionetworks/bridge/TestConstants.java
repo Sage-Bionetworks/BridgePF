@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+
 public class TestConstants {
     public static final String DUMMY_IMAGE_DATA = "VGhpcyBpc24ndCBhIHJlYWwgaW1hZ2Uu";
 
@@ -75,4 +77,6 @@ public class TestConstants {
     public static final String CANCEL_ACTION = "#cancelAct";
     public static final String CLOSE_ACTION = ".close";
     public static final String TOAST_DIALOG = ".humane";
+
+    public static final String UPLOAD_BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
 }
