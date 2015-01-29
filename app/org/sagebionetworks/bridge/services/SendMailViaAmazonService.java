@@ -1,10 +1,13 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.apache.commons.lang3.StringEscapeUtils.escapeCsv;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
@@ -27,6 +30,7 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
@@ -45,13 +49,19 @@ public class SendMailViaAmazonService implements SendMailService {
     
     private static final Logger logger = LoggerFactory.getLogger(SendMailViaAmazonService.class);
 
-    private static final String EMAIL_SUBJECT = "Consent Agreement for %s";
+    private static final String CONSENT_EMAIL_SUBJECT = "Consent Agreement for %s";
+    private static final String PARTICIPANTS_EMAIL_SUBJECT = "Study participants for %s";
     private static final DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
     private static final String HEADER_CONTENT_DISPOSITION = "Content-Disposition";
     private static final String HEADER_CONTENT_DISPOSITION_VALUE = "inline";
     private static final String HEADER_CONTENT_ID_VALUE = "<consentSignature>";
+    private static final String HEADER_CONTENT_TRANSFER_ENCODING = "Content-Transfer-Encoding";
     private static final String HEADER_CONTENT_TRANSFER_ENCODING_VALUE = "base64";
+    private static final String MIME_TYPE_TEXT_CSV = "text/csv";
     private static final String MIME_TYPE_TEXT_HTML = "text/html";
+    private static final String MIME_TYPE_TEXT_PLAIN = "text/plain";
+    private static final String COMMA_DELIMITER = ",";
+    private static final String NLS = "\n";
     private static final Region region = Region.getRegion(Regions.US_EAST_1);
 
     private String fromEmail;
@@ -93,23 +103,48 @@ public class SendMailViaAmazonService implements SendMailService {
             }
             
             // As recommended by Amazon, we send the emails separately.
-            sendEmailTo(study.getName(), user.getEmail(), bodyPart, sigPart);
+            String subject = String.format(CONSENT_EMAIL_SUBJECT, study.getName());
+            
+            sendEmailTo(subject, user.getEmail(), bodyPart, sigPart);
             Set<String> emailAddresses = commaListToSet(study.getConsentNotificationEmail());
             for (String email : emailAddresses) {
-                sendEmailTo(study.getName(), email, bodyPart, sigPart);
+                sendEmailTo(subject, email, bodyPart, sigPart);
             }
         } catch(IOException | MessagingException e) {
             throw new BridgeServiceException(e);
         }
     }
+    
+    @Override
+    public void sendParticipants(Study study, List<StudyParticipant> participants) {
+        try {
+            // Very simple for now, let's just see it work.
+            String body = createParticipantRoster(participants);
+            MimeBodyPart bodyPart = new MimeBodyPart();
+            bodyPart.setContent(body, MIME_TYPE_TEXT_PLAIN);
+            
+            body = createParticipantCSV(participants);
+            MimeBodyPart csvPart = new MimeBodyPart();
+            csvPart.setContentID("<participantCSV>");
+            csvPart.setHeader(HEADER_CONTENT_DISPOSITION, "attachment; filename=participants.csv");
+            csvPart.setHeader(HEADER_CONTENT_TRANSFER_ENCODING, HEADER_CONTENT_TRANSFER_ENCODING_VALUE); 
+            csvPart.setContent(body, MIME_TYPE_TEXT_CSV);
+            
+            String subject = String.format(PARTICIPANTS_EMAIL_SUBJECT, study.getName());
+            sendEmailTo(subject, study.getConsentNotificationEmail(), bodyPart, csvPart);
+            
+        } catch(MessagingException e) {
+            throw new BridgeServiceException(e);
+        }
+    }
 
-    private void sendEmailTo(String studyName, String email, MimeBodyPart bodyPart, MimeBodyPart sigPart) {
+    private void sendEmailTo(String subject, String email, MimeBodyPart bodyPart, MimeBodyPart sigPart) {
         try {
             // Create email using JavaMail
             Session mailSession = Session.getInstance(new Properties(), null);
             MimeMessage mimeMessage = new MimeMessage(mailSession);
             mimeMessage.setFrom(new InternetAddress(fromEmail));
-            mimeMessage.setSubject(String.format(EMAIL_SUBJECT, studyName), Charsets.UTF_8.name());
+            mimeMessage.setSubject(subject, Charsets.UTF_8.name());
             mimeMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(email));
 
             MimeMultipart mimeMultipart = new MimeMultipart();
@@ -161,5 +196,54 @@ public class SendMailViaAmazonService implements SendMailService {
         html = html.replace("@@birth.date@@", birthdate);
         html = html.replace("@@signing.date@@", signingDate);
         return html;
+    }
+    
+    private String createParticipantRoster(List<StudyParticipant> participants) {
+        StringBuilder sb = new StringBuilder("There are "+participants.size()+" users enrolled in this study:"+NLS);
+        for (int i=0; i < participants.size(); i++) {
+            StudyParticipant participant = participants.get(i);
+            
+            sb.append(NLS).append(participant.getEmail()).append(" (");
+            if (participant.getFirstName() == null && participant.getLastName() == null) {
+                sb.append("No name given");
+            } else if (participant.getFirstName() != null && participant.getLastName() != null) {
+                sb.append(participant.getFirstName()).append(" ").append(participant.getLastName());
+            } else if (participant.getFirstName() != null) {
+                sb.append(participant.getFirstName());
+            } else if (participant.getLastName() != null) {
+                sb.append(participant.getLastName());
+            }
+            sb.append(")"+NLS);
+            if (participant.getPhone() != null) {
+                sb.append("Phone: ").append(participant.getPhone()).append(NLS);    
+            }
+        }
+        return sb.toString();
+    }
+    
+    private String createParticipantCSV(List<StudyParticipant> participants) {
+        StringBuilder sb = new StringBuilder();
+        append(sb, "Email");
+        append(sb, "First Name");
+        append(sb, "Last Name");
+        append(sb, "Phone");
+        sb.append(NLS);
+        for (int i=0; i < participants.size(); i++) {
+            StudyParticipant participant = participants.get(i);
+            append(sb, participant.getEmail());
+            append(sb, participant.getFirstName());
+            append(sb, participant.getLastName());
+            append(sb, participant.getPhone());
+            sb.append(NLS);
+        }
+        return sb.toString();
+    }
+    
+    private void append(StringBuilder sb, String value) {
+        if (value != null) {
+            sb.append(escapeCsv(value)).append(COMMA_DELIMITER);
+        } else {
+            sb.append("").append(COMMA_DELIMITER);
+        }
     }
 }

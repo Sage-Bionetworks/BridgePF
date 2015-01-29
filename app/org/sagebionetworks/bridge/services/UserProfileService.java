@@ -1,11 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
-import java.util.List;
-
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 
 public interface UserProfileService {
 
@@ -13,6 +10,6 @@ public interface UserProfileService {
     
     public User updateProfile(User caller, UserProfile profile);
     
-    public List<StudyParticipant> getStudyParticipants(Study study);
+    public void sendStudyParticipantRoster(Study study);
     
 }

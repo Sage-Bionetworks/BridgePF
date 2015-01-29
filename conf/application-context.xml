@@ -390,6 +390,8 @@
     <bean id="userProfileService" class="org.sagebionetworks.bridge.services.UserProfileServiceImpl">
         <property name="authenticationService" ref="authenticationService" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
+        <property name="executorService" ref="asyncExecutorService" />
+        <property name="sendMailService" ref="sendEmailViaAmazonService" />
     </bean>
 
     <bean id="consentService" class="org.sagebionetworks.bridge.services.ConsentServiceImpl">

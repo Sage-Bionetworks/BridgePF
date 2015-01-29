@@ -48,7 +48,7 @@ public class DynamoStudyDao implements StudyDao {
         study.setIdentifier(identifier);
         study = mapper.load(study);
         if (study == null) {
-            throw new EntityNotFoundException(Study.class);
+            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found.");
         }
         return study;
     }
