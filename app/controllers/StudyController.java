@@ -44,7 +44,7 @@ public class StudyController extends BaseController {
         getAuthenticatedResearchSession(study);
         
         // One thing we can do here is verify that an email address has been set for the email
-        // that is about to be send.
+        // that is about to be sent.
         if (StringUtils.isBlank(study.getConsentNotificationEmail())) {
             throw new BridgeServiceException("No consent notification contact email exists for this study. You must update the study with this contact before retrieving a roster of study participants.");
         }

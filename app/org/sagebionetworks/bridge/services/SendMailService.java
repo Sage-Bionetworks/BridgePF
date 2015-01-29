@@ -12,6 +12,6 @@ public interface SendMailService {
 
     public void sendConsentAgreement(User caller, ConsentSignature consent, StudyConsent studyConsent);
 
-    public void sendParticipants(Study study, List<StudyParticipant> participants);
+    public void sendStudyParticipantsRoster(Study study, List<StudyParticipant> participants);
     
 }
