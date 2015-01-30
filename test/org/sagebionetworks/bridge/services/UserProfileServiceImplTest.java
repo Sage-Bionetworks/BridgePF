@@ -1,6 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Resource;
 
@@ -10,6 +15,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.springframework.test.context.ContextConfiguration;
@@ -26,7 +32,7 @@ public class UserProfileServiceImplTest {
     private TestUserAdminHelper helper;
     
     @Resource
-    private UserProfileService profileService;
+    private UserProfileServiceImpl profileService;
     
     private TestUser testUser;
     
@@ -59,5 +65,26 @@ public class UserProfileServiceImplTest {
         assertEquals(testUser.getEmail(), userProfile.getEmail());
         assertEquals(testUser.getUsername(), userProfile.getUsername());
         assertEquals("123-456-7890", userProfile.getPhone());
+    }
+    
+    @Test(expected = BridgeServiceException.class)
+    public void getErrorIfNoConsentEmailSet() {
+        testUser.getStudy().setConsentNotificationEmail(null);
+        profileService.sendStudyParticipantRoster(testUser.getStudy());
+    }
+    
+    
+    @Test
+    public void canRetrieveStudyParticipants() {
+        UserProfileServiceImpl userProfileService = new UserProfileServiceImpl();
+        
+        // Do not send email when this service is called.
+        ExecutorService service = mock(ExecutorService.class);
+        userProfileService.setExecutorService(service);
+        
+        // All we an really do here is verify no error is thrown.
+        userProfileService.sendStudyParticipantRoster(testUser.getStudy());
+        
+        verify(service).submit(any(Runnable.class));
     }
 }

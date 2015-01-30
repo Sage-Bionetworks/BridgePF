@@ -74,7 +74,7 @@ public class User implements BridgeEntity {
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
-
+    
     public String getHealthCode() {
         return healthCode;
     }
