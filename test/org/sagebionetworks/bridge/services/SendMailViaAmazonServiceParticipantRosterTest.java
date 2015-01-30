@@ -88,7 +88,8 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         participant.setFirstName("First");
         participant.setLastName("Last");
         participant.setEmail("test@test.com");
-        participant.setPhone("(123) 456-7890");
+        // Tab snuck into this string should be converted to a space
+        participant.setPhone("(123)\t456-7890");
         List<StudyParticipant> participants = Lists.newArrayList(participant);
 
         String output = service.createParticipantCSV(participants);

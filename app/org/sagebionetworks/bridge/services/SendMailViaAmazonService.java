@@ -249,7 +249,7 @@ public class SendMailViaAmazonService implements SendMailService {
     }
     
     private void append(StringBuilder sb, String value, boolean withComma) {
-        sb.append( (value != null) ? escapeCsv(value) : "" );
+        sb.append( (value != null) ? value.replaceAll("\t", " ") : "" );
         if (withComma) {
             sb.append(DELIMITER);
         }
