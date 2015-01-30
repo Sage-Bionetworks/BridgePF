@@ -1,8 +1,6 @@
 # Redirect to application
 
 # These routes won't support an URL that maps to an internal AngularJS state (those would all be routed to /public/app")
-GET    /app/                       @controllers.ApplicationController.loadApp
-GET    /app/index.html             @controllers.ApplicationController.redirectToApp
 GET    /                           @controllers.ApplicationController.loadPublicApp
 GET    /index.html                 @controllers.ApplicationController.redirectToPublicApp
 GET    /consent/:sessionToken      @controllers.ApplicationController.loadConsent(sessionToken: String)
@@ -113,7 +111,3 @@ DELETE    /admin/v1/users           @controllers.UserManagementController.delete
 
 # Lunch
 GET    /api/v1/lunch/where     @controllers.LunchController.where
-
-# AngularJS application
-GET    /*file      controllers.Assets.at(path="/public", file)
-HEAD   /*file      controllers.Assets.at(path="/public", file)

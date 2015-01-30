@@ -1,15 +1,17 @@
-@(auth: String)
+@(auth: String, assetsHost: String, assetsBuild: String)
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <title>Consent to Participate in Bridge - Sage Bionetworks</title>
     <meta name="viewport" content="width=device-width, user-scalable=no, minimal-ui" />
-    <base href="/"/>
-    <script>window._session = @Html(auth);</script>
+    <script>
+        window._session = @Html(auth);
+        window.assetsHost = "@assetsHost";
+    </script>
     <!-- These file names are updated by the grunt build; do not modify directly. -->
-    <link rel="stylesheet" href="../shared/build/bridge-shared.min.aabcc93c.css" />
-    <link rel="stylesheet" href="consent/build/consent.min.e0e2fc12.css" />
+    <link rel="stylesheet" href="//@assetsHost/shared/build/@assetsBuild/bridge-shared.min.css" />
+    <link rel="stylesheet" href="//@assetsHost/consent/build/@assetsBuild/consent.min.css" />
 </head>
 <body ng-app="consent" ng-controller="ConsentController">
 
@@ -27,7 +29,7 @@
             </div>
         </div>
         <div class="hdr"><div>Welcome! Your email has been confirmed.</div></div>
-        <div class="ng-include" src="'/consent/views/wiz.html'"></div>
+        <div class="ng-include" src="'//@assetsHost/consent/views/wiz.html'"></div>
     </header>
     <article>
         <div class="info">
@@ -52,7 +54,7 @@
             <div class="auth"></div>
         </div>
         <div class="hdr"><div>What&#8217;s involved:<br>Tasks and surveys</div></div>
-        <div class="ng-include" src="'/consent/views/wiz.html'"></div>
+        <div class="ng-include" src="'//@assetsHost/consent/views/wiz.html'"></div>
     </header>
     <article>
         <div class="info">
@@ -67,18 +69,18 @@
             <table>
                 <tr>
                     <td>
-                        <img id="surveyImg" draggable="false" ng-click="assessTask($event, 1)" bg-pressable data-src="consent/images/takesurveys_rest.svg"/>
+                        <img id="surveyImg" draggable="false" ng-click="assessTask($event, 1)" bg-pressable data-src="//@assetsHost/consent/images/takesurveys_rest.svg"/>
                     </td>
                     <td>
-                        <img id="talkingImg" draggable="false" ng-click="assessTask($event, 2)" bg-pressable data-src="consent/images/talking_rest.svg"/>
+                        <img id="talkingImg" draggable="false" ng-click="assessTask($event, 2)" bg-pressable data-src="//@assetsHost/consent/images/talking_rest.svg"/>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <img id="tappingImg" draggable="false" ng-click="assessTask($event, 3)" bg-pressable data-src="consent/images/tapping_rest.svg"/>
+                        <img id="tappingImg" draggable="false" ng-click="assessTask($event, 3)" bg-pressable data-src="//@assetsHost/consent/images/tapping_rest.svg"/>
                     </td>
                     <td>
-                        <img id="walkingImg" draggable="false" ng-click="assessTask($event, 4)" bg-pressable data-src="consent/images/walking_rest.svg"/>
+                        <img id="walkingImg" draggable="false" ng-click="assessTask($event, 4)" bg-pressable data-src="//@assetsHost/consent/images/walking_rest.svg"/>
                     </td>                
                 </tr>
             </table>
@@ -96,7 +98,7 @@
             <div class="auth"></div>
         </div>
         <div class="hdr"><div>What&#8217;s involved? Sensor data</div></div>
-        <div class="ng-include" src="'/consent/views/wiz.html'"></div>
+        <div class="ng-include" src="'//@assetsHost/consent/views/wiz.html'"></div>
     </header>
     <article>
         <div class="info">
@@ -108,7 +110,7 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('sensors')">Learn more</a>
         </div>
         <div class="image" ng-click="nextStepIfDesktop()">
-            <img draggable="false" data-src="consent/images/phonesensordata.svg"/>
+            <img draggable="false" data-src="//@assetsHost/consent/images/phonesensordata.svg"/>
         </div>
     </article>
     <footer>
@@ -125,7 +127,7 @@
             <div class="auth"></div>
         </div>
         <div class="hdr"><div>What&#8217;s involved? Sensor data</div></div>
-        <div class="ng-include" src="'/consent/views/wiz.html'"></div>
+        <div class="ng-include" src="'//@assetsHost/consent/views/wiz.html'"></div>
     </header>
     <article>
         <div class="info">
@@ -137,7 +139,7 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('sensors')">Learn more</a>
         </div>
         <div class="image" ng-click="nextStep()">
-            <img draggable="false" data-src="consent/images/phonesensordata.svg"/>
+            <img draggable="false" data-src="//@assetsHost/consent/images/phonesensordata.svg"/>
         </div>
     </article>
     <footer>
@@ -155,7 +157,7 @@
             <div class="auth"></div>
         </div>
         <div class="hdr"><div>De-identification</div></div>
-        <div class="ng-include" src="'/consent/views/wiz.html'"></div>
+        <div class="ng-include" src="'//@assetsHost/consent/views/wiz.html'"></div>
     </header>
     <article>
         <div class="info animcell">  
@@ -166,20 +168,20 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('deidentification')">Learn more</a>
         </div>
         <div class="image animcell" ng-click="nextStepIfAnimDone()">
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_1.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_2.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_3.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_4.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_5.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_6.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_7.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_8.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_9.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_10.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_11.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_12.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_13.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/deidentification/step4_14.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_1.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_2.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_3.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_4.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_5.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_6.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_7.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_8.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_9.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_10.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_11.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_12.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_13.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/deidentification/step4_14.svg"/></div>
         </div>
     </article>
     <footer>
@@ -199,7 +201,7 @@
             <div class="auth"></div>
         </div>
         <div class="hdr"><div>Combining data</div></div>
-        <div class="ng-include" src="'/consent/views/wiz.html'"></div>
+        <div class="ng-include" src="'//@assetsHost/consent/views/wiz.html'"></div>
     </header>
     <article>
         <div class="info animcell">
@@ -211,28 +213,28 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('aggregation')">Learn more</a>
         </div>
         <div class="image animcell" ng-click="nextStepIfAnimDone()">
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_1.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_2.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_3.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_4.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_5.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_6.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_7.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_8.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_9.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_10.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_11.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_12.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_13.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_14.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_15.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_16.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_17.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_18.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_19.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_20.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_21.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/aggregation/step5_22.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_1.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_2.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_3.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_4.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_5.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_6.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_7.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_8.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_9.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_10.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_11.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_12.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_13.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_14.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_15.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_16.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_17.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_18.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_19.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_20.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_21.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/aggregation/step5_22.svg"/></div>
         </div>
     </article>
     <footer>
@@ -252,7 +254,7 @@
             <div class="auth"></div>
         </div>
         <div class="hdr"><div>Impact on your life</div></div>
-        <div class="ng-include" src="'/consent/views/wiz.html'"></div>
+        <div class="ng-include" src="'//@assetsHost/consent/views/wiz.html'"></div>
     </header>
     <article>
         <div class="info animcell">
@@ -262,7 +264,7 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('impact')">Learn more</a>
         </div>
         <div class="image" ng-click="nextStep()">
-            <img data-src="consent/images/impact.svg"/>
+            <img data-src="//@assetsHost/consent/images/impact.svg"/>
         </div>
     </article>
     <footer>
@@ -277,7 +279,7 @@
             <div class="auth"></div>
         </div>
         <div class="hdr"><div>Potential Risk</div></div>
-        <div class="ng-include" src="'/consent/views/wiz.html'"></div>
+        <div class="ng-include" src="'//@assetsHost/consent/views/wiz.html'"></div>
     </header>
     <article>
         <div class="info animcell">
@@ -288,15 +290,15 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('risk')">Learn more</a>
         </div>
         <div class="image animcell" ng-click="nextStepIfAnimDone()">
-            <div><img draggable="false" data-src="consent/images/risk/step7a_1.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk/step7a_2.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk/step7a_3.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk/step7a_4.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk/step7a_5.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk/step7a_6.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk/step7a_7.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk/step7a_8.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk/step7a_9.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk/step7a_1.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk/step7a_2.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk/step7a_3.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk/step7a_4.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk/step7a_5.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk/step7a_6.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk/step7a_7.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk/step7a_8.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk/step7a_9.svg"/></div>
         </div>    
     </article>
     <footer>
@@ -316,7 +318,7 @@
             <div class="auth"></div>
         </div>
         <div class="hdr"><div>Potential Risk</div></div>
-        <div class="ng-include" src="'/consent/views/wiz.html'"></div>
+        <div class="ng-include" src="'//@assetsHost/consent/views/wiz.html'"></div>
     </header>
     <article>
         <div class="info animcell">
@@ -327,20 +329,20 @@
             <a class="lm button" bg-pressable="lm-pressed" ng-click="learnMore('risk')">Learn more</a>
         </div>
         <div class="image animcell" ng-click="nextStepIfAnimDone()">
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_1.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_2.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_3.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_4.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_5.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_6.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_7.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_8.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_9.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_10.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_11.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_12.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_13.svg"/></div>
-            <div><img draggable="false" data-src="consent/images/risk2/step7b_14.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_1.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_2.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_3.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_4.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_5.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_6.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_7.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_8.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_9.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_10.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_11.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_12.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_13.svg"/></div>
+            <div><img draggable="false" data-src="//@assetsHost/consent/images/risk2/step7b_14.svg"/></div>
         </div>    
     </article>
     <footer>
@@ -360,14 +362,14 @@
             <div class="auth"></div>
         </div>
         <div class="hdr"><div>Withdrawal</div></div>
-        <div class="ng-include" src="'/consent/views/wiz.html'"></div>
+        <div class="ng-include" src="'//@assetsHost/consent/views/wiz.html'"></div>
     </header>
     <article>
         <div class="info">
             <p class="bold">You may withdraw your consent and discontinue participation at any time.</p>
         </div>
         <div class="image" ng-click="nextStep()">
-            <img data-src="consent/images/withdrawal.svg"/>
+            <img data-src="//@assetsHost/consent/images/withdrawal.svg"/>
         </div>
         <div class="info">
             <p>Email pdbridge@@sagebase.org to withdraw.</p>
@@ -385,7 +387,7 @@
             <div class="auth"></div>
         </div>
         <div class="hdr"><div>Consent</div></div>
-        <div class="ng-include" src="'/consent/views/wiz.html'"></div>
+        <div class="ng-include" src="'//@assetsHost/consent/views/wiz.html'"></div>
     </header>
     <article>
         <div class="info">
@@ -436,7 +438,7 @@
             <div class="auth"></div>
         </div>
         <div class="hdr"><div><!-- blank --></div></div>
-        <div class="ng-include" src="'/consent/views/wiz.html'"></div>
+        <div class="ng-include" src="'//@assetsHost/consent/views/wiz.html'"></div>
     </header>
     <article>
         <div class="info">
@@ -455,8 +457,8 @@
 </div>
 
 <!-- These file names are updated by the grunt build; do not modify directly. -->
-<script src="shared/build/bridge-shared.min.35def929.js"></script>
-<script src="consent/build/consent.min.dc8c0e93.js"></script>
+<script src="//@assetsHost/shared/build/@assetsBuild/bridge-shared.min.js"></script>
+<script src="//@assetsHost/consent/build/@assetsBuild/consent.min.js"></script>
 
 </body>
 </html>
