@@ -8,7 +8,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -38,9 +37,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -72,15 +69,6 @@ public class UploadServiceTest {
     public void before() {
         assertNotNull(uploadService);
         assertNotNull(s3Client);
-        // Clean objects older than an hour
-        ObjectListing objList = s3Client.listObjects(BUCKET);
-        for (S3ObjectSummary obj: objList.getObjectSummaries()) {
-            Date date = obj.getLastModified();
-            Date now = DateTime.now(DateTimeZone.UTC).minusHours(1).toDate();
-            if (now.after(date)) {
-                s3Client.deleteObject(BUCKET, obj.getKey());
-            }
-        }
         objectsToRemove = new ArrayList<String>();
         testUser = helper.createUser(UploadServiceTest.class);
     }
@@ -106,7 +94,7 @@ public class UploadServiceTest {
         int reponseCode = upload(uploadSession.getUrl(), uploadRequest);
         assertEquals(200, reponseCode);
 
-        Upload upload = uploadService.getUpload(uploadId);
+        Upload upload = uploadService.getUpload(testUser.getUser(), uploadId);
         uploadService.uploadComplete(upload);
         long expiration = DateTime.now(DateTimeZone.UTC).plusMinutes(1).getMillis();
         assertTrue(expiration > uploadSession.getExpires());

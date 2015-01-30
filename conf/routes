@@ -55,6 +55,7 @@ POST   /api/v1/consent/dataSharing/resume    @controllers.ConsentController.resu
 # API - Upload
 POST   /api/v1/upload                  @controllers.UploadController.upload
 POST   /api/v1/upload/:id/complete     @controllers.UploadController.uploadComplete(id: String)
+GET    /api/v1/upload/:id/validationStatus  @controllers.UploadController.getValidationStatus(id: String)
 
 # Researchers - Surveys
 GET    /researchers/v1/surveys                                 @controllers.SurveyController.getAllSurveysMostRecentVersion

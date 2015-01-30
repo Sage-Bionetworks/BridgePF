@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.amazonaws.services.s3.Headers.SERVER_SIDE_ENCRYPTION;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 
+import javax.annotation.Nonnull;
 import java.net.URL;
 import java.util.Date;
 
@@ -12,6 +13,7 @@ import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -84,14 +86,36 @@ public class UploadService {
     }
 
     /**
+     * <p>
      * Get upload service handler. This isn't currently exposed directly to the users, but is currently used by the
      * controller class to call both uploadComplete() and upload validation APIs.
+     * </p>
+     * <p>
+     * This method also validates to ensure that only the user who created the upload can access this upload.
+     * </p>
+     * <p>
+     * user comes from the controller, and is guaranteed to be present. However, uploadId is user input and must be
+     * validated.
+     * </p>
+     *
+     * @param user
+     *         calling user, must be non-null
+     * @param uploadId
+     *         ID of upload to fetch, must be non-null and non-empty
+     * @return upload metadata object
      */
-    public Upload getUpload(String uploadId) {
+    public Upload getUpload(@Nonnull User user, @Nonnull String uploadId) {
         if (Strings.isNullOrEmpty(uploadId)) {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "uploadId"));
         }
-        return uploadDao.getUpload(uploadId);
+        Upload upload = uploadDao.getUpload(uploadId);
+
+        // check health code
+        if (!user.getHealthCode().equals(upload.getHealthCode())) {
+            throw new UnauthorizedException();
+        }
+
+        return upload;
     }
 
     public void uploadComplete(Upload upload) {

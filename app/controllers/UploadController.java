@@ -5,6 +5,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
+import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.services.UploadService;
 import org.sagebionetworks.bridge.services.UploadValidationService;
 
@@ -26,6 +27,14 @@ public class UploadController extends BaseController {
         this.uploadValidationService = uploadValidationService;
     }
 
+    /** Gets validation status and messages for the given upload ID. */
+    public Result getValidationStatus(String uploadId) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        Upload upload = uploadService.getUpload(session.getUser(), uploadId);
+        UploadValidationStatus validationStatus = UploadValidationStatus.from(upload);
+        return okResult(validationStatus);
+    }
+
     public Result upload() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         UploadRequest uploadRequest = UploadRequest.fromJson(requestToJSON(request()));
@@ -38,10 +47,10 @@ public class UploadController extends BaseController {
      * through the Upload Validation Service.
      */
     public Result uploadComplete(String uploadId) throws Exception {
-        getAuthenticatedAndConsentedSession();
+        UserSession session = getAuthenticatedAndConsentedSession();
 
         // mark upload as complete
-        Upload upload = uploadService.getUpload(uploadId);
+        Upload upload = uploadService.getUpload(session.getUser(), uploadId);
         uploadService.uploadComplete(upload);
 
         // kick off upload validation
@@ -50,6 +59,4 @@ public class UploadController extends BaseController {
 
         return ok("Upload " + uploadId + " complete!");
     }
-
-    // TODO: add API for get validation status and messages
 }
