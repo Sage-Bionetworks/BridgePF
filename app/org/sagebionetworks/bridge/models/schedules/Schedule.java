@@ -48,12 +48,6 @@ public class Schedule implements BridgeEntity {
     public void setLabel(String label) {
         this.label = label;
     }
-    public ActivityType getActivityType() {
-        return (activities == null || activities.isEmpty()) ? null : activities.get(0).getActivityType();
-    }
-    public String getActivityRef() {
-        return (activities == null || activities.isEmpty()) ? null : activities.get(0).getRef();
-    }
     public ScheduleType getScheduleType() {
         return scheduleType;
     }
@@ -86,7 +80,7 @@ public class Schedule implements BridgeEntity {
     }
     public boolean isScheduleFor(GuidCreatedOnVersionHolder keys) {
         for (Activity activity : activities) {
-            if (keys.keysEqual(activity.getSurvey())) {
+            if (keys.keysEqual(activity.getGuidCreatedOnVersionHolder())) {
                 return true;
             }
         }

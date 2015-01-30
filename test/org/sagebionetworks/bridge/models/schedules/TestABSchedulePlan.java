@@ -11,7 +11,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
             setGuid("AAA");
             setScheduleType(ScheduleType.RECURRING);
             setCronTrigger("* * *");
-            addActivity(new Activity("Do AAA task", ActivityType.TASK, "task:AAA"));
+            addActivity(new Activity("Do AAA task", "task:AAA"));
             setExpires(new Long(60000));
             setLabel("Schedule 1");
         }
@@ -21,7 +21,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
             setGuid("BBB");
             setScheduleType(ScheduleType.RECURRING);
             setCronTrigger("* * *");
-            addActivity(new Activity("Do BBB task", ActivityType.TASK, "task:BBB"));
+            addActivity(new Activity("Do BBB task", "task:BBB"));
             setExpires(new Long(60000));
             setLabel("Schedule 2");
         }
@@ -31,7 +31,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
             setGuid("CCC");
             setScheduleType(ScheduleType.RECURRING);
             setCronTrigger("* * *");
-            addActivity(new Activity("Do CCC task", ActivityType.TASK, "task:CCC"));
+            addActivity(new Activity("Do CCC task", "task:CCC"));
             setExpires(new Long(60000));
             setLabel("Schedule 3");
         }

@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountEncryptionService;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.stormpath.StormpathAccountIterator;
 import org.sagebionetworks.bridge.stormpath.StormpathFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
