@@ -203,7 +203,9 @@ public class SendMailViaAmazonService implements SendMailService {
 
         MimeMultipart mimeMultipart = new MimeMultipart();
         for (MimeBodyPart part : parts) {
-            mimeMultipart.addBodyPart(part);
+            if (part != null) {
+                mimeMultipart.addBodyPart(part);    
+            }
         }
 
         // Convert MimeMessage to raw text to send to SES.
