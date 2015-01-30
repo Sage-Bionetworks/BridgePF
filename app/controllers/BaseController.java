@@ -109,28 +109,19 @@ public abstract class BaseController extends Controller {
         return session;
     }
     
+    protected UserSession getAuthenticatedResearcherSession(Study study) {
+        UserSession session = getAuthenticatedSession();
+        User user = session.getUser();
+        if (user.isInRole(study.getResearcherRole())) {
+            return session;
+        }
+        throw new UnauthorizedException();
+    }
+    
     protected UserSession getAuthenticatedResearcherOrAdminSession(Study study) {
         UserSession session = getAuthenticatedSession();
         User user = session.getUser();
         if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
-            return session;
-        }
-        throw new UnauthorizedException();
-    }
-    
-    protected UserSession getAuthenticatedResearchOrAdminSession(Study study) {
-        UserSession session = getAuthenticatedSession();
-        User user = session.getUser();
-        if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
-            return session;
-        }
-        throw new UnauthorizedException();
-    }
-    
-    protected UserSession getAuthenticatedResearchSession(Study study) {
-        UserSession session = getAuthenticatedSession();
-        User user = session.getUser();
-        if (user.isInRole(study.getResearcherRole())) {
             return session;
         }
         throw new UnauthorizedException();
