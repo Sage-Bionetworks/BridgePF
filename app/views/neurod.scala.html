@@ -1,15 +1,17 @@
-@(auth: String, host: String, build: String)
+@(auth: String, assetsHost: String, assetsBuild: String)
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <title>mPower - Sage Bionetworks</title>
     <meta name="viewport" content="width=device-width" />
-    <base href="/"/>
-    <script>window._session = @Html(auth);</script>
+    <script>
+        window._session = @Html(auth);
+        window.assetsHost = "@assetsHost";
+    </script>
     <!-- These file names are updated by the grunt build; do not modify directly. -->
-    <link rel="stylesheet" href="//@host/shared/build/@build/bridge-shared.min.css" />
-    <link rel="stylesheet" href="//@host/neurod/build/@build/neurod.min.css" />
+    <link rel="stylesheet" href="//@assetsHost/shared/build/@assetsBuild/bridge-shared.min.css" />
+    <link rel="stylesheet" href="//@assetsHost/neurod/build/@assetsBuild/neurod.min.css" />
 </head>
 <body ng-app="neurod" ng-controller="MainController">
   
@@ -36,8 +38,8 @@
 
 <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
 <!-- These file names are updated by the grunt build; do not modify directly. -->
-<script src="//@host/shared/build/@build/bridge-shared.min.js"></script>
-<script src="//@host/neurod/build/@build/neurod.min.js"></script>
+<script src="//@assetsHost/shared/build/@assetsBuild/bridge-shared.min.js"></script>
+<script src="//@assetsHost/neurod/build/@assetsBuild/neurod.min.js"></script>
 
 </body>
 </html>
