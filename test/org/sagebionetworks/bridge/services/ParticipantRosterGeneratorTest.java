@@ -44,7 +44,6 @@ public class ParticipantRosterGeneratorTest {
         Class<List<StudyParticipant>> listClass = (Class<List<StudyParticipant>>)(Class<?>)List.class;
         argument = ArgumentCaptor.forClass(listClass);
         
-        
         AesGcmEncryptor encryptor = mock(AesGcmEncryptor.class);
         when(encryptor.decrypt(any(String.class))).then(returnsFirstArg());
         UserProfileServiceImpl userProfileService = new UserProfileServiceImpl();
@@ -52,9 +51,10 @@ public class ParticipantRosterGeneratorTest {
         
         sendMailService = mock(SendMailService.class);
         
-        Account account1 = createAccount("zanadine@test.com", "FirstZ", "LastZ", "(206) 333-444");
-        Account account2 = createAccount("first.last@test.com", "First", "Last", "(206) 111-2222");
-        Account account3 = createAccount("gail.tester@test.com", "Gail", "Tester", null);
+        Account account1 = createAccount("zanadine@test.com", "FirstZ", "LastZ", "(206) 333-444", true);
+        Account account2 = createAccount("first.last@test.com", "First", "Last", "(206) 111-2222", true);
+        // Gail will not have the key for the consent record, and will be filtered out.
+        Account account3 = createAccount("gail.tester@test.com", "Gail", "Tester", null, false);
         AccountList list = mock(AccountList.class);
         when(list.iterator()).thenReturn(Lists.newArrayList(account1, account2, account3).iterator());
         
@@ -72,12 +72,11 @@ public class ParticipantRosterGeneratorTest {
         List<StudyParticipant> participants = argument.getValue();
         
         // They're all there
-        assertEquals(3, participants.size());
+        assertEquals(2, participants.size());
         
         // Should be sorted by email addresses
         assertEquals("first.last@test.com", participants.get(0).getEmail());
-        assertEquals("gail.tester@test.com", participants.get(1).getEmail());
-        assertEquals("zanadine@test.com", participants.get(2).getEmail());
+        assertEquals("zanadine@test.com", participants.get(1).getEmail());
         
         // These objects should be fully realized
         StudyParticipant p = participants.get(0);
@@ -87,10 +86,10 @@ public class ParticipantRosterGeneratorTest {
         assertEquals("(206) 111-2222", p.getPhone());
     }
 
-    private Account createAccount(String email, String firstName, String lastName, String phone) {
+    private Account createAccount(String email, String firstName, String lastName, String phone, boolean hasConsented) {
         CustomData data = mock(CustomData.class);
         when(data.get(any())).thenReturn(phone);
-        when(data.containsKey(any())).thenReturn(true);
+        when(data.containsKey(any())).thenReturn(hasConsented);
         
         Account account = mock(Account.class);
         when(account.getEmail()).thenReturn(email);

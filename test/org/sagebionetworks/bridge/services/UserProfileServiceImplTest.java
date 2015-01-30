@@ -76,12 +76,14 @@ public class UserProfileServiceImplTest {
     
     @Test
     public void canRetrieveStudyParticipants() {
+        UserProfileServiceImpl userProfileService = new UserProfileServiceImpl();
+        
         // Do not send email when this service is called.
         ExecutorService service = mock(ExecutorService.class);
-        profileService.setExecutorService(service);
+        userProfileService.setExecutorService(service);
         
         // All we an really do here is verify no error is thrown.
-        profileService.sendStudyParticipantRoster(testUser.getStudy());
+        userProfileService.sendStudyParticipantRoster(testUser.getStudy());
         
         verify(service).submit(any(Runnable.class));
     }
