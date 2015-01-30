@@ -21,7 +21,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.validators.UploadValidationStatusValidator;
 
-@SuppressWarnings({ "rawtypes", "unchecked" })
+@SuppressWarnings("unchecked")
 public class UploadValidationStatusTest {
     @Test
     public void builder() {
@@ -127,7 +127,7 @@ public class UploadValidationStatusTest {
     // we call the validator directly, since Validate.validateThrowingException filters out nulls and wrong types
     @Test
     public void validateNull() {
-        MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadValidationStatus");
+        MapBindingResult errors = new MapBindingResult(new HashMap<>(), "UploadValidationStatus");
         UploadValidationStatusValidator.INSTANCE.validate(null, errors);
         Assert.assertTrue(errors.hasErrors());
     }
@@ -136,7 +136,7 @@ public class UploadValidationStatusTest {
     // we call the validator directly, since Validate.validateThrowingException filters out nulls and wrong types
     @Test
     public void validateWrongClass() {
-        MapBindingResult errors = new MapBindingResult(new HashMap(), "UploadValidationStatus");
+        MapBindingResult errors = new MapBindingResult(new HashMap<>(), "UploadValidationStatus");
         UploadValidationStatusValidator.INSTANCE.validate("this is the wrong class", errors);
         Assert.assertTrue(errors.hasErrors());
     }
