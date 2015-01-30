@@ -26,7 +26,11 @@ import com.amazonaws.services.simpleemail.model.SendRawEmailRequest;
 import com.amazonaws.services.simpleemail.model.SendRawEmailResult;
 import com.google.common.base.Charsets;
 
-public class SendMailViaAmazonServiceTest {
+/**
+ * Set-up here for consent-specific tests is extensive, so tests for the participant roster
+ * are in a separate class.
+ */
+public class SendMailViaAmazonServiceConsentTest {
 
     private SendMailViaAmazonService service;
     private AmazonSimpleEmailServiceClient emailClient;

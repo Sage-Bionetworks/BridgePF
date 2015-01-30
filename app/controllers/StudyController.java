@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.models.StudyInfo;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.UserProfileService;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -16,24 +17,39 @@ import play.mvc.Result;
 public class StudyController extends BaseController {
 
     private StudyService studyService;
+    
+    private UserProfileService userProfileService;
 
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+    
+    public void setUserProfileService(UserProfileService userProfileService) {
+        this.userProfileService = userProfileService;
     }
 
     public Result getStudyForResearcher() throws Exception {
         // We want a signed in exception before a study not found exception
         // getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
-        getAuthenticatedResearchOrAdminSession(study);
+        getAuthenticatedResearcherOrAdminSession(study);
         return okResult(new StudyInfo(study));
+    }
+    
+    public Result sendStudyParticipantsRoster() throws Exception {
+        Study study = studyService.getStudyByHostname(getHostname());
+        // Researchers only, administrators cannot get this list so easily
+        getAuthenticatedResearcherSession(study);
+        
+        userProfileService.sendStudyParticipantRoster(study);
+        return okResult("A roster of study participants will be emailed to the study's consent notification contact.");
     }
 
     public Result updateStudyForResearcher() throws Exception {
         // We want a signed in exception before a study not found exception
         // getAuthenticatedSession();
         Study study = studyService.getStudyByHostname(getHostname());
-        getAuthenticatedResearchOrAdminSession(study);
+        getAuthenticatedResearcherOrAdminSession(study);
 
         Study studyUpdate = DynamoStudy.fromJson(requestToJSON(request()));
         studyUpdate.setIdentifier(study.getIdentifier());

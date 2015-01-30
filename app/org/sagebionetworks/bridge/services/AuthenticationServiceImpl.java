@@ -338,7 +338,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(user, study));
         user.setConsent(consentService.hasUserConsentedToResearch(user, study));
         user.setDataSharing(optionsService.getBooleanOption(healthCode, Option.DATA_SHARING));
-
+        
         // And now for some exceptions...
 
         // All administrators and all researchers are assumed to consent when using any API.

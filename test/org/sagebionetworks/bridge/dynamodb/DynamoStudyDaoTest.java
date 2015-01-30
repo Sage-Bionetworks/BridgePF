@@ -57,6 +57,8 @@ public class DynamoStudyDaoTest {
         assertNotNull("Study deployment was set", study.getStormpathHref());
         assertNotNull("Study hostname was set", study.getHostname());
         assertTrue("Contains tracker", study.getTrackers().contains("sage:bp"));
+        assertEquals("support@test.com", study.getSupportEmail());
+        assertEquals("consent-notification@test.com", study.getConsentNotificationEmail());
         
         String identifier = study.getIdentifier();
         studyDao.deleteStudy(study.getIdentifier());
@@ -127,6 +129,8 @@ public class DynamoStudyDaoTest {
         study.getTrackers().add("sage:bp");
         study.setHostname("test.sagebridge.org");
         study.setStormpathHref("http://test/local/");
+        study.setSupportEmail("support@test.com");
+        study.setConsentNotificationEmail("consent-notification@test.com");
         return study;
     }
     

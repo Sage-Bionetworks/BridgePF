@@ -88,8 +88,9 @@ POST   /researcher/v1/consents                      @controllers.StudyConsentCon
 POST   /researcher/v1/consents/active/:timestamp    @controllers.StudyConsentController.setActiveConsent(timestamp: String)
 
 # Researchers - Studies
-GET    /researcher/v1/study           @controllers.StudyController.getStudyForResearcher          
-POST   /researcher/v1/study           @controllers.StudyController.updateStudyForResearcher
+GET    /researcher/v1/study              @controllers.StudyController.getStudyForResearcher
+POST   /researcher/v1/study/participants @controllers.StudyController.sendStudyParticipantsRoster          
+POST   /researcher/v1/study              @controllers.StudyController.updateStudyForResearcher
 
 # Researchers - Upload Schemas
 GET    /researcher/v1/uploadSchema/:schemaId  @controllers.UploadSchemaController.getUploadSchema(schemaId: String)

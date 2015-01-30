@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.services.backfill;
+package org.sagebionetworks.bridge.stormpath;
 
 import java.util.Iterator;
 
@@ -11,25 +11,29 @@ import com.stormpath.sdk.impl.account.DefaultAccountCriteria;
 /**
  * Iterates through Stormpath accounts page by page.
  */
-class StormpathAccountIterator extends PageIterator<Account> {
+public class StormpathAccountIterator extends PageIterator<Account> {
 
-    private static final int PAGE_SIZE = 50;
+    // 100 is the maximum allowed page size according to the Stormpath API docs.
+    // Eventually iterating through users will be pretty slow.
+    private static final int DEFAULT_PAGE_SIZE = 100;
+    
     private final Application app;
 
-    StormpathAccountIterator(Application app) {
+    public StormpathAccountIterator(Application app) {
         this.app = app;
     }
 
     @Override
-    int pageSize() {
-        return PAGE_SIZE;
+    public int pageSize() {
+        return DEFAULT_PAGE_SIZE;
     }
 
     @Override
-    Iterator<Account> nextPage() {
+    public Iterator<Account> nextPage() {
         AccountCriteria criteria = new DefaultAccountCriteria();
         criteria.offsetBy(pageStart());
         criteria.limitTo(pageSize());
+        criteria.withCustomData();
         AccountList list = app.getAccounts(criteria);
         return list.iterator();
     }
