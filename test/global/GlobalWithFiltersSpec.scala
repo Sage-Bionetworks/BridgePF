@@ -46,7 +46,9 @@ object GlobalWithFiltersSpec extends PlaySpecification {
 
   "HTTP" should {
     "not redirect HTTPS " in new WithApplication {
-      val request = FakeRequest(GET, "/").withHeaders(X_FORWARDED_PROTO -> "https")
+      val request = FakeRequest(GET, "/")
+          .withHeaders("Bridge-Host" -> "api")
+          .withHeaders(X_FORWARDED_PROTO -> "https")
       val result = route(request).get
       status(result) must equalTo(OK)
     }
