@@ -20,6 +20,10 @@ public class ApplicationController extends BaseController {
         return redirect("/");
     }
 
+    public Result loadApp() throws Exception {
+        return loadPublicApp();
+    }
+
     public Result loadPublicApp() throws Exception {
         UserSessionInfo info = new UserSessionInfo(new UserSession());
         
