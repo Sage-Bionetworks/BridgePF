@@ -18,7 +18,7 @@ import com.google.common.collect.Lists;
 public class TestSurvey extends DynamoSurvey {
 
     public static SurveyQuestion selectBy(Survey survey, DataType type) {
-        for (SurveyQuestion question : survey.getQuestions()) {
+        for (SurveyQuestion question : survey.getUnmodifiableQuestionList()) {
             if (question.getConstraints().getDataType() == type) {
                 return question;
             }
@@ -165,24 +165,24 @@ public class TestSurvey extends DynamoSurvey {
         setVersion(2L);
         setPublished(true);
         setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
-        List<SurveyQuestion> questions = getQuestions();
-        questions.add(booleanQuestion);
-        questions.add(dateQuestion);
-        questions.add(dateTimeQuestion);
-        questions.add(decimalQuestion);
-        questions.add(integerQuestion);
-        questions.add(durationQuestion);
-        questions.add(timeQuestion);
-        questions.add(multiValueQuestion);
-        questions.add(stringQuestion);
+        List<SurveyElement> elements = getElements();
+        elements.add(booleanQuestion);
+        elements.add(dateQuestion);
+        elements.add(dateTimeQuestion);
+        elements.add(decimalQuestion);
+        elements.add(integerQuestion);
+        elements.add(durationQuestion);
+        elements.add(timeQuestion);
+        elements.add(multiValueQuestion);
+        elements.add(stringQuestion);
         
         if (makeNew) {
             setGuid(null);
             setPublished(false);
             setVersion(null);
             setCreatedOn(0L);
-            for (SurveyQuestion question : getQuestions()) {
-                question.setGuid(null);
+            for (SurveyElement element : getElements()) {
+                element.setGuid(null);
             }
         }
     }

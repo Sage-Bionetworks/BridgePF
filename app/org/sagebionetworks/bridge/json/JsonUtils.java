@@ -13,6 +13,8 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
+import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -242,6 +244,26 @@ public class JsonUtils {
             array.add(element.name().toLowerCase());
         }
         return array;
+    }
+    
+    public static List<SurveyElement> asSurveyElementsArray(JsonNode node, String propertyName) {
+        ArrayNode elementsNode = JsonUtils.asArrayNode(node, propertyName);
+        List<SurveyElement> elements = Lists.newArrayListWithCapacity(elementsNode.size());
+        if (elementsNode != null) {
+            for (JsonNode elementNode : elementsNode) {
+                elements.add(SurveyElementFactory.fromJson(elementNode));
+                /*
+                String type = JsonUtils.asText(elementNode, "type");
+                if (SurveyElement.SURVEY_QUESTION_TYPE.equals(type)) {
+                    elements.add(DynamoSurveyQuestion.fromJson(elementNode));
+                } else if (SurveyElement.SURVEY_INFO_SCREEN_TYPE.equals(type)) {
+                    elements.add(DynamoSurveyInfoScreen.fromJson(elementNode));
+                } else {
+                    throw new BridgeServiceException("Survey element type '"+type+"' not recognized.");
+                }*/
+            }
+        }
+        return elements;
     }
 
     public static void write(ObjectNode node, String propertyName, Enum<?> e) {

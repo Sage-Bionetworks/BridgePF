@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -10,6 +13,8 @@ import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
@@ -37,16 +42,56 @@ public class SurveyValidator implements Validator {
         if (StringUtils.isBlank(survey.getGuid())) {
             errors.reject("missing a GUID");
         }
-        for (int i=0; i < survey.getQuestions().size(); i++) {
-            SurveyQuestion question = survey.getQuestions().get(i);
-            errors.pushNestedPath("question"+i);
-            doValidateQuestion(question, i, errors);
+        for (int i=0; i < survey.getElements().size(); i++) {
+            SurveyElement element = survey.getElements().get(i);
+            errors.pushNestedPath("element"+i);
+            if (SurveyElement.SURVEY_QUESTION_TYPE.equals(element.getType())) {
+                doValidateQuestion((SurveyQuestion)element, i, errors);    
+            } else if (SurveyElement.SURVEY_INFO_SCREEN_TYPE.equals(element.getType())) {
+                doValidateInfoScreen((SurveyInfoScreen)element, i, errors);
+            }
             errors.popNestedPath();
+            
         }
         // You can get all sorts of NPEs if survey is not valid and you look at the rules.
         // So don't.
         if (!errors.hasErrors()) {
-            validateRules(errors, survey.getQuestions());    
+            List<SurveyQuestion> questions = survey.getUnmodifiableQuestionList();
+            validateRules(errors, questions);    
+        }
+    }
+    private void doValidateQuestion(SurveyQuestion question, int pos, Errors errors) {
+        if (isBlank(question.getIdentifier())) {
+            errors.rejectValue("identifier", "is required");
+        }
+        if (question.getUiHint() == null) {
+            errors.rejectValue("uiHint", "is required");
+        }
+        if (isBlank(question.getPrompt())) {
+            errors.rejectValue("prompt", "is required");
+        }
+        if (question.getConstraints() == null) {
+            errors.rejectValue("constraints", "is required");
+        } else {
+            errors.pushNestedPath("constraints");
+            doValidateConstraints(question, question.getConstraints(), errors);
+            errors.popNestedPath();
+        }
+    }
+    private void doValidateInfoScreen(SurveyInfoScreen screen, int i, Errors errors) {
+        if (isBlank(screen.getIdentifier())) {
+            errors.rejectValue("identifier", "is required");
+        }
+        if (isBlank(screen.getTitle())) {
+            errors.rejectValue("title", "is required");
+        }
+        if (isBlank(screen.getPrompt())) {
+            errors.rejectValue("prompt", "is required");
+        }
+        if (isNotBlank(screen.getImageSource()) && 
+            !screen.getImageSource().startsWith("http://") && 
+            !screen.getImageSource().startsWith("https://")) {
+            errors.rejectValue("imageSource", "must be a valid URL to an image");
         }
     }
     private void validateRules(Errors errors, List<SurveyQuestion> questions) {
@@ -75,24 +120,6 @@ public class SurveyValidator implements Validator {
             }
         }
         
-    }
-    private void doValidateQuestion(SurveyQuestion question, int pos, Errors errors) {
-        if (StringUtils.isBlank(question.getIdentifier())) {
-            errors.rejectValue("identifier", "missing an identifier");
-        }
-        if (question.getUiHint() == null) {
-            errors.rejectValue("uiHint", "missing a UI hint");
-        }
-        if (StringUtils.isBlank(question.getPrompt())) {
-            errors.rejectValue("prompt", "missing a prompt/question");
-        }
-        if (question.getConstraints() == null) {
-            errors.rejectValue("constraints", "missing a constraints object");
-        } else {
-            errors.pushNestedPath("constraints");
-            doValidateConstraints(question, question.getConstraints(), errors);
-            errors.popNestedPath();
-        }
     }
     private void doValidateConstraints(SurveyQuestion question, Constraints con, Errors errors) {
         if (con.getDataType() == null) {
