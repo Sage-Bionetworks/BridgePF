@@ -186,15 +186,6 @@ public class DynamoSurveyDao implements SurveyDao {
             List<SurveyElement> elements = Lists.newArrayList();
             for (DynamoSurveyElement element : page.getResults()) {
                 elements.add(SurveyElementFactory.fromDynamoEntity(element));
-                /*
-                if (element.getType().equals(SurveyElement.SURVEY_QUESTION_TYPE)) {
-                    elements.add(new DynamoSurveyQuestion(element));
-                } else if (element.getType().equals(SurveyElement.SURVEY_INFO_SCREEN_TYPE)) {
-                    elements.add(new DynamoSurveyInfoScreen(element));
-                } else {
-                    // Possibly the default case
-                    elements.add(new DynamoSurveyQuestion(element));
-                }*/
             }
             survey.setElements(elements);
         }
