@@ -89,7 +89,7 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     }
 
     private void validate(List<SurveyAnswer> answers, Survey survey) {
-        Map<String, SurveyQuestion> questions = getQuestionsMap(survey);
+        Map<String, SurveyQuestion> questions = getQuestionsMap(survey.getUnmodifiableQuestionList());
         
         MapBindingResult errors = new MapBindingResult(Maps.newHashMap(), "SurveyResponse");
         for (int i = 0; i < answers.size(); i++) {
@@ -101,11 +101,12 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
         Validate.throwException(errors, survey);
     }
 
-    private Map<String, SurveyQuestion> getQuestionsMap(Survey survey) {
-        return BridgeUtils.asMap(survey.getQuestions(), new Function<SurveyQuestion, String>() {
-            public String apply(SurveyQuestion question) {
-                return question.getGuid();
+    private Map<String, SurveyQuestion> getQuestionsMap(List<SurveyQuestion> questions) {
+        return BridgeUtils.asMap(questions, new Function<SurveyQuestion, String>() {
+            public String apply(SurveyQuestion element) {
+                return element.getGuid();
             }
         });
     }
+    
 }

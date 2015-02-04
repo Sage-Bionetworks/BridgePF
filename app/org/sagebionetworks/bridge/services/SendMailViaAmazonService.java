@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.apache.commons.lang3.StringEscapeUtils.escapeCsv;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;

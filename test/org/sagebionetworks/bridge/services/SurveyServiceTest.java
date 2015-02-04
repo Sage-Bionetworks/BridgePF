@@ -20,7 +20,8 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
-import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -60,9 +61,9 @@ public class SurveyServiceTest {
     public void before() {
         testSurvey = new TestSurvey(true);
         study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
-        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyQuestion.class);
+        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyElement.class);
         DynamoTestUtil.clearTable(DynamoSurvey.class);
-        DynamoTestUtil.clearTable(DynamoSurveyQuestion.class);
+        DynamoTestUtil.clearTable(DynamoSurveyElement.class);
     }
     
     @After
@@ -104,8 +105,8 @@ public class SurveyServiceTest {
 
         assertTrue("Survey has a guid", survey.getGuid() != null);
         assertTrue("Survey has been versioned", survey.getCreatedOn() != 0L);
-        assertTrue("Question #1 has a guid", survey.getQuestions().get(0).getGuid() != null);
-        assertTrue("Question #2 has a guid", survey.getQuestions().get(1).getGuid() != null);
+        assertTrue("Question #1 has a guid", survey.getElements().get(0).getGuid() != null);
+        assertTrue("Question #2 has a guid", survey.getElements().get(1).getGuid() != null);
 
         survey.setIdentifier("newIdentifier");
         surveyService.updateSurvey(survey);
@@ -152,18 +153,18 @@ public class SurveyServiceTest {
     public void crudSurveyQuestions() {
         Survey survey = surveyService.createSurvey(testSurvey);
 
-        int count = survey.getQuestions().size();
+        int count = survey.getElements().size();
         
         // Now, alter these, and verify they are altered
-        survey.getQuestions().remove(0);
-        survey.getQuestions().get(6).setIdentifier("new gender");
+        survey.getElements().remove(0);
+        survey.getElements().get(6).setIdentifier("new gender");
         surveyService.updateSurvey(survey);
 
         survey = surveyService.getSurvey(survey);
 
-        assertEquals("Survey has one less question", count-1, survey.getQuestions().size());
+        assertEquals("Survey has one less question", count-1, survey.getElements().size());
         
-        SurveyQuestion restored = survey.getQuestions().get(6);
+        SurveyQuestion restored = (SurveyQuestion)survey.getElements().get(6);
         MultiValueConstraints mvc = (MultiValueConstraints)restored.getConstraints();
         
         assertEquals("Survey has updated the one question's identifier", "new gender", restored.getIdentifier());
@@ -208,12 +209,12 @@ public class SurveyServiceTest {
     @Test
     public void versioningASurveyCopiesTheQuestions() {
         Survey survey = surveyService.createSurvey(testSurvey);
-        String v1SurveyCompoundKey = survey.getQuestions().get(0).getSurveyCompoundKey();
-        String v1Guid = survey.getQuestions().get(0).getGuid();
+        String v1SurveyCompoundKey = survey.getElements().get(0).getSurveyCompoundKey();
+        String v1Guid = survey.getElements().get(0).getGuid();
 
         survey = surveyService.versionSurvey(survey);
-        String v2SurveyCompoundKey = survey.getQuestions().get(0).getSurveyCompoundKey();
-        String v2Guid = survey.getQuestions().get(0).getGuid();
+        String v2SurveyCompoundKey = survey.getElements().get(0).getSurveyCompoundKey();
+        String v2Guid = survey.getElements().get(0).getGuid();
 
         assertNotEquals("Survey reference differs", v1SurveyCompoundKey, v2SurveyCompoundKey);
         assertNotEquals("Survey question GUID differs", v1Guid, v2Guid);
@@ -381,6 +382,22 @@ public class SurveyServiceTest {
         Survey found = surveyService.getSurveyMostRecentlyPublishedVersionByIdentifier(study, identifier);
         assertNotNull(found);
         assertEquals(survey.getName(), found.getName());
+    }
+    
+    @Test
+    public void validationInfoScreen() {
+        Survey survey = new TestSurvey(true);
+        
+        DynamoSurveyInfoScreen screen = new DynamoSurveyInfoScreen();
+        screen.setImageSource("/path/to/source.gif");
+        survey.getElements().add(0, screen);
+        
+        try {
+            surveyService.createSurvey(survey);
+            fail("Service should have thrown an exception");
+        } catch(InvalidEntityException e) {
+            assertEquals("Survey is invalid: element0.identifier is required; element0.title is required; element0.prompt is required; element0.imageSource must be a valid URL to an image", e.getMessage());
+        }
     }
 
 }

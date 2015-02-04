@@ -37,6 +37,9 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
     public boolean isPublished();
     public void setPublished(boolean published);
     
-    public List<SurveyQuestion> getQuestions();
-    public void setQuestions(List<SurveyQuestion> questions);
+    public List<SurveyElement> getElements();
+    public void setElements(List<SurveyElement> elements);
+    
+    public List<SurveyQuestion> getUnmodifiableQuestionList();
+    
 }

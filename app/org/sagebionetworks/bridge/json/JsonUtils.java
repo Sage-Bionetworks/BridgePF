@@ -13,6 +13,8 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
+import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -242,6 +244,18 @@ public class JsonUtils {
             array.add(element.name().toLowerCase());
         }
         return array;
+    }
+    
+    public static List<SurveyElement> asSurveyElementsArray(JsonNode node, String propertyName) {
+        ArrayNode elementsNode = JsonUtils.asArrayNode(node, propertyName);
+        if (elementsNode != null) {
+            List<SurveyElement> elements = Lists.newArrayListWithCapacity(elementsNode.size());
+            for (JsonNode elementNode : elementsNode) {
+                elements.add(SurveyElementFactory.fromJson(elementNode));
+            }
+            return elements;
+        }
+        return null;
     }
 
     public static void write(ObjectNode node, String propertyName, Enum<?> e) {
