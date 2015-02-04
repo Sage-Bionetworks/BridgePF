@@ -7,6 +7,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
 @DynamoDBTable(tableName = SurveyElement.SURVEY_ELEMENT_TYPE)
@@ -22,16 +23,6 @@ public class DynamoSurveyElement implements SurveyElement, DynamoTable {
     public DynamoSurveyElement() {
     }
 
-    /*
-    public DynamoSurveyElement(SurveyElement element, boolean boo) {
-        setSurveyCompoundKey(element.getSurveyCompoundKey());
-        setGuid(element.getGuid());
-        setIdentifier(element.getIdentifier());
-        setType(element.getType());
-        setData(element.getData());
-        setOrder(element.getOrder());
-    }
-*/
     @DynamoDBHashKey
     public String getSurveyCompoundKey() {
         return surveyCompoundKey;
@@ -50,6 +41,7 @@ public class DynamoSurveyElement implements SurveyElement, DynamoTable {
         this.guid = guid;
     }
     @DynamoDBRangeKey
+    @JsonIgnore
     public int getOrder() {
         return order;
     }

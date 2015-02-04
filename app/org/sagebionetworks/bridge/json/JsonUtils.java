@@ -248,22 +248,14 @@ public class JsonUtils {
     
     public static List<SurveyElement> asSurveyElementsArray(JsonNode node, String propertyName) {
         ArrayNode elementsNode = JsonUtils.asArrayNode(node, propertyName);
-        List<SurveyElement> elements = Lists.newArrayListWithCapacity(elementsNode.size());
         if (elementsNode != null) {
+            List<SurveyElement> elements = Lists.newArrayListWithCapacity(elementsNode.size());
             for (JsonNode elementNode : elementsNode) {
                 elements.add(SurveyElementFactory.fromJson(elementNode));
-                /*
-                String type = JsonUtils.asText(elementNode, "type");
-                if (SurveyElement.SURVEY_QUESTION_TYPE.equals(type)) {
-                    elements.add(DynamoSurveyQuestion.fromJson(elementNode));
-                } else if (SurveyElement.SURVEY_INFO_SCREEN_TYPE.equals(type)) {
-                    elements.add(DynamoSurveyInfoScreen.fromJson(elementNode));
-                } else {
-                    throw new BridgeServiceException("Survey element type '"+type+"' not recognized.");
-                }*/
             }
+            return elements;
         }
-        return elements;
+        return null;
     }
 
     public static void write(ObjectNode node, String propertyName, Enum<?> e) {
