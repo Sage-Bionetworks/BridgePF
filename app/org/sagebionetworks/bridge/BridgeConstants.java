@@ -23,4 +23,5 @@ public class BridgeConstants {
 
     public static final String PHONE_ATTRIBUTE = "phone";
 
+    public static final String ASSETS_HOST = "assets.sagebridge.org";
 }
