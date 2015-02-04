@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyElementConstants;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -10,14 +11,14 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
-@DynamoDBTable(tableName = SurveyElement.SURVEY_ELEMENT_TYPE)
+@DynamoDBTable(tableName = SurveyElementConstants.SURVEY_ELEMENT_TYPE)
 public class DynamoSurveyElement implements SurveyElement, DynamoTable {
 
-    protected String surveyCompoundKey;
-    protected String guid;
-    protected String identifier;
-    protected String type;
-    protected int order;
+    private String surveyCompoundKey;
+    private String guid;
+    private String identifier;
+    private String type;
+    private int order;
     private JsonNode data;
 
     public DynamoSurveyElement() {
