@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
@@ -8,6 +7,9 @@ import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyElementConstants;
+import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
@@ -17,10 +19,11 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 @DynamoDBTable(tableName = "Survey")
@@ -29,20 +32,15 @@ public class DynamoSurvey implements Survey, DynamoTable {
     private static final String VERSION_FIELD = "version";
     private static final String NAME_FIELD = "name";
     private static final String IDENTIFIER_FIELD = "identifier";
-    private static final String QUESTIONS_FIELD = "questions";
+    private static final String ELEMENTS_FIELD = "elements";
     
     public static final DynamoSurvey fromJson(JsonNode node) {
         DynamoSurvey survey = new DynamoSurvey();
         survey.setVersion( JsonUtils.asLong(node, VERSION_FIELD) );
         survey.setName( JsonUtils.asText(node, NAME_FIELD) );
         survey.setIdentifier( JsonUtils.asText(node, IDENTIFIER_FIELD) );
-        ArrayNode questionsNode = JsonUtils.asArrayNode(node,  QUESTIONS_FIELD);
-        if (questionsNode != null) {
-            for (JsonNode questionNode : questionsNode) {
-                SurveyQuestion question = DynamoSurveyQuestion.fromJson(questionNode);
-                survey.getQuestions().add(question);
-            }
-        }
+        List<SurveyElement> elements = JsonUtils.asSurveyElementsArray(node, ELEMENTS_FIELD);
+        survey.setElements(elements);
         return survey;
     }
 
@@ -54,10 +52,10 @@ public class DynamoSurvey implements Survey, DynamoTable {
     private String name;
     private String identifier;
     private boolean published;
-    private List<SurveyQuestion> questions;
+    private List<SurveyElement> elements;
     
     public DynamoSurvey() {
-        this.questions = Lists.newArrayList();
+        this.elements = Lists.newArrayList();
     }
     
     public DynamoSurvey(String guid, long createdOn) {
@@ -76,12 +74,11 @@ public class DynamoSurvey implements Survey, DynamoTable {
         setName(survey.getName());
         setIdentifier(survey.getIdentifier());
         setPublished(survey.isPublished());
-        for (Iterator<SurveyQuestion> i = survey.getQuestions().iterator(); i.hasNext();){
-            DynamoSurveyQuestion q = (DynamoSurveyQuestion)i.next();
-            questions.add( new DynamoSurveyQuestion(q) );
+        for (SurveyElement element : survey.getElements()) {
+            elements.add(SurveyElementFactory.fromDynamoEntity(element));
         }
     }
-
+    
     @Override
     @DynamoDBAttribute(attributeName = "studyKey")
     @JsonIgnore
@@ -174,16 +171,29 @@ public class DynamoSurvey implements Survey, DynamoTable {
     public void setPublished(boolean published) {
         this.published = published;
     }
-
+    
     @Override
     @DynamoDBIgnore
-    public List<SurveyQuestion> getQuestions() {
-        return questions;
+    public List<SurveyElement> getElements() {
+        return elements;
+    }
+    
+    @Override
+    @DynamoDBIgnore
+    @JsonProperty("questions")
+    public List<SurveyQuestion> getUnmodifiableQuestionList() {
+        ImmutableList.Builder<SurveyQuestion> builder = new ImmutableList.Builder<SurveyQuestion>();
+        for (SurveyElement element : elements) {
+            if (SurveyElementConstants.SURVEY_QUESTION_TYPE.equals(element.getType())) {
+                builder.add((SurveyQuestion)element);
+            }
+        }
+        return builder.build();
     }
 
     @Override
-    public void setQuestions(List<SurveyQuestion> questions) {
-        this.questions = questions;
+    public void setElements(List<SurveyElement> elements) {
+        this.elements = elements;
     }
     
     @Override
@@ -195,15 +205,15 @@ public class DynamoSurvey implements Survey, DynamoTable {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + (int) (createdOn ^ (createdOn >>> 32));
+        result = prime * result + ((elements == null) ? 0 : elements.hashCode());
         result = prime * result + ((guid == null) ? 0 : guid.hashCode());
         result = prime * result + ((identifier == null) ? 0 : identifier.hashCode());
         result = prime * result + (int) (modifiedOn ^ (modifiedOn >>> 32));
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + (published ? 1231 : 1237);
-        result = prime * result + ((questions == null) ? 0 : questions.hashCode());
         result = prime * result + ((studyKey == null) ? 0 : studyKey.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
-        result = prime * result + (int) (createdOn ^ (createdOn >>> 32));
         return result;
     }
 
@@ -216,6 +226,13 @@ public class DynamoSurvey implements Survey, DynamoTable {
         if (getClass() != obj.getClass())
             return false;
         DynamoSurvey other = (DynamoSurvey) obj;
+        if (createdOn != other.createdOn)
+            return false;
+        if (elements == null) {
+            if (other.elements != null)
+                return false;
+        } else if (!elements.equals(other.elements))
+            return false;
         if (guid == null) {
             if (other.guid != null)
                 return false;
@@ -235,11 +252,6 @@ public class DynamoSurvey implements Survey, DynamoTable {
             return false;
         if (published != other.published)
             return false;
-        if (questions == null) {
-            if (other.questions != null)
-                return false;
-        } else if (!questions.equals(other.questions))
-            return false;
         if (studyKey == null) {
             if (other.studyKey != null)
                 return false;
@@ -250,15 +262,13 @@ public class DynamoSurvey implements Survey, DynamoTable {
                 return false;
         } else if (!version.equals(other.version))
             return false;
-        if (createdOn != other.createdOn)
-            return false;
         return true;
     }
-    
+
     @Override
     public String toString() {
-        return "DynamoSurvey [studyKey=" + studyKey + ", guid=" + guid + ", createdOn=" + createdOn
-                + ", modifiedOn=" + modifiedOn + ", version=" + version + ", name=" + name + ", identifier="
-                + identifier + ", published=" + published + ", questions=" + questions + "]";
+        return "DynamoSurvey [studyKey=" + studyKey + ", guid=" + guid + ", createdOn=" + createdOn + ", modifiedOn="
+                + modifiedOn + ", version=" + version + ", name=" + name + ", identifier=" + identifier
+                + ", published=" + published + ", elements=" + elements + "]";
     }
 }
