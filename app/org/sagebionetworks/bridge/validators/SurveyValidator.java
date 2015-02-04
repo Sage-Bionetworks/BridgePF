@@ -1,7 +1,10 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_QUESTION_TYPE;
+import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_INFO_SCREEN_TYPE;
 
 import java.util.List;
 import java.util.Set;
@@ -45,9 +48,9 @@ public class SurveyValidator implements Validator {
         for (int i=0; i < survey.getElements().size(); i++) {
             SurveyElement element = survey.getElements().get(i);
             errors.pushNestedPath("element"+i);
-            if (SurveyElement.SURVEY_QUESTION_TYPE.equals(element.getType())) {
+            if (SURVEY_QUESTION_TYPE.equals(element.getType())) {
                 doValidateQuestion((SurveyQuestion)element, i, errors);    
-            } else if (SurveyElement.SURVEY_INFO_SCREEN_TYPE.equals(element.getType())) {
+            } else if (SURVEY_INFO_SCREEN_TYPE.equals(element.getType())) {
                 doValidateInfoScreen((SurveyInfoScreen)element, i, errors);
             }
             errors.popNestedPath();

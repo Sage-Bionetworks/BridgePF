@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyElementConstants;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 
@@ -183,7 +184,7 @@ public class DynamoSurvey implements Survey, DynamoTable {
     public List<SurveyQuestion> getUnmodifiableQuestionList() {
         ImmutableList.Builder<SurveyQuestion> builder = new ImmutableList.Builder<SurveyQuestion>();
         for (SurveyElement element : elements) {
-            if (SurveyElement.SURVEY_QUESTION_TYPE.equals(element.getType())) {
+            if (SurveyElementConstants.SURVEY_QUESTION_TYPE.equals(element.getType())) {
                 builder.add((SurveyQuestion)element);
             }
         }
