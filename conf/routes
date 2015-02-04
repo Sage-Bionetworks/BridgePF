@@ -1,10 +1,11 @@
 # Redirect to application
 
 # These routes won't support an URL that maps to an internal AngularJS state (those would all be routed to /public/app")
-GET    /                           @controllers.ApplicationController.loadPublicApp
-GET    /app/                       @controllers.ApplicationController.loadApp
-GET    /index.html                 @controllers.ApplicationController.redirectToPublicApp
-GET    /consent/:sessionToken      @controllers.ApplicationController.loadConsent(sessionToken: String)
+OPTIONS    /*all                       @controllers.ApplicationController.preflight(all: String)
+GET        /                           @controllers.ApplicationController.loadPublicApp
+GET        /app/                       @controllers.ApplicationController.loadApp
+GET        /index.html                 @controllers.ApplicationController.redirectToPublicApp
+GET        /consent/:sessionToken      @controllers.ApplicationController.loadConsent(sessionToken: String)
 
 # API - Authentication
 POST   /api/v1/auth/signIn                  @controllers.AuthenticationController.signIn

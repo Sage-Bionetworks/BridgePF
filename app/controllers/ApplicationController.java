@@ -59,4 +59,11 @@ public class ApplicationController extends BaseController {
     public Result redirectToConsent() {
         return redirect("/consent/");
     }
+
+    public Result preflight(String all) {
+        response().setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "https://assets.sagebridge.org");
+        response().setHeader(ACCESS_CONTROL_ALLOW_METHODS, "HEAD, GET, OPTIONS, POST, PUT, DELETE");
+        response().setHeader(ACCESS_CONTROL_ALLOW_HEADERS, "*");
+        return ok();
+    }
 }
