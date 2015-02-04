@@ -1,6 +1,6 @@
 package global
 
-import filters._
+import filters.CorsFilter
 import models.StatusMessage
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory
@@ -25,6 +25,8 @@ import scala.concurrent.Future
 object GlobalWithFilters extends WithFilters (
 
     // TODO: CSRF filter
+
+    CorsFilter,
 
     new GzipFilter(shouldGzip = (request, response) =>
         response.headers.get(CONTENT_TYPE).exists(_.startsWith(JSON)))
