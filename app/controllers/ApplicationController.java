@@ -1,5 +1,7 @@
 package controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.ASSETS_HOST;
+
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -13,11 +15,14 @@ import play.mvc.Result;
 public class ApplicationController extends BaseController {
 
     private static final UserSession EMPTY_USER_SESSION = new UserSession();
-    private static final String ASSETS_HOST = "assets.sagebridge.org";
     private static final String ASSETS_BUILD = "201501291830";
 
     public Result redirectToPublicApp() {
         return redirect("/");
+    }
+
+    public Result loadApp() throws Exception {
+        return loadPublicApp();
     }
 
     public Result loadPublicApp() throws Exception {
@@ -54,5 +59,12 @@ public class ApplicationController extends BaseController {
 
     public Result redirectToConsent() {
         return redirect("/consent/");
+    }
+
+    public Result preflight(String all) {
+        response().setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "https://" + ASSETS_HOST);
+        response().setHeader(ACCESS_CONTROL_ALLOW_METHODS, "HEAD, GET, OPTIONS, POST, PUT, DELETE");
+        response().setHeader(ACCESS_CONTROL_ALLOW_HEADERS, "*");
+        return ok();
     }
 }
