@@ -21,7 +21,8 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -102,7 +103,7 @@ public class DynamoSurveyDao implements SurveyDao {
         Survey getOne(boolean exceptionIfEmpty) {
             List<Survey> surveys = getAll(exceptionIfEmpty);
             if (!surveys.isEmpty()) {
-                attachQuestions(surveys.get(0));
+                attachSurveyElements(surveys.get(0));
                 return surveys.get(0);
             }
             return null;
@@ -173,26 +174,34 @@ public class DynamoSurveyDao implements SurveyDao {
             return rangeCond;
         }
         
-        private void attachQuestions(Survey survey) {
-            DynamoSurveyQuestion template = new DynamoSurveyQuestion();
+        private void attachSurveyElements(Survey survey) {
+            DynamoSurveyElement template = new DynamoSurveyElement();
             template.setSurveyKeyComponents(survey.getGuid(), survey.getCreatedOn());
             
-            DynamoDBQueryExpression<DynamoSurveyQuestion> query = new DynamoDBQueryExpression<DynamoSurveyQuestion>();
+            DynamoDBQueryExpression<DynamoSurveyElement> query = new DynamoDBQueryExpression<DynamoSurveyElement>();
             query.withHashKeyValues(template);
             
-            QueryResultPage<DynamoSurveyQuestion> page = surveyQuestionMapper.queryPage(DynamoSurveyQuestion.class,
-                    query);
-            
-            List<SurveyQuestion> questions = Lists.newArrayList();
-            for (DynamoSurveyQuestion question : page.getResults()) {
-                questions.add((SurveyQuestion)question);
+            QueryResultPage<DynamoSurveyElement> page = surveyElementMapper.queryPage(DynamoSurveyElement.class, query);
+
+            List<SurveyElement> elements = Lists.newArrayList();
+            for (DynamoSurveyElement element : page.getResults()) {
+                elements.add(SurveyElementFactory.fromDynamoEntity(element));
+                /*
+                if (element.getType().equals(SurveyElement.SURVEY_QUESTION_TYPE)) {
+                    elements.add(new DynamoSurveyQuestion(element));
+                } else if (element.getType().equals(SurveyElement.SURVEY_INFO_SCREEN_TYPE)) {
+                    elements.add(new DynamoSurveyInfoScreen(element));
+                } else {
+                    // Possibly the default case
+                    elements.add(new DynamoSurveyQuestion(element));
+                }*/
             }
-            survey.setQuestions(questions);
+            survey.setElements(elements);
         }
     }
 
     private DynamoDBMapper surveyMapper;
-    private DynamoDBMapper surveyQuestionMapper;
+    private DynamoDBMapper surveyElementMapper;
     private SurveyResponseDao responseDao;
     private SchedulePlanDao schedulePlanDao;
     
@@ -212,8 +221,8 @@ public class DynamoSurveyDao implements SurveyDao {
         
         mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoSurveyQuestion.class)).build();
-        surveyQuestionMapper = new DynamoDBMapper(client, mapperConfig);
+                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoSurveyElement.class)).build();
+        surveyElementMapper = new DynamoDBMapper(client, mapperConfig);
     }
 
     @Override
@@ -251,7 +260,7 @@ public class DynamoSurveyDao implements SurveyDao {
         }
         existing.setIdentifier(survey.getIdentifier());
         existing.setName(survey.getName());
-        existing.setQuestions(survey.getQuestions());
+        existing.setElements(survey.getElements());
         existing.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         
         return saveSurvey(survey);
@@ -266,8 +275,8 @@ public class DynamoSurveyDao implements SurveyDao {
         long time = DateUtils.getCurrentMillisFromEpoch();
         copy.setCreatedOn(time);
         copy.setModifiedOn(time);
-        for (SurveyQuestion question : copy.getQuestions()) {
-            question.setGuid(BridgeUtils.generateGuid());
+        for (SurveyElement element : copy.getElements()) {
+            element.setGuid(BridgeUtils.generateGuid());
         }
         return saveSurvey(copy);
     }
@@ -290,7 +299,7 @@ public class DynamoSurveyDao implements SurveyDao {
                 throw new IllegalStateException("Survey has been scheduled; it cannot be deleted.");
             }
         }
-        deleteAllQuestions(existing.getGuid(), existing.getCreatedOn());
+        deleteAllElements(existing.getGuid(), existing.getCreatedOn());
         surveyMapper.delete(existing);
     }
     
@@ -358,19 +367,20 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     private Survey saveSurvey(Survey survey) {
-        deleteAllQuestions(survey.getGuid(), survey.getCreatedOn());
-        List<SurveyQuestion> questions = survey.getQuestions();
-        for (int i=0; i < questions.size(); i++) {
-            // These shouldn't be invalid at this point, but we double-check.
-            SurveyQuestion question = questions.get(i);
-            question.setSurveyKeyComponents(survey.getGuid(), survey.getCreatedOn());
-            question.setOrder(i);
-            if (question.getGuid() == null) {
-                question.setGuid(BridgeUtils.generateGuid());
+        deleteAllElements(survey.getGuid(), survey.getCreatedOn());
+        
+        List<DynamoSurveyElement> dynamoElements = Lists.newArrayList();
+        for (int i=0; i < survey.getElements().size(); i++) {
+            SurveyElement element = survey.getElements().get(i);
+            element.setSurveyKeyComponents(survey.getGuid(), survey.getCreatedOn());
+            element.setOrder(i);
+            if (element.getGuid() == null) {
+                element.setGuid(BridgeUtils.generateGuid());
             }
+            dynamoElements.add((DynamoSurveyElement)element);
         }
         
-        List<FailedBatch> failures = surveyQuestionMapper.batchSave(questions);
+        List<FailedBatch> failures = surveyElementMapper.batchSave(dynamoElements);
         BridgeUtils.ifFailuresThrowException(failures);
         
         try {
@@ -383,15 +393,15 @@ public class DynamoSurveyDao implements SurveyDao {
         return survey;
     }
     
-    private void deleteAllQuestions(String surveyGuid, long createdOn) {
-        DynamoSurveyQuestion template = new DynamoSurveyQuestion();
+    private void deleteAllElements(String surveyGuid, long createdOn) {
+        DynamoSurveyElement template = new DynamoSurveyElement();
         template.setSurveyKeyComponents(surveyGuid, createdOn);
         
-        DynamoDBQueryExpression<DynamoSurveyQuestion> query = new DynamoDBQueryExpression<DynamoSurveyQuestion>();
+        DynamoDBQueryExpression<DynamoSurveyElement> query = new DynamoDBQueryExpression<DynamoSurveyElement>();
         query.withHashKeyValues(template);
         
-        QueryResultPage<DynamoSurveyQuestion> page = surveyQuestionMapper.queryPage(DynamoSurveyQuestion.class, query);
-        List<FailedBatch> failures = surveyQuestionMapper.batchDelete(page.getResults());
+        QueryResultPage<DynamoSurveyElement> page = surveyElementMapper.queryPage(DynamoSurveyElement.class, query);
+        List<FailedBatch> failures = surveyElementMapper.batchDelete(page.getResults());
         BridgeUtils.ifFailuresThrowException(failures);
     }
 }

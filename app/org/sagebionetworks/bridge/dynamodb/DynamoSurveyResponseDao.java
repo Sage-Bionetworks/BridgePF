@@ -195,7 +195,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
             if (!answers.isEmpty()) {
                 response.setStartedOn(earliestDate);    
             }
-            if (response.getAnswers().size() == response.getSurvey().getQuestions().size()) {
+            if (response.getAnswers().size() == response.getSurvey().getUnmodifiableQuestionList().size()) {
                 response.setCompletedOn(latestDate);
             }
         }
