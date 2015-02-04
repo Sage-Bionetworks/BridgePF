@@ -65,7 +65,7 @@ public class AuthenticationControllerTest {
                 node.put(PASSWORD, testUser.getPassword());
                 
                 WSRequestHolder holder = WS.url(TEST_BASE_URL + SIGN_IN_URL);
-                holder.setHeader("Bridge-Host", "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix());
+                holder.setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix());
                 Response response = holder.post(node).get(TIMEOUT);
                 
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);

@@ -7,8 +7,11 @@ import static org.mockito.Mockito.when;
 import java.util.Map;
 
 import org.junit.Test;
+
 import play.mvc.Http;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
@@ -16,6 +19,9 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 @SuppressWarnings("unchecked")
 public class BaseControllerTest {
     private static final String DUMMY_JSON = "{\"dummy-key\":\"dummy-value\"}";
+    private static final String STUDY_IDENTIFIER = "studyName";
+    private static final String HOSTNAME_POSTFIX = "-local.sagebridge.org";
+    private static final String HOSTNAME = STUDY_IDENTIFIER+HOSTNAME_POSTFIX;
 
     @Test
     public void testParseJsonFromText() {
@@ -68,4 +74,88 @@ public class BaseControllerTest {
         // execute and validate
         BaseController.parseJson(mockRequest, Map.class);
     }
+    
+    @Test
+    public void studyExtractableFromConfiguration() {
+        
+    }
+    
+    @Test
+    public void studyExtractableFromBridgeHostHeader() {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(BridgeConstants.BRIDGE_HOST_HEADER)).thenReturn(HOSTNAME);
+        
+        Http.Context mockContext = mock(Http.Context.class);
+        when(mockContext.request()).thenReturn(mockRequest);
+        
+        Http.Context.current.set(mockContext);
+        
+        ApplicationController controller = new ApplicationController();
+        controller.setBridgeConfig(mock(BridgeConfig.class));
+        
+        String retrievedHostName = controller.getHostname();
+        assertEquals(HOSTNAME, retrievedHostName);
+    }
+    
+    @Test 
+    public void studyExtractableFromBridgeStudyHeader() {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.getHeader(BridgeConstants.BRIDGE_STUDY_HEADER)).thenReturn(STUDY_IDENTIFIER);
+
+        Http.Context mockContext = mock(Http.Context.class);
+        when(mockContext.request()).thenReturn(mockRequest);
+        
+        Http.Context.current.set(mockContext);
+        
+        ApplicationController controller = new ApplicationController();
+        
+        BridgeConfig mockConfig = mock(BridgeConfig.class);
+        when(mockConfig.getStudyHostnamePostfix()).thenReturn(HOSTNAME_POSTFIX);
+        controller.setBridgeConfig(mockConfig);
+        
+        String retrievedHostName = controller.getHostname();
+        assertEquals(HOSTNAME, retrievedHostName);
+    }
+    
+    @Test
+    public void whenNoHeaderPresentUseHost() {
+        Http.Request mockRequest = mock(Http.Request.class);
+        
+        when(mockRequest.host()).thenReturn(HOSTNAME);
+        
+        Http.Context mockContext = mock(Http.Context.class);
+        when(mockContext.request()).thenReturn(mockRequest);
+
+        Http.Context.current.set(mockContext);
+        
+        ApplicationController controller = new ApplicationController();
+        controller.setBridgeConfig(mock(BridgeConfig.class));
+        
+        String retrievedHostName = controller.getHostname();
+        assertEquals(HOSTNAME, retrievedHostName);
+    }
+    
+    @Test
+    public void studyHeaderHigherPrecedenceThanOtherStudyLocations() {
+        Http.Request mockRequest = mock(Http.Request.class);
+        
+        when(mockRequest.getHeader(BridgeConstants.BRIDGE_STUDY_HEADER)).thenReturn(STUDY_IDENTIFIER);
+        when(mockRequest.getHeader(BridgeConstants.BRIDGE_HOST_HEADER)).thenReturn("badStudyId"+HOSTNAME_POSTFIX);
+        when(mockRequest.host()).thenReturn("badStudyId"+HOSTNAME_POSTFIX);
+        
+        Http.Context mockContext = mock(Http.Context.class);
+        when(mockContext.request()).thenReturn(mockRequest);
+        
+        Http.Context.current.set(mockContext);
+        
+        ApplicationController controller = new ApplicationController();
+        BridgeConfig mockConfig = mock(BridgeConfig.class);
+        when(mockConfig.getStudyHostnamePostfix()).thenReturn(HOSTNAME_POSTFIX);
+        controller.setBridgeConfig(mockConfig);
+        
+        String retrievedHostName = controller.getHostname();
+        assertEquals(HOSTNAME, retrievedHostName);
+    }
+    
+    
 }
