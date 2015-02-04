@@ -59,4 +59,14 @@ public class ApplicationController extends BaseController {
         response().setHeader(ACCESS_CONTROL_ALLOW_HEADERS, "*");
         return ok();
     }
+
+    public Result verifyEmail() {
+        UserSessionInfo info = new UserSessionInfo(new UserSession());
+        return ok(views.html.verifyEmail.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
+    }
+
+    public Result resetPassword() {
+        UserSessionInfo info = new UserSessionInfo(new UserSession());
+        return ok(views.html.resetPassword.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
+    }
 }
