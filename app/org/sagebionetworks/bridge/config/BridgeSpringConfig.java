@@ -25,8 +25,10 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.TableNameOverrideFactory;
 import org.sagebionetworks.bridge.s3.S3Helper;
-import org.sagebionetworks.bridge.upload.DecryptAndUnzipHandler;
+import org.sagebionetworks.bridge.upload.DecryptHandler;
+import org.sagebionetworks.bridge.upload.ParseJsonHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
+import org.sagebionetworks.bridge.upload.UnzipHandler;
 import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 
 @ComponentScan(basePackages = "org.sagebionetworks.bridge")
@@ -84,11 +86,11 @@ public class BridgeSpringConfig {
     @Bean(name = "uploadValidationHandlerList")
     @Autowired
     public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,
-            DecryptAndUnzipHandler decryptAndUnzipHandler) {
+            DecryptHandler decryptHandler, UnzipHandler unzipHandler, ParseJsonHandler parseJsonHandler) {
         // TODO: add handlers for the following:
         // * validate against schemas
         // * write intermediate artifacts
-        return ImmutableList.of(s3DownloadHandler, decryptAndUnzipHandler);
+        return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler, parseJsonHandler);
     }
 
     @Bean(name = "uploadSchemaDdbMapper")

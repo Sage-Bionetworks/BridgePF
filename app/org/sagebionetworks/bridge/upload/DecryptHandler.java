@@ -8,12 +8,12 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.services.UploadArchiveService;
 
 /**
- * Validation handler for decrypting, unzipping, and JSON parsing the upload. This handler reads from
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getData}.
+ * Validation handler for decrypting the upload. This handler reads from
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getData}, decrypts it, and writes the decrypted
+ * data back to the same field.
  */
-// TODO: Separate the decrypt, unzip, and the JSON parsing
 @Component
-public class DecryptAndUnzipHandler implements UploadValidationHandler {
+public class DecryptHandler implements UploadValidationHandler {
     private UploadArchiveService uploadArchiveService;
 
     /** Upload archive service, which handles decrypting and unzipping of files. This is configured by Spring. */
@@ -25,6 +25,7 @@ public class DecryptAndUnzipHandler implements UploadValidationHandler {
     /** {@inheritDoc} */
     @Override
     public void handle(@Nonnull UploadValidationContext context) {
-        uploadArchiveService.decryptAndUnzip(context.getStudy(), context.getData());
+        byte[] decryptedData = uploadArchiveService.decrypt(context.getStudy().getIdentifier(), context.getData());
+        context.setData(decryptedData);
     }
 }
