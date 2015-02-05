@@ -76,11 +76,6 @@ public class BaseControllerTest {
     }
     
     @Test
-    public void studyExtractableFromConfiguration() {
-        
-    }
-    
-    @Test
     public void studyExtractableFromBridgeHostHeader() {
         Http.Request mockRequest = mock(Http.Request.class);
         when(mockRequest.getHeader(BridgeConstants.BRIDGE_HOST_HEADER)).thenReturn(HOSTNAME);
