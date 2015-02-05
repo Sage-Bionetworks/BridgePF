@@ -4,8 +4,8 @@ GET        /                           @controllers.ApplicationController.loadPu
 GET        /app/                       @controllers.ApplicationController.loadApp
 GET        /index.html                 @controllers.ApplicationController.redirectToPublicApp
 GET        /consent/:sessionToken      @controllers.ApplicationController.loadConsent(sessionToken: String)
-GET        /verifyEmail                @controllers.ApplicationController.verifyEmail
-GET        /resetPassword              @controllers.ApplicationController.resetPassword
+GET        /mobile/verifyEmail.html    @controllers.ApplicationController.verifyEmail
+GET        /mobile/resetPassword.html  @controllers.ApplicationController.resetPassword
 
 # API - Authentication
 POST   /api/v1/auth/signIn                  @controllers.AuthenticationController.signIn
