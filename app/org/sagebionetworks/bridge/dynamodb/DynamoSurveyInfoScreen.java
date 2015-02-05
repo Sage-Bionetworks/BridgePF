@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 
@@ -20,7 +21,7 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
     private static final String PROMPT_DETAIL_PROPERTY = "promptDetail";
     private static final String TYPE_PROPERTY = "type";
     private static final String TITLE_PROPERTY = "title";
-    private static final String IMAGE_SOURCE_PROPERTY = "imageSource";
+    private static final String IMAGE_PROPERTY = "image";
     
     public static DynamoSurveyInfoScreen fromJson(JsonNode node) {
         DynamoSurveyInfoScreen question = new DynamoSurveyInfoScreen();
@@ -30,14 +31,14 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
         question.setPrompt(JsonUtils.asText(node, PROMPT_PROPERTY));
         question.setPromptDetail(JsonUtils.asText(node, PROMPT_DETAIL_PROPERTY));
         question.setTitle(JsonUtils.asText(node, TITLE_PROPERTY));
-        question.setImageSource(JsonUtils.asText(node, IMAGE_SOURCE_PROPERTY));
+        question.setImage(JsonUtils.asImage(node, IMAGE_PROPERTY));
         return question;
     }
     
     private String prompt;
     private String promptDetail;
     private String title;
-    private String imageSource;
+    private Image image;
     
     public DynamoSurveyInfoScreen() {
         setType("SurveyInfoScreen");
@@ -82,16 +83,16 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
     public void setPromptDetail(String promptDetail) {
         this.promptDetail = promptDetail;
     }
-
+    
     @Override
     @DynamoDBIgnore
-    public String getImageSource() {
-        return imageSource;
+    public Image getImage() {
+        return image;
     }
 
     @Override
-    public void setImageSource(String imageSource) {
-        this.imageSource = imageSource;
+    public void setImage(Image image) {
+        this.image = image;
     }
     
     @Override
@@ -103,7 +104,7 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
         data.put(PROMPT_PROPERTY, prompt);
         data.put(PROMPT_DETAIL_PROPERTY, promptDetail);
         data.put(TITLE_PROPERTY, title);
-        data.put(IMAGE_SOURCE_PROPERTY, imageSource);
+        data.putPOJO(IMAGE_PROPERTY, image);
         return data;
     }
 
@@ -112,17 +113,17 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
         this.prompt = JsonUtils.asText(data, PROMPT_PROPERTY);
         this.promptDetail = JsonUtils.asText(data, PROMPT_DETAIL_PROPERTY);
         this.title = JsonUtils.asText(data, TITLE_PROPERTY);
-        this.imageSource = JsonUtils.asText(data, IMAGE_SOURCE_PROPERTY);
+        this.image = JsonUtils.asImage(data, IMAGE_PROPERTY);
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = super.hashCode();
-        result = prime * result + ((imageSource == null) ? 0 : imageSource.hashCode());
         result = prime * result + ((prompt == null) ? 0 : prompt.hashCode());
         result = prime * result + ((promptDetail == null) ? 0 : promptDetail.hashCode());
         result = prime * result + ((title == null) ? 0 : title.hashCode());
+        result = prime * result + ((image == null) ? 0 : image.hashCode());
         return result;
     }
 
@@ -135,11 +136,6 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
         if (getClass() != obj.getClass())
             return false;
         DynamoSurveyInfoScreen other = (DynamoSurveyInfoScreen) obj;
-        if (imageSource == null) {
-            if (other.imageSource != null)
-                return false;
-        } else if (!imageSource.equals(other.imageSource))
-            return false;
         if (prompt == null) {
             if (other.prompt != null)
                 return false;
@@ -154,6 +150,11 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
             if (other.title != null)
                 return false;
         } else if (!title.equals(other.title))
+            return false;
+        if (image == null) {
+            if (other.image != null)
+                return false;
+        } else if (!image.equals(other.image))
             return false;
         return true;
     }
