@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_QUESTION_TYPE;
 import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_INFO_SCREEN_TYPE;
 
@@ -13,6 +11,7 @@ import java.util.regex.PatternSyntaxException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
+import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -91,10 +90,22 @@ public class SurveyValidator implements Validator {
         if (isBlank(screen.getPrompt())) {
             errors.rejectValue("prompt", "is required");
         }
-        if (isNotBlank(screen.getImageSource()) && 
-            !screen.getImageSource().startsWith("http://") && 
-            !screen.getImageSource().startsWith("https://")) {
-            errors.rejectValue("imageSource", "must be a valid URL to an image");
+        if (screen.getImage() != null) {
+            errors.pushNestedPath("image");
+            Image image = screen.getImage();
+            if (isBlank(image.getSource())) {
+                errors.rejectValue("source", "is required");
+            }
+            if (!image.getSource().startsWith("http://") && !image.getSource().startsWith("https://")) {
+                errors.rejectValue("source", "must be a valid URL to an image");
+            }
+            if (image.getWidth() == 0) {
+                errors.rejectValue("width", "is required");
+            }
+            if (image.getHeight() == 0) {
+                errors.rejectValue("height", "is required");
+            }
+            errors.popNestedPath();
         }
     }
     private void validateRules(Errors errors, List<SurveyQuestion> questions) {

@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
+import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.validators.SurveyValidator;
@@ -81,6 +82,8 @@ public class DynamoSurveyTest {
         survey.setStudyIdentifier("api");
         survey.setVersion(2L);
         
+        Image image = new Image("http://foo.bar", 100, 100);
+        
         DynamoSurveyInfoScreen screen = new DynamoSurveyInfoScreen();
         screen.setGuid(guid);
         screen.setIdentifier("screenA");
@@ -88,12 +91,14 @@ public class DynamoSurveyTest {
         screen.setTitle("The title of the screen");
         screen.setPrompt("This is the prompt");
         screen.setPromptDetail("This is further explanation of the prompt.");
+        screen.setImage(image);
         survey.getElements().add(screen);
         
         survey.getElements().add(new DynamoSurveyQuestion());
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String jsonString = mapper.writeValueAsString(survey);
+        System.out.println(jsonString);
         
         JsonNode node = mapper.readTree(jsonString);
         
@@ -105,7 +110,7 @@ public class DynamoSurveyTest {
         assertEquals("This is the prompt", JsonUtils.asText(sn, "prompt"));
         assertEquals("This is further explanation of the prompt.", JsonUtils.asText(sn, "promptDetail"));
         assertEquals("The title of the screen", JsonUtils.asText(sn, "title"));
-        
+        assertEquals(image, JsonUtils.asImage(sn, "image"));
         Survey survey2 = DynamoSurvey.fromJson(node);
         survey2.setGuid(survey.getGuid());
         survey2.setStudyIdentifier(survey.getStudyIdentifier());

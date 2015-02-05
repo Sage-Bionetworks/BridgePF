@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DataType;
+import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
@@ -149,7 +150,7 @@ public class JsonUtils {
         }
         return Lists.newLinkedList();
     }
-
+    
     public static <T> List<SurveyAnswer> asSurveyAnswers(JsonNode list) {
         List<SurveyAnswer> answers = asEntityList(list, SurveyAnswer.class);
         for (int i=0; i < answers.size(); i++) {
@@ -210,6 +211,17 @@ public class JsonUtils {
         if (parent != null && parent.hasNonNull(property)) {
             String value = JsonUtils.asText(parent, property);
             return ScheduleType.valueOf(value.toUpperCase());
+        }
+        return null;
+    }
+    
+    public static Image asImage(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            JsonNode node = parent.get(property);
+            String source = JsonUtils.asText(node, "source");
+            int width = JsonUtils.asInt(node, "width");
+            int height = JsonUtils.asInt(node, "height");
+            return new Image(source, width, height);
         }
         return null;
     }
