@@ -1,9 +1,11 @@
 package controllers;
 
 import javax.annotation.Nonnull;
+
 import java.util.Collection;
 
 import com.google.common.base.Strings;
+
 import models.StatusMessage;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -20,6 +22,8 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import play.libs.Json;
 import play.mvc.Controller;
@@ -34,6 +38,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public abstract class BaseController extends Controller {
 
+    private static Logger logger = LoggerFactory.getLogger(BaseController.class);
+    
     private static ObjectMapper mapper = BridgeObjectMapper.get();
     
     protected AuthenticationService authenticationService;
@@ -152,17 +158,24 @@ public abstract class BaseController extends Controller {
         // For testing, we check a few places for a forced host value, first 
         // from the configuration, and then on every request, as a header from
         // the client.
-        if (!bridgeConfig.isProduction()) {
-            if (bridgeConfig.getHost() != null) {
-                return bridgeConfig.getHost();
-            }
-            String header = request().getHeader("Bridge-Host");
-            if (header != null) {
-                return header;
-            }
+        if (bridgeConfig.isLocal() && bridgeConfig.getHost() != null) {
+            logger.debug("Hostname retrieved from Bridge configuration file");
+            return bridgeConfig.getHost();
+        }
+        // You can directly declare the study in a header (this is our preferred way eventually).
+        String header = request().getHeader(BridgeConstants.BRIDGE_STUDY_HEADER);
+        if (header != null) {
+            logger.debug("Hostname reconstructed from Bridge-Study header");
+            return header+bridgeConfig.getStudyHostnamePostfix();
+        }
+        header = request().getHeader(BridgeConstants.BRIDGE_HOST_HEADER);
+        if (header != null) {
+            logger.debug("Hostname retrieved from Bridge-Host header");
+            return header;
         }
         String host = request().host();
         if (host.indexOf(":") > -1) {
+            logger.debug("Hostname retrieved from hostname of server");
             host = host.split(":")[0];
         }
         return host;

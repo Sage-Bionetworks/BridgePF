@@ -11,6 +11,7 @@ import static play.test.Helpers.testServer;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -29,7 +30,7 @@ public class ApplicationControllerTest {
             @Override
             public void run() {
                 WSRequestHolder holder = WS.url(TEST_BASE_URL + "/anything");
-                holder.setHeader("Bridge-Host", "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix());
+                holder.setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix());
                 Response response = holder.options().get(TIMEOUT);
                 assertEquals(200, response.getStatus());
                 assertEquals("https://assets.sagebridge.org", response.getHeader(ACCESS_CONTROL_ALLOW_ORIGIN));
