@@ -98,8 +98,6 @@ public class DynamoSurveyTest {
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String jsonString = mapper.writeValueAsString(survey);
-        System.out.println(jsonString);
-        
         JsonNode node = mapper.readTree(jsonString);
         
         JsonNode sn = node.get("elements").get(0);
