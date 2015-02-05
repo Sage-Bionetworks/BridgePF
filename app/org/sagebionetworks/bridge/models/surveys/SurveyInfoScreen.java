@@ -17,8 +17,8 @@ public interface SurveyInfoScreen extends SurveyElement {
     
     public String getPromptDetail();
     public void setPromptDetail(String promptDetail);
-    
-    public String getImageSource();
-    public void setImageSource(String imageSource);
+
+    public Image getImage();
+    public void setImage(Image image);
     
 }

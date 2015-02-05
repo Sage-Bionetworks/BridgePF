@@ -1,9 +1,13 @@
 package org.sagebionetworks.bridge.json;
 
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
+
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -18,7 +22,8 @@ public class SurveyElementJsonTest {
         screen.setPrompt("Prompt");
         screen.setPromptDetail("Prompt detail");
         screen.setType("foo");
-        screen.setImageSource("https://pbs.twimg.com/profile_images/1642204340/ReferencePear_400x400.PNG");
+        Image image = new Image("https://pbs.twimg.com/profile_images/1642204340/ReferencePear_400x400.PNG", 400, 400);
+        screen.setImage(image);
         
         DynamoSurvey survey = new DynamoSurvey();
         survey.setIdentifier("test-survey");
@@ -28,7 +33,8 @@ public class SurveyElementJsonTest {
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         JsonNode node = mapper.readTree(mapper.writeValueAsString(survey));
         
-        DynamoSurvey.fromJson(node);
+        DynamoSurvey newSurvey = DynamoSurvey.fromJson(node);
+        assertEquals(survey, newSurvey);
     }
     
 }

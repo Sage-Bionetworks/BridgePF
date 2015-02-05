@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.S
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
