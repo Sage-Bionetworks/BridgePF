@@ -32,6 +32,7 @@ import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.DataType;
+import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
@@ -389,14 +390,15 @@ public class SurveyServiceTest {
         Survey survey = new TestSurvey(true);
         
         DynamoSurveyInfoScreen screen = new DynamoSurveyInfoScreen();
-        screen.setImageSource("/path/to/source.gif");
+        screen.setImage(new Image("/path/to/source.gif", 0, 0)); // very wrong
         survey.getElements().add(0, screen);
         
         try {
             surveyService.createSurvey(survey);
             fail("Service should have thrown an exception");
         } catch(InvalidEntityException e) {
-            assertEquals("Survey is invalid: element0.identifier is required; element0.title is required; element0.prompt is required; element0.imageSource must be a valid URL to an image", e.getMessage());
+            System.out.println(e.getMessage());
+            assertEquals("Survey is invalid: element0.identifier is required; element0.title is required; element0.prompt is required; element0.image.source must be a valid URL to an image; element0.image.width is required; element0.image.height is required", e.getMessage());
         }
     }
 
