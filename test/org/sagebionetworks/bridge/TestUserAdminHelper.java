@@ -112,7 +112,7 @@ public class TestUserAdminHelper {
 
         String name = makeRandomUserName(cls);
         SignUp signUp = new SignUp(name, name + "@sagebridge.org", PASSWORD, roles);
-        Study study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
+        Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         return createUser(signUp, study, signIn, consent);
     }
 
