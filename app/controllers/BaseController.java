@@ -153,32 +153,39 @@ public abstract class BaseController extends Controller {
         session.setUser(user);
         cacheProvider.setUserSession(session.getSessionToken(), session);
     }
-
-    protected String getHostname() {
-        // For testing, we check a few places for a forced host value, first 
-        // from the configuration, and then on every request, as a header from
-        // the client.
-        if (bridgeConfig.isLocal() && bridgeConfig.getHost() != null) {
-            logger.debug("Hostname retrieved from Bridge configuration file");
-            return bridgeConfig.getHost();
+    
+    protected String getStudyIdentifier() {
+        // bridge.conf:
+        // host = api-local.sagebridge.org
+        String value = bridgeConfig.getHost();
+        if (bridgeConfig.isLocal() && value != null) {
+            logger.debug("Study identifier parsed from host property in config file ("+value+")");
+            return getIdentifierFromHostname(value);
         }
-        // You can directly declare the study in a header (this is our preferred way eventually).
-        String header = request().getHeader(BridgeConstants.BRIDGE_STUDY_HEADER);
-        if (header != null) {
-            logger.debug("Hostname reconstructed from Bridge-Study header");
-            return header+bridgeConfig.getStudyHostnamePostfix();
+        // Bridge-Study: api
+        value = request().getHeader(BridgeConstants.BRIDGE_STUDY_HEADER);
+        if (value != null) {
+            logger.debug("Study identifier retrieved from Bridge-Study header ("+value+")");
+            return value;
         }
-        header = request().getHeader(BridgeConstants.BRIDGE_HOST_HEADER);
-        if (header != null) {
-            logger.debug("Hostname retrieved from Bridge-Host header");
-            return header;
+        // Bridge-Host: api-develop.sagebridge.org
+        value = request().getHeader(BridgeConstants.BRIDGE_HOST_HEADER);
+        if (value != null) {
+            logger.debug("Study identifier parsed from Bridge-Host header ("+value+")");
+            return getIdentifierFromHostname(value);
         }
-        String host = request().host();
-        if (host.indexOf(":") > -1) {
-            logger.debug("Hostname retrieved from hostname of server");
-            host = host.split(":")[0];
+        // Host: api-develop.sagebridge.org
+        value = request().host();
+        if (value.indexOf(":") > -1) {
+            value = value.split(":")[0];
         }
-        return host;
+        logger.warn("Study identifier retrieved from hostname of server ("+value+")");
+        return getIdentifierFromHostname(value);
+    }
+    
+    private String getIdentifierFromHostname(String hostname) {
+        String postfix = bridgeConfig.getStudyHostnamePostfix();
+        return (postfix == null) ? "api" : hostname.split(postfix)[0];
     }
     
     private String getSessionToken() {

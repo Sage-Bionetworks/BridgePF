@@ -31,13 +31,13 @@ public class StudyController extends BaseController {
     public Result getStudyForResearcher() throws Exception {
         // We want a signed in exception before a study not found exception
         // getAuthenticatedSession();
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = studyService.getStudy(getStudyIdentifier());
         getAuthenticatedResearcherOrAdminSession(study);
         return okResult(new StudyInfo(study));
     }
     
     public Result sendStudyParticipantsRoster() throws Exception {
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = studyService.getStudy(getStudyIdentifier());
         // Researchers only, administrators cannot get this list so easily
         getAuthenticatedResearcherSession(study);
         
@@ -48,7 +48,7 @@ public class StudyController extends BaseController {
     public Result updateStudyForResearcher() throws Exception {
         // We want a signed in exception before a study not found exception
         // getAuthenticatedSession();
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = studyService.getStudy(getStudyIdentifier());
         getAuthenticatedResearcherOrAdminSession(study);
 
         Study studyUpdate = DynamoStudy.fromJson(requestToJSON(request()));
@@ -68,7 +68,7 @@ public class StudyController extends BaseController {
     public Result getStudy(String identifier) throws Exception {
         getAuthenticatedAdminSession();
 
-        Study study = studyService.getStudyByIdentifier(identifier);
+        Study study = studyService.getStudy(getStudyIdentifier());
         return okResult(new StudyInfo(study));
     }
 

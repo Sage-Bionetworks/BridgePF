@@ -22,7 +22,7 @@ public class ScheduleController extends BaseController {
     
     public Result getSchedules() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = studyService.getStudy(getStudyIdentifier());
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(study);
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());

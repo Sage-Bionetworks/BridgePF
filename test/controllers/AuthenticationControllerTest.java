@@ -67,7 +67,7 @@ public class AuthenticationControllerTest {
                 WSRequestHolder holder = WS.url(TEST_BASE_URL + SIGN_IN_URL);
                 holder.setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix());
                 Response response = holder.post(node).get(TIMEOUT);
-                
+
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 
                 // All of a sudden, there's no cookie being set. I have no idea why.

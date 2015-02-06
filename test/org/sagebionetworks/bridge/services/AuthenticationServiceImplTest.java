@@ -152,7 +152,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
-        Study study = studyService.getStudyByIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
         TestUser researcher = helper.createUser(AuthenticationServiceImplTest.class, false, false,
                 Sets.newHashSet(study.getResearcherRole()));
         try {
