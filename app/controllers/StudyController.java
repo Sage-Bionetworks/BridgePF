@@ -2,11 +2,11 @@ package controllers;
 
 import java.util.List;
 
+
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.StudyInfo;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserProfileService;
 
 import com.google.common.base.Function;
@@ -16,14 +16,8 @@ import play.mvc.Result;
 
 public class StudyController extends BaseController {
 
-    private StudyService studyService;
-    
     private UserProfileService userProfileService;
 
-    public void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
-    
     public void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
     }
@@ -68,7 +62,7 @@ public class StudyController extends BaseController {
     public Result getStudy(String identifier) throws Exception {
         getAuthenticatedAdminSession();
 
-        Study study = getStudy();
+        Study study = studyService.getStudy(identifier);
         return okResult(new StudyInfo(study));
     }
 
