@@ -160,15 +160,8 @@ public abstract class BaseController extends Controller {
     }
     
     protected String getStudyIdentifier() {
-        // bridge.conf:
-        // host = api-local.sagebridge.org
-        String value = bridgeConfig.getHost();
-        if (bridgeConfig.isLocal() && value != null) {
-            logger.debug("Study identifier parsed from host property in config file ("+value+")");
-            return getIdentifierFromHostname(value);
-        }
         // Bridge-Study: api
-        value = request().getHeader(BridgeConstants.BRIDGE_STUDY_HEADER);
+        String value = request().getHeader(BridgeConstants.BRIDGE_STUDY_HEADER);
         if (value != null) {
             logger.debug("Study identifier retrieved from Bridge-Study header ("+value+")");
             return value;
@@ -177,6 +170,13 @@ public abstract class BaseController extends Controller {
         value = request().getHeader(BridgeConstants.BRIDGE_HOST_HEADER);
         if (value != null) {
             logger.debug("Study identifier parsed from Bridge-Host header ("+value+")");
+            return getIdentifierFromHostname(value);
+        }
+        // bridge.conf:
+        // host = api-local.sagebridge.org
+        value = bridgeConfig.getHost();
+        if (bridgeConfig.isLocal() && value != null) {
+            logger.debug("Study identifier parsed from host property in config file ("+value+")");
             return getIdentifierFromHostname(value);
         }
         // Host: api-develop.sagebridge.org
