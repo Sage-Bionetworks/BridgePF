@@ -1,5 +1,7 @@
 package controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.ASSETS_HOST;
+
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -13,58 +15,58 @@ import play.mvc.Result;
 public class ApplicationController extends BaseController {
 
     private static final UserSession EMPTY_USER_SESSION = new UserSession();
-
-    public Result redirectToApp() {
-        return redirect("/app/");
-    }
-
-    public Result loadApp() throws Exception {
-        UserSession session = getSessionIfItExists();
-        if (session == null) {
-            session = new UserSession();
-        }
-        UserSessionInfo info = new UserSessionInfo(session);
-        Study study = studyService.getStudyByHostname(getHostname());
-        return ok(views.html.index.render(Json.toJson(info).toString(), study.getIdentifier()));
-    }
+    private static final String ASSETS_BUILD = "201501291830";
 
     public Result redirectToPublicApp() {
         return redirect("/");
     }
 
+    public Result loadApp() throws Exception {
+        return loadPublicApp();
+    }
+
     public Result loadPublicApp() throws Exception {
         UserSessionInfo info = new UserSessionInfo(new UserSession());
-        
-        // We need to default to a study or the integration tests in Play will fail 
-        // (localhost:3333 won't match anything).
         try {
             Study study = studyService.getStudyByHostname(getHostname());
             if ("pd".equals(study.getIdentifier()) || "neurod".equals(study.getIdentifier()) || "parkinson".equals(study.getIdentifier())) {
-                return ok(views.html.neurod.render(Json.toJson(info).toString()));    
+                return ok(views.html.neurod.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
             } else if ("api".equals(study.getIdentifier())) {
-                return ok(views.html.api.render(Json.toJson(info).toString()));
+                return ok(views.html.api.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
             }
             String apiHost = "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix();
             return ok(views.html.nosite.render(study.getName(), apiHost));
         } catch(EntityNotFoundException e) {
-            // Go with the API study
-            return ok(views.html.api.render(Json.toJson(info).toString()));
+            return ok(views.html.api.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
         }
     }
-    
+
     public Result loadConsent(String sessionToken) throws Exception {
         UserSession session = null;
         if (sessionToken != null) {
-            session = cacheProvider.getUserSession(sessionToken);    
+            session = cacheProvider.getUserSession(sessionToken);
         }
         if (session == null) {
             session = EMPTY_USER_SESSION;
         }
         UserSessionInfo info = new UserSessionInfo(session);
-        return ok(views.html.consent.render(Json.toJson(info).toString()));
+        return ok(views.html.consent.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
     }
 
-    public Result redirectToConsent() {
-        return redirect("/consent/");
+    public Result preflight(String all) {
+        response().setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "https://" + ASSETS_HOST);
+        response().setHeader(ACCESS_CONTROL_ALLOW_METHODS, "HEAD, GET, OPTIONS, POST, PUT, DELETE");
+        response().setHeader(ACCESS_CONTROL_ALLOW_HEADERS, "*");
+        return ok();
+    }
+
+    public Result verifyEmail() {
+        UserSessionInfo info = new UserSessionInfo(new UserSession());
+        return ok(views.html.verifyEmail.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
+    }
+
+    public Result resetPassword() {
+        UserSessionInfo info = new UserSessionInfo(new UserSession());
+        return ok(views.html.resetPassword.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
     }
 }

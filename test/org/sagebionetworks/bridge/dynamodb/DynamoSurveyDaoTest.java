@@ -49,9 +49,9 @@ public class DynamoSurveyDaoTest {
     public void before() {
         testSurvey = new TestSurvey(true);
         study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
-        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyQuestion.class);
+        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyElement.class);
         DynamoTestUtil.clearTable(DynamoSurvey.class);
-        DynamoTestUtil.clearTable(DynamoSurveyQuestion.class);
+        DynamoTestUtil.clearTable(DynamoSurveyElement.class);
     }
 
     // CREATE SURVEY
@@ -75,8 +75,8 @@ public class DynamoSurveyDaoTest {
 
         assertTrue("Survey has a guid", survey.getGuid() != null);
         assertTrue("Survey has been versioned", survey.getCreatedOn() != 0L);
-        assertTrue("Question #1 has a guid", survey.getQuestions().get(0).getGuid() != null);
-        assertTrue("Question #2 has a guid", survey.getQuestions().get(1).getGuid() != null);
+        assertTrue("Question #1 has a guid", survey.getElements().get(0).getGuid() != null);
+        assertTrue("Question #2 has a guid", survey.getElements().get(1).getGuid() != null);
 
         survey.setIdentifier("newIdentifier");
         surveyDao.updateSurvey(survey);
@@ -123,18 +123,20 @@ public class DynamoSurveyDaoTest {
     public void crudSurveyQuestions() {
         Survey survey = surveyDao.createSurvey(testSurvey);
 
-        int count = survey.getQuestions().size();
+        int count = survey.getElements().size();
         
         // Now, alter these, and verify they are altered
-        survey.getQuestions().remove(0);
-        survey.getQuestions().get(6).setIdentifier("new gender");
+        survey.getElements().remove(0);
+        survey.getElements().get(6).setIdentifier("new gender");
         surveyDao.updateSurvey(survey);
 
         survey = surveyDao.getSurvey(survey);
 
-        assertEquals("Survey has one less question", count-1, survey.getQuestions().size());
+        assertEquals("Survey has one less question", count-1, survey.getElements().size());
         
-        SurveyQuestion restored = survey.getQuestions().get(6);
+        // TODO: So this doesn't work, from a concrete parent class to sub-interface.
+        // BUT: getting closer.
+        SurveyQuestion restored = (SurveyQuestion)survey.getElements().get(6);
         MultiValueConstraints mvc = (MultiValueConstraints)restored.getConstraints();
         
         assertEquals("Survey has updated the one question's identifier", "new gender", restored.getIdentifier());
@@ -178,12 +180,12 @@ public class DynamoSurveyDaoTest {
     @Test
     public void versioningASurveyCopiesTheQuestions() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        String v1SurveyCompoundKey = survey.getQuestions().get(0).getSurveyCompoundKey();
-        String v1Guid = survey.getQuestions().get(0).getGuid();
+        String v1SurveyCompoundKey = survey.getElements().get(0).getSurveyCompoundKey();
+        String v1Guid = survey.getElements().get(0).getGuid();
 
         survey = surveyDao.versionSurvey(survey);
-        String v2SurveyCompoundKey = survey.getQuestions().get(0).getSurveyCompoundKey();
-        String v2Guid = survey.getQuestions().get(0).getGuid();
+        String v2SurveyCompoundKey = survey.getElements().get(0).getSurveyCompoundKey();
+        String v2Guid = survey.getElements().get(0).getGuid();
 
         assertNotEquals("Survey reference differs", v1SurveyCompoundKey, v2SurveyCompoundKey);
         assertNotEquals("Survey question GUID differs", v1Guid, v2Guid);

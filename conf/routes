@@ -1,11 +1,11 @@
-# Redirect to application
-
-# These routes won't support an URL that maps to an internal AngularJS state (those would all be routed to /public/app")
-GET    /app/                       @controllers.ApplicationController.loadApp
-GET    /app/index.html             @controllers.ApplicationController.redirectToApp
-GET    /                           @controllers.ApplicationController.loadPublicApp
-GET    /index.html                 @controllers.ApplicationController.redirectToPublicApp
-GET    /consent/:sessionToken      @controllers.ApplicationController.loadConsent(sessionToken: String)
+# Top level views
+OPTIONS    /*all                       @controllers.ApplicationController.preflight(all: String)
+GET        /                           @controllers.ApplicationController.loadPublicApp
+GET        /app/                       @controllers.ApplicationController.loadApp
+GET        /index.html                 @controllers.ApplicationController.redirectToPublicApp
+GET        /consent/:sessionToken      @controllers.ApplicationController.loadConsent(sessionToken: String)
+GET        /mobile/verifyEmail.html    @controllers.ApplicationController.verifyEmail
+GET        /mobile/resetPassword.html  @controllers.ApplicationController.resetPassword
 
 # API - Authentication
 POST   /api/v1/auth/signIn                  @controllers.AuthenticationController.signIn
@@ -108,12 +108,8 @@ GET    /admin/v1/backfill/:name          @controllers.BackfillController.backfil
 POST   /admin/v1/backfill/:name/start    @controllers.BackfillController.start(name: String)
 
 # Admin - User Management
-POST      /admin/v1/users           @controllers.UserManagementController.createUser
-DELETE    /admin/v1/users           @controllers.UserManagementController.deleteUser(email: java.lang.String ?= null)
+POST   /admin/v1/users          @controllers.UserManagementController.createUser
+DELETE /admin/v1/users          @controllers.UserManagementController.deleteUser(email: java.lang.String ?= null)
 
 # Lunch
-GET    /api/v1/lunch/where     @controllers.LunchController.where
-
-# AngularJS application
-GET    /*file      controllers.Assets.at(path="/public", file)
-HEAD   /*file      controllers.Assets.at(path="/public", file)
+GET    /api/v1/lunch/where      @controllers.LunchController.where

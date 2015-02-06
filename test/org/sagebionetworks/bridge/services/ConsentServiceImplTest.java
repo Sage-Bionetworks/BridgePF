@@ -178,36 +178,40 @@ public class ConsentServiceImplTest {
 
     @Test
     public void enforcesStudyEnrollmentLimit() {
-        Study study = new DynamoStudy();
-        study.setIdentifier("test");
-        study.setName("Test Study");
-        study.setMaxNumOfParticipants(2);
-
-        // Set the cache so we avoid going to DynamoDB. We're testing the caching layer
-        // in the service test, we'll test the DAO in the DAO test.
         JedisStringOps stringOps = new JedisStringOps();
-        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        stringOps.delete(key).execute();
-
-        boolean limit = consentService.isStudyAtEnrollmentLimit(study);
-        assertFalse("No limit reached", limit);
-
-        consentService.incrementStudyEnrollment(study);
-        consentService.incrementStudyEnrollment(study);
-        limit = consentService.isStudyAtEnrollmentLimit(study);
-        assertTrue("Limit reached", limit);
+        String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey("test");
         try {
+            stringOps.delete(key).execute();
+            
+            Study study = new DynamoStudy();
+            study.setIdentifier("test");
+            study.setName("Test Study");
+            study.setMaxNumOfParticipants(2);
+
+            // Set the cache so we avoid going to DynamoDB. We're testing the caching layer
+            // in the service test, we'll test the DAO in the DAO test.
+            stringOps.delete(key).execute();
+
+            boolean limit = consentService.isStudyAtEnrollmentLimit(study);
+            assertFalse("No limit reached", limit);
+
             consentService.incrementStudyEnrollment(study);
-            fail("Should have thrown an exception");
-        } catch (StudyLimitExceededException e) {
-            assertEquals("This is a 473 error", 473, e.getStatusCode());
+            consentService.incrementStudyEnrollment(study);
+            limit = consentService.isStudyAtEnrollmentLimit(study);
+            assertTrue("Limit reached", limit);
+            try {
+                consentService.incrementStudyEnrollment(study);
+                fail("Should have thrown an exception");
+            } catch (StudyLimitExceededException e) {
+                assertEquals("This is a 473 error", 473, e.getStatusCode());
+            }
+        } finally {
+            stringOps.delete(key).execute();
         }
-        stringOps.delete(key).execute();
     }
 
     @Test
     public void checkConsentUpToDate() {
-        System.out.println("Start Test");
         ConsentSignature researchConsent = ConsentSignature.create("John Smith", "1990-11-11", null, null);
         consentService.consentToResearch(testUser.getUser(), researchConsent, testUser.getStudy(), false);
 

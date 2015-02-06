@@ -4,6 +4,10 @@ public class BridgeConstants {
 
     public static final String SESSION_TOKEN_HEADER = "Bridge-Session";
 
+    public static final String BRIDGE_STUDY_HEADER = "Bridge-Study";
+    
+    public static final String BRIDGE_HOST_HEADER = "Bridge-Host";
+    
     public static final String CUSTOM_DATA_HEALTH_CODE_SUFFIX = "_code";
 
     public static final String CUSTOM_DATA_CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
@@ -23,4 +27,5 @@ public class BridgeConstants {
 
     public static final String PHONE_ATTRIBUTE = "phone";
 
+    public static final String ASSETS_HOST = "assets.sagebridge.org";
 }

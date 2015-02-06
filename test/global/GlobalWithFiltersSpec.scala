@@ -46,9 +46,22 @@ object GlobalWithFiltersSpec extends PlaySpecification {
 
   "HTTP" should {
     "not redirect HTTPS " in new WithApplication {
-      val request = FakeRequest(GET, "/someFakePath?fakeQuery=fake&p=q").withHeaders(X_FORWARDED_PROTO -> "https")
+      val request = FakeRequest(GET, "/")
+          .withHeaders("Bridge-Host" -> "api")
+          .withHeaders(X_FORWARDED_PROTO -> "https")
       val result = route(request).get
-      status(result) must equalTo(NOT_FOUND)
+      status(result) must equalTo(OK)
+    }
+  }
+
+  "Response" should {
+    "have CORS headers " in new WithApplication {
+      val request = FakeRequest(GET, "/")
+          .withHeaders("Bridge-Host" -> "api")
+      val result = route(request).get
+      headers(result).get(ACCESS_CONTROL_ALLOW_ORIGIN) must beSome("https://assets.sagebridge.org")
+      headers(result).get(ACCESS_CONTROL_ALLOW_METHODS) must beSome("HEAD, GET, OPTIONS, POST, PUT, DELETE")
+      headers(result).get(ACCESS_CONTROL_ALLOW_HEADERS) must beSome("*")
     }
   }
 }

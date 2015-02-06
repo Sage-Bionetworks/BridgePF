@@ -139,14 +139,14 @@ public class DynamoSurveyResponseDaoTest {
         answer.addAnswer("false");
         answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
         answer.setClient("mobile");
-        answer.setQuestionGuid(survey.getQuestions().get(0).getGuid());
+        answer.setQuestionGuid(survey.getElements().get(0).getGuid());
         answers.add(answer);
 
         answer = new SurveyAnswer();
         answer.addAnswer(DateUtils.getCurrentISODate());
         answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
         answer.setClient("mobile");
-        answer.setQuestionGuid(survey.getQuestions().get(1).getGuid());
+        answer.setQuestionGuid(survey.getElements().get(1).getGuid());
         answers.add(answer);
 
         surveyResponseDao.appendSurveyAnswers(newResponse, answers);
