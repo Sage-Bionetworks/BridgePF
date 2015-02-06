@@ -25,7 +25,7 @@ public class UploadSchemaController extends BaseController {
      * @return Play result, with the created or updated schema in JSON format
      */
     public Result createOrUpdateUploadSchema() {
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
         UploadSchema uploadSchema = parseJson(request(), UploadSchema.class);
         UploadSchema createdSchema = uploadSchemaService.createOrUpdateUploadSchema(study, uploadSchema);
@@ -42,7 +42,7 @@ public class UploadSchemaController extends BaseController {
      * @return Play result with the fetched schema in JSON format
      */
     public Result getUploadSchema(String schemaId) {
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
         UploadSchema uploadSchema = uploadSchemaService.getUploadSchema(study, schemaId);
         return okResult(uploadSchema);

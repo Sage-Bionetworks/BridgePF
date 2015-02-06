@@ -19,7 +19,7 @@ public class SchedulePlanController extends BaseController {
     }
     
     public Result getSchedulePlans() throws Exception {
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
 
         List<SchedulePlan> plans =  schedulePlanService.getSchedulePlans(study);
@@ -27,7 +27,7 @@ public class SchedulePlanController extends BaseController {
     }
 
     public Result createSchedulePlan() throws Exception {
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
@@ -37,7 +37,7 @@ public class SchedulePlanController extends BaseController {
     }
 
     public Result getSchedulePlan(String guid) throws Exception {
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
         
         SchedulePlan plan = schedulePlanService.getSchedulePlan(study, guid);
@@ -45,7 +45,7 @@ public class SchedulePlanController extends BaseController {
     }
 
     public Result updateSchedulePlan(String guid) throws Exception {
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
@@ -56,7 +56,7 @@ public class SchedulePlanController extends BaseController {
     }
 
     public Result deleteSchedulePlan(String guid) {
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
 
         schedulePlanService.deleteSchedulePlan(study, guid);

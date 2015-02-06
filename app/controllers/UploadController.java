@@ -54,7 +54,7 @@ public class UploadController extends BaseController {
         uploadService.uploadComplete(upload);
 
         // kick off upload validation
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         uploadValidationService.validateUpload(study, upload);
 
         return ok("Upload " + uploadId + " complete!");

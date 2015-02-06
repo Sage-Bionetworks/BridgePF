@@ -154,6 +154,11 @@ public abstract class BaseController extends Controller {
         cacheProvider.setUserSession(session.getSessionToken(), session);
     }
     
+    protected Study getStudy() {
+        String studyIdentifier = getStudyIdentifier();
+        return studyService.getStudy(studyIdentifier);
+    }
+    
     protected String getStudyIdentifier() {
         // bridge.conf:
         // host = api-local.sagebridge.org
@@ -176,14 +181,14 @@ public abstract class BaseController extends Controller {
         }
         // Host: api-develop.sagebridge.org
         value = request().host();
-        if (value.indexOf(":") > -1) {
-            value = value.split(":")[0];
-        }
-        logger.warn("Study identifier retrieved from hostname of server ("+value+")");
+        logger.warn("Study identifier retrieved from Host header ("+value+")");
         return getIdentifierFromHostname(value);
     }
     
     private String getIdentifierFromHostname(String hostname) {
+        if (hostname.indexOf(":") > -1) {
+            hostname = hostname.split(":")[0];
+        }
         String postfix = bridgeConfig.getStudyHostnamePostfix();
         return (postfix == null) ? "api" : hostname.split(postfix)[0];
     }
