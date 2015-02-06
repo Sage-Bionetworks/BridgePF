@@ -132,7 +132,7 @@ public class DynamoInitializer {
             final List<AttributeDefinition> attributes = new ArrayList<AttributeDefinition>();
             final List<GlobalSecondaryIndexDescription> globalIndices = new ArrayList<GlobalSecondaryIndexDescription>();
             final List<LocalSecondaryIndexDescription> localIndices = new ArrayList<LocalSecondaryIndexDescription>();
-            Method[] methods = clazz.getDeclaredMethods();
+            Method[] methods = clazz.getMethods();
             KeySchemaElement hashKey = null;
             for (Method method : methods) {
                 if (method.isAnnotationPresent(DynamoDBHashKey.class)) {
