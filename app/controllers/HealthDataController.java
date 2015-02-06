@@ -36,7 +36,7 @@ public class HealthDataController extends BaseController {
 
     public Result appendHealthData(String identifier) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         Tracker tracker = studyService.getTracker(identifier);
 
         JsonNode node = requestToJSON(request());
@@ -75,7 +75,7 @@ public class HealthDataController extends BaseController {
 
     private Result getAllHealthData(String identifier) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         Tracker tracker = studyService.getTracker(identifier);
 
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
@@ -86,7 +86,7 @@ public class HealthDataController extends BaseController {
 
     private Result getHealthDataByDateRange(String identifier, long startDate, long endDate) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         Tracker tracker = studyService.getTracker(identifier);
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
@@ -96,7 +96,7 @@ public class HealthDataController extends BaseController {
 
     public Result getHealthDataRecord(String identifier, String guid) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         Tracker tracker = studyService.getTracker(identifier);
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
@@ -106,7 +106,7 @@ public class HealthDataController extends BaseController {
 
     public Result updateHealthDataRecord(String identifier, String guid) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         Tracker tracker = studyService.getTracker(identifier);
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 
@@ -120,7 +120,7 @@ public class HealthDataController extends BaseController {
 
     public Result deleteHealthDataRecord(String identifier, String guid) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         Tracker tracker = studyService.getTracker(identifier);
         HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
 

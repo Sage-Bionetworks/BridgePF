@@ -23,7 +23,7 @@ public class TrackerController extends BaseController {
     
     public Result getTrackers() throws Exception {
         getAuthenticatedSession();
-        Study study = studyService.getStudy(getStudyIdentifier());
+        Study study = getStudy();
         List<TrackerInfo> infos = Lists.newArrayList();
         for (String trackerId : study.getTrackers()) {
             Tracker tracker = studyService.getTracker(trackerId);
