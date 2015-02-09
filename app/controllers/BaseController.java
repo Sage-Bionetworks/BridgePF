@@ -212,8 +212,7 @@ public abstract class BaseController extends Controller {
         json.put("total", items.size());
         json.put("type", "ResourceList");
         
-        return ok(mapper.writeValueAsString(json)).as("application/json");
-        // return ok(json);
+        return ok(json);
     }
 
     protected Result errorResult(String message) {
