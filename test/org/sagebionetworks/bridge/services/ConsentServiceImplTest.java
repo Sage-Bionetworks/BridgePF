@@ -178,10 +178,11 @@ public class ConsentServiceImplTest {
 
     @Test
     public void enforcesStudyEnrollmentLimit() {
+        // TODO: Spring-ify or re-write this
         JedisStringOps stringOps = new JedisStringOps();
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey("test");
         try {
-            stringOps.delete(key).execute();
+            stringOps.delete(key);
             
             Study study = new DynamoStudy();
             study.setIdentifier("test");
@@ -190,7 +191,7 @@ public class ConsentServiceImplTest {
 
             // Set the cache so we avoid going to DynamoDB. We're testing the caching layer
             // in the service test, we'll test the DAO in the DAO test.
-            stringOps.delete(key).execute();
+            stringOps.delete(key);
 
             boolean limit = consentService.isStudyAtEnrollmentLimit(study);
             assertFalse("No limit reached", limit);
@@ -206,7 +207,7 @@ public class ConsentServiceImplTest {
                 assertEquals("This is a 473 error", 473, e.getStatusCode());
             }
         } finally {
-            stringOps.delete(key).execute();
+            stringOps.delete(key);
         }
     }
 

@@ -17,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
@@ -25,8 +27,10 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.TableNameOverrideFactory;
 import org.sagebionetworks.bridge.s3.S3Helper;
-import org.sagebionetworks.bridge.upload.DecryptAndUnzipHandler;
+import org.sagebionetworks.bridge.upload.DecryptHandler;
+import org.sagebionetworks.bridge.upload.ParseJsonHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
+import org.sagebionetworks.bridge.upload.UnzipHandler;
 import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 
 @ComponentScan(basePackages = "org.sagebionetworks.bridge")
@@ -42,6 +46,36 @@ public class BridgeSpringConfig {
     @Autowired
     public LoadingCache<String, CmsEncryptor> cmsEncryptorCache(CmsEncryptorCacheLoader cacheLoader) {
         return CacheBuilder.newBuilder().build(cacheLoader);
+    }
+
+    @Bean(name = "jedisPool")
+    public JedisPool jedisPool() {
+        // configure Jedis pool
+        BridgeConfig config = BridgeConfigFactory.getConfig();
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
+        String host = config.getProperty("redis.host");
+        int port = config.getPropertyAsInt("redis.port");
+        int timeout = config.getPropertyAsInt("redis.timeout");
+
+        // create Jedis pool
+        final JedisPool jedisPool;
+        if (config.isLocal()) {
+            jedisPool = new JedisPool(poolConfig, host, port, timeout);
+        } else {
+            String password = config.getProperty("redis.password");
+            jedisPool = new JedisPool(poolConfig, host, port, timeout, password);
+        }
+
+        // configure shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                jedisPool.destroy();
+            }
+        }));
+
+        return jedisPool;
     }
 
     @Bean(name = "s3CmsHelper")
@@ -84,11 +118,11 @@ public class BridgeSpringConfig {
     @Bean(name = "uploadValidationHandlerList")
     @Autowired
     public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,
-            DecryptAndUnzipHandler decryptAndUnzipHandler) {
+            DecryptHandler decryptHandler, UnzipHandler unzipHandler, ParseJsonHandler parseJsonHandler) {
         // TODO: add handlers for the following:
         // * validate against schemas
         // * write intermediate artifacts
-        return ImmutableList.of(s3DownloadHandler, decryptAndUnzipHandler);
+        return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler, parseJsonHandler);
     }
 
     @Bean(name = "uploadSchemaDdbMapper")

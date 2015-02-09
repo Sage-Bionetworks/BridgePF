@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.upload;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,17 +60,27 @@ public class UploadValidationTask implements Runnable {
     /** {@inheritDoc} */
     @Override
     public void run() {
+        Stopwatch stopwatch = Stopwatch.createUnstarted();
         for (UploadValidationHandler oneHandler : handlerList) {
+            String handlerName = oneHandler.getClass().getName();
+            stopwatch.start();
+
             try {
                 oneHandler.handle(context);
             } catch (RuntimeException | UploadValidationException ex) {
-                String handlerName = oneHandler.getClass().getName();
                 context.setSuccess(false);
-                context.addMessage(String.format("Error running upload validation handler %s: %s", handlerName,
+                context.addMessage(String.format("Exception thrown from upload validation handler %s: %s", handlerName,
                         ex.getMessage()));
-                logger.warn(String.format("Error running upload validation handler %s for study %s, upload %s",
-                        handlerName, context.getStudy().getIdentifier(), context.getUpload().getUploadId()), ex);
+                logger.warn(String.format(
+                        "Exception thrown from upload validation handler %s for study %s, upload %s, filename %s",
+                        handlerName, context.getStudy().getIdentifier(), context.getUpload().getUploadId(),
+                        context.getUpload().getFilename()), ex);
                 break;
+            } finally {
+                long elapsedMillis = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+                stopwatch.reset();
+                // TODO: send this to somewhere other than the logs
+                logger.info(String.format("Upload validation handler %s took %d ms", handlerName, elapsedMillis));
             }
         }
 
