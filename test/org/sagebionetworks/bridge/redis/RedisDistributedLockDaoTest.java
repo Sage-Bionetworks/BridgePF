@@ -15,6 +15,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 
+// TODO: wire up this test with Spring, or re-write this test
 public class RedisDistributedLockDaoTest {
 
     private JedisStringOps strOps;
@@ -42,10 +43,10 @@ public class RedisDistributedLockDaoTest {
         assertNotNull(lockId);
         String redisKey = RedisKey.LOCK.getRedisKey(
                 id + RedisKey.SEPARATOR + getClass().getCanonicalName());
-        String redisLockId = strOps.get(redisKey).execute();
+        String redisLockId = strOps.get(redisKey);
         assertNotNull(redisLockId);
         assertEquals(redisLockId, lockId);
-        assertTrue(strOps.ttl(redisKey).execute() > 0);
+        assertTrue(strOps.ttl(redisKey) > 0);
         // Acquire again should get back an exception
         try {
             assertNull(lockDao.acquireLock(getClass(), id));

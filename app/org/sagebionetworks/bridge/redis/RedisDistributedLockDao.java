@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.redis;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -11,7 +13,12 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 public class RedisDistributedLockDao implements DistributedLockDao {
 
     private static final int EXPIRATION_IN_SECONDS = 3 * 60;
-    private final StringOps stringOps = new JedisStringOps();
+    private JedisStringOps stringOps;
+
+    @Autowired
+    public void setStringOps(JedisStringOps stringOps) {
+        this.stringOps = stringOps;
+    }
 
     @Override
     public String acquireLock(final Class<?> clazz, final String identifier) {
@@ -25,9 +32,9 @@ public class RedisDistributedLockDao implements DistributedLockDao {
         checkArgument(expireInSeconds > 0);
         final String redisKey = createRedisKey(clazz, identifier);
         final String lock = BridgeUtils.generateGuid();
-        final Long result = stringOps.setnx(redisKey, lock).execute();
+        final Long result = stringOps.setnx(redisKey, lock);
         if (result != 1L) {
-            Long expire = stringOps.ttl(redisKey).execute();
+            Long expire = stringOps.ttl(redisKey);
             if (expire < 0L) {
                 expire(redisKey, expireInSeconds);
             }
@@ -43,11 +50,11 @@ public class RedisDistributedLockDao implements DistributedLockDao {
         checkNotNull(identifier);
         checkNotNull(lock);
         final String redisKey = createRedisKey(clazz, identifier);
-        final String redisLockId = stringOps.get(redisKey).execute();
+        final String redisLockId = stringOps.get(redisKey);
         if (!lock.equals(redisLockId)) {
             return false;
         }
-        Long result = stringOps.delete(redisKey).execute();
+        Long result = stringOps.delete(redisKey);
         if (result != 1L) {
             throw new BridgeServiceException("Lock not released.");
         }
@@ -60,10 +67,10 @@ public class RedisDistributedLockDao implements DistributedLockDao {
     }
 
     private void expire(final String redisKey, final int expireInSeconds) {
-        Long result = stringOps.expire(redisKey, expireInSeconds).execute();
+        Long result = stringOps.expire(redisKey, expireInSeconds);
         if (result != 1L) {
             // Try to recover by deleting the key
-            stringOps.delete(redisKey).execute();
+            stringOps.delete(redisKey);
             throw new BridgeServiceException("Lock expiration not set.");
         }
     }

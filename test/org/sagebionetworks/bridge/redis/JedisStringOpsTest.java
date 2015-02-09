@@ -5,13 +5,14 @@ import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
+// TODO: Spring-ify or re-write this.
 public class JedisStringOpsTest {
     @Test
     public void setsAndReadsValueFromRedis() throws Exception {
-        StringOps strOps = new JedisStringOps();
-        assertEquals("OK", strOps.setex("testKey", 2, "testValue").execute());
-        assertEquals("testValue", strOps.get("testKey").execute());
+        JedisStringOps strOps = new JedisStringOps();
+        assertEquals("OK", strOps.setex("testKey", 2, "testValue"));
+        assertEquals("testValue", strOps.get("testKey"));
         Thread.sleep(3000);
-        assertNull(strOps.get("testKey").execute());
+        assertNull(strOps.get("testKey"));
     }
 }

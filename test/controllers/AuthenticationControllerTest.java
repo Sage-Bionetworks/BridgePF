@@ -81,9 +81,10 @@ public class AuthenticationControllerTest {
 
                 cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
                 assertEquals("Cookie has been set to empty string", "", cookie.getValue());
-                
+
+                // TODO: Spring-ify or re-write this.
                 JedisStringOps stringOps = new JedisStringOps();
-                String output = stringOps.get(sessionToken).execute();
+                String output = stringOps.get(sessionToken);
                 assertNull("Should no longer be session data", output);
             }
         });
