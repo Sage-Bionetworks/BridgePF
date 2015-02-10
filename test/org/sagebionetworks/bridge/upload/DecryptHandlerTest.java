@@ -34,6 +34,6 @@ public class DecryptHandlerTest {
 
         // execute and validate
         handler.handle(ctx);
-        assertEquals("decrypted test data", new String(ctx.getData(), Charsets.UTF_8));
+        assertEquals("decrypted test data", new String(ctx.getDecryptedData(), Charsets.UTF_8));
     }
 }

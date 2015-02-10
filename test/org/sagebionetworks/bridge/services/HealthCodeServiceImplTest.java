@@ -42,7 +42,7 @@ public class HealthCodeServiceImplTest {
 
     @Test
     public void test() {
-        Study study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
+        Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         HealthId healthId1 = healthCodeService.create(study);
         assertNotNull(healthId1);
         assertEquals(healthId1.getCode(), healthCodeService.getHealthCode(healthId1.getId()));

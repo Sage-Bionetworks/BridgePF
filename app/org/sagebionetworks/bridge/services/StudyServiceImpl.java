@@ -88,11 +88,11 @@ public class StudyServiceImpl implements StudyService {
     }
 
     @Override
-    public Tracker getTrackerByIdentifier(String trackerId) {
+    public Tracker getTracker(String trackerId) {
         return trackersByIdentifier.get(trackerId);
     }
     @Override
-    public Study getStudyByIdentifier(String identifier) {
+    public Study getStudy(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
         
         Study study = cacheProvider.getStudy(identifier);
@@ -101,15 +101,6 @@ public class StudyServiceImpl implements StudyService {
             cacheProvider.setStudy(study);
         }
         return study;
-    }
-    @Override
-    public Study getStudyByHostname(String hostname) {
-        checkArgument(isNotBlank(hostname), Validate.CANNOT_BE_BLANK, "hostname");
-
-        String postfix = config.getStudyHostnamePostfix();
-        String identifier = (postfix == null) ? "api" : hostname.split(postfix)[0];
-
-        return getStudyByIdentifier(identifier);
     }
     @Override
     public List<Study> getStudies() {
