@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.upload;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -15,6 +17,9 @@ public class UploadValidationContext {
     private boolean success = true;
     private List<String> messageList = new ArrayList<>();
     private byte[] data;
+    private byte[] decryptedData;
+    private Map<String, byte[]> unzippedDataMap;
+    private Map<String, JsonNode> jsonDataMap;
 
     /**
      * This is the study that the upload lives in and is validated against. This is made available by the upload
@@ -71,9 +76,7 @@ public class UploadValidationContext {
         messageList.add(msg);
     }
 
-    /**
-     * Raw upload data as bytes. This is set by the S3DownloadHandler.
-     */
+    /** Raw upload data as bytes. This is created by S3DownloadHandler abd read by the UnzipHandler. */
     public byte[] getData() {
         return data;
     }
@@ -81,5 +84,38 @@ public class UploadValidationContext {
     /** @see #getData */
     public void setData(byte[] data) {
         this.data = data;
+    }
+
+    /** Decrypted upload data as bytes. This is created by DecryptHandler and read by UnzipHandler. */
+    public byte[] getDecryptedData() {
+        return decryptedData;
+    }
+
+    /** @see #getDecryptedData */
+    public void setDecryptedData(byte[] decryptedData) {
+        this.decryptedData = decryptedData;
+    }
+
+    /**
+     * Unzipped data as bytes, keyed by filename. This is initially created by the UnzipHandler. The ParseJsonHandler
+     * will read this and remove entries that can be parsed into JSON. Non-JSON entries will still remain in this map.
+     */
+    public Map<String, byte[]> getUnzippedDataMap() {
+        return unzippedDataMap;
+    }
+
+    /** @see #getUnzippedDataMap */
+    public void setUnzippedDataMap(Map<String, byte[]> unzippedDataMap) {
+        this.unzippedDataMap = unzippedDataMap;
+    }
+
+    /** Parsed JSON data, keyed by filename. This is initially created by the ParseJsonHandler. */
+    public Map<String, JsonNode> getJsonDataMap() {
+        return jsonDataMap;
+    }
+
+    /** @see #getJsonDataMap */
+    public void setJsonDataMap(Map<String, JsonNode> jsonDataMap) {
+        this.jsonDataMap = jsonDataMap;
     }
 }

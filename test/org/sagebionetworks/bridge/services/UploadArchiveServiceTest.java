@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.notNull;
 import static org.mockito.Mockito.when;
@@ -10,37 +12,25 @@ import java.io.File;
 import java.nio.file.Files;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
+import com.google.common.base.Charsets;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.crypto.BcCmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.PemUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.upload.ArchiveEntry;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 @SuppressWarnings("unchecked")
 public class UploadArchiveServiceTest {
-
     private UploadArchiveService archiveService;
-    private ArchiveEntry entryInfo;
-    private ArchiveEntry entry0;
-    private ArchiveEntry entry1;
-    private Study testStudy;
 
     @Before
     public void before() throws Exception {
-        // test study
-        testStudy = new DynamoStudy();
-        testStudy.setIdentifier("test-study");
-
         // encryptor
         File certFile = new File("test/resources/cms/rsacert.pem");
         byte[] certBytes = Files.readAllBytes(certFile.toPath());
@@ -57,41 +47,72 @@ public class UploadArchiveServiceTest {
         // archive service
         archiveService = new UploadArchiveService();
         archiveService.setCmsEncryptorCache(mockEncryptorCache);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        File file = new File("test/resources/cms/data/info.json");
-        entryInfo = new ArchiveEntry(file.getName(), objectMapper.readTree(file));
-        file = new File("test/resources/cms/data/tapTheButton0.json");
-        entry0 = new ArchiveEntry(file.getName(), objectMapper.readTree(file));
-        file = new File("test/resources/cms/data/tapTheButton1.json");
-        entry1 = new ArchiveEntry(file.getName(), objectMapper.readTree(file));
     }
 
     @Test
-    public void test() throws Exception {
-        List<ArchiveEntry> entries = new ArrayList<>();
-        entries.add(entry0);
-        entries.add(entry1);
-        entries.add(entryInfo);
-        byte[] archive = archiveService.zipAndEncrypt(testStudy, entries);
-        List<ArchiveEntry> results = archiveService.decryptAndUnzip(testStudy, archive);
-        assertNotNull(results);
-        assertEquals(3, results.size());
-        for (ArchiveEntry archiveEntry : results) {
-            assertNotNull(archiveEntry);
-        }
+    public void encryptDecryptRoundTrip() {
+        // starting data
+        String inputStr = "This is my raw data.";
+        byte[] inputData = inputStr.getBytes(Charsets.UTF_8);
+
+        // encrypt
+        byte[] encryptedData = archiveService.encrypt("test-study", inputData);
+        assertNotNull(encryptedData);
+        assertTrue(encryptedData.length > 0);
+
+        // decrypt
+        byte[] decryptedData = archiveService.decrypt("test-study", encryptedData);
+        assertEquals(inputStr, new String(decryptedData, Charsets.UTF_8));
+    }
+
+    @Test(expected = BridgeServiceException.class)
+    public void decryptGarbageData() {
+        String garbageStr = "This is not encrypted data.";
+        byte[] garbageData = garbageStr.getBytes(Charsets.UTF_8);
+        archiveService.decrypt("test-study", garbageData);
     }
 
     @Test
-    public void testDecryptAndUnzip() throws Exception {
+    public void zipUnzipRoundTrip() {
+        // starting data
+        Map<String, byte[]> inputMap = ImmutableMap.of(
+                "foo", "foo data".getBytes(Charsets.UTF_8),
+                "bar", "bar data".getBytes(Charsets.UTF_8),
+                "baz", "baz data".getBytes(Charsets.UTF_8));
+
+        // zip
+        byte[] zippedData = archiveService.zip(inputMap);
+        assertNotNull(zippedData);
+        assertTrue(zippedData.length > 0);
+
+        // unzip
+        Map<String, byte[]> unzippedData = archiveService.unzip(zippedData);
+        assertEquals(3, unzippedData.size());
+        assertArrayEquals(inputMap.get("foo"), unzippedData.get("foo"));
+        assertArrayEquals(inputMap.get("bar"), unzippedData.get("bar"));
+        assertArrayEquals(inputMap.get("baz"), unzippedData.get("baz"));
+    }
+
+    // There was originally a test here for unzipping garbage data. However, it looks like Java
+    // ZipInputStream.getNextEntry() will just return null if the stream contains garbage data.
+
+    @Test
+    public void decryptAndUnzipRealFile() throws Exception {
+        // get archive file, which is stored in git
         File archiveFile = new File("test/resources/cms/data/archive");
         byte[] encryptedBytes = Files.readAllBytes(archiveFile.toPath());
-        List<ArchiveEntry> archive = archiveService.decryptAndUnzip(testStudy, encryptedBytes);
-        assertNotNull(archive);
-        assertEquals(3, archive.size());
-        for (ArchiveEntry archiveEntry : archive) {
-            assertNotNull(archiveEntry);
+
+        // decrypt
+        byte[] decryptedData = archiveService.decrypt("test-study", encryptedBytes);
+        assertNotNull(decryptedData);
+        assertTrue(decryptedData.length > 0);
+
+        // unzip
+        Map<String, byte[]> unzippedData = archiveService.unzip(decryptedData);
+        assertEquals(3, unzippedData.size());
+        for (byte[] oneData : unzippedData.values()) {
+            assertNotNull(oneData);
+            assertTrue(oneData.length > 0);
         }
     }
 }
