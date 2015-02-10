@@ -158,7 +158,7 @@ public class UserAdminServiceImpl implements UserAdminService {
     private void removeAllHealthDataRecords(Study study, User user) throws BridgeServiceException {
         // This user may have never consented to research. Ignore if that's the case.
         for (String trackerId : study.getTrackers()) {
-            Tracker tracker = studyService.getTrackerByIdentifier(trackerId);
+            Tracker tracker = studyService.getTracker(trackerId);
             if (tracker != null) { // this happens with some tests
                 HealthDataKey key = new HealthDataKey(study, tracker, user);
                 healthDataService.deleteHealthDataRecords(key);

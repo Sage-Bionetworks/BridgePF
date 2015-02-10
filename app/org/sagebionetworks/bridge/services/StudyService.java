@@ -7,11 +7,9 @@ import org.sagebionetworks.bridge.models.studies.Tracker;
 
 public interface StudyService {
 
-    public Tracker getTrackerByIdentifier(String trackerId);
+    public Tracker getTracker(String trackerId);
 
-    public Study getStudyByIdentifier(String identifier);
-
-    public Study getStudyByHostname(String hostname);
+    public Study getStudy(String identifier);
 
     public List<Study> getStudies();
 

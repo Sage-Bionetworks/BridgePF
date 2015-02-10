@@ -45,7 +45,7 @@ public class SendMailViaAmazonServiceConsentTest {
         study.setMinAgeOfConsent(17);
 
         studyService = mock(StudyService.class);
-        when(studyService.getStudyByIdentifier(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         emailClient = mock(AmazonSimpleEmailServiceClient.class);
         when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenReturn(new SendRawEmailResult()
                 .withMessageId("test message id"));

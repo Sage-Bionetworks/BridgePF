@@ -28,7 +28,7 @@ public class ApplicationController extends BaseController {
     public Result loadPublicApp() throws Exception {
         UserSessionInfo info = new UserSessionInfo(new UserSession());
         try {
-            Study study = studyService.getStudyByHostname(getHostname());
+            Study study = getStudy();
             if ("pd".equals(study.getIdentifier()) || "neurod".equals(study.getIdentifier()) || "parkinson".equals(study.getIdentifier())) {
                 return ok(views.html.neurod.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
             } else if ("api".equals(study.getIdentifier())) {

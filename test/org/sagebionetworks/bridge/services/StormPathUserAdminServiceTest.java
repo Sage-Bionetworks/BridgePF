@@ -67,7 +67,7 @@ public class StormPathUserAdminServiceTest {
 
     @Before
     public void before() {
-        study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
+        study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
         signUp = new SignUp(name, name+"@sagebridge.org", "P4ssword", null);
 
