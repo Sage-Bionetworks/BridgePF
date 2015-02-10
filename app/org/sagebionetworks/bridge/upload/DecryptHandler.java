@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.services.UploadArchiveService;
 /**
  * Validation handler for decrypting the upload. This handler reads from
  * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getData}, decrypts it, and writes the decrypted
- * data back to the same field.
+ * data to {@link org.sagebionetworks.bridge.upload.UploadValidationContext#setDecryptedData }.
  */
 @Component
 public class DecryptHandler implements UploadValidationHandler {
@@ -26,6 +26,6 @@ public class DecryptHandler implements UploadValidationHandler {
     @Override
     public void handle(@Nonnull UploadValidationContext context) {
         byte[] decryptedData = uploadArchiveService.decrypt(context.getStudy().getIdentifier(), context.getData());
-        context.setData(decryptedData);
+        context.setDecryptedData(decryptedData);
     }
 }
