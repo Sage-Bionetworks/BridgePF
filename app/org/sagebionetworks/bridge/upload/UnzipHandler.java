@@ -10,8 +10,8 @@ import org.sagebionetworks.bridge.services.UploadArchiveService;
 
 /**
  * Validation handler for unzipping the upload. This handler reads decrypted from
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getData}, unzips it, and writes the unzipped data
- * to {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getUnzippedDataMap}.
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getDecryptedData}, unzips it, and writes the
+ * unzipped data to {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getUnzippedDataMap}.
  */
 @Component
 public class UnzipHandler implements UploadValidationHandler {
@@ -26,7 +26,7 @@ public class UnzipHandler implements UploadValidationHandler {
     /** {@inheritDoc} */
     @Override
     public void handle(@Nonnull UploadValidationContext context) {
-        Map<String, byte[]> unzippedDataMap = uploadArchiveService.unzip(context.getData());
+        Map<String, byte[]> unzippedDataMap = uploadArchiveService.unzip(context.getDecryptedData());
         context.setUnzippedDataMap(unzippedDataMap);
     }
 }
