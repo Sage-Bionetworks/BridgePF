@@ -2,11 +2,11 @@ package controllers;
 
 import java.util.List;
 
+
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.StudyInfo;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserProfileService;
 
 import com.google.common.base.Function;
@@ -16,14 +16,8 @@ import play.mvc.Result;
 
 public class StudyController extends BaseController {
 
-    private StudyService studyService;
-    
     private UserProfileService userProfileService;
 
-    public void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
-    
     public void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
     }
@@ -31,13 +25,13 @@ public class StudyController extends BaseController {
     public Result getStudyForResearcher() throws Exception {
         // We want a signed in exception before a study not found exception
         // getAuthenticatedSession();
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
         return okResult(new StudyInfo(study));
     }
     
     public Result sendStudyParticipantsRoster() throws Exception {
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = getStudy();
         // Researchers only, administrators cannot get this list so easily
         getAuthenticatedResearcherSession(study);
         
@@ -48,7 +42,7 @@ public class StudyController extends BaseController {
     public Result updateStudyForResearcher() throws Exception {
         // We want a signed in exception before a study not found exception
         // getAuthenticatedSession();
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
 
         Study studyUpdate = DynamoStudy.fromJson(requestToJSON(request()));
@@ -68,7 +62,7 @@ public class StudyController extends BaseController {
     public Result getStudy(String identifier) throws Exception {
         getAuthenticatedAdminSession();
 
-        Study study = studyService.getStudyByIdentifier(identifier);
+        Study study = studyService.getStudy(identifier);
         return okResult(new StudyInfo(study));
     }
 

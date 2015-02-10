@@ -111,7 +111,7 @@ public class StudyServiceImplTest {
         verifyNoMoreInteractions(cache);
         reset(cache);
         
-        study = studyService.getStudyByIdentifier(identifier);
+        study = studyService.getStudy(identifier);
         assertEquals(identifier, study.getIdentifier());
         assertEquals("Test of study creation", study.getName());
         assertEquals(100, study.getMaxNumOfParticipants());
@@ -129,7 +129,7 @@ public class StudyServiceImplTest {
         verify(cache).removeStudy(study.getIdentifier());
         verifyNoMoreInteractions(cache);
         try {
-            studyService.getStudyByIdentifier(study.getIdentifier());
+            studyService.getStudy(study.getIdentifier());
             fail("Should have thrown an exception");
         } catch(EntityNotFoundException e) {
         }

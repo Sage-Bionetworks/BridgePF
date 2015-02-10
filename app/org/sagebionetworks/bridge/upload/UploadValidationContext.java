@@ -17,6 +17,7 @@ public class UploadValidationContext {
     private boolean success = true;
     private List<String> messageList = new ArrayList<>();
     private byte[] data;
+    private byte[] decryptedData;
     private Map<String, byte[]> unzippedDataMap;
     private Map<String, JsonNode> jsonDataMap;
 
@@ -75,10 +76,7 @@ public class UploadValidationContext {
         messageList.add(msg);
     }
 
-    /**
-     * Raw upload data as bytes. This is initially created by the S3DownloadHandler. It is later read by the
-     * DecryptHandler and also overwritten by the same handler. This is also read by the UnzipHandler.
-     */
+    /** Raw upload data as bytes. This is created by S3DownloadHandler abd read by the UnzipHandler. */
     public byte[] getData() {
         return data;
     }
@@ -86,6 +84,16 @@ public class UploadValidationContext {
     /** @see #getData */
     public void setData(byte[] data) {
         this.data = data;
+    }
+
+    /** Decrypted upload data as bytes. This is created by DecryptHandler and read by UnzipHandler. */
+    public byte[] getDecryptedData() {
+        return decryptedData;
+    }
+
+    /** @see #getDecryptedData */
+    public void setDecryptedData(byte[] decryptedData) {
+        this.decryptedData = decryptedData;
     }
 
     /**

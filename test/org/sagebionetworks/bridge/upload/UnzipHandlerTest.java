@@ -21,7 +21,7 @@ public class UnzipHandlerTest {
 
         // inputs
         UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setData("zipped test data".getBytes(Charsets.UTF_8));
+        ctx.setDecryptedData("zipped test data".getBytes(Charsets.UTF_8));
 
         // mock UploadArchiveService
         Map<String, byte[]> mockUnzippedDataMap = ImmutableMap.of(
@@ -30,7 +30,7 @@ public class UnzipHandlerTest {
                 "baz", "baz data".getBytes(Charsets.UTF_8));
 
         UploadArchiveService mockSvc = mock(UploadArchiveService.class);
-        when(mockSvc.unzip(ctx.getData())).thenReturn(mockUnzippedDataMap);
+        when(mockSvc.unzip(ctx.getDecryptedData())).thenReturn(mockUnzippedDataMap);
 
         // set up test handler
         UnzipHandler handler = new UnzipHandler();
