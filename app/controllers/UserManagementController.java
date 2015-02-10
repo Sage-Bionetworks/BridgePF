@@ -22,7 +22,7 @@ public class UserManagementController extends BaseController {
     public Result createUser() throws Exception {
         getAuthenticatedAdminSession();
 
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = getStudy();
 
         JsonNode node = requestToJSON(request());
         SignUp signUp = SignUp.fromJson(node, true);

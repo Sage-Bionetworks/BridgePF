@@ -19,21 +19,21 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result getAllConsents() throws Exception {
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
         List<StudyConsent> consents = studyConsentService.getAllConsents(study.getIdentifier());
         return okResult(consents);
     }
 
     public Result getActiveConsent() throws Exception {
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
         StudyConsent consent = studyConsentService.getActiveConsent(study.getIdentifier());
         return okResult(consent);
     }
 
     public Result getConsent(String createdOn) throws Exception {
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
         StudyConsent consent = studyConsentService.getConsent(study.getIdentifier(), timestamp);
@@ -41,7 +41,7 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result addConsent() throws Exception {
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
         StudyConsentForm form = StudyConsentForm.fromJson(requestToJSON(request()));
         StudyConsent studyConsent = studyConsentService.addConsent(study.getIdentifier(), form);
@@ -49,7 +49,7 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result setActiveConsent(String createdOn) throws Exception {
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = getStudy();
         getAuthenticatedResearcherOrAdminSession(study);
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
         studyConsentService.activateConsent(study.getIdentifier(), timestamp);
