@@ -30,7 +30,7 @@ public class UserProfileController extends BaseController {
         final UserSession session = getAuthenticatedSession();
         final String studyIdentifier = getStudyIdentifier();
 
-        ViewCacheKey cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getEmail(), studyIdentifier);
+        ViewCacheKey<UserProfile> cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getEmail(), studyIdentifier);
         String json = viewCache.getView(cacheKey, new Supplier<UserProfile>() {
             @Override public UserProfile get() {
                 return userProfileService.getProfile(session.getUser().getEmail());
@@ -48,7 +48,7 @@ public class UserProfileController extends BaseController {
         user = userProfileService.updateProfile(user, profile);
         updateSessionUser(session, user);
         
-        ViewCacheKey cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getEmail(), studyIdentifier);
+        ViewCacheKey<UserProfile> cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getEmail(), studyIdentifier);
         viewCache.removeView(cacheKey);
         
         return okResult("Profile updated.");

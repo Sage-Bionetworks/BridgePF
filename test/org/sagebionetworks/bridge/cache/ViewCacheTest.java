@@ -35,7 +35,7 @@ public class ViewCacheTest {
     @Test
     public void nothingWasCached() throws Exception {
         ViewCache cache = new ViewCache();
-        ViewCacheKey cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getString(cacheKey.getKey())).thenReturn(null);
         cache.setCacheProvider(provider);
@@ -55,7 +55,7 @@ public class ViewCacheTest {
     @Test
     public void nothingWasCachedAndThereIsAnException() {
         ViewCache cache = new ViewCache();
-        ViewCacheKey cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getString(cacheKey.getKey())).thenReturn(null);
@@ -80,7 +80,7 @@ public class ViewCacheTest {
         String originalStudyJson = mapper.writeValueAsString(study);
         
         ViewCache cache = new ViewCache();
-        ViewCacheKey cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getString(cacheKey.getKey())).thenReturn(originalStudyJson);
         cache.setCacheProvider(provider);
@@ -101,7 +101,7 @@ public class ViewCacheTest {
         
         final String originalStudyJson = mapper.writeValueAsString(study);
         ViewCache cache = new ViewCache();
-        final ViewCacheKey cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        final ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         cache.setCacheProvider(getSimpleCacheProvider(cacheKey.getKey(), originalStudyJson));
         
         cache.removeView(cacheKey);
@@ -121,7 +121,7 @@ public class ViewCacheTest {
     public void getCacheKeyWorks() {
         ViewCache cache = new ViewCache();
         
-        ViewCacheKey cacheKey = cache.getCacheKey(Study.class, "mostRandom", "leastRandom");
+        ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, "mostRandom", "leastRandom");
         assertEquals("mostRandom:leastRandom:org.sagebionetworks.bridge.models.studies.Study:view", cacheKey.getKey());
     }
     

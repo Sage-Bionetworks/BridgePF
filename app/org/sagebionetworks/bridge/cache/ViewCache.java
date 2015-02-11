@@ -16,7 +16,7 @@ public class ViewCache {
     // requests when the view is expired. But I don't think this is likely to be a very big
     // problem.
 
-    public class ViewCacheKey {
+    public class ViewCacheKey<T> {
         private final String key;
         public ViewCacheKey(String key) {
             this.key = key;
@@ -42,7 +42,7 @@ public class ViewCache {
      * @param supplier
      * @return
      */
-    public <T> String getView(ViewCacheKey key, Supplier<T> supplier) {
+    public <T> String getView(ViewCacheKey<T> key, Supplier<T> supplier) {
         try {
             String value = cache.getString(key.getKey());
             if (value == null) {
@@ -61,17 +61,17 @@ public class ViewCache {
      * @param clazz
      * @param id
      */
-    public void removeView(ViewCacheKey key) {
+    public <T> void removeView(ViewCacheKey<T> key) {
         logger.debug("Deleting JSON for '" +key.getKey() +"'");
         cache.removeString(key.getKey());
     }
     
-    public ViewCacheKey getCacheKey(Class<?> clazz, String... identifiers) {
+    public <T> ViewCacheKey<T> getCacheKey(Class<T> clazz, String... identifiers) {
         String id = Joiner.on(":").join(identifiers);
-        return new ViewCacheKey(RedisKey.VIEW.getRedisKey(id + ":" + clazz.getName()));
+        return new ViewCacheKey<T>(RedisKey.VIEW.getRedisKey(id + ":" + clazz.getName()));
     }
     
-    private <T> String cacheView(ViewCacheKey key, Supplier<T> supplier) throws JsonProcessingException {
+    private <T> String cacheView(ViewCacheKey<T> key, Supplier<T> supplier) throws JsonProcessingException {
         logger.debug("Caching JSON for " +key.getKey()+"'");
         T object = supplier.get();
         String value = BridgeObjectMapper.get().writeValueAsString(object);
