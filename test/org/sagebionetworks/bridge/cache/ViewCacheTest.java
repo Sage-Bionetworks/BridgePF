@@ -87,9 +87,8 @@ public class ViewCacheTest {
         
         String json = cache.getView(cacheKey, new Supplier<Study>() {
             @Override public Study get() {
-                Study study = new DynamoStudy();
-                study.setName("Test Study 2");
-                return study;
+                fail("This should not be called");
+                return null;
             }
         });
         
