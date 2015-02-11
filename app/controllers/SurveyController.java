@@ -68,7 +68,7 @@ public class SurveyController extends BaseController {
     public Result getSurveyForUser(final String surveyGuid, final String createdOnString) throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
 
-        ViewCacheKey cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString); 
+        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString); 
         String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
             @Override public Survey get() {
                 Study study = getStudy();
@@ -86,7 +86,7 @@ public class SurveyController extends BaseController {
     public Result getSurveyMostRecentlyPublishedVersionForUser(final String surveyGuid) throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
         
-        ViewCacheKey cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY);
+        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY);
         String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
             @Override public Survey get() {
                 Study study = getStudy();
@@ -103,7 +103,7 @@ public class SurveyController extends BaseController {
         final Study study = getStudy();
         final UserSession session = getAuthenticatedResearcherOrAdminSession(study);
         
-        ViewCacheKey cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString); 
+        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString); 
         String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
             @Override public Survey get() {
                 long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
@@ -120,7 +120,7 @@ public class SurveyController extends BaseController {
         final Study study = getStudy();
         final UserSession session = getAuthenticatedResearcherOrAdminSession(study);
         
-        ViewCacheKey cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, MOSTRECENT_KEY);
+        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, MOSTRECENT_KEY);
         String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
             @Override public Survey get() {
                 Survey survey = surveyService.getSurveyMostRecentVersion(study, surveyGuid);
@@ -135,7 +135,7 @@ public class SurveyController extends BaseController {
         final Study study = getStudy();
         final UserSession session = getAuthenticatedResearcherOrAdminSession(study);
         
-        ViewCacheKey cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY);
+        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY);
         String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
             @Override public Survey get() {
                 Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(study, surveyGuid);
