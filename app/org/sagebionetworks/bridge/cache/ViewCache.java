@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.cache;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.redis.RedisKey;
@@ -76,7 +75,7 @@ public class ViewCache {
         logger.debug("Caching JSON for " +key.getKey()+"'");
         T object = supplier.get();
         String value = BridgeObjectMapper.get().writeValueAsString(object);
-        cache.setString(key.getKey(), value, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        cache.setString(key.getKey(), value);
         return value;
     }
     

@@ -8,7 +8,6 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -36,7 +35,7 @@ public class CacheProviderTest {
         
         String cacheKey = study.getIdentifier() + ":Study";
         
-        cacheProvider.setString(cacheKey, json, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        cacheProvider.setString(cacheKey, json);
         
         String cachedString = cacheProvider.getString(cacheKey);
         assertEquals(json, cachedString);

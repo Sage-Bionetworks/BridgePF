@@ -102,21 +102,16 @@ public class CacheProvider {
     
     public String getString(String cacheKey) {
         try {
-            String ser = stringOps.get(cacheKey);
-            if (ser != null) {
-                stringOps.expire(cacheKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-                return ser;
-            }
+            return stringOps.get(cacheKey);
         } catch (Throwable e) {
             promptToStartRedisIfLocalEnv(e);
             throw new BridgeServiceException(e);
         }
-        return null;
     }
 
-    public void setString(String cacheKey, String value, int ttlSeconds) {
+    public void setString(String cacheKey, String value) {
         try {
-            String result = stringOps.setex(cacheKey, ttlSeconds, value);
+            String result = stringOps.setex(cacheKey, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, value);
             if (!"OK".equals(result)) {
                 throw new BridgeServiceException("View storage error");
             }
