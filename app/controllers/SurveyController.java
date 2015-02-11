@@ -203,8 +203,9 @@ public class SurveyController extends BaseController {
         Survey survey = surveyService.getSurvey(keys);
         verifySurveyIsInStudy(session, study, survey);
 
-        // This creates a new version of the survey, and so, no cache clearing needs to occur
         survey = surveyService.versionSurvey(survey);
+        expireCache(surveyGuid, createdOnString);
+        
         return createdResult(new GuidCreatedOnVersionHolderImpl(survey));
     }
     
