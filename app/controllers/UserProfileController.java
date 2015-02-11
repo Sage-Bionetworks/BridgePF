@@ -2,6 +2,7 @@ package controllers;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
+import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
@@ -27,8 +28,10 @@ public class UserProfileController extends BaseController {
 
     public Result getUserProfile() throws Exception {
         final UserSession session = getAuthenticatedSession();
+        final String studyIdentifier = getStudyIdentifier();
 
-        String json = viewCache.getView(UserProfile.class, session.getUser().getEmail(), new Supplier<UserProfile>() {
+        ViewCacheKey cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getEmail(), studyIdentifier);
+        String json = viewCache.getView(cacheKey, new Supplier<UserProfile>() {
             @Override public UserProfile get() {
                 return userProfileService.getProfile(session.getUser().getEmail());
             }
@@ -38,12 +41,15 @@ public class UserProfileController extends BaseController {
 
     public Result updateUserProfile() throws Exception {
         UserSession session = getAuthenticatedSession();
-
+        final String studyIdentifier = getStudyIdentifier();
+        
         User user = session.getUser();
         UserProfile profile = UserProfile.fromJson(requestToJSON(request()));
         user = userProfileService.updateProfile(user, profile);
         updateSessionUser(session, user);
-        viewCache.removeView(UserProfile.class, user.getEmail());
+        
+        ViewCacheKey cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getEmail(), studyIdentifier);
+        viewCache.removeView(cacheKey);
         
         return okResult("Profile updated.");
     }
