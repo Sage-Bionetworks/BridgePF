@@ -1,18 +1,15 @@
 package org.sagebionetworks.bridge.redis;
 
-import javax.annotation.Resource;
 import java.util.Set;
 
-import org.springframework.stereotype.Component;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
-@Component
 public class JedisStringOps {
-    private JedisPool jedisPool;
 
-    @Resource(name = "jedisPool")
+    private JedisPool jedisPool;
+    
     public void setJedisPool(JedisPool jedisPool) {
         this.jedisPool = jedisPool;
     }

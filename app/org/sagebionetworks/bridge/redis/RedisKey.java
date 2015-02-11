@@ -40,7 +40,10 @@ public interface RedisKey {
 
     /** Number of participants in a study */
     RedisKey NUM_OF_PARTICIPANTS = new SimpleKey("num-of-participants");
-
+    
+    /** A cached JSON response. */
+    RedisKey VIEW = new SimpleKey("view");
+    
     String SEPARATOR = ":";
 
     /**

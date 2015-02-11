@@ -74,7 +74,21 @@
             <ref bean="s3CmsCredentials" />
         </constructor-arg>
     </bean>
+    
+    <!-- Caching -->
 
+    <bean id="viewCache" class="org.sagebionetworks.bridge.cache.ViewCache">
+        <property name="cacheProvider" ref="cacheProvider"/>
+    </bean>
+
+    <bean id="cacheProvider" class="org.sagebionetworks.bridge.cache.CacheProvider">
+        <property name="stringOps" ref="stringOps"/>
+    </bean>
+    
+    <bean id="stringOps" class="org.sagebionetworks.bridge.redis.JedisStringOps">
+        <property name="jedisPool" ref="jedisPool"/>
+    </bean>
+    
     <!-- DynamoDB -->
 
     <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient">
@@ -162,10 +176,6 @@
         factory-method="getStormpathClient" scope="singleton">
     </bean>
 
-    <!-- Caching abstraction -->
-
-    <bean id="cacheProvider" class="org.sagebionetworks.bridge.cache.CacheProvider"/>
-
     <!-- Play controllers. -->
 
     <bean id="BaseController" class="controllers.BaseController" abstract="true">
@@ -224,6 +234,7 @@
         <property name="target">
             <bean class="controllers.UserProfileController" parent="BaseController">
                 <property name="userProfileService" ref="userProfileService"/>
+                <property name="viewCache" ref="viewCache"/>
             </bean>
         </property>
     </bean>
@@ -269,6 +280,7 @@
         <property name="target">
             <bean class="controllers.SurveyController" parent="BaseController">
                 <property name="surveyService" ref="surveyService" />
+                <property name="viewCache" ref="viewCache" />
             </bean>
         </property>
     </bean>
