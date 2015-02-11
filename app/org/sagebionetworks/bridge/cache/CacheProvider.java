@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.cache;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -16,11 +14,10 @@ import org.sagebionetworks.bridge.redis.RedisKey;
  * A wrapper around whatever cache provider we ultimately decide to go with (probably Redis). 
  * Assuming for the moment that we can store objects, by serialization if we have to.
  */
-// TODO: integrate this with Cache.java
 public class CacheProvider {
+    
     private JedisStringOps stringOps;
 
-    @Autowired
     public void setStringOps(JedisStringOps stringOps) {
         this.stringOps = stringOps;
     }
@@ -97,6 +94,41 @@ public class CacheProvider {
         try {
             String redisKey = RedisKey.STUDY.getRedisKey(identifier);
             stringOps.delete(redisKey);
+        } catch(Throwable e) {
+            promptToStartRedisIfLocalEnv(e);
+            throw new BridgeServiceException(e);
+        }
+    }
+    
+    public String getString(String cacheKey) {
+        try {
+            String ser = stringOps.get(cacheKey);
+            if (ser != null) {
+                stringOps.expire(cacheKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+                return ser;
+            }
+        } catch (Throwable e) {
+            promptToStartRedisIfLocalEnv(e);
+            throw new BridgeServiceException(e);
+        }
+        return null;
+    }
+
+    public void setString(String cacheKey, String value, int ttlSeconds) {
+        try {
+            String result = stringOps.setex(cacheKey, ttlSeconds, value);
+            if (!"OK".equals(result)) {
+                throw new BridgeServiceException("View storage error");
+            }
+        } catch (Throwable e) {
+            promptToStartRedisIfLocalEnv(e);
+            throw new BridgeServiceException(e);
+        }
+    }
+
+    public void removeString(String cacheKey) {
+        try {
+            stringOps.delete(cacheKey);
         } catch(Throwable e) {
             promptToStartRedisIfLocalEnv(e);
             throw new BridgeServiceException(e);

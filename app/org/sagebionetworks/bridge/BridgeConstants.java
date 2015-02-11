@@ -28,4 +28,6 @@ public class BridgeConstants {
     public static final String PHONE_ATTRIBUTE = "phone";
 
     public static final String ASSETS_HOST = "assets.sagebridge.org";
+    
+    public static final String JSON_MIME_TYPE = "application/json; charset=UTF-8";
 }

@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.cache.Cache;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
@@ -41,11 +40,8 @@ import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.springframework.beans.factory.annotation.Autowired;
 
 public class DynamoSurveyDao implements SurveyDao {
-    private static final String SURVEY_ELEMENT_CACHE_KEY_PATTERN = "%s:%s";
-    private static final int SURVEY_ELEMENT_CACHE_TTL_SECONDS = 24 * 3600;
 
     Comparator<DynamoSurvey> VERSIONED_ON_DESC_SORTER = new Comparator<DynamoSurvey>() {
         @Override public int compare(DynamoSurvey o1, DynamoSurvey o2) {
@@ -179,46 +175,26 @@ public class DynamoSurveyDao implements SurveyDao {
         }
         
         private void attachSurveyElements(Survey survey) {
-            // check cache
-            String cacheKey = String.format(SURVEY_ELEMENT_CACHE_KEY_PATTERN, survey.getGuid(), survey.getCreatedOn());
-            List<DynamoSurveyElement> dynamoElementList = cache.getList(DynamoSurveyElement.class, cacheKey);
-
-            if (dynamoElementList == null) {
-                DynamoSurveyElement template = new DynamoSurveyElement();
-                template.setSurveyKeyComponents(survey.getGuid(), survey.getCreatedOn());
-
-                DynamoDBQueryExpression<DynamoSurveyElement> query = new DynamoDBQueryExpression<>();
-                query.withHashKeyValues(template);
-
-                QueryResultPage<DynamoSurveyElement> page = surveyElementMapper.queryPage(DynamoSurveyElement.class,
-                        query);
-                dynamoElementList = page.getResults();
-
-                // put back into cache
-                cache.putList(DynamoSurveyElement.class, cacheKey, dynamoElementList,
-                        SURVEY_ELEMENT_CACHE_TTL_SECONDS);
-
-                // TODO: cache eviction on write
-            }
+            DynamoSurveyElement template = new DynamoSurveyElement();
+            template.setSurveyKeyComponents(survey.getGuid(), survey.getCreatedOn());
+            
+            DynamoDBQueryExpression<DynamoSurveyElement> query = new DynamoDBQueryExpression<DynamoSurveyElement>();
+            query.withHashKeyValues(template);
+            
+            QueryResultPage<DynamoSurveyElement> page = surveyElementMapper.queryPage(DynamoSurveyElement.class, query);
 
             List<SurveyElement> elements = Lists.newArrayList();
-            for (DynamoSurveyElement element : dynamoElementList) {
+            for (DynamoSurveyElement element : page.getResults()) {
                 elements.add(SurveyElementFactory.fromDynamoEntity(element));
             }
             survey.setElements(elements);
         }
     }
 
-    private Cache cache;
     private DynamoDBMapper surveyMapper;
     private DynamoDBMapper surveyElementMapper;
     private SurveyResponseDao responseDao;
     private SchedulePlanDao schedulePlanDao;
-
-    @Autowired
-    public void setCache(Cache cache) {
-        this.cache = cache;
-    }
 
     public void setSurveyResponseDao(SurveyResponseDao responseDao) {
         this.responseDao = responseDao;

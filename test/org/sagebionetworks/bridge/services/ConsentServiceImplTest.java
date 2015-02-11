@@ -40,6 +40,9 @@ public class ConsentServiceImplTest {
     private StudyConsent studyConsent;
 
     @Resource
+    private JedisStringOps stringOps;
+    
+    @Resource
     private Client stormpathClient;
 
     @Resource
@@ -178,8 +181,6 @@ public class ConsentServiceImplTest {
 
     @Test
     public void enforcesStudyEnrollmentLimit() {
-        // TODO: Spring-ify or re-write this
-        JedisStringOps stringOps = new JedisStringOps();
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey("test");
         try {
             stringOps.delete(key);

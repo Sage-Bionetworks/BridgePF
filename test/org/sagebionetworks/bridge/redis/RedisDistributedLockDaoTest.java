@@ -9,30 +9,36 @@ import static org.junit.Assert.fail;
 
 import java.util.UUID;
 
+import javax.annotation.Resource;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-// TODO: wire up this test with Spring, or re-write this test
+@ContextConfiguration("classpath:test-context.xml")
+@RunWith(SpringJUnit4ClassRunner.class)
 public class RedisDistributedLockDaoTest {
 
-    private JedisStringOps strOps;
+    @Resource
+    private JedisStringOps stringOps;
+    @Resource
     private DistributedLockDao lockDao;
     private String id;
 
     @Before
     public void before() {
-        strOps = new JedisStringOps();
-        lockDao = new RedisDistributedLockDao();
         id = UUID.randomUUID().toString();
     }
 
     @After
     public void after() {
-        if (strOps != null) {
-            strOps.clearRedis(id + "*");
+        if (stringOps != null) {
+            stringOps.clearRedis(id + "*");
         }
     }
 
@@ -43,10 +49,10 @@ public class RedisDistributedLockDaoTest {
         assertNotNull(lockId);
         String redisKey = RedisKey.LOCK.getRedisKey(
                 id + RedisKey.SEPARATOR + getClass().getCanonicalName());
-        String redisLockId = strOps.get(redisKey);
+        String redisLockId = stringOps.get(redisKey);
         assertNotNull(redisLockId);
         assertEquals(redisLockId, lockId);
-        assertTrue(strOps.ttl(redisKey) > 0);
+        assertTrue(stringOps.ttl(redisKey) > 0);
         // Acquire again should get back an exception
         try {
             assertNull(lockDao.acquireLock(getClass(), id));
