@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.cache;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -67,6 +68,7 @@ public class ViewCacheTest {
                     throw new BridgeServiceException("There has been a problem retrieving the study");
                 }
             });
+            fail("This should have thrown an exception");
         } catch(BridgeServiceException e) {
             assertEquals("There has been a problem retrieving the study", e.getMessage());
         }
