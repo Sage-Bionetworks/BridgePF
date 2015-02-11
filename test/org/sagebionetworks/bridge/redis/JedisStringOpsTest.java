@@ -3,15 +3,25 @@ package org.sagebionetworks.bridge.redis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import org.junit.Test;
+import javax.annotation.Resource;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+@ContextConfiguration("classpath:test-context.xml")
+@RunWith(SpringJUnit4ClassRunner.class)
 public class JedisStringOpsTest {
+    
+    @Resource
+    private JedisStringOps stringOps;
+    
     @Test
     public void setsAndReadsValueFromRedis() throws Exception {
-        StringOps strOps = new JedisStringOps();
-        assertEquals("OK", strOps.setex("testKey", 2, "testValue").execute());
-        assertEquals("testValue", strOps.get("testKey").execute());
+        assertEquals("OK", stringOps.setex("testKey", 2, "testValue"));
+        assertEquals("testValue", stringOps.get("testKey"));
         Thread.sleep(3000);
-        assertNull(strOps.get("testKey").execute());
+        assertNull(stringOps.get("testKey"));
     }
 }

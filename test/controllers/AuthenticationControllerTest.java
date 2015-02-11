@@ -40,6 +40,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class AuthenticationControllerTest {
 
     @Resource
+    private JedisStringOps stringOps;
+    
+    @Resource
     private TestUserAdminHelper helper;
     
     private TestUser testUser;
@@ -80,9 +83,8 @@ public class AuthenticationControllerTest {
 
                 cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
                 assertEquals("Cookie has been set to empty string", "", cookie.getValue());
-                
-                JedisStringOps stringOps = new JedisStringOps();
-                String output = stringOps.get(sessionToken).execute();
+
+                String output = stringOps.get(sessionToken);
                 assertNull("Should no longer be session data", output);
             }
         });
