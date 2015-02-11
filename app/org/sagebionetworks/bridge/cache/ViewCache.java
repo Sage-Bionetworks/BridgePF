@@ -12,6 +12,8 @@ import com.google.common.base.Supplier;
 
 public class ViewCache {
     
+    private static final Logger logger = LoggerFactory.getLogger(ViewCache.class);
+    
     // Could add a BlockingQueue and Executors.newSingleThreadExecutor() to prevent a run of 
     // requests when the view is expired. But I don't think this is likely to be a very big
     // problem.
@@ -26,8 +28,6 @@ public class ViewCache {
         }
     };
     
-    private static Logger logger = LoggerFactory.getLogger(ViewCache.class);
-    
     private CacheProvider cache;
     
     public void setCacheProvider(CacheProvider cacheProvider) {
@@ -35,10 +35,9 @@ public class ViewCache {
     }
     
     /**
-     * Get the view cached with the given identifier, or if that view has not been cached, 
-     * call the supplier, convert the response to JSON and cache it, then return that view.
-     * @param clazz
-     * @param id
+     * Get the JSON for the viewCacheKey, or if nothing has been cached, call the supplier, 
+     * cache the JSON representation of the object returned, and return that JSON.
+     * @param key
      * @param supplier
      * @return
      */
@@ -57,15 +56,21 @@ public class ViewCache {
     }
 
     /**
-     * Remove the view with the given identifier.
-     * @param clazz
-     * @param id
+     * Remove the JSON for the view represented by the viewCacheKey.
+     * @param key
      */
     public <T> void removeView(ViewCacheKey<T> key) {
         logger.debug("Deleting JSON for '" +key.getKey() +"'");
         cache.removeString(key.getKey());
     }
     
+    /**
+     * Create a viewCacheKey for a particular type of entity, and the set of identifiers 
+     * that will identify that entity.
+     * @param clazz
+     * @param identifiers
+     * @return
+     */
     public <T> ViewCacheKey<T> getCacheKey(Class<T> clazz, String... identifiers) {
         String id = Joiner.on(":").join(identifiers);
         return new ViewCacheKey<T>(RedisKey.VIEW.getRedisKey(id + ":" + clazz.getName()));
