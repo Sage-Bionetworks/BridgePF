@@ -223,7 +223,8 @@ public abstract class BaseController extends Controller {
         json.set("items", itemsNode);
         json.put("total", items.size());
         json.put("type", "ResourceList");
-        return ok(json);        
+        
+        return ok(json);
     }
 
     protected Result errorResult(String message) {
