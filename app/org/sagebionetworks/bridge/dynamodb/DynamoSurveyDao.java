@@ -42,7 +42,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class DynamoSurveyDao implements SurveyDao {
-    
+
     Comparator<DynamoSurvey> VERSIONED_ON_DESC_SORTER = new Comparator<DynamoSurvey>() {
         @Override public int compare(DynamoSurvey o1, DynamoSurvey o2) {
             return (int)(o2.getCreatedOn() - o1.getCreatedOn());
@@ -195,7 +195,7 @@ public class DynamoSurveyDao implements SurveyDao {
     private DynamoDBMapper surveyElementMapper;
     private SurveyResponseDao responseDao;
     private SchedulePlanDao schedulePlanDao;
-    
+
     public void setSurveyResponseDao(SurveyResponseDao responseDao) {
         this.responseDao = responseDao;
     }

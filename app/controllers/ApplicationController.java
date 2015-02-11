@@ -6,7 +6,6 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
-import org.sagebionetworks.bridge.models.studies.Study;
 
 import play.libs.Json;
 import play.mvc.Result;
@@ -28,14 +27,15 @@ public class ApplicationController extends BaseController {
     public Result loadPublicApp() throws Exception {
         UserSessionInfo info = new UserSessionInfo(new UserSession());
         try {
-            Study study = getStudy();
-            if ("pd".equals(study.getIdentifier()) || "neurod".equals(study.getIdentifier()) || "parkinson".equals(study.getIdentifier())) {
+            // Study study = getStudy(); don't need the entire study, so don't get it
+            String studyIdentifier = getStudyIdentifier();
+            if ("parkinson".equals(studyIdentifier)) {
                 return ok(views.html.neurod.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
-            } else if ("api".equals(study.getIdentifier())) {
+            } else if ("api".equals(studyIdentifier)) {
                 return ok(views.html.api.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
             }
             String apiHost = "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix();
-            return ok(views.html.nosite.render(study.getName(), apiHost));
+            return ok(views.html.nosite.render("Unknown study", apiHost));
         } catch(EntityNotFoundException e) {
             return ok(views.html.api.render(Json.toJson(info).toString(), ASSETS_HOST, ASSETS_BUILD));
         }
