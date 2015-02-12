@@ -54,7 +54,7 @@ public class DynamoInitializer {
 
     // DynamoDB Free tier
     private static final Long READ_CAPACITY = Long.valueOf(25);
-    private static final Long WRITE_CAPACITY = Long.valueOf(20);
+    private static final Long WRITE_CAPACITY = Long.valueOf(25);
 
     private static final BridgeConfig CONFIG = BridgeConfigFactory.getConfig();
 
