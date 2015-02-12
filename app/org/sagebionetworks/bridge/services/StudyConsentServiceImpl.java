@@ -5,12 +5,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.validation.Validator;
 
@@ -28,19 +28,19 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     }
     
     @Override
-    public StudyConsent addConsent(String studyKey, StudyConsentForm form) {
-        checkArgument(StringUtils.isNotBlank(studyKey), "Study key is blank or null");
+    public StudyConsent addConsent(StudyIdentifier studyIdentifier, StudyConsentForm form) {
+        checkNotNull(studyIdentifier, "StudyIdentifier is null");
         checkNotNull(form, "Study consent is null");
         
         Validate.entityThrowingException(validator, form);
-        return studyConsentDao.addConsent(studyKey, form.getPath(), form.getMinAge());
+        return studyConsentDao.addConsent(studyIdentifier, form.getPath(), form.getMinAge());
     }
 
     @Override
-    public StudyConsent getActiveConsent(String studyKey) {
-        checkArgument(StringUtils.isNotBlank(studyKey), "Study key is blank or null");
+    public StudyConsent getActiveConsent(StudyIdentifier studyIdentifier) {
+        checkNotNull(studyIdentifier, "StudyIdentifier is null");
         
-        StudyConsent consent = studyConsentDao.getConsent(studyKey);
+        StudyConsent consent = studyConsentDao.getConsent(studyIdentifier);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
@@ -48,10 +48,10 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     }
 
     @Override
-    public List<StudyConsent> getAllConsents(String studyKey) {
-        checkArgument(StringUtils.isNotBlank(studyKey), "Study key is blank or null");
+    public List<StudyConsent> getAllConsents(StudyIdentifier studyIdentifier) {
+        checkNotNull(studyIdentifier, "StudyIdentifier is null");
         
-        List<StudyConsent> consents = studyConsentDao.getConsents(studyKey);
+        List<StudyConsent> consents = studyConsentDao.getConsents(studyIdentifier);
         if (consents == null || consents.isEmpty()) {
             throw new BadRequestException("There are no consent records.");
         }
@@ -59,11 +59,11 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     }
 
     @Override
-    public StudyConsent getConsent(String studyKey, long timestamp) {
-        checkArgument(StringUtils.isNotBlank(studyKey), "Study key is blank or null");
+    public StudyConsent getConsent(StudyIdentifier studyIdentifier, long timestamp) {
+        checkNotNull(studyIdentifier, "StudyIdentifier is null");
         checkArgument(timestamp > 0, "Timestamp is 0");
         
-        StudyConsent consent = studyConsentDao.getConsent(studyKey, timestamp);
+        StudyConsent consent = studyConsentDao.getConsent(studyIdentifier, timestamp);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
@@ -71,11 +71,11 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     }
 
     @Override
-    public StudyConsent activateConsent(String studyKey, long timestamp) {
-        checkArgument(StringUtils.isNotBlank(studyKey), "Study key is blank or null");
+    public StudyConsent activateConsent(StudyIdentifier studyIdentifier, long timestamp) {
+        checkNotNull(studyIdentifier, "StudyIdentifier is null");
         checkArgument(timestamp > 0, "Timestamp is 0");
         
-        StudyConsent consent = studyConsentDao.getConsent(studyKey, timestamp);
+        StudyConsent consent = studyConsentDao.getConsent(studyIdentifier, timestamp);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
@@ -83,13 +83,13 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     }
 
     @Override
-    public void deleteConsent(String studyKey, long timestamp) {
-        checkArgument(StringUtils.isNotBlank(studyKey), "Study key is blank or null");
+    public void deleteConsent(StudyIdentifier studyIdentifier, long timestamp) {
+        checkNotNull(studyIdentifier, "StudyIdentifier is null");
         checkArgument(timestamp > 0, "Timestamp is 0");
         
-        if (studyConsentDao.getConsent(studyKey, timestamp).getActive()) {
+        if (studyConsentDao.getConsent(studyIdentifier, timestamp).getActive()) {
             throw new BadRequestException("Cannot delete active consent document.");
         }
-        studyConsentDao.deleteConsent(studyKey, timestamp);
+        studyConsentDao.deleteConsent(studyIdentifier, timestamp);
     }
 }

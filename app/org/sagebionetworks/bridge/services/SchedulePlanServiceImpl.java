@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.validation.Validator;
 
@@ -24,13 +24,13 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     }
 
     @Override
-    public List<SchedulePlan> getSchedulePlans(Study study) {
-        return schedulePlanDao.getSchedulePlans(study);
+    public List<SchedulePlan> getSchedulePlans(StudyIdentifier studyIdentifier) {
+        return schedulePlanDao.getSchedulePlans(studyIdentifier);
     }
 
     @Override
-    public SchedulePlan getSchedulePlan(Study study, String guid) {
-        return schedulePlanDao.getSchedulePlan(study, guid);
+    public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
+        return schedulePlanDao.getSchedulePlan(studyIdentifier, guid);
     }
 
     @Override
@@ -49,8 +49,8 @@ public class SchedulePlanServiceImpl implements SchedulePlanService {
     }
 
     @Override
-    public void deleteSchedulePlan(Study study, String guid) {
-        schedulePlanDao.deleteSchedulePlan(study, guid);
+    public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
+        schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
     }
     
 }

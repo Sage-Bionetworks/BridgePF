@@ -1,9 +1,11 @@
 package controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+
 import play.mvc.Result;
 
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
@@ -25,10 +27,11 @@ public class UploadSchemaController extends BaseController {
      * @return Play result, with the created or updated schema in JSON format
      */
     public Result createOrUpdateUploadSchema() {
-        Study study = getStudy();
-        getAuthenticatedResearcherOrAdminSession(study);
+        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        StudyIdentifier studyId = session.getStudyIdentifier();
+        
         UploadSchema uploadSchema = parseJson(request(), UploadSchema.class);
-        UploadSchema createdSchema = uploadSchemaService.createOrUpdateUploadSchema(study, uploadSchema);
+        UploadSchema createdSchema = uploadSchemaService.createOrUpdateUploadSchema(studyId, uploadSchema);
         return okResult(createdSchema);
     }
 
@@ -42,9 +45,10 @@ public class UploadSchemaController extends BaseController {
      * @return Play result with the fetched schema in JSON format
      */
     public Result getUploadSchema(String schemaId) {
-        Study study = getStudy();
-        getAuthenticatedResearcherOrAdminSession(study);
-        UploadSchema uploadSchema = uploadSchemaService.getUploadSchema(study, schemaId);
+        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        StudyIdentifier studyId = session.getStudyIdentifier();
+        
+        UploadSchema uploadSchema = uploadSchemaService.getUploadSchema(studyId, schemaId);
         return okResult(uploadSchema);
     }
 }

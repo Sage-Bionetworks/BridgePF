@@ -6,6 +6,8 @@ import java.util.List;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -48,6 +50,7 @@ public class DynamoStudy implements Study, DynamoTable {
     private int maxNumOfParticipants;
     private List<String> trackers = Lists.newArrayList();
     private Long version;
+    private StudyIdentifier studyIdentifier;
 
     public static DynamoStudy fromJson(JsonNode node) {
         DynamoStudy study = new DynamoStudy();
@@ -90,6 +93,12 @@ public class DynamoStudy implements Study, DynamoTable {
     @Override
     public void setIdentifier(String identifier) {
         this.identifier = identifier;
+        this.studyIdentifier = new StudyIdentifierImpl(identifier);
+    }
+    @Override
+    @JsonIgnore
+    public StudyIdentifier getStudyIdentifier() {
+        return studyIdentifier;
     }
     @Override
     @DynamoDBVersionAttribute
