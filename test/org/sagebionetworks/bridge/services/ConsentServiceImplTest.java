@@ -62,7 +62,7 @@ public class ConsentServiceImplTest {
     @Before
     public void before() {
         testUser = helper.createUser(ConsentServiceImplTest.class);
-        studyConsent = studyConsentDao.addConsent(testUser.getStudy().getIdentifier(), "/path/to", testUser.getStudy()
+        studyConsent = studyConsentDao.addConsent(testUser.getStudyIdentifier(), "/path/to", testUser.getStudy()
                 .getMinAgeOfConsent());
         studyConsentDao.setActive(studyConsent, true);
 
@@ -88,7 +88,7 @@ public class ConsentServiceImplTest {
             consentService.withdrawConsent(testUser.getUser(), testUser.getStudy());
         }
         studyConsentDao.setActive(studyConsent, false);
-        studyConsentDao.deleteConsent(testUser.getStudy().getIdentifier(), studyConsent.getCreatedOn());
+        studyConsentDao.deleteConsent(testUser.getStudyIdentifier(), studyConsent.getCreatedOn());
         helper.deleteUser(testUser);
     }
 
@@ -223,7 +223,7 @@ public class ConsentServiceImplTest {
                 consentService.hasUserSignedMostRecentConsent(testUser.getUser(), testUser.getStudy()));
 
         // Create new study consent, but do not activate it. User is consented and has still signed most recent consent.
-        StudyConsent newStudyConsent = studyConsentDao.addConsent(testUser.getStudy().getIdentifier(), "/path/to2",
+        StudyConsent newStudyConsent = studyConsentDao.addConsent(testUser.getStudyIdentifier(), "/path/to2",
                 testUser.getStudy().getMinAgeOfConsent());
 
         assertTrue("Should be consented.",
@@ -249,6 +249,6 @@ public class ConsentServiceImplTest {
                 consentService.hasUserSignedMostRecentConsent(testUser.getUser(), testUser.getStudy()));
 
         // cleanup
-        studyConsentDao.deleteConsent(testUser.getStudy().getIdentifier(), newStudyConsent.getCreatedOn());
+        studyConsentDao.deleteConsent(testUser.getStudyIdentifier(), newStudyConsent.getCreatedOn());
     }
 }

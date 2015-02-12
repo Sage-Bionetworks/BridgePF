@@ -1,13 +1,14 @@
 package org.sagebionetworks.bridge.services;
 
 import com.google.common.base.Strings;
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.validators.UploadSchemaValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -34,13 +35,13 @@ public class UploadSchemaService {
      * This method validates the schema. However, it does not validate the study, as that is not user input.
      * </p>
      *
-     * @param study
+     * @param studyIdentifier
      *         the study this schema should be created or updated in, provided by the controller
      * @param uploadSchema
      *         schema to create or update, must be non-null, must contain a valid schema ID
      * @return the created or updated schema, will be non-null
      */
-    public UploadSchema createOrUpdateUploadSchema(Study study, UploadSchema uploadSchema) {
+    public UploadSchema createOrUpdateUploadSchema(StudyIdentifier studyIdentifier, UploadSchema uploadSchema) {
         // validate schema
         if (uploadSchema == null) {
             throw new InvalidEntityException(String.format(Validate.CANNOT_BE_NULL, "upload schema"));
@@ -48,7 +49,7 @@ public class UploadSchemaService {
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, uploadSchema);
 
         // call through to DAO
-        return uploadSchemaDao.createOrUpdateUploadSchema(study.getIdentifier(), uploadSchema);
+        return uploadSchemaDao.createOrUpdateUploadSchema(studyIdentifier.getIdentifier(), uploadSchema);
     }
 
     /**
@@ -61,16 +62,16 @@ public class UploadSchemaService {
      * This method validates the schema ID. However, it does not validate the study, as that is not user input.
      * </p>
      *
-     * @param study
+     * @param studyIdentifier
      *         study to fetch the schema from, provided by the controller
      * @param schemaId
      *         ID of the schema to fetch, must be non-null and non-empty
      * @return the fetched schema, will be non-null
      */
-    public UploadSchema getUploadSchema(Study study, String schemaId) {
+    public UploadSchema getUploadSchema(StudyIdentifier studyIdentifier, String schemaId) {
         if (Strings.isNullOrEmpty(schemaId)) {
             throw new BadRequestException(String.format("Invalid schema ID %s", schemaId));
         }
-        return uploadSchemaDao.getUploadSchema(study.getIdentifier(), schemaId);
+        return uploadSchemaDao.getUploadSchema(studyIdentifier.getIdentifier(), schemaId);
     }
 }

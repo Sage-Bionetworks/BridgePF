@@ -2,18 +2,24 @@ package org.sagebionetworks.bridge.dao;
 
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface UserConsentDao {
 
     /**
      * Gives consent to the specified study.
+     * @param healthCode
+     * @param consent
      */
     void giveConsent(String healthCode, StudyConsent consent);
 
     /**
      * Withdraws consent to the specified study.
+     * @param healthCode
+     * @param studyIdentifier
+     * @return
      */
-    boolean withdrawConsent(String healthCode, String studyIdentifier);
+    boolean withdrawConsent(String healthCode, StudyIdentifier studyIdentifier);
 
     /**
      * Whether the user has consented to the specified study.
@@ -21,7 +27,7 @@ public interface UserConsentDao {
      * @param studyIdentifier
      * @return
      */
-    boolean hasConsented(String healthCode, String studyIdentifier);
+    boolean hasConsented(String healthCode, StudyIdentifier studyIdentifier);
 
     /**
      * Get the user consent record that consents the user to this study.
@@ -29,11 +35,11 @@ public interface UserConsentDao {
      * @param studyIdentifier
      * @return
      */
-    UserConsent getUserConsent(String healthCode, String studyIdentifier);
+    UserConsent getUserConsent(String healthCode, StudyIdentifier studyIdentifier);
 
     /**
-     * @param studyKey
+     * @param studyIdentifier
      * @return
      */
-    long getNumberOfParticipants(String studyKey);
+    long getNumberOfParticipants(StudyIdentifier studyIdentifier);
 }

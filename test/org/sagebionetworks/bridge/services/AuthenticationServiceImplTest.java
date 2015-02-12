@@ -196,4 +196,28 @@ public class AuthenticationServiceImplTest {
             helper.deleteUser(user);
         }
     }
+    
+    /*
+    @Test
+    public void signInIsScopedToStudyWhereUserAuthenticated() {
+        String studyIdentifier = RandomStringUtils.randomAlphabetic(5);
+        try {
+            Study secondStudy = new DynamoStudy();
+            secondStudy.setIdentifier(studyIdentifier);
+            secondStudy.setName("Second Test Study");
+            studyService.createStudy(secondStudy);
+            
+            TestUser researcher = helper.createUser(AuthenticationServiceImplTest.class, false, false,
+                    Sets.newHashSet(secondStudy.getResearcherRole()));
+            
+            authService.signIn(researcher.getStudy(), researcher.getSignIn());
+
+            
+            // This should fail.
+            Study firstStudy = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
+            authService.getSession(sessionToken);
+        } finally {
+            studyService.deleteStudy(studyIdentifier);
+        }
+    }*/
 }

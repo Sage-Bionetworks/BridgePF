@@ -10,6 +10,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -18,7 +20,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class DynamoUserConsentDaoTest {
 
     private static final String HEALTH_CODE = "hc789";
-    private static final String STUDY_IDENTIFIER = "study123";
+    private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("study123");
 
     @Resource
     private DynamoUserConsentDao userConsentDao;
@@ -38,23 +40,23 @@ public class DynamoUserConsentDaoTest {
     public void canConsentToStudy() {
         // Not consented yet
         final DynamoStudyConsent1 consent = createStudyConsent();
-        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
+        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
 
         // Give consent
         userConsentDao.giveConsent(HEALTH_CODE, consent);
-        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
+        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
 
         // Withdraw
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
+        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
 
         // Can give consent again if the previous consent is withdrawn
         userConsentDao.giveConsent(HEALTH_CODE, consent);
-        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
+        assertTrue(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
 
         // Withdraw again
         userConsentDao.withdrawConsent(HEALTH_CODE, STUDY_IDENTIFIER);
-        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, consent.getStudyKey()));
+        assertFalse(userConsentDao.hasConsented(HEALTH_CODE, new StudyIdentifierImpl(consent.getStudyKey())));
     }
 
     @Test
@@ -78,7 +80,7 @@ public class DynamoUserConsentDaoTest {
 
     private DynamoStudyConsent1 createStudyConsent() {
         final DynamoStudyConsent1 consent = new DynamoStudyConsent1();
-        consent.setStudyKey(STUDY_IDENTIFIER);
+        consent.setStudyKey(STUDY_IDENTIFIER.getIdentifier());
         consent.setCreatedOn(123L);
         return consent;
     }

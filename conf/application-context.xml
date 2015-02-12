@@ -329,8 +329,10 @@
         <property name="uploadCertificateService" ref="uploadCertificateService"/>
         <property name="studyDao" ref="studyDao"/>
         <property name="directoryDao" ref="directoryDao"/>
+        <!-- 
         <property name="herokuApi" ref="herokuApi"/>
         <property name="dnsDao" ref="dnsDao"/>
+         -->
         <property name="distributedLockDao" ref="distributedLockDao"/>
         <property name="bridgeConfig" ref="bridgeConfig"/>
         <property name="cacheProvider" ref="cacheProvider"/>

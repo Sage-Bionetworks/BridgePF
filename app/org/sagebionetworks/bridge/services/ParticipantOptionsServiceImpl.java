@@ -9,7 +9,7 @@ import java.util.Map;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.Validate;
 
 public class ParticipantOptionsServiceImpl implements ParticipantOptionsService {
@@ -21,13 +21,13 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
     }
     
     @Override
-    public void setOption(Study study, String healthCode, Option option, String value) {
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+    public void setOption(StudyIdentifier studyIdentifier, String healthCode, Option option, String value) {
+        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
         checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
         checkArgument(isNotBlank(value), Validate.CANNOT_BE_BLANK, "value");
         
-        optionsDao.setOption(study, healthCode, option, value);
+        optionsDao.setOption(studyIdentifier, healthCode, option, value);
     }
     
     @Override
@@ -66,11 +66,11 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
     }
 
     @Override
-    public OptionLookup getOptionForAllStudyParticipants(Study study, Option option) {
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+    public OptionLookup getOptionForAllStudyParticipants(StudyIdentifier studyIdentifier, Option option) {
+        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
         checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
         
-        return optionsDao.getOptionForAllStudyParticipants(study, option);
+        return optionsDao.getOptionForAllStudyParticipants(studyIdentifier, option);
     }
 
 }

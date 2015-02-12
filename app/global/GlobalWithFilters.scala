@@ -1,26 +1,29 @@
 package global
 
-import filters.CorsFilter
-import models.StatusMessage
+import scala.concurrent.Future
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer
-
-import org.springframework.context.ApplicationContext
 import org.springframework.context.support.ClassPathXmlApplicationContext
 
-import play.api._
-import play.api.http.ContentTypes._
-import play.api.http.HeaderNames._
-import play.api.http.Status._
-import play.api.mvc._
-import play.api.mvc.Results._
-import play.filters.csrf.CSRFFilter
+import filters.CorsFilter
+import models.StatusMessage
+import play.api.Application
+import play.api.GlobalSettings
+import play.api.Logger
+import play.api.http.ContentTypes.JSON
+import play.api.http.HeaderNames.CONTENT_TYPE
+import play.api.http.HeaderNames.X_FORWARDED_PROTO
+import play.api.http.Status.MOVED_PERMANENTLY
+import play.api.mvc.Action
+import play.api.mvc.Handler
+import play.api.mvc.RequestHeader
+import play.api.mvc.Results.BadRequest
+import play.api.mvc.Results.Redirect
+import play.api.mvc.SimpleResult
+import play.api.mvc.WithFilters
 import play.filters.gzip.GzipFilter
 import play.libs.Json
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-
-import scala.concurrent.Future
 
 object GlobalWithFilters extends WithFilters (
 

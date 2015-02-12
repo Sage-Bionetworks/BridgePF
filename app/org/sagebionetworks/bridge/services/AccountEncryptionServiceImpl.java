@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -33,37 +33,37 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
     }
 
     @Override
-    public HealthId createAndSaveHealthCode(Study study, Account account) {
-        checkNotNull(study);
+    public HealthId createAndSaveHealthCode(StudyIdentifier studyIdentifier, Account account) {
+        checkNotNull(studyIdentifier);
         checkNotNull(account);
         final CustomData customData = account.getCustomData();
-        final HealthId healthId = healthCodeService.create(study);
+        final HealthId healthId = healthCodeService.create(studyIdentifier);
         final String encryptedHealthId = healthCodeEncryptor.encrypt(healthId.getId());
-        customData.put(getHealthIdKey(study), encryptedHealthId);
-        customData.put(getVersionKey(study), CURRENT_VERSION);
+        customData.put(getHealthIdKey(studyIdentifier), encryptedHealthId);
+        customData.put(getVersionKey(studyIdentifier), CURRENT_VERSION);
         customData.save();
         return healthId;
     }
 
     @Override
-    public HealthId getHealthCode(Study study, Account account) {
-        checkNotNull(study);
+    public HealthId getHealthCode(StudyIdentifier studyIdentifier, Account account) {
+        checkNotNull(studyIdentifier);
         checkNotNull(account);
         CustomData customData = account.getCustomData();
-        Object healthIdObj = customData.get(getHealthIdKey(study));
+        Object healthIdObj = customData.get(getHealthIdKey(studyIdentifier));
         if (healthIdObj == null) {
             return null;
         }
-        Object versionObj = customData.get(getVersionKey(study));
+        Object versionObj = customData.get(getVersionKey(studyIdentifier));
         return (getHealthId(healthIdObj, versionObj));
     }
 
     @Override
-    public void putConsentSignature(Study study, Account account, ConsentSignature consentSignature) {
+    public void putConsentSignature(StudyIdentifier studyIdentifier, Account account, ConsentSignature consentSignature) {
         try {
             String encrypted = healthCodeEncryptor.encrypt(MAPPER.writeValueAsString(consentSignature));
             CustomData customData = account.getCustomData();
-            customData.put(getConsentSignatureKey(study), encrypted);
+            customData.put(getConsentSignatureKey(studyIdentifier), encrypted);
             customData.save();
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -71,9 +71,9 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
     }
 
     @Override
-    public ConsentSignature getConsentSignature(Study study, Account account) {
+    public ConsentSignature getConsentSignature(StudyIdentifier studyIdentifier, Account account) {
         CustomData customData = account.getCustomData();
-        Object obj = customData.get(getConsentSignatureKey(study));
+        Object obj = customData.get(getConsentSignatureKey(studyIdentifier));
         if (obj == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
@@ -81,22 +81,22 @@ public class AccountEncryptionServiceImpl implements AccountEncryptionService {
     }
 
     @Override
-    public void removeConsentSignature(Study study, Account account) {
+    public void removeConsentSignature(StudyIdentifier studyIdentifier, Account account) {
         CustomData customData = account.getCustomData();
-        customData.remove(getConsentSignatureKey(study));
+        customData.remove(getConsentSignatureKey(studyIdentifier));
         customData.save();
     }
 
-    private String getHealthIdKey(Study study) {
-        return study.getIdentifier() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
+    private String getHealthIdKey(StudyIdentifier studyIdentifier) {
+        return studyIdentifier.getIdentifier() + BridgeConstants.CUSTOM_DATA_HEALTH_CODE_SUFFIX;
     }
 
-    private String getConsentSignatureKey(Study study) {
-        return study.getIdentifier() + BridgeConstants.CUSTOM_DATA_CONSENT_SIGNATURE_SUFFIX;
+    private String getConsentSignatureKey(StudyIdentifier studyIdentifier) {
+        return studyIdentifier.getIdentifier() + BridgeConstants.CUSTOM_DATA_CONSENT_SIGNATURE_SUFFIX;
     }
 
-    private String getVersionKey(Study study) {
-        return study.getIdentifier() + BridgeConstants.CUSTOM_DATA_VERSION;
+    private String getVersionKey(StudyIdentifier studyIdentifier) {
+        return studyIdentifier.getIdentifier() + BridgeConstants.CUSTOM_DATA_VERSION;
     }
 
     private HealthId getHealthId(final Object healthIdObj, final Object versionObj) {
