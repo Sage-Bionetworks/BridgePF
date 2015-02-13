@@ -1,7 +1,10 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class StudyIdentifierImpl implements StudyIdentifier {
 
@@ -9,6 +12,7 @@ public class StudyIdentifierImpl implements StudyIdentifier {
     
     @JsonCreator
     public StudyIdentifierImpl(@JsonProperty("identifier") String identifier) {
+        checkNotNull(identifier);
         this.identifier = identifier;
     }
     
@@ -22,6 +26,7 @@ public class StudyIdentifierImpl implements StudyIdentifier {
 
     @Override
     public String toString() {
-        return String.format("StudyIdentifierImpl [identifier=%s]", identifier);
+        return String.format("StudyIdentifierImpl [identifier=%s, researcherRole=%s]", getIdentifier(),
+                getResearcherRole());
     }
 }
