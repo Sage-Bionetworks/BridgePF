@@ -115,11 +115,7 @@
     <bean id="schedulePlanDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlanDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
-    
-    <bean id="healthDataDao" class="org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-    </bean>
-    
+
     <bean id="participantOptionsDao" class="org.sagebionetworks.bridge.dynamodb.DynamoParticipantOptionsDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
@@ -204,9 +200,7 @@
 
     <bean id="controllers.HealthDataController" parent="proxiedController">
         <property name="target">
-            <bean class="controllers.HealthDataController" parent="BaseController">
-                <property name="healthDataService" ref="healthDataService"/>
-            </bean>
+            <bean class="controllers.HealthDataController" parent="BaseController" />
         </property>
     </bean>
 
@@ -380,13 +374,6 @@
         </property>
     </bean>
 
-    <bean id="healthDataService" class="org.sagebionetworks.bridge.services.HealthDataServiceImpl">
-        <property name="healthDataDao" ref="healthDataDao"/>
-        <property name="validator">
-            <bean class="org.sagebionetworks.bridge.validators.HealthDataRecordValidator"/>
-        </property>
-    </bean>
-
     <bean id="userProfileService" class="org.sagebionetworks.bridge.services.UserProfileServiceImpl">
         <property name="authenticationService" ref="authenticationService" />
         <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
@@ -441,7 +428,6 @@
     <bean id="userAdminService" class="org.sagebionetworks.bridge.services.UserAdminServiceImpl">
         <property name="authenticationService" ref="authenticationService" />
         <property name="consentService" ref="consentService" />
-        <property name="healthDataService" ref="healthDataService" />
         <property name="studyService" ref="studyService" />
         <property name="distributedLockDao" ref="distributedLockDao"/>
     </bean>
