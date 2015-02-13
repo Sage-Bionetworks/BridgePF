@@ -97,6 +97,7 @@ public class DynamoStudy implements Study, DynamoTable {
     }
     @Override
     @JsonIgnore
+    @DynamoDBIgnore
     public StudyIdentifier getStudyIdentifier() {
         return studyIdentifier;
     }

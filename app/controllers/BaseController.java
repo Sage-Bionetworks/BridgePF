@@ -18,7 +18,6 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -69,15 +68,7 @@ public abstract class BaseController extends Controller {
      */
     protected UserSession getSessionIfItExists() {
         String sessionToken = getSessionToken();
-        UserSession session = authenticationService.getSession(sessionToken);
-        if (session == null || session.getStudyIdentifier() == null) {
-            return null;
-        }
-        String studyIdentifier = getStudyIdentifier();
-        if (!session.getStudyIdentifier().equals(studyIdentifier)) {
-            return null;
-        }
-        return session;
+        return authenticationService.getSession(sessionToken);
     }
     
     /**
@@ -92,11 +83,7 @@ public abstract class BaseController extends Controller {
             throw new NotAuthenticatedException();
         }
         UserSession session = authenticationService.getSession(sessionToken);
-        if (session == null || session.getStudyIdentifier() == null || !session.isAuthenticated()) {
-            throw new NotAuthenticatedException();
-        }
-        String studyIdentifier = getStudyIdentifier();
-        if (!session.getStudyIdentifier().equals(studyIdentifier)) {
+        if (session == null || !session.isAuthenticated()) {
             throw new NotAuthenticatedException();
         }
         return session;
@@ -156,11 +143,6 @@ public abstract class BaseController extends Controller {
     protected void updateSessionUser(UserSession session, User user) {
         session.setUser(user);
         cacheProvider.setUserSession(session.getSessionToken(), session);
-    }
-    
-    protected Study getStudy() {
-        String studyIdentifier = getStudyIdentifier();
-        return studyService.getStudy(studyIdentifier); 
     }
     
     protected String getStudyIdentifier() {
