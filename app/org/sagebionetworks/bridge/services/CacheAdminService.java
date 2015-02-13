@@ -13,7 +13,7 @@ import com.google.common.collect.Sets;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
-public class CacheService {
+public class CacheAdminService {
 
     private final String SUFFIX = RedisKey.SEPARATOR + RedisKey.SESSION.getSuffix(); 
     private JedisPool jedisPool;
