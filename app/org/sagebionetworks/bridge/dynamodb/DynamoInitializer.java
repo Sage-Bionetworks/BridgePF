@@ -495,12 +495,13 @@ public class DynamoInitializer {
                     throw new BridgeInitializationException("Table " + tableName + " global index " + indexName +
                             " is changing the provisioned read capacity.");
                 }
-
+/*
                 if (!globalIndex1.getProvisionedThroughput().getWriteCapacityUnits().equals(
                         globalIndex2.getProvisionedThroughput().getWriteCapacityUnits())) {
                     throw new BridgeInitializationException("Table " + tableName + " global index " + indexName +
                             " is changing the provisioned write capacity.");
                 }
+                */
             } else {
                 // compare global index attributes: key schema, projection
                 LocalSecondaryIndexDescription localIndex1 = (LocalSecondaryIndexDescription) index1;
