@@ -64,8 +64,7 @@ public class BridgeSpringConfig {
 
     @Bean(name = "healthDataUploadDateIndex")
     @Autowired
-    @Resource(name = "healthDataDdbMapper")
-    public DynamoIndexHelper healthDataUploadDateIndex(AmazonDynamoDB client, DynamoDBMapper mapper) {
+    public DynamoIndexHelper healthDataUploadDateIndex(AmazonDynamoDB client) {
         // DDB index
         DynamoDBMapperConfig.TableNameOverride tableNameOverride = TableNameOverrideFactory.getTableNameOverride(
                 DynamoHealthDataRecord.class);
@@ -76,7 +75,7 @@ public class BridgeSpringConfig {
         // construct index helper
         DynamoIndexHelper indexHelper = new DynamoIndexHelper();
         indexHelper.setIndex(ddbIndex);
-        indexHelper.setMapper(mapper);
+        indexHelper.setMapper(healthDataDdbMapper(client));
         return indexHelper;
     }
 

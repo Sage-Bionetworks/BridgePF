@@ -41,6 +41,8 @@ public class HealthDataService {
         }
         Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
 
+        // TODO: validate health code, schema ID
+
         // call through to DAO
         return healthDataDao.createRecord(record);
     }
