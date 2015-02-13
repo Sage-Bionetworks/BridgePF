@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -67,7 +68,7 @@ public class StormPathUserAdminServiceTest {
 
     @Before
     public void before() {
-        study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
+        study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
         signUp = new SignUp(name, name+"@sagebridge.org", "P4ssword", null);
 
@@ -109,5 +110,26 @@ public class StormPathUserAdminServiceTest {
         } catch (ConsentRequiredException e) {
             testUser = e.getUserSession().getUser();
         }
+    }
+    
+    @Test
+    public void cannotCreateUserWithSameUsernameOrEmail() {
+        service.createUser(signUp, study, false, false);
+        
+        try {
+            SignUp sameWithDifferentUsername = new SignUp(RandomStringUtils.randomAlphabetic(8), signUp.getEmail(), signUp.getPassword(), null);
+            service.createUser(sameWithDifferentUsername, study, false, false);
+        } catch(InvalidEntityException e) {
+            assertEquals("SignUp is invalid: email has already been registered", e.getMessage());
+        }
+        try {
+            String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
+            String email = name+"@sagebridge.org";
+            SignUp sameWithDifferentEmail = new SignUp(signUp.getUsername(), email, signUp.getPassword(), null);
+            service.createUser(sameWithDifferentEmail, study, false, false);
+        } catch(InvalidEntityException e) {
+            assertEquals("SignUp is invalid: username has already been registered", e.getMessage());
+        }
+        
     }
 }

@@ -20,17 +20,23 @@ import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.stormpath.sdk.account.Account;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class ConsentServiceImpl implements ConsentService {
 
     private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
 
     private AuthenticationService authService;
-    private JedisStringOps stringOps = new JedisStringOps();
+    private JedisStringOps stringOps;
     private AccountEncryptionService accountEncryptionService;
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
+
+    @Autowired
+    public void setStringOps(JedisStringOps stringOps) {
+        this.stringOps = stringOps;
+    }
 
     public void setAuthenticationService(AuthenticationService authService) {
         this.authService = authService;
@@ -178,7 +184,7 @@ public class ConsentServiceImpl implements ConsentService {
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
 
         long count = Long.MAX_VALUE;
-        String countString = stringOps.get(key).execute();
+        String countString = stringOps.get(key);
         if (countString == null) {
             // This is expensive but don't lock, it's better to do it twice slowly, than to throw an exception here.
             count = userConsentDao.getNumberOfParticipants(study.getIdentifier());
@@ -198,7 +204,7 @@ public class ConsentServiceImpl implements ConsentService {
             throw new StudyLimitExceededException(study);
         }
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        stringOps.increment(key).execute();
+        stringOps.increment(key);
     }
 
     @Override
@@ -207,9 +213,9 @@ public class ConsentServiceImpl implements ConsentService {
             return;
         }
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        String count = stringOps.get(key).execute();
+        String count = stringOps.get(key);
         if (count != null && Long.parseLong(count) > 0) {
-            stringOps.decrement(key).execute();
+            stringOps.decrement(key);
         }
     }
 }

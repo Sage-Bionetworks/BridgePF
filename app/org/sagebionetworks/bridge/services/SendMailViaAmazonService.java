@@ -85,9 +85,9 @@ public class SendMailViaAmazonService implements SendMailService {
     @Override
     public void sendConsentAgreement(User user, ConsentSignature consentSignature, StudyConsent studyConsent) {
         try {
-            Study study = studyService.getStudyByIdentifier(studyConsent.getStudyKey());
+            Study study = studyService.getStudy(studyConsent.getStudyKey());
             
-            String body = createSignedDocument(consentSignature, studyConsent);
+            String body = createSignedDocument(user, consentSignature, studyConsent);
             MimeBodyPart bodyPart = new MimeBodyPart();
             bodyPart.setContent(body, MIME_TYPE_HTML);
 
@@ -228,7 +228,7 @@ public class SendMailViaAmazonService implements SendMailService {
         return Collections.emptySet();
     }
 
-    private String createSignedDocument(ConsentSignature consent, StudyConsent studyConsent)
+    private String createSignedDocument(User user, ConsentSignature consent, StudyConsent studyConsent)
             throws IOException {
 
         String filePath = studyConsent.getPath();
@@ -243,8 +243,10 @@ public class SendMailViaAmazonService implements SendMailService {
         String birthdate = fmt.print(localDate);
 
         String html = consentAgreementHTML.replace("@@name@@", consent.getName());
-        html = html.replace("@@birth.date@@", birthdate);
+        // removed as per BRIDGE-343.
+        // html = html.replace("@@birth.date@@", birthdate);
         html = html.replace("@@signing.date@@", signingDate);
+        html = html.replace("@@email@@", user.getEmail());
         return html;
     }
     

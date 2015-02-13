@@ -55,7 +55,7 @@ public class DynamoSchedulePlanDaoTest {
     public void before() {
         DynamoInitializer.init(DynamoSchedulePlan.class);
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
-        study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
+        study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
     }
     
     @Test

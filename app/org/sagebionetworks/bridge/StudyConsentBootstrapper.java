@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 public class StudyConsentBootstrapper {
     public StudyConsentBootstrapper(StudyService studyService, StudyConsentDao studyConsentDao) {
         try {
-            studyService.getStudyByIdentifier("api");    
+            studyService.getStudy("api");    
         } catch(EntityNotFoundException e) {
             Study study = new DynamoStudy();
             study.setName("Test Study");

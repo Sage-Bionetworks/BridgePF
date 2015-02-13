@@ -31,8 +31,10 @@ public class SignUpValidator implements Validator {
             errors.rejectValue("email", "not a valid email address");
         }
         if (!errors.hasErrors()) {
-            if (authService.getAccount(signUp.getEmail()) != null) {
-                errors.rejectValue("email", "has already been registered");
+            // Check both the email and the user name. Both must be unique
+            String fieldTaken = authService.isAccountInUse(signUp.getUsername(), signUp.getEmail());
+            if (fieldTaken != null) {
+                errors.rejectValue(fieldTaken, "has already been registered");
             }
         }
         if (StringUtils.isBlank(signUp.getUsername())) {

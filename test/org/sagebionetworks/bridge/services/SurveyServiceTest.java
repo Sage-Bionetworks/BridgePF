@@ -61,7 +61,7 @@ public class SurveyServiceTest {
     @Before
     public void before() {
         testSurvey = new TestSurvey(true);
-        study = studyService.getStudyByIdentifier(TEST_STUDY_IDENTIFIER);
+        study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyElement.class);
         DynamoTestUtil.clearTable(DynamoSurvey.class);
         DynamoTestUtil.clearTable(DynamoSurveyElement.class);

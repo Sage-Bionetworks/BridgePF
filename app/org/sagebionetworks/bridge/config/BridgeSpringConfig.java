@@ -20,6 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
@@ -77,6 +79,36 @@ public class BridgeSpringConfig {
         indexHelper.setIndex(ddbIndex);
         indexHelper.setMapper(healthDataDdbMapper(client));
         return indexHelper;
+    }
+
+    @Bean(name = "jedisPool")
+    public JedisPool jedisPool() {
+        // configure Jedis pool
+        BridgeConfig config = BridgeConfigFactory.getConfig();
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
+        String host = config.getProperty("redis.host");
+        int port = config.getPropertyAsInt("redis.port");
+        int timeout = config.getPropertyAsInt("redis.timeout");
+
+        // create Jedis pool
+        final JedisPool jedisPool;
+        if (config.isLocal()) {
+            jedisPool = new JedisPool(poolConfig, host, port, timeout);
+        } else {
+            String password = config.getProperty("redis.password");
+            jedisPool = new JedisPool(poolConfig, host, port, timeout, password);
+        }
+
+        // configure shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                jedisPool.destroy();
+            }
+        }));
+
+        return jedisPool;
     }
 
     @Bean(name = "s3CmsHelper")
