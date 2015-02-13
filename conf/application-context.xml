@@ -43,12 +43,6 @@
         </constructor-arg>
     </bean>
     
-    <bean id="r5client" class="com.amazonaws.services.route53.AmazonRoute53Client">
-        <constructor-arg index="0">
-            <ref bean="awsCredentials" />
-        </constructor-arg>
-    </bean>
-
     <!-- S3 -->
 
     <bean id="s3Client" class="com.amazonaws.services.s3.AmazonS3Client">
@@ -147,19 +141,10 @@
         <property name="stormpathClient" ref="stormpathClient"/>
     </bean>
     
-    <bean id="dnsDao" class="org.sagebionetworks.bridge.route53.Route53DnsDao">
-        <property name="bridgeConfig" ref="bridgeConfig"/>
-        <property name="amazonRoute53Client" ref="r5client"/>
-    </bean>
-
     <bean id="backfillDao" class="org.sagebionetworks.bridge.dynamodb.DynamoBackfillDao">
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
 
-    <bean id="herokuApi" class="org.sagebionetworks.bridge.heroku.HerokuApiImpl">
-        <property name="bridgeConfig" ref="bridgeConfig"/>
-    </bean>
-    
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor">
         <property name="bridgeConfig" ref="bridgeConfig"/>
     </bean>
@@ -329,10 +314,6 @@
         <property name="uploadCertificateService" ref="uploadCertificateService"/>
         <property name="studyDao" ref="studyDao"/>
         <property name="directoryDao" ref="directoryDao"/>
-        <!-- 
-        <property name="herokuApi" ref="herokuApi"/>
-        <property name="dnsDao" ref="dnsDao"/>
-         -->
         <property name="distributedLockDao" ref="distributedLockDao"/>
         <property name="bridgeConfig" ref="bridgeConfig"/>
         <property name="cacheProvider" ref="cacheProvider"/>
