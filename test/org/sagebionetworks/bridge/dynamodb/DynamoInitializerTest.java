@@ -59,7 +59,7 @@ public class DynamoInitializerTest {
         assertEquals(2, table.getLocalSecondaryIndexes().size());
         assertEquals(1, table.getGlobalSecondaryIndexes().size());
         assertEquals(25L, table.getProvisionedThroughput().getReadCapacityUnits().longValue());
-        assertEquals(20L, table.getProvisionedThroughput().getWriteCapacityUnits().longValue());
+        assertEquals(25L, table.getProvisionedThroughput().getWriteCapacityUnits().longValue());
     }
 
     @Test
@@ -133,7 +133,7 @@ public class DynamoInitializerTest {
 
         // Throughput
         assertEquals(25L, request.getProvisionedThroughput().getReadCapacityUnits().longValue());
-        assertEquals(20L, request.getProvisionedThroughput().getWriteCapacityUnits().longValue());
+        assertEquals(25L, request.getProvisionedThroughput().getWriteCapacityUnits().longValue());
     }
 
     @Test
@@ -235,9 +235,9 @@ public class DynamoInitializerTest {
     public void compareGlobalIndicesDifferentName() {
         // indices
         GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
-                ProjectionType.ALL, 25, 20);
-        GlobalSecondaryIndexDescription diffIndex1 = makeGlobalIndex("index1", "diff-key", ProjectionType.ALL, 25, 20);
-        GlobalSecondaryIndexDescription diffIndex2 = makeGlobalIndex("index2", "diff-key", ProjectionType.ALL, 25, 20);
+                ProjectionType.ALL, 25, 25);
+        GlobalSecondaryIndexDescription diffIndex1 = makeGlobalIndex("index1", "diff-key", ProjectionType.ALL, 25, 25);
+        GlobalSecondaryIndexDescription diffIndex2 = makeGlobalIndex("index2", "diff-key", ProjectionType.ALL, 25, 25);
 
         List<GlobalSecondaryIndexDescription> indexList1 = ImmutableList.of(sameIndex, diffIndex1);
         List<GlobalSecondaryIndexDescription> indexList2 = ImmutableList.of(sameIndex, diffIndex2);
@@ -250,9 +250,9 @@ public class DynamoInitializerTest {
     public void compareGlobalIndicesDifferentKeys() {
         // indices
         GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
-                ProjectionType.ALL, 25, 20);
-        GlobalSecondaryIndexDescription diffIndex1 = makeGlobalIndex("diff-index", "key1", ProjectionType.ALL, 25, 20);
-        GlobalSecondaryIndexDescription diffIndex2 = makeGlobalIndex("diff-index", "key2", ProjectionType.ALL, 25, 20);
+                ProjectionType.ALL, 25, 25);
+        GlobalSecondaryIndexDescription diffIndex1 = makeGlobalIndex("diff-index", "key1", ProjectionType.ALL, 25, 25);
+        GlobalSecondaryIndexDescription diffIndex2 = makeGlobalIndex("diff-index", "key2", ProjectionType.ALL, 25, 25);
 
         List<GlobalSecondaryIndexDescription> indexList1 = ImmutableList.of(sameIndex, diffIndex1);
         List<GlobalSecondaryIndexDescription> indexList2 = ImmutableList.of(sameIndex, diffIndex2);
@@ -265,11 +265,11 @@ public class DynamoInitializerTest {
     public void compareGlobalIndicesDifferentProjections() {
         // indices
         GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
-                ProjectionType.ALL, 25, 20);
+                ProjectionType.ALL, 25, 25);
         GlobalSecondaryIndexDescription diffIndex1 = makeGlobalIndex("diff-index", "diff-key",
-                ProjectionType.ALL, 25, 20);
+                ProjectionType.ALL, 25, 25);
         GlobalSecondaryIndexDescription diffIndex2 = makeGlobalIndex("diff-index", "diff-key",
-                ProjectionType.KEYS_ONLY, 25, 20);
+                ProjectionType.KEYS_ONLY, 25, 25);
 
         List<GlobalSecondaryIndexDescription> indexList1 = ImmutableList.of(sameIndex, diffIndex1);
         List<GlobalSecondaryIndexDescription> indexList2 = ImmutableList.of(sameIndex, diffIndex2);
@@ -282,11 +282,11 @@ public class DynamoInitializerTest {
     public void compareGlobalIndicesDifferentReadCapacity() {
         // indices
         GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
-                ProjectionType.ALL, 25, 20);
+                ProjectionType.ALL, 25, 25);
         GlobalSecondaryIndexDescription diffIndex1 = makeGlobalIndex("diff-index", "diff-key",
-                ProjectionType.ALL, 25, 20);
+                ProjectionType.ALL, 25, 25);
         GlobalSecondaryIndexDescription diffIndex2 = makeGlobalIndex("diff-index", "diff-key",
-                ProjectionType.ALL, 24, 20);
+                ProjectionType.ALL, 24, 25);
 
         List<GlobalSecondaryIndexDescription> indexList1 = ImmutableList.of(sameIndex, diffIndex1);
         List<GlobalSecondaryIndexDescription> indexList2 = ImmutableList.of(sameIndex, diffIndex2);
@@ -299,9 +299,9 @@ public class DynamoInitializerTest {
     public void compareGlobalIndicesDifferentWriteCapacity() {
         // indices
         GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
-                ProjectionType.ALL, 25, 20);
+                ProjectionType.ALL, 25, 25);
         GlobalSecondaryIndexDescription diffIndex1 = makeGlobalIndex("diff-index", "diff-key",
-                ProjectionType.ALL, 25, 20);
+                ProjectionType.ALL, 25, 25);
         GlobalSecondaryIndexDescription diffIndex2 = makeGlobalIndex("diff-index", "diff-key",
                 ProjectionType.ALL, 25, 21);
 
@@ -315,8 +315,8 @@ public class DynamoInitializerTest {
     @Test
     public void compareSameGlobalIndicesInDifferentOrder() {
         // indices
-        GlobalSecondaryIndexDescription index1 = makeGlobalIndex("index1", "key1", ProjectionType.ALL, 25, 20);
-        GlobalSecondaryIndexDescription index2 = makeGlobalIndex("index2", "key2", ProjectionType.ALL, 25, 20);
+        GlobalSecondaryIndexDescription index1 = makeGlobalIndex("index1", "key1", ProjectionType.ALL, 25, 25);
+        GlobalSecondaryIndexDescription index2 = makeGlobalIndex("index2", "key2", ProjectionType.ALL, 25, 25);
 
         List<GlobalSecondaryIndexDescription> indexList1 = ImmutableList.of(index1, index2);
         List<GlobalSecondaryIndexDescription> indexList2 = ImmutableList.of(index2, index1);
