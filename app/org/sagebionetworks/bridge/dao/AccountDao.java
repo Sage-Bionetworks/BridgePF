@@ -1,15 +1,22 @@
 package org.sagebionetworks.bridge.dao;
 
+import java.util.Iterator;
+
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.studies.Study;
+
 public interface AccountDao {
 
-    // TODO: Update to StudyIdentifier when that exists
+    public Iterator<Account> getAllAccounts();
     
-    public Account getAccount(String studyIdentifier, String email);
+    public Iterator<Account> getStudyAccounts(Study study);
     
-    public Account createAccount(String studyIdentifier, Account account);
+    public Account getAccount(Study study, String email);
     
-    public void updateAcount(String studyIdentifier, Account account);
+    public Account createAccount(Study study, Account account);
     
-    public void deleteAccount(String studyIdentifier, String email);
+    public void updateAcount(Study study, Account account);
+    
+    public void deleteAccount(Study study, String email);
     
 }
