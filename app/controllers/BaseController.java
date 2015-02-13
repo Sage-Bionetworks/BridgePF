@@ -1,5 +1,11 @@
 package controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.ADMIN_GROUP;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_HOST_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_STUDY_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+
 import javax.annotation.Nonnull;
 
 import java.util.Collection;
@@ -8,7 +14,6 @@ import com.google.common.base.Strings;
 
 import models.StatusMessage;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -109,7 +114,7 @@ public abstract class BaseController extends Controller {
      */
     protected UserSession getAuthenticatedAdminSession() throws NotAuthenticatedException, UnauthorizedException {
         UserSession session = getAuthenticatedSession();
-        if (!session.getUser().isInRole(BridgeConstants.ADMIN_GROUP)) {
+        if (!session.getUser().isInRole(ADMIN_GROUP)) {
             throw new UnauthorizedException();
         }
         return session;
@@ -119,25 +124,24 @@ public abstract class BaseController extends Controller {
         UserSession session = getAuthenticatedSession();
         User user = session.getUser();
         StudyIdentifier studyId = session.getStudyIdentifier();
-        if (user.isInRole(studyId.getResearcherRole())) {
-            return session;
+        if (!user.isInRole(studyId.getResearcherRole())) {
+            throw new UnauthorizedException();
         }
-        throw new UnauthorizedException();
+        return session;
     }
     
     protected UserSession getAuthenticatedResearcherOrAdminSession() throws NotAuthenticatedException, UnauthorizedException {
         UserSession session = getAuthenticatedSession();
         User user = session.getUser();
         StudyIdentifier studyId = session.getStudyIdentifier();
-        if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(studyId.getResearcherRole())) {
-            return session;
+        if (!user.isInRole(ADMIN_GROUP) && !user.isInRole(studyId.getResearcherRole())) {
+            throw new UnauthorizedException();
         }
-        throw new UnauthorizedException();
+        return session;
     }
     
     protected void setSessionToken(String sessionToken) {
-        response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+        response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
 
     protected void updateSessionUser(UserSession session, User user) {
@@ -147,13 +151,13 @@ public abstract class BaseController extends Controller {
     
     protected String getStudyIdentifier() {
         // Bridge-Study: api
-        String value = request().getHeader(BridgeConstants.BRIDGE_STUDY_HEADER);
+        String value = request().getHeader(BRIDGE_STUDY_HEADER);
         if (value != null) {
             logger.debug("Study identifier retrieved from Bridge-Study header ("+value+")");
             return value;
         }
         // Bridge-Host: api-develop.sagebridge.org
-        value = request().getHeader(BridgeConstants.BRIDGE_HOST_HEADER);
+        value = request().getHeader(BRIDGE_HOST_HEADER);
         if (value != null) {
             logger.debug("Study identifier parsed from Bridge-Host header ("+value+")");
             return getIdentifierFromHostname(value);
@@ -180,9 +184,9 @@ public abstract class BaseController extends Controller {
     }
     
     private String getSessionToken() {
-        String[] session = request().headers().get(BridgeConstants.SESSION_TOKEN_HEADER);
+        String[] session = request().headers().get(SESSION_TOKEN_HEADER);
         if (session == null || session.length == 0 || session[0].isEmpty()) {
-            Cookie sessionCookie = request().cookie(BridgeConstants.SESSION_TOKEN_HEADER);
+            Cookie sessionCookie = request().cookie(SESSION_TOKEN_HEADER);
             if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
                 return sessionCookie.value();
             }
