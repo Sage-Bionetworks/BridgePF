@@ -16,23 +16,23 @@ import com.google.common.collect.Sets;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
-public class CacheServiceTest {
+public class CacheAdminServiceTest {
 
-    private CacheService service;
+    private CacheAdminService adminService;
     
     @Before
     public void before() {
-        service = new CacheService();
+        adminService = new CacheAdminService();
         
         JedisPool pool = mock(JedisPool.class);
         when(pool.getResource()).thenReturn(createStubJedis());
 
-        service.setJedisPool(pool);
+        adminService.setJedisPool(pool);
     }
     
     @Test
     public void listsItemsWithoutSessions() {
-        Set<String> set = service.listItems();
+        Set<String> set = adminService.listItems();
         assertEquals(2, set.size());
         assertTrue(set.contains("foo:study"));
         assertTrue(set.contains("baz:Survey:view"));
@@ -41,29 +41,29 @@ public class CacheServiceTest {
     
     @Test
     public void canRemoveItem() {
-        service.removeItem("foo:study");
-        Set<String> set = service.listItems();
+        adminService.removeItem("foo:study");
+        Set<String> set = adminService.listItems();
         assertEquals(1, set.size());
     }
     
     @Test(expected = BridgeServiceException.class)
     public void doesNotRemoveSessions() {
-        service.removeItem("bar:session");
+        adminService.removeItem("bar:session");
     }
     
     @Test(expected = BridgeServiceException.class)
     public void throwsExceptionWhenThereIsNoKey() {
-        service.removeItem("not:a:key");
+        adminService.removeItem("not:a:key");
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void throwsExceptionWhenKeyIsEmpty() {
-        service.removeItem(" ");
+        adminService.removeItem(" ");
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void throwsExceptionWhenKeyIsNull() {
-        service.removeItem(null);
+        adminService.removeItem(null);
     }
     
     private Jedis createStubJedis() {
