@@ -40,7 +40,6 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     @Override
     public List<SchedulePlan> getSchedulePlans(StudyIdentifier studyIdentifier) {
         checkNotNull(studyIdentifier, "studyIdentifier is null");
-        checkArgument(StringUtils.isNotBlank(studyIdentifier.getIdentifier()), "Study key is null");
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setStudyKey(studyIdentifier.getIdentifier());
@@ -55,7 +54,6 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     @Override
     public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
         checkNotNull(studyIdentifier, "studyIdentifier is null");
-        checkArgument(StringUtils.isNotBlank(studyIdentifier.getIdentifier()), "Study key is null");
         checkArgument(StringUtils.isNotBlank(guid), "Plan GUID is blank or null");
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
