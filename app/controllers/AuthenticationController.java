@@ -27,7 +27,7 @@ public class AuthenticationController extends BaseController {
             return okResult(new UserSessionInfo(session));
         }
         try {
-            Study study = studyService.getStudyByHostname(getHostname());
+            Study study = getStudy();
             SignIn signIn = SignIn.fromJson(requestToJSON(request()));
             session = authenticationService.signIn(study, signIn);
             setSessionToken(session.getSessionToken());
@@ -52,13 +52,13 @@ public class AuthenticationController extends BaseController {
 
     public Result signUp() throws Exception {
         SignUp signUp = SignUp.fromJson(requestToJSON(request()), false);
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = getStudy();
         authenticationService.signUp(signUp, study, true);
         return createdResult("Signed up.");
     }
 
     public Result verifyEmail() throws Exception {
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = getStudy();
         EmailVerification ev = EmailVerification.fromJson(requestToJSON(request()));
         // In normal course of events (verify email, consent to research),
         // an exception is thrown. Code after this line will rarely execute
@@ -68,7 +68,7 @@ public class AuthenticationController extends BaseController {
     }
     
     public Result resendEmailVerification() throws Exception {
-        Study study = studyService.getStudyByHostname(getHostname());
+        Study study = getStudy();
         Email email = Email.fromJson(requestToJSON(request()));
         
         authenticationService.resendEmailVerification(study, email);

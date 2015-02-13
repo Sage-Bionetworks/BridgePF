@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -40,6 +39,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class AuthenticationControllerTest {
 
+    @Resource
+    private JedisStringOps stringOps;
+    
     @Resource
     private TestUserAdminHelper helper;
     
@@ -65,9 +67,9 @@ public class AuthenticationControllerTest {
                 node.put(PASSWORD, testUser.getPassword());
                 
                 WSRequestHolder holder = WS.url(TEST_BASE_URL + SIGN_IN_URL);
-                holder.setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix());
+                holder.setHeader(BridgeConstants.BRIDGE_STUDY_HEADER, "api");
                 Response response = holder.post(node).get(TIMEOUT);
-                
+
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 
                 // All of a sudden, there's no cookie being set. I have no idea why.
@@ -81,9 +83,8 @@ public class AuthenticationControllerTest {
 
                 cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
                 assertEquals("Cookie has been set to empty string", "", cookie.getValue());
-                
-                JedisStringOps stringOps = new JedisStringOps();
-                String output = stringOps.get(sessionToken).execute();
+
+                String output = stringOps.get(sessionToken);
                 assertNull("Should no longer be session data", output);
             }
         });

@@ -45,7 +45,7 @@ public class SendMailViaAmazonServiceConsentTest {
         study.setMinAgeOfConsent(17);
 
         studyService = mock(StudyService.class);
-        when(studyService.getStudyByIdentifier(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         emailClient = mock(AmazonSimpleEmailServiceClient.class);
         when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenReturn(new SendRawEmailResult()
                 .withMessageId("test message id"));
@@ -102,8 +102,8 @@ public class SendMailViaAmazonServiceConsentTest {
         // Validate message content. MIME message must be ASCII
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.US_ASCII);
         assertTrue("Contains consent content", rawMessage.contains("Had this been a real study"));
-        assertTrue("Date transposed to document", rawMessage.contains("May 5, 1950"));
         assertTrue("Name transposed to document", rawMessage.contains("Test 2"));
+        assertTrue("Email transposed to document", rawMessage.contains(user.getEmail()));
     }
 
     @Test
@@ -129,8 +129,8 @@ public class SendMailViaAmazonServiceConsentTest {
         // Validate message content. MIME message must be ASCII
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.US_ASCII);
         assertTrue("Contains consent content", rawMessage.contains("Had this been a real study"));
-        assertTrue("Date transposed to document", rawMessage.contains("May 1, 1970"));
         assertTrue("Name transposed to document", rawMessage.contains("Eggplant McTester"));
+        assertTrue("Email transposed to document", rawMessage.contains(user.getEmail()));
 
         // Validate message contains signature image. To avoid coupling too closely with MIME implementation, just
         // validate that our content type shows up and that we contain the first few chars of the image data.

@@ -321,6 +321,25 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
         return null;
     }
+    
+    /**
+     * Return the name of the field that has already been used by a prior account, or null if
+     * the sign up credentials are available.
+     */
+    @Override
+    public String isAccountInUse(String username, String email) {
+        // There is no boolean "OR" form of query in the API... you have to use two queries.
+        Application app = StormpathFactory.getStormpathApplication(stormpathClient);
+        AccountList accounts = app.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email)));
+        if (accounts.iterator().hasNext()) {
+            return "email";
+        }
+        accounts = app.getAccounts(Accounts.where(Accounts.username().eqIgnoreCase(username)));
+        if (accounts.iterator().hasNext()) {
+            return "username";
+        }
+        return null;
+    }
 
     @Override
     public UserSession getSessionFromAccount(Study study, Account account) {

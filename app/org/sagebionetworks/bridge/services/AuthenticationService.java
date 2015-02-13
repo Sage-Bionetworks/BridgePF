@@ -35,5 +35,7 @@ public interface AuthenticationService {
     
     public Account getAccount(String email);
     
+    public String isAccountInUse(String username, String email);
+    
     public UserSession getSessionFromAccount(Study study, Account account);
 }

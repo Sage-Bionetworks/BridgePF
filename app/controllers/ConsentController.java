@@ -26,7 +26,7 @@ public class ConsentController extends BaseController {
 
     public Result getConsentSignature() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
-        final Study study = studyService.getStudyByHostname(getHostname());
+        final Study study = getStudy();
         ConsentSignature sig = consentService.getConsentSignature(session.getUser(), study);
         return okResult(sig);
     }
@@ -34,7 +34,7 @@ public class ConsentController extends BaseController {
     public Result give() throws Exception {
         final UserSession session = getAuthenticatedSession();
         final ConsentSignature consent = ConsentSignature.createFromJson(requestToJSON(request()));
-        final Study study = studyService.getStudyByHostname(getHostname());
+        final Study study = getStudy();
         final User user = consentService.consentToResearch(session.getUser(), consent, study, true);
         updateSessionUser(session, user);
         setSessionToken(session.getSessionToken());
@@ -43,14 +43,14 @@ public class ConsentController extends BaseController {
 
     public Result emailCopy() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
-        final Study study = studyService.getStudyByHostname(getHostname());
+        final Study study = getStudy();
         consentService.emailConsentAgreement(session.getUser(), study);
         return okResult("Emailed consent.");
     }
 
     public Result suspendDataSharing() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
-        final Study study = studyService.getStudyByHostname(getHostname());
+        final Study study = getStudy();
         final User user = session.getUser();
         optionsService.setOption(study, user.getHealthCode(), Option.DATA_SHARING, Boolean.FALSE.toString());
         user.setDataSharing(false);
@@ -60,7 +60,7 @@ public class ConsentController extends BaseController {
 
     public Result resumeDataSharing() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
-        final Study study = studyService.getStudyByHostname(getHostname());
+        final Study study = getStudy();
         final User user = session.getUser();
         optionsService.setOption(study, user.getHealthCode(), Option.DATA_SHARING, Boolean.TRUE.toString());
         user.setDataSharing(true);
