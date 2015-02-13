@@ -1,185 +1,154 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
-import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
-import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.json.DateTimeToStringSerializer;
+import org.sagebionetworks.bridge.json.JodaDateTimeDeserializer;
+import org.sagebionetworks.bridge.json.LocalDateToStringSerializer;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.joda.deser.LocalDateDeserializer;
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 
-@DynamoDBTable(tableName = "HealthDataRecord2")
+/** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataRecord}. */
+@DynamoDBTable(tableName = "HealthDataRecord3")
 public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
-
-    private static final String GUID_FIELD = "guid";
-    private static final String START_DATE_FIELD = "startDate";
-    private static final String END_DATE_FIELD = "endDate";
-    private static final String VERSION_FIELD = "version";
-    private static final String DATA_FIELD = "data";
-    
-    private String key;
-    private String guid;
-    private long startDate;
-    private long endDate;
     private JsonNode data;
+    private String healthCode;
+    private String id;
+    private DateTime measuredTime;
+    private JsonNode metadata;
+    private String schemaId;
+    private LocalDate uploadDate;
     private Long version;
-    
-    public static final DynamoHealthDataRecord fromJson(JsonNode node) {
-        DynamoHealthDataRecord record = new DynamoHealthDataRecord();
-        record.setGuid(JsonUtils.asText(node, GUID_FIELD));
-        record.setStartDate(JsonUtils.asMillisSinceEpoch(node, START_DATE_FIELD));
-        record.setEndDate(JsonUtils.asMillisSinceEpoch(node, END_DATE_FIELD));
-        record.setVersion(JsonUtils.asLongPrimitive(node, VERSION_FIELD));
-        record.setData(JsonUtils.asJsonNode(node, DATA_FIELD));
-        return record;
+
+    /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
+    @Override
+    public JsonNode getData() {
+        return data;
     }
 
-    public DynamoHealthDataRecord() {
+    /** @see #getData */
+    public void setData(JsonNode data) {
+        this.data = data;
     }
-    
-    public DynamoHealthDataRecord(String key) {
-        this.key = key;
+
+    /** {@inheritDoc} */
+    @DynamoDBIndexHashKey(attributeName = "healthCode", globalSecondaryIndexName = "healthCode-index")
+    @Override
+    public String getHealthCode() {
+        return healthCode;
     }
-    
-    public DynamoHealthDataRecord(String key, HealthDataRecord record) {
-        this.key = key;
-        this.guid = record.getGuid();
-        this.startDate = record.getStartDate();
-        this.endDate = record.getEndDate();
-        this.data = record.getData();
-        this.version = record.getVersion();
+
+    /** @see #getHealthCode */
+    public void setHealthCode(String healthCode) {
+        this.healthCode = healthCode;
     }
-    
-    public DynamoHealthDataRecord(String key, String guid, HealthDataRecord record) {
-        this.key = key;
-        this.guid = guid;
-        this.startDate = record.getStartDate();
-        this.endDate = record.getEndDate();
-        this.data = record.getData();
-        this.version = record.getVersion();
-    }
-    
+
+    /** {@inheritDoc} */
     @DynamoDBHashKey
-    @JsonIgnore
-    public String getKey() { 
-        return key; 
-    }
-    public void setKey(String key) { 
-        this.key = key; 
-    }
-    
-    @Override 
-    @DynamoDBRangeKey(attributeName="recordId")
-    public String getGuid() { 
-        return guid; 
-    }
     @Override
-    public void setGuid(String guid) { 
-        this.guid = guid;
+    public String getId() {
+        return id;
     }
-    
-    @Override 
-    @DynamoDBAttribute
-    @DynamoDBIndexRangeKey(attributeName="startDate", localSecondaryIndexName="startDate-index")
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
-    public long getStartDate() { 
-        return startDate; 
+
+    /** @see #getId */
+    public void setId(String id) {
+        this.id = id;
     }
+
+    /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = DateTimeMarshaller.class)
+    @JsonSerialize(using = DateTimeToStringSerializer.class)
     @Override
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
-    public void setStartDate(long startDate) { 
-        this.startDate = startDate; 
+    public DateTime getMeasuredTime() {
+        return measuredTime;
     }
-    
-    @Override 
-    @DynamoDBAttribute
-    @DynamoDBIndexRangeKey(attributeName="endDate", localSecondaryIndexName="endDate-index")
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
-    public long getEndDate() { 
-        return endDate; 
+
+    /** @see #getMeasuredTime */
+    @JsonDeserialize(using = JodaDateTimeDeserializer.class)
+    public void setMeasuredTime(DateTime measuredTime) {
+        this.measuredTime = measuredTime;
     }
-    @Override
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
-    public void setEndDate(long endDate) { 
-        this.endDate = endDate; 
-    }
-    
-    @Override 
-    @DynamoDBAttribute
+
+    /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
-    public JsonNode getData() { 
-        return data; 
-    }
     @Override
-    public void setData(JsonNode payload) { 
-        this.data = payload; 
+    public JsonNode getMetadata() {
+        return metadata;
     }
-    
+
+    /** @see #getMetadata */
+    public void setMetadata(JsonNode metadata) {
+        this.metadata = metadata;
+    }
+
+    /** {@inheritDoc} */
     @Override
+    public String getSchemaId() {
+        return schemaId;
+    }
+
+    /** @see #getSchemaId */
+    public void setSchemaId(String schemaId) {
+        this.schemaId = schemaId;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBIndexHashKey(attributeName = "uploadDate", globalSecondaryIndexName = "uploadDate-index")
+    @DynamoDBMarshalling(marshallerClass = LocalDateMarshaller.class)
+    @JsonSerialize(using = LocalDateToStringSerializer.class)
+    @Override
+    public LocalDate getUploadDate() {
+        return uploadDate;
+    }
+
+    /** @see #getUploadDate */
+    @JsonDeserialize(using = LocalDateDeserializer.class)
+    public void setUploadDate(LocalDate uploadDate) {
+        this.uploadDate = uploadDate;
+    }
+
+    /**
+     * DynamoDB version, used for optimistic locking. This is used internally by Bridge and by DynamoDB and is not
+     * exposed to users.
+     */
     @DynamoDBVersionAttribute
+    @JsonIgnore
     public Long getVersion() {
         return version;
     }
-    
-    @Override
+
+    /** @see #getVersion */
+    @JsonIgnore
     public void setVersion(Long version) {
         this.version = version;
     }
-    
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (int) (endDate ^ (endDate >>> 32));
-        result = prime * result + ((key == null) ? 0 : key.hashCode());
-        result = prime * result + ((guid == null) ? 0 : guid.hashCode());
-        result = prime * result + (int) (startDate ^ (startDate >>> 32));
-        result = prime * result + ((version == null) ? 0 : version.hashCode());
-        return result;
-    }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        DynamoHealthDataRecord other = (DynamoHealthDataRecord) obj;
-        if (data == null) {
-            if (other.data != null)
-                return false;
+    /** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder}. */
+    public static class Builder extends HealthDataRecordBuilder {
+        /** {@inheritDoc} */
+        @Override
+        protected HealthDataRecord buildUnvalidated() {
+            DynamoHealthDataRecord record = new DynamoHealthDataRecord();
+            record.setData(getData());
+            record.setHealthCode(getHealthCode());
+            record.setId(getId());
+            record.setMeasuredTime(getMeasuredTime());
+            record.setMetadata(getMetadata());
+            record.setSchemaId(getSchemaId());
+            record.setUploadDate(getUploadDate());
+            return record;
         }
-        if (endDate != other.endDate)
-            return false;
-        if (key == null) {
-            if (other.key != null)
-                return false;
-        } else if (!key.equals(other.key))
-            return false;
-        if (guid == null) {
-            if (other.guid != null)
-                return false;
-        } else if (!guid.equals(other.guid))
-            return false;
-        if (startDate != other.startDate)
-            return false;
-        if (version == null) {
-            if (other.version != null)
-                return false;
-        } else if (!version.equals(other.version))
-            return false;
-        return true;
     }
-
 }

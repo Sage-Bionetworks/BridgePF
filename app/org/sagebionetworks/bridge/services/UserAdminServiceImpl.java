@@ -9,10 +9,8 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +25,6 @@ public class UserAdminServiceImpl implements UserAdminService {
 
     private AuthenticationServiceImpl authenticationService;
     private ConsentService consentService;
-    private HealthDataService healthDataService;
     private StudyService studyService;
     private DistributedLockDao lockDao;
 
@@ -37,10 +34,6 @@ public class UserAdminServiceImpl implements UserAdminService {
 
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
-    }
-
-    public void setHealthDataService(HealthDataService healthDataService) {
-        this.healthDataService = healthDataService;
     }
 
     public void setStudyService(StudyService studyService) {
@@ -145,7 +138,6 @@ public class UserAdminServiceImpl implements UserAdminService {
 
         try {
             consentService.withdrawConsent(user, study);
-            removeAllHealthDataRecords(study, user);
             //String healthCode = user.getHealthCode();
             //optionsService.deleteAllParticipantOptions(healthCode);
             return true;
@@ -154,16 +146,4 @@ public class UserAdminServiceImpl implements UserAdminService {
             return false;
         }
     }
-
-    private void removeAllHealthDataRecords(Study study, User user) throws BridgeServiceException {
-        // This user may have never consented to research. Ignore if that's the case.
-        for (String trackerId : study.getTrackers()) {
-            Tracker tracker = studyService.getTrackerByIdentifier(trackerId);
-            if (tracker != null) { // this happens with some tests
-                HealthDataKey key = new HealthDataKey(study, tracker, user);
-                healthDataService.deleteHealthDataRecords(key);
-            }
-        }
-    }
-
 }

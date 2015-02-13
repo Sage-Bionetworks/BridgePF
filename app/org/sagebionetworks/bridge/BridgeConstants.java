@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import org.joda.time.DateTimeZone;
+
 public class BridgeConstants {
 
     public static final String SESSION_TOKEN_HEADER = "Bridge-Session";
@@ -17,6 +19,8 @@ public class BridgeConstants {
     public static final String ADMIN_GROUP = "admin";
 
     public static final String TEST_USERS_GROUP = "test_users";
+
+    public static final DateTimeZone LOCAL_TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");
 
     // 24 hrs after last activity
     public static final int BRIDGE_SESSION_EXPIRE_IN_SECONDS = 24 * 60 * 60;
