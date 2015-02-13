@@ -1,0 +1,83 @@
+package org.sagebionetworks.bridge.services;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Set;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+
+import com.google.common.collect.Sets;
+
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+
+public class CacheServiceTest {
+
+    private CacheService service;
+    
+    @Before
+    public void before() {
+        service = new CacheService();
+        
+        JedisPool pool = mock(JedisPool.class);
+        when(pool.getResource()).thenReturn(createStubJedis());
+
+        service.setJedisPool(pool);
+    }
+    
+    @Test
+    public void listsItemsWithoutSessions() {
+        Set<String> set = service.listItems();
+        assertEquals(2, set.size());
+        assertTrue(set.contains("foo:study"));
+        assertTrue(set.contains("baz:Survey:view"));
+    }
+    
+    
+    @Test
+    public void canRemoveItem() {
+        service.removeItem("foo:study");
+        Set<String> set = service.listItems();
+        assertEquals(1, set.size());
+    }
+    
+    @Test(expected = BridgeServiceException.class)
+    public void doesNotRemoveSessions() {
+        service.removeItem("bar:session");
+    }
+    
+    @Test(expected = BridgeServiceException.class)
+    public void throwsExceptionWhenThereIsNoKey() {
+        service.removeItem("not:a:key");
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void throwsExceptionWhenKeyIsEmpty() {
+        service.removeItem(" ");
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void throwsExceptionWhenKeyIsNull() {
+        service.removeItem(null);
+    }
+    
+    private Jedis createStubJedis() {
+        return new Jedis("") {
+            private Set<String> set = Sets.newHashSet("foo:study", "bar:session", "baz:Survey:view");
+
+            @Override
+            public Set<String> keys(String pattern) {
+                return set;
+            }
+            @Override
+            public Long del(String key) {
+                return (set.remove(key)) ? 1L : 0L;
+            }
+        };
+    }
+}
