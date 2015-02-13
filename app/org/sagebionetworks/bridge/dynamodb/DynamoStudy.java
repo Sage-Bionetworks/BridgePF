@@ -92,8 +92,10 @@ public class DynamoStudy implements Study, DynamoTable {
     }
     @Override
     public void setIdentifier(String identifier) {
-        this.identifier = identifier;
-        this.studyIdentifier = new StudyIdentifierImpl(identifier);
+        if (identifier != null) {
+            this.identifier = identifier;
+            this.studyIdentifier = new StudyIdentifierImpl(identifier);
+        }
     }
     @Override
     @JsonIgnore
