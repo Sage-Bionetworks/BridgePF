@@ -72,32 +72,11 @@ public class AuthenticationControllerTest {
     @Before
     public void before() {
         testUser = helper.createUser(AuthenticationControllerTest.class);
-        
-        String id = RandomStringUtils.randomAlphabetic(7).toLowerCase();
-        secondStudy = new DynamoStudy();
-        secondStudy.setIdentifier(id);
-        secondStudy.setName("Second Test Study");
-        studyService.createStudy(secondStudy);
-        
-        Schedule schedule = new Schedule();
-        schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.getActivities().add(new Activity("An Activity", "task:AAA"));
-        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
-        strategy.setSchedule(schedule);
-        
-        // Create a schedule plan for a task that we can look for in this study...
-        plan = new DynamoSchedulePlan();
-        plan.setStudyKey(id);
-        plan.setStrategy(strategy);
-        
-        plan = schedulePlanService.createSchedulePlan(plan);
     }
     
     @After
     public void after() {
         helper.deleteUser(testUser);
-        schedulePlanService.deleteSchedulePlan(secondStudy.getStudyIdentifier(), plan.getGuid());
-        studyService.deleteStudy(secondStudy.getIdentifier());
     }
 
     @Test
@@ -136,24 +115,56 @@ public class AuthenticationControllerTest {
     public void onceAuthenticatedUserCannotSwitchStudies() {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
-                ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put(USERNAME, testUser.getUsername());
-                node.put(PASSWORD, testUser.getPassword());
-                
-                WSRequestHolder holder = WS.url(TEST_BASE_URL + SIGN_IN_URL);
-                holder.setHeader(BridgeConstants.BRIDGE_STUDY_HEADER, "api");
-                Response response = holder.post(node).get(TIMEOUT);
-                WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+                try {
+                    saveSecondStudyWithSchedulePlan();
+                    
+                    ObjectNode node = JsonNodeFactory.instance.objectNode();
+                    node.put(USERNAME, testUser.getUsername());
+                    node.put(PASSWORD, testUser.getPassword());
+                    
+                    WSRequestHolder holder = WS.url(TEST_BASE_URL + SIGN_IN_URL);
+                    holder.setHeader(BridgeConstants.BRIDGE_STUDY_HEADER, "api");
+                    Response response = holder.post(node).get(TIMEOUT);
+                    WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 
-                // Now, try and access schedules in the wrong study (one with a plan), you do not get it.
-                holder = WS.url(TEST_BASE_URL + SCHEDULES_API);
-                holder.setHeader(BridgeConstants.BRIDGE_STUDY_HEADER, secondStudy.getIdentifier());
-                holder.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue());
-                response = holder.get().get(TIMEOUT);
-                assertEquals("{\"items\":[],\"total\":0,\"type\":\"ResourceList\"}", response.getBody());
+                    // Now, try and access schedules in the wrong study (one with a plan), you do not get it.
+                    holder = WS.url(TEST_BASE_URL + SCHEDULES_API);
+                    holder.setHeader(BridgeConstants.BRIDGE_STUDY_HEADER, secondStudy.getIdentifier());
+                    holder.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue());
+                    response = holder.get().get(TIMEOUT);
+                    assertEquals("{\"items\":[],\"total\":0,\"type\":\"ResourceList\"}", response.getBody());
+                    
+                } finally {
+                    if (secondStudy != null) {
+                        if (plan != null) {
+                            schedulePlanService.deleteSchedulePlan(secondStudy.getStudyIdentifier(), plan.getGuid());        
+                        }
+                        studyService.deleteStudy(secondStudy.getIdentifier());
+                    }
+                }
             }
         });
     }
     
+    private void saveSecondStudyWithSchedulePlan() {
+        String id = RandomStringUtils.randomAlphabetic(7).toLowerCase();
+        secondStudy = new DynamoStudy();
+        secondStudy.setIdentifier(id);
+        secondStudy.setName("Second Test Study");
+        studyService.createStudy(secondStudy);
+        
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.getActivities().add(new Activity("An Activity", "task:AAA"));
+        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+        strategy.setSchedule(schedule);
+        
+        // Create a schedule plan for a task that we can look for in this study...
+        plan = new DynamoSchedulePlan();
+        plan.setStudyKey(id);
+        plan.setStrategy(strategy);
+        
+        plan = schedulePlanService.createSchedulePlan(plan);
+    }
     
 }
