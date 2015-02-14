@@ -196,4 +196,5 @@ public class AuthenticationServiceImplTest {
             helper.deleteUser(user);
         }
     }
+    
 }
