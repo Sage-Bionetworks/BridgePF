@@ -5,7 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -15,15 +15,14 @@ public final class HealthDataKey {
     private final String trackerIdentifier;
     private final String healthCode;
     
-    public HealthDataKey(Study study, Tracker tracker, User user) {
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        checkNotNull(study.getIdentifier(), Validate.CANNOT_BE_NULL, "study key");
+    public HealthDataKey(StudyIdentifier studyIdentifier, Tracker tracker, User user) {
+        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(tracker, Validate.CANNOT_BE_NULL, "tracker");
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkArgument(isNotBlank(tracker.getIdentifier()), Validate.CANNOT_BE_BLANK, "tracker identifier");
         checkArgument(isNotBlank(user.getHealthCode()), Validate.CANNOT_BE_BLANK, "user healthCode");
 
-        this.studyKey = study.getIdentifier();
+        this.studyKey = studyIdentifier.getIdentifier();
         this.trackerIdentifier = tracker.getIdentifier();
         this.healthCode = user.getHealthCode();
     }

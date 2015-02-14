@@ -4,16 +4,17 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface ParticipantOptionsService {
     /**
      * Set an option for a participant. Value cannot be null.
+     * @param studyIdentifier
      * @param healthCode
      * @param option
      * @param value
      */
-    public void setOption(Study study, String healthCode, Option option, String value);
+    public void setOption(StudyIdentifier studyIdentifier, String healthCode, Option option, String value);
     
     /**
      * Get an option for a participant. Returns the default value for the option if the option 
@@ -58,10 +59,10 @@ public interface ParticipantOptionsService {
     /**
      * Get a map of all health codes to all values for an option (null if never set), for a 
      * given study. Useful for export and other batch tasks.
-     * @param studyKey
+     * @param studyIdentifier
      * @param option
      * @return
      */
-    public OptionLookup getOptionForAllStudyParticipants(Study study, Option option);
+    public OptionLookup getOptionForAllStudyParticipants(StudyIdentifier studyIdentifier, Option option);
 
 }

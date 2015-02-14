@@ -4,13 +4,15 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
-public interface Study extends BridgeEntity {
+public interface Study extends BridgeEntity, StudyIdentifier {
 
     public String getName();
     public void setName(String name);
     
     public String getIdentifier();
     public void setIdentifier(String identifier);
+    
+    public StudyIdentifier getStudyIdentifier();
     
     public Long getVersion();
     public void setVersion(Long version);

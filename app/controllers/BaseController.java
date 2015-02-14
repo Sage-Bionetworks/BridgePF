@@ -1,5 +1,11 @@
 package controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.ADMIN_GROUP;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_HOST_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_STUDY_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+
 import javax.annotation.Nonnull;
 
 import java.util.Collection;
@@ -8,10 +14,8 @@ import com.google.common.base.Strings;
 
 import models.StatusMessage;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -19,7 +23,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.slf4j.Logger;
@@ -64,17 +68,28 @@ public abstract class BaseController extends Controller {
     }
     
     /**
+     * Returns a session. Will not throw exception if user is not authorized or has not consented to research.
+     * @return session if it exists, or null otherwise.
+     */
+    protected UserSession getSessionIfItExists() {
+        String sessionToken = getSessionToken();
+        if (sessionToken == null){
+            return null;
+        }
+        return authenticationService.getSession(sessionToken);
+    }
+    
+    /**
      * Retrieve a user's session or throw an exception if the user is not authenticated. 
      * User does not have to give consent. 
      * @return
      * @throws Exception
      */
-    protected UserSession getAuthenticatedSession() throws BridgeServiceException {
+    protected UserSession getAuthenticatedSession() throws NotAuthenticatedException {
         String sessionToken = getSessionToken();
         if (sessionToken == null || sessionToken.isEmpty()) {
             throw new NotAuthenticatedException();
         }
-
         UserSession session = authenticationService.getSession(sessionToken);
         if (session == null || !session.isAuthenticated()) {
             throw new NotAuthenticatedException();
@@ -89,16 +104,9 @@ public abstract class BaseController extends Controller {
      * @return
      * @throws Exception
      */
-    protected UserSession getAuthenticatedAndConsentedSession() throws BridgeServiceException {
-        String sessionToken = getSessionToken();
-        if (sessionToken == null || sessionToken.isEmpty()) {
-            throw new NotAuthenticatedException();
-        }
-
-        UserSession session = authenticationService.getSession(sessionToken);
-        if (session == null || !session.isAuthenticated()) {
-            throw new NotAuthenticatedException();
-        } else if (!session.getUser().isConsent()) {
+    protected UserSession getAuthenticatedAndConsentedSession() throws NotAuthenticatedException, ConsentRequiredException {
+        UserSession session = getAuthenticatedSession();
+        if (!session.getUser().isConsent()) {
             throw new ConsentRequiredException(session);
         }
         return session;
@@ -107,46 +115,36 @@ public abstract class BaseController extends Controller {
     /**
      * Checks if the user is in the "admin" group.
      */
-    protected UserSession getAuthenticatedAdminSession() throws BridgeServiceException {
+    protected UserSession getAuthenticatedAdminSession() throws NotAuthenticatedException, UnauthorizedException {
         UserSession session = getAuthenticatedSession();
-        if (!session.getUser().isInRole(BridgeConstants.ADMIN_GROUP)) {
+        if (!session.getUser().isInRole(ADMIN_GROUP)) {
             throw new UnauthorizedException();
         }
         return session;
     }
     
-    protected UserSession getAuthenticatedResearcherSession(Study study) {
+    protected UserSession getAuthenticatedResearcherSession() throws NotAuthenticatedException, UnauthorizedException {
         UserSession session = getAuthenticatedSession();
         User user = session.getUser();
-        if (user.isInRole(study.getResearcherRole())) {
-            return session;
+        StudyIdentifier studyId = session.getStudyIdentifier();
+        if (!user.isInRole(studyId.getResearcherRole())) {
+            throw new UnauthorizedException();
         }
-        throw new UnauthorizedException();
+        return session;
     }
     
-    protected UserSession getAuthenticatedResearcherOrAdminSession(Study study) {
+    protected UserSession getAuthenticatedResearcherOrAdminSession() throws NotAuthenticatedException, UnauthorizedException {
         UserSession session = getAuthenticatedSession();
         User user = session.getUser();
-        if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
-            return session;
+        StudyIdentifier studyId = session.getStudyIdentifier();
+        if (!user.isInRole(ADMIN_GROUP) && !user.isInRole(studyId.getResearcherRole())) {
+            throw new UnauthorizedException();
         }
-        throw new UnauthorizedException();
+        return session;
     }
     
-    /**
-     * Return a session if it exists, or null otherwise. Will not throw exception if user is not authorized or has not
-     * consented to research.
-     * 
-     * @return
-     */
-    protected UserSession getSessionIfItExists() {
-        String sessionToken = getSessionToken();
-        return authenticationService.getSession(sessionToken);
-    }
-
     protected void setSessionToken(String sessionToken) {
-        response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+        response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
 
     protected void updateSessionUser(UserSession session, User user) {
@@ -154,20 +152,15 @@ public abstract class BaseController extends Controller {
         cacheProvider.setUserSession(session.getSessionToken(), session);
     }
     
-    protected Study getStudy() {
-        String studyIdentifier = getStudyIdentifier();
-        return studyService.getStudy(studyIdentifier);
-    }
-    
     protected String getStudyIdentifier() {
         // Bridge-Study: api
-        String value = request().getHeader(BridgeConstants.BRIDGE_STUDY_HEADER);
+        String value = request().getHeader(BRIDGE_STUDY_HEADER);
         if (value != null) {
             logger.debug("Study identifier retrieved from Bridge-Study header ("+value+")");
             return value;
         }
         // Bridge-Host: api-develop.sagebridge.org
-        value = request().getHeader(BridgeConstants.BRIDGE_HOST_HEADER);
+        value = request().getHeader(BRIDGE_HOST_HEADER);
         if (value != null) {
             logger.debug("Study identifier parsed from Bridge-Host header ("+value+")");
             return getIdentifierFromHostname(value);
@@ -194,9 +187,9 @@ public abstract class BaseController extends Controller {
     }
     
     private String getSessionToken() {
-        String[] session = request().headers().get(BridgeConstants.SESSION_TOKEN_HEADER);
+        String[] session = request().headers().get(SESSION_TOKEN_HEADER);
         if (session == null || session.length == 0 || session[0].isEmpty()) {
-            Cookie sessionCookie = request().cookie(BridgeConstants.SESSION_TOKEN_HEADER);
+            Cookie sessionCookie = request().cookie(SESSION_TOKEN_HEADER);
             if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
                 return sessionCookie.value();
             }

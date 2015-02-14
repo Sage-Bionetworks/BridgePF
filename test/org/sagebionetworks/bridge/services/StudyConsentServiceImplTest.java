@@ -18,6 +18,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -44,7 +46,7 @@ public class StudyConsentServiceImplTest {
     @After
     public void after() {
         for (StudyConsent sc : toDelete) {
-            studyConsentDao.deleteConsent(sc.getStudyKey(), sc.getCreatedOn());
+            studyConsentDao.deleteConsent(new StudyIdentifierImpl(sc.getStudyKey()), sc.getCreatedOn());
         }
         toDelete.clear();
     }
@@ -52,34 +54,34 @@ public class StudyConsentServiceImplTest {
     @Test
     public void test() {
 
-        String studyKey = "study-key";
+        StudyIdentifier studyId = new StudyIdentifierImpl("study-key");
         String path = "fake-path";
         int minAge = 17;
         StudyConsentForm form = new StudyConsentForm(path, minAge);
 
         // addConsent should return a non-null consent object.
-        StudyConsent addedConsent1 = studyConsentService.addConsent(studyKey, form);
+        StudyConsent addedConsent1 = studyConsentService.addConsent(studyId, form);
         assertNotNull(addedConsent1);
         toDelete.add(addedConsent1);
 
         try {
-            studyConsentService.getActiveConsent(studyKey);
+            studyConsentService.getActiveConsent(studyId);
             fail("getActiveConsent should throw exception, as there is no currently active consent.");
         } catch (Exception e) {
         }
 
         // Get active consent returns the most recently activated consent document.
-        StudyConsent activatedConsent = studyConsentService.activateConsent(studyKey, addedConsent1.getCreatedOn());
-        StudyConsent getActiveConsent = studyConsentService.getActiveConsent(studyKey);
+        StudyConsent activatedConsent = studyConsentService.activateConsent(studyId, addedConsent1.getCreatedOn());
+        StudyConsent getActiveConsent = studyConsentService.getActiveConsent(studyId);
         assertTrue(activatedConsent.getCreatedOn() == getActiveConsent.getCreatedOn());
 
         // Get all consents returns one consent document (addedConsent).
-        List<StudyConsent> allConsents = studyConsentService.getAllConsents(studyKey);
+        List<StudyConsent> allConsents = studyConsentService.getAllConsents(studyId);
         assertTrue(allConsents.size() == 1);
 
         // Cannot delete active consent document.
         try {
-            studyConsentService.deleteConsent(studyKey, getActiveConsent.getCreatedOn());
+            studyConsentService.deleteConsent(studyId, getActiveConsent.getCreatedOn());
             fail("Was able to successfully delete active consent, which we should not be able to do.");
         } catch (BridgeServiceException e) {
         }

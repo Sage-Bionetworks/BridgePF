@@ -14,10 +14,6 @@ public class ViewCache {
     
     private static final Logger logger = LoggerFactory.getLogger(ViewCache.class);
     
-    // Could add a BlockingQueue and Executors.newSingleThreadExecutor() to prevent a run of 
-    // requests when the view is expired. But I don't think this is likely to be a very big
-    // problem.
-
     public class ViewCacheKey<T> {
         private final String key;
         public ViewCacheKey(String key) {

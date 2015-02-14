@@ -4,8 +4,9 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 
 import play.mvc.Result;
@@ -19,47 +20,47 @@ public class SchedulePlanController extends BaseController {
     }
     
     public Result getSchedulePlans() throws Exception {
-        Study study = getStudy();
-        getAuthenticatedResearcherOrAdminSession(study);
+        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        StudyIdentifier studyId = session.getStudyIdentifier();
 
-        List<SchedulePlan> plans =  schedulePlanService.getSchedulePlans(study);
+        List<SchedulePlan> plans =  schedulePlanService.getSchedulePlans(studyId);
         return okResult(plans);
     }
 
     public Result createSchedulePlan() throws Exception {
-        Study study = getStudy();
-        getAuthenticatedResearcherOrAdminSession(study);
+        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        StudyIdentifier studyId = session.getStudyIdentifier();
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
-        planForm.setStudyKey(study.getIdentifier());
+        planForm.setStudyKey(studyId.getIdentifier());
         SchedulePlan plan = schedulePlanService.createSchedulePlan(planForm);
         return createdResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
     }
 
     public Result getSchedulePlan(String guid) throws Exception {
-        Study study = getStudy();
-        getAuthenticatedResearcherOrAdminSession(study);
+        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        StudyIdentifier studyId = session.getStudyIdentifier();
         
-        SchedulePlan plan = schedulePlanService.getSchedulePlan(study, guid);
+        SchedulePlan plan = schedulePlanService.getSchedulePlan(studyId, guid);
         return okResult(plan);
     }
 
     public Result updateSchedulePlan(String guid) throws Exception {
-        Study study = getStudy();
-        getAuthenticatedResearcherOrAdminSession(study);
+        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        StudyIdentifier studyId = session.getStudyIdentifier();
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
-        planForm.setStudyKey(study.getIdentifier());
+        planForm.setStudyKey(studyId.getIdentifier());
         SchedulePlan plan = schedulePlanService.updateSchedulePlan(planForm);
         
         return okResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
     }
 
     public Result deleteSchedulePlan(String guid) {
-        Study study = getStudy();
-        getAuthenticatedResearcherOrAdminSession(study);
+        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        StudyIdentifier studyId = session.getStudyIdentifier();
 
-        schedulePlanService.deleteSchedulePlan(study, guid);
+        schedulePlanService.deleteSchedulePlan(studyId, guid);
         return okResult("Schedule plan deleted.");
     }
 

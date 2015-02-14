@@ -18,7 +18,6 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
@@ -30,7 +29,8 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
@@ -51,17 +51,14 @@ public class SurveyServiceTest {
     @Resource
     SurveyServiceImpl surveyService;
 
-    @Resource
-    StudyServiceImpl studyService; 
-    
     private TestSurvey testSurvey;
     
-    private Study study;
+    private StudyIdentifier studyIdentifier;
     
     @Before
     public void before() {
         testSurvey = new TestSurvey(true);
-        study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
+        studyIdentifier = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
         DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyElement.class);
         DynamoTestUtil.clearTable(DynamoSurvey.class);
         DynamoTestUtil.clearTable(DynamoSurveyElement.class);
@@ -114,7 +111,7 @@ public class SurveyServiceTest {
         survey = surveyService.getSurvey(survey);
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
 
-        surveyService.deleteSurvey(study, survey);
+        surveyService.deleteSurvey(studyIdentifier, survey);
 
         try {
             survey = surveyService.getSurvey(survey);
@@ -230,7 +227,7 @@ public class SurveyServiceTest {
 
         assertTrue("Survey is marked published", survey.isPublished());
 
-        Survey pubSurvey = surveyService.getAllSurveysMostRecentlyPublishedVersion(study).get(0);
+        Survey pubSurvey = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier).get(0);
 
         assertEquals("Same testSurvey GUID", survey.getGuid(), pubSurvey.getGuid());
         assertEquals("Same testSurvey createdOn", survey.getCreatedOn(), pubSurvey.getCreatedOn());
@@ -238,7 +235,7 @@ public class SurveyServiceTest {
 
         // Publishing again is harmless
         survey = surveyService.publishSurvey(survey);
-        pubSurvey = surveyService.getAllSurveysMostRecentlyPublishedVersion(study).get(0);
+        pubSurvey = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier).get(0);
         assertEquals("Same testSurvey GUID", survey.getGuid(), pubSurvey.getGuid());
         assertEquals("Same testSurvey createdOn", survey.getCreatedOn(), pubSurvey.getCreatedOn());
         assertTrue("Published testSurvey is marked published", pubSurvey.isPublished());
@@ -255,7 +252,7 @@ public class SurveyServiceTest {
 
         laterSurvey = surveyService.publishSurvey(laterSurvey);
 
-        Survey pubSurvey = surveyService.getAllSurveysMostRecentlyPublishedVersion(study).get(0);
+        Survey pubSurvey = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier).get(0);
         assertEquals("Later testSurvey is the published testSurvey", laterSurvey.getCreatedOn(), pubSurvey.getCreatedOn());
     }
 
@@ -263,12 +260,8 @@ public class SurveyServiceTest {
 
     @Test
     public void failToGetSurveysByBadStudyKey() {
-        Study study = new DynamoStudy();
-        study.setName("foo");
-        study.setIdentifier("foo");
-        study.setMinAgeOfConsent(17);
-        study.setResearcherRole("foo_researcher");
-        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(study);
+        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("foo");
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyIdentifier);
         assertEquals("No surveys", 0, surveys.size());
     }
 
@@ -285,11 +278,11 @@ public class SurveyServiceTest {
 
         // Get all surveys
         
-        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(study);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyIdentifier);
         assertEquals("All surveys are returned", 5, surveys.size());
 
         // Get all surveys of a version
-        surveys = surveyService.getSurveyAllVersions(study, survey.getGuid());
+        surveys = surveyService.getSurveyAllVersions(studyIdentifier, survey.getGuid());
         assertEquals("All surveys are returned", 2, surveys.size());
 
         Survey version1 = surveys.get(0);
@@ -330,14 +323,14 @@ public class SurveyServiceTest {
         // Publish one version
         surveyService.publishSurvey(survey1);
 
-        List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(study);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
         assertEquals("Retrieved published testSurvey v1", survey1.getCreatedOn(), surveys.get(0).getCreatedOn());
 
         // Publish a later version
         surveyService.publishSurvey(survey2);
 
         // Now the most recent version of this testSurvey should be survey2.
-        surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(study);
+        surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
         assertEquals("Retrieved published testSurvey v2", survey2.getCreatedOn(), surveys.get(0).getCreatedOn());
     }
 
@@ -352,7 +345,7 @@ public class SurveyServiceTest {
         Survey survey3 = surveyService.createSurvey(new TestSurvey(true));
         surveyService.publishSurvey(survey3);
 
-        List<Survey> published = surveyService.getAllSurveysMostRecentlyPublishedVersion(study);
+        List<Survey> published = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
 
         assertEquals("There are three published surveys", 3, published.size());
         assertEquals("The first is survey3", survey3.getGuid(), published.get(0).getGuid());
@@ -367,7 +360,7 @@ public class SurveyServiceTest {
         Survey survey = surveyService.createSurvey(testSurvey);
         surveyService.publishSurvey(survey);
 
-        surveyService.deleteSurvey(study, survey);
+        surveyService.deleteSurvey(studyIdentifier, survey);
     }
     
     @Test
@@ -380,7 +373,7 @@ public class SurveyServiceTest {
         GuidCreatedOnVersionHolder keys = surveyService.createSurvey(survey);
         surveyService.publishSurvey(keys);
         
-        Survey found = surveyService.getSurveyMostRecentlyPublishedVersionByIdentifier(study, identifier);
+        Survey found = surveyService.getSurveyMostRecentlyPublishedVersionByIdentifier(studyIdentifier, identifier);
         assertNotNull(found);
         assertEquals(survey.getName(), found.getName());
     }

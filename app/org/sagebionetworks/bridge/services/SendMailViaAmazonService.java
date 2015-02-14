@@ -19,7 +19,6 @@ import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.PreencodedMimeBodyPart;
 
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -237,14 +236,8 @@ public class SendMailViaAmazonService implements SendMailService {
         String consentAgreementHTML = CharStreams.toString(isr);
 
         String signingDate = fmt.print(DateUtils.getCurrentMillisFromEpoch());
-        // The dates we're showing are internally stored as UTC dates, so convert to 
-        // LocalDate which will show the date the user entered.
-        LocalDate localDate = LocalDate.parse(consent.getBirthdate());
-        String birthdate = fmt.print(localDate);
 
         String html = consentAgreementHTML.replace("@@name@@", consent.getName());
-        // removed as per BRIDGE-343.
-        // html = html.replace("@@birth.date@@", birthdate);
         html = html.replace("@@signing.date@@", signingDate);
         html = html.replace("@@email@@", user.getEmail());
         return html;

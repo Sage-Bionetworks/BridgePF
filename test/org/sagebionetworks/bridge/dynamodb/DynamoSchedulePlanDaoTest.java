@@ -25,10 +25,10 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.TestABSchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.TestSimpleSchedulePlan;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
-import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -46,16 +46,13 @@ public class DynamoSchedulePlanDaoTest {
     @Resource
     DynamoSurveyDao surveyDao;
     
-    @Resource
-    StudyServiceImpl studyService;
-    
-    private Study study;
+    private StudyIdentifier studyIdentifier;
     
     @Before
     public void before() {
         DynamoInitializer.init(DynamoSchedulePlan.class);
         DynamoTestUtil.clearTable(DynamoSchedulePlan.class);
-        study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
+        studyIdentifier = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
     }
     
     @Test
@@ -82,15 +79,15 @@ public class DynamoSchedulePlanDaoTest {
         schedulePlanDao.updateSchedulePlan(abPlan);
         
         // Get it from DynamoDB
-        SchedulePlan newPlan = schedulePlanDao.getSchedulePlan(study, abPlan.getGuid());
+        SchedulePlan newPlan = schedulePlanDao.getSchedulePlan(studyIdentifier, abPlan.getGuid());
         assertEquals("Schedule plan contains correct strategy class type", SimpleScheduleStrategy.class, newPlan.getStrategy().getClass());
         
         assertEquals("The strategy has been updated", simplePlan.getStrategy().hashCode(), newPlan.getStrategy().hashCode());
         
         // delete, throws exception
-        schedulePlanDao.deleteSchedulePlan(study, newPlan.getGuid());
+        schedulePlanDao.deleteSchedulePlan(studyIdentifier, newPlan.getGuid());
         try {
-            schedulePlanDao.getSchedulePlan(study, newPlan.getGuid());
+            schedulePlanDao.getSchedulePlan(studyIdentifier, newPlan.getGuid());
             fail("Should have thrown an entity not found exception");
         } catch(EntityNotFoundException e) {
         }
@@ -104,7 +101,7 @@ public class DynamoSchedulePlanDaoTest {
         schedulePlanDao.createSchedulePlan(abPlan);
         schedulePlanDao.createSchedulePlan(simplePlan);
         
-        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(study);
+        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(studyIdentifier);
         assertEquals("2 plans exist", 2, plans.size());
     }
     
@@ -123,23 +120,23 @@ public class DynamoSchedulePlanDaoTest {
         
         plan = schedulePlanDao.createSchedulePlan(plan);
         
-        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlansForSurvey(study, survey);
+        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlansForSurvey(studyIdentifier, survey);
         assertEquals("There should be one plan returned", 1, plans.size());
         
         try {
             // Should not be able to delete a survey at this opint
-            surveyDao.deleteSurvey(study, survey);
+            surveyDao.deleteSurvey(studyIdentifier, survey);
             fail("Was able to delete without a problem");
         } catch(IllegalStateException e) {
         }
         
-        schedulePlanDao.deleteSchedulePlan(study, plan.getGuid());
+        schedulePlanDao.deleteSchedulePlan(studyIdentifier, plan.getGuid());
         // Now you can delete the survey
-        surveyDao.deleteSurvey(study, survey);
+        surveyDao.deleteSurvey(studyIdentifier, survey);
         
         // Verify both have been deleted.
         try {
-            schedulePlanDao.getSchedulePlan(study, plan.getGuid());
+            schedulePlanDao.getSchedulePlan(studyIdentifier, plan.getGuid());
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
         }
