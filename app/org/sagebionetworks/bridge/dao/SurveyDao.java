@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.dao;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
 public interface SurveyDao {
@@ -23,10 +23,10 @@ public interface SurveyDao {
      * first be deleted, and the survey closed (unpublished), before the survey 
      * can be deleted.
      *  
-     * @param study
+     * @param studyIdentifier
      * @param keys
      */
-    public void deleteSurvey(Study study, GuidCreatedOnVersionHolder keys);
+    public void deleteSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys);
     
     /**
      * Unpublish the survey, closing out any active records that are still 
@@ -51,7 +51,7 @@ public interface SurveyDao {
      * @param guid
      * @return
      */
-    public List<Survey> getSurveyAllVersions(String studyIdentifier, String guid);    
+    public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid);    
     
     /**
      * Get the most recent version of a survey, regardless of whether it is published
@@ -60,7 +60,7 @@ public interface SurveyDao {
      * @param guid
      * @return
      */
-    public Survey getSurveyMostRecentVersion(String studyIdentifier, String guid);
+    public Survey getSurveyMostRecentVersion(StudyIdentifier studyIdentifier, String guid);
     
     /**
      * Get the most recent version of a survey that is published. More recent, unpublished 
@@ -69,26 +69,28 @@ public interface SurveyDao {
      * @param guid
      * @return
      */
-    public Survey getSurveyMostRecentlyPublishedVersion(String studyIdentifier, String guid);
+    public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid);
     
     /**
      * Get the most recently published version of a survey using its identifier.
+     * @param studyIdentifier
+     * @param identifier
      * @return
      */
-    public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(String studyIdentifier, String identifier);
+    public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(StudyIdentifier studyIdentifier, String identifier);
     
     /**
      * Get the most recent version of each survey in the study, that has been published. 
      * @param studyIdentifier
      * @return
      */
-    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(String studyIdentifier);
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier);
     
     /**
      * Get the most recent version of each survey in the study, whether published or not.
      * @param studyIdentifier
      * @return
      */
-    public List<Survey> getAllSurveysMostRecentVersion(String studyIdentifier);
+    public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier);
     
 }

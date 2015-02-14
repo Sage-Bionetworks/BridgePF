@@ -3,18 +3,18 @@ package org.sagebionetworks.bridge.services;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface SchedulePlanService {
 
-    public List<SchedulePlan> getSchedulePlans(Study study);
+    public List<SchedulePlan> getSchedulePlans(StudyIdentifier studyIdentifier);
     
-    public SchedulePlan getSchedulePlan(Study study, String guid);
+    public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid);
     
     public SchedulePlan createSchedulePlan(SchedulePlan plan);
     
     public SchedulePlan updateSchedulePlan(SchedulePlan plan);
     
-    public void deleteSchedulePlan(Study study, String guid);
+    public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid);
     
 }

@@ -5,6 +5,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.StudyService;
 
 public class StudyConsentBootstrapper {
@@ -25,11 +26,12 @@ public class StudyConsentBootstrapper {
             studyService.createStudy(study);
         }
         for (Study study : studyService.getStudies()) {
+            StudyIdentifier studyIdentifier = study.getStudyIdentifier();
             String path = String.format("conf/email-templates/%s-consent.html", study.getIdentifier());
             int minAge = 17;
-            StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
+            StudyConsent consent = studyConsentDao.getConsent(studyIdentifier);
             if (consent == null) {
-                consent = studyConsentDao.addConsent(study.getIdentifier(), path, minAge);
+                consent = studyConsentDao.addConsent(studyIdentifier, path, minAge);
                 studyConsentDao.setActive(consent, true);
             }
         }

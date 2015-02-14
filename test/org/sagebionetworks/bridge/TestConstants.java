@@ -20,7 +20,8 @@ public class TestConstants {
     public static final String RECORD_URL = API_URL + "/healthdata/2/record/";
 
     public static final String PROFILE_URL = API_URL + "/profile";
-
+    public static final String SCHEDULES_API = API_URL + "/schedules";
+    
     public static final String STUDYCONSENT_URL = ADMIN_URL + "/consents";
     public static final String STUDYCONSENT_ACTIVE_URL = STUDYCONSENT_URL + "/active";
 
