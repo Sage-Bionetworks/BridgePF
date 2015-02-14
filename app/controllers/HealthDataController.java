@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataKey;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -36,7 +36,7 @@ public class HealthDataController extends BaseController {
 
     public Result appendHealthData(String identifier) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = getStudy();
+        StudyIdentifier studyId = session.getStudyIdentifier();
         Tracker tracker = studyService.getTracker(identifier);
 
         JsonNode node = requestToJSON(request());
@@ -48,7 +48,7 @@ public class HealthDataController extends BaseController {
             records.add(DynamoHealthDataRecord.fromJson(child));
         }
 
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
+        HealthDataKey key = new HealthDataKey(studyId, tracker, session.getUser());
 
         List<HealthDataRecord> updatedRecords = healthDataService.appendHealthData(key, records);
 
@@ -75,10 +75,10 @@ public class HealthDataController extends BaseController {
 
     private Result getAllHealthData(String identifier) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = getStudy();
+        StudyIdentifier studyId = session.getStudyIdentifier();
         Tracker tracker = studyService.getTracker(identifier);
 
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
+        HealthDataKey key = new HealthDataKey(studyId, tracker, session.getUser());
 
         List<HealthDataRecord> entries = healthDataService.getAllHealthData(key);
         return okResult(entries);
@@ -86,9 +86,9 @@ public class HealthDataController extends BaseController {
 
     private Result getHealthDataByDateRange(String identifier, long startDate, long endDate) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = getStudy();
+        StudyIdentifier studyId = session.getStudyIdentifier();
         Tracker tracker = studyService.getTracker(identifier);
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
+        HealthDataKey key = new HealthDataKey(studyId, tracker, session.getUser());
 
         List<HealthDataRecord> entries = healthDataService.getHealthDataByDateRange(key, startDate, endDate);
         return okResult(entries);
@@ -96,9 +96,9 @@ public class HealthDataController extends BaseController {
 
     public Result getHealthDataRecord(String identifier, String guid) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = getStudy();
+        StudyIdentifier studyId = session.getStudyIdentifier();
         Tracker tracker = studyService.getTracker(identifier);
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
+        HealthDataKey key = new HealthDataKey(studyId, tracker, session.getUser());
 
         HealthDataRecord record = healthDataService.getHealthDataRecord(key, guid);
         return okResult(record);
@@ -106,9 +106,9 @@ public class HealthDataController extends BaseController {
 
     public Result updateHealthDataRecord(String identifier, String guid) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = getStudy();
+        StudyIdentifier studyId = session.getStudyIdentifier();
         Tracker tracker = studyService.getTracker(identifier);
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
+        HealthDataKey key = new HealthDataKey(studyId, tracker, session.getUser());
 
         JsonNode node = requestToJSON(request());
         HealthDataRecord record = DynamoHealthDataRecord.fromJson(node);
@@ -120,9 +120,9 @@ public class HealthDataController extends BaseController {
 
     public Result deleteHealthDataRecord(String identifier, String guid) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = getStudy();
+        StudyIdentifier studyId = session.getStudyIdentifier();
         Tracker tracker = studyService.getTracker(identifier);
-        HealthDataKey key = new HealthDataKey(study, tracker, session.getUser());
+        HealthDataKey key = new HealthDataKey(studyId, tracker, session.getUser());
 
         healthDataService.deleteHealthDataRecord(key, guid);
         return okResult("Record deleted.");

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkArgument;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -13,6 +14,7 @@ import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -55,7 +57,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public boolean withdrawConsent(String healthCode, String studyIdentifier) {
+    public boolean withdrawConsent(String healthCode, StudyIdentifier studyIdentifier) {
         DynamoUserConsent2 consent = (DynamoUserConsent2) getUserConsent(healthCode, studyIdentifier);
         if (consent != null) {
             mapper.delete(consent);
@@ -65,24 +67,24 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public boolean hasConsented(String healthCode, String studyIdentifier) {
+    public boolean hasConsented(String healthCode, StudyIdentifier studyIdentifier) {
         return getUserConsent(healthCode, studyIdentifier) != null;
     }
 
     @Override
-    public UserConsent getUserConsent(String healthCode, String studyIdentifier) {
-        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyIdentifier);
+    public UserConsent getUserConsent(String healthCode, StudyIdentifier studyIdentifier) {
+        DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyIdentifier.getIdentifier());
         consent = mapper.load(consent);
         return consent;
     }
 
     @Override
-    public long getNumberOfParticipants(String studyKey) {
+    public long getNumberOfParticipants(StudyIdentifier studyIdentifier) {
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
 
         Condition condition = new Condition();
         condition.withComparisonOperator(ComparisonOperator.EQ);
-        condition.withAttributeValueList(new AttributeValue().withS(studyKey));
+        condition.withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
         scan.addFilterCondition("studyKey", condition);
 
         Set<String> healthCodes = Sets.newHashSet();

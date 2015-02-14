@@ -1,11 +1,12 @@
 package org.sagebionetworks.bridge.services;
 
 import org.sagebionetworks.bridge.models.HealthId;
-import org.sagebionetworks.bridge.models.studies.Study;
+
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface HealthCodeService {
 
-    HealthId create(Study study);
+    HealthId create(StudyIdentifier studyIdentifier);
 
     String getHealthCode(String id);
 

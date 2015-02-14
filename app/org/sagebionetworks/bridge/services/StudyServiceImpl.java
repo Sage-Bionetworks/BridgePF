@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
@@ -13,13 +12,11 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
-import org.sagebionetworks.bridge.dao.DnsDao;
-import org.sagebionetworks.bridge.dao.HerokuApi;
 import org.sagebionetworks.bridge.dao.StudyDao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -35,8 +32,6 @@ public class StudyServiceImpl implements StudyService {
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
-    private HerokuApi herokuApi;
-    private DnsDao dnsDao;
     private DistributedLockDao lockDao;
     private BridgeConfig config;
     private StudyValidator validator;
@@ -54,15 +49,6 @@ public class StudyServiceImpl implements StudyService {
     public void setValidator(StudyValidator validator) {
         this.validator = validator;
     }
-
-    public void setHerokuApi(HerokuApi herokuApi) {
-        this.herokuApi = herokuApi;
-    }
-
-    public void setDnsDao(DnsDao dnsDao) {
-        this.dnsDao = dnsDao;
-    }
-
     public void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
     }
@@ -103,6 +89,12 @@ public class StudyServiceImpl implements StudyService {
         return study;
     }
     @Override
+    public Study getStudy(StudyIdentifier studyId) {
+        checkNotNull(studyId, Validate.CANNOT_BE_NULL, "studyIdentifier");
+        
+        return getStudy(studyId.getIdentifier());
+    }
+    @Override
     public List<Study> getStudies() {
         return studyDao.getStudies();
     }
@@ -125,21 +117,9 @@ public class StudyServiceImpl implements StudyService {
 
             String directory = directoryDao.createDirectoryForStudy(study.getIdentifier());
             study.setStormpathHref(directory);
-            if (!config.isLocal()) {
-                uploadCertService.createCmsKeyPair(study.getIdentifier());
-
-                String record = dnsDao.createDnsRecordForStudy(study.getIdentifier());
-                String domain = herokuApi.registerDomainForStudy(study.getIdentifier());
-
-                if (record != null && record.equals(domain)) {
-                    study.setHostname(domain);
-                } else {
-                    String msg = String.format("DNS record (%s) and hostname as registered with Heroku (%s) don't match.", record, domain);
-                    throw new BridgeServiceException(msg);
-                }
-            } else {
-                study.setHostname(study.getIdentifier() + config.getStudyHostnamePostfix());
-            }
+            uploadCertService.createCmsKeyPair(study.getIdentifier());
+            // This may be removable at some point, as we're deprecating this means of communicating the study
+            study.setHostname(study.getIdentifier() + config.getStudyHostnamePostfix());
             study = studyDao.createStudy(study);
             cacheProvider.setStudy(study);
 
@@ -171,10 +151,6 @@ public class StudyServiceImpl implements StudyService {
         String lockId = null;
         try {
             lockId = lockDao.acquireLock(Study.class, identifier);
-            if (!config.isLocal()) {
-                herokuApi.unregisterDomainForStudy(identifier);
-                dnsDao.deleteDnsRecordForStudy(identifier);
-            }
             directoryDao.deleteDirectoryForStudy(identifier);
             studyDao.deleteStudy(identifier);
             cacheProvider.removeStudy(identifier);

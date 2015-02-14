@@ -124,7 +124,7 @@ public class DynamoStudyDaoTest {
         study.setMaxNumOfParticipants(100);
         study.setMinAgeOfConsent(18);
         study.setName(TestUtils.randomName());
-        study.setResearcherRole("researcher");
+        study.setResearcherRole(study.getIdentifier()+"_researcher");
         study.getTrackers().add("sage:med");
         study.getTrackers().add("sage:bp");
         study.setHostname("test.sagebridge.org");

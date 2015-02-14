@@ -13,7 +13,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -38,12 +38,11 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public List<SchedulePlan> getSchedulePlans(Study study) {
-        checkNotNull(study, "Study is null");
-        checkArgument(StringUtils.isNotBlank(study.getIdentifier()), "Study key is null");
+    public List<SchedulePlan> getSchedulePlans(StudyIdentifier studyIdentifier) {
+        checkNotNull(studyIdentifier, "studyIdentifier is null");
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
-        plan.setStudyKey(study.getIdentifier());
+        plan.setStudyKey(studyIdentifier.getIdentifier());
         
         DynamoDBQueryExpression<DynamoSchedulePlan> query = new DynamoDBQueryExpression<DynamoSchedulePlan>();
         query.withScanIndexForward(false);
@@ -53,13 +52,12 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
     
     @Override
-    public SchedulePlan getSchedulePlan(Study study, String guid) {
-        checkNotNull(study, "Study is null");
-        checkArgument(StringUtils.isNotBlank(study.getIdentifier()), "Study key is null");
+    public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
+        checkNotNull(studyIdentifier, "studyIdentifier is null");
         checkArgument(StringUtils.isNotBlank(guid), "Plan GUID is blank or null");
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
-        plan.setStudyKey(study.getIdentifier());
+        plan.setStudyKey(studyIdentifier.getIdentifier());
         
         Condition condition = new Condition();
         condition.withComparisonOperator(ComparisonOperator.EQ);
@@ -97,19 +95,19 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public void deleteSchedulePlan(Study study, String guid) {
-        checkNotNull(study, "Study is null");
+    public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
+        checkNotNull(studyIdentifier, "Study identifier is null");
         checkArgument(StringUtils.isNotBlank(guid), "Plan GUID is blank or null");
         
-        SchedulePlan plan = getSchedulePlan(study, guid);
+        SchedulePlan plan = getSchedulePlan(studyIdentifier, guid);
         mapper.delete(plan);
     }
     
     @Override
-    public List<SchedulePlan> getSchedulePlansForSurvey(Study study, GuidCreatedOnVersionHolder keys) {
+    public List<SchedulePlan> getSchedulePlansForSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
         List<SchedulePlan> results = Lists.newArrayList();
         
-        for (SchedulePlan plan : getSchedulePlans(study)) {
+        for (SchedulePlan plan : getSchedulePlans(studyIdentifier)) {
             if (plan.getStrategy().doesScheduleSurvey(keys)) {
                 results.add(plan);
             }

@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
@@ -57,7 +57,7 @@ public class DynamoSurveyDao implements SurveyDao {
         private static final String IDENTIFIER_PROPERTY = "identifier";
         
         String surveyGuid;
-        String studyKey;
+        String studyIdentifier;
         String identifier;
         long createdOn;
         boolean published;
@@ -66,8 +66,8 @@ public class DynamoSurveyDao implements SurveyDao {
             this.surveyGuid = surveyGuid;
             return this;
         }
-        QueryBuilder setStudy(String studyKey) {
-            this.studyKey = studyKey;
+        QueryBuilder setStudy(StudyIdentifier studyIdentifier) {
+            this.studyIdentifier = studyIdentifier.getIdentifier();
             return this;
         }
         QueryBuilder setIdentifier(String identifier) {
@@ -113,7 +113,7 @@ public class DynamoSurveyDao implements SurveyDao {
             DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
             query.withScanIndexForward(false);
             query.withHashKeyValues(new DynamoSurvey(surveyGuid, createdOn));    
-            if (studyKey != null) {
+            if (studyIdentifier != null) {
                 query.withQueryFilterEntry(STUDY_KEY_PROPERTY, studyCondition());
             }
             if (createdOn != 0L) {
@@ -127,7 +127,7 @@ public class DynamoSurveyDao implements SurveyDao {
 
         private List<DynamoSurvey> scan() {
             DynamoDBScanExpression scan = new DynamoDBScanExpression();
-            if (studyKey != null) {
+            if (studyIdentifier != null) {
                 scan.addFilterCondition(STUDY_KEY_PROPERTY, studyCondition());
             }
             if (createdOn != 0L) {
@@ -156,7 +156,7 @@ public class DynamoSurveyDao implements SurveyDao {
         private Condition studyCondition() {
             Condition studyCond = new Condition();
             studyCond.withComparisonOperator(ComparisonOperator.EQ);
-            studyCond.withAttributeValueList(new AttributeValue().withS(studyKey));
+            studyCond.withAttributeValueList(new AttributeValue().withS(studyIdentifier));
             return studyCond;
         }
 
@@ -273,7 +273,7 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurvey(Study study, GuidCreatedOnVersionHolder keys) {
+    public void deleteSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
         Survey existing = getSurvey(keys);
         if (existing.isPublished()) {
             throw new PublishedSurveyException(existing);
@@ -284,8 +284,8 @@ public class DynamoSurveyDao implements SurveyDao {
             throw new IllegalStateException("Survey has been answered by participants; it cannot be deleted.");
         }
         // If there are schedule plans for this survey, it can't be deleted. Would need to delete them all first. 
-        if (study != null) {
-            List<SchedulePlan> plans = schedulePlanDao.getSchedulePlansForSurvey(study, keys);
+        if (studyIdentifier != null) {
+            List<SchedulePlan> plans = schedulePlanDao.getSchedulePlansForSurvey(studyIdentifier, keys);
             if (!plans.isEmpty()) {
                 throw new IllegalStateException("Survey has been scheduled; it cannot be deleted.");
             }
@@ -308,32 +308,32 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public List<Survey> getSurveyAllVersions(String studyKey, String guid) {
-        return new QueryBuilder().setStudy(studyKey).setSurvey(guid).getAll(true);
+    public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid) {
+        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).getAll(true);
     }
     
     @Override
-    public Survey getSurveyMostRecentVersion(String studyIdentifier, String guid) {
+    public Survey getSurveyMostRecentVersion(StudyIdentifier studyIdentifier, String guid) {
         return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).getOne(true);
     }
 
     @Override
-    public Survey getSurveyMostRecentlyPublishedVersion(String studyIdentifier, String guid) {
+    public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid) {
         return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).getOne(true);
     }
     
     @Override
-    public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(String studyIdentifier, String identifier) {
+    public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(StudyIdentifier studyIdentifier, String identifier) {
         return new QueryBuilder().setStudy(studyIdentifier).setIdentifier(identifier).isPublished().getOne(true);
     }
     
     @Override
-    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(String studyIdentifier) {
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier) {
         return new QueryBuilder().setStudy(studyIdentifier).isPublished().getAll(false);
     }
     
     @Override
-    public List<Survey> getAllSurveysMostRecentVersion(String studyIdentifier) {
+    public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier) {
         List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).getAll(false);
         if (surveys.isEmpty()) {
             return surveys;
