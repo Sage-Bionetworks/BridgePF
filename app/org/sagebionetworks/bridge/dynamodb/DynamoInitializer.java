@@ -54,8 +54,8 @@ public class DynamoInitializer {
     private static Logger logger = LoggerFactory.getLogger(DynamoInitializer.class);
 
     // Default capacities are the DynamoDB free tier
-    private static final Long READ_CAPACITY = Long.valueOf(25);
-    private static final Long WRITE_CAPACITY = Long.valueOf(25);
+    static final long READ_CAPACITY = 25;
+    static final long WRITE_CAPACITY = 25;
 
     private static final BridgeConfig CONFIG = BridgeConfigFactory.getConfig();
 
@@ -74,14 +74,14 @@ public class DynamoInitializer {
      */
     public static void init(String dynamoPackage) {
         beforeInit();
-        List<Class<? extends DynamoTable>> classes = loadDynamoTableClasses(dynamoPackage);
+        List<Class<?>> classes = loadDynamoTableClasses(dynamoPackage);
         List<TableDescription> tables = getAnnotatedTables(classes);
         initTables(tables);
     }
 
     @SafeVarargs
-    public static void init(Class<? extends DynamoTable>... dynamoTables) {
-        List<Class<? extends DynamoTable>> classes = Arrays.asList(dynamoTables);
+    public static void init(Class<?>... dynamoTables) {
+        List<Class<?>> classes = Arrays.asList(dynamoTables);
         List<TableDescription> tables = getAnnotatedTables(classes);
         initTables(tables);
     }
@@ -92,7 +92,7 @@ public class DynamoInitializer {
     static void beforeInit() {
     }
 
-    static void deleteTable(Class<? extends DynamoTable> table) {
+    static void deleteTable(Class<?> table) {
         final String tableName = TableNameOverrideFactory.getTableNameOverride(table).getTableName();
         try {
             DescribeTableResult tableResult = DYNAMO.describeTable(tableName);
@@ -116,9 +116,9 @@ public class DynamoInitializer {
     /**
      * Converts the annotated DynamoDBTable types to a list of TableDescription.
      */
-    static List<TableDescription> getAnnotatedTables(final List<Class<? extends DynamoTable>> classes) {
+    static List<TableDescription> getAnnotatedTables(final List<Class<?>> classes) {
         final List<TableDescription> tables = new ArrayList<TableDescription>();
-        for (final Class<? extends DynamoTable> clazz : classes) {
+        for (final Class<?> clazz : classes) {
             final List<KeySchemaElement> keySchema = new ArrayList<>();
             final List<AttributeDefinition> attributes = new ArrayList<>();
             final List<GlobalSecondaryIndexDescription> globalIndices = new ArrayList<>();
@@ -203,6 +203,14 @@ public class DynamoInitializer {
                     }
                 }
             }
+            // Throughput
+            long writeCapacity = WRITE_CAPACITY;
+            long readCapacity = READ_CAPACITY;
+            if (clazz.isAnnotationPresent(DynamoThroughput.class)) {
+                DynamoThroughput throughput = clazz.getAnnotation(DynamoThroughput.class);
+                writeCapacity = throughput.writeCapacity();
+                readCapacity = throughput.readCapacity();
+            }
             final String tableName = TableNameOverrideFactory.getTableNameOverride(clazz).getTableName();
             // Create the table description
             final TableDescription table = (new TableDescription())
@@ -212,8 +220,8 @@ public class DynamoInitializer {
                     .withGlobalSecondaryIndexes(globalIndices)
                     .withLocalSecondaryIndexes(localIndices)
                     .withProvisionedThroughput((new ProvisionedThroughputDescription())
-                            .withReadCapacityUnits(READ_CAPACITY)
-                            .withWriteCapacityUnits(WRITE_CAPACITY));
+                            .withReadCapacityUnits(readCapacity)
+                            .withWriteCapacityUnits(writeCapacity));
             tables.add(table);
         }
         return tables;
@@ -222,15 +230,15 @@ public class DynamoInitializer {
     /**
      * Uses reflection to get all the annotated DynamoDBTable.
      */
-    static List<Class<? extends DynamoTable>> loadDynamoTableClasses(final String dynamoPackage) {
-        final List<Class<? extends DynamoTable>> classes = new ArrayList<>();
-        final ClassLoader classLoader = DynamoTable.class.getClassLoader();
+    static List<Class<?>> loadDynamoTableClasses(final String dynamoPackage) {
+        final List<Class<?>> classes = new ArrayList<>();
+        final ClassLoader classLoader = DynamoInitializer.class.getClassLoader();
         try {
             final ImmutableSet<ClassInfo> classSet = ClassPath.from(classLoader).getTopLevelClasses(dynamoPackage);
             for (ClassInfo classInfo : classSet) {
                 Class<?> clazz = classInfo.load();
                 if (clazz.isAnnotationPresent(DynamoDBTable.class)) {
-                    classes.add(clazz.asSubclass(DynamoTable.class));
+                    classes.add(clazz);
                 }
             }
             return classes;
@@ -303,7 +311,9 @@ public class DynamoInitializer {
                 logger.info("Creating table " + table.getTableName());
                 DYNAMO.createTable(createTableRequest);
             } else {
-                compareSchema(table, existingTables.get(table.getTableName()));
+                final TableDescription existingTable = existingTables.get(table.getTableName());
+                compareSchema(table, existingTable);
+                updateThroughput(table,existingTable);
             }
             waitForActive(table);
         }
@@ -478,18 +488,6 @@ public class DynamoInitializer {
                             " is changing the projection.");
                 }
 
-                if (!globalIndex1.getProvisionedThroughput().getReadCapacityUnits().equals(
-                        globalIndex2.getProvisionedThroughput().getReadCapacityUnits())) {
-                    throw new BridgeInitializationException("Table " + tableName + " global index " + indexName +
-                            " is changing the provisioned read capacity.");
-                }
-
-                if (!globalIndex1.getProvisionedThroughput().getWriteCapacityUnits().equals(
-                        globalIndex2.getProvisionedThroughput().getWriteCapacityUnits())) {
-                    throw new BridgeInitializationException("Table " + tableName + " global index " + indexName +
-                            " is changing the provisioned write capacity.");
-                }
-
             } else {
                 // compare global index attributes: key schema, projection
                 LocalSecondaryIndexDescription localIndex1 = (LocalSecondaryIndexDescription) index1;
@@ -502,6 +500,13 @@ public class DynamoInitializer {
                 }
             }
         }
+    }
+
+    /**
+     * Tries to update throughput if there is a change.
+     */
+    static void updateThroughput(TableDescription table, TableDescription existingTable) {
+        
     }
 
     /**

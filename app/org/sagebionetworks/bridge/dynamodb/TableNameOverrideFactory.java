@@ -9,7 +9,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 public class TableNameOverrideFactory {
 
-    public static TableNameOverride getTableNameOverride(Class<? extends DynamoTable> clazz) {
+    public static TableNameOverride getTableNameOverride(Class<?> clazz) {
         BridgeConfig config = BridgeConfigFactory.getConfig();
         Environment env = config.getEnvironment();
         String tableName = clazz.getAnnotation(DynamoDBTable.class).tableName();

@@ -41,7 +41,7 @@ public class DynamoInitializerTest {
 
     @Test
     public void testGetAnnotatedTables() {
-        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         assertNotNull(tables);
         assertEquals(1, tables.size());
@@ -64,7 +64,7 @@ public class DynamoInitializerTest {
 
     @Test
     public void testLoadDynamoTableClasses() {
-        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         assertNotNull(classes);
         assertEquals(1, classes.size());
         Set<String> classSet = new HashSet<String>();
@@ -92,7 +92,7 @@ public class DynamoInitializerTest {
 
     @Test
     public void testGetCreateTableRequest() {
-        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         TableDescription table = tables.get(0);
         CreateTableRequest request = DynamoInitializer.getCreateTableRequest(table);
@@ -138,7 +138,7 @@ public class DynamoInitializerTest {
 
     @Test
     public void testCompareSchema() {
-        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         TableDescription table1 = tables.get(0);
         TableDescription table2 = copyTableDescription(table1);
@@ -148,7 +148,7 @@ public class DynamoInitializerTest {
 
     @Test(expected = BridgeInitializationException.class)
     public void testCompareSchemaDifferentKeys() {
-        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         TableDescription table1 = tables.get(0);
         TableDescription table2 = copyTableDescription(table1);
@@ -158,7 +158,7 @@ public class DynamoInitializerTest {
 
     @Test(expected = BridgeInitializationException.class)
     public void testCompareSchemaDifferentGlobalIndex() {
-        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         TableDescription table1 = tables.get(0);
         TableDescription table2 = copyTableDescription(table1);
@@ -168,7 +168,7 @@ public class DynamoInitializerTest {
 
     @Test(expected = BridgeInitializationException.class)
     public void testCompareSchemaDifferentLocalIndex() {
-        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         TableDescription table1 = tables.get(0);
         TableDescription table2 = copyTableDescription(table1);

@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @DynamoDBTable(tableName = "StudyConsent1")
-public class DynamoStudyConsent1 implements StudyConsent, DynamoTable {
+public class DynamoStudyConsent1 implements StudyConsent {
 
     private String studyKey;
     private long createdOn;

@@ -31,7 +31,7 @@ public class DynamoTestUtil {
                 secretKey));
     }
 
-    public static <T extends DynamoTable> void clearTable(Class<T> clazz) {
+    public static void clearTable(Class<?> clazz) {
         List<String> keyAttrs = getKeyAttrs(clazz);
         String tableName = TableNameOverrideFactory.getTableNameOverride(clazz).getTableName();
         ScanResult result = DYNAMO.scan((new ScanRequest(tableName)).withAttributesToGet(keyAttrs));
@@ -51,7 +51,7 @@ public class DynamoTestUtil {
         } while (items != null);
     }
 
-    private static <T extends DynamoTable> List<String> getKeyAttrs(Class<T> clazz) {
+    private static List<String> getKeyAttrs(Class<?> clazz) {
         List<String> keyAttrs = new ArrayList<String>();
         Method[] methods = clazz.getMethods();
         for (Method method : methods) {
