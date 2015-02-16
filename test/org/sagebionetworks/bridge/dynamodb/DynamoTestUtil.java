@@ -16,7 +16,6 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
@@ -34,8 +33,7 @@ public class DynamoTestUtil {
 
     public static <T extends DynamoTable> void clearTable(Class<T> clazz) {
         List<String> keyAttrs = getKeyAttrs(clazz);
-        String tableName = clazz.getAnnotation(DynamoDBTable.class).tableName();
-        tableName = DynamoInitializer.getTableName(tableName);
+        String tableName = TableNameOverrideFactory.getTableNameOverride(clazz).getTableName();
         ScanResult result = DYNAMO.scan((new ScanRequest(tableName)).withAttributesToGet(keyAttrs));
         List<Map<String, AttributeValue>> items = result.getItems();
         do {
