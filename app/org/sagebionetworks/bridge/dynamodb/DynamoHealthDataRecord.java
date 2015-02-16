@@ -18,7 +18,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @DynamoDBTable(tableName = "HealthDataRecord2")
-public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
+public class DynamoHealthDataRecord implements HealthDataRecord {
 
     private static final String GUID_FIELD = "guid";
     private static final String START_DATE_FIELD = "startDate";

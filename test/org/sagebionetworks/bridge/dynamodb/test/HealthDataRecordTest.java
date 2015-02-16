@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb.test;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoTable;
 import org.sagebionetworks.bridge.dynamodb.JsonNodeMarshaller;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
@@ -19,7 +18,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @DynamoDBTable(tableName = "HealthDataRecord")
-public class HealthDataRecordTest implements HealthDataRecord, DynamoTable {
+public class HealthDataRecordTest implements HealthDataRecord {
 
     private String key;
     private String guid;
