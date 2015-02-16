@@ -103,6 +103,7 @@ public class DynamoInitializer {
             if (TableStatus.DELETING.toString().equalsIgnoreCase(status)) {
                 return;
             } else if (!TableStatus.ACTIVE.toString().equalsIgnoreCase(status)) {
+                // Must be active to be deleted
                 waitForActive(tableDscr);
             }
             logger.info("Deleting table " + table);
@@ -516,7 +517,10 @@ public class DynamoInitializer {
         }
     }
 
-    static void waitForActive(TableDescription table) {
+    /**
+     * Wait for the table to become ACTIVE.
+     */
+    private static void waitForActive(TableDescription table) {
         DescribeTableResult describeResult = DYNAMO.describeTable(
                 new DescribeTableRequest(table.getTableName()));
         table = describeResult.getTable();
@@ -531,7 +535,10 @@ public class DynamoInitializer {
         }
     }
 
-    static void waitForDelete(TableDescription table) {
+    /**
+     * Wait for the table to be deleted.
+     */
+    private static void waitForDelete(TableDescription table) {
         DescribeTableResult describeResult = DYNAMO.describeTable(
                 new DescribeTableRequest(table.getTableName()));
         table = describeResult.getTable();
