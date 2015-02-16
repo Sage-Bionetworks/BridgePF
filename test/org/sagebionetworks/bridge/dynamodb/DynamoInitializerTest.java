@@ -13,15 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
-import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndexDescription;
-import com.amazonaws.services.dynamodbv2.model.KeyType;
-import com.amazonaws.services.dynamodbv2.model.Projection;
-import com.amazonaws.services.dynamodbv2.model.ProjectionType;
-import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputDescription;
-import com.google.common.collect.ImmutableList;
-
-import org.junit.Ignore;
 import org.junit.Test;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -31,20 +22,26 @@ import org.sagebionetworks.bridge.exceptions.BridgeInitializationException;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
+import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
+import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndexDescription;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
+import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.LocalSecondaryIndex;
 import com.amazonaws.services.dynamodbv2.model.LocalSecondaryIndexDescription;
+import com.amazonaws.services.dynamodbv2.model.Projection;
+import com.amazonaws.services.dynamodbv2.model.ProjectionType;
+import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputDescription;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
+import com.google.common.collect.ImmutableList;
 
 public class DynamoInitializerTest {
 
     private static final String PACKAGE = "org.sagebionetworks.bridge.dynamodb.test";
 
     @Test
-    @Ignore
     public void testGetAnnotatedTables() {
-        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         assertNotNull(tables);
         assertEquals(1, tables.size());
@@ -66,9 +63,8 @@ public class DynamoInitializerTest {
     }
 
     @Test
-    @Ignore
     public void testLoadDynamoTableClasses() {
-        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         assertNotNull(classes);
         assertEquals(1, classes.size());
         Set<String> classSet = new HashSet<String>();
@@ -79,7 +75,6 @@ public class DynamoInitializerTest {
     }
 
     @Test
-    @Ignore
     public void testGetAttributeName() throws Exception {
         Method method = HealthDataRecordTest.class.getMethod("getStartDate");
         assertEquals("startDate", DynamoInitializer.getAttributeName(method));
@@ -88,7 +83,6 @@ public class DynamoInitializerTest {
     }
 
     @Test
-    @Ignore
     public void testGetAttributeType() throws Exception {
         Method method = HealthDataRecordTest.class.getMethod("getStartDate");
         assertEquals(ScalarAttributeType.N, DynamoInitializer.getAttributeType(method));
@@ -97,9 +91,8 @@ public class DynamoInitializerTest {
     }
 
     @Test
-    @Ignore
     public void testGetCreateTableRequest() {
-        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         TableDescription table = tables.get(0);
         CreateTableRequest request = DynamoInitializer.getCreateTableRequest(table);
@@ -144,9 +137,8 @@ public class DynamoInitializerTest {
     }
 
     @Test
-    @Ignore
     public void testCompareSchema() {
-        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         TableDescription table1 = tables.get(0);
         TableDescription table2 = copyTableDescription(table1);
@@ -155,9 +147,8 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void testCompareSchemaDifferentKeys() {
-        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         TableDescription table1 = tables.get(0);
         TableDescription table2 = copyTableDescription(table1);
@@ -165,10 +156,9 @@ public class DynamoInitializerTest {
         DynamoInitializer.compareSchema(table1, table2);
     }
 
-    @Ignore
     @Test(expected = BridgeInitializationException.class)
     public void testCompareSchemaDifferentGlobalIndex() {
-        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         TableDescription table1 = tables.get(0);
         TableDescription table2 = copyTableDescription(table1);
@@ -177,9 +167,8 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void testCompareSchemaDifferentLocalIndex() {
-        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<Class<? extends DynamoTable>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         TableDescription table1 = tables.get(0);
         TableDescription table2 = copyTableDescription(table1);
@@ -188,7 +177,6 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void compareSecondaryIndicesZeroToOne() {
         // one index in table 2
         List<GlobalSecondaryIndexDescription> indexList2 = ImmutableList.of(new GlobalSecondaryIndexDescription());
@@ -198,7 +186,6 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void compareSecondaryIndicesOneToZero() {
         // one index in table 1
         List<GlobalSecondaryIndexDescription> indexList1 = ImmutableList.of(new GlobalSecondaryIndexDescription());
@@ -208,7 +195,6 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void compareSecondaryIndicesOneToTwo() {
         // one index in table 1
         List<GlobalSecondaryIndexDescription> indexList1 = ImmutableList.of(new GlobalSecondaryIndexDescription());
@@ -222,7 +208,6 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void compareSecondaryIndicesTwoToOne() {
         // two index in table 1
         List<GlobalSecondaryIndexDescription> indexList1 = ImmutableList.of(new GlobalSecondaryIndexDescription(),
@@ -236,20 +221,17 @@ public class DynamoInitializerTest {
     }
 
     @Test
-    @Ignore
     public void compareSecondaryIndicesNullToNull() {
         DynamoInitializer.compareSecondaryIndices("test-table", null, null, true);
     }
 
     @Test
-    @Ignore
     public void compareSecondaryIndicesZeroToZero() {
         DynamoInitializer.compareSecondaryIndices("test-table", Collections.emptyList(), Collections.emptyList(),
                 true);
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void compareGlobalIndicesDifferentName() {
         // indices
         GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
@@ -265,7 +247,6 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void compareGlobalIndicesDifferentKeys() {
         // indices
         GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
@@ -281,7 +262,6 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void compareGlobalIndicesDifferentProjections() {
         // indices
         GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
@@ -299,7 +279,6 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void compareGlobalIndicesDifferentReadCapacity() {
         // indices
         GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
@@ -317,7 +296,6 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void compareGlobalIndicesDifferentWriteCapacity() {
         // indices
         GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
@@ -335,7 +313,6 @@ public class DynamoInitializerTest {
     }
 
     @Test
-    @Ignore
     public void compareSameGlobalIndicesInDifferentOrder() {
         // indices
         GlobalSecondaryIndexDescription index1 = makeGlobalIndex("index1", "key1", ProjectionType.ALL, 25, 25);
@@ -349,7 +326,6 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void compareLocalIndicesDifferentNames() {
         // indices
         LocalSecondaryIndexDescription sameIndex = makeLocalIndex("same-index", "same-key", ProjectionType.ALL);
@@ -364,7 +340,6 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void compareLocalIndicesDifferentKeys() {
         // indices
         LocalSecondaryIndexDescription sameIndex = makeLocalIndex("same-index", "same-key", ProjectionType.ALL);
@@ -379,7 +354,6 @@ public class DynamoInitializerTest {
     }
 
     @Test(expected = BridgeInitializationException.class)
-    @Ignore
     public void compareLocalIndicesDifferentProjections() {
         // indices
         LocalSecondaryIndexDescription sameIndex = makeLocalIndex("same-index", "same-key", ProjectionType.ALL);
@@ -394,7 +368,6 @@ public class DynamoInitializerTest {
     }
 
     @Test
-    @Ignore
     public void compareSameLocalIndicesInDifferentOrder() {
         // indices
         LocalSecondaryIndexDescription index1 = makeLocalIndex("index1", "key1", ProjectionType.ALL);
