@@ -6,7 +6,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import org.joda.time.DateTime;
-import org.joda.time.format.ISODateTimeFormat;
 
 /**
  * Custom Joda DateTime deserializer, because the one in jackson-datatype-joda doesn't work. This one deserializes from
@@ -17,6 +16,6 @@ public class JodaDateTimeDeserializer extends JsonDeserializer<DateTime> {
     @Override
     public DateTime deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
         String dateTimeStr = jp.getText();
-        return ISODateTimeFormat.dateTimeParser().parseDateTime(dateTimeStr);
+        return DateUtils.parseISODateTime(dateTimeStr);
     }
 }

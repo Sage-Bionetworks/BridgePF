@@ -49,7 +49,7 @@ public class HealthDataRecordTest {
         assertEquals(0, record.getMetadata().size());
 
         // for default date and time, just check they're not null, so we don't get weird clock skew errors
-        assertNotNull(record.getMeasuredTime());
+        assertNotNull(record.getCreatedOn());
         assertNotNull(record.getUploadDate());
     }
 
@@ -58,23 +58,20 @@ public class HealthDataRecordTest {
         // optional values
         JsonNode data = BridgeObjectMapper.get().readTree("{\"myData\":\"myDataValue\"}");
         JsonNode metadata = BridgeObjectMapper.get().readTree("{\"myMetadata\":\"myMetaValue\"}");
-
-        // arbitrarily 2015-02-12T12:09 PST
-        DateTime measuredTime = new DateTime(2014, 2, 12, 12, 9, BridgeConstants.LOCAL_TIME_ZONE);
-        long measuredTimeMillis = measuredTime.getMillis();
+        long arbitraryTimestamp = 1424136378727L;
 
         // arbitrarily 2015-02-12
         LocalDate uploadDate = new LocalDate(2014, 2, 12);
 
         // build
         HealthDataRecord record = DAO.getRecordBuilder().withData(data).withHealthCode("required healthcode")
-                .withId("optional record ID").withMeasuredTime(measuredTime).withMetadata(metadata)
+                .withId("optional record ID").withCreatedOn(arbitraryTimestamp).withMetadata(metadata)
                 .withSchemaId("required schema").withUploadDate(uploadDate).build();
 
         // validate
         assertEquals("required healthcode", record.getHealthCode());
         assertEquals("optional record ID", record.getId());
-        assertEquals(measuredTimeMillis, record.getMeasuredTime().getMillis());
+        assertEquals(arbitraryTimestamp, record.getCreatedOn().longValue());
         assertEquals("required schema", record.getSchemaId());
         assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
 
@@ -134,7 +131,7 @@ public class HealthDataRecordTest {
         // build and overwrite measuredTime
         DynamoHealthDataRecord record = (DynamoHealthDataRecord) DAO.getRecordBuilder()
                 .withHealthCode("valid healthcode").withSchemaId("valid schema").build();
-        record.setMeasuredTime(null);
+        record.setCreatedOn(null);
 
         // validate
         MapBindingResult errors = new MapBindingResult(new HashMap<>(), "HealthDataRecord");
@@ -236,10 +233,10 @@ public class HealthDataRecordTest {
     public void testSerialization() throws Exception {
         // start with JSON
         String jsonText = "{\n" +
+                "   \"createdOn\":\"2014-02-12T13:45-0800\",\n" +
                 "   \"data\":{\"myData\":\"myDataValue\"},\n" +
                 "   \"healthCode\":\"json healthcode\",\n" +
                 "   \"id\":\"json record ID\",\n" +
-                "   \"measuredTime\":\"2014-02-12T13:45-0800\",\n" +
                 "   \"metadata\":{\"myMetadata\":\"myMetaValue\"},\n" +
                 "   \"schemaId\":\"json schema\",\n" +
                 "   \"uploadDate\":\"2014-02-12\"\n" +
@@ -250,7 +247,7 @@ public class HealthDataRecordTest {
         HealthDataRecord record = BridgeObjectMapper.get().readValue(jsonText, HealthDataRecord.class);
         assertEquals("json healthcode", record.getHealthCode());
         assertEquals("json record ID", record.getId());
-        assertEquals(measuredTimeMillis, record.getMeasuredTime().getMillis());
+        assertEquals(measuredTimeMillis, record.getCreatedOn().longValue());
         assertEquals("json schema", record.getSchemaId());
         assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
 
@@ -272,7 +269,7 @@ public class HealthDataRecordTest {
         assertEquals("2014-02-12", jsonMap.get("uploadDate"));
         assertEquals("HealthData", jsonMap.get("type"));
 
-        DateTime convertedMeasuredTime = DateTime.parse((String) jsonMap.get("measuredTime"));
+        DateTime convertedMeasuredTime = DateTime.parse((String) jsonMap.get("createdOn"));
         assertEquals(measuredTimeMillis, convertedMeasuredTime.getMillis());
 
         Map<String, String> data = (Map<String, String>) jsonMap.get("data");

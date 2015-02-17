@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -23,10 +23,10 @@ public class HealthDataRecordValidator implements Validator {
      * Validates the given object as a valid HealthDataRecord instance. This will flag errors in the following
      * conditions:
      * <ul>
+     * <li>createdOn is null</li>
      * <li>data is null (in Java or in JSON)</li>
      * <li>data is not a map (but empty maps are okay)</li>
      * <li>healthCode is null or empty</li>
-     * <li>measuredTime is null</li>
      * <li>metadata is null (in Java or in JSON)</li>
      * <li>metadata is not a map (but empty maps are okay)</li>
      * <li>schemaId is null or empty</li>
@@ -49,6 +49,11 @@ public class HealthDataRecordValidator implements Validator {
         } else {
             HealthDataRecord record = (HealthDataRecord) object;
 
+            // createdOn
+            if (record.getCreatedOn() == null) {
+                errors.rejectValue("createdOn", Validate.CANNOT_BE_NULL);
+            }
+
             // data
             JsonNode data = record.getData();
             if (data == null) {
@@ -59,19 +64,14 @@ public class HealthDataRecordValidator implements Validator {
             }
 
             // health code
-            if (Strings.isNullOrEmpty(record.getHealthCode())) {
+            if (StringUtils.isBlank(record.getHealthCode())) {
                 errors.rejectValue("healthCode", Validate.CANNOT_BE_BLANK);
             }
 
             // id
             String id = record.getId();
-            if (id != null && id.isEmpty()) {
+            if (id != null && StringUtils.isBlank(id)) {
                 errors.rejectValue("id", Validate.CANNOT_BE_EMPTY_STRING);
-            }
-
-            // measuredTime
-            if (record.getMeasuredTime() == null) {
-                errors.rejectValue("measuredTime", Validate.CANNOT_BE_NULL);
             }
 
             // metadata
@@ -84,7 +84,7 @@ public class HealthDataRecordValidator implements Validator {
             }
 
             // schema ID is non-null and non-empty
-            if (Strings.isNullOrEmpty(record.getSchemaId())) {
+            if (StringUtils.isBlank(record.getSchemaId())) {
                 errors.rejectValue("schemaId", Validate.CANNOT_BE_BLANK);
             }
 

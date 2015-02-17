@@ -2,15 +2,14 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.List;
 
-import com.google.common.base.Strings;
-import org.joda.time.LocalDate;
-import org.joda.time.format.ISODateTimeFormat;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.validators.HealthDataRecordValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -57,14 +56,14 @@ public class HealthDataService {
      */
     public List<HealthDataRecord> getRecordsForUploadDate(String uploadDate) {
         // validate upload date
-        if (Strings.isNullOrEmpty(uploadDate)) {
+        if (StringUtils.isBlank(uploadDate)) {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "uploadDate"));
         }
 
         // use Joda to parse the upload date, to validate it
         // The DAO takes a string, so we don't ever actually need the LocalDate instance.
         try {
-            LocalDate.parse(uploadDate, ISODateTimeFormat.date());
+            DateUtils.parseCalendarDate(uploadDate);
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException(String.format("Expected date format YYYY-MM-DD, received %s", uploadDate));
         }

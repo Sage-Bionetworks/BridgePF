@@ -6,13 +6,18 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 /** This class represents health data and associated metadata. */
 @BridgeTypeName("HealthData")
 @JsonDeserialize(as = DynamoHealthDataRecord.class)
 public interface HealthDataRecord extends BridgeEntity {
+    /**
+     * The timestamp at which this health data was created (recorded on the client), in milliseconds since 1970-01-01
+     * (start of epoch).
+     */
+    Long getCreatedOn();
+
     /** Health data, in JSON format. */
     JsonNode getData();
 
@@ -21,9 +26,6 @@ public interface HealthDataRecord extends BridgeEntity {
 
     /** Unique identifier for the health data record. */
     String getId();
-
-    /** The timestamp at which this health data was recorded. */
-    DateTime getMeasuredTime();
 
     /** Miscellaneous metadata associated with this record. This may vary with schema. */
     JsonNode getMetadata();
