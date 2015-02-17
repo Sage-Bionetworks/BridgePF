@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * algorithms for assigning users their schedules.
  */
 @DynamoDBTable(tableName = "SchedulePlan")
-public class DynamoSchedulePlan implements SchedulePlan, DynamoTable {
+public class DynamoSchedulePlan implements SchedulePlan {
 
     private static final String GUID_PROPERTY = "guid";
     private static final String STUDY_KEY_PROPERTY = "studyKey";

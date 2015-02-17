@@ -14,8 +14,9 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
  * avoid collisions of health code. We do not trust that the underlying RNG
  * is always a solid one.
  */
+@DynamoThroughput(writeCapacity=50, readCapacity=50)
 @DynamoDBTable(tableName = "HealthCode")
-public class DynamoHealthCode implements DynamoTable {
+public class DynamoHealthCode {
 
     private String code;
     private Long version;

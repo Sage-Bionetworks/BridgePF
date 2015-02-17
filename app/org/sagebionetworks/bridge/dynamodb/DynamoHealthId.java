@@ -10,8 +10,9 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 
+@DynamoThroughput(writeCapacity=50, readCapacity=50)
 @DynamoDBTable(tableName = "HealthId")
-public class DynamoHealthId implements HealthId, DynamoTable {
+public class DynamoHealthId implements HealthId {
 
     private String id;
     private String code;

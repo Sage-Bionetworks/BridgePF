@@ -27,7 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 @DynamoDBTable(tableName = "Survey")
-public class DynamoSurvey implements Survey, DynamoTable {
+public class DynamoSurvey implements Survey {
     
     private static final String VERSION_FIELD = "version";
     private static final String NAME_FIELD = "name";
