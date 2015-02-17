@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 
 @DynamoDBTable(tableName = "SurveyResponse")
-public class DynamoSurveyResponse implements SurveyResponse, DynamoTable {
+public class DynamoSurveyResponse implements SurveyResponse {
 
     private static final String HEALTH_CODE_PROPERTY = "healthCode";
     private static final String COMPLETED_ON_PROPERTY = "completedOn";

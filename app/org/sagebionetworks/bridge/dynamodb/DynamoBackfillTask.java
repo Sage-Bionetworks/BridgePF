@@ -14,7 +14,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 
 @DynamoDBTable(tableName = "BackfillTask")
-public class DynamoBackfillTask implements BackfillTask, DynamoTable {
+public class DynamoBackfillTask implements BackfillTask {
 
     private static final String SEPARATOR = ":";
 

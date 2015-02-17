@@ -17,8 +17,9 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 
+@DynamoThroughput(writeCapacity=50, readCapacity=50)
 @DynamoDBTable(tableName = "Upload")
-public class DynamoUpload implements Upload, DynamoTable {
+public class DynamoUpload implements Upload {
 
     private String uploadId;
     private long timestamp;
