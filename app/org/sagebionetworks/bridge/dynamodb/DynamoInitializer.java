@@ -54,8 +54,8 @@ public class DynamoInitializer {
     private static Logger logger = LoggerFactory.getLogger(DynamoInitializer.class);
 
     // Default capacities are the DynamoDB free tier
-    static final long READ_CAPACITY = 25;
-    static final long WRITE_CAPACITY = 25;
+    static final long DEFAULT_READ_CAPACITY = 25;
+    static final long DEFAULT_WRITE_CAPACITY = 25;
 
     private static final BridgeConfig CONFIG = BridgeConfigFactory.getConfig();
 
@@ -93,7 +93,7 @@ public class DynamoInitializer {
     }
 
     static void deleteTable(Class<?> table) {
-        final String tableName = TableNameOverrideFactory.getTableNameOverride(table).getTableName();
+        final String tableName = TableNameOverrideFactory.getTableName(table);
         try {
             DescribeTableResult tableResult = DYNAMO.describeTable(tableName);
             TableDescription tableDscr = tableResult.getTable();
@@ -197,21 +197,21 @@ public class DynamoInitializer {
                                 .withKeySchema(new KeySchemaElement(attrName, KeyType.HASH))
                                 .withProjection(new Projection().withProjectionType(ProjectionType.KEYS_ONLY))
                                 .withProvisionedThroughput(new ProvisionedThroughputDescription()
-                                        .withReadCapacityUnits(READ_CAPACITY)
-                                        .withWriteCapacityUnits(WRITE_CAPACITY));
+                                        .withReadCapacityUnits(DEFAULT_READ_CAPACITY)
+                                        .withWriteCapacityUnits(DEFAULT_WRITE_CAPACITY));
                         globalIndices.add(globalIndex);
                     }
                 }
             }
             // Throughput
-            long writeCapacity = WRITE_CAPACITY;
-            long readCapacity = READ_CAPACITY;
+            long writeCapacity = DEFAULT_WRITE_CAPACITY;
+            long readCapacity = DEFAULT_READ_CAPACITY;
             if (clazz.isAnnotationPresent(DynamoThroughput.class)) {
                 DynamoThroughput throughput = clazz.getAnnotation(DynamoThroughput.class);
                 writeCapacity = throughput.writeCapacity();
                 readCapacity = throughput.readCapacity();
             }
-            final String tableName = TableNameOverrideFactory.getTableNameOverride(clazz).getTableName();
+            final String tableName = TableNameOverrideFactory.getTableName(clazz);
             // Create the table description
             final TableDescription table = (new TableDescription())
                     .withTableName(tableName)
@@ -313,7 +313,6 @@ public class DynamoInitializer {
             } else {
                 final TableDescription existingTable = existingTables.get(table.getTableName());
                 compareSchema(table, existingTable);
-                updateThroughput(table,existingTable);
             }
             waitForActive(table);
         }
@@ -500,13 +499,6 @@ public class DynamoInitializer {
                 }
             }
         }
-    }
-
-    /**
-     * Tries to update throughput if there is a change.
-     */
-    static void updateThroughput(TableDescription table, TableDescription existingTable) {
-        
     }
 
     /**

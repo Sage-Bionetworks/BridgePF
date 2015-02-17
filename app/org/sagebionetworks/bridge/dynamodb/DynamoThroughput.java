@@ -8,6 +8,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface DynamoThroughput {
-    long writeCapacity() default DynamoInitializer.WRITE_CAPACITY;
-    long readCapacity() default DynamoInitializer.READ_CAPACITY;
+    long writeCapacity();
+    long readCapacity();
 }
