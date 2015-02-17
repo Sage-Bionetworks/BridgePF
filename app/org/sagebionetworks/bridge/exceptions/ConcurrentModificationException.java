@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.exceptions;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 public class ConcurrentModificationException extends BridgeServiceException {
@@ -9,7 +10,7 @@ public class ConcurrentModificationException extends BridgeServiceException {
     private BridgeEntity entity;
     
     public ConcurrentModificationException(BridgeEntity entity) {
-        super(entity.getClass().getSimpleName() + " has the wrong version number; it may have been saved in the background.", HttpStatus.SC_CONFLICT);
+        super(BridgeUtils.getTypeName(entity.getClass()) + " has the wrong version number; it may have been saved in the background.", HttpStatus.SC_CONFLICT);
         this.entity = entity;
     }
     

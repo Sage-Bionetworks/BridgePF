@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 @SuppressWarnings("serial")
@@ -13,7 +14,7 @@ public class InvalidEntityException extends BridgeServiceException {
     private Map<String,List<String>> errors;
     
     public InvalidEntityException(BridgeEntity entity) {
-        this(entity, entity.getClass().getSimpleName() + " is not valid.");
+        this(entity, BridgeUtils.getTypeName(entity.getClass()) + " is not valid.");
     }
     
     public InvalidEntityException(BridgeEntity entity, String message) {
