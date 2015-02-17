@@ -18,4 +18,8 @@ public class TableNameOverrideFactory {
         }
         return new TableNameOverride(env.name().toLowerCase() + "-" + config.getUser() + "-" + tableName);
     }
+
+    public static String getTableName(Class<?> clazz) {
+        return getTableNameOverride(clazz).getTableName();
+    }
 }

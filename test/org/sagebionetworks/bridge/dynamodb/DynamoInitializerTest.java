@@ -58,8 +58,8 @@ public class DynamoInitializerTest {
         assertEquals(5, table.getAttributeDefinitions().size());
         assertEquals(2, table.getLocalSecondaryIndexes().size());
         assertEquals(1, table.getGlobalSecondaryIndexes().size());
-        assertEquals(25L, table.getProvisionedThroughput().getReadCapacityUnits().longValue());
-        assertEquals(25L, table.getProvisionedThroughput().getWriteCapacityUnits().longValue());
+        assertEquals(30L, table.getProvisionedThroughput().getReadCapacityUnits().longValue());
+        assertEquals(50L, table.getProvisionedThroughput().getWriteCapacityUnits().longValue());
     }
 
     @Test
@@ -132,8 +132,8 @@ public class DynamoInitializerTest {
         assertEquals(5, attributes.size());
 
         // Throughput
-        assertEquals(25L, request.getProvisionedThroughput().getReadCapacityUnits().longValue());
-        assertEquals(25L, request.getProvisionedThroughput().getWriteCapacityUnits().longValue());
+        assertEquals(30L, request.getProvisionedThroughput().getReadCapacityUnits().longValue());
+        assertEquals(50L, request.getProvisionedThroughput().getWriteCapacityUnits().longValue());
     }
 
     @Test
@@ -270,40 +270,6 @@ public class DynamoInitializerTest {
                 ProjectionType.ALL, 25, 25);
         GlobalSecondaryIndexDescription diffIndex2 = makeGlobalIndex("diff-index", "diff-key",
                 ProjectionType.KEYS_ONLY, 25, 25);
-
-        List<GlobalSecondaryIndexDescription> indexList1 = ImmutableList.of(sameIndex, diffIndex1);
-        List<GlobalSecondaryIndexDescription> indexList2 = ImmutableList.of(sameIndex, diffIndex2);
-
-        // execute (expected exception)
-        DynamoInitializer.compareSecondaryIndices("test-table", indexList1, indexList2, true);
-    }
-
-    @Test(expected = BridgeInitializationException.class)
-    public void compareGlobalIndicesDifferentReadCapacity() {
-        // indices
-        GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
-                ProjectionType.ALL, 25, 25);
-        GlobalSecondaryIndexDescription diffIndex1 = makeGlobalIndex("diff-index", "diff-key",
-                ProjectionType.ALL, 25, 25);
-        GlobalSecondaryIndexDescription diffIndex2 = makeGlobalIndex("diff-index", "diff-key",
-                ProjectionType.ALL, 24, 25);
-
-        List<GlobalSecondaryIndexDescription> indexList1 = ImmutableList.of(sameIndex, diffIndex1);
-        List<GlobalSecondaryIndexDescription> indexList2 = ImmutableList.of(sameIndex, diffIndex2);
-
-        // execute (expected exception)
-        DynamoInitializer.compareSecondaryIndices("test-table", indexList1, indexList2, true);
-    }
-
-    @Test(expected = BridgeInitializationException.class)
-    public void compareGlobalIndicesDifferentWriteCapacity() {
-        // indices
-        GlobalSecondaryIndexDescription sameIndex = makeGlobalIndex("same-index", "same-key",
-                ProjectionType.ALL, 25, 25);
-        GlobalSecondaryIndexDescription diffIndex1 = makeGlobalIndex("diff-index", "diff-key",
-                ProjectionType.ALL, 25, 25);
-        GlobalSecondaryIndexDescription diffIndex2 = makeGlobalIndex("diff-index", "diff-key",
-                ProjectionType.ALL, 25, 21);
 
         List<GlobalSecondaryIndexDescription> indexList1 = ImmutableList.of(sameIndex, diffIndex1);
         List<GlobalSecondaryIndexDescription> indexList2 = ImmutableList.of(sameIndex, diffIndex2);
