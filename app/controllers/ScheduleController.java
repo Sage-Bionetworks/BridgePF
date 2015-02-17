@@ -6,6 +6,7 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 
 import play.mvc.Result;
@@ -22,9 +23,10 @@ public class ScheduleController extends BaseController {
     
     public Result getSchedules() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = getStudy();
+        StudyIdentifier studyId = session.getStudyIdentifier();
+        Study study = studyService.getStudy(studyId);
         
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(study);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId);
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(study, plan, session.getUser());

@@ -1,11 +1,14 @@
 package org.sagebionetworks.bridge.models;
 
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+
 public class UserSession {
 
     private boolean authenticated;
     private String environment;
     private String sessionToken;
     private User user;
+    private StudyIdentifier studyIdentifier;
     
     public UserSession() {
         this.user = new User();
@@ -29,6 +32,12 @@ public class UserSession {
     public void setEnvironment(String environment) {
         this.environment = environment;
     }
+    public StudyIdentifier getStudyIdentifier() {
+        return studyIdentifier;
+    }
+    public void setStudyIdentifier(StudyIdentifier studyIdentifier) {
+        this.studyIdentifier = studyIdentifier;
+    }
     public User getUser() {
         return user;
     }
@@ -39,6 +48,6 @@ public class UserSession {
     @Override
     public String toString() {
         return "UserSession [authenticated=" + authenticated + ", environment=" + environment + ", sessionToken="
-                + sessionToken + ", user=" + user + "]";
+                + sessionToken + ", studyIdentifier=" + studyIdentifier + ", user=" + user + "]";
     }
 }

@@ -5,6 +5,7 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
@@ -26,15 +27,15 @@ public class ConsentController extends BaseController {
 
     public Result getConsentSignature() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
-        final Study study = getStudy();
-        ConsentSignature sig = consentService.getConsentSignature(session.getUser(), study);
+        final StudyIdentifier studyId = session.getStudyIdentifier();
+        ConsentSignature sig = consentService.getConsentSignature(session.getUser(), studyId);
         return okResult(sig);
     }
 
     public Result give() throws Exception {
         final UserSession session = getAuthenticatedSession();
         final ConsentSignature consent = ConsentSignature.createFromJson(requestToJSON(request()));
-        final Study study = getStudy();
+        final Study study = studyService.getStudy(session.getStudyIdentifier());
         final User user = consentService.consentToResearch(session.getUser(), consent, study, true);
         updateSessionUser(session, user);
         setSessionToken(session.getSessionToken());
@@ -43,16 +44,16 @@ public class ConsentController extends BaseController {
 
     public Result emailCopy() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
-        final Study study = getStudy();
-        consentService.emailConsentAgreement(session.getUser(), study);
+        final StudyIdentifier studyId = session.getStudyIdentifier();
+        consentService.emailConsentAgreement(session.getUser(), studyId);
         return okResult("Emailed consent.");
     }
 
     public Result suspendDataSharing() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
-        final Study study = getStudy();
+        final StudyIdentifier studyId = session.getStudyIdentifier();
         final User user = session.getUser();
-        optionsService.setOption(study, user.getHealthCode(), Option.DATA_SHARING, Boolean.FALSE.toString());
+        optionsService.setOption(studyId, user.getHealthCode(), Option.DATA_SHARING, Boolean.FALSE.toString());
         user.setDataSharing(false);
         updateSessionUser(session, user);
         return okResult("Data sharing with the study researchers has been suspended.");
@@ -60,9 +61,9 @@ public class ConsentController extends BaseController {
 
     public Result resumeDataSharing() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
-        final Study study = getStudy();
+        final StudyIdentifier studyId = session.getStudyIdentifier();
         final User user = session.getUser();
-        optionsService.setOption(study, user.getHealthCode(), Option.DATA_SHARING, Boolean.TRUE.toString());
+        optionsService.setOption(studyId, user.getHealthCode(), Option.DATA_SHARING, Boolean.TRUE.toString());
         user.setDataSharing(true);
         updateSessionUser(session, user);
         return okResult("Data sharing with the study researchers has been resumed.");

@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -31,7 +31,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
 
     @Override
-    public void setOption(Study study, String healthCode, Option option, String value) {
+    public void setOption(StudyIdentifier studyIdentifier, String healthCode, Option option, String value) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
         
@@ -39,7 +39,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         if (options == null) {
             options = new DynamoParticipantOptions();
         }
-        options.setStudyKey(study.getIdentifier());
+        options.setStudyKey(studyIdentifier.getIdentifier());
         options.setHealthCode(healthCode);
         options.getOptions().put(option.name(), value);
         mapper.save(options);
@@ -105,14 +105,14 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
     
     @Override
-    public OptionLookup getOptionForAllStudyParticipants(Study study, Option option) {
+    public OptionLookup getOptionForAllStudyParticipants(StudyIdentifier studyIdentifier, Option option) {
         // The only place we need the study, and that's to find all the options for all the 
         // participants in a given study.
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
 
         Condition condition = new Condition();
         condition.withComparisonOperator(ComparisonOperator.EQ);
-        condition.withAttributeValueList(new AttributeValue().withS(study.getIdentifier()));
+        condition.withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
         scan.addFilterCondition("studyKey", condition);
         
         List<DynamoParticipantOptions> mappings = mapper.scan(DynamoParticipantOptions.class, scan);

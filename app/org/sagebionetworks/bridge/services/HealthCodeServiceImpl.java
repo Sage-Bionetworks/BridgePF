@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.models.HealthId;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,9 +26,9 @@ public class HealthCodeServiceImpl implements HealthCodeService {
     }
 
     @Override
-    public HealthId create(Study study) {
-        checkNotNull(study);
-        final String healthCode = generateHealthCode(study.getIdentifier());
+    public HealthId create(StudyIdentifier studyIdentifier) {
+        checkNotNull(studyIdentifier);
+        final String healthCode = generateHealthCode(studyIdentifier.getIdentifier());
         final String healthId = generateHealthId(healthCode);
         return new HealthId() {
             @Override

@@ -20,7 +20,7 @@ import org.joda.time.LocalDate;
 
 /** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataRecord}. */
 @DynamoDBTable(tableName = "HealthDataRecord3")
-public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
+public class DynamoHealthDataRecord implements HealthDataRecord {
     private Long createdOn;
     private JsonNode data;
     private String healthCode;
