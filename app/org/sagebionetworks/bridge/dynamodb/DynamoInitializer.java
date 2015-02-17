@@ -383,16 +383,12 @@ public class DynamoInitializer {
     }
 
     /**
-     * Compares hash key, range key, secondary indices of the two tables. Throws an exception
+     * Compares hash key, range key of the two tables. Throws an exception
      * if there is difference.
      */
     static void compareSchema(TableDescription table1, TableDescription table2) {
         if (table1.getTableName().equals(table2.getTableName())) {
             compareKeySchema(table1, table2);
-            compareSecondaryIndices(table1.getTableName(), table1.getGlobalSecondaryIndexes(),
-                    table2.getGlobalSecondaryIndexes(), true);
-            compareSecondaryIndices(table1.getTableName(), table1.getLocalSecondaryIndexes(),
-                    table2.getLocalSecondaryIndexes(), false);
         }
     }
 
@@ -417,86 +413,6 @@ public class DynamoInitializer {
             }
             if (!ele1.equals(ele2)) {
                 throw new BridgeInitializationException("Different key schema for key " + ele2.getAttributeName());
-            }
-        }
-    }
-
-    /**
-     * Compare lists of indices from 2 different tables. If isGlobal is true, then this function compares global
-     * secondary indices, and the elements of the list should be GlobalSecondaryIndexDescriptions. If isGlobal is
-     * false, then this function compares local secondary indices, and the elements of the list should be
-     * LocalSecondaryIndexDescriptions.
-     *
-     * @param tableName
-     *         name of table to compare against (generally table 1, but they should be the same)
-     * @param indices1
-     *         a list of index descriptions from table 1
-     * @param indices2
-     *         a list of index descriptions from table 2
-     * @param isGlobal
-     *         true if these are glocal indices, false otherwise
-     */
-    static void compareSecondaryIndices(String tableName, List<?> indices1, List<?> indices2, boolean isGlobal) {
-        // Check for size first
-        int numIndices1 = indices1 == null ? 0 : indices1.size();
-        int numIndices2 = indices2 == null ? 0 : indices2.size();
-        if (numIndices1 != numIndices2) {
-            throw new BridgeInitializationException("Table " + tableName + " is changing the number of secondary indices.");
-        }
-
-        // if there are zero indices, short-circuit
-        if (numIndices1 == 0) {
-            return;
-        }
-
-        // Check one by one
-        Map<String, Object> indexMap1 = new HashMap<>();
-        for (Object index1 : indices1) {
-            String indexName;
-            if (isGlobal) {
-                indexName = ((GlobalSecondaryIndexDescription) index1).getIndexName();
-            } else {
-                indexName = ((LocalSecondaryIndexDescription) index1).getIndexName();
-            }
-            indexMap1.put(indexName, index1);
-        }
-
-        // Compare table 2 indices against table 1
-        for (Object index2 : indices2) {
-            String indexName;
-            if (isGlobal) {
-                indexName = ((GlobalSecondaryIndexDescription) index2).getIndexName();
-            } else {
-                indexName = ((LocalSecondaryIndexDescription) index2).getIndexName();
-            }
-
-            // make sure there's a corresponding table 1 index
-            Object index1 = indexMap1.get(indexName);
-            if (index1 == null) {
-                throw new BridgeInitializationException("Table " + tableName + " is changing the secondary indices.");
-            }
-
-            if (isGlobal) {
-                // compare global index attributes: key schema, projection, provisioned throughput
-                GlobalSecondaryIndexDescription globalIndex1 = (GlobalSecondaryIndexDescription) index1;
-                GlobalSecondaryIndexDescription globalIndex2 = (GlobalSecondaryIndexDescription) index2;
-                compareKeySchema(globalIndex1.getKeySchema(), globalIndex2.getKeySchema());
-
-                if (!globalIndex1.getProjection().equals(globalIndex2.getProjection())) {
-                    throw new BridgeInitializationException("Table " + tableName + " global index " + indexName +
-                            " is changing the projection.");
-                }
-
-            } else {
-                // compare global index attributes: key schema, projection
-                LocalSecondaryIndexDescription localIndex1 = (LocalSecondaryIndexDescription) index1;
-                LocalSecondaryIndexDescription localIndex2 = (LocalSecondaryIndexDescription) index2;
-                compareKeySchema(localIndex1.getKeySchema(), localIndex2.getKeySchema());
-
-                if (!localIndex1.getProjection().equals(localIndex2.getProjection())) {
-                    throw new BridgeInitializationException("Table " + tableName + " local index " + indexName +
-                            " is changing the projection.");
-                }
             }
         }
     }
