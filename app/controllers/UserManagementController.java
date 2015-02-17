@@ -2,6 +2,7 @@ package controllers;
 
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.SignUp;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
@@ -20,9 +21,8 @@ public class UserManagementController extends BaseController {
     }
 
     public Result createUser() throws Exception {
-        getAuthenticatedAdminSession();
-
-        Study study = getStudy();
+        UserSession session = getAuthenticatedAdminSession();
+        Study study = studyService.getStudy(session.getStudyIdentifier());
 
         JsonNode node = requestToJSON(request());
         SignUp signUp = SignUp.fromJson(node, true);

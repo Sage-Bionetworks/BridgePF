@@ -4,6 +4,7 @@ import global.JsonSchemaValidator;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.models.studies.TrackerInfo;
@@ -22,8 +23,9 @@ public class TrackerController extends BaseController {
     }
     
     public Result getTrackers() throws Exception {
-        getAuthenticatedSession();
-        Study study = getStudy();
+        UserSession session = getAuthenticatedSession();
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
         List<TrackerInfo> infos = Lists.newArrayList();
         for (String trackerId : study.getTrackers()) {
             Tracker tracker = studyService.getTracker(trackerId);
@@ -31,7 +33,6 @@ public class TrackerController extends BaseController {
         }
         return okResult(infos);
     }
-    
     
     public Result getTrackerSchema(String trackerId) throws Exception {
         getAuthenticatedSession();

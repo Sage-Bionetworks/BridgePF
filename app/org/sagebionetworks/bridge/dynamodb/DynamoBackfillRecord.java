@@ -14,14 +14,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @DynamoDBTable(tableName = "BackfillRecord")
-public class DynamoBackfillRecord implements BackfillRecord, DynamoTable {
+public class DynamoBackfillRecord implements BackfillRecord {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private String taskId;
     private long timestamp;
     private Long version;
-    
+
     private String studyId;
     private String accountId;
     private String operation;

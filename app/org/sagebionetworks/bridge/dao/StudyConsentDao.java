@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dao;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface StudyConsentDao {
 
@@ -10,7 +11,7 @@ public interface StudyConsentDao {
      * Adds a consent to the study. Note the consent is added as
      * inactive. Must explicitly set it active.
      */
-    StudyConsent addConsent(String studyKey, String path, int minAge);
+    StudyConsent addConsent(StudyIdentifier studyIdentifier, String path, int minAge);
 
     /**
      * Sets the consent active or inactive, depending on the boolean flag.
@@ -20,20 +21,20 @@ public interface StudyConsentDao {
     /**
      * Gets the latest, active consent.
      */
-    StudyConsent getConsent(String studyKey);
+    StudyConsent getConsent(StudyIdentifier studyIdentifier);
 
     /**
      * Gets the consent, activate or inactive, of the specified timestamp.
      */
-    StudyConsent getConsent(String studyKey, long timestamp);
+    StudyConsent getConsent(StudyIdentifier studyIdentifier, long timestamp);
     
     /**
      * Deletes the consent of the specified timestamp.
      */
-    void deleteConsent(String studyKey, long timestamp);
+    void deleteConsent(StudyIdentifier studyIdentifier, long timestamp);
 
     /**
      * Gets all the consents, active and inactive, in reverse order of the timestamp, of a particular study.
      */
-    List<StudyConsent> getConsents(String studyKey);
+    List<StudyConsent> getConsents(StudyIdentifier studyIdentifier);
 }

@@ -14,12 +14,14 @@ import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.stormpath.sdk.account.Account;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class ConsentServiceImpl implements ConsentService {
@@ -59,11 +61,11 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public ConsentSignature getConsentSignature(final User caller, final Study study) {
+    public ConsentSignature getConsentSignature(final User caller, final StudyIdentifier studyIdentifier) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         Account account = authService.getAccount(caller.getEmail());
-        ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(study, account);
+        ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(studyIdentifier, account);
         if (consentSignature != null) {
             return consentSignature;
         }
@@ -71,8 +73,8 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public User consentToResearch(final User caller, final ConsentSignature consentSignature, final Study study,
-            final boolean sendEmail) throws BridgeServiceException {
+    public User consentToResearch(final User caller, final ConsentSignature consentSignature,
+            final Study study, final boolean sendEmail) throws BridgeServiceException {
 
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
@@ -95,7 +97,7 @@ public class ConsentServiceImpl implements ConsentService {
         }
         final String healthCode = hid.getCode();
 
-        final StudyConsent studyConsent = studyConsentDao.getConsent(study.getIdentifier());
+        final StudyConsent studyConsent = studyConsentDao.getConsent(study);
 
         incrementStudyEnrollment(study);
         try {
@@ -117,20 +119,20 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public boolean hasUserConsentedToResearch(User caller, Study study) {
+    public boolean hasUserConsentedToResearch(User caller, StudyIdentifier studyIdentifier) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
 
-        return userConsentDao.hasConsented(caller.getHealthCode(), study.getIdentifier());
+        return userConsentDao.hasConsented(caller.getHealthCode(), studyIdentifier);
     }
 
     @Override
-    public boolean hasUserSignedMostRecentConsent(User caller, Study study) {
+    public boolean hasUserSignedMostRecentConsent(User caller, StudyIdentifier studyIdentifier) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
 
-        UserConsent userConsent = userConsentDao.getUserConsent(caller.getHealthCode(), study.getIdentifier());
-        StudyConsent mostRecentConsent = studyConsentDao.getConsent(study.getIdentifier());
+        UserConsent userConsent = userConsentDao.getUserConsent(caller.getHealthCode(), studyIdentifier);
+        StudyConsent mostRecentConsent = studyConsentDao.getConsent(studyIdentifier);
 
         if (mostRecentConsent != null && userConsent != null) {
             // If the user signed the StudyConsent after the time the most recent StudyConsent was created, then the
@@ -148,7 +150,7 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
 
         String healthCode = caller.getHealthCode();
-        if (userConsentDao.withdrawConsent(healthCode, study.getIdentifier())) {
+        if (userConsentDao.withdrawConsent(healthCode, study)) {
             decrementStudyEnrollment(study);
             caller.setConsent(false);
         }
@@ -160,16 +162,16 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public void emailConsentAgreement(final User caller, final Study study) {
+    public void emailConsentAgreement(final User caller, final StudyIdentifier studyIdentifier) {
         checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
 
-        final StudyConsent consent = studyConsentDao.getConsent(study.getIdentifier());
+        final StudyConsent consent = studyConsentDao.getConsent(studyIdentifier);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
 
-        final ConsentSignature consentSignature = getConsentSignature(caller, study);
+        final ConsentSignature consentSignature = getConsentSignature(caller, studyIdentifier);
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
@@ -187,7 +189,7 @@ public class ConsentServiceImpl implements ConsentService {
         String countString = stringOps.get(key);
         if (countString == null) {
             // This is expensive but don't lock, it's better to do it twice slowly, than to throw an exception here.
-            count = userConsentDao.getNumberOfParticipants(study.getIdentifier());
+            count = userConsentDao.getNumberOfParticipants(study.getStudyIdentifier());
             stringOps.setex(key, TWENTY_FOUR_HOURS, Long.toString(count));
         } else {
             count = Long.parseLong(countString);
