@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import org.sagebionetworks.bridge.json.DateTimeToStringSerializer;
-import org.sagebionetworks.bridge.json.JodaDateTimeDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.LocalDateToStringSerializer;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
@@ -16,20 +16,32 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.joda.deser.LocalDateDeserializer;
-import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 /** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataRecord}. */
 @DynamoDBTable(tableName = "HealthDataRecord3")
 public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
+    private Long createdOn;
     private JsonNode data;
     private String healthCode;
     private String id;
-    private DateTime measuredTime;
     private JsonNode metadata;
     private String schemaId;
     private LocalDate uploadDate;
     private Long version;
+
+    /** {@inheritDoc} */
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @Override
+    public Long getCreatedOn() {
+        return createdOn;
+    }
+
+    /** @see #getCreatedOn */
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    public void setCreatedOn(Long createdOn) {
+        this.createdOn = createdOn;
+    }
 
     /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
@@ -65,20 +77,6 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
     /** @see #getId */
     public void setId(String id) {
         this.id = id;
-    }
-
-    /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = DateTimeMarshaller.class)
-    @JsonSerialize(using = DateTimeToStringSerializer.class)
-    @Override
-    public DateTime getMeasuredTime() {
-        return measuredTime;
-    }
-
-    /** @see #getMeasuredTime */
-    @JsonDeserialize(using = JodaDateTimeDeserializer.class)
-    public void setMeasuredTime(DateTime measuredTime) {
-        this.measuredTime = measuredTime;
     }
 
     /** {@inheritDoc} */
@@ -141,10 +139,10 @@ public class DynamoHealthDataRecord implements HealthDataRecord, DynamoTable {
         @Override
         protected HealthDataRecord buildUnvalidated() {
             DynamoHealthDataRecord record = new DynamoHealthDataRecord();
+            record.setCreatedOn(getCreatedOn());
             record.setData(getData());
             record.setHealthCode(getHealthCode());
             record.setId(getId());
-            record.setMeasuredTime(getMeasuredTime());
             record.setMetadata(getMetadata());
             record.setSchemaId(getSchemaId());
             record.setUploadDate(getUploadDate());

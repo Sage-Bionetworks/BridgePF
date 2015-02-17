@@ -1,11 +1,10 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.validators.HealthDataRecordValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -15,13 +14,24 @@ import org.sagebionetworks.bridge.validators.Validate;
  * implementation directly.
  */
 public abstract class HealthDataRecordBuilder {
+    private Long createdOn;
     private JsonNode data;
     private String healthCode;
     private String id;
-    private DateTime measuredTime;
     private JsonNode metadata;
     private String schemaId;
     private LocalDate uploadDate;
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getCreatedOn */
+    public Long getCreatedOn() {
+        return createdOn;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getCreatedOn */
+    public HealthDataRecordBuilder withCreatedOn(Long createdOn) {
+        this.createdOn = createdOn;
+        return this;
+    }
 
     /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getData */
     public JsonNode getData() {
@@ -53,17 +63,6 @@ public abstract class HealthDataRecordBuilder {
     /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getId */
     public HealthDataRecordBuilder withId(String id) {
         this.id = id;
-        return this;
-    }
-
-    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getMeasuredTime */
-    public DateTime getMeasuredTime() {
-        return measuredTime;
-    }
-
-    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getMeasuredTime */
-    public HealthDataRecordBuilder withMeasuredTime(DateTime measuredTime) {
-        this.measuredTime = measuredTime;
         return this;
     }
 
@@ -108,25 +107,25 @@ public abstract class HealthDataRecordBuilder {
      * <p>
      * This builder also adds reasonable defaults to fields that are null or unspecified. Specifically:
      *   <ul>
+     *     <li>createdOn defaults to the current time</li>
      *     <li>data and metadata default to an empty ObjectNode</li>
-     *     <li>measuredTime defaults to the current time</li>
      *     <li>uploadDate defaults to the current calendar date (as measured in Pacific local time)</li>
      *   </ul>
      * </p>
      */
     public HealthDataRecord build() {
         // default values
+        if (createdOn == null) {
+            createdOn = DateUtils.getCurrentMillisFromEpoch();
+        }
         if (data == null) {
             data = BridgeObjectMapper.get().createObjectNode();
         }
         if (metadata == null) {
             metadata = BridgeObjectMapper.get().createObjectNode();
         }
-        if (measuredTime == null) {
-            measuredTime = DateTime.now();
-        }
         if (uploadDate == null) {
-            uploadDate = LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE);
+            uploadDate = DateUtils.getCurrentCalendarDateInLocalTime();
         }
 
         // build and validate
