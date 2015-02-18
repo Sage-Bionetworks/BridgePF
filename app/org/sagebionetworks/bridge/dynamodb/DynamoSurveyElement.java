@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
 @DynamoDBTable(tableName = SurveyElementConstants.SURVEY_ELEMENT_TYPE)
-public class DynamoSurveyElement implements SurveyElement, DynamoTable {
+public class DynamoSurveyElement implements SurveyElement {
 
     private String surveyCompoundKey;
     private String guid;

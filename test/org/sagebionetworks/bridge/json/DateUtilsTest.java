@@ -4,16 +4,17 @@ import static org.junit.Assert.assertEquals;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 
 public class DateUtilsTest {
     
     // The test date is: either "2014-08-11T16:01:23.817Z" or 1407772883817 in milliseconds
     private static long MILLIS = 1407772883817L;
-    private static long MILLIS_TO_MIDNIGHT = 1407715200000L;
 
     private static String ISO_DATE_TIME = "2014-08-11T16:01:23.817Z";
-    private static String ISO_DATE = "2014-08-11";
     private static final long SIX_DAYS_IN_MILLIS = 6*24*60*60*1000;
     
     private DateTime getDateTime() {
@@ -31,53 +32,70 @@ public class DateUtilsTest {
         long millis = DateUtils.convertToMillisFromDuration("PT144H");
         assertEquals("Comes out as six days", SIX_DAYS_IN_MILLIS, millis);
     }
-    
-    
+
     @Test
-    public void getMillisFromEpoch() {
-        long millis = DateUtils.getMillisFromEpoch(getDateTime());
-        assertEquals("Milliseconds are correct", MILLIS, millis);
+    public void getCalendarDateString() {
+        LocalDate date = new LocalDate(2014, 2, 16);
+        assertEquals("2014-02-16", DateUtils.getCalendarDateString(date));
     }
+
     @Test
-    public void getISODate() {
-        String dateString = DateUtils.getISODate(getDateTime());
-        assertEquals("Date is correctly formatted", ISO_DATE, dateString);
+    public void parseCalendarDate() {
+        LocalDate date = DateUtils.parseCalendarDate("2014-02-16");
+        assertEquals(2014, date.getYear());
+        assertEquals(2, date.getMonthOfYear());
+        assertEquals(16, date.getDayOfMonth());
     }
+
     @Test
     public void getISODateTime() {
         String dateString = DateUtils.getISODateTime(getDateTime());
         assertEquals("Datetime is correctly formatted", ISO_DATE_TIME, dateString);
     }
+
     @Test
-    public void convertToISODate() {
-        // No problem converting the more specific datetime to a date only
-        
-        String dateString = DateUtils.convertToISODate(ISO_DATE);
-        assertEquals("Same date string [1]", ISO_DATE, dateString);
-        
-        dateString = DateUtils.convertToISODate(ISO_DATE_TIME);
-        assertEquals("Same date string [2]", ISO_DATE, dateString);
+    public void parseISODateTime() {
+        // Arbitrarily 2014-02-17T23:00Z.
+        long expectedMillis = new DateTime(2014, 2, 17, 23, 0, DateTimeZone.UTC).getMillis();
+
+        DateTime dateTime = DateUtils.parseISODateTime("2014-02-17T23:00Z");
+        assertEquals(expectedMillis, dateTime.getMillis());
     }
+
     @Test
-    public void convertToISODateTime() {
-        // But we cannot convert a date only to a date time, without falsely 
-        // declaring a time, usually of midnight. So we don't, we pass back a 
-        // date only.
-        
-        String dateString = DateUtils.convertToISODateTime(ISO_DATE);
-        assertEquals("Same date time string [1]", ISO_DATE, dateString);
-        
-        dateString = DateUtils.convertToISODateTime(ISO_DATE_TIME);
-        assertEquals("Same date time string [2]", ISO_DATE_TIME, dateString);
+    public void parseISODateTimeNonUtc() {
+        // Arbitrarily 2014-02-17T23:00-0800. We want to use a timezone other than UTC to make sure we can handle
+        // non-UTC timezones.
+        long expectedMillis = new DateTime(2014, 2, 17, 23, 0, BridgeConstants.LOCAL_TIME_ZONE).getMillis();
+
+        DateTime dateTime = DateUtils.parseISODateTime("2014-02-17T23:00-0800");
+        assertEquals(expectedMillis, dateTime.getMillis());
     }
+
     @Test
-    public void convertToMillisFromEpoch() {
-        long millis = DateUtils.convertToMillisFromEpoch(ISO_DATE_TIME);
-        assertEquals("Same millis [1]", MILLIS, millis);
-        
-        // We cannot avoid ambiguity here though, as long can't represent this.
-        // So this is milliseconds to midnight UTC of the given date.
-        millis = DateUtils.convertToMillisFromEpoch(ISO_DATE);
-        assertEquals("Same millis [2]", MILLIS_TO_MIDNIGHT, millis);
+    public void convertToMillisFromDate() {
+        long expectedMillis = new DateTime(2014, 2, 17, 0, 0, DateTimeZone.UTC).getMillis();
+
+        long millis = DateUtils.convertToMillisFromEpoch("2014-02-17");
+        assertEquals(expectedMillis, millis);
+    }
+
+    @Test
+    public void convertToMillisFromDateTime() {
+        // Arbitrarily 2014-02-17T23:00Z.
+        long expectedMillis = new DateTime(2014, 2, 17, 23, 0, DateTimeZone.UTC).getMillis();
+
+        long millis = DateUtils.convertToMillisFromEpoch("2014-02-17T23:00Z");
+        assertEquals(expectedMillis, millis);
+    }
+
+    @Test
+    public void convertToMillisFromDateTimeNonUtc() {
+        // Arbitrarily 2014-02-17T23:00-0800. We want to use a timezone other than UTC to make sure we can handle
+        // non-UTC timezones.
+        long expectedMillis = new DateTime(2014, 2, 17, 23, 0, BridgeConstants.LOCAL_TIME_ZONE).getMillis();
+
+        long millis = DateUtils.convertToMillisFromEpoch("2014-02-17T23:00-0800");
+        assertEquals(expectedMillis, millis);
     }
 }
