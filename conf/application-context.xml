@@ -142,6 +142,7 @@
     </bean>
     
     <bean id="accountDao" class="org.sagebionetworks.bridge.stormpath.StormpathAccountDao">
+        <property name="stormpathApplication" ref="stormpathApplication"/>
         <property name="stormpathClient" ref="stormpathClient"/>
         <property name="studyService" ref="studyService"/>
         <property name="encryptors">
@@ -167,6 +168,10 @@
         factory-method="getStormpathClient" scope="singleton">
     </bean>
 
+    <bean id="stormpathApplication" class="org.sagebionetworks.bridge.stormpath.StormpathFactory" 
+        factory-method="getStormpathApplication" scope="singleton">
+    </bean>
+    
     <!-- Play controllers. -->
 
     <bean id="BaseController" class="controllers.BaseController" abstract="true">
