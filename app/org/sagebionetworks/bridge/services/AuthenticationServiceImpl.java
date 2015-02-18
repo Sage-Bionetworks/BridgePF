@@ -126,7 +126,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         AuthenticationRequest<?, ?> request = null;
         UserSession session = null;
         try {
-            Application application = StormpathFactory.getStormpathApplication(stormpathClient);
+            Application application = StormpathFactory.getStormpathApplication();
             logger.debug("sign in create app " + (System.nanoTime() - start) );
             request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword());
             Account account = application.authenticateAccount(request).getAccount();
@@ -281,7 +281,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkArgument(StringUtils.isNotBlank(email.getEmail()), "Email is required");
 
         try {
-            Application application = StormpathFactory.getStormpathApplication(stormpathClient);
+            Application application = StormpathFactory.getStormpathApplication();
             application.sendPasswordResetEmail(email.getEmail());
         } catch (ResourceException re) {
             throw new BadRequestException(re.getDeveloperMessage());
@@ -294,7 +294,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         Validate.entityThrowingException(passwordResetValidator, passwordReset);
         try {
-            Application application = StormpathFactory.getStormpathApplication(stormpathClient);
+            Application application = StormpathFactory.getStormpathApplication();
             Account account = application.verifyPasswordResetToken(passwordReset.getSptoken());
             account.setPassword(passwordReset.getPassword());
             account.save();
@@ -314,7 +314,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public Account getAccount(String email) {
-        Application app = StormpathFactory.getStormpathApplication(stormpathClient);
+        Application app = StormpathFactory.getStormpathApplication();
         AccountList accounts = app.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email)));
         if (accounts.iterator().hasNext()) {
             return accounts.iterator().next();
@@ -329,7 +329,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public String isAccountInUse(String username, String email) {
         // There is no boolean "OR" form of query in the API... you have to use two queries.
-        Application app = StormpathFactory.getStormpathApplication(stormpathClient);
+        Application app = StormpathFactory.getStormpathApplication();
         AccountList accounts = app.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email)));
         if (accounts.iterator().hasNext()) {
             return "email";

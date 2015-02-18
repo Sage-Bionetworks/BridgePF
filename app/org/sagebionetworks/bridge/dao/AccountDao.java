@@ -38,10 +38,9 @@ public interface AccountDao {
     /**
      * Sign up sends an email address with a link that includes a one-time token for verification. That email
      * can be resent by calling this method.
-     * @param study
      * @param email
      */
-    public void resendEmailVerificationToken(Study study, Email email);
+    public void resendEmailVerificationToken(Email email);
     
     /**
      * Request that an email be sent to the account holder with a link to reset a password, including a 

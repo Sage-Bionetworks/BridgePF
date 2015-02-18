@@ -22,7 +22,6 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -57,9 +56,15 @@ public class StormpathAccountDao implements AccountDao {
 
     // private static Logger logger = LoggerFactory.getLogger(StormpathAccountDao.class);
 
+    private Application application;
     private Client client;
     private StudyService studyService;
     private SortedMap<Integer,Encryptor> encryptors = Maps.newTreeMap();
+    
+    
+    public void setStormpathApplication(Application application) {
+        this.application = application;
+    }
     
     public void setStormpathClient(Client client) {
         this.client = client;
@@ -98,17 +103,16 @@ public class StormpathAccountDao implements AccountDao {
     }
 
     @Override
-    public Account verifyEmail(StudyIdentifier study, EmailVerification verification) throws ConsentRequiredException {
+    public Account verifyEmail(StudyIdentifier study, EmailVerification verification) {
         checkNotNull(study);
         checkNotNull(verification);
         
         com.stormpath.sdk.account.Account acct = client.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
-        return new StormpathAccount(study, acct, encryptors);
+        return (acct == null) ? null : new StormpathAccount(study, acct, encryptors);
     }
 
     @Override
-    public void resendEmailVerificationToken(Study study, Email email) {
-        checkNotNull(study);
+    public void resendEmailVerificationToken(Email email) {
         checkNotNull(email);
 
         // This is painful, it's not in the Java SDK. I hope we can come back to this when it's in their SDK
@@ -168,7 +172,6 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(email);
         
         try {
-            Application application = getApplication();
             application.sendPasswordResetEmail(email.getEmail());
         } catch (ResourceException e) {
             rethrowResourceException(e, null);
@@ -180,7 +183,6 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(passwordReset);
         
         try {
-            Application application = getApplication();
             com.stormpath.sdk.account.Account account = application.verifyPasswordResetToken(passwordReset.getSptoken());
             account.setPassword(passwordReset.getPassword());
             account.save();
@@ -197,7 +199,6 @@ public class StormpathAccountDao implements AccountDao {
         checkArgument(isNotBlank(signIn.getPassword()));
         
         try {
-            Application application = getApplication();
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             
             UsernamePasswordRequest request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword(), directory);
@@ -286,11 +287,6 @@ public class StormpathAccountDao implements AccountDao {
         Account account = getAccount(study, email);
         com.stormpath.sdk.account.Account acct =((StormpathAccount)account).getAccount();
         acct.delete();
-    }
-    
-    private Application getApplication() {
-        BridgeConfig config = BridgeConfigFactory.getConfig();
-        return client.getResource(config.getStormpathApplicationHref().trim(), Application.class);
     }
     
     private void rethrowResourceException(ResourceException e, Account account) {
