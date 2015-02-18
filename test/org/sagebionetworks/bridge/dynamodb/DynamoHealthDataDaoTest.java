@@ -15,7 +15,6 @@ import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
-@SuppressWarnings("unchecked")
 public class DynamoHealthDataDaoTest {
     @Test
     public void createRecord() {
