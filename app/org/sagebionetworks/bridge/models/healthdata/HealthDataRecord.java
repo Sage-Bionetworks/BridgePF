@@ -1,26 +1,38 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.joda.time.LocalDate;
 
+/** This class represents health data and associated metadata. */
 @BridgeTypeName("HealthData")
+@JsonDeserialize(as = DynamoHealthDataRecord.class)
 public interface HealthDataRecord extends BridgeEntity {
+    /**
+     * The timestamp at which this health data was created (recorded on the client), in milliseconds since 1970-01-01
+     * (start of epoch).
+     */
+    Long getCreatedOn();
 
-    public String getGuid();
-    public void setGuid(String guid);
-    
-    public Long getVersion();
-    public void setVersion(Long version);
-    
-    public long getStartDate();
-    public void setStartDate(long startDate);
-    
-    public long getEndDate();
-    public void setEndDate(long endDate);
-    
-    public JsonNode getData();
-    public void setData(JsonNode data);
-    
+    /** Health data, in JSON format. */
+    JsonNode getData();
+
+    /** Health code of the user contributing the health data. */
+    String getHealthCode();
+
+    /** Unique identifier for the health data record. */
+    String getId();
+
+    /** Miscellaneous metadata associated with this record. This may vary with schema. */
+    JsonNode getMetadata();
+
+    /** Schema ID of the health data. */
+    String getSchemaId();
+
+    /** Calendar date the health data was uploaded. This is generally filled in by the Bridge server. */
+    LocalDate getUploadDate();
 }

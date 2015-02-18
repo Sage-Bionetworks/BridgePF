@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @DynamoDBTable(tableName = "UserConsent2")
 @BridgeTypeName("UserConsent")
-public class DynamoUserConsent2 implements DynamoTable, UserConsent {
+public class DynamoUserConsent2 implements UserConsent {
 
     // Schema attributes
     private String healthCodeStudy; // <health-code>:<study-key>

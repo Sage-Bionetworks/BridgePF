@@ -16,7 +16,6 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
@@ -32,10 +31,9 @@ public class DynamoTestUtil {
                 secretKey));
     }
 
-    public static <T extends DynamoTable> void clearTable(Class<T> clazz) {
+    public static void clearTable(Class<?> clazz) {
         List<String> keyAttrs = getKeyAttrs(clazz);
-        String tableName = clazz.getAnnotation(DynamoDBTable.class).tableName();
-        tableName = DynamoInitializer.getTableName(tableName);
+        String tableName = TableNameOverrideFactory.getTableName(clazz);
         ScanResult result = DYNAMO.scan((new ScanRequest(tableName)).withAttributesToGet(keyAttrs));
         List<Map<String, AttributeValue>> items = result.getItems();
         do {
@@ -53,7 +51,7 @@ public class DynamoTestUtil {
         } while (items != null);
     }
 
-    private static <T extends DynamoTable> List<String> getKeyAttrs(Class<T> clazz) {
+    private static List<String> getKeyAttrs(Class<?> clazz) {
         List<String> keyAttrs = new ArrayList<String>();
         Method[] methods = clazz.getMethods();
         for (Method method : methods) {
