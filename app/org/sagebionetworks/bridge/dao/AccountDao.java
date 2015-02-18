@@ -2,10 +2,14 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.Iterator;
 
+import org.sagebionetworks.bridge.models.Email;
+import org.sagebionetworks.bridge.models.EmailVerification;
+import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 /**
  * DAO to retrieve personally identifiable account information, including authentication 
@@ -22,6 +26,36 @@ public interface AccountDao {
      * @param sendEmail
      */
     public void signUp(Study study, SignUp signUp, boolean sendEmail);
+    
+    /**
+     * Verify an email address using a supplied, one-time token for verification.
+     * @param study
+     * @param verification
+     * @return
+     */
+    public Account verifyEmail(StudyIdentifier study, EmailVerification verification);
+    
+    /**
+     * Sign up sends an email address with a link that includes a one-time token for verification. That email
+     * can be resent by calling this method.
+     * @param study
+     * @param email
+     */
+    public void resendEmailVerificationToken(Study study, Email email);
+    
+    /**
+     * Request that an email be sent to the account holder with a link to reset a password, including a 
+     * one-time verification token. 
+     * @param email
+     */
+    public void requestResetPassword(Email email);
+    
+    /**
+     * Reset a password, supplying a new password and the one-time verification token that was sent via email 
+     * to the account holder.
+     * @param passwordReset
+     */
+    public void resetPassword(PasswordReset passwordReset);
     
     /**
      * Authenticate a user with the supplied credentials, returning that user's account record

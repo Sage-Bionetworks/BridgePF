@@ -1,29 +1,44 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import static com.google.common.base.Preconditions.checkArgument;
-
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.httpclient.auth.AuthScope.ANY;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.SimpleHttpConnectionManager;
+import org.apache.commons.httpclient.UsernamePasswordCredentials;
+import org.apache.commons.httpclient.auth.AuthPolicy;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.Email;
+import org.sagebionetworks.bridge.models.EmailVerification;
+import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.StudyService;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.stormpath.sdk.account.AccountList;
@@ -81,6 +96,98 @@ public class StormpathAccountDao implements AccountDao {
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
         return new DirectoryAccountIterator(directory, study, encryptors);
     }
+
+    @Override
+    public Account verifyEmail(StudyIdentifier study, EmailVerification verification) throws ConsentRequiredException {
+        checkNotNull(study);
+        checkNotNull(verification);
+        
+        com.stormpath.sdk.account.Account acct = client.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
+        return new StormpathAccount(study, acct, encryptors);
+    }
+
+    @Override
+    public void resendEmailVerificationToken(Study study, Email email) {
+        checkNotNull(study);
+        checkNotNull(email);
+
+        // This is painful, it's not in the Java SDK. I hope we can come back to this when it's in their SDK
+        // and move it over.
+        SimpleHttpConnectionManager manager = new SimpleHttpConnectionManager();
+        int status = 202; // The Stormpath resend method returns 202 "Accepted" when successful
+        byte[] responseBody = new byte[0];
+        try {
+            BridgeConfig config = BridgeConfigFactory.getConfig();
+            
+            String bodyJson = "{\"login\":\""+email.getEmail()+"\"}";
+            String applicationId = StormpathFactory.getApplicationId();
+            
+            HttpClient client = new HttpClient(manager);
+            
+            PostMethod post = new PostMethod("https://api.stormpath.com/v1/applications/"+applicationId+"/verificationEmails");
+            post.setRequestHeader("Accept", "application/json");
+            post.setRequestHeader("Content-Type", "application/json");
+            post.setRequestEntity(new StringRequestEntity(bodyJson, "application/json", "UTF-8"));
+
+            UsernamePasswordCredentials creds = new UsernamePasswordCredentials(
+                    config.getStormpathId().trim(), config.getStormpathSecret().trim());
+            
+            client.getState().setCredentials(ANY, creds);
+            client.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, Lists.newArrayList(AuthPolicy.DIGEST));
+            client.getParams().setAuthenticationPreemptive(true);
+            
+            status = client.executeMethod(post);
+            responseBody = post.getResponseBody();
+
+        } catch(Throwable throwable) {
+            throw new BridgeServiceException(throwable);
+        } finally {
+            manager.shutdown();
+        }
+        // If it *wasn't* a 202, then there should be a JSON message included with the response...
+        if (status != 202) {
+            // One common response, that the email no longer exists, we have mapped to a 404, so do that 
+            // here as well. Otherwise we treat it on the API side as a 500 error, a server problem.
+            try {
+                JsonNode node = BridgeObjectMapper.get().readTree(responseBody);
+                String message = node.get("message").asText();
+                if (message.contains("does not match a known resource")) {
+                    status = 404;
+                } else {
+                    status = 500;
+                }
+                throw new BridgeServiceException(message, status);
+            } catch(IOException e) {
+                throw new BridgeServiceException(e);
+            }
+        }
+    }
+
+    @Override
+    public void requestResetPassword(Email email) {
+        checkNotNull(email);
+        
+        try {
+            Application application = getApplication();
+            application.sendPasswordResetEmail(email.getEmail());
+        } catch (ResourceException e) {
+            rethrowResourceException(e, null);
+        }
+    }
+
+    @Override
+    public void resetPassword(PasswordReset passwordReset) {
+        checkNotNull(passwordReset);
+        
+        try {
+            Application application = getApplication();
+            com.stormpath.sdk.account.Account account = application.verifyPasswordResetToken(passwordReset.getSptoken());
+            account.setPassword(passwordReset.getPassword());
+            account.save();
+        } catch (ResourceException e) {
+            rethrowResourceException(e, null);
+        }
+    }
     
     @Override
     public Account authenticate(Study study, SignIn signIn) {
@@ -90,9 +197,7 @@ public class StormpathAccountDao implements AccountDao {
         checkArgument(isNotBlank(signIn.getPassword()));
         
         try {
-            BridgeConfig config = BridgeConfigFactory.getConfig();
-            Application application = client.getResource(config.getStormpathApplicationHref().trim(), Application.class);
-
+            Application application = getApplication();
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             
             UsernamePasswordRequest request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword(), directory);
@@ -181,6 +286,11 @@ public class StormpathAccountDao implements AccountDao {
         Account account = getAccount(study, email);
         com.stormpath.sdk.account.Account acct =((StormpathAccount)account).getAccount();
         acct.delete();
+    }
+    
+    private Application getApplication() {
+        BridgeConfig config = BridgeConfigFactory.getConfig();
+        return client.getResource(config.getStormpathApplicationHref().trim(), Application.class);
     }
     
     private void rethrowResourceException(ResourceException e, Account account) {
