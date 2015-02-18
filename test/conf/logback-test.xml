@@ -2,7 +2,7 @@
 <configuration debug="true">
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%d{ISO8601} %-5p %logger - %message%n%xException%n%mdc</pattern>
+      <pattern>%d{ISO8601} %-5p [%t] %logger - %message%n%xException%n%mdc</pattern>
     </encoder>
   </appender>
   <root level="ERROR">
