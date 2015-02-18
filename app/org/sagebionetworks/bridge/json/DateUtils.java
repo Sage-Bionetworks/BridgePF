@@ -3,11 +3,14 @@ package org.sagebionetworks.bridge.json;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.joda.time.Period;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.joda.time.format.ISOPeriodFormat;
 import org.joda.time.format.PeriodFormatter;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 
 public final class DateUtils {
 
@@ -15,8 +18,21 @@ public final class DateUtils {
     private static final DateTimeFormatter dateTimeFmt = ISODateTimeFormat.dateTime();
     private static final PeriodFormatter periodFmt = ISOPeriodFormat.standard();
 
-    private static DateTime getDateTime() {
+    /** Returns current time as a Joda DateTime object. */
+    public static DateTime getCurrentDateTime() {
         return DateTime.now(DateTimeZone.UTC);
+    }
+
+    /** Returns current calendar date as a Joda LocalDate object, using UTC as the reference time zone. */
+    public static LocalDate getCurrentCalendarDateInUtc() {
+        return LocalDate.now(DateTimeZone.UTC);
+    }
+
+    /**
+     * Returns current calendar date as a Joda LocalDate object, using Pacific local time as the reference time zone.
+     */
+    public static LocalDate getCurrentCalendarDateInLocalTime() {
+        return LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE);
     }
     
     /**
@@ -25,74 +41,49 @@ public final class DateUtils {
      * @return milliseconds from epoch.
      */
     public static long getCurrentMillisFromEpoch() {
-        return getDateTime().getMillis();
+        return getCurrentDateTime().getMillis();
     }
 
-    public static long getMillisFromEpoch(DateTime date) {
-        return date.getMillis();
+    /** Returns the current calendar date as a string in YYYY-MM-DD format, using UTC as the reference time zone. */
+    public static String getCurrentCalendarDateStringInUtc() {
+        return getCalendarDateString(getCurrentCalendarDateInUtc());
     }
-    
+
     /**
-     * Get the current system date in ISO 8601 format (e.g. yyyy-MM-dd).
-     * 
-     * @return date string
+     * Returns the current calendar date as a string in YYYY-MM-DD format, using Pacific local time as the reference
+     * time zone.
      */
-    public static String getCurrentISODate() {
-        return dateFmt.withZone(DateTimeZone.UTC).print(getDateTime().getMillis());
+    public static String getCurrentCalendarDateStringInLocalTime() {
+        return getCalendarDateString(getCurrentCalendarDateInLocalTime());
     }
 
-    public static String getISODate(DateTime date) {
-        return dateFmt.withZone(DateTimeZone.UTC).print(date.getMillis());
+    /** Converts the Joda LocalDate object into a string in YYYY-MM-DD format. */
+    public static String getCalendarDateString(LocalDate date) {
+        return dateFmt.print(date);
     }
-    
+
+    /** Parses a calendar date in YYYY-MM-DD format into a Joda LocalDate. */
+    public static LocalDate parseCalendarDate(String dateStr) {
+        return dateFmt.parseLocalDate(dateStr);
+    }
+
     /**
      * Get the current system date and time in ISO 8601 format (e.g. yyyy-MM-ddTHH:mm:ss.SSSZ).
      * 
      * @return
      */
     public static String getCurrentISODateTime() {
-        return dateTimeFmt.withZone(DateTimeZone.UTC).print(getDateTime().getMillis());
+        return getISODateTime(getCurrentDateTime());
     }
 
     public static String getISODateTime(DateTime date) {
         return dateTimeFmt.withZone(DateTimeZone.UTC).print(date.getMillis());
     }
-    
-    /**
-     * Takes an ISO 8601 format compliant string, and returns only the date part (e.g. yyyy-MM-dd).
-     * 
-     * @param d
-     * @return date string
-     * @throws exception
-     *             if parameter d is in an incorrect format.
-     */
-    public static String convertToISODate(String d) {
-        DateTime date = null;
-        if (d.length() == "yyyy-MM-dd".length()) {
-            date = dateFmt.parseDateTime(d);
-        } else {
-            date = dateTimeFmt.parseDateTime(d);
-        }
-        return dateFmt.withZone(DateTimeZone.UTC).print(date);
-    }
 
-    /**
-     * Takes a ISO 8601 compliant string, and returns the full date time (e.g. yyyy-MM-ddTHH:mm:ss.SSSZ).
-     * 
-     * @param d
-     * @return date time string
-     * @throws exception
-     *             if parameter d is in an incorrect format.
-     */
-    public static String convertToISODateTime(String d) {
-        DateTime date = null;
-        if (d.length() == "yyyy-MM-dd".length()) {
-            date = dateFmt.parseDateTime(d);
-            return dateFmt.withZone(DateTimeZone.UTC).print(date);
-        } else {
-            date = dateTimeFmt.parseDateTime(d);
-            return dateTimeFmt.withZone(DateTimeZone.UTC).print(date);
-        }
+    /** Parses a string in ISO 8601 date format into a Joda DateTime object. */
+    public static DateTime parseISODateTime(String dateTimeStr) {
+        // We use dateTimeParser() instead of dateTimeFmt because we want to be able to handle non-UTC timezones.
+        return ISODateTimeFormat.dateTimeParser().parseDateTime(dateTimeStr);
     }
 
     /**
@@ -109,19 +100,22 @@ public final class DateUtils {
     }
 
     /**
+     * <p>
      * Takes a ISO 8601 compliant string, and returns that as the number of milliseconds from the epoch.
-     * 
-     * @param d
-     * @return number of milliseconds from epoch
-     * @throws exception
-     *             if parameter d is in an incorrect format.
+     * </p>
+     * <p>
+     * For backwards compatibility, this function accepts calendar dates in YYYY-MM-DD format. Calendar dates cannot be
+     * meaningfully converted into time instants. However, for backwards compatibility, this function will assume
+     * start of day (usually midnight) at UTC.
+     * </p>
      */
     public static long convertToMillisFromEpoch(String d) {
-        DateTime date = null;
+        DateTime date;
         if (d.length() == "yyyy-MM-dd".length()) {
-            date = dateFmt.withZone(DateTimeZone.UTC).parseDateTime(d);
+            LocalDate localDate = parseCalendarDate(d);
+            date = localDate.toDateTimeAtStartOfDay(DateTimeZone.UTC);
         } else {
-            date = dateTimeFmt.withZone(DateTimeZone.UTC).parseDateTime(d);
+            date = parseISODateTime(d);
         }
         return date.getMillis();
     }
