@@ -143,7 +143,7 @@ public class DynamoSurveyResponseDaoTest {
         answers.add(answer);
 
         answer = new SurveyAnswer();
-        answer.addAnswer(DateUtils.getCurrentISODate());
+        answer.addAnswer(DateUtils.getCurrentCalendarDateStringInLocalTime());
         answer.setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
         answer.setClient("mobile");
         answer.setQuestionGuid(survey.getElements().get(1).getGuid());
