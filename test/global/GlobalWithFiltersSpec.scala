@@ -17,9 +17,21 @@ object GlobalWithFiltersSpec extends PlaySpecification {
       val jsonAction = GlobalWithFilters.doFilter(Action {
           Results.Ok(Json.obj("name" -> "bob", "age" -> 31))
         })
-      val request = FakeRequest().withHeaders(ACCEPT_ENCODING -> "deflate, gzip, sdch")
+      val request = FakeRequest().withHeaders(ACCEPT_ENCODING -> "deflate,gzip,sdch")
       val result = jsonAction(request).run
       header(CONTENT_ENCODING, result) must beSome("gzip")
+    }
+  }
+
+  // See https://github.com/playframework/playframework/issues/1983
+  "gzip filter" should {
+    "have fixed this bug in 2.3.x" in new WithApplication {
+      val jsonAction = GlobalWithFilters.doFilter(Action {
+          Results.Ok(Json.obj("name" -> "bob", "age" -> 31))
+        })
+      val request = FakeRequest().withHeaders(ACCEPT_ENCODING -> "deflate, gzip, sdch")
+      val result = jsonAction(request).run
+      header(CONTENT_ENCODING, result) must not beSome("gzip")
     }
   }
 
