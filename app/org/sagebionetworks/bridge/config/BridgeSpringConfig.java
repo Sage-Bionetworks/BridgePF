@@ -64,14 +64,29 @@ public class BridgeSpringConfig {
         return new DynamoDBMapper(client, mapperConfig);
     }
 
+    @Bean(name = "healthDataHealthCodeIndex")
+    @Autowired
+    public DynamoIndexHelper healthDataHealthCodeIndex(AmazonDynamoDB client) {
+        // DDB index
+        String tableName = TableNameOverrideFactory.getTableName(DynamoHealthDataRecord.class);
+        DynamoDB ddb = new DynamoDB(client);
+        Table ddbTable = ddb.getTable(tableName);
+        Index ddbIndex = ddbTable.getIndex("healthCode-index");
+
+        // construct index helper
+        DynamoIndexHelper indexHelper = new DynamoIndexHelper();
+        indexHelper.setIndex(ddbIndex);
+        indexHelper.setMapper(healthDataDdbMapper(client));
+        return indexHelper;
+    }
+
     @Bean(name = "healthDataUploadDateIndex")
     @Autowired
     public DynamoIndexHelper healthDataUploadDateIndex(AmazonDynamoDB client) {
         // DDB index
-        DynamoDBMapperConfig.TableNameOverride tableNameOverride = TableNameOverrideFactory.getTableNameOverride(
-                DynamoHealthDataRecord.class);
+        String tableName = TableNameOverrideFactory.getTableName(DynamoHealthDataRecord.class);
         DynamoDB ddb = new DynamoDB(client);
-        Table ddbTable = ddb.getTable(tableNameOverride.getTableName());
+        Table ddbTable = ddb.getTable(tableName);
         Index ddbIndex = ddbTable.getIndex("uploadDate-index");
 
         // construct index helper

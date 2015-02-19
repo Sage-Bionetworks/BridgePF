@@ -40,10 +40,30 @@ public class HealthDataService {
         }
         Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
 
-        // TODO: validate health code, schema ID
+        // TODO: validate health code, schema ID against DDB tables
 
         // call through to DAO
         return healthDataDao.createRecord(record);
+    }
+
+    /**
+     * Deletes all records for the given health code (which corresponds to a user in a particular study). This method
+     * is used by admin accounts to delete user health data, or by the user admin service to delete health data when a
+     * deleting a user account
+     *
+     * @param healthCode
+     *         health code to delete records for, must be non-null and non-empty
+     * @return number of records deleted
+     */
+    public int deleteRecordsForHealthCode(String healthCode) {
+        // validate health code
+        if (StringUtils.isBlank(healthCode)) {
+            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "healthCode"));
+        }
+        // TODO: validate health code against health code table
+
+        // call through to DAO
+        return healthDataDao.deleteRecordsForHealthCode(healthCode);
     }
 
     /**

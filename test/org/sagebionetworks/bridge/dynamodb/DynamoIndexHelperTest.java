@@ -78,25 +78,16 @@ public class DynamoIndexHelperTest {
         when(mockMapper.batchLoad(arg.capture())).thenReturn(mockMapperResultMap);
         helper.setMapper(mockMapper);
 
+        // execute query keys and validate
+        List<Thing> keyList = helper.queryKeys(Thing.class, "test key", "test value");
+        validateKeyObjects(keyList);
+
         // execute
         List<Thing> resultList = helper.query(Thing.class, "test key", "test value");
 
         // Validate intermediate "key objects". This is a List<Object>, but because of type erasure, this should work,
         // at least in the test context.
-        List<Thing> keyList = arg.getValue();
-        assertEquals(4, keyList.size());
-
-        assertEquals("foo key", keyList.get(0).key);
-        assertNull(keyList.get(0).value);
-
-        assertEquals("bar key", keyList.get(1).key);
-        assertNull(keyList.get(1).value);
-
-        assertEquals("asdf key", keyList.get(2).key);
-        assertNull(keyList.get(2).value);
-
-        assertEquals("jkl; key", keyList.get(3).key);
-        assertNull(keyList.get(3).value);
+        validateKeyObjects(arg.getValue());
 
         // Validate final results. Because of wonkiness with maps and ordering, we'll convert the Things into a map and
         // validate the map.
@@ -111,5 +102,21 @@ public class DynamoIndexHelperTest {
         assertEquals("bar value", thingMap.get("bar key"));
         assertEquals("asdf value", thingMap.get("asdf key"));
         assertEquals("jkl; value", thingMap.get("jkl; key"));
+    }
+
+    private static void validateKeyObjects(List<Thing> keyList) {
+        assertEquals(4, keyList.size());
+
+        assertEquals("foo key", keyList.get(0).key);
+        assertNull(keyList.get(0).value);
+
+        assertEquals("bar key", keyList.get(1).key);
+        assertNull(keyList.get(1).value);
+
+        assertEquals("asdf key", keyList.get(2).key);
+        assertNull(keyList.get(2).value);
+
+        assertEquals("jkl; key", keyList.get(3).key);
+        assertNull(keyList.get(3).value);
     }
 }
