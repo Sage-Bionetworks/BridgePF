@@ -56,6 +56,29 @@ public class HealthDataServiceTest {
     }
 
     @Test(expected = BadRequestException.class)
+    public void deleteRecordsForHealthCodeNullHealthCode() {
+        new HealthDataService().deleteRecordsForHealthCode(null);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void deleteRecordsForHealthCodeEmptyHealthCode() {
+        new HealthDataService().deleteRecordsForHealthCode("");
+    }
+
+    @Test
+    public void deleteHealthRecodsForHealthCodeSuccess() {
+        // mock dao
+        HealthDataDao mockDao = mock(HealthDataDao.class);
+        when(mockDao.deleteRecordsForHealthCode("test health code")).thenReturn(37);
+        HealthDataService svc = new HealthDataService();
+        svc.setHealthDataDao(mockDao);
+
+        // execute and verify
+        int numDeleted = svc.deleteRecordsForHealthCode("test health code");
+        assertEquals(37, numDeleted);
+    }
+
+    @Test(expected = BadRequestException.class)
     public void getRecordsForUploadDateNullUploadDate() {
         new HealthDataService().getRecordsForUploadDate(null);
     }
