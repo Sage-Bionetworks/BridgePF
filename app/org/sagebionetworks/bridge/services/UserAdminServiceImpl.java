@@ -12,12 +12,15 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.RedisKey;
+
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.group.Group;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class UserAdminServiceImpl implements UserAdminService {
 
@@ -25,6 +28,7 @@ public class UserAdminServiceImpl implements UserAdminService {
 
     private AuthenticationServiceImpl authenticationService;
     private ConsentService consentService;
+    private HealthDataService healthDataService;
     private StudyService studyService;
     private DistributedLockDao lockDao;
 
@@ -34,6 +38,11 @@ public class UserAdminServiceImpl implements UserAdminService {
 
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
+    }
+
+    @Autowired
+    public void setHealthDataService(HealthDataService healthDataService) {
+        this.healthDataService = healthDataService;
     }
 
     public void setStudyService(StudyService studyService) {
@@ -138,8 +147,14 @@ public class UserAdminServiceImpl implements UserAdminService {
 
         try {
             consentService.withdrawConsent(user, study);
-            //String healthCode = user.getHealthCode();
-            //optionsService.deleteAllParticipantOptions(healthCode);
+
+            // AuthenticationServiceImpl.getHealthCode() ensures that health code will be defined. However, this is
+            // some defensive coding to keep our services robust.
+            String healthCode = user.getHealthCode();
+            if (!StringUtils.isBlank(healthCode)) {
+                healthDataService.deleteRecordsForHealthCode(healthCode);
+            }
+
             return true;
         } catch (Throwable e) {
             logger.error(e.getMessage(), e);
