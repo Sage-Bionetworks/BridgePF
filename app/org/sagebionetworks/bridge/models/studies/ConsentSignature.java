@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -9,9 +11,11 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.validators.ConsentSignatureValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class ConsentSignature implements BridgeEntity {
+public final class ConsentSignature implements BridgeEntity {
 
     private static final String NAME_FIELD = "name";
     private static final String BIRTHDATE_FIELD = "birthdate";
@@ -25,7 +29,9 @@ public class ConsentSignature implements BridgeEntity {
     private final @Nullable String imageMimeType;
 
     /** Private constructor. Instances should be constructed using factory methods create() or createFromJson(). */
-    private ConsentSignature(String name, String birthdate, String imageData, String imageMimeType) {
+    @JsonCreator
+    private ConsentSignature(@JsonProperty("name") String name, @JsonProperty("birthdate") String birthdate,
+            @JsonProperty("imageData") String imageData, @JsonProperty("imageMimeType") String imageMimeType) {
         this.name = name;
         this.birthdate = birthdate;
         this.imageData = imageData;
@@ -95,5 +101,33 @@ public class ConsentSignature implements BridgeEntity {
     /** Image MIME type (ex: image/png). */
     public @Nullable String getImageMimeType() {
         return imageMimeType;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Objects.hashCode(birthdate);
+        result = prime * result + Objects.hashCode(imageData);
+        result = prime * result + Objects.hashCode(imageMimeType);
+        result = prime * result + Objects.hashCode(name);
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        ConsentSignature other = (ConsentSignature) obj;
+        return Objects.equals(birthdate, other.birthdate) && Objects.equals(imageData, other.imageData)
+                && Objects.equals(imageMimeType, other.imageMimeType) && Objects.equals(name, other.name);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("ConsentSignature [name=%s, birthdate=%s, imageData=%s, imageMimeType=%s]", 
+                name, birthdate, imageData, imageMimeType);
     }
 }
