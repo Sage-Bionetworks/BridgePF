@@ -19,6 +19,16 @@ public interface HealthDataDao {
     String createRecord(@Nonnull HealthDataRecord record);
 
     /**
+     * DAO method user by admin to delete all health data records for a health code (user in study). This is generally
+     * used through the user admin service, when the admin deletes a user.
+     *
+     * @param healthCode
+     *         health code of the health data records to exist, keyed to a particular user in a study
+     * @return number of records deleted
+     */
+    int deleteRecordsForHealthCode(@Nonnull String healthCode);
+
+    /**
      * DAO method used by worker apps to query all health data records uploaded for a specific date, generally used for
      * export.
      *
