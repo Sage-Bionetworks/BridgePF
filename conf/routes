@@ -83,9 +83,6 @@ POST   /researcher/v1/study              @controllers.StudyController.updateStud
 GET    /researcher/v1/uploadSchema/:schemaId  @controllers.UploadSchemaController.getUploadSchema(schemaId: String)
 POST   /researcher/v1/uploadSchema            @controllers.UploadSchemaController.createOrUpdateUploadSchema
 
-# Admin - Health Data
-DELETE /admin/v2/healthdata/byHealthCode/:healthCode @controllers.HealthDataController.deleteRecordsForHealthCode(healthCode: String)
-
 # Admin - Studies
 GET    /admin/v1/studies/:identifier  @controllers.StudyController.getStudy(identifier: String)
 POST   /admin/v1/studies/:identifier  @controllers.StudyController.updateStudy(identifier: String)
