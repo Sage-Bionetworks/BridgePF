@@ -1,9 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class UserProfile {
@@ -23,10 +21,8 @@ public class UserProfile {
 
     public static UserProfile fromJson(JsonNode node) {
         UserProfile profile = new UserProfile();
-        String firstName = JsonUtils.asText(node, FIRST_NAME_FIELD);
-        String lastName = JsonUtils.asText(node, LAST_NAME_FIELD);
-        profile.setFirstName(replaceWithEmpty(firstName));
-        profile.setLastName(replaceWithEmpty(lastName));
+        profile.setFirstName(JsonUtils.asText(node, FIRST_NAME_FIELD));
+        profile.setLastName(JsonUtils.asText(node, LAST_NAME_FIELD));
         profile.setPhone(JsonUtils.asText(node, PHONE_NAME_FIELD));
         return profile;
     }
@@ -34,20 +30,12 @@ public class UserProfile {
     public String getFirstName() {
         return this.firstName;
     }
-    @JsonIgnore
-    public String getFirstNameWithEmptyString() {
-        return replaceWithEmpty(this.firstName);
-    }
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
 
     public String getLastName() {
         return this.lastName;
-    }
-    @JsonIgnore
-    public String getLastNameWithEmptyString() {
-        return replaceWithEmpty(this.lastName);
     }
     public void setLastName(String lastName) {
         this.lastName = lastName;
@@ -72,14 +60,6 @@ public class UserProfile {
     }
     public void setPhone(String phone) {
         this.phone = phone;
-    }
-    
-    private static String replaceWithEmpty(String s) {
-        if (StringUtils.isBlank(s)) {
-            return "<EMPTY>";
-        } else {
-            return s;
-        }
     }
 
 }

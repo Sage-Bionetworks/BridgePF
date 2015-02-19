@@ -43,13 +43,8 @@ public class HealthCodeServiceImpl implements HealthCodeService {
     }
 
     @Override
-    public String getHealthCode(String id) {
-        return healthIdDao.getCode(id);
-    }
-
-    @Override
-    public String getStudyIdentifier(String healthCode) {
-        return healthCodeDao.getStudyIdentifier(healthCode);
+    public String getHealthCode(String healthId) {
+        return healthIdDao.getCode(healthId);
     }
 
     private String generateHealthCode(String studyId) {

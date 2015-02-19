@@ -8,7 +8,8 @@ public interface HealthCodeService {
 
     HealthId create(StudyIdentifier studyIdentifier);
 
-    String getHealthCode(String id);
+    String getHealthCode(String healthId);
 
-    String getStudyIdentifier(String healthCode);
+    // Never used anywhere... still in the DAO though.
+    // String getStudyIdentifier(String healthCode);
 }

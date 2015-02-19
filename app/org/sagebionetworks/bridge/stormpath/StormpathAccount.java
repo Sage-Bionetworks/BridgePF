@@ -44,6 +44,7 @@ class StormpathAccount implements Account {
     public static final String OLD_VERSION_SUFFIX = "version";
     
     private final com.stormpath.sdk.account.Account acct;
+    private final StudyIdentifier studyIdentifier;
     private final SortedMap<Integer,Encryptor> encryptors;
     private final String healthIdKey;
     private final String consentSignatureKey;
@@ -59,6 +60,7 @@ class StormpathAccount implements Account {
         String studyId = studyIdentifier.getIdentifier();
         
         this.acct = acct;
+        this.studyIdentifier = studyIdentifier;
         this.encryptors = encryptors;
         this.healthIdKey = studyId + HEALTH_CODE_SUFFIX;
         this.consentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
@@ -134,6 +136,10 @@ class StormpathAccount implements Account {
         encryptJSONTo(consentSignatureKey, signature);
     }
     @Override
+    public StudyIdentifier getStudyIdentifier() {
+        return studyIdentifier;
+    }
+    @Override
     public Set<String> getRoles() {
         return this.roles;
     }
@@ -202,14 +208,17 @@ class StormpathAccount implements Account {
     }
     
     private String decryptFrom(String key) {
+        String encryptedString = (String)acct.getCustomData().get(key);
+        if (encryptedString == null) {
+            return null;
+        }
         // Decryption is always done with the version that was used for encryption.
         Integer version = getVersionAccountingForExceptions(key);
         Encryptor encryptor = encryptors.get(version);
         if (encryptor == null) {
             throw new BridgeServiceException("No encryptor can be found for version " + version);
         }
-        String encryptedString = (String)acct.getCustomData().get(key);
-        return (encryptedString != null) ? encryptor.decrypt(encryptedString) : null;
+        return encryptor.decrypt(encryptedString);
     }
     
     /**

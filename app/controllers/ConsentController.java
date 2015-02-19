@@ -27,8 +27,9 @@ public class ConsentController extends BaseController {
 
     public Result getConsentSignature() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
-        final StudyIdentifier studyId = session.getStudyIdentifier();
-        ConsentSignature sig = consentService.getConsentSignature(session.getUser(), studyId);
+        final Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        ConsentSignature sig = consentService.getConsentSignature(session.getUser(), study);
         return okResult(sig);
     }
 
@@ -44,8 +45,9 @@ public class ConsentController extends BaseController {
 
     public Result emailCopy() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
-        final StudyIdentifier studyId = session.getStudyIdentifier();
-        consentService.emailConsentAgreement(session.getUser(), studyId);
+        final Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        consentService.emailConsentAgreement(session.getUser(), study);
         return okResult("Emailed consent.");
     }
 

@@ -25,17 +25,12 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.stormpath.sdk.client.Client;
-
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StudyServiceImplTest {
 
     @Resource
     StudyServiceImpl studyService;
-    
-    @Resource
-    Client stormpathClient;
     
     private CacheProvider cache;
     

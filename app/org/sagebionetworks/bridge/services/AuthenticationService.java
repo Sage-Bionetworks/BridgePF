@@ -9,9 +9,8 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
-
-import com.stormpath.sdk.account.Account;
 
 public interface AuthenticationService {
 
@@ -25,17 +24,17 @@ public interface AuthenticationService {
 
     public UserSession verifyEmail(Study study, EmailVerification verification) throws ConsentRequiredException;
     
-    public void resendEmailVerification(Study study, Email email);
+    public void resendEmailVerification(Email email);
 
     public void requestResetPassword(Email email);
 
     public void resetPassword(PasswordReset passwordReset);
     
+    /*
     public User getUser(Study study, String email);
     
-    public Account getAccount(String email);
-    
-    public String isAccountInUse(String username, String email);
+    public Account getAccount(Study study, String email);
     
     public UserSession getSessionFromAccount(Study study, Account account);
+    */
 }

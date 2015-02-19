@@ -6,7 +6,7 @@ import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.UserProfileService;
 
 import com.google.common.base.Supplier;
@@ -29,12 +29,12 @@ public class UserProfileController extends BaseController {
 
     public Result getUserProfile() throws Exception {
         final UserSession session = getAuthenticatedSession();
-        final StudyIdentifier studyIdentifier = session.getStudyIdentifier();
+        final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        ViewCacheKey<UserProfile> cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getEmail(), studyIdentifier.getIdentifier());
+        ViewCacheKey<UserProfile> cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getEmail(), study.getIdentifier());
         String json = viewCache.getView(cacheKey, new Supplier<UserProfile>() {
             @Override public UserProfile get() {
-                return userProfileService.getProfile(session.getUser().getEmail());
+                return userProfileService.getProfile(study, session.getUser().getEmail());
             }
         });
         return ok(json).as(BridgeConstants.JSON_MIME_TYPE);
@@ -42,14 +42,14 @@ public class UserProfileController extends BaseController {
 
     public Result updateUserProfile() throws Exception {
         UserSession session = getAuthenticatedSession();
-        StudyIdentifier studyIdentifier = session.getStudyIdentifier();
+        Study study = studyService.getStudy(session.getStudyIdentifier());
         
         User user = session.getUser();
         UserProfile profile = UserProfile.fromJson(requestToJSON(request()));
-        user = userProfileService.updateProfile(user, profile);
+        user = userProfileService.updateProfile(study, user, profile);
         updateSessionUser(session, user);
         
-        ViewCacheKey<UserProfile> cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getEmail(), studyIdentifier.getIdentifier());
+        ViewCacheKey<UserProfile> cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getEmail(), study.getIdentifier());
         viewCache.removeView(cacheKey);
         
         return okResult("Profile updated.");

@@ -368,11 +368,11 @@
     </bean>
 
     <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl">
-        <property name="stormpathClient" ref="stormpathClient" />
         <property name="distributedLockDao" ref="distributedLockDao"/>
         <property name="cacheProvider" ref="cacheProvider" />
         <property name="bridgeConfig" ref="bridgeConfig" />
         <property name="accountEncryptionService" ref="accountEncryptionService" />
+        <property name="accountDao" ref="accountDao" />
         <property name="consentService" ref="consentService" />
         <property name="optionsService" ref="optionsService" />
         <property name="signInValidator">
@@ -384,14 +384,13 @@
     </bean>
 
     <bean id="userProfileService" class="org.sagebionetworks.bridge.services.UserProfileServiceImpl">
-        <property name="authenticationService" ref="authenticationService" />
-        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="executorService" ref="asyncExecutorService" />
         <property name="sendMailService" ref="sendEmailViaAmazonService" />
-    </bean>
+        <property name="accountDao" ref="accountDao" />
+        </bean>
 
     <bean id="consentService" class="org.sagebionetworks.bridge.services.ConsentServiceImpl">
-        <property name="authenticationService" ref="authenticationService" />
+        <property name="accountDao" ref="accountDao" />
         <property name="accountEncryptionService" ref="accountEncryptionService" />
         <property name="sendMailService" ref="sendEmailViaAmazonService"/>
         <property name="studyConsentDao" ref="studyConsentDao"/>
@@ -399,8 +398,8 @@
     </bean>
 
     <bean id="accountEncryptionService" class="org.sagebionetworks.bridge.services.AccountEncryptionServiceImpl">
-        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="healthCodeService" ref="healthCodeService" />
+        <property name="accountDao" ref="accountDao" />
     </bean>
 
     <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">
@@ -436,6 +435,7 @@
     
     <bean id="userAdminService" class="org.sagebionetworks.bridge.services.UserAdminServiceImpl">
         <property name="authenticationService" ref="authenticationService" />
+        <property name="accountDao" ref="accountDao" />
         <property name="consentService" ref="consentService" />
         <property name="studyService" ref="studyService" />
         <property name="distributedLockDao" ref="distributedLockDao"/>

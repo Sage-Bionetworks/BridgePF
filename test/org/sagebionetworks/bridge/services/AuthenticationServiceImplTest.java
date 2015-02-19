@@ -19,8 +19,8 @@ import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
@@ -30,7 +30,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.google.common.collect.Sets;
-import com.stormpath.sdk.client.Client;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -47,9 +46,6 @@ public class AuthenticationServiceImplTest {
 
     @Resource
     private TestUserAdminHelper helper;
-
-    @Resource
-    private Client stormpathClient;
 
     private TestUser testUser;
 
@@ -143,7 +139,7 @@ public class AuthenticationServiceImplTest {
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
         try {
             Email email = new Email(user.getEmail());
-            authService.resendEmailVerification(user.getStudy(), email);
+            authService.resendEmailVerification(email);
         } catch (ConsentRequiredException e) {
         } finally {
             helper.deleteUser(user);
@@ -188,9 +184,8 @@ public class AuthenticationServiceImplTest {
             authService.signUp(user.getSignUp(), user.getStudy(), false);
             authService.signUp(user.getSignUp(), tempStudy, false);
             fail("Should not get here");
-        } catch (InvalidEntityException e) {
-            String message = e.getErrors().get("email").get(0);
-            assertEquals("email has already been registered", message);
+        } catch (EntityAlreadyExistsException e) {
+            assertEquals("Account already exists.", e.getMessage());
         } finally {
             studyService.deleteStudy(tempStudy.getIdentifier());    
             helper.deleteUser(user);

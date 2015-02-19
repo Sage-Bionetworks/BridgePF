@@ -68,10 +68,9 @@ public class AuthenticationController extends BaseController {
     }
     
     public Result resendEmailVerification() throws Exception {
-        Study study = studyService.getStudy(getStudyIdentifier());
         Email email = Email.fromJson(requestToJSON(request()));
         
-        authenticationService.resendEmailVerification(study, email);
+        authenticationService.resendEmailVerification(email);
         return okResult("A request to verify an email address was re-sent.");
     }
 

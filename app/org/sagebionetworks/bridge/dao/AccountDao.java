@@ -66,7 +66,9 @@ public interface AccountDao {
     public Account authenticate(Study study, SignIn signIn);
     
     /**
-     * Get an account in the context of a study by the email address. 
+     * Get an account in the context of a study by the email address. Returns null if 
+     * there is no account, it is up to callers to translate this into the appropriate 
+     * exception, if any. 
      * @param study
      * @param email
      * @return
