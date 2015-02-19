@@ -26,9 +26,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class UserProfileServiceImplTest {
     
     @Resource
-    private UserProfileServiceImpl service;
-    
-    @Resource
     private TestUserAdminHelper helper;
     
     @Resource
@@ -48,14 +45,14 @@ public class UserProfileServiceImplTest {
     
     @Test
     public void canUpdateUserProfile() {
-        UserProfile userProfile = profileService.getProfile(testUser.getEmail());
+        UserProfile userProfile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
         userProfile.setFirstName("Test");
         userProfile.setLastName("Powers");
         userProfile.setPhone("123-456-7890");
 
-        User updatedUser = service.updateProfile(testUser.getUser(), userProfile);
+        User updatedUser = profileService.updateProfile(testUser.getStudy(), testUser.getUser(), userProfile);
         
-        userProfile = profileService.getProfile(testUser.getEmail());
+        userProfile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
         
         assertEquals("Test", updatedUser.getFirstName());
         assertEquals("Powers", updatedUser.getLastName());
@@ -76,14 +73,12 @@ public class UserProfileServiceImplTest {
     
     @Test
     public void canRetrieveStudyParticipants() {
-        UserProfileServiceImpl userProfileService = new UserProfileServiceImpl();
-        
         // Do not send email when this service is called.
         ExecutorService service = mock(ExecutorService.class);
-        userProfileService.setExecutorService(service);
+        profileService.setExecutorService(service);
         
         // All we an really do here is verify no error is thrown.
-        userProfileService.sendStudyParticipantRoster(testUser.getStudy());
+        profileService.sendStudyParticipantRoster(testUser.getStudy());
         
         verify(service).submit(any(Runnable.class));
     }

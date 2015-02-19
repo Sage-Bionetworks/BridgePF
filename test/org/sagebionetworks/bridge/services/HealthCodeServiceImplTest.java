@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import javax.annotation.Resource;
@@ -49,9 +48,6 @@ public class HealthCodeServiceImplTest {
         HealthId healthId2 = healthCodeService.create(study);
         assertFalse(healthId1.getId().equals(healthId2.getId()));
         assertFalse(healthId1.getCode().equals(healthId2.getCode()));
-        assertEquals(TEST_STUDY_IDENTIFIER, healthCodeService.getStudyIdentifier(healthId1.getCode()));
-        assertEquals(TEST_STUDY_IDENTIFIER, healthCodeService.getStudyIdentifier(healthId2.getCode()));
-        assertNull(healthCodeService.getStudyIdentifier("abcdef"));
     }
 
     private void clearDynamo() {

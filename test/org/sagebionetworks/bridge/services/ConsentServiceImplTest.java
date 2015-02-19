@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -31,8 +30,6 @@ import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.stormpath.sdk.client.Client;
-
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ConsentServiceImplTest {
@@ -43,9 +40,6 @@ public class ConsentServiceImplTest {
     private JedisStringOps stringOps;
     
     @Resource
-    private Client stormpathClient;
-
-    @Resource
     private ConsentService consentService;
 
     @Resource
@@ -55,37 +49,36 @@ public class ConsentServiceImplTest {
     private UserConsentDao userConsentDao;
 
     @Resource
+    private StudyService studyService;
+    
+    @Resource
     private TestUserAdminHelper helper;
 
+    private Study study;
+    
     private TestUser testUser;
 
     @Before
     public void before() {
-        testUser = helper.createUser(ConsentServiceImplTest.class);
-        studyConsent = studyConsentDao.addConsent(testUser.getStudyIdentifier(), "/path/to", testUser.getStudy()
-                .getMinAgeOfConsent());
+        study = studyService.getStudy("api");
+        testUser = helper.createUser(ConsentServiceImplTest.class, true, false, null);
+        
+        studyConsent = studyConsentDao.addConsent(study.getStudyIdentifier(), "/path/to", study.getMinAgeOfConsent());
         studyConsentDao.setActive(studyConsent, true);
-
-        // TestUserAdminHelper creates a user with consent. Withdraw consent to make sure we're
-        // working with a clean slate.
-        consentService.withdrawConsent(testUser.getUser(), testUser.getStudy());
 
         // Ensure that user gives no consent.
         assertFalse(consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy()));
-        EntityNotFoundException thrownEx = null;
         try {
             consentService.getConsentSignature(testUser.getUser(), testUser.getStudy());
             fail("expected exception");
-        } catch (EntityNotFoundException ex) {
-            thrownEx = ex;
+        } catch (EntityNotFoundException e) {
         }
-        assertNotNull(thrownEx);
     }
 
     @After
     public void after() {
         if (consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy())) {
-            consentService.withdrawConsent(testUser.getUser(), testUser.getStudy());
+            consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
         }
         studyConsentDao.setActive(studyConsent, false);
         studyConsentDao.deleteConsent(testUser.getStudyIdentifier(), studyConsent.getCreatedOn());
@@ -105,16 +98,13 @@ public class ConsentServiceImplTest {
         assertNull(returnedSig.getImageMimeType());
 
         // Withdraw consent and verify.
-        consentService.withdrawConsent(testUser.getUser(), testUser.getStudy());
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
         assertFalse(consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy()));
-        EntityNotFoundException thrownEx = null;
         try {
             consentService.getConsentSignature(testUser.getUser(), testUser.getStudy());
             fail("expected exception");
         } catch (EntityNotFoundException ex) {
-            thrownEx = ex;
         }
-        assertNotNull(thrownEx);
     }
 
     @Test
@@ -124,32 +114,26 @@ public class ConsentServiceImplTest {
                 TestConstants.DUMMY_IMAGE_DATA, "image/fake");
         consentService.consentToResearch(testUser.getUser(), researchConsent, testUser.getStudy(), false);
         assertTrue(consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy()));
+        
         ConsentSignature returnedSig = consentService.getConsentSignature(testUser.getUser(), testUser.getStudy());
+        
         assertEquals("Eggplant McTester", returnedSig.getName());
         assertEquals("1970-01-01", returnedSig.getBirthdate());
         assertEquals(TestConstants.DUMMY_IMAGE_DATA, returnedSig.getImageData());
         assertEquals("image/fake", returnedSig.getImageMimeType());
 
         // Withdraw consent and verify.
-        consentService.withdrawConsent(testUser.getUser(), testUser.getStudy());
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
         assertFalse(consentService.hasUserConsentedToResearch(testUser.getUser(), testUser.getStudy()));
-        EntityNotFoundException thrownEx = null;
         try {
             consentService.getConsentSignature(testUser.getUser(), testUser.getStudy());
             fail("expected exception");
         } catch (EntityNotFoundException ex) {
-            thrownEx = ex;
         }
-        assertNotNull(thrownEx);
     }
 
     @Test
     public void cannotConsentIfTooYoung() {
-        Study study = new DynamoStudy();
-        study.setIdentifier("api");
-        study.setName("Test Study");
-        study.setMinAgeOfConsent(18);
-
         LocalDate now = LocalDate.now();
         int year = now.getYear();
         int month = now.getMonthOfYear();
@@ -162,19 +146,19 @@ public class ConsentServiceImplTest {
         // This will work
         ConsentSignature sig = ConsentSignature.create("Test User", today18YearsAgo, null, null);
         consentService.consentToResearch(testUser.getUser(), sig, study, false);
-        consentService.withdrawConsent(testUser.getUser(), study);
+        consentService.withdrawConsent(study, testUser.getUser());
 
         // Also okay
         sig = ConsentSignature.create("Test User", yesterday18YearsAgo, null, null);
         consentService.consentToResearch(testUser.getUser(), sig, study, false);
-        consentService.withdrawConsent(testUser.getUser(), study);
+        consentService.withdrawConsent(study, testUser.getUser());
 
         // But this is not, one day to go
         try {
             sig = ConsentSignature.create("Test User", tomorrow18YearsAgo, null, null);
             consentService.consentToResearch(testUser.getUser(), sig, study, false);
         } catch (InvalidEntityException e) {
-            consentService.withdrawConsent(testUser.getUser(), study);
+            consentService.withdrawConsent(study, testUser.getUser());
             assertTrue(e.getMessage().contains("years of age or older"));
         }
     }
@@ -240,7 +224,7 @@ public class ConsentServiceImplTest {
                 consentService.hasUserSignedMostRecentConsent(testUser.getUser(), testUser.getStudy()));
 
         // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
-        consentService.withdrawConsent(testUser.getUser(), testUser.getStudy());
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
         consentService.consentToResearch(testUser.getUser(), researchConsent, testUser.getStudy(), false);
 
         assertTrue("Should still be consented.",

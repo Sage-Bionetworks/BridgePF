@@ -15,6 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Email;
@@ -45,6 +46,9 @@ public class StormpathAccountDaoTest {
     @Resource
     private StudyServiceImpl studyService;
     
+    @Resource
+    private TestUserAdminHelper helper;
+    
     private Study study;
     
     @Before
@@ -66,6 +70,12 @@ public class StormpathAccountDaoTest {
         
         // There's always one... the behavior of the iterator is tested separately
         assertTrue(i.hasNext());
+    }
+    
+    @Test
+    public void returnsNulWhenThereIsNoAccount() {
+        Account account = accountDao.getAccount(study, "thisemaildoesntexist@stormpath.com");
+        assertNull(account);
     }
     
     @Test
@@ -141,26 +151,22 @@ public class StormpathAccountDaoTest {
             
         } finally {
             accountDao.deleteAccount(study, email);
-            try {
-                accountDao.getAccount(study, email);
-                fail("Should have thrown entity not found exception");
-            } catch(EntityNotFoundException e) {
-                // just so
-            }
+            account = accountDao.getAccount(study, email);
+            assertNull(account);
         }
     }
     
     @Test
     public void canResendEmailVerification() throws Exception {
-        String email = "bridge-testing+tester@sagebridge.org";
+        String random = RandomStringUtils.randomAlphabetic(5);
+        SignUp signUp = new SignUp(random, "bridge-testing+" + random + "@sagebridge.org", "P4ssword", null); 
         try {
-            SignUp signUp = new SignUp("tester", email, "P4ssword", Sets.newHashSet("test_users"));
-            accountDao.signUp(study, signUp, false);
+            accountDao.signUp(study, signUp, false); // don't send email
             
-            Email emailObj = new Email(email);
-            accountDao.resendEmailVerificationToken(emailObj);
+            Email emailObj = new Email(signUp.getEmail());
+            accountDao.resendEmailVerificationToken(emailObj); // now send email
         } finally {
-            accountDao.deleteAccount(study, email);
+            accountDao.deleteAccount(study, signUp.getEmail());
         }
     }
 

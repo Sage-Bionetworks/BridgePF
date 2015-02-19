@@ -14,14 +14,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.client.Client;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -34,7 +33,7 @@ public class AccountEncryptionServiceImplTest {
     private TestUserAdminHelper helper;
 
     @Resource
-    private Client stormpathClient;
+    private AccountDao accountDao;
 
     private TestUser testUser;
 
@@ -51,11 +50,11 @@ public class AccountEncryptionServiceImplTest {
     @Test
     public void testConsentSignature() {
         Study study = testUser.getStudy();
-        Account account = stormpathClient.getResource(testUser.getUser().getStormpathHref(), Account.class);
+        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getEmail());
         ConsentSignature consentSignature = ConsentSignature.create("Test User", "1977-07-29",
                 Base64.encodeBase64String("some image".getBytes()), "image/png");
         accountEncryptionService.putConsentSignature(study, account, consentSignature);
-        ConsentSignature signature = accountEncryptionService.getConsentSignature(study, account);
+        ConsentSignature signature = accountEncryptionService.getConsentSignature(account);
         assertNotNull(signature);
         assertEquals(consentSignature.getName(), signature.getName());
         assertEquals(consentSignature.getBirthdate(), signature.getBirthdate());
@@ -63,7 +62,7 @@ public class AccountEncryptionServiceImplTest {
         assertEquals(consentSignature.getImageMimeType(), signature.getImageMimeType());
         accountEncryptionService.removeConsentSignature(study, account);
         try {
-            accountEncryptionService.getConsentSignature(study, account);
+            accountEncryptionService.getConsentSignature(account);
             fail("EntityNotFoundException expected.");
         } catch (EntityNotFoundException e) {
             assertTrue("EntityNotFoundException expected.", true);
@@ -72,8 +71,7 @@ public class AccountEncryptionServiceImplTest {
 
     @Test(expected = EntityNotFoundException.class)
     public void testConsentSignatureEntityNotFoundException() {
-        Study study = testUser.getStudy();
-        Account account = stormpathClient.getResource(testUser.getUser().getStormpathHref(), Account.class);
-        accountEncryptionService.getConsentSignature(study, account);
+        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getEmail());
+        accountEncryptionService.getConsentSignature(account);
     }
 }

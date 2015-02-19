@@ -221,12 +221,11 @@ public class StormpathAccountDao implements AccountDao {
         
         AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email))
                 .withGroups().withGroupMemberships());
-        if (!accounts.iterator().hasNext()) {
-            throw new EntityNotFoundException(Account.class);
+        if (accounts.iterator().hasNext()) {
+            com.stormpath.sdk.account.Account acct = accounts.iterator().next();
+            return new StormpathAccount(study.getStudyIdentifier(), acct, encryptors);
         }
-        com.stormpath.sdk.account.Account acct = accounts.iterator().next();
-        StormpathAccount account = new StormpathAccount(study.getStudyIdentifier(), acct, encryptors);
-        return account;
+        return null;
     }
     
     @Override 
@@ -240,9 +239,10 @@ public class StormpathAccountDao implements AccountDao {
         account.setEmail(signUp.getEmail());
         account.setFirstName(StormpathAccount.PLACEHOLDER_STRING);
         account.setLastName(StormpathAccount.PLACEHOLDER_STRING);
-        account.getRoles().addAll(signUp.getRoles());
         acct.setPassword(signUp.getPassword());
-        
+        if (signUp.getRoles() != null) {
+            account.getRoles().addAll(signUp.getRoles());    
+        }
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             directory.createAccount(acct, sendEmail);
@@ -266,6 +266,9 @@ public class StormpathAccountDao implements AccountDao {
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             updateGroups(directory, account);
+            
+            acct.getCustomData().save();
+            
             // This will throw an exception if the account object has not changed, which it may not have
             // if this call was made simply to persist a change in the groups. To get around this, we dig 
             // into the implementation internals of the account because the Stormpath code is tracking the 

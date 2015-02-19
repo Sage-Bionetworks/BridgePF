@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface ConsentService {
 
-    public ConsentSignature getConsentSignature(User caller, StudyIdentifier studyIdentifier);
+    public ConsentSignature getConsentSignature(User caller, Study study);
 
     public User consentToResearch(User caller, ConsentSignature consentSignature, Study study, boolean sendEmail);
 
@@ -16,9 +16,9 @@ public interface ConsentService {
 
     public boolean hasUserConsentedToResearch(User caller, StudyIdentifier studyIdentifier);
 
-    public User withdrawConsent(User caller, Study study);
+    public void withdrawConsent(Study study, User user);
 
-    public void emailConsentAgreement(User caller, StudyIdentifier studyIdentifier);
+    public void emailConsentAgreement(User caller, Study study);
     
     public boolean isStudyAtEnrollmentLimit(Study study);
 
