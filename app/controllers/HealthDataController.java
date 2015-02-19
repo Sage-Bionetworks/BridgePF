@@ -34,6 +34,22 @@ public class HealthDataController extends BaseController {
     }
 
     /**
+     * Play controller for DELETE /admin/v2/healthdata/byHealthCode/:healthCode. This API is used by admins to delete
+     * health data records for a given health code (user in study).
+     *
+     * @param healthCode
+     *         health code to delete records for
+     * @return Play result indicating number of records deleted
+     */
+    public Result deleteRecordsForHealthCode(String healthCode) {
+        // unlike the other APIs, this is a proper admin API
+        getAuthenticatedAdminSession();
+
+        int numDeleted = healthDataService.deleteRecordsForHealthCode(healthCode);
+        return okResult(String.format("%d records deleted.", numDeleted));
+    }
+
+    /**
      * Play controller for GET /worker/v2/healthdata/byUploadDate/:uploadDate. This API is used by worker apps to
      * query all health data records uploaded for a specific date, generally used for export.
      *

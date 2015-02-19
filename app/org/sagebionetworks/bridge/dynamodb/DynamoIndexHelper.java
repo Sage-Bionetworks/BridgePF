@@ -36,8 +36,38 @@ public class DynamoIndexHelper {
     }
 
     /**
+     * Queries the global secondary index with the specified key name and value. Only the attributes projected onto the
+     * index will be returned. (Generally, this is only the table index keys and the index keys.) This is generally
+     * used to re-query the table to get the full list of results, or to batch update or batch delete rows.
+     *
+     * @param clazz
+     *         expected result class
+     * @param indexKeyName
+     *         index key name to query on
+     * @param indexKeyValue
+     *         index key value to query on
+     * @param <T>
+     *         expected result type
+     * @return list of key objects returned by the query
+     */
+    public <T> List<T> queryKeys(@Nonnull Class<? extends T> clazz, @Nonnull String indexKeyName,
+            @Nonnull Object indexKeyValue) {
+        // query the index
+        Iterable<Item> itemIter = queryHelper(indexKeyName, indexKeyValue);
+
+        // convert items to the specified class
+        List<T> recordKeyList = new ArrayList<>();
+        for (Item oneItem : itemIter) {
+            T oneRecord = BridgeObjectMapper.get().convertValue(oneItem.asMap(), clazz);
+            recordKeyList.add(oneRecord);
+        }
+        return recordKeyList;
+    }
+
+    /**
      * Queries the global secondary index with the specified key name and value. Results will be returned as a list of
-     * the specified class.
+     * the specified class. Unlike {@link #queryKeys}, this method re-queries DynamoDB to get the full rows of the
+     * DynamoDB rows.
      *
      * @param clazz
      *         expected result class
@@ -52,23 +82,19 @@ public class DynamoIndexHelper {
     @SuppressWarnings("unchecked")
     public <T> List<T> query(@Nonnull Class<? extends T> clazz, @Nonnull String indexKeyName,
             @Nonnull Object indexKeyValue) {
-        // query the index
-        Iterable<Item> itemIter = queryHelper(indexKeyName, indexKeyValue);
-
         // In general, we only project keys onto global secondary indices, to save storage space. This means the
         // objects we get back aren't full fledged objects. However, we can use them as "key objects" to re-query
         // the DDB table to get full results.
         //
-        // Also, for some reason, batchLoad() takes a List<Object>, not a List<T> or List<?>.
-        List<Object> recordKeyList = new ArrayList<>();
-        for (Item oneItem : itemIter) {
-            T oneRecord = BridgeObjectMapper.get().convertValue(oneItem.asMap(), clazz);
-            recordKeyList.add(oneRecord);
-        }
+        // First step is to query the index to get these "key objects".
+        List<T> recordKeyList = queryKeys(clazz, indexKeyName, indexKeyValue);
 
         // Using the "key objects", batch query DDB to get full records. For some reason, batchLoad() returns a map.
         // Flatten that map into a list.
-        Map<String, List<Object>> resultMap = mapper.batchLoad(recordKeyList);
+        //
+        // Also, for some reason, batchLoad() takes a List<Object>, not a List<T> or List<?>. Fortunately, Java type
+        // erasure means we can safely cast this to a List<Object>.
+        Map<String, List<Object>> resultMap = mapper.batchLoad((List<Object>) recordKeyList);
         List<T> recordList = new ArrayList<>();
         for (List<Object> resultList : resultMap.values()) {
             for (Object oneResult : resultList) {
