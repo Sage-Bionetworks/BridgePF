@@ -7,6 +7,7 @@ import java.util.Iterator;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
+import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.SignIn;
@@ -17,11 +18,11 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.RedisKey;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class UserAdminServiceImpl implements UserAdminService {
@@ -32,6 +33,7 @@ public class UserAdminServiceImpl implements UserAdminService {
     private AccountDao accountDao;
     private ConsentService consentService;
     private HealthDataService healthDataService;
+    private HealthIdDao healthIdDao;
     private StudyService studyService;
     private DistributedLockDao lockDao;
 
@@ -59,6 +61,10 @@ public class UserAdminServiceImpl implements UserAdminService {
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
+    
+    public void setHealthIdDao(HealthIdDao healthIdDao) {
+        this.healthIdDao = healthIdDao;
+    }
 
     @Override
     public UserSession createUser(SignUp signUp, Study study, boolean signUserIn, boolean consentUser) {
@@ -77,7 +83,7 @@ public class UserAdminServiceImpl implements UserAdminService {
             if (consentUser) {
                 String sig = String.format("[Signature for %s]", signUp.getEmail());;
                 ConsentSignature consent = ConsentSignature.create(sig, "1989-08-19", null, null);
-                consentService.consentToResearch(newUserSession.getUser(), consent, study, false);
+                consentService.consentToResearch(study, newUserSession.getUser(), consent, false);
             }
         }
         if (!signUserIn) {
@@ -160,16 +166,21 @@ public class UserAdminServiceImpl implements UserAdminService {
         checkNotNull(account);
 
         try {
-            User user = authenticationService.getUser(study, account.getEmail());
-            consentService.withdrawConsent(study, user);
+            // health id/code are not assigned until consent is given. They may not exist.
+            if (account.getHealthId() != null) {
+                // This is the fastest way to do this that I know of
+                String healthCode = healthIdDao.getCode(account.getHealthId());
+                User user = new User(account);
+                user.setHealthCode(healthCode);
+                
+                consentService.withdrawConsent(study, user);
 
-            // AuthenticationServiceImpl.getHealthCode() ensures that health code will be defined. However, this is
-            // some defensive coding to keep our services robust.
-            String healthCode = user.getHealthCode();
-            if (!StringUtils.isBlank(healthCode)) {
-                healthDataService.deleteRecordsForHealthCode(healthCode);
+                // AuthenticationServiceImpl.getHealthCode() ensures that health code will be defined. However, this is
+                // some defensive coding to keep our services robust.
+                if (!StringUtils.isBlank(healthCode)) {
+                    healthDataService.deleteRecordsForHealthCode(healthCode);
+                }
             }
-
             return true;
         } catch (Throwable e) {
             logger.error(e.getMessage(), e);

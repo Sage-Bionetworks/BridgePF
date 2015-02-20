@@ -371,10 +371,10 @@
         <property name="distributedLockDao" ref="distributedLockDao"/>
         <property name="cacheProvider" ref="cacheProvider" />
         <property name="bridgeConfig" ref="bridgeConfig" />
-        <property name="accountEncryptionService" ref="accountEncryptionService" />
         <property name="accountDao" ref="accountDao" />
         <property name="consentService" ref="consentService" />
         <property name="optionsService" ref="optionsService" />
+        <property name="healthCodeService" ref="healthCodeService" />
         <property name="signInValidator">
             <bean class="org.sagebionetworks.bridge.validators.SignInValidator"/>
         </property>
@@ -391,15 +391,10 @@
 
     <bean id="consentService" class="org.sagebionetworks.bridge.services.ConsentServiceImpl">
         <property name="accountDao" ref="accountDao" />
-        <property name="accountEncryptionService" ref="accountEncryptionService" />
         <property name="sendMailService" ref="sendEmailViaAmazonService"/>
         <property name="studyConsentDao" ref="studyConsentDao"/>
         <property name="userConsentDao" ref="userConsentDao"/>
-    </bean>
-
-    <bean id="accountEncryptionService" class="org.sagebionetworks.bridge.services.AccountEncryptionServiceImpl">
-        <property name="healthCodeService" ref="healthCodeService" />
-        <property name="accountDao" ref="accountDao" />
+        <property name="healthCodeService" ref="healthCodeService"/>
     </bean>
 
     <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">
@@ -436,6 +431,7 @@
     <bean id="userAdminService" class="org.sagebionetworks.bridge.services.UserAdminServiceImpl">
         <property name="authenticationService" ref="authenticationService" />
         <property name="accountDao" ref="accountDao" />
+        <property name="healthIdDao" ref="healthIdDao" />
         <property name="consentService" ref="consentService" />
         <property name="studyService" ref="studyService" />
         <property name="distributedLockDao" ref="distributedLockDao"/>

@@ -39,9 +39,6 @@ public class AuthenticationServiceImplTest {
     private AuthenticationServiceImpl authService;
 
     @Resource
-    private AccountEncryptionService accountEncryptionService;
-
-    @Resource
     private StudyServiceImpl studyService;
 
     @Resource

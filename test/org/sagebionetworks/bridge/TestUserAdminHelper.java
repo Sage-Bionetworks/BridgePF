@@ -10,6 +10,8 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService;
@@ -79,6 +81,71 @@ public class TestUserAdminHelper {
         }
         public StudyIdentifier getStudyIdentifier() {
             return study.getStudyIdentifier();
+        }
+        public Account getAccount() {
+            return new Account() {
+                @Override
+                public String getUsername() {
+                    return null;
+                }
+                @Override
+                public void setUsername(String username) {
+                }
+                @Override
+                public String getFirstName() {
+                    return null;
+                }
+                @Override
+                public void setFirstName(String firstName) {
+                }
+                @Override
+                public String getLastName() {
+                    return null;
+                }
+                @Override
+                public void setLastName(String lastName) {
+                }
+                @Override
+                public String getPhone() {
+                    return null;
+                }
+                @Override
+                public void setPhone(String phone) {
+                }
+                @Override
+                public String getEmail() {
+                    return null;
+                }
+                @Override
+                public void setEmail(String email) {
+                }
+                @Override
+                public ConsentSignature getConsentSignature() {
+                    return null;
+                }
+                @Override
+                public void setConsentSignature(ConsentSignature signature) {
+                }
+                @Override
+                public String getHealthId() {
+                    return null;
+                }
+                @Override
+                public void setHealthId(String healthId) {
+                }
+                @Override
+                public StudyIdentifier getStudyIdentifier() {
+                    return null;
+                }
+                @Override
+                public Set<String> getRoles() {
+                    return null;
+                }
+                @Override
+                public String getId() {
+                    return null;
+                }
+            };
         }
     }
 
