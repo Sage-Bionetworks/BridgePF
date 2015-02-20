@@ -73,6 +73,9 @@ public abstract class BaseController extends Controller {
      */
     protected UserSession getSessionIfItExists() {
         String sessionToken = getSessionToken();
+        if (sessionToken == null){
+            return null;
+        }
         return authenticationService.getSession(sessionToken);
     }
     

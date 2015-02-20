@@ -32,7 +32,7 @@ object GlobalWithFilters extends WithFilters (
     CorsFilter,
 
     new GzipFilter(shouldGzip = (request, response) =>
-        response.headers.get(CONTENT_TYPE).exists(_.startsWith(JSON)))
+        response.headers.get(CONTENT_TYPE).exists(_.contains(JSON)))
 
   ) with GlobalSettings {
 

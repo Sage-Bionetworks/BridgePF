@@ -16,19 +16,6 @@ POST   /api/v1/auth/signUp                  @controllers.AuthenticationControlle
 POST   /api/v1/auth/verifyEmail             @controllers.AuthenticationController.verifyEmail
 POST   /api/v1/auth/resendEmailVerification @controllers.AuthenticationController.resendEmailVerification
 
-# API - Individual Health Data Record
-GET    /api/v1/healthdata/:identifier/record/:guid @controllers.HealthDataController.getHealthDataRecord(identifier: String, guid: String)
-POST   /api/v1/healthdata/:identifier/record/:guid @controllers.HealthDataController.updateHealthDataRecord(identifier: String, guid: String)
-DELETE /api/v1/healthdata/:identifier/record/:guid @controllers.HealthDataController.deleteHealthDataRecord(identifier: String, guid: String)
-
-# API - Health Data
-GET    /api/v1/healthdata/:identifier     @controllers.HealthDataController.getHealthData(identifier: String, startDate: java.lang.String ?= null, endDate: java.lang.String ?= null)
-POST   /api/v1/healthdata/:identifier     @controllers.HealthDataController.appendHealthData(identifier: String)
-
-# API - Trackers
-GET    /api/v1/trackers                       @controllers.TrackerController.getTrackers
-GET    /api/v1/trackers/schema/:identifier    @controllers.TrackerController.getTrackerSchema(identifier: String)
-
 # API - Users
 GET    /api/v1/profile      @controllers.UserProfileController.getUserProfile
 POST   /api/v1/profile      @controllers.UserProfileController.updateUserProfile
@@ -114,6 +101,10 @@ DELETE /admin/v1/users          @controllers.UserManagementController.deleteUser
 # Admin - Cache Management
 GET    /admin/v1/cache           @controllers.CacheAdminController.listItems
 DELETE /admin/v1/cache/:cacheKey @controllers.CacheAdminController.removeItem(cacheKey: String)
+
+# Worker - Health Data
+POST /worker/v2/healthdata @controllers.HealthDataController.createRecord
+GET /worker/v2/healthdata/byUploadDate/:uploadDate @controllers.HealthDataController.getRecordsForUploadDate(uploadDate: String)
 
 # Lunch
 GET    /api/v1/lunch/where      @controllers.LunchController.where

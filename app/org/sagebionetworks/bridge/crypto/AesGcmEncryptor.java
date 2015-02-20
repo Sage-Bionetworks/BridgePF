@@ -10,8 +10,10 @@ import org.apache.shiro.crypto.PaddingScheme;
 import org.apache.shiro.util.ByteSource;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-public class AesGcmEncryptor {
+public class AesGcmEncryptor implements Encryptor {
 
+    public static final Integer VERSION = new Integer(2);
+    
     public static void main(String[] args) {
         if (args.length < 2) {
             throw new RuntimeException("Must supply at least 2 parameters: "
@@ -39,6 +41,12 @@ public class AesGcmEncryptor {
         aesCipher = createCipher();
     }
 
+    @Override
+    public Integer getVersion() {
+        return VERSION;
+    }
+    
+    @Override
     public String encrypt(String text) {
         if (text == null) {
             throw new IllegalArgumentException("Text to encrypt cannot be null.");
@@ -48,6 +56,7 @@ public class AesGcmEncryptor {
         return bytes.toBase64();
     }
 
+    @Override
     public String decrypt(String text) {
         if (text == null) {
             throw new IllegalArgumentException("Text to decrypt cannot be null.");
