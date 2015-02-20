@@ -7,9 +7,7 @@ import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 public interface AuthenticationService {
@@ -30,11 +28,4 @@ public interface AuthenticationService {
 
     public void resetPassword(PasswordReset passwordReset);
     
-    /*
-    public User getUser(Study study, String email);
-    
-    public Account getAccount(Study study, String email);
-    
-    public UserSession getSessionFromAccount(Study study, Account account);
-    */
 }

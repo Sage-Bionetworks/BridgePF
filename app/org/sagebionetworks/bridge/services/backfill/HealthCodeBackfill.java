@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.AccountEncryptionService;
+import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -19,7 +19,7 @@ public class HealthCodeBackfill extends AsyncBackfillTemplate {
     private BackfillRecordFactory backfillRecordFactory;
     private AccountDao accountDao;
     private StudyService studyService;
-    private AccountEncryptionService accountEncryptionService;
+    private HealthCodeService healthCodeService;
 
     @Autowired
     public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
@@ -35,10 +35,10 @@ public class HealthCodeBackfill extends AsyncBackfillTemplate {
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-
+    
     @Autowired
-    public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
-        this.accountEncryptionService = accountEncryptionService;
+    public void setHealthCodeService(HealthCodeService healthCodeService) {
+        this.healthCodeService = healthCodeService;
     }
 
     @Override
@@ -52,12 +52,14 @@ public class HealthCodeBackfill extends AsyncBackfillTemplate {
             Account account = i.next();
             Study study = studyService.getStudy(account.getStudyIdentifier());
             
-            HealthId healthId = accountEncryptionService.getHealthCode(study, account);
-            if (healthId == null) {
+            HealthId mapping = healthCodeService.getMapping(account);
+            if (mapping == null) {
                 // Backfill the account that have no health code mapping in the study.
                 // This happens when the user creates a new account and consents in a study
                 // and has not consented in other studies yet.
-                healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
+                mapping = healthCodeService.createMapping(study);
+                account.setHealthId(mapping.getId());
+                accountDao.updateAccount(study, account);
                 callback.newRecords(backfillRecordFactory.createAndSave(
                         task, study, account, "health code created"));
             } 

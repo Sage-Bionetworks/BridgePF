@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.AccountEncryptionService;
+import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +26,8 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
     private BackfillRecordFactory backfillRecordFactory;
     private StudyService studyService;
     private AccountDao accountDao;
-    private AccountEncryptionService accountEncryptionService;
     private HealthCodeDao healthCodeDao;
+    private HealthCodeService healthCodeService;
 
     @Autowired
     public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
@@ -45,14 +45,15 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
     }
 
     @Autowired
-    public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
-        this.accountEncryptionService = accountEncryptionService;
-    }
-
-    @Autowired
     public void setHealthCodeDao(HealthCodeDao healthCodeDao) {
         this.healthCodeDao = healthCodeDao;
     }
+    
+    @Autowired
+    public void setHealthCodeService(HealthCodeService healthCodeService) {
+        this.healthCodeService = healthCodeService;
+    }
+    
 
     @Override
     int getLockExpireInSeconds() {
@@ -66,10 +67,10 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
             Account account = i.next();
             Study study = studyService.getStudy(account.getStudyIdentifier());
             
-            HealthId healthId = accountEncryptionService.getHealthCode(study, account);
-            if (healthId != null) {
+            HealthId mapping = healthCodeService.getMapping(account);
+            if (mapping != null) {
                 try {
-                    String healthCode = healthId.getCode();
+                    String healthCode = mapping.getCode();
                     if (healthCode != null) {
                         final String studyId = healthCodeDao.getStudyIdentifier(healthCode);
                         if (isBlank(studyId)) {

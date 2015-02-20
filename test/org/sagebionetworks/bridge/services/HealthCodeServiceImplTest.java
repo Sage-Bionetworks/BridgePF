@@ -42,12 +42,12 @@ public class HealthCodeServiceImplTest {
     @Test
     public void test() {
         Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
-        HealthId healthId1 = healthCodeService.create(study);
-        assertNotNull(healthId1);
-        assertEquals(healthId1.getCode(), healthCodeService.getHealthCode(healthId1.getId()));
-        HealthId healthId2 = healthCodeService.create(study);
-        assertFalse(healthId1.getId().equals(healthId2.getId()));
-        assertFalse(healthId1.getCode().equals(healthId2.getCode()));
+        HealthId mapping = healthCodeService.createMapping(study);
+        assertNotNull(mapping);
+        assertEquals(mapping.getCode(), healthCodeService.getMapping(mapping.getId()).getCode());
+        HealthId healthId2 = healthCodeService.createMapping(study);
+        assertFalse(mapping.getId().equals(healthId2.getId()));
+        assertFalse(mapping.getCode().equals(healthId2.getCode()));
     }
 
     private void clearDynamo() {

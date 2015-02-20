@@ -39,10 +39,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private DistributedLockDao lockDao;
     private CacheProvider cacheProvider;
     private BridgeConfig config;
-    private AccountEncryptionService accountEncryptionService;
     private ConsentService consentService;
     private ParticipantOptionsService optionsService;
     private AccountDao accountDao;
+    private HealthCodeService healthCodeService;
     private Validator signInValidator;
     private Validator passwordResetValidator;
 
@@ -58,10 +58,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         this.config = config;
     }
 
-    public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
-        this.accountEncryptionService = accountEncryptionService;
-    }
-
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
@@ -74,6 +70,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         this.accountDao = accountDao;
     }
 
+    public void setHealthCodeService(HealthCodeService healthCodeService) {
+        this.healthCodeService = healthCodeService;
+    }
+    
     public void setSignInValidator(Validator validator) {
         this.signInValidator = validator;
     }
@@ -100,7 +100,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Account account = accountDao.authenticate(study, signIn);
         UserSession session = getSessionFromAccount(study, account);
         cacheProvider.setUserSession(session.getSessionToken(), session);
-        
+
         if (!session.getUser().doesConsent()) {
             throw new ConsentRequiredException(session);
         }
@@ -134,9 +134,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             accountDao.signUp(study, signUp, sendEmail);
 
-            // Assign a health code
+            /* Bravely, we're going to stop doing this.
             Account account = accountDao.getAccount(study, signUp.getEmail());
-            accountEncryptionService.createAndSaveHealthCode(study, account);
+            HealthId healthId = healthCodeService.createMapping(study.getStudyIdentifier());
+            account.setHealthId(healthId.getId());
+            accountDao.updateAccount(study, account);
+            */
 
         } finally {
             lockDao.releaseLock(SignUp.class, signUp.getEmail(), lockId);
@@ -183,22 +186,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         accountDao.resetPassword(passwordReset);
     }
 
-    /*
-    @Override
-    public User getUser(Study study, String email) {
-        Account account = getAccount(study, email);
-        if (account != null) {
-            return getSessionFromAccount(study, account).getUser();
-        }
-        return null;
-    }
-
-    @Override
-    public Account getAccount(Study study, String email) {
-        return accountDao.getAccount(study, email);
-    }
-    */
-
     private UserSession getSessionFromAccount(Study study, Account account) {
         final UserSession session = new UserSession();
         session.setAuthenticated(true);
@@ -210,11 +197,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setStudyKey(study.getIdentifier());
 
         final String healthCode = getHealthCode(study, account);
-        user.setHealthCode(healthCode);
-
-        user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(user, study));
-        user.setConsent(consentService.hasUserConsentedToResearch(user, study));
-        user.setDataSharing(optionsService.getBooleanOption(healthCode, Option.DATA_SHARING));
+        if (healthCode != null) {
+            user.setHealthCode(healthCode);
+            user.setDataSharing(optionsService.getBooleanOption(healthCode, Option.DATA_SHARING));
+        }
+        user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(study, user));
+        user.setConsent(consentService.hasUserConsentedToResearch(study, user));
         
         // And now for some exceptions...
 
@@ -233,18 +221,23 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return session;
     }
 
+    /**
+     * Any user who authenticates has a health ID/code generated and assigned. It happens at authentication 
+     * because some users are automatically marked as consented, which means we have these users accessing 
+     * all the APIs that expect users to have health codes, which unknown consequences if they don't. We 
+     * do not have to do it at sign up or when the user actually consents (interestingly enough). 
+     * @param study
+     * @param account
+     * @return
+     */
     private String getHealthCode(Study study, Account account) {
-        HealthId healthId = accountEncryptionService.getHealthCode(study, account);
+        HealthId healthId = healthCodeService.getMapping(account);
         if (healthId == null) {
-            healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
+            healthId = healthCodeService.createMapping(study);
+            account.setHealthId(healthId.getId());
+            accountDao.updateAccount(study, account);
+            logger.debug("Health ID/code pair created for " + account.getEmail() + " in study " + study.getName());
         }
-        String healthCode = healthId.getCode();
-        if (healthCode == null) {
-            healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
-            logger.error("Health code re-created for account " + account.getEmail() + " in study " + study.getName());
-            healthCode = healthId.getCode();
-        }
-        checkNotNull(healthCode);
-        return healthCode;
+        return healthId.getCode();
     }
 }
