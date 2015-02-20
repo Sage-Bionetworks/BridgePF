@@ -98,6 +98,10 @@ POST   /admin/v1/backfill/:name/start    @controllers.BackfillController.start(n
 POST   /admin/v1/users          @controllers.UserManagementController.createUser
 DELETE /admin/v1/users          @controllers.UserManagementController.deleteUser(email: java.lang.String ?= null)
 
+# Admin - Cache Management
+GET    /admin/v1/cache           @controllers.CacheAdminController.listItems
+DELETE /admin/v1/cache/:cacheKey @controllers.CacheAdminController.removeItem(cacheKey: String)
+
 # Worker - Health Data
 POST /worker/v2/healthdata @controllers.HealthDataController.createRecord
 GET /worker/v2/healthdata/byUploadDate/:uploadDate @controllers.HealthDataController.getRecordsForUploadDate(uploadDate: String)
