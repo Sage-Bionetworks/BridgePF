@@ -50,7 +50,6 @@ public class TestUserAdminHelper {
             this.session = session;
             this.roles = (roleList == null) ? Sets.<String>newHashSet() : roleList;
             this.roles.add(BridgeConstants.TEST_USERS_GROUP);
-
         }
         public SignUp getSignUp() {
             return new SignUp(username, email, password, roles);
@@ -81,71 +80,6 @@ public class TestUserAdminHelper {
         }
         public StudyIdentifier getStudyIdentifier() {
             return study.getStudyIdentifier();
-        }
-        public Account getAccount() {
-            return new Account() {
-                @Override
-                public String getUsername() {
-                    return null;
-                }
-                @Override
-                public void setUsername(String username) {
-                }
-                @Override
-                public String getFirstName() {
-                    return null;
-                }
-                @Override
-                public void setFirstName(String firstName) {
-                }
-                @Override
-                public String getLastName() {
-                    return null;
-                }
-                @Override
-                public void setLastName(String lastName) {
-                }
-                @Override
-                public String getPhone() {
-                    return null;
-                }
-                @Override
-                public void setPhone(String phone) {
-                }
-                @Override
-                public String getEmail() {
-                    return null;
-                }
-                @Override
-                public void setEmail(String email) {
-                }
-                @Override
-                public ConsentSignature getConsentSignature() {
-                    return null;
-                }
-                @Override
-                public void setConsentSignature(ConsentSignature signature) {
-                }
-                @Override
-                public String getHealthId() {
-                    return null;
-                }
-                @Override
-                public void setHealthId(String healthId) {
-                }
-                @Override
-                public StudyIdentifier getStudyIdentifier() {
-                    return null;
-                }
-                @Override
-                public Set<String> getRoles() {
-                    return null;
-                }
-                @Override
-                public String getId() {
-                    return null;
-                }
-            };
         }
     }
 
