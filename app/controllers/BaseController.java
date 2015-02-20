@@ -209,7 +209,7 @@ public abstract class BaseController extends Controller {
     protected Result okResult(Collection<?> items) throws Exception {
         ArrayNode itemsNode = mapper.createArrayNode();
         for (Object item : items) {
-            ObjectNode node = (ObjectNode) mapper.valueToTree(item);
+            JsonNode node = mapper.valueToTree(item);
             itemsNode.add(node);
         }
         ObjectNode json = mapper.createObjectNode();
