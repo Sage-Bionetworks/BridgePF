@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
@@ -60,7 +61,7 @@ public class StormpathAccountDao implements AccountDao {
     private Client client;
     private StudyService studyService;
     private SortedMap<Integer,Encryptor> encryptors = Maps.newTreeMap();
-    
+    private String applicationId;
     
     public void setStormpathApplication(Application application) {
         this.application = application;
@@ -78,6 +79,13 @@ public class StormpathAccountDao implements AccountDao {
     
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+    
+    public StormpathAccountDao() {
+        BridgeConfig config = BridgeConfigFactory.getConfig();
+        String url = config.getStormpathApplicationHref().trim();
+        String[] parts = url.split("/");
+        applicationId = parts[parts.length-1];
     }
     
     @Override
@@ -110,7 +118,7 @@ public class StormpathAccountDao implements AccountDao {
         com.stormpath.sdk.account.Account acct = client.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
         return (acct == null) ? null : new StormpathAccount(study, acct, encryptors);
     }
-
+    
     @Override
     public void resendEmailVerificationToken(Email email) {
         checkNotNull(email);
@@ -124,7 +132,6 @@ public class StormpathAccountDao implements AccountDao {
             BridgeConfig config = BridgeConfigFactory.getConfig();
             
             String bodyJson = "{\"login\":\""+email.getEmail()+"\"}";
-            String applicationId = StormpathFactory.getApplicationId();
             
             HttpClient client = new HttpClient(manager);
             
@@ -298,7 +305,7 @@ public class StormpathAccountDao implements AccountDao {
         } else if (e.getCode() == 7104) { // account not found in the directory
             throw new EntityNotFoundException(Account.class);
         }
-        throw new BridgeServiceException(e);
+        throw new ServiceUnavailableException(e);
     }
     
     private void updateGroups(Directory directory, Account account) {

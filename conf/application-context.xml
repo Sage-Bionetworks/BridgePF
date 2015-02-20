@@ -162,16 +162,6 @@
 
     <bean id="distributedLockDao" class="org.sagebionetworks.bridge.redis.RedisDistributedLockDao"/>
 
-    <!-- Stormpath identity service -->
-
-    <bean id="stormpathClient" class="org.sagebionetworks.bridge.stormpath.StormpathFactory" 
-        factory-method="getStormpathClient" scope="singleton">
-    </bean>
-
-    <bean id="stormpathApplication" class="org.sagebionetworks.bridge.stormpath.StormpathFactory" 
-        factory-method="getStormpathApplication" scope="singleton">
-    </bean>
-    
     <!-- Play controllers. -->
 
     <bean id="BaseController" class="controllers.BaseController" abstract="true">
