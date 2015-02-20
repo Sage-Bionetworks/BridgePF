@@ -378,6 +378,9 @@
         <property name="signInValidator">
             <bean class="org.sagebionetworks.bridge.validators.SignInValidator"/>
         </property>
+        <property name="signUpValidator">
+            <bean class="org.sagebionetworks.bridge.validators.SignUpValidator"/>
+        </property>
         <property name="passwordResetValidator">
             <bean class="org.sagebionetworks.bridge.validators.PasswordResetValidator"/>
         </property>
@@ -394,7 +397,6 @@
         <property name="sendMailService" ref="sendEmailViaAmazonService"/>
         <property name="studyConsentDao" ref="studyConsentDao"/>
         <property name="userConsentDao" ref="userConsentDao"/>
-        <property name="healthCodeService" ref="healthCodeService"/>
     </bean>
 
     <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">

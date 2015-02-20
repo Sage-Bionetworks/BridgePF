@@ -26,7 +26,6 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.validators.SignUpValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +34,7 @@ import org.springframework.validation.Validator;
 public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
-
+    
     private DistributedLockDao lockDao;
     private CacheProvider cacheProvider;
     private BridgeConfig config;
@@ -44,6 +43,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private AccountDao accountDao;
     private HealthCodeService healthCodeService;
     private Validator signInValidator;
+    private Validator signUpValidator;
     private Validator passwordResetValidator;
 
     public void setDistributedLockDao(DistributedLockDao lockDao) {
@@ -78,6 +78,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         this.signInValidator = validator;
     }
 
+    public void setSignUpValidator(Validator validator) {
+        this.signUpValidator = validator;
+    }
+    
     public void setPasswordResetValidator(Validator validator) {
         this.passwordResetValidator = validator;
     }
@@ -125,21 +129,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         try {
             lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail());
 
-            SignUpValidator validator = new SignUpValidator();
-            Validate.entityThrowingException(validator, signUp);
-
+            Validate.entityThrowingException(signUpValidator, signUp);
             if (consentService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }
-
             accountDao.signUp(study, signUp, sendEmail);
-
-            /* Bravely, we're going to stop doing this.
-            Account account = accountDao.getAccount(study, signUp.getEmail());
-            HealthId healthId = healthCodeService.createMapping(study.getStudyIdentifier());
-            account.setHealthId(healthId.getId());
-            accountDao.updateAccount(study, account);
-            */
 
         } finally {
             lockDao.releaseLock(SignUp.class, signUp.getEmail(), lockId);
@@ -211,7 +205,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
             user.setConsent(true);
         }
-        // And then we set *anyone* configured as an admin to have signed the consent as well
+        // And then we set *any* account that has the admin email to be consented as well
         String adminUser = BridgeConfigFactory.getConfig().getProperty("admin.email");
         if (adminUser != null && adminUser.equals(account.getEmail())) {
             user.setConsent(true);

@@ -8,7 +8,6 @@ import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
-import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -31,7 +30,6 @@ public class ConsentServiceImpl implements ConsentService {
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
-    private HealthCodeService healthCodeService;
 
     @Autowired
     public void setStringOps(JedisStringOps stringOps) {
@@ -52,10 +50,6 @@ public class ConsentServiceImpl implements ConsentService {
 
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
-    }
-
-    public void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
     }
     
     @Override
@@ -85,19 +79,11 @@ public class ConsentServiceImpl implements ConsentService {
         ConsentAgeValidator validator = new ConsentAgeValidator(study);
         Validate.entityThrowingException(validator, consentSignature);
 
-        // Here. We are creating the mapping here. 
         Account account = accountDao.getAccount(study, user.getEmail());
-        /*
-        HealthId mapping = healthCodeService.getMapping(account);
-        if (mapping == null) {
-            mapping = healthCodeService.createMapping(study);
-            account.setHealthId(mapping.getId());
-        }
-        */
+
         account.setConsentSignature(consentSignature);
         accountDao.updateAccount(study, account);
         
-        //final String healthCode = mapping.getCode();
         final StudyConsent studyConsent = studyConsentDao.getConsent(study);
 
         incrementStudyEnrollment(study);
@@ -113,7 +99,6 @@ public class ConsentServiceImpl implements ConsentService {
         }
 
         user.setConsent(true);
-        //user.setHealthCode(healthCode);
         return user;
     }
 
