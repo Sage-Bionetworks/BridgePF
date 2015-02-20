@@ -76,7 +76,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         if (StringUtils.isBlank(study.getConsentNotificationEmail())) {
             throw new BridgeServiceException("Participant roster cannot be sent because no consent notification contact email exists for this study.");
         }
-        Application app = StormpathFactory.getStormpathApplication(StormpathFactory.getStormpathClient());
+        Application app = StormpathFactory.getStormpathApplication();
         executorService.submit(new ParticipantRosterGenerator(app, study, this, sendMailService));
     }
 

@@ -16,6 +16,7 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.core" % "jackson-annotations" % "2.4.2",
   "com.fasterxml.jackson.core" % "jackson-core" % "2.4.2",
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.2",
+  "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.4.2",
   "com.google.guava" % "guava" % "18.0",
   "org.mockito" % "mockito-all" % "1.9.5",
   "org.apache.shiro" % "shiro-core" % "1.2.3",
@@ -25,7 +26,8 @@ libraryDependencies ++= Seq(
   "commons-httpclient" % "commons-httpclient" % "3.1",
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC2.1",
   "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC2.1",
-  "redis.clients" % "jedis" % "2.6.1"
+  "redis.clients" % "jedis" % "2.6.1",
+  "nl.jqno.equalsverifier" % "equalsverifier" % "1.6"
 )
 
 // To avoid reloading the Spring context

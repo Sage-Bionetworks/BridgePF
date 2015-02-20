@@ -29,7 +29,7 @@ import org.sagebionetworks.bridge.validators.Validate;
  * with the DynamoDB mapper.
  */
 @DynamoDBTable(tableName = "UploadSchema")
-public class DynamoUploadSchema implements DynamoTable, UploadSchema {
+public class DynamoUploadSchema implements UploadSchema {
     private List<UploadFieldDefinition> fieldDefList;
     private String name;
     private int rev;

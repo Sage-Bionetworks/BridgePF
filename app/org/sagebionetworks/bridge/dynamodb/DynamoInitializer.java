@@ -4,9 +4,18 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.joda.time.LocalDate;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.exceptions.BridgeInitializationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -39,22 +48,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 import com.google.common.reflect.ClassPath.ClassInfo;
-import org.joda.time.LocalDate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.exceptions.BridgeInitializationException;
 
 public class DynamoInitializer {
 
     private static Logger logger = LoggerFactory.getLogger(DynamoInitializer.class);
 
-    // DynamoDB Free tier
-    private static final Long READ_CAPACITY = Long.valueOf(25);
-    private static final Long WRITE_CAPACITY = Long.valueOf(25);
+    // Default capacities are the DynamoDB free tier
+    static final long DEFAULT_READ_CAPACITY = 25;
+    static final long DEFAULT_WRITE_CAPACITY = 25;
 
     private static final BridgeConfig CONFIG = BridgeConfigFactory.getConfig();
 
@@ -79,59 +80,49 @@ public class DynamoInitializer {
     }
 
     @SafeVarargs
-    public static void init(Class<? extends DynamoTable>... dynamoTables) {
-        List<Class<?>> classes = new ArrayList<Class<?>>();
-        for (Class<?> dynamoTable : dynamoTables) {
-            classes.add(dynamoTable);
-        }
+    public static void init(Class<?>... dynamoTables) {
+        List<Class<?>> classes = Arrays.asList(dynamoTables);
         List<TableDescription> tables = getAnnotatedTables(classes);
         initTables(tables);
     }
 
     /**
-     * For phasing out obsolete schemas.
+     * Actions performed before init(), e.g. for phasing out obsolete schemas.
      */
     static void beforeInit() {
     }
 
-    static void deleteTable(String table) {
-        table = getTableName(table);
+    static void deleteTable(Class<?> table) {
+        final String tableName = TableNameOverrideFactory.getTableName(table);
         try {
-            DescribeTableResult tableResult = DYNAMO.describeTable(table);
+            DescribeTableResult tableResult = DYNAMO.describeTable(tableName);
             TableDescription tableDscr = tableResult.getTable();
             String status = tableDscr.getTableStatus();
             if (TableStatus.DELETING.toString().equalsIgnoreCase(status)) {
                 return;
             } else if (!TableStatus.ACTIVE.toString().equalsIgnoreCase(status)) {
+                // Must be active to be deleted
                 waitForActive(tableDscr);
             }
-            logger.info("Deleting table " + table);
-            DYNAMO.deleteTable(table);
+            logger.info("Deleting table " + tableName);
+            DYNAMO.deleteTable(tableName);
             waitForDelete(tableDscr);
-            logger.info("Table " + table + " deleted.");
+            logger.info("Table " + tableName + " deleted.");
         } catch(ResourceNotFoundException e) {
-            logger.warn("Table " + table + " does not exist.");
+            logger.warn("Table " + tableName + " does not exist.");
         }
-    }
-
-    /**
-     * Prefix the table name with '{env}-' and '{user}-'.
-     */
-    static String getTableName(String table) {
-        Environment env = CONFIG.getEnvironment();
-        return env.name().toLowerCase() + "-" + CONFIG.getUser() + "-" + table;
     }
 
     /**
      * Converts the annotated DynamoDBTable types to a list of TableDescription.
      */
     static List<TableDescription> getAnnotatedTables(final List<Class<?>> classes) {
-        List<TableDescription> tables = new ArrayList<TableDescription>();
-        for (Class<?> clazz : classes) {
-            final List<KeySchemaElement> keySchema = new ArrayList<KeySchemaElement>();
-            final List<AttributeDefinition> attributes = new ArrayList<AttributeDefinition>();
-            final List<GlobalSecondaryIndexDescription> globalIndices = new ArrayList<GlobalSecondaryIndexDescription>();
-            final List<LocalSecondaryIndexDescription> localIndices = new ArrayList<LocalSecondaryIndexDescription>();
+        final List<TableDescription> tables = new ArrayList<TableDescription>();
+        for (final Class<?> clazz : classes) {
+            final List<KeySchemaElement> keySchema = new ArrayList<>();
+            final List<AttributeDefinition> attributes = new ArrayList<>();
+            final List<GlobalSecondaryIndexDescription> globalIndices = new ArrayList<>();
+            final List<LocalSecondaryIndexDescription> localIndices = new ArrayList<>();
             Method[] methods = clazz.getMethods();
             KeySchemaElement hashKey = null;
             for (Method method : methods) {
@@ -206,14 +197,21 @@ public class DynamoInitializer {
                                 .withKeySchema(new KeySchemaElement(attrName, KeyType.HASH))
                                 .withProjection(new Projection().withProjectionType(ProjectionType.KEYS_ONLY))
                                 .withProvisionedThroughput(new ProvisionedThroughputDescription()
-                                        .withReadCapacityUnits(READ_CAPACITY)
-                                        .withWriteCapacityUnits(WRITE_CAPACITY));
+                                        .withReadCapacityUnits(DEFAULT_READ_CAPACITY)
+                                        .withWriteCapacityUnits(DEFAULT_WRITE_CAPACITY));
                         globalIndices.add(globalIndex);
                     }
                 }
             }
-            final String tableName = getTableName(
-                    clazz.getAnnotation(DynamoDBTable.class).tableName());
+            // Throughput
+            long writeCapacity = DEFAULT_WRITE_CAPACITY;
+            long readCapacity = DEFAULT_READ_CAPACITY;
+            if (clazz.isAnnotationPresent(DynamoThroughput.class)) {
+                DynamoThroughput throughput = clazz.getAnnotation(DynamoThroughput.class);
+                writeCapacity = throughput.writeCapacity();
+                readCapacity = throughput.readCapacity();
+            }
+            final String tableName = TableNameOverrideFactory.getTableName(clazz);
             // Create the table description
             final TableDescription table = (new TableDescription())
                     .withTableName(tableName)
@@ -222,8 +220,8 @@ public class DynamoInitializer {
                     .withGlobalSecondaryIndexes(globalIndices)
                     .withLocalSecondaryIndexes(localIndices)
                     .withProvisionedThroughput((new ProvisionedThroughputDescription())
-                            .withReadCapacityUnits(READ_CAPACITY)
-                            .withWriteCapacityUnits(WRITE_CAPACITY));
+                            .withReadCapacityUnits(readCapacity)
+                            .withWriteCapacityUnits(writeCapacity));
             tables.add(table);
         }
         return tables;
@@ -233,12 +231,10 @@ public class DynamoInitializer {
      * Uses reflection to get all the annotated DynamoDBTable.
      */
     static List<Class<?>> loadDynamoTableClasses(final String dynamoPackage) {
-        final List<Class<?>> classes = new ArrayList<Class<?>>();
-        final ClassLoader classLoader = DynamoTable.class.getClassLoader();
+        final List<Class<?>> classes = new ArrayList<>();
+        final ClassLoader classLoader = DynamoInitializer.class.getClassLoader();
         try {
-            ImmutableSet<ClassInfo> classSet = ClassPath
-                    .from(classLoader)
-                    .getTopLevelClasses(dynamoPackage);
+            final ImmutableSet<ClassInfo> classSet = ClassPath.from(classLoader).getTopLevelClasses(dynamoPackage);
             for (ClassInfo classInfo : classSet) {
                 Class<?> clazz = classInfo.load();
                 if (clazz.isAnnotationPresent(DynamoDBTable.class)) {
@@ -256,7 +252,7 @@ public class DynamoInitializer {
     /**
      * Gets attribute name from the method.
      */
-    static String getAttributeName(Method method) {
+    static String getAttributeName(final Method method) {
         String attrName = method.getName();
         if (attrName.startsWith("get")) {
             attrName = attrName.substring("get".length());
@@ -315,7 +311,8 @@ public class DynamoInitializer {
                 logger.info("Creating table " + table.getTableName());
                 DYNAMO.createTable(createTableRequest);
             } else {
-                compareSchema(table, existingTables.get(table.getTableName()));
+                final TableDescription existingTable = existingTables.get(table.getTableName());
+                compareSchema(table, existingTable);
             }
             waitForActive(table);
         }
@@ -323,7 +320,7 @@ public class DynamoInitializer {
     }
 
     static Map<String, TableDescription> getExistingTables() {
-        Map<String, TableDescription> existingTables = new HashMap<String, TableDescription>();
+        Map<String, TableDescription> existingTables = new HashMap<>();
         String lastTableName = null;
         ListTablesResult listTablesResult = DYNAMO.listTables();
         do {
@@ -369,7 +366,7 @@ public class DynamoInitializer {
         }
 
         // LocalSecondaryIndexDescription -> LocalSecondaryIndex
-        List<LocalSecondaryIndex> localIndices = new ArrayList<LocalSecondaryIndex>();
+        List<LocalSecondaryIndex> localIndices = new ArrayList<>();
         List<LocalSecondaryIndexDescription> localIndexDescs = table.getLocalSecondaryIndexes();
         for (LocalSecondaryIndexDescription localIndexDesc : localIndexDescs) {
             LocalSecondaryIndex localIndex = new LocalSecondaryIndex()
@@ -386,16 +383,12 @@ public class DynamoInitializer {
     }
 
     /**
-     * Compares hash key, range key, secondary indices of the two tables. Throws an exception
+     * Compares hash key, range key of the two tables. Throws an exception
      * if there is difference.
      */
     static void compareSchema(TableDescription table1, TableDescription table2) {
         if (table1.getTableName().equals(table2.getTableName())) {
             compareKeySchema(table1, table2);
-            compareSecondaryIndices(table1.getTableName(), table1.getGlobalSecondaryIndexes(),
-                    table2.getGlobalSecondaryIndexes(), true);
-            compareSecondaryIndices(table1.getTableName(), table1.getLocalSecondaryIndexes(),
-                    table2.getLocalSecondaryIndexes(), false);
         }
     }
 
@@ -409,7 +402,7 @@ public class DynamoInitializer {
         if (keySchema1.size() != keySchema2.size()) {
             throw new BridgeInitializationException("Key schemas have different number of key elements.");
         }
-        Map<String, KeySchemaElement> keySchemaMap1 = new HashMap<String, KeySchemaElement>();
+        Map<String, KeySchemaElement> keySchemaMap1 = new HashMap<>();
         for (KeySchemaElement ele1 : keySchema1) {
             keySchemaMap1.put(ele1.getAttributeName(), ele1);
         }
@@ -425,98 +418,9 @@ public class DynamoInitializer {
     }
 
     /**
-     * Compare lists of indices from 2 different tables. If isGlobal is true, then this function compares global
-     * secondary indices, and the elements of the list should be GlobalSecondaryIndexDescriptions. If isGlobal is
-     * false, then this function compares local secondary indices, and the elements of the list should be
-     * LocalSecondaryIndexDescriptions.
-     *
-     * @param tableName
-     *         name of table to compare against (generally table 1, but they should be the same)
-     * @param indices1
-     *         a list of index descriptions from table 1
-     * @param indices2
-     *         a list of index descriptions from table 2
-     * @param isGlobal
-     *         true if these are glocal indices, false otherwise
+     * Wait for the table to become ACTIVE.
      */
-    static void compareSecondaryIndices(String tableName, List<?> indices1, List<?> indices2, boolean isGlobal) {
-        // Check for size first
-        int numIndices1 = indices1 == null ? 0 : indices1.size();
-        int numIndices2 = indices2 == null ? 0 : indices2.size();
-        if (numIndices1 != numIndices2) {
-            throw new BridgeInitializationException("Table " + tableName + " is changing the number of secondary indices.");
-        }
-
-        // if there are zero indices, short-circuit
-        if (numIndices1 == 0) {
-            return;
-        }
-
-        // Check one by one
-        Map<String, Object> indexMap1 = new HashMap<>();
-        for (Object index1 : indices1) {
-            String indexName;
-            if (isGlobal) {
-                indexName = ((GlobalSecondaryIndexDescription) index1).getIndexName();
-            } else {
-                indexName = ((LocalSecondaryIndexDescription) index1).getIndexName();
-            }
-            indexMap1.put(indexName, index1);
-        }
-
-        // Compare table 2 indices against table 1
-        for (Object index2 : indices2) {
-            String indexName;
-            if (isGlobal) {
-                indexName = ((GlobalSecondaryIndexDescription) index2).getIndexName();
-            } else {
-                indexName = ((LocalSecondaryIndexDescription) index2).getIndexName();
-            }
-
-            // make sure there's a corresponding table 1 index
-            Object index1 = indexMap1.get(indexName);
-            if (index1 == null) {
-                throw new BridgeInitializationException("Table " + tableName + " is changing the secondary indices.");
-            }
-
-            if (isGlobal) {
-                // compare global index attributes: key schema, projection, provisioned throughput
-                GlobalSecondaryIndexDescription globalIndex1 = (GlobalSecondaryIndexDescription) index1;
-                GlobalSecondaryIndexDescription globalIndex2 = (GlobalSecondaryIndexDescription) index2;
-                compareKeySchema(globalIndex1.getKeySchema(), globalIndex2.getKeySchema());
-
-                if (!globalIndex1.getProjection().equals(globalIndex2.getProjection())) {
-                    throw new BridgeInitializationException("Table " + tableName + " global index " + indexName +
-                            " is changing the projection.");
-                }
-
-                if (!globalIndex1.getProvisionedThroughput().getReadCapacityUnits().equals(
-                        globalIndex2.getProvisionedThroughput().getReadCapacityUnits())) {
-                    throw new BridgeInitializationException("Table " + tableName + " global index " + indexName +
-                            " is changing the provisioned read capacity.");
-                }
-/*
-                if (!globalIndex1.getProvisionedThroughput().getWriteCapacityUnits().equals(
-                        globalIndex2.getProvisionedThroughput().getWriteCapacityUnits())) {
-                    throw new BridgeInitializationException("Table " + tableName + " global index " + indexName +
-                            " is changing the provisioned write capacity.");
-                }
-                */
-            } else {
-                // compare global index attributes: key schema, projection
-                LocalSecondaryIndexDescription localIndex1 = (LocalSecondaryIndexDescription) index1;
-                LocalSecondaryIndexDescription localIndex2 = (LocalSecondaryIndexDescription) index2;
-                compareKeySchema(localIndex1.getKeySchema(), localIndex2.getKeySchema());
-
-                if (!localIndex1.getProjection().equals(localIndex2.getProjection())) {
-                    throw new BridgeInitializationException("Table " + tableName + " local index " + indexName +
-                            " is changing the projection.");
-                }
-            }
-        }
-    }
-
-    static void waitForActive(TableDescription table) {
+    private static void waitForActive(TableDescription table) {
         DescribeTableResult describeResult = DYNAMO.describeTable(
                 new DescribeTableRequest(table.getTableName()));
         table = describeResult.getTable();
@@ -531,7 +435,10 @@ public class DynamoInitializer {
         }
     }
 
-    static void waitForDelete(TableDescription table) {
+    /**
+     * Wait for the table to be deleted.
+     */
+    private static void waitForDelete(TableDescription table) {
         DescribeTableResult describeResult = DYNAMO.describeTable(
                 new DescribeTableRequest(table.getTableName()));
         table = describeResult.getTable();

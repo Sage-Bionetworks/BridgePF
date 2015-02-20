@@ -9,6 +9,9 @@ import java.util.concurrent.Executors;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Index;
+import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
@@ -22,6 +25,8 @@ import redis.clients.jedis.JedisPoolConfig;
 
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
+import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
@@ -46,6 +51,49 @@ public class BridgeSpringConfig {
     @Autowired
     public LoadingCache<String, CmsEncryptor> cmsEncryptorCache(CmsEncryptorCacheLoader cacheLoader) {
         return CacheBuilder.newBuilder().build(cacheLoader);
+    }
+
+    @Bean(name = "healthDataDdbMapper")
+    @Autowired
+    public DynamoDBMapper healthDataDdbMapper(AmazonDynamoDB client) {
+        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder()
+                .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE)
+                .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
+                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoHealthDataRecord.class))
+                .build();
+        return new DynamoDBMapper(client, mapperConfig);
+    }
+
+    @Bean(name = "healthDataHealthCodeIndex")
+    @Autowired
+    public DynamoIndexHelper healthDataHealthCodeIndex(AmazonDynamoDB client) {
+        // DDB index
+        String tableName = TableNameOverrideFactory.getTableName(DynamoHealthDataRecord.class);
+        DynamoDB ddb = new DynamoDB(client);
+        Table ddbTable = ddb.getTable(tableName);
+        Index ddbIndex = ddbTable.getIndex("healthCode-index");
+
+        // construct index helper
+        DynamoIndexHelper indexHelper = new DynamoIndexHelper();
+        indexHelper.setIndex(ddbIndex);
+        indexHelper.setMapper(healthDataDdbMapper(client));
+        return indexHelper;
+    }
+
+    @Bean(name = "healthDataUploadDateIndex")
+    @Autowired
+    public DynamoIndexHelper healthDataUploadDateIndex(AmazonDynamoDB client) {
+        // DDB index
+        String tableName = TableNameOverrideFactory.getTableName(DynamoHealthDataRecord.class);
+        DynamoDB ddb = new DynamoDB(client);
+        Table ddbTable = ddb.getTable(tableName);
+        Index ddbIndex = ddbTable.getIndex("uploadDate-index");
+
+        // construct index helper
+        DynamoIndexHelper indexHelper = new DynamoIndexHelper();
+        indexHelper.setIndex(ddbIndex);
+        indexHelper.setMapper(healthDataDdbMapper(client));
+        return indexHelper;
     }
 
     @Bean(name = "jedisPool")

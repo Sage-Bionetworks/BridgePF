@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.client.Client;
 
 /**
  * Backfills study IDs to the health code table.
@@ -29,7 +28,6 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
 
     private BackfillRecordFactory backfillRecordFactory;
     private StudyService studyService;
-    private Client stormpathClient;
     private AccountEncryptionService accountEncryptionService;
     private HealthCodeDao healthCodeDao;
 
@@ -41,11 +39,6 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
     @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
-    }
-
-    @Autowired
-    public void setStormpathClient(Client client) {
-        this.stormpathClient = client;
     }
 
     @Autowired
@@ -66,7 +59,7 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
     @Override
     void doBackfill(final BackfillTask task, final BackfillCallback callback) {
         final List<Study> studies = studyService.getStudies();
-        Application application = StormpathFactory.getStormpathApplication(stormpathClient);
+        Application application = StormpathFactory.getStormpathApplication();
         StormpathAccountIterator iterator = new StormpathAccountIterator(application);
         while (iterator.hasNext()) {
             List<Account> accountList = iterator.next();

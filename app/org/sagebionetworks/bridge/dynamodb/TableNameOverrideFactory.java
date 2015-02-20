@@ -9,7 +9,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 public class TableNameOverrideFactory {
 
-    public static TableNameOverride getTableNameOverride(Class<? extends DynamoTable> clazz) {
+    public static TableNameOverride getTableNameOverride(Class<?> clazz) {
         BridgeConfig config = BridgeConfigFactory.getConfig();
         Environment env = config.getEnvironment();
         String tableName = clazz.getAnnotation(DynamoDBTable.class).tableName();
@@ -17,5 +17,9 @@ public class TableNameOverrideFactory {
             throw new IllegalArgumentException("Missing DynamoDBTable table name for " + clazz.getName());
         }
         return new TableNameOverride(env.name().toLowerCase() + "-" + config.getUser() + "-" + tableName);
+    }
+
+    public static String getTableName(Class<?> clazz) {
+        return getTableNameOverride(clazz).getTableName();
     }
 }

@@ -16,7 +16,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Maps;
 
 @DynamoDBTable(tableName = "ParticipantOptions")
-public class DynamoParticipantOptions implements DynamoTable { 
+public class DynamoParticipantOptions { 
     
     private String healthCode; // hash
     private String studyKey; // range

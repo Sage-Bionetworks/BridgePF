@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 
 @DynamoDBTable(tableName = "Study")
-public class DynamoStudy implements Study, DynamoTable {
+public class DynamoStudy implements Study {
 
     // We need the unconfigured mapper for setData/getData.
     private static ObjectMapper mapper = new ObjectMapper();
@@ -92,8 +92,10 @@ public class DynamoStudy implements Study, DynamoTable {
     }
     @Override
     public void setIdentifier(String identifier) {
-        this.identifier = identifier;
-        this.studyIdentifier = new StudyIdentifierImpl(identifier);
+        if (identifier != null) {
+            this.identifier = identifier;
+            this.studyIdentifier = new StudyIdentifierImpl(identifier);
+        }
     }
     @Override
     @JsonIgnore
