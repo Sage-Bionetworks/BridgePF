@@ -309,6 +309,14 @@
         </property>
     </bean>
     
+    <bean id="controllers.CacheAdminController" parent="proxiedController">
+        <property name="target">
+            <bean class="controllers.CacheAdminController" parent="BaseController">
+                <property name="cacheAdminService" ref="cacheAdminService" />
+            </bean>
+        </property>
+    </bean>
+    
     <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
         <property name="uploadCertificateService" ref="uploadCertificateService"/>
         <property name="studyDao" ref="studyDao"/>
@@ -455,6 +463,10 @@
     
     <bean id="optionsService" class="org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl">
         <property name="participantOptionsDao" ref="participantOptionsDao"/>
+    </bean>
+    
+    <bean id="cacheAdminService" class="org.sagebionetworks.bridge.services.CacheAdminService">
+        <property name="jedisPool" ref="jedisPool"/>
     </bean>
 
     <bean id="backfillRecordFactory" class="org.sagebionetworks.bridge.services.backfill.BackfillRecordFactory">
