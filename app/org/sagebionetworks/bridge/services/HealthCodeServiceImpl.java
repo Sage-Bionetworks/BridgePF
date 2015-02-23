@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.models.HealthId;
-import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.HealthIdImpl;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,33 +31,11 @@ public class HealthCodeServiceImpl implements HealthCodeService {
         checkNotNull(studyIdentifier);
         final String healthCode = generateHealthCode(studyIdentifier.getIdentifier());
         final String healthId = generateHealthId(healthCode);
-        return new HealthId() {
-            @Override
-            public String getId() {
-                return healthId;
-            }
-            @Override
-            public String getCode() {
-                return healthCode;
-            }
-        };
+        return new HealthIdImpl(healthId, healthCode);
     }
 
     @Override
     public HealthId getMapping(String healthId) {
-        checkNotNull(healthId);
-        final String healthCode = healthIdDao.getCode(healthId);
-        if (healthCode == null) {
-            return null;
-        }
-        return getHealthIdObject(healthId, healthCode);
-    }
-    
-    @Override
-    public HealthId getMapping(Account account) {
-        checkNotNull(account);
-        
-        final String healthId = account.getHealthId();
         if (healthId == null) {
             return null;
         }
@@ -65,20 +43,7 @@ public class HealthCodeServiceImpl implements HealthCodeService {
         if (healthCode == null) {
             return null;
         }
-        return getHealthIdObject(healthId, healthCode);
-    }
-
-    private HealthId getHealthIdObject(final String healthId, final String healthCode) {
-        return new HealthId() {
-            @Override
-            public String getId() {
-                return healthId;
-            }
-            @Override
-            public String getCode() {
-                return healthCode;
-            }
-        };
+        return new HealthIdImpl(healthId, healthCode);
     }
     
     private String generateHealthCode(String studyId) {

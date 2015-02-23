@@ -26,10 +26,13 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.validators.PasswordResetValidator;
+import org.sagebionetworks.bridge.validators.SignInValidator;
+import org.sagebionetworks.bridge.validators.SignUpValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.validation.Validator;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class AuthenticationServiceImpl implements AuthenticationService {
 
@@ -42,47 +45,48 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private ParticipantOptionsService optionsService;
     private AccountDao accountDao;
     private HealthCodeService healthCodeService;
-    private Validator signInValidator;
-    private Validator signUpValidator;
-    private Validator passwordResetValidator;
+    private SignInValidator signInValidator;
+    private SignUpValidator signUpValidator;
+    private PasswordResetValidator passwordResetValidator;
 
+    @Autowired
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
-
+    @Autowired
     public void setCacheProvider(CacheProvider cache) {
         this.cacheProvider = cache;
     }
-
+    @Autowired
     public void setBridgeConfig(BridgeConfig config) {
         this.config = config;
     }
-
+    @Autowired
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
-
+    @Autowired
     public void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
-    
+    @Autowired
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
-
+    @Autowired
     public void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
-    
-    public void setSignInValidator(Validator validator) {
+    @Autowired
+    public void setSignInValidator(SignInValidator validator) {
         this.signInValidator = validator;
     }
-
-    public void setSignUpValidator(Validator validator) {
+    @Autowired
+    public void setSignUpValidator(SignUpValidator validator) {
         this.signUpValidator = validator;
     }
-    
-    public void setPasswordResetValidator(Validator validator) {
+    @Autowired
+    public void setPasswordResetValidator(PasswordResetValidator validator) {
         this.passwordResetValidator = validator;
     }
 
@@ -191,10 +195,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setStudyKey(study.getIdentifier());
 
         final String healthCode = getHealthCode(study, account);
-        if (healthCode != null) {
-            user.setHealthCode(healthCode);
-            user.setDataSharing(optionsService.getBooleanOption(healthCode, Option.DATA_SHARING));
-        }
+        user.setHealthCode(healthCode);
+        user.setDataSharing(optionsService.getBooleanOption(healthCode, Option.DATA_SHARING));
         user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(study, user));
         user.setConsent(consentService.hasUserConsentedToResearch(study, user));
         
@@ -225,7 +227,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
      * @return
      */
     private String getHealthCode(Study study, Account account) {
-        HealthId healthId = healthCodeService.getMapping(account);
+        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
         if (healthId == null) {
             healthId = healthCodeService.createMapping(study);
             account.setHealthId(healthId.getId());

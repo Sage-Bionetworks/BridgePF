@@ -61,7 +61,6 @@ public class StormpathAccountDao implements AccountDao {
     private Client client;
     private StudyService studyService;
     private SortedMap<Integer,Encryptor> encryptors = Maps.newTreeMap();
-    private String applicationId;
     
     public void setStormpathApplication(Application application) {
         this.application = application;
@@ -79,13 +78,6 @@ public class StormpathAccountDao implements AccountDao {
     
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
-    }
-    
-    public StormpathAccountDao() {
-        BridgeConfig config = BridgeConfigFactory.getConfig();
-        String url = config.getStormpathApplicationHref().trim();
-        String[] parts = url.split("/");
-        applicationId = parts[parts.length-1];
     }
     
     @Override
@@ -135,7 +127,7 @@ public class StormpathAccountDao implements AccountDao {
             
             HttpClient client = new HttpClient(manager);
             
-            PostMethod post = new PostMethod("https://api.stormpath.com/v1/applications/"+applicationId+"/verificationEmails");
+            PostMethod post = new PostMethod(this.application.getHref() + "/verificationEmails");
             post.setRequestHeader("Accept", "application/json");
             post.setRequestHeader("Content-Type", "application/json");
             post.setRequestEntity(new StringRequestEntity(bodyJson, "application/json", "UTF-8"));

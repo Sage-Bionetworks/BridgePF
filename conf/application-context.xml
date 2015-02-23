@@ -365,24 +365,7 @@
         <property name="healthCodeDao" ref="healthCodeDao" />
     </bean>
 
-    <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl">
-        <property name="distributedLockDao" ref="distributedLockDao"/>
-        <property name="cacheProvider" ref="cacheProvider" />
-        <property name="bridgeConfig" ref="bridgeConfig" />
-        <property name="accountDao" ref="accountDao" />
-        <property name="consentService" ref="consentService" />
-        <property name="optionsService" ref="optionsService" />
-        <property name="healthCodeService" ref="healthCodeService" />
-        <property name="signInValidator">
-            <bean class="org.sagebionetworks.bridge.validators.SignInValidator"/>
-        </property>
-        <property name="signUpValidator">
-            <bean class="org.sagebionetworks.bridge.validators.SignUpValidator"/>
-        </property>
-        <property name="passwordResetValidator">
-            <bean class="org.sagebionetworks.bridge.validators.PasswordResetValidator"/>
-        </property>
-    </bean>
+    <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl" />
 
     <bean id="userProfileService" class="org.sagebionetworks.bridge.services.UserProfileServiceImpl">
         <property name="executorService" ref="asyncExecutorService" />
