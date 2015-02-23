@@ -153,17 +153,24 @@ public abstract class BaseController extends Controller {
     }
     
     protected String getStudyIdentifier() {
-        // Bridge-Study: api
+        // Bridge-Study header: api
         String value = request().getHeader(BRIDGE_STUDY_HEADER);
         if (value != null) {
             logger.debug("Study identifier retrieved from Bridge-Study header ("+value+")");
             return value;
         }
-        // Bridge-Host: api-develop.sagebridge.org
+        // Bridge-Host header: api-develop.sagebridge.org
         value = request().getHeader(BRIDGE_HOST_HEADER);
         if (value != null) {
             logger.debug("Study identifier parsed from Bridge-Host header ("+value+")");
             return getIdentifierFromHostname(value);
+        }
+        // Query string: ?study=api
+        String[] params = request().queryString().get("study");
+        if (params != null && params.length > 0) {
+            value = params[0];
+            logger.debug("Study identifier parsed from query string ("+value+")");
+            return value;
         }
         // bridge.conf:
         // host = api-local.sagebridge.org
@@ -209,7 +216,7 @@ public abstract class BaseController extends Controller {
     protected Result okResult(Collection<?> items) throws Exception {
         ArrayNode itemsNode = mapper.createArrayNode();
         for (Object item : items) {
-            ObjectNode node = (ObjectNode) mapper.valueToTree(item);
+            JsonNode node = mapper.valueToTree(item);
             itemsNode.add(node);
         }
         ObjectNode json = mapper.createObjectNode();
