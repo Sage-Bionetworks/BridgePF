@@ -2,9 +2,11 @@ package org.sagebionetworks.bridge.validators;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.PasswordReset;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+@Component
 public class PasswordResetValidator implements Validator {
 
     @Override

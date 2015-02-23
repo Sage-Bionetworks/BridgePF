@@ -67,7 +67,7 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
             Account account = i.next();
             Study study = studyService.getStudy(account.getStudyIdentifier());
             
-            HealthId mapping = healthCodeService.getMapping(account);
+            HealthId mapping = healthCodeService.getMapping(account.getHealthId());
             if (mapping != null) {
                 try {
                     String healthCode = mapping.getCode();

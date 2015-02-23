@@ -52,7 +52,7 @@ public class HealthCodeBackfill extends AsyncBackfillTemplate {
             Account account = i.next();
             Study study = studyService.getStudy(account.getStudyIdentifier());
             
-            HealthId mapping = healthCodeService.getMapping(account);
+            HealthId mapping = healthCodeService.getMapping(account.getHealthId());
             if (mapping == null) {
                 // Backfill the account that have no health code mapping in the study.
                 // This happens when the user creates a new account and consents in a study
