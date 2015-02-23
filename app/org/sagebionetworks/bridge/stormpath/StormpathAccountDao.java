@@ -109,7 +109,7 @@ public class StormpathAccountDao implements AccountDao {
         
         try {
             com.stormpath.sdk.account.Account acct = client.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
-            return new StormpathAccount(study, acct, encryptors);
+            return (acct == null) ? null : new StormpathAccount(study, acct, encryptors);
         } catch(ResourceException e) {
             rethrowResourceException(e, null);
         }
