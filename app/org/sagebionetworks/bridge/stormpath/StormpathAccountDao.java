@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -52,10 +53,12 @@ import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupMembership;
 import com.stormpath.sdk.impl.resource.AbstractResource;
 import com.stormpath.sdk.resource.ResourceException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StormpathAccountDao implements AccountDao {
 
-    // private static Logger logger = LoggerFactory.getLogger(StormpathAccountDao.class);
+    private static Logger logger = LoggerFactory.getLogger(StormpathAccountDao.class);
 
     private Application application;
     private Client client;
@@ -147,6 +150,8 @@ public class StormpathAccountDao implements AccountDao {
             
             status = client.executeMethod(post);
             responseBody = post.getResponseBody();
+            
+            System.out.println(status);
 
         } catch(ResourceException e) {
             rethrowResourceException(e, null);
@@ -158,19 +163,18 @@ public class StormpathAccountDao implements AccountDao {
         // If it *wasn't* a 202, then there should be a JSON message included with the response...
         if (status != 202) {
             // One common response, that the email no longer exists, we have mapped to a 404, so do that 
-            // here as well. Otherwise we treat it on the API side as a 500 error, a server problem.
+            // here as well. Otherwise we treat it on the API side as a 503 error, a service unavailable problem.
+            JsonNode node = null;
             try {
-                JsonNode node = BridgeObjectMapper.get().readTree(responseBody);
-                String message = node.get("message").asText();
-                if (message.contains("does not match a known resource")) {
-                    status = 404;
-                } else {
-                    status = 500;
-                }
-                throw new BridgeServiceException(message, status);
+                node = BridgeObjectMapper.get().readTree(responseBody);    
             } catch(IOException e) {
                 throw new BridgeServiceException(e);
             }
+            String message = node.get("message").asText();
+            if (message.contains("does not match a known resource")) {
+                throw new EntityNotFoundException(Account.class);
+            }
+            throw new ServiceUnavailableException(message);
         }
     }
 
@@ -300,12 +304,19 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     private void rethrowResourceException(ResourceException e, Account account) {
-        if (e.getCode() == 2001) { // must be unique (email isn't unique)
+        logger.info("Stormpath error code: " + e.getCode() + ", exception: " + e.getMessage());
+        switch(e.getCode()) {
+        case 2001: // must be unique (email isn't unique)
             throw new EntityAlreadyExistsException(account);
-        } else if (e.getCode() == 7104) { // account not found in the directory
+        case 400:
+            throw new BadRequestException("Invalid email or password");
+        case 404:
+        case 7104: // account not found in the directory
+        case 2016: // "Property value does not match a known resource." somehow this equals not found
             throw new EntityNotFoundException(Account.class);
+        default:
+            throw new ServiceUnavailableException(e);
         }
-        throw new ServiceUnavailableException(e);
     }
     
     private void updateGroups(Directory directory, Account account) {
