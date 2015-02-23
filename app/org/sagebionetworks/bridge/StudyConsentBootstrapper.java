@@ -11,7 +11,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 public class StudyConsentBootstrapper {
     public StudyConsentBootstrapper(StudyService studyService, StudyConsentDao studyConsentDao) {
         try {
-            studyService.getStudy("api");    
+            studyService.getStudy("api");
         } catch(EntityNotFoundException e) {
             Study study = new DynamoStudy();
             study.setName("Test Study");
@@ -28,7 +28,7 @@ public class StudyConsentBootstrapper {
         for (Study study : studyService.getStudies()) {
             StudyIdentifier studyIdentifier = study.getStudyIdentifier();
             String path = String.format("conf/email-templates/%s-consent.html", study.getIdentifier());
-            int minAge = 17;
+            int minAge = 18;
             StudyConsent consent = studyConsentDao.getConsent(studyIdentifier);
             if (consent == null) {
                 consent = studyConsentDao.addConsent(studyIdentifier, path, minAge);

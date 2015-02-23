@@ -35,9 +35,11 @@ public class UserManagementController extends BaseController {
     }
 
     public Result deleteUser(String email) throws Exception {
-        getAuthenticatedAdminSession();
-        userAdminService.deleteUser(email);
-
+        UserSession session = getAuthenticatedAdminSession();
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        userAdminService.deleteUser(study, email);
+        
         return okResult("User deleted.");
     }
 

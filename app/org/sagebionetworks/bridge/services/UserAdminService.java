@@ -5,8 +5,6 @@ import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 
-import com.stormpath.sdk.group.Group;
-
 public interface UserAdminService {
 
     /**
@@ -25,23 +23,22 @@ public interface UserAdminService {
      *
      * @throws BridgeServiceException
      */
-    public UserSession createUser(SignUp signUp, Study userStudy, boolean signUserIn, boolean consentUser)
-            throws BridgeServiceException;
+    public UserSession createUser(SignUp signUp, Study userStudy, boolean signUserIn, boolean consentUser);
 
     /**
      * Delete the target user.
      *
-     * @param userEmail
-     *            target user's email
+     * @param user
+     *            target user
      * @throws BridgeServiceException
      */
-    public void deleteUser(String userEmail) throws BridgeServiceException;
-
+    public void deleteUser(Study study, String email);
+    
     /**
      * Deletes all all users in the "test users" group in Stormpath.
      *
      * @throws BridgeServiceException
      */
-    public void deleteAllUsers(Group group) throws BridgeServiceException;
+    public void deleteAllUsers(String role) throws BridgeServiceException;
 
 }

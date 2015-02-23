@@ -48,7 +48,6 @@ public class TestUserAdminHelper {
             this.session = session;
             this.roles = (roleList == null) ? Sets.<String>newHashSet() : roleList;
             this.roles.add(BridgeConstants.TEST_USERS_GROUP);
-
         }
         public SignUp getSignUp() {
             return new SignUp(username, email, password, roles);
@@ -136,7 +135,7 @@ public class TestUserAdminHelper {
         if (testUser.getSession() != null) {
             // Delete using session if it exists
             authService.signOut(testUser.getSessionToken());
-            userAdminService.deleteUser(testUser.getUser().getEmail());
+            userAdminService.deleteUser(testUser.getStudy(), testUser.getUser().getEmail());
         } else {
             // Otherwise delete using the user's email
             deleteUser(testUser.getStudy(), testUser.getEmail());
@@ -147,10 +146,7 @@ public class TestUserAdminHelper {
         checkNotNull(study);
         checkNotNull(email);
 
-        User user = authService.getUser(study, email);
-        if (user != null) {
-            userAdminService.deleteUser(user.getEmail());
-        }
+        userAdminService.deleteUser(study, email);
     }
 
 }
