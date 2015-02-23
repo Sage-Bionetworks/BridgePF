@@ -136,7 +136,7 @@ public class AuthenticationServiceImplTest {
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
         try {
             Email email = new Email(user.getEmail());
-            authService.resendEmailVerification(email);
+            authService.resendEmailVerification(user.getStudyIdentifier(), email);
         } catch (ConsentRequiredException e) {
         } finally {
             helper.deleteUser(user);
