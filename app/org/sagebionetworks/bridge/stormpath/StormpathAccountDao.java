@@ -107,8 +107,13 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(study);
         checkNotNull(verification);
         
-        com.stormpath.sdk.account.Account acct = client.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
-        return (acct == null) ? null : new StormpathAccount(study, acct, encryptors);
+        try {
+            com.stormpath.sdk.account.Account acct = client.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
+            return new StormpathAccount(study, acct, encryptors);
+        } catch(ResourceException e) {
+            rethrowResourceException(e, null);
+        }
+        return null;
     }
     
     @Override
@@ -300,7 +305,7 @@ public class StormpathAccountDao implements AccountDao {
         } else if (e.getCode() == 7104) { // account not found in the directory
             throw new EntityNotFoundException(Account.class);
         }
-        throw new ServiceUnavailableException(e);
+        throw new ServiceUnavailableException(e.getCode() + ": " + e.getMessage());
     }
     
     private void updateGroups(Directory directory, Account account) {
