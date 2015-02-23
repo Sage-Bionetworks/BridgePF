@@ -27,9 +27,8 @@ function success() {
 }
 function failure() {
     $("#m1").text("Your email address could not be verified.");
-    $("#m2").text("Contact technical support for this study to receive further assistance.");
+    $("#m2").html("Please refresh the page; if the problem persists, contact <a href='bridgeit@@sagebase.org'>bridgeit@@sagebase.org</a> to receive further assistance.");
 }
-
 try {
     if (!qd.study) {
         throw new Error("No study");
