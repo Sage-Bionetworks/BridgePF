@@ -164,7 +164,7 @@ public class StormpathAccountDaoTest {
             accountDao.signUp(study, signUp, false); // don't send email
             
             Email emailObj = new Email(signUp.getEmail());
-            accountDao.resendEmailVerificationToken(emailObj); // now send email
+            accountDao.resendEmailVerificationToken(study.getStudyIdentifier(), emailObj); // now send email
         } finally {
             accountDao.deleteAccount(study, signUp.getEmail());
         }

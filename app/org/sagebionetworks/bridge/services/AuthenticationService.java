@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface AuthenticationService {
 
@@ -22,7 +23,7 @@ public interface AuthenticationService {
 
     public UserSession verifyEmail(Study study, EmailVerification verification) throws ConsentRequiredException;
     
-    public void resendEmailVerification(Email email);
+    public void resendEmailVerification(StudyIdentifier studyIdentifier, Email email);
 
     public void requestResetPassword(Email email);
 

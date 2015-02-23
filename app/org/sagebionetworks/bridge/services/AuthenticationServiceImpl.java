@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.SignUpValidator;
@@ -160,11 +161,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
     
     @Override
-    public void resendEmailVerification(Email email) {
+    public void resendEmailVerification(StudyIdentifier studyIdentifier, Email email) {
+        checkNotNull(studyIdentifier, "StudyIdentifier object cannnot be null");
         checkNotNull(email, "Email object cannnot be null");
         checkNotNull(email.getEmail(), "Email is required");
         
-        accountDao.resendEmailVerificationToken(email);
+        accountDao.resendEmailVerificationToken(studyIdentifier, email);
     }
 
     @Override

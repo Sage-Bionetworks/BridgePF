@@ -112,7 +112,7 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     @Override
-    public void resendEmailVerificationToken(Email email) {
+    public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
         checkNotNull(email);
 
         // This is painful, it's not in the Java SDK. I hope we can come back to this when it's in their SDK
@@ -130,6 +130,7 @@ public class StormpathAccountDao implements AccountDao {
             PostMethod post = new PostMethod(this.application.getHref() + "/verificationEmails");
             post.setRequestHeader("Accept", "application/json");
             post.setRequestHeader("Content-Type", "application/json");
+            post.setRequestHeader("Bridge-Study", studyIdentifier.getIdentifier());
             post.setRequestEntity(new StringRequestEntity(bodyJson, "application/json", "UTF-8"));
 
             UsernamePasswordCredentials creds = new UsernamePasswordCredentials(
@@ -142,6 +143,8 @@ public class StormpathAccountDao implements AccountDao {
             status = client.executeMethod(post);
             responseBody = post.getResponseBody();
 
+        } catch(ResourceException e) {
+            rethrowResourceException(e, null);
         } catch(Throwable throwable) {
             throw new BridgeServiceException(throwable);
         } finally {
