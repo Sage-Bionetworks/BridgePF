@@ -87,18 +87,6 @@ public class HealthCodeServiceImplTest {
         
     }
     
-    /*
-   @Override
-    public HealthId getMapping(String healthId) {
-        checkNotNull(healthId);
-        final String healthCode = healthIdDao.getCode(healthId);
-        if (healthCode == null) {
-            return null;
-        }
-        return new HealthIdImpl(healthId, healthCode);
-    }
-     */
-    
     private void clearDynamo() {
         DynamoTestUtil.clearTable(DynamoHealthCode.class);
         DynamoTestUtil.clearTable(DynamoHealthId.class);
