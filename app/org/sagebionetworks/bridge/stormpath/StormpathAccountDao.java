@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
@@ -60,7 +61,6 @@ public class StormpathAccountDao implements AccountDao {
     private Client client;
     private StudyService studyService;
     private SortedMap<Integer,Encryptor> encryptors = Maps.newTreeMap();
-    
     
     public void setStormpathApplication(Application application) {
         this.application = application;
@@ -110,9 +110,9 @@ public class StormpathAccountDao implements AccountDao {
         com.stormpath.sdk.account.Account acct = client.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
         return (acct == null) ? null : new StormpathAccount(study, acct, encryptors);
     }
-
+    
     @Override
-    public void resendEmailVerificationToken(Email email) {
+    public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
         checkNotNull(email);
 
         // This is painful, it's not in the Java SDK. I hope we can come back to this when it's in their SDK
@@ -124,13 +124,13 @@ public class StormpathAccountDao implements AccountDao {
             BridgeConfig config = BridgeConfigFactory.getConfig();
             
             String bodyJson = "{\"login\":\""+email.getEmail()+"\"}";
-            String applicationId = StormpathFactory.getApplicationId();
             
             HttpClient client = new HttpClient(manager);
             
-            PostMethod post = new PostMethod("https://api.stormpath.com/v1/applications/"+applicationId+"/verificationEmails");
+            PostMethod post = new PostMethod(this.application.getHref() + "/verificationEmails");
             post.setRequestHeader("Accept", "application/json");
             post.setRequestHeader("Content-Type", "application/json");
+            post.setRequestHeader("Bridge-Study", studyIdentifier.getIdentifier());
             post.setRequestEntity(new StringRequestEntity(bodyJson, "application/json", "UTF-8"));
 
             UsernamePasswordCredentials creds = new UsernamePasswordCredentials(
@@ -143,6 +143,8 @@ public class StormpathAccountDao implements AccountDao {
             status = client.executeMethod(post);
             responseBody = post.getResponseBody();
 
+        } catch(ResourceException e) {
+            rethrowResourceException(e, null);
         } catch(Throwable throwable) {
             throw new BridgeServiceException(throwable);
         } finally {
@@ -221,12 +223,11 @@ public class StormpathAccountDao implements AccountDao {
         
         AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email))
                 .withGroups().withGroupMemberships());
-        if (!accounts.iterator().hasNext()) {
-            throw new EntityNotFoundException(Account.class);
+        if (accounts.iterator().hasNext()) {
+            com.stormpath.sdk.account.Account acct = accounts.iterator().next();
+            return new StormpathAccount(study.getStudyIdentifier(), acct, encryptors);
         }
-        com.stormpath.sdk.account.Account acct = accounts.iterator().next();
-        StormpathAccount account = new StormpathAccount(study.getStudyIdentifier(), acct, encryptors);
-        return account;
+        return null;
     }
     
     @Override 
@@ -240,9 +241,10 @@ public class StormpathAccountDao implements AccountDao {
         account.setEmail(signUp.getEmail());
         account.setFirstName(StormpathAccount.PLACEHOLDER_STRING);
         account.setLastName(StormpathAccount.PLACEHOLDER_STRING);
-        account.getRoles().addAll(signUp.getRoles());
         acct.setPassword(signUp.getPassword());
-        
+        if (signUp.getRoles() != null) {
+            account.getRoles().addAll(signUp.getRoles());    
+        }
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             directory.createAccount(acct, sendEmail);
@@ -266,6 +268,9 @@ public class StormpathAccountDao implements AccountDao {
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             updateGroups(directory, account);
+            
+            acct.getCustomData().save();
+            
             // This will throw an exception if the account object has not changed, which it may not have
             // if this call was made simply to persist a change in the groups. To get around this, we dig 
             // into the implementation internals of the account because the Stormpath code is tracking the 
@@ -295,7 +300,7 @@ public class StormpathAccountDao implements AccountDao {
         } else if (e.getCode() == 7104) { // account not found in the directory
             throw new EntityNotFoundException(Account.class);
         }
-        throw new BridgeServiceException(e);
+        throw new ServiceUnavailableException(e);
     }
     
     private void updateGroups(Directory directory, Account account) {

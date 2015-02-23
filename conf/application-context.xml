@@ -162,16 +162,6 @@
 
     <bean id="distributedLockDao" class="org.sagebionetworks.bridge.redis.RedisDistributedLockDao"/>
 
-    <!-- Stormpath identity service -->
-
-    <bean id="stormpathClient" class="org.sagebionetworks.bridge.stormpath.StormpathFactory" 
-        factory-method="getStormpathClient" scope="singleton">
-    </bean>
-
-    <bean id="stormpathApplication" class="org.sagebionetworks.bridge.stormpath.StormpathFactory" 
-        factory-method="getStormpathApplication" scope="singleton">
-    </bean>
-    
     <!-- Play controllers. -->
 
     <bean id="BaseController" class="controllers.BaseController" abstract="true">
@@ -375,40 +365,19 @@
         <property name="healthCodeDao" ref="healthCodeDao" />
     </bean>
 
-    <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl">
-        <property name="stormpathClient" ref="stormpathClient" />
-        <property name="distributedLockDao" ref="distributedLockDao"/>
-        <property name="cacheProvider" ref="cacheProvider" />
-        <property name="bridgeConfig" ref="bridgeConfig" />
-        <property name="accountEncryptionService" ref="accountEncryptionService" />
-        <property name="consentService" ref="consentService" />
-        <property name="optionsService" ref="optionsService" />
-        <property name="signInValidator">
-            <bean class="org.sagebionetworks.bridge.validators.SignInValidator"/>
-        </property>
-        <property name="passwordResetValidator">
-            <bean class="org.sagebionetworks.bridge.validators.PasswordResetValidator"/>
-        </property>
-    </bean>
+    <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl" />
 
     <bean id="userProfileService" class="org.sagebionetworks.bridge.services.UserProfileServiceImpl">
-        <property name="authenticationService" ref="authenticationService" />
-        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
         <property name="executorService" ref="asyncExecutorService" />
         <property name="sendMailService" ref="sendEmailViaAmazonService" />
-    </bean>
+        <property name="accountDao" ref="accountDao" />
+        </bean>
 
     <bean id="consentService" class="org.sagebionetworks.bridge.services.ConsentServiceImpl">
-        <property name="authenticationService" ref="authenticationService" />
-        <property name="accountEncryptionService" ref="accountEncryptionService" />
+        <property name="accountDao" ref="accountDao" />
         <property name="sendMailService" ref="sendEmailViaAmazonService"/>
         <property name="studyConsentDao" ref="studyConsentDao"/>
         <property name="userConsentDao" ref="userConsentDao"/>
-    </bean>
-
-    <bean id="accountEncryptionService" class="org.sagebionetworks.bridge.services.AccountEncryptionServiceImpl">
-        <property name="healthCodeEncryptor" ref="healthCodeEncryptor" />
-        <property name="healthCodeService" ref="healthCodeService" />
     </bean>
 
     <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">
@@ -444,6 +413,8 @@
     
     <bean id="userAdminService" class="org.sagebionetworks.bridge.services.UserAdminServiceImpl">
         <property name="authenticationService" ref="authenticationService" />
+        <property name="accountDao" ref="accountDao" />
+        <property name="healthIdDao" ref="healthIdDao" />
         <property name="consentService" ref="consentService" />
         <property name="studyService" ref="studyService" />
         <property name="distributedLockDao" ref="distributedLockDao"/>

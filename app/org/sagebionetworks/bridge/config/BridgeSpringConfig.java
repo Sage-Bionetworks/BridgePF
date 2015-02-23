@@ -16,10 +16,17 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.stormpath.sdk.api.ApiKey;
+import com.stormpath.sdk.api.ApiKeys;
+import com.stormpath.sdk.application.Application;
+import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.client.Clients;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -97,9 +104,8 @@ public class BridgeSpringConfig {
     }
 
     @Bean(name = "jedisPool")
-    public JedisPool jedisPool() {
+    public JedisPool jedisPool(BridgeConfig config) {
         // configure Jedis pool
-        BridgeConfig config = BridgeConfigFactory.getConfig();
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
         String host = config.getProperty("redis.host");
@@ -181,4 +187,21 @@ public class BridgeSpringConfig {
                 .build();
         return new DynamoDBMapper(client, mapperConfig);
     }
+    
+    // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
+    @Bean(name = "stormpathClient")
+    public Client getStormpathClient(BridgeConfig config) {
+        ApiKey apiKey = ApiKeys.builder()
+            .setId(config.getStormpathId().trim())
+            .setSecret(config.getStormpathSecret().trim()).build();
+        return Clients.builder().setApiKey(apiKey).build();
+    }
+
+    // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
+    @Bean(name = "stormpathApplication")
+    @Autowired
+    public Application getStormpathApplication(BridgeConfig config, Client client) {
+        return client.getResource(config.getStormpathApplicationHref().trim(), Application.class);
+    }
+    
 }

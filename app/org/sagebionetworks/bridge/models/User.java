@@ -3,11 +3,9 @@ package org.sagebionetworks.bridge.models;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.accounts.Account;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Sets;
-import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.group.Group;
 
 @BridgeTypeName("User")
 public class User implements BridgeEntity {
@@ -30,12 +28,10 @@ public class User implements BridgeEntity {
     public User(Account account) {
         this.email = account.getEmail();
         this.username = account.getUsername();
-        this.firstName = account.getGivenName();
-        this.lastName = account.getSurname();
-        this.id = account.getHref().split("/accounts/")[1];
-        for (Group group : account.getGroups()) {
-            roles.add(group.getName());
-        }
+        this.firstName = account.getFirstName();
+        this.lastName = account.getLastName();
+        this.id = account.getId();
+        this.roles = account.getRoles();
     }
 
     public User(String id, String email) {
@@ -145,10 +141,6 @@ public class User implements BridgeEntity {
         return this.roles.contains(role);
     }
 
-    @JsonIgnore
-    public String getStormpathHref() {
-        return (id == null) ? null : ("https://api.stormpath.com/v1/accounts/" + id);
-    }
     @Override
     public int hashCode() {
         final int prime = 31;

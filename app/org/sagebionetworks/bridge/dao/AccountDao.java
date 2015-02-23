@@ -38,9 +38,10 @@ public interface AccountDao {
     /**
      * Sign up sends an email address with a link that includes a one-time token for verification. That email
      * can be resent by calling this method.
+     * @param studyIdentifier
      * @param email
      */
-    public void resendEmailVerificationToken(Email email);
+    public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email);
     
     /**
      * Request that an email be sent to the account holder with a link to reset a password, including a 
@@ -66,7 +67,9 @@ public interface AccountDao {
     public Account authenticate(Study study, SignIn signIn);
     
     /**
-     * Get an account in the context of a study by the email address. 
+     * Get an account in the context of a study by the email address. Returns null if 
+     * there is no account, it is up to callers to translate this into the appropriate 
+     * exception, if any. 
      * @param study
      * @param email
      * @return

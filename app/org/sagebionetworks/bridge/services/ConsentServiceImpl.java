@@ -2,15 +2,15 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
-import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserConsent;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
@@ -19,18 +19,14 @@ import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
-
-import com.stormpath.sdk.account.Account;
-
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class ConsentServiceImpl implements ConsentService {
 
     private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
 
-    private AuthenticationService authService;
+    private AccountDao accountDao;
     private JedisStringOps stringOps;
-    private AccountEncryptionService accountEncryptionService;
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
@@ -40,14 +36,10 @@ public class ConsentServiceImpl implements ConsentService {
         this.stringOps = stringOps;
     }
 
-    public void setAuthenticationService(AuthenticationService authService) {
-        this.authService = authService;
+    public void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
-
-    public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
-        this.accountEncryptionService = accountEncryptionService;
-    }
-
+    
     public void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
     }
@@ -59,13 +51,14 @@ public class ConsentServiceImpl implements ConsentService {
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
-
+    
     @Override
-    public ConsentSignature getConsentSignature(final User caller, final StudyIdentifier studyIdentifier) {
-        checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
-        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
-        Account account = authService.getAccount(caller.getEmail());
-        ConsentSignature consentSignature = accountEncryptionService.getConsentSignature(studyIdentifier, account);
+    public ConsentSignature getConsentSignature(final Study study, final User user) {
+        checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        
+        Account account = accountDao.getAccount(study, user.getEmail());
+        ConsentSignature consentSignature = account.getConsentSignature();
         if (consentSignature != null) {
             return consentSignature;
         }
@@ -73,65 +66,56 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public User consentToResearch(final User caller, final ConsentSignature consentSignature,
-            final Study study, final boolean sendEmail) throws BridgeServiceException {
+    public User consentToResearch(final Study study, final User user, final ConsentSignature consentSignature,
+            final boolean sendEmail) {
 
-        checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
+        checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
 
-        // Both of these are validation and should ideally be in the validator, but that was
-        // tied to object creation and deserialization, happening multiple places in the
-        // codebase.
-        if (caller.doesConsent()) {
+        if (user.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
         }
         ConsentAgeValidator validator = new ConsentAgeValidator(study);
         Validate.entityThrowingException(validator, consentSignature);
 
-        // Stormpath account
-        final Account account = authService.getAccount(caller.getEmail());
-        HealthId hid = accountEncryptionService.getHealthCode(study, account);
-        if (hid == null) {
-            hid = accountEncryptionService.createAndSaveHealthCode(study, account);
-        }
-        final String healthCode = hid.getCode();
+        Account account = accountDao.getAccount(study, user.getEmail());
 
+        account.setConsentSignature(consentSignature);
+        accountDao.updateAccount(study, account);
+        
         final StudyConsent studyConsent = studyConsentDao.getConsent(study);
 
         incrementStudyEnrollment(study);
         try {
-            userConsentDao.giveConsent(healthCode, studyConsent);
+            userConsentDao.giveConsent(user.getHealthCode(), studyConsent);
         } catch (Throwable e) {
             decrementStudyEnrollment(study);
             throw e;
         }
 
-        accountEncryptionService.putConsentSignature(study, account, consentSignature);
-
         if (sendEmail) {
-            sendMailService.sendConsentAgreement(caller, consentSignature, studyConsent);
+            sendMailService.sendConsentAgreement(user, consentSignature, studyConsent);
         }
 
-        caller.setConsent(true);
-        caller.setHealthCode(healthCode);
-        return caller;
+        user.setConsent(true);
+        return user;
     }
 
     @Override
-    public boolean hasUserConsentedToResearch(User caller, StudyIdentifier studyIdentifier) {
-        checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
+    public boolean hasUserConsentedToResearch(StudyIdentifier studyIdentifier, User user) {
+        checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
 
-        return userConsentDao.hasConsented(caller.getHealthCode(), studyIdentifier);
+        return userConsentDao.hasConsented(user.getHealthCode(), studyIdentifier);
     }
 
     @Override
-    public boolean hasUserSignedMostRecentConsent(User caller, StudyIdentifier studyIdentifier) {
-        checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
+    public boolean hasUserSignedMostRecentConsent(StudyIdentifier studyIdentifier, User user) {
+        checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
 
-        UserConsent userConsent = userConsentDao.getUserConsent(caller.getHealthCode(), studyIdentifier);
+        UserConsent userConsent = userConsentDao.getUserConsent(user.getHealthCode(), studyIdentifier);
         StudyConsent mostRecentConsent = studyConsentDao.getConsent(studyIdentifier);
 
         if (mostRecentConsent != null && userConsent != null) {
@@ -145,37 +129,34 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public User withdrawConsent(User caller, Study study) {
-        checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
+    public void withdrawConsent(Study study, User user) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-
-        String healthCode = caller.getHealthCode();
-        if (userConsentDao.withdrawConsent(healthCode, study)) {
+        checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
+        
+        if (userConsentDao.withdrawConsent(user.getHealthCode(), study)) {
             decrementStudyEnrollment(study);
-            caller.setConsent(false);
+            Account account = accountDao.getAccount(study, user.getEmail());
+            account.setConsentSignature(null);
+            accountDao.updateAccount(study, account);
+            user.setConsent(false);
         }
-
-        Account account = authService.getAccount(caller.getEmail());
-        accountEncryptionService.removeConsentSignature(study, account);
-
-        return caller;
     }
 
     @Override
-    public void emailConsentAgreement(final User caller, final StudyIdentifier studyIdentifier) {
-        checkNotNull(caller, Validate.CANNOT_BE_NULL, "user");
-        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
+    public void emailConsentAgreement(final Study study, final User user) {
+        checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "studyIdentifier");
 
-        final StudyConsent consent = studyConsentDao.getConsent(studyIdentifier);
+        final StudyConsent consent = studyConsentDao.getConsent(study);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
 
-        final ConsentSignature consentSignature = getConsentSignature(caller, studyIdentifier);
+        final ConsentSignature consentSignature = getConsentSignature(study, user);
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
-        sendMailService.sendConsentAgreement(caller, consentSignature, consent);
+        sendMailService.sendConsentAgreement(user, consentSignature, consent);
     }
 
     @Override

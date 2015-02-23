@@ -2,24 +2,27 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Iterator;
+
+import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
+import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.RedisKey;
-
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.account.AccountList;
-import com.stormpath.sdk.group.Group;
+import com.google.common.base.Preconditions;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class UserAdminServiceImpl implements UserAdminService {
@@ -27,13 +30,19 @@ public class UserAdminServiceImpl implements UserAdminService {
     private static final Logger logger = LoggerFactory.getLogger(UserAdminServiceImpl.class);
 
     private AuthenticationServiceImpl authenticationService;
+    private AccountDao accountDao;
     private ConsentService consentService;
     private HealthDataService healthDataService;
+    private HealthIdDao healthIdDao;
     private StudyService studyService;
     private DistributedLockDao lockDao;
 
     public void setAuthenticationService(AuthenticationServiceImpl authenticationService) {
         this.authenticationService = authenticationService;
+    }
+    
+    public void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
 
     public void setConsentService(ConsentService consentService) {
@@ -52,10 +61,13 @@ public class UserAdminServiceImpl implements UserAdminService {
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
+    
+    public void setHealthIdDao(HealthIdDao healthIdDao) {
+        this.healthIdDao = healthIdDao;
+    }
 
     @Override
-    public UserSession createUser(SignUp signUp, Study study, boolean signUserIn, boolean consentUser)
-            throws BridgeServiceException {
+    public UserSession createUser(SignUp signUp, Study study, boolean signUserIn, boolean consentUser) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
         checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
@@ -71,7 +83,7 @@ public class UserAdminServiceImpl implements UserAdminService {
             if (consentUser) {
                 String sig = String.format("[Signature for %s]", signUp.getEmail());;
                 ConsentSignature consent = ConsentSignature.create(sig, "1989-08-19", null, null);
-                consentService.consentToResearch(newUserSession.getUser(), consent, study, false);
+                consentService.consentToResearch(study, newUserSession.getUser(), consent, false);
             }
         }
         if (!signUserIn) {
@@ -82,13 +94,23 @@ public class UserAdminServiceImpl implements UserAdminService {
     }
 
     @Override
-    public void deleteUser(String userEmail) throws BridgeServiceException {
-        checkNotNull(userEmail, "User email cannot be null");
+    public void deleteUser(Study study, String email) {
+        checkNotNull(study);
+        Preconditions.checkArgument(StringUtils.isNotBlank(email));         
+        
+        Account account = accountDao.getAccount(study, email);
+        if (account != null) {
+            deleteUser(account);    
+        }
+    }
+    
+    void deleteUser(Account account) {
+        checkNotNull(account);
 
         int retryCount = 0;
         boolean shouldRetry = true;
         while (shouldRetry) {
-            boolean deleted = deleteUserAttempt(userEmail);
+            boolean deleted = deleteUserAttempt(account);
             if (deleted) {
                 return;
             }
@@ -103,30 +125,29 @@ public class UserAdminServiceImpl implements UserAdminService {
     }
 
     @Override
-    public void deleteAllUsers(Group group) throws BridgeServiceException {
-        AccountList accounts = group.getAccounts();
-        for (Account account : accounts) {
-            deleteUser(account.getEmail());
+    public void deleteAllUsers(String role) {
+        Iterator<Account> iterator = accountDao.getAllAccounts();
+        while(iterator.hasNext()) {
+            Account account = iterator.next();
+            if (account.getRoles().contains(role)) {
+                deleteUser(account);
+            }
         }
     }
 
-    private boolean deleteUserAttempt(String userEmail) {
-        String key = RedisKey.USER_LOCK.getRedisKey(userEmail);
+    private boolean deleteUserAttempt(Account account) {
+        String key = RedisKey.USER_LOCK.getRedisKey(account.getEmail());
         String lock = null;
         boolean success = false;
         try {
             lock = lockDao.acquireLock(User.class, key);
-
-            Account account = authenticationService.getAccount(userEmail);
             if (account != null) {
-                for (Study study : studyService.getStudies()) {
-                    User user = authenticationService.getSessionFromAccount(study, account).getUser();
-                    deleteUserInStudy(study, account, user);
-                }
-                account.delete();
+                Study study = studyService.getStudy(account.getStudyIdentifier());
+                deleteUserInStudy(study, account);
+                accountDao.deleteAccount(study, account.getEmail());
+                // Check if the delete succeeded
+                success = accountDao.getAccount(study, account.getEmail()) == null ? true : false;
             }
-            // Check if the delete succeeded in Stormpath.
-            success = authenticationService.getAccount(userEmail) == null ? true : false;
         } catch(Throwable t) {
             success = false;
             logger.error(t.getMessage(), t);
@@ -140,21 +161,26 @@ public class UserAdminServiceImpl implements UserAdminService {
         return success;
     }
 
-    private boolean deleteUserInStudy(Study study, Account account, User user) throws BridgeServiceException {
+    private boolean deleteUserInStudy(Study study, Account account) throws BridgeServiceException {
         checkNotNull(study);
         checkNotNull(account);
-        checkNotNull(user);
 
         try {
-            consentService.withdrawConsent(user, study);
+            // health id/code are not assigned until consent is given. They may not exist.
+            if (account.getHealthId() != null) {
+                // This is the fastest way to do this that I know of
+                String healthCode = healthIdDao.getCode(account.getHealthId());
+                User user = new User(account);
+                user.setHealthCode(healthCode);
+                
+                consentService.withdrawConsent(study, user);
 
-            // AuthenticationServiceImpl.getHealthCode() ensures that health code will be defined. However, this is
-            // some defensive coding to keep our services robust.
-            String healthCode = user.getHealthCode();
-            if (!StringUtils.isBlank(healthCode)) {
-                healthDataService.deleteRecordsForHealthCode(healthCode);
+                // AuthenticationServiceImpl.getHealthCode() ensures that health code will be defined. However, this is
+                // some defensive coding to keep our services robust.
+                if (!StringUtils.isBlank(healthCode)) {
+                    healthDataService.deleteRecordsForHealthCode(healthCode);
+                }
             }
-
             return true;
         } catch (Throwable e) {
             logger.error(e.getMessage(), e);

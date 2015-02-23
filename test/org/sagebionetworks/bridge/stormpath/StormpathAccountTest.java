@@ -197,10 +197,17 @@ public class StormpathAccountTest {
     }
     
     @Test
+    public void retrievingNullEncryptedFieldReturnsNull() {
+        String phone = acct.getPhone();
+        assertNull(phone);
+    }
+    
+    @Test
     public void canSetAndGetRoles() {
         acct.getRoles().add("aRole");
         
         assertEquals(1, acct.getRoles().size());
         assertEquals("aRole", acct.getRoles().iterator().next());
     }
+    
 }
