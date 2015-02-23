@@ -305,7 +305,7 @@ public class StormpathAccountDao implements AccountDao {
         } else if (e.getCode() == 7104) { // account not found in the directory
             throw new EntityNotFoundException(Account.class);
         }
-        throw new ServiceUnavailableException(e.getCode() + ": " + e.getMessage());
+        throw new ServiceUnavailableException(e);
     }
     
     private void updateGroups(Directory directory, Account account) {
