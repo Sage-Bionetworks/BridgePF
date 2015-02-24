@@ -150,8 +150,6 @@ public class StormpathAccountDao implements AccountDao {
             
             status = client.executeMethod(post);
             responseBody = post.getResponseBody();
-            
-            System.out.println(status);
 
         } catch(ResourceException e) {
             rethrowResourceException(e, null);
