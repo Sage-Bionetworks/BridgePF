@@ -10,6 +10,8 @@ import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,10 +70,10 @@ public class AuthenticationController extends BaseController {
     }
     
     public Result resendEmailVerification() throws Exception {
-        Study study = studyService.getStudy(getStudyIdentifier());
         Email email = Email.fromJson(requestToJSON(request()));
+        StudyIdentifier studyIdentifier = new StudyIdentifierImpl(getStudyIdentifier());
         
-        authenticationService.resendEmailVerification(study, email);
+        authenticationService.resendEmailVerification(studyIdentifier, email);
         return okResult("A request to verify an email address was re-sent.");
     }
 

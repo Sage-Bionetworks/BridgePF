@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -19,7 +20,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.User;
@@ -37,9 +38,6 @@ public class StormPathUserAdminServiceTest {
 
     @Resource
     AuthenticationServiceImpl authService;
-
-    @Resource
-    UserAdminServiceImpl service;
 
     @Resource
     BridgeConfig bridgeConfig;
@@ -79,21 +77,15 @@ public class StormPathUserAdminServiceTest {
     @After
     public void after() {
         if (testUser != null) {
-            userAdminService.deleteUser(testUser.getEmail());
+            userAdminService.deleteUser(study, testUser.getEmail());
         }
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void cannotCreateUserIdempotently() {
-        testUser = service.createUser(signUp, study, true, true).getUser();
-        testUser = service.createUser(signUp, study, true, true).getUser();
     }
 
     @Test(expected = BridgeServiceException.class)
     public void deletedUserHasBeenDeleted() {
-        testUser = service.createUser(signUp, study, true, true).getUser();
+        testUser = userAdminService.createUser(signUp, study, true, true).getUser();
 
-        service.deleteUser(testUser.getEmail());
+        userAdminService.deleteUser(study, testUser.getEmail());
 
         // This should fail with a 404.
         authService.signIn(study, new SignIn(signUp.getEmail(), signUp.getPassword()));
@@ -101,7 +93,7 @@ public class StormPathUserAdminServiceTest {
 
     @Test
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
-        UserSession session1 = service.createUser(signUp, study, false, false);
+        UserSession session1 = userAdminService.createUser(signUp, study, false, false);
         assertNull("No session", session1);
 
         try {
@@ -111,24 +103,34 @@ public class StormPathUserAdminServiceTest {
             testUser = e.getUserSession().getUser();
         }
     }
+
+    // Next two test the same thing in two different ways.
+    
+    @Test(expected = EntityAlreadyExistsException.class)
+    public void cannotCreateTheSameUserTwice() {
+        testUser = userAdminService.createUser(signUp, study, true, true).getUser();
+        testUser = userAdminService.createUser(signUp, study, true, true).getUser();
+    }
     
     @Test
     public void cannotCreateUserWithSameUsernameOrEmail() {
-        service.createUser(signUp, study, false, false);
+        testUser = userAdminService.createUser(signUp, study, true, false).getUser();
         
         try {
             SignUp sameWithDifferentUsername = new SignUp(RandomStringUtils.randomAlphabetic(8), signUp.getEmail(), signUp.getPassword(), null);
-            service.createUser(sameWithDifferentUsername, study, false, false);
-        } catch(InvalidEntityException e) {
-            assertEquals("SignUp is invalid: email has already been registered", e.getMessage());
+            userAdminService.createUser(sameWithDifferentUsername, study, false, false);
+            fail("Sign up with email already in use should throw an exception");
+        } catch(EntityAlreadyExistsException e) {
+            assertEquals("Account already exists.", e.getMessage());
         }
         try {
             String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
             String email = name+"@sagebridge.org";
             SignUp sameWithDifferentEmail = new SignUp(signUp.getUsername(), email, signUp.getPassword(), null);
-            service.createUser(sameWithDifferentEmail, study, false, false);
-        } catch(InvalidEntityException e) {
-            assertEquals("SignUp is invalid: username has already been registered", e.getMessage());
+            userAdminService.createUser(sameWithDifferentEmail, study, false, false);
+            fail("Sign up with username already in use should throw an exception");
+        } catch(EntityAlreadyExistsException e) { 
+            assertEquals("Account already exists.", e.getMessage());
         }
         
     }

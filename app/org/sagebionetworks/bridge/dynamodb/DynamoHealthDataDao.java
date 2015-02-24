@@ -16,12 +16,22 @@ import org.springframework.stereotype.Component;
 @Component
 public class DynamoHealthDataDao implements HealthDataDao {
     private DynamoDBMapper mapper;
+    private DynamoIndexHelper healthCodeIndex;
     private DynamoIndexHelper uploadDateIndex;
 
     /** DynamoDB mapper for the HealthDataRecord table. This is configured by Spring. */
     @Resource(name = "healthDataDdbMapper")
     public void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
+    }
+
+    /**
+     * DynamoDB Index reference for the healthCode index. This is needed because the DynamoDB mapper does allow queries
+     * using global secondary indices. This is configured by Spring
+     */
+    @Resource(name = "healthDataHealthCodeIndex")
+    public void setHealthCodeIndex(DynamoIndexHelper healthCodeIndex) {
+        this.healthCodeIndex = healthCodeIndex;
     }
 
     /**
@@ -44,6 +54,19 @@ public class DynamoHealthDataDao implements HealthDataDao {
         // persist to DDB
         mapper.save(dynamoRecord);
         return id;
+    }
+
+    /** {@inheritDoc} */
+    public int deleteRecordsForHealthCode(@Nonnull String healthCode) {
+        // query for the keys we need to delete
+        List<HealthDataRecord> keysToDelete = healthCodeIndex.queryKeys(HealthDataRecord.class, "healthCode",
+                healthCode);
+
+        // and then delete
+        List<DynamoDBMapper.FailedBatch> failureList = mapper.batchDelete(keysToDelete);
+        BridgeUtils.ifFailuresThrowException(failureList);
+
+        return keysToDelete.size();
     }
 
     /** {@inheritDoc} */

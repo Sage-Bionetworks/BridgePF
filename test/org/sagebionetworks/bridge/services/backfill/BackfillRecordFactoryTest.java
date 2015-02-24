@@ -14,10 +14,10 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.dao.BackfillDao;
 import org.sagebionetworks.bridge.models.BackfillRecord;
 import org.sagebionetworks.bridge.models.BackfillTask;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.stormpath.sdk.account.Account;
 
 public class BackfillRecordFactoryTest {
 
