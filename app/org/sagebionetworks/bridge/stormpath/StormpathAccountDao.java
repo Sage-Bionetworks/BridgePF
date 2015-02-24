@@ -21,9 +21,11 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
@@ -51,16 +53,17 @@ import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupMembership;
 import com.stormpath.sdk.impl.resource.AbstractResource;
 import com.stormpath.sdk.resource.ResourceException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StormpathAccountDao implements AccountDao {
 
-    // private static Logger logger = LoggerFactory.getLogger(StormpathAccountDao.class);
+    private static Logger logger = LoggerFactory.getLogger(StormpathAccountDao.class);
 
     private Application application;
     private Client client;
     private StudyService studyService;
     private SortedMap<Integer,Encryptor> encryptors = Maps.newTreeMap();
-    
     
     public void setStormpathApplication(Application application) {
         this.application = application;
@@ -107,12 +110,17 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(study);
         checkNotNull(verification);
         
-        com.stormpath.sdk.account.Account acct = client.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
-        return (acct == null) ? null : new StormpathAccount(study, acct, encryptors);
+        try {
+            com.stormpath.sdk.account.Account acct = client.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
+            return (acct == null) ? null : new StormpathAccount(study, acct, encryptors);
+        } catch(ResourceException e) {
+            rethrowResourceException(e, null);
+        }
+        return null;
     }
-
+    
     @Override
-    public void resendEmailVerificationToken(Email email) {
+    public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
         checkNotNull(email);
 
         // This is painful, it's not in the Java SDK. I hope we can come back to this when it's in their SDK
@@ -124,13 +132,13 @@ public class StormpathAccountDao implements AccountDao {
             BridgeConfig config = BridgeConfigFactory.getConfig();
             
             String bodyJson = "{\"login\":\""+email.getEmail()+"\"}";
-            String applicationId = StormpathFactory.getApplicationId();
             
             HttpClient client = new HttpClient(manager);
             
-            PostMethod post = new PostMethod("https://api.stormpath.com/v1/applications/"+applicationId+"/verificationEmails");
+            PostMethod post = new PostMethod(this.application.getHref() + "/verificationEmails");
             post.setRequestHeader("Accept", "application/json");
             post.setRequestHeader("Content-Type", "application/json");
+            post.setRequestHeader("Bridge-Study", studyIdentifier.getIdentifier());
             post.setRequestEntity(new StringRequestEntity(bodyJson, "application/json", "UTF-8"));
 
             UsernamePasswordCredentials creds = new UsernamePasswordCredentials(
@@ -142,7 +150,11 @@ public class StormpathAccountDao implements AccountDao {
             
             status = client.executeMethod(post);
             responseBody = post.getResponseBody();
+            
+            System.out.println(status);
 
+        } catch(ResourceException e) {
+            rethrowResourceException(e, null);
         } catch(Throwable throwable) {
             throw new BridgeServiceException(throwable);
         } finally {
@@ -151,19 +163,18 @@ public class StormpathAccountDao implements AccountDao {
         // If it *wasn't* a 202, then there should be a JSON message included with the response...
         if (status != 202) {
             // One common response, that the email no longer exists, we have mapped to a 404, so do that 
-            // here as well. Otherwise we treat it on the API side as a 500 error, a server problem.
+            // here as well. Otherwise we treat it on the API side as a 503 error, a service unavailable problem.
+            JsonNode node = null;
             try {
-                JsonNode node = BridgeObjectMapper.get().readTree(responseBody);
-                String message = node.get("message").asText();
-                if (message.contains("does not match a known resource")) {
-                    status = 404;
-                } else {
-                    status = 500;
-                }
-                throw new BridgeServiceException(message, status);
+                node = BridgeObjectMapper.get().readTree(responseBody);    
             } catch(IOException e) {
                 throw new BridgeServiceException(e);
             }
+            String message = node.get("message").asText();
+            if (message.contains("does not match a known resource")) {
+                throw new EntityNotFoundException(Account.class);
+            }
+            throw new ServiceUnavailableException(message);
         }
     }
 
@@ -221,12 +232,11 @@ public class StormpathAccountDao implements AccountDao {
         
         AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email))
                 .withGroups().withGroupMemberships());
-        if (!accounts.iterator().hasNext()) {
-            throw new EntityNotFoundException(Account.class);
+        if (accounts.iterator().hasNext()) {
+            com.stormpath.sdk.account.Account acct = accounts.iterator().next();
+            return new StormpathAccount(study.getStudyIdentifier(), acct, encryptors);
         }
-        com.stormpath.sdk.account.Account acct = accounts.iterator().next();
-        StormpathAccount account = new StormpathAccount(study.getStudyIdentifier(), acct, encryptors);
-        return account;
+        return null;
     }
     
     @Override 
@@ -240,9 +250,10 @@ public class StormpathAccountDao implements AccountDao {
         account.setEmail(signUp.getEmail());
         account.setFirstName(StormpathAccount.PLACEHOLDER_STRING);
         account.setLastName(StormpathAccount.PLACEHOLDER_STRING);
-        account.getRoles().addAll(signUp.getRoles());
         acct.setPassword(signUp.getPassword());
-        
+        if (signUp.getRoles() != null) {
+            account.getRoles().addAll(signUp.getRoles());    
+        }
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             directory.createAccount(acct, sendEmail);
@@ -266,6 +277,9 @@ public class StormpathAccountDao implements AccountDao {
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             updateGroups(directory, account);
+            
+            acct.getCustomData().save();
+            
             // This will throw an exception if the account object has not changed, which it may not have
             // if this call was made simply to persist a change in the groups. To get around this, we dig 
             // into the implementation internals of the account because the Stormpath code is tracking the 
@@ -290,12 +304,19 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     private void rethrowResourceException(ResourceException e, Account account) {
-        if (e.getCode() == 2001) { // must be unique (email isn't unique)
+        logger.info("Stormpath error code: " + e.getCode() + ", exception: " + e.getMessage());
+        switch(e.getCode()) {
+        case 2001: // must be unique (email isn't unique)
             throw new EntityAlreadyExistsException(account);
-        } else if (e.getCode() == 7104) { // account not found in the directory
+        case 400:
+            throw new BadRequestException("Invalid email or password");
+        case 404:
+        case 7104: // account not found in the directory
+        case 2016: // "Property value does not match a known resource." somehow this equals not found
             throw new EntityNotFoundException(Account.class);
+        default:
+            throw new ServiceUnavailableException(e);
         }
-        throw new BridgeServiceException(e);
     }
     
     private void updateGroups(Directory directory, Account account) {

@@ -2,31 +2,20 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.httpclient.auth.AuthScope.ANY;
 
-import java.io.IOException;
-import java.util.Set;
-
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.SimpleHttpConnectionManager;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
-import org.apache.commons.httpclient.auth.AuthPolicy;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.HealthId;
@@ -35,75 +24,70 @@ import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.stormpath.StormpathFactory;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.validators.PasswordResetValidator;
+import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.SignUpValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.validation.Validator;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
-import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.account.AccountList;
-import com.stormpath.sdk.account.Accounts;
-import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.authc.AuthenticationRequest;
-import com.stormpath.sdk.authc.UsernamePasswordRequest;
-import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.Directory;
-import com.stormpath.sdk.group.Group;
-import com.stormpath.sdk.group.GroupList;
-import com.stormpath.sdk.resource.ResourceException;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
-
+    
     private DistributedLockDao lockDao;
-    private Client stormpathClient;
     private CacheProvider cacheProvider;
     private BridgeConfig config;
-    private AccountEncryptionService accountEncryptionService;
     private ConsentService consentService;
     private ParticipantOptionsService optionsService;
-    private Validator signInValidator;
-    private Validator passwordResetValidator;
+    private AccountDao accountDao;
+    private HealthCodeService healthCodeService;
+    private SignInValidator signInValidator;
+    private SignUpValidator signUpValidator;
+    private PasswordResetValidator passwordResetValidator;
 
+    @Autowired
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
-
-    public void setStormpathClient(Client client) {
-        this.stormpathClient = client;
-    }
-
+    @Autowired
     public void setCacheProvider(CacheProvider cache) {
         this.cacheProvider = cache;
     }
-
+    @Autowired
     public void setBridgeConfig(BridgeConfig config) {
         this.config = config;
     }
-
-    public void setAccountEncryptionService(AccountEncryptionService accountEncryptionService) {
-        this.accountEncryptionService = accountEncryptionService;
-    }
-
+    @Autowired
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
-
+    @Autowired
     public void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
-
-    public void setSignInValidator(Validator validator) {
+    @Autowired
+    public void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
+    }
+    @Autowired
+    public void setHealthCodeService(HealthCodeService healthCodeService) {
+        this.healthCodeService = healthCodeService;
+    }
+    @Autowired
+    public void setSignInValidator(SignInValidator validator) {
         this.signInValidator = validator;
     }
-
-    public void setPasswordResetValidator(Validator validator) {
+    @Autowired
+    public void setSignUpValidator(SignUpValidator validator) {
+        this.signUpValidator = validator;
+    }
+    @Autowired
+    public void setPasswordResetValidator(PasswordResetValidator validator) {
         this.passwordResetValidator = validator;
     }
 
@@ -122,31 +106,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         Validate.entityThrowingException(signInValidator, signIn);
 
-        final long start = System.nanoTime();
-        AuthenticationRequest<?, ?> request = null;
-        UserSession session = null;
-        try {
-            Application application = StormpathFactory.getStormpathApplication();
-            logger.debug("sign in create app " + (System.nanoTime() - start) );
-            request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword());
-            Account account = application.authenticateAccount(request).getAccount();
-            logger.debug("sign in authenticate " + (System.nanoTime() - start));
-            session = getSessionFromAccount(study, account);
-            cacheProvider.setUserSession(session.getSessionToken(), session);
+        Account account = accountDao.authenticate(study, signIn);
+        UserSession session = getSessionFromAccount(study, account);
+        cacheProvider.setUserSession(session.getSessionToken(), session);
 
-            if (!session.getUser().doesConsent()) {
-                throw new ConsentRequiredException(session);
-            }
-
-        } catch (ResourceException re) {
-            throw new EntityNotFoundException(User.class, re.getDeveloperMessage());
-        } finally {
-            if (request != null) {
-                request.clear();
-            }
+        if (!session.getUser().doesConsent()) {
+            throw new ConsentRequiredException(session);
         }
-        final long end = System.nanoTime();
-        logger.debug("sign in service " + (end - start));
 
         return session;
     }
@@ -168,30 +134,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         try {
             lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail());
 
-            SignUpValidator validator = new SignUpValidator(this);
-            Validate.entityThrowingException(validator, signUp);
-
+            Validate.entityThrowingException(signUpValidator, signUp);
             if (consentService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }
+            accountDao.signUp(study, signUp, sendEmail);
 
-            Directory directory = stormpathClient.getResource(study.getStormpathHref(), Directory.class);
-            // Create Stormpath account
-            Account account = stormpathClient.instantiate(Account.class);
-            account.setGivenName("<EMPTY>");
-            account.setSurname("<EMPTY>");
-            account.setEmail(signUp.getEmail());
-            account.setUsername(signUp.getUsername());
-            account.setPassword(signUp.getPassword());
-
-            directory.createAccount(account, sendEmail);
-            addAccountToGroups(directory, account, signUp.getRoles());
-
-            // Assign a health code
-            accountEncryptionService.createAndSaveHealthCode(study, account);
-
-        } catch (ResourceException re) {
-            throw new BadRequestException(re.getDeveloperMessage());
         } finally {
             lockDao.releaseLock(SignUp.class, signUp.getEmail(), lockId);
         }
@@ -202,77 +150,23 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(verification, "Verification object cannot be null");
         checkNotNull(verification.getSptoken(), "Email verification token is required");
 
-        UserSession session = null;
-        try {
-            Account account = stormpathClient.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
+        Account account = accountDao.verifyEmail(study, verification);
+        UserSession session = getSessionFromAccount(study, account);
+        cacheProvider.setUserSession(session.getSessionToken(), session);
 
-            session = getSessionFromAccount(study, account);
-            cacheProvider.setUserSession(session.getSessionToken(), session);
-
-            if (!session.getUser().doesConsent()) {
-                throw new ConsentRequiredException(session);
-            }
-            return session;
-        } catch (ResourceException re) {
-            throw new BadRequestException(re.getDeveloperMessage());
+        if (!session.getUser().doesConsent()) {
+            throw new ConsentRequiredException(session);
         }
+        return session;
     }
     
     @Override
-    public void resendEmailVerification(Study study, Email email) {
+    public void resendEmailVerification(StudyIdentifier studyIdentifier, Email email) {
+        checkNotNull(studyIdentifier, "StudyIdentifier object cannnot be null");
         checkNotNull(email, "Email object cannnot be null");
         checkNotNull(email.getEmail(), "Email is required");
         
-        // This is painful, it's not in the Java SDK. I hope we can come back to this when it's in their SDK
-        // and move it over.
-        SimpleHttpConnectionManager manager = new SimpleHttpConnectionManager();
-        int status = 202; // The Stormpath resend method returns 202 "Accepted" when successful
-        byte[] responseBody = new byte[0];
-        try {
-            BridgeConfig config = BridgeConfigFactory.getConfig();
-            
-            String bodyJson = "{\"login\":\""+email.getEmail()+"\"}";
-            String applicationId = StormpathFactory.getApplicationId();
-            
-            HttpClient client = new HttpClient(manager);
-            
-            PostMethod post = new PostMethod("https://api.stormpath.com/v1/applications/"+applicationId+"/verificationEmails");
-            post.setRequestHeader("Accept", "application/json");
-            post.setRequestHeader("Content-Type", "application/json");
-            post.setRequestEntity(new StringRequestEntity(bodyJson, "application/json", "UTF-8"));
-
-            UsernamePasswordCredentials creds = new UsernamePasswordCredentials(
-                    config.getStormpathId().trim(), config.getStormpathSecret().trim());
-            
-            client.getState().setCredentials(ANY, creds);
-            client.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, Lists.newArrayList(AuthPolicy.DIGEST));
-            client.getParams().setAuthenticationPreemptive(true);
-            
-            status = client.executeMethod(post);
-            responseBody = post.getResponseBody();
-
-        } catch(Throwable throwable) {
-            throw new BridgeServiceException(throwable);
-        } finally {
-            manager.shutdown();
-        }
-        // If it *wasn't* a 202, then there should be a JSON message included with the response...
-        if (status != 202) {
-            // One common response, that the email no longer exists, we have mapped to a 404, so do that 
-            // here as well. Otherwise we treat it on the API side as a 500 error, a server problem.
-            try {
-                JsonNode node = BridgeObjectMapper.get().readTree(responseBody);
-                String message = node.get("message").asText();
-                if (message.contains("does not match a known resource")) {
-                    status = 404;
-                } else {
-                    status = 500;
-                }
-                throw new BridgeServiceException(message, status);
-            } catch(IOException e) {
-                throw new BridgeServiceException(e);
-            }
-        }
+        accountDao.resendEmailVerificationToken(studyIdentifier, email);
     }
 
     @Override
@@ -280,12 +174,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(email, "Email object cannot cannot be null");
         checkArgument(StringUtils.isNotBlank(email.getEmail()), "Email is required");
 
-        try {
-            Application application = StormpathFactory.getStormpathApplication();
-            application.sendPasswordResetEmail(email.getEmail());
-        } catch (ResourceException re) {
-            throw new BadRequestException(re.getDeveloperMessage());
-        }
+        accountDao.requestResetPassword(email);
     }
 
     @Override
@@ -293,56 +182,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(passwordReset, "Password reset object required");
 
         Validate.entityThrowingException(passwordResetValidator, passwordReset);
-        try {
-            Application application = StormpathFactory.getStormpathApplication();
-            Account account = application.verifyPasswordResetToken(passwordReset.getSptoken());
-            account.setPassword(passwordReset.getPassword());
-            account.save();
-        } catch (ResourceException e) {
-            throw new BadRequestException(e.getDeveloperMessage());
-        }
+        
+        accountDao.resetPassword(passwordReset);
     }
 
-    @Override
-    public User getUser(Study study, String email) {
-        Account account = getAccount(email);
-        if (account != null) {
-            return getSessionFromAccount(study, account).getUser();
-        }
-        return null;
-    }
-
-    @Override
-    public Account getAccount(String email) {
-        Application app = StormpathFactory.getStormpathApplication();
-        AccountList accounts = app.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email)));
-        if (accounts.iterator().hasNext()) {
-            return accounts.iterator().next();
-        }
-        return null;
-    }
-    
-    /**
-     * Return the name of the field that has already been used by a prior account, or null if
-     * the sign up credentials are available.
-     */
-    @Override
-    public String isAccountInUse(String username, String email) {
-        // There is no boolean "OR" form of query in the API... you have to use two queries.
-        Application app = StormpathFactory.getStormpathApplication();
-        AccountList accounts = app.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email)));
-        if (accounts.iterator().hasNext()) {
-            return "email";
-        }
-        accounts = app.getAccounts(Accounts.where(Accounts.username().eqIgnoreCase(username)));
-        if (accounts.iterator().hasNext()) {
-            return "username";
-        }
-        return null;
-    }
-
-    @Override
-    public UserSession getSessionFromAccount(Study study, Account account) {
+    private UserSession getSessionFromAccount(Study study, Account account) {
         final UserSession session = new UserSession();
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment().name().toLowerCase());
@@ -354,10 +198,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         final String healthCode = getHealthCode(study, account);
         user.setHealthCode(healthCode);
-
-        user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(user, study));
-        user.setConsent(consentService.hasUserConsentedToResearch(user, study));
         user.setDataSharing(optionsService.getBooleanOption(healthCode, Option.DATA_SHARING));
+        user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(study, user));
+        user.setConsent(consentService.hasUserConsentedToResearch(study, user));
         
         // And now for some exceptions...
 
@@ -366,7 +209,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
             user.setConsent(true);
         }
-        // And then we set *anyone* configured as an admin to have signed the consent as well
+        // And then we set *any* account that has the admin email to be consented as well
         String adminUser = BridgeConfigFactory.getConfig().getProperty("admin.email");
         if (adminUser != null && adminUser.equals(account.getEmail())) {
             user.setConsent(true);
@@ -376,29 +219,23 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return session;
     }
 
-    private void addAccountToGroups(Directory directory, Account account, Set<String> roles) {
-        if (roles != null) {
-            GroupList groups = directory.getGroups();
-            for (Group group : groups) {
-                if (roles.contains(group.getName())) {
-                    account.addGroup(group);
-                }
-            }
-        }
-    }
-
+    /**
+     * Any user who authenticates has a health ID/code generated and assigned. It happens at authentication 
+     * because some users are automatically marked as consented, which means we have these users accessing 
+     * all the APIs that expect users to have health codes, which unknown consequences if they don't. We 
+     * do not have to do it at sign up or when the user actually consents (interestingly enough). 
+     * @param study
+     * @param account
+     * @return
+     */
     private String getHealthCode(Study study, Account account) {
-        HealthId healthId = accountEncryptionService.getHealthCode(study, account);
+        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
         if (healthId == null) {
-            healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
+            healthId = healthCodeService.createMapping(study);
+            account.setHealthId(healthId.getId());
+            accountDao.updateAccount(study, account);
+            logger.debug("Health ID/code pair created for " + account.getEmail() + " in study " + study.getName());
         }
-        String healthCode = healthId.getCode();
-        if (healthCode == null) {
-            healthId = accountEncryptionService.createAndSaveHealthCode(study, account);
-            logger.error("Health code re-created for account " + account.getEmail() + " in study " + study.getName());
-            healthCode = healthId.getCode();
-        }
-        checkNotNull(healthCode);
-        return healthCode;
+        return healthId.getCode();
     }
 }
