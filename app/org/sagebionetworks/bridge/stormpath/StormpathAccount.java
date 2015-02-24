@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.io.IOException;
 import java.util.Set;
@@ -94,7 +96,11 @@ class StormpathAccount implements Account {
     }
     @Override
     public void setFirstName(String firstName) {
-        acct.setGivenName(firstName);
+        if (isBlank(firstName)) {
+            acct.setGivenName(PLACEHOLDER_STRING);
+        } else {
+            acct.setGivenName(firstName);    
+        }
     }
     @Override
     public String getLastName() {
@@ -103,7 +109,11 @@ class StormpathAccount implements Account {
     }
     @Override
     public void setLastName(String lastName) {
-        acct.setSurname(lastName);
+        if (isBlank(lastName)) {
+            acct.setSurname(PLACEHOLDER_STRING);
+        } else {
+            acct.setSurname(lastName);    
+        }
     }
     @Override
     public String getPhone() {

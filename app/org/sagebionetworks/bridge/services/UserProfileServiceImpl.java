@@ -1,11 +1,12 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.User;
@@ -57,7 +58,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
 
         // Verify there is an email address to notify
-        if (StringUtils.isBlank(study.getConsentNotificationEmail())) {
+        if (isBlank(study.getConsentNotificationEmail())) {
             throw new BridgeServiceException("Participant roster cannot be sent because no consent notification contact email exists for this study.");
         }
         Iterator<Account> accounts = accountDao.getStudyAccounts(study);

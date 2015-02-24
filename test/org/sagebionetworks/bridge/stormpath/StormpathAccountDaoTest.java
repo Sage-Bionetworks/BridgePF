@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -14,6 +15,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -33,6 +35,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import com.google.common.collect.Sets;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.resource.ResourceException;
 import com.stormpath.sdk.tenant.Tenant;
 
@@ -227,6 +230,33 @@ public class StormpathAccountDaoTest {
         verify(account).setPassword(passwordReset.getPassword());
         verify(account).save();
         verifyNoMoreInteractions(account);
+    }
+    
+    // This all worked, but appeared to be an issue on staging.
+    @Test
+    public void stormpathAccountCorrectlyInitialized() {
+        StormpathAccountDao dao = new StormpathAccountDao();
+        
+        Directory directory = mock(Directory.class);
+        com.stormpath.sdk.account.Account account = mock(com.stormpath.sdk.account.Account.class);
+        Client client = mock(Client.class);
+        
+        when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(account);
+        when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
+        dao.setStormpathClient(client);
+        
+        SignUp signUp = new SignUp("tester", "bridge-testing+tester@sagebridge.org", "P4ssword", null);
+        dao.signUp(study, signUp, false);
+
+        ArgumentCaptor<com.stormpath.sdk.account.Account> argument = ArgumentCaptor.forClass(com.stormpath.sdk.account.Account.class);
+        verify(directory).createAccount(argument.capture(), anyBoolean());
+        
+        com.stormpath.sdk.account.Account acct = argument.getValue();
+        verify(acct).setSurname("<EMPTY>");
+        verify(acct).setGivenName("<EMPTY>");
+        verify(acct).setEmail("bridge-testing+tester@sagebridge.org");
+        verify(acct).setUsername("tester");
+        verify(acct).setPassword("P4ssword");
     }
 
 }
