@@ -11,6 +11,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -181,6 +182,7 @@ public class StormpathAccountTest {
     }
     
     @Test
+    @Ignore
     public void failsIfNoEncryptorForVersion() {
         try {
             data.put("foo_code", "111");
@@ -212,6 +214,7 @@ public class StormpathAccountTest {
     }
     
     @Test(expected = BridgeServiceException.class)
+    @Ignore
     public void phoneNotRetrievedWithIncorrectVersion() {
         data.put("phone", "encryptedphonenumber");
         data.put("phone_version", 3);
