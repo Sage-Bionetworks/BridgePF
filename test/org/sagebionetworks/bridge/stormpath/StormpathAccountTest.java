@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stormpath.sdk.account.Account;
 import com.stormpath.sdk.directory.CustomData;
 
@@ -38,8 +39,10 @@ public class StormpathAccountTest {
     
     private StormpathAccount acct;
     
+    private String legacySignature;
+    
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         StudyIdentifier studyId = new StudyIdentifierImpl("foo");
         
         account = mock(Account.class);
@@ -59,6 +62,14 @@ public class StormpathAccountTest {
         encryptDecryptValues(encryptor2, "111-222-3333", "111-222-3333-encryptor2encrypted");
         encryptDecryptValues(encryptor2, json, "json-encryptor2encrypted");
         encryptDecryptValues(encryptor2, "555-555-5555", "555-555-5555-encryptor2encrypted");
+        
+        // This must be a passthrough because we're not going to set the signature through
+        // StormpathAccount, we're going to put a legacy state in the map that's stubbing out
+        // The CustomData element, and then verify that we can retrieve and deserialize the consent
+        // even without a version attribute.
+        ConsentSignature sig = ConsentSignature.create("Test", "1970-01-01", "test", "image/png");
+        legacySignature = new ObjectMapper().writeValueAsString(sig);
+        encryptDecryptValues(encryptor2, legacySignature, legacySignature);
         
         SortedMap<Integer,Encryptor> encryptors = new TreeMap<>();
         encryptors.put(1, encryptor1);
@@ -155,6 +166,18 @@ public class StormpathAccountTest {
         
         String healthId = acct.getHealthId();
         assertEquals("aHealthId", healthId);
+    }
+    
+    @Test
+    public void consentSignatureRetrievedWithNoVersion() throws Exception {
+        // There is no version attribute for this. Can still retrieve it.
+        data.put("foo_consent_signature", legacySignature);
+        
+        ConsentSignature restoredSig = acct.getConsentSignature();
+        assertEquals("Test", restoredSig.getName());
+        assertEquals("1970-01-01", restoredSig.getBirthdate());
+        assertEquals("test", restoredSig.getImageData());
+        assertEquals("image/png", restoredSig.getImageMimeType());
     }
     
     @Test
