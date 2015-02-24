@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -70,6 +72,17 @@ public class UserProfileServiceImplTest {
         profileService.sendStudyParticipantRoster(testUser.getStudy());
     }
     
+    @Test
+    public void cannotBreakProfileWithBadFirstLastName() {
+        UserProfile userProfile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
+        userProfile.setFirstName("");
+        userProfile.setLastName(null);
+        profileService.updateProfile(testUser.getStudy(), testUser.getUser(), userProfile);
+        
+        userProfile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
+        assertNull(userProfile.getFirstName());
+        assertNull(userProfile.getLastName());
+    }
     
     @Test
     public void canRetrieveStudyParticipants() {
