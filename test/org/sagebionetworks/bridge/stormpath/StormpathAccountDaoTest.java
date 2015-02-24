@@ -232,7 +232,6 @@ public class StormpathAccountDaoTest {
         verifyNoMoreInteractions(account);
     }
     
-    // This all worked, but appeared to be an issue on staging.
     @Test
     public void stormpathAccountCorrectlyInitialized() {
         StormpathAccountDao dao = new StormpathAccountDao();
