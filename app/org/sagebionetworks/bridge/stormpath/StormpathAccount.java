@@ -49,6 +49,7 @@ class StormpathAccount implements Account {
     private final String healthIdKey;
     private final String consentSignatureKey;
     private final String oldHealthIdVersionKey;
+    private final String oldConsentSignatureKey;
     private final Set<String> roles;
     
     StormpathAccount(StudyIdentifier studyIdentifier, com.stormpath.sdk.account.Account acct,
@@ -65,6 +66,7 @@ class StormpathAccount implements Account {
         this.healthIdKey = studyId + HEALTH_CODE_SUFFIX;
         this.consentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
         this.oldHealthIdVersionKey = studyId + OLD_VERSION_SUFFIX;
+        this.oldConsentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
         this.roles = Sets.newHashSet();
         if (acct.getGroups() != null) {
             for (Group group : acct.getGroups()) {
@@ -229,20 +231,28 @@ class StormpathAccount implements Account {
      * @return
      */
     private Integer getVersionAccountingForExceptions(String key) {
-        Integer version = (Integer)acct.getCustomData().get(key+VERSION_SUFFIX);
+        String versionKey = key+VERSION_SUFFIX;
+        Integer version = (Integer)acct.getCustomData().get(versionKey);
         if (version == null) {
             // Special case #1: the original health id version format is being used (studyIdversion), not the newer per-field key format
             // (studyId_code_version)
             if (healthIdKey.equals(key)) {
-                version = (Integer)acct.getCustomData().get(oldHealthIdVersionKey);
+                versionKey = oldHealthIdVersionKey;
+                version = (Integer)acct.getCustomData().get(versionKey);
             } 
             // Special case #2: phone without a version string
             else if (PHONE_ATTRIBUTE.equals(key)) {
+                versionKey = "[no version for phone]";
+                version = 2;
+            }
+            // Special case #3: existing consent signature has no version. Again, assume version 2 for now. 
+            else if (oldConsentSignatureKey.equals(key)) {
+                versionKey = "[no version for consent signature]";
                 version = 2;
             }
         }
         if (version == null) {
-            throw new BridgeServiceException("No version for encryptor found for field " + key);
+            throw new BridgeServiceException("No version for encryptor found for field " + versionKey);
         }
         return version;
     }
