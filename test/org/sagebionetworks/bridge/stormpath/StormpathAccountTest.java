@@ -65,7 +65,8 @@ public class StormpathAccountTest {
         
         // This must be a passthrough because we're not going to set the signature through
         // StormpathAccount, we're going to put a legacy state in the map that's stubbing out
-        // The CustomData element, and then verify that we can retrieve and deserialize the consent.
+        // The CustomData element, and then verify that we can retrieve and deserialize the consent
+        // even without a version attribute.
         ConsentSignature sig = ConsentSignature.create("Test", "1970-01-01", "test", "image/png");
         legacySignature = new ObjectMapper().writeValueAsString(sig);
         encryptDecryptValues(encryptor2, legacySignature, legacySignature);
