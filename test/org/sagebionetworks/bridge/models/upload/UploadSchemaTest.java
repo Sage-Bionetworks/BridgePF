@@ -162,7 +162,7 @@ public class UploadSchemaTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("test-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -225,7 +225,7 @@ public class UploadSchemaTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -243,7 +243,7 @@ public class UploadSchemaTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -262,7 +262,7 @@ public class UploadSchemaTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -279,7 +279,7 @@ public class UploadSchemaTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -297,7 +297,7 @@ public class UploadSchemaTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate

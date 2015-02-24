@@ -20,20 +20,20 @@ public class UploadFieldDefinitionTest {
     @Test
     public void testBuilder() {
         UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("test-field")
-                .withType(UploadFieldType.BLOB).build();
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build();
         assertEquals("test-field", fieldDef.getName());
         assertTrue(fieldDef.isRequired());
-        assertEquals(UploadFieldType.BLOB, fieldDef.getType());
+        assertEquals(UploadFieldType.ATTACHMENT_BLOB, fieldDef.getType());
     }
 
     @Test(expected = InvalidEntityException.class)
     public void testNullName() {
-        new DynamoUploadFieldDefinition.Builder().withType(UploadFieldType.BLOB).build();
+        new DynamoUploadFieldDefinition.Builder().withType(UploadFieldType.ATTACHMENT_BLOB).build();
     }
 
     @Test(expected = InvalidEntityException.class)
     public void testEmptyName() {
-        new DynamoUploadFieldDefinition.Builder().withName("").withType(UploadFieldType.BLOB).build();
+        new DynamoUploadFieldDefinition.Builder().withName("").withType(UploadFieldType.ATTACHMENT_BLOB).build();
     }
 
     @Test(expected = InvalidEntityException.class)
@@ -44,19 +44,19 @@ public class UploadFieldDefinitionTest {
     @Test
     public void testRequiredTrue() {
         UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("test-field")
-                .withRequired(true).withType(UploadFieldType.BLOB).build();
+                .withRequired(true).withType(UploadFieldType.ATTACHMENT_BLOB).build();
         assertEquals("test-field", fieldDef.getName());
         assertTrue(fieldDef.isRequired());
-        assertEquals(UploadFieldType.BLOB, fieldDef.getType());
+        assertEquals(UploadFieldType.ATTACHMENT_BLOB, fieldDef.getType());
     }
 
     @Test
     public void testRequiredFalse() {
         UploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition.Builder().withName("test-field")
-                .withRequired(false).withType(UploadFieldType.BLOB).build();
+                .withRequired(false).withType(UploadFieldType.ATTACHMENT_BLOB).build();
         assertEquals("test-field", fieldDef.getName());
         assertFalse(fieldDef.isRequired());
-        assertEquals(UploadFieldType.BLOB, fieldDef.getType());
+        assertEquals(UploadFieldType.ATTACHMENT_BLOB, fieldDef.getType());
     }
 
     // branch coverage

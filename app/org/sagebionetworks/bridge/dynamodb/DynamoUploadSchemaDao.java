@@ -28,6 +28,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
             .withExpectedEntry("key", new ExpectedAttributeValue(false));
 
     private DynamoDBMapper mapper;
+    private DynamoIndexHelper studyIdIndex;
 
     /**
      * This is the DynamoDB mapper that reads from and writes to our DynamoDB table. This is normally configured by
@@ -36,6 +37,11 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     @Resource(name = "uploadSchemaDdbMapper")
     public void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
+    }
+
+    @Resource(name = "uploadSchemaStudyIdIndex")
+    public void setStudyIdIndex(DynamoIndexHelper studyIdIndex) {
+        this.studyIdIndex = studyIdIndex;
     }
 
     /** {@inheritDoc} */
@@ -102,5 +108,10 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         } else {
             return schemaList.get(0);
         }
+    }
+
+    /** {@inheritDoc} */
+    public @Nonnull List<UploadSchema> getUploadSchemasForStudyAsMap(@Nonnull String studyId) {
+        return studyIdIndex.query(UploadSchema.class, "studyId", studyId);
     }
 }

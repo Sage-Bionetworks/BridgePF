@@ -1,5 +1,7 @@
 package controllers;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import play.mvc.Result;
@@ -36,7 +38,7 @@ public class UploadSchemaController extends BaseController {
     }
 
     /**
-     * Play controller for GET /researcher/v1/uploadSchema/:schemaId. This API fetches the upload schema with the
+     * Play controller for GET /researcher/v1/uploadSchema/byId/:schemaId. This API fetches the upload schema with the
      * specified ID. If there is more than one revision of the schema, this fetches the latest revision. If the schema
      * doesn't exist, this API throws a 404 exception.
      *
@@ -50,5 +52,19 @@ public class UploadSchemaController extends BaseController {
         
         UploadSchema uploadSchema = uploadSchemaService.getUploadSchema(studyId, schemaId);
         return okResult(uploadSchema);
+    }
+
+    /**
+     * Play controller for GET /researcher/v1/uploadSchema/forStudy. This API fetches all revisions of all upload
+     * schemas in the current study. This is generally used by worker apps to validate uploads against schemas.
+     * @return Play result with list of schemas for this study
+     */
+    public Result getUploadSchemasForStudy() throws Exception {
+        // TODO: When we implement worker accounts, they should have access to the API as well.
+        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        String studyId = session.getStudyIdentifier().getIdentifier();
+
+        List<UploadSchema> schemasByIdAndRev = uploadSchemaService.getUploadSchemasForStudy(studyId);
+        return okResult(schemasByIdAndRev);
     }
 }

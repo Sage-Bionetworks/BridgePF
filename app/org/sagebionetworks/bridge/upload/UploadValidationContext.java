@@ -7,6 +7,7 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
@@ -20,6 +21,8 @@ public class UploadValidationContext {
     private byte[] decryptedData;
     private Map<String, byte[]> unzippedDataMap;
     private Map<String, JsonNode> jsonDataMap;
+    private HealthDataRecordBuilder healthDataRecordBuilder;
+    private Map<String, byte[]> attachmentsByFieldName;
 
     /**
      * This is the study that the upload lives in and is validated against. This is made available by the upload
@@ -117,5 +120,34 @@ public class UploadValidationContext {
     /** @see #getJsonDataMap */
     public void setJsonDataMap(Map<String, JsonNode> jsonDataMap) {
         this.jsonDataMap = jsonDataMap;
+    }
+
+    /**
+     * Health Data Record Builder, used to build a health data record that will be written to the health data record
+     * table. This is initially created by IosSchemaValidationHandler and is finalized and persisted by
+     * UploadArtifactsHandler.
+     */
+    public HealthDataRecordBuilder getHealthDataRecordBuilder() {
+        return healthDataRecordBuilder;
+    }
+
+    /** @see #getHealthDataRecordBuilder */
+    public void setHealthDataRecordBuilder(HealthDataRecordBuilder healthDataRecordBuilder) {
+        this.healthDataRecordBuilder = healthDataRecordBuilder;
+    }
+
+    /**
+     * Map of health data attachments, keyed off the field name in the health data record. These files will be uploaded
+     * to external storage (most likely S3) with metadata stored in Health Data Attachments table and field references
+     * in the health data record. This is created by IosSchemaValidationHandler and is uploaded by
+     * UploadArtifactsHandler.
+     */
+    public Map<String, byte[]> getAttachmentsByFieldName() {
+        return attachmentsByFieldName;
+    }
+
+    /** @see #getAttachmentsByFieldName */
+    public void setAttachmentsByFieldName(Map<String, byte[]> attachmentsByFieldName) {
+        this.attachmentsByFieldName = attachmentsByFieldName;
     }
 }
