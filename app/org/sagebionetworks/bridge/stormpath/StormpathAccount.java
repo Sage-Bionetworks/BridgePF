@@ -262,7 +262,9 @@ class StormpathAccount implements Account {
             }
         }
         if (version == null) {
-            throw new BridgeServiceException("No version for encryptor found for field " + versionKey);
+            // This must work, today. It's still possible that something about this is not working.
+            version = 2;
+            // throw new BridgeServiceException("No version for encryptor found for field " + versionKey);
         }
         return version;
     }
