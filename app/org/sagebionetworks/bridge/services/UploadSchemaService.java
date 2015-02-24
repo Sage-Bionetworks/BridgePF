@@ -1,7 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
-import com.google.common.base.Strings;
+import java.util.List;
 
+import com.google.common.base.Strings;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -73,5 +74,22 @@ public class UploadSchemaService {
             throw new BadRequestException(String.format("Invalid schema ID %s", schemaId));
         }
         return uploadSchemaDao.getUploadSchema(studyIdentifier.getIdentifier(), schemaId);
+    }
+
+    /**
+     * <p>
+     * Service handler for fetching all revisions of all upload schemas in a study. This is used by upload unpacking
+     * and validation to match up the data to the schema.
+     * </p>
+     * <p>
+     * This method does not validate the study ID, as that is not user input.
+     * </p>
+     *
+     * @param studyId
+     *         study ID to fetch all revisions of all schemas from
+     * @return a list of upload schemas
+     */
+    public List<UploadSchema> getUploadSchemasForStudy(String studyId) {
+        return uploadSchemaDao.getUploadSchemasForStudyAsMap(studyId);
     }
 }

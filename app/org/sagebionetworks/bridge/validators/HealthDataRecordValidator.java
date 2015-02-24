@@ -30,6 +30,8 @@ public class HealthDataRecordValidator implements Validator {
      * <li>metadata is null (in Java or in JSON)</li>
      * <li>metadata is not a map (but empty maps are okay)</li>
      * <li>schemaId is null or empty</li>
+     * <li>schemaRevision is zero or negative</li>
+     * <li>studyId is null or empty</li>
      * <li>uploadDate is null</li>
      * </ul>
      * </p>
@@ -86,6 +88,16 @@ public class HealthDataRecordValidator implements Validator {
             // schema ID is non-null and non-empty
             if (StringUtils.isBlank(record.getSchemaId())) {
                 errors.rejectValue("schemaId", Validate.CANNOT_BE_BLANK);
+            }
+
+            // schema revision is positive
+            if (record.getSchemaRevision() <= 0) {
+                errors.rejectValue("schemaRevision", Validate.CANNOT_BE_ZERO_OR_NEGATIVE);
+            }
+
+            // schema ID is non-null and non-empty
+            if (StringUtils.isBlank(record.getStudyId())) {
+                errors.rejectValue("studyId", Validate.CANNOT_BE_BLANK);
             }
 
             // upload date is non-null

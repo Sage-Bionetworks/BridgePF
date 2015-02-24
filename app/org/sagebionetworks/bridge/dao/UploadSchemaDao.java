@@ -2,6 +2,10 @@ package org.sagebionetworks.bridge.dao;
 
 import javax.annotation.Nonnull;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 /** DAO for upload schemas. This encapsulates standard CRUD operations as well as list operations. */
@@ -30,6 +34,16 @@ public interface UploadSchemaDao {
      * @return the fetched schema, will be non-null
      */
     @Nonnull UploadSchema getUploadSchema(@Nonnull String studyId, @Nonnull String schemaId);
+
+    /**
+     * DAO method for fetching all revisions of all upload schemas in a given study. This is used by upload unpacking
+     * and validation to match up the data to the schema.
+     *
+     * @param studyId
+     *         study ID to fetch all revisions of all schemas from
+     * @return a list of upload schemas
+     */
+    @Nonnull List<UploadSchema> getUploadSchemasForStudyAsMap(@Nonnull String studyId);
 
     // TODO add list and delete APIs
 }
