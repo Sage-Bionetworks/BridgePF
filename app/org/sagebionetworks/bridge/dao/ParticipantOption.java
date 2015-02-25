@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.dao;
 
 public enum ParticipantOption {
 
-    @Deprecated
-    DATA_SHARING("true"),
     SCOPE_OF_SHARING(ScopeOfSharing.NO_SHARING.name());
     
     private final String defaultValue;
