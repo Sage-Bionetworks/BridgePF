@@ -45,7 +45,7 @@ public class UploadSchemaServiceTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("test-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // mock dao

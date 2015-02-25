@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 /** DynamoDB implementation of the {@link org.sagebionetworks.bridge.dao.UploadSchemaDao} */
@@ -28,6 +29,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
             .withExpectedEntry("key", new ExpectedAttributeValue(false));
 
     private DynamoDBMapper mapper;
+    private DynamoIndexHelper studyIdIndex;
 
     /**
      * This is the DynamoDB mapper that reads from and writes to our DynamoDB table. This is normally configured by
@@ -36,6 +38,11 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     @Resource(name = "uploadSchemaDdbMapper")
     public void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
+    }
+
+    @Resource(name = "uploadSchemaStudyIdIndex")
+    public void setStudyIdIndex(DynamoIndexHelper studyIdIndex) {
+        this.studyIdIndex = studyIdIndex;
     }
 
     /** {@inheritDoc} */
@@ -102,5 +109,11 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         } else {
             return schemaList.get(0);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @Nonnull List<UploadSchema> getUploadSchemasForStudy(@Nonnull StudyIdentifier studyId) {
+        return studyIdIndex.query(UploadSchema.class, "studyId", studyId.getIdentifier());
     }
 }
