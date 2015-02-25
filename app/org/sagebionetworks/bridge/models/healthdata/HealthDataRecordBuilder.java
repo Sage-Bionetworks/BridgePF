@@ -20,6 +20,8 @@ public abstract class HealthDataRecordBuilder {
     private String id;
     private JsonNode metadata;
     private String schemaId;
+    private int schemaRevision;
+    private String studyId;
     private LocalDate uploadDate;
 
     /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getCreatedOn */
@@ -85,6 +87,28 @@ public abstract class HealthDataRecordBuilder {
     /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getSchemaId */
     public HealthDataRecordBuilder withSchemaId(String schemaId) {
         this.schemaId = schemaId;
+        return this;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getSchemaRevision */
+    public int getSchemaRevision() {
+        return schemaRevision;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getSchemaRevision */
+    public HealthDataRecordBuilder withSchemaRevision(int schemaRevision) {
+        this.schemaRevision = schemaRevision;
+        return this;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getStudyId */
+    public String getStudyId() {
+        return studyId;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getStudyId */
+    public HealthDataRecordBuilder withStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 

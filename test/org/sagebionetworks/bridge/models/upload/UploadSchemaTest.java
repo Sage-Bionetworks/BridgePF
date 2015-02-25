@@ -28,7 +28,7 @@ public class UploadSchemaTest {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setStudyId("api");
         ddbUploadSchema.setSchemaId("test");
-        assertEquals("api$test", ddbUploadSchema.getKey());
+        assertEquals("api:test", ddbUploadSchema.getKey());
     }
 
     @Test(expected = InvalidEntityException.class)
@@ -64,7 +64,7 @@ public class UploadSchemaTest {
     @Test
     public void getStudyAndSchemaFromKey() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setKey("api$test");
+        ddbUploadSchema.setKey("api:test");
         assertEquals("api", ddbUploadSchema.getStudyId());
         assertEquals("test", ddbUploadSchema.getSchemaId());
     }
@@ -90,29 +90,29 @@ public class UploadSchemaTest {
     @Test(expected = IllegalArgumentException.class)
     public void keyWithEmptyStudy() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setKey("$test");
+        ddbUploadSchema.setKey(":test");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void keyWithEmptySchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setKey("api$");
+        ddbUploadSchema.setKey("api:");
     }
 
     @Test
-    public void getKeyWithDollarSignsInSchema() {
+    public void getKeyWithColonsInSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setStudyId("api");
-        ddbUploadSchema.setSchemaId("test$schema");
-        assertEquals("api$test$schema", ddbUploadSchema.getKey());
+        ddbUploadSchema.setSchemaId("test:schema");
+        assertEquals("api:test:schema", ddbUploadSchema.getKey());
     }
 
     @Test
-    public void setKeyWithDashesInSchema() {
+    public void setKeyWithColonsInSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setKey("api$test$schema");
+        ddbUploadSchema.setKey("api:test:schema");
         assertEquals("api", ddbUploadSchema.getStudyId());
-        assertEquals("test$schema", ddbUploadSchema.getSchemaId());
+        assertEquals("test:schema", ddbUploadSchema.getSchemaId());
     }
 
     // branch coverage
@@ -162,7 +162,7 @@ public class UploadSchemaTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("test-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -225,7 +225,7 @@ public class UploadSchemaTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -243,7 +243,7 @@ public class UploadSchemaTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -262,7 +262,7 @@ public class UploadSchemaTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -279,7 +279,7 @@ public class UploadSchemaTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
@@ -297,7 +297,7 @@ public class UploadSchemaTest {
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.BLOB).build());
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
         // validate

@@ -35,12 +35,14 @@ public class HealthDataRecordTest {
     public void testBuilder() {
         // build
         HealthDataRecord record = DAO.getRecordBuilder().withHealthCode("dummy healthcode")
-                .withSchemaId("dummy schema").build();
+                .withSchemaId("dummy schema").withSchemaRevision(3).withStudyId("dummy study").build();
 
         // validate
         assertEquals("dummy healthcode", record.getHealthCode());
         assertNull(record.getId());
         assertEquals("dummy schema", record.getSchemaId());
+        assertEquals(3, record.getSchemaRevision());
+        assertEquals("dummy study", record.getStudyId());
 
         assertTrue(record.getData().isObject());
         assertEquals(0, record.getData().size());
@@ -66,13 +68,16 @@ public class HealthDataRecordTest {
         // build
         HealthDataRecord record = DAO.getRecordBuilder().withData(data).withHealthCode("required healthcode")
                 .withId("optional record ID").withCreatedOn(arbitraryTimestamp).withMetadata(metadata)
-                .withSchemaId("required schema").withUploadDate(uploadDate).build();
+                .withSchemaId("required schema").withSchemaRevision(3).withStudyId("required study")
+                .withUploadDate(uploadDate).build();
 
         // validate
         assertEquals("required healthcode", record.getHealthCode());
         assertEquals("optional record ID", record.getId());
         assertEquals(arbitraryTimestamp, record.getCreatedOn().longValue());
         assertEquals("required schema", record.getSchemaId());
+        assertEquals(3, record.getSchemaRevision());
+        assertEquals("required study", record.getStudyId());
         assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
 
         assertEquals(1, record.getData().size());
@@ -85,13 +90,15 @@ public class HealthDataRecordTest {
     @Test(expected = InvalidEntityException.class)
     public void jsonNullData() throws Exception {
         JsonNode data = BridgeObjectMapper.get().readTree("null");
-        DAO.getRecordBuilder().withData(data).withHealthCode("valid healthcode").withSchemaId("valid schema").build();
+        DAO.getRecordBuilder().withData(data).withHealthCode("valid healthcode").withSchemaId("valid schema")
+                .withSchemaRevision(3).withStudyId("valid study").build();
     }
 
     @Test(expected = InvalidEntityException.class)
     public void dataIsNotMap() throws Exception {
         JsonNode data = BridgeObjectMapper.get().readTree("\"This is not a map.\"");
-        DAO.getRecordBuilder().withData(data).withHealthCode("valid healthcode").withSchemaId("valid schema").build();
+        DAO.getRecordBuilder().withData(data).withHealthCode("valid healthcode").withSchemaId("valid schema")
+                .withSchemaRevision(3).withStudyId("valid study").build();
     }
 
     // branch coverage
@@ -100,7 +107,8 @@ public class HealthDataRecordTest {
     public void validatorWithNullData() {
         // build and overwrite data
         DynamoHealthDataRecord record = (DynamoHealthDataRecord) DAO.getRecordBuilder()
-                .withHealthCode("valid healthcode").withSchemaId("valid schema").build();
+                .withHealthCode("valid healthcode").withSchemaId("valid schema").withSchemaRevision(3)
+                .withStudyId("valid study").build();
         record.setData(null);
 
         // validate
@@ -111,17 +119,20 @@ public class HealthDataRecordTest {
 
     @Test(expected = InvalidEntityException.class)
     public void nullHealthCode() {
-        DAO.getRecordBuilder().withHealthCode(null).withSchemaId("valid schema").build();
+        DAO.getRecordBuilder().withHealthCode(null).withSchemaId("valid schema").withSchemaRevision(3)
+                .withStudyId("valid study").build();
     }
 
     @Test(expected = InvalidEntityException.class)
     public void emptyHealthCode() {
-        DAO.getRecordBuilder().withHealthCode("").withSchemaId("valid schema").build();
+        DAO.getRecordBuilder().withHealthCode("").withSchemaId("valid schema").withSchemaRevision(3)
+                .withStudyId("valid study").build();
     }
 
     @Test(expected = InvalidEntityException.class)
     public void emptyId() {
-        DAO.getRecordBuilder().withHealthCode("valid healthcode").withId("").withSchemaId("valid schema").build();
+        DAO.getRecordBuilder().withHealthCode("valid healthcode").withId("").withSchemaId("valid schema")
+                .withSchemaRevision(3).withStudyId("valid study").build();
     }
 
     // branch coverage
@@ -130,7 +141,8 @@ public class HealthDataRecordTest {
     public void validatorWithNullMeasuredTime() {
         // build and overwrite measuredTime
         DynamoHealthDataRecord record = (DynamoHealthDataRecord) DAO.getRecordBuilder()
-                .withHealthCode("valid healthcode").withSchemaId("valid schema").build();
+                .withHealthCode("valid healthcode").withSchemaId("valid schema").withSchemaRevision(3)
+                .withStudyId("valid study").build();
         record.setCreatedOn(null);
 
         // validate
@@ -143,14 +155,14 @@ public class HealthDataRecordTest {
     public void jsonNullMetadata() throws Exception {
         JsonNode metadata = BridgeObjectMapper.get().readTree("null");
         DAO.getRecordBuilder().withMetadata(metadata).withHealthCode("valid healthcode").withSchemaId("valid schema")
-                .build();
+                .withSchemaRevision(3).withStudyId("valid study").build();
     }
 
     @Test(expected = InvalidEntityException.class)
     public void metadataIsNotMap() throws Exception {
         JsonNode metadata = BridgeObjectMapper.get().readTree("\"This is not a map.\"");
         DAO.getRecordBuilder().withMetadata(metadata).withHealthCode("valid healthcode").withSchemaId("valid schema")
-                .build();
+                .withSchemaRevision(3).withStudyId("valid study").build();
     }
 
     // branch coverage
@@ -159,7 +171,8 @@ public class HealthDataRecordTest {
     public void validatorWithNullMetadata() {
         // build and overwrite metadata
         DynamoHealthDataRecord record = (DynamoHealthDataRecord) DAO.getRecordBuilder()
-                .withHealthCode("valid healthcode").withSchemaId("valid schema").build();
+                .withHealthCode("valid healthcode").withSchemaId("valid schema").withSchemaRevision(3)
+                .withStudyId("valid study").build();
         record.setMetadata(null);
 
         // validate
@@ -170,12 +183,14 @@ public class HealthDataRecordTest {
 
     @Test(expected = InvalidEntityException.class)
     public void nullSchemaId() {
-        DAO.getRecordBuilder().withHealthCode("valid healthcode").withSchemaId(null).build();
+        DAO.getRecordBuilder().withHealthCode("valid healthcode").withSchemaId(null).withSchemaRevision(3)
+                .withStudyId("valid study").build();
     }
 
     @Test(expected = InvalidEntityException.class)
     public void emptySchemaId() {
-        DAO.getRecordBuilder().withHealthCode("valid healthcode").withSchemaId("").build();
+        DAO.getRecordBuilder().withHealthCode("valid healthcode").withSchemaId("").withSchemaRevision(3)
+                .withStudyId("valid study").build();
     }
 
     // branch coverage
@@ -184,7 +199,8 @@ public class HealthDataRecordTest {
     public void validatorWithNullUploadDate() {
         // build and overwrite metadata
         DynamoHealthDataRecord record = (DynamoHealthDataRecord) DAO.getRecordBuilder()
-                .withHealthCode("valid healthcode").withSchemaId("valid schema").build();
+                .withHealthCode("valid healthcode").withSchemaId("valid schema").withSchemaRevision(3)
+                .withStudyId("valid study").build();
         record.setUploadDate(null);
 
         // validate
@@ -239,6 +255,8 @@ public class HealthDataRecordTest {
                 "   \"id\":\"json record ID\",\n" +
                 "   \"metadata\":{\"myMetadata\":\"myMetaValue\"},\n" +
                 "   \"schemaId\":\"json schema\",\n" +
+                "   \"schemaRevision\":3,\n" +
+                "   \"studyId\":\"json study\",\n" +
                 "   \"uploadDate\":\"2014-02-12\"\n" +
                 "}";
         long measuredTimeMillis = new DateTime(2014, 2, 12, 13, 45, BridgeConstants.LOCAL_TIME_ZONE).getMillis();
@@ -249,6 +267,8 @@ public class HealthDataRecordTest {
         assertEquals("json record ID", record.getId());
         assertEquals(measuredTimeMillis, record.getCreatedOn().longValue());
         assertEquals("json schema", record.getSchemaId());
+        assertEquals(3, record.getSchemaRevision());
+        assertEquals("json study", record.getStudyId());
         assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
 
         assertEquals(1, record.getData().size());
@@ -262,10 +282,12 @@ public class HealthDataRecordTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(8, jsonMap.size());
+        assertEquals(10, jsonMap.size());
         assertEquals("json healthcode", jsonMap.get("healthCode"));
         assertEquals("json record ID", jsonMap.get("id"));
         assertEquals("json schema", jsonMap.get("schemaId"));
+        assertEquals(3, jsonMap.get("schemaRevision"));
+        assertEquals("json study", jsonMap.get("studyId"));
         assertEquals("2014-02-12", jsonMap.get("uploadDate"));
         assertEquals("HealthData", jsonMap.get("type"));
 
