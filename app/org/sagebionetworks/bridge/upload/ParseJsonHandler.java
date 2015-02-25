@@ -20,7 +20,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
  */
 @Component
 public class ParseJsonHandler implements UploadValidationHandler {
-    private static final Logger logger = LoggerFactory.getLogger(UploadValidationTask.class);
+    private static final Logger logger = LoggerFactory.getLogger(ParseJsonHandler.class);
 
     /** {@inheritDoc} */
     @Override
