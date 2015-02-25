@@ -80,7 +80,8 @@ POST   /researcher/v1/study/participants @controllers.StudyController.sendStudyP
 POST   /researcher/v1/study              @controllers.StudyController.updateStudyForResearcher
 
 # Researchers - Upload Schemas
-GET    /researcher/v1/uploadSchema/:schemaId  @controllers.UploadSchemaController.getUploadSchema(schemaId: String)
+GET    /researcher/v1/uploadSchema/byId/:schemaId  @controllers.UploadSchemaController.getUploadSchema(schemaId: String)
+GET    /researcher/v1/uploadSchema/forStudy   @controllers.UploadSchemaController.getUploadSchemasForStudy
 POST   /researcher/v1/uploadSchema            @controllers.UploadSchemaController.createOrUpdateUploadSchema
 
 # Admin - Studies

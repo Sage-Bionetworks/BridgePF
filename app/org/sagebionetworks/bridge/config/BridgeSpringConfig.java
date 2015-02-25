@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.TableNameOverrideFactory;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
+import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler;
 import org.sagebionetworks.bridge.upload.ParseJsonHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
 import org.sagebionetworks.bridge.upload.UnzipHandler;
@@ -172,11 +173,13 @@ public class BridgeSpringConfig {
     @Bean(name = "uploadValidationHandlerList")
     @Autowired
     public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,
-            DecryptHandler decryptHandler, UnzipHandler unzipHandler, ParseJsonHandler parseJsonHandler) {
+            DecryptHandler decryptHandler, UnzipHandler unzipHandler, ParseJsonHandler parseJsonHandler,
+            IosSchemaValidationHandler iosSchemaValidationHandler) {
         // TODO: add handlers for the following:
-        // * validate against schemas
+        // * download consent date
         // * write intermediate artifacts
-        return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler, parseJsonHandler);
+        return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler, parseJsonHandler,
+                iosSchemaValidationHandler);
     }
 
     @Bean(name = "uploadSchemaDdbMapper")
@@ -187,7 +190,24 @@ public class BridgeSpringConfig {
                 .build();
         return new DynamoDBMapper(client, mapperConfig);
     }
-    
+
+    @Bean(name = "uploadSchemaStudyIdIndex")
+    @Autowired
+    public DynamoIndexHelper uploadSchemaStudyIdIndex(AmazonDynamoDB client) {
+        // DDB index
+        DynamoDBMapperConfig.TableNameOverride tableNameOverride = TableNameOverrideFactory.getTableNameOverride(
+                DynamoUploadSchema.class);
+        DynamoDB ddb = new DynamoDB(client);
+        Table ddbTable = ddb.getTable(tableNameOverride.getTableName());
+        Index ddbIndex = ddbTable.getIndex("studyId-index");
+
+        // construct index helper
+        DynamoIndexHelper indexHelper = new DynamoIndexHelper();
+        indexHelper.setIndex(ddbIndex);
+        indexHelper.setMapper(uploadSchemaDdbMapper(client));
+        return indexHelper;
+    }
+
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
     @Bean(name = "stormpathClient")
     public Client getStormpathClient(BridgeConfig config) {
@@ -203,5 +223,4 @@ public class BridgeSpringConfig {
     public Application getStormpathApplication(BridgeConfig config, Client client) {
         return client.getResource(config.getStormpathApplicationHref().trim(), Application.class);
     }
-    
 }
