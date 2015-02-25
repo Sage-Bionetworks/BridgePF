@@ -252,19 +252,15 @@ class StormpathAccount implements Account {
             } 
             // Special case #2: phone without a version string
             else if (PHONE_ATTRIBUTE.equals(key)) {
-                versionKey = "[no version for phone]";
                 version = 2;
             }
             // Special case #3: existing consent signature has no version. Again, assume version 2 for now. 
             else if (oldConsentSignatureKey.equals(key)) {
-                versionKey = "[no version for consent signature]";
                 version = 2;
             }
         }
         if (version == null) {
-            // This must work, today. It's still possible that something about this is not working.
-            version = 2;
-            // throw new BridgeServiceException("No version for encryptor found for field " + versionKey);
+            throw new BridgeServiceException("No version for encryptor found for field " + versionKey);
         }
         return version;
     }

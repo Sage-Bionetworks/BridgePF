@@ -182,7 +182,6 @@ public class StormpathAccountTest {
     }
     
     @Test
-    @Ignore
     public void failsIfNoEncryptorForVersion() {
         try {
             data.put("foo_code", "111");
@@ -214,7 +213,6 @@ public class StormpathAccountTest {
     }
     
     @Test(expected = BridgeServiceException.class)
-    @Ignore
     public void phoneNotRetrievedWithIncorrectVersion() {
         data.put("phone", "encryptedphonenumber");
         data.put("phone_version", 3);
@@ -235,5 +233,4 @@ public class StormpathAccountTest {
         assertEquals(1, acct.getRoles().size());
         assertEquals("aRole", acct.getRoles().iterator().next());
     }
-    
 }
