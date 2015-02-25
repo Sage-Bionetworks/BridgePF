@@ -62,9 +62,9 @@ public class UploadSchemaController extends BaseController {
     public Result getUploadSchemasForStudy() throws Exception {
         // TODO: When we implement worker accounts, they should have access to the API as well.
         UserSession session = getAuthenticatedResearcherOrAdminSession();
-        String studyId = session.getStudyIdentifier().getIdentifier();
+        StudyIdentifier studyId = session.getStudyIdentifier();
 
-        List<UploadSchema> schemasByIdAndRev = uploadSchemaService.getUploadSchemasForStudy(studyId);
-        return okResult(schemasByIdAndRev);
+        List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForStudy(studyId);
+        return okResult(schemaList);
     }
 }
