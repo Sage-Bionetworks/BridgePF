@@ -11,7 +11,6 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
-import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -198,7 +197,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         final String healthCode = getHealthCode(study, account);
         user.setHealthCode(healthCode);
-        user.setDataSharing(optionsService.getBooleanOption(healthCode, Option.DATA_SHARING));
+        
+        user.setDataSharing(optionsService.getScopeOfSharing(healthCode));
         user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(study, user));
         user.setConsent(consentService.hasUserConsentedToResearch(study, user));
         

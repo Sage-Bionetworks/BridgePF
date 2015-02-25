@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -31,7 +32,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
 
     @Override
-    public void setOption(StudyIdentifier studyIdentifier, String healthCode, Option option, String value) {
+    public void setOption(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
         
@@ -46,7 +47,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
     
     @Override
-    public String getOption(String healthCode, Option option) {
+    public String getOption(String healthCode, ParticipantOption option) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
         
@@ -70,7 +71,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
 
     @Override
-    public void deleteOption(String healthCode, Option option) {
+    public void deleteOption(String healthCode, ParticipantOption option) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
         
@@ -82,18 +83,18 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
 
     @Override
-    public Map<Option,String> getAllParticipantOptions(String healthCode) {
+    public Map<ParticipantOption,String> getAllParticipantOptions(String healthCode) {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
         
-        Map<Option,String> map = Maps.newHashMap();
+        Map<ParticipantOption,String> map = Maps.newHashMap();
         DynamoParticipantOptions options = mapper.load(keyObject);
         if (options == null) {
-            for (Option opt : Option.values()) {
+            for (ParticipantOption opt : ParticipantOption.values()) {
                 map.put(opt, null);
             }
         } else {
-            for (Option opt : Option.values()) {
+            for (ParticipantOption opt : ParticipantOption.values()) {
                 String value = opt.getDefaultValue();
                 if (options.getOptions().get(opt.name()) != null) {
                     value = options.getOptions().get(opt.name());
@@ -105,7 +106,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     }
     
     @Override
-    public OptionLookup getOptionForAllStudyParticipants(StudyIdentifier studyIdentifier, Option option) {
+    public OptionLookup getOptionForAllStudyParticipants(StudyIdentifier studyIdentifier, ParticipantOption option) {
         // The only place we need the study, and that's to find all the options for all the 
         // participants in a given study.
         DynamoDBScanExpression scan = new DynamoDBScanExpression();

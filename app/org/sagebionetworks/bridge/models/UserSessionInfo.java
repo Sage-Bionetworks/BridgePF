@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
+import org.sagebionetworks.bridge.dao.ParticipantOption;
+
 /**
  * Greatly trimmed user session object that is embedded in the initial render of the
  * web application.
@@ -10,7 +12,7 @@ public class UserSessionInfo {
     private final boolean authenticated;
     private final boolean signedMostRecentConsent;
     private final boolean consented;
-    private final boolean dataSharing;
+    private final ParticipantOption.ScopeOfSharing dataSharing;
     private final String sessionToken;
     private final String username;
 
@@ -19,7 +21,7 @@ public class UserSessionInfo {
         this.sessionToken = session.getSessionToken();
         this.signedMostRecentConsent = session.getUser().hasSignedMostRecentConsent();
         this.consented = session.getUser().doesConsent();
-        this.dataSharing = session.getUser().isDataSharing();
+        this.dataSharing = session.getUser().getDataSharing();
         this.username = session.getUser().getUsername();
     }
 
@@ -29,10 +31,10 @@ public class UserSessionInfo {
     public boolean isConsented() {
         return consented;
     }
-    public boolean isSignedMostRecentConsent() { // ...
+    public boolean isSignedMostRecentConsent() {
         return signedMostRecentConsent;
     }
-    public boolean isDataSharing() {
+    public ParticipantOption.ScopeOfSharing getDataSharing() {
         return dataSharing;
     }
     public String getSessionToken() {

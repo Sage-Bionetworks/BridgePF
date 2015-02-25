@@ -6,8 +6,8 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Map;
 
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
-import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -21,7 +21,7 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
     }
     
     @Override
-    public void setOption(StudyIdentifier studyIdentifier, String healthCode, Option option, String value) {
+    public void setOption(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
         checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
@@ -31,15 +31,25 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
     }
     
     @Override
-    public String getOption(String healthCode, Option option) {
+    public void setOption(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption.ScopeOfSharing option) {
+        setOption(studyIdentifier, healthCode, ParticipantOption.SCOPE_OF_SHARING, option.name());
+    }
+    
+    @Override
+    public String getOption(String healthCode, ParticipantOption option) {
         checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
         checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
         
         return optionsDao.getOption(healthCode, option);
     }
 
+    public ParticipantOption.ScopeOfSharing getScopeOfSharing(String healthCode) {
+        String value = getOption(healthCode, ParticipantOption.SCOPE_OF_SHARING);
+        return Enum.valueOf(ParticipantOption.ScopeOfSharing.class, value);
+    }
+    
     @Override
-    public boolean getBooleanOption(String healthCode, Option option) {
+    public boolean getBooleanOption(String healthCode, ParticipantOption option) {
         String value = getOption(healthCode, option);
         return Boolean.valueOf(value);
     }
@@ -51,7 +61,7 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
     }
     
     @Override
-    public void deleteOption(String healthCode, Option option) {
+    public void deleteOption(String healthCode, ParticipantOption option) {
         checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
         checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
         
@@ -59,14 +69,14 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
     }
 
     @Override
-    public Map<Option, String> getAllParticipantOptions(String healthCode) {
+    public Map<ParticipantOption, String> getAllParticipantOptions(String healthCode) {
         checkArgument(isNotBlank(healthCode), Validate.CANNOT_BE_BLANK, "healthCode");
         
         return optionsDao.getAllParticipantOptions(healthCode);
     }
 
     @Override
-    public OptionLookup getOptionForAllStudyParticipants(StudyIdentifier studyIdentifier, Option option) {
+    public OptionLookup getOptionForAllStudyParticipants(StudyIdentifier studyIdentifier, ParticipantOption option) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
         checkNotNull(option, Validate.CANNOT_BE_NULL, "option");
         
