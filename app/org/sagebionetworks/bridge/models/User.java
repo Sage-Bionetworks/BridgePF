@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models;
 
 import java.util.Set;
 
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.Account;
 
@@ -19,7 +20,7 @@ public class User implements BridgeEntity {
     private String studyKey;
     private boolean consent;
     private boolean signedMostRecentConsent;
-    private boolean dataSharing;
+    private ParticipantOption.ScopeOfSharing dataSharing;
     private Set<String> roles = Sets.newHashSet();
 
     public User() {
@@ -129,11 +130,11 @@ public class User implements BridgeEntity {
         this.signedMostRecentConsent = signedMostRecentConsent;
     }
 
-    public boolean isDataSharing() {
+    public ParticipantOption.ScopeOfSharing getDataSharing() {
         return dataSharing;
     }
 
-    public void setDataSharing(boolean dataSharing) {
+    public void setDataSharing(ParticipantOption.ScopeOfSharing dataSharing) {
         this.dataSharing = dataSharing;
     }
 

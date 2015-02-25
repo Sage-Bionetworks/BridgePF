@@ -174,7 +174,7 @@ public class DynamoSurveyResponseDaoTest {
         // delete it
         surveyResponseDao.deleteSurveyResponse(newResponse);
         try {
-            assertTrue("After deleting of response survey is again not in use", noResponses(survey));
+            assertTrue("After deleting survey response, the survey returns to not being in use", noResponses(survey));
             surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
             fail("Should have thrown an EntityNotFoundException");
         } catch (EntityNotFoundException nfe) {
