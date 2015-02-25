@@ -309,6 +309,7 @@ public class StormpathAccountDao implements AccountDao {
         case 400:
             throw new BadRequestException("Invalid email or password");
         case 404:
+        case 7102: // login attempt failed because the Account is not verified. 
         case 7104: // account not found in the directory
         case 2016: // "Property value does not match a known resource." somehow this equals not found
             throw new EntityNotFoundException(Account.class);
