@@ -159,7 +159,7 @@ public abstract class BaseController extends Controller {
             logger.debug("Study identifier retrieved from Bridge-Study header ("+value+")");
             return value;
         }
-        // Bridge-Host header: api-develop.sagebridge.org
+        // @Deprecated Bridge-Host header: api-develop.sagebridge.org 
         value = request().getHeader(BRIDGE_HOST_HEADER);
         if (value != null) {
             logger.debug("Study identifier parsed from Bridge-Host header ("+value+")");

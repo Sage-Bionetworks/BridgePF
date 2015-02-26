@@ -38,7 +38,7 @@ public class UserSessionInfo {
         return signedMostRecentConsent;
     }
     /**
-     * BridgeObjectMapper is not correctly using this serializer, even though it's added as a module.
+     * FIXME: BridgeObjectMapper is not correctly using this serializer, even though it's added as a module.
      */
     @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public SharingScope getSharingScope() {
