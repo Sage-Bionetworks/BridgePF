@@ -28,6 +28,8 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private String id;
     private JsonNode metadata;
     private String schemaId;
+    private int schemaRevision;
+    private String studyId;
     private LocalDate uploadDate;
     private Long version;
 
@@ -104,6 +106,28 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** {@inheritDoc} */
+    @Override
+    public int getSchemaRevision() {
+        return schemaRevision;
+    }
+
+    /** @see #getSchemaRevision */
+    public void setSchemaRevision(int schemaRevision) {
+        this.schemaRevision = schemaRevision;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String getStudyId() {
+        return studyId;
+    }
+
+    /** @see #getStudyId */
+    public void setStudyId(String studyId) {
+        this.studyId = studyId;
+    }
+
+    /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "uploadDate", globalSecondaryIndexName = "uploadDate-index")
     @DynamoDBMarshalling(marshallerClass = LocalDateMarshaller.class)
     @JsonSerialize(using = LocalDateToStringSerializer.class)
@@ -146,6 +170,8 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
             record.setId(getId());
             record.setMetadata(getMetadata());
             record.setSchemaId(getSchemaId());
+            record.setSchemaRevision(getSchemaRevision());
+            record.setStudyId(getStudyId());
             record.setUploadDate(getUploadDate());
             return record;
         }

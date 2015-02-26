@@ -36,6 +36,7 @@ public class Validate {
     public static final String CANNOT_BE_NEGATIVE = "%s cannot be negative";
     public static final String CANNOT_BE_NULL = "%s cannot be missing or null";
     public static final String CANNOT_BE_NULL_OR_EMPTY = "%s cannot be null or empty";
+    public static final String CANNOT_BE_ZERO_OR_NEGATIVE = "%s cannot be negative";
     public static final String WRONG_TYPE = "%s is the wrong type";
 
     public static void jsonWithSchema(Tracker tracker, JsonNode node) {
