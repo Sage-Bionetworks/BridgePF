@@ -64,7 +64,14 @@ public class ExceptionInterceptor implements MethodInterceptor {
             }
             
             if (!config.isLocal() && quietExceptions.contains(throwable.getClass())) {
-                logger.debug(throwable.getMessage(), throwable);
+                if (throwable instanceof InvalidEntityException) {
+                    // For the near future, log this in the event it represents an error on our side.
+                    Http.Request request = Http.Context.current().request();
+                    String bodyContent = request.body().asText();
+                    logger.debug(throwable.getMessage() + ": " + bodyContent, throwable);
+                } else {
+                    logger.debug(throwable.getMessage(), throwable);
+                }
             } else {
                 // stuff we don't expect, log the stacktrace at the error level
                 logger.error(throwable.getMessage(), throwable);
