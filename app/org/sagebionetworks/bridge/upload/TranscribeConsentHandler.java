@@ -2,16 +2,11 @@ package org.sagebionetworks.bridge.upload;
 
 import javax.annotation.Nonnull;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.base.Joiner;
 import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
@@ -22,8 +17,6 @@ import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
 @Component
 public class TranscribeConsentHandler implements UploadValidationHandler {
-    private static final Logger logger = LoggerFactory.getLogger(TranscribeConsentHandler.class);
-
     private ConsentService consentService;
     private ParticipantOptionsService optionsService;
 
@@ -63,18 +56,5 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
                 .build();
         HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
         recordBuilder.withUserConsentMetadata(userConsentMetadata);
-
-        // debug messages to help debug
-        if (logger.isDebugEnabled()) {
-            try {
-                String recordJson = BridgeObjectMapper.get().writerWithDefaultPrettyPrinter().writeValueAsString(
-                        context.getHealthDataRecordBuilder().build());
-                logger.debug(String.format("Health Data Record: %s", recordJson));
-                logger.debug(String.format("Attachments: %s", Joiner.on(", ").join(
-                        context.getAttachmentsByFieldName().keySet())));
-            } catch (JsonProcessingException ex) {
-                logger.debug("Couldn't convert record builder into JSON", ex);
-            }
-        }
     }
 }
