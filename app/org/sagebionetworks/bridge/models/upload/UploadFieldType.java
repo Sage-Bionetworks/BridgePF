@@ -5,8 +5,32 @@ package org.sagebionetworks.bridge.models.upload;
  * data to the export data.
  */
 public enum UploadFieldType {
-    /** Raw data, generally a JSON map or JSON array */
-    BLOB,
+    /**
+     * Health Data Attachment as a non-JSON blob. The value of this field is a foreign key into the Health Data
+     * Attachments table. Data stored in this format will not be subject to additional post-processing.
+     */
+    ATTACHMENT_BLOB,
+
+    /**
+     * Health Data Attachment as a CSV file. The value of this field is a foreign key into the Health Data Attachments
+     * table. Data stored in this format will be used to construct de-normalized tables during data export.
+     */
+    ATTACHMENT_CSV,
+
+    /**
+     * Health Data Attachment as a JSON blob. The value of this field is a foreign key into the Health Data Attachments
+     * table. Data stored in this format will not be subject to additional post-processing, but is tagged as JSON data
+     * in the schema for convenience.
+     */
+    ATTACHMENT_JSON_BLOB,
+
+    /**
+     * Health Data Attachment as a JSON blob of a specific "table" format. The value of this field is a foreign key
+     * into the Health Data Attachments table. Data stored in this format will be used to construct de-normalizeds
+     * tables during data export.
+     */
+    // TODO: document ATTACHMENT_JSON_TABLE data format
+    ATTACHMENT_JSON_TABLE,
 
     /** A boolean, expected values match Boolean.parse() */
     BOOLEAN,

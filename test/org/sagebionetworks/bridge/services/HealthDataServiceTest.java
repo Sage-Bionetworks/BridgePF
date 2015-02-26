@@ -30,7 +30,8 @@ public class HealthDataServiceTest {
     public void createRecordInvalidRecord() {
         // build and overwrite data
         DynamoHealthDataRecord record = (DynamoHealthDataRecord) DAO.getRecordBuilder()
-                .withHealthCode("valid healthcode").withSchemaId("valid schema").build();
+                .withHealthCode("valid healthcode").withSchemaId("valid schema").withSchemaRevision(3)
+                .withStudyId("valid study").build();
         record.setData(null);
 
         // execute
@@ -41,7 +42,7 @@ public class HealthDataServiceTest {
     public void createRecordSuccess() {
         // record
         HealthDataRecord record = DAO.getRecordBuilder().withHealthCode("valid healthcode")
-                .withSchemaId("valid schema").build();
+                .withSchemaId("valid schema").withSchemaRevision(3).withStudyId("valid study").build();
 
         // mock dao
         HealthDataDao mockDao = mock(HealthDataDao.class);
@@ -102,9 +103,12 @@ public class HealthDataServiceTest {
     public void getRecordsForUploadDateSuccess() {
         // mock results
         List<HealthDataRecord> mockRecordList = ImmutableList.of(
-                DAO.getRecordBuilder().withHealthCode("foo healthcode").withSchemaId("dummy schema").build(),
-                DAO.getRecordBuilder().withHealthCode("bar healthcode").withSchemaId("dummy schema").build(),
-                DAO.getRecordBuilder().withHealthCode("baz healthcode").withSchemaId("dummy schema").build());
+                DAO.getRecordBuilder().withHealthCode("foo healthcode").withSchemaId("dummy schema")
+                        .withSchemaRevision(3).withStudyId("dummy study").build(),
+                DAO.getRecordBuilder().withHealthCode("bar healthcode").withSchemaId("dummy schema")
+                        .withSchemaRevision(3).withStudyId("dummy study").build(),
+                DAO.getRecordBuilder().withHealthCode("baz healthcode").withSchemaId("dummy schema")
+                        .withSchemaRevision(3).withStudyId("dummy study").build());
 
         HealthDataDao mockDao = mock(HealthDataDao.class);
         when(mockDao.getRecordsForUploadDate("2014-02-12")).thenReturn(mockRecordList);

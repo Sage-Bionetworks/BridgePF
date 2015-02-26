@@ -106,7 +106,7 @@ public class ConsentServiceImplTest {
         } catch (EntityNotFoundException ex) {
         }
     }
-
+    
     @Test
     public void canConsentWithSignatureImage() {
         // Consent and verify.
@@ -238,4 +238,5 @@ public class ConsentServiceImplTest {
             studyConsentDao.deleteConsent(testUser.getStudyIdentifier(), newStudyConsent.getCreatedOn());
         }
     }
+    
 }

@@ -1,5 +1,10 @@
 package org.sagebionetworks.bridge.models;
 
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
+
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * Greatly trimmed user session object that is embedded in the initial render of the
  * web application.
@@ -10,7 +15,7 @@ public class UserSessionInfo {
     private final boolean authenticated;
     private final boolean signedMostRecentConsent;
     private final boolean consented;
-    private final boolean dataSharing;
+    private final SharingScope sharingScope;
     private final String sessionToken;
     private final String username;
 
@@ -19,7 +24,7 @@ public class UserSessionInfo {
         this.sessionToken = session.getSessionToken();
         this.signedMostRecentConsent = session.getUser().hasSignedMostRecentConsent();
         this.consented = session.getUser().doesConsent();
-        this.dataSharing = session.getUser().isDataSharing();
+        this.sharingScope = session.getUser().getSharingScope();
         this.username = session.getUser().getUsername();
     }
 
@@ -29,11 +34,18 @@ public class UserSessionInfo {
     public boolean isConsented() {
         return consented;
     }
-    public boolean isSignedMostRecentConsent() { // ...
+    public boolean isSignedMostRecentConsent() {
         return signedMostRecentConsent;
     }
+    /**
+     * FIXME: BridgeObjectMapper is not correctly using this serializer, even though it's added as a module.
+     */
+    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
+    public SharingScope getSharingScope() {
+        return sharingScope;
+    }
     public boolean isDataSharing() {
-        return dataSharing;
+        return (sharingScope != SharingScope.NO_SHARING);
     }
     public String getSessionToken() {
         return sessionToken;
