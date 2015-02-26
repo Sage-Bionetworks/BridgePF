@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.validators.Validate;
 
 public class OptionLookup {
@@ -26,6 +27,13 @@ public class OptionLookup {
             return map.get(healthCode);
         }
         return defaultValue;
+    }
+    
+    public SharingScope getSharingScope(String healthCode) {
+        if (map.containsKey(healthCode)) {
+            return SharingScope.valueOf(map.get(healthCode));
+        }
+        return SharingScope.valueOf(defaultValue);
     }
 
 }
