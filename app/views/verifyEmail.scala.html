@@ -48,9 +48,9 @@ try {
         } else {
             try {
                 var message = response.responseJSON.message;
-                if (message === "The requested resource does not exist.") {
-                    $("#m1").text("Your email address has already been verified.");
-                    $("#m2").text("You can currently use the "+titles[host]+" application.");
+                if (message === "Account not found.") {
+                    $("#m1").text("It looks like your email address has already been verified.");
+                    $("#m2").text("You can try using the "+titles[host]+" application at this point.");
                 } else {
                     failure();
                 }
