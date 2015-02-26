@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
-import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
@@ -14,28 +14,28 @@ public class SharingOption {
     
     private static final String SCOPE_FIELD = "scope";
     
-    private final ParticipantOption.ScopeOfSharing scope;
+    private final SharingScope sharingScope;
     
-    private SharingOption(ParticipantOption.ScopeOfSharing scope) {
-        this.scope = scope;
+    private SharingOption(SharingScope scope) {
+        this.sharingScope = scope;
     }
     
     public static final SharingOption fromJson(JsonNode node, int version) {
         if (version == 1) {
-            return new SharingOption(ParticipantOption.ScopeOfSharing.NO_SHARING);
+            return new SharingOption(SharingScope.NO_SHARING);
         }
         try {
-            String scopeOfConsent = JsonUtils.asText(node, SCOPE_FIELD);
-            if (scopeOfConsent != null) {
-                return new SharingOption(ParticipantOption.ScopeOfSharing.valueOf(scopeOfConsent.toUpperCase()));
+            String scope = JsonUtils.asText(node, SCOPE_FIELD);
+            if (scope != null) {
+                return new SharingOption(SharingScope.valueOf(scope.toUpperCase()));
             }                
         } catch(Exception e) {
         }
         throw new InvalidEntityException("ConsentSignature: "+SCOPE_FIELD+" is required.");
     }
 
-    public ParticipantOption.ScopeOfSharing getScopeOfSharing() {
-        return scope;
+    public SharingScope getSharingScope() {
+        return sharingScope;
     }
 
 }

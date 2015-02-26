@@ -198,7 +198,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final String healthCode = getHealthCode(study, account);
         user.setHealthCode(healthCode);
         
-        user.setDataSharing(optionsService.getScopeOfSharing(healthCode));
+        user.setSharingScope(optionsService.getSharingScope(healthCode));
         user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(study, user));
         user.setConsent(consentService.hasUserConsentedToResearch(study, user));
         

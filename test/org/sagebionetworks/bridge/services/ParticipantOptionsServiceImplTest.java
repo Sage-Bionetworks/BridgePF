@@ -14,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantOptions;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -61,20 +62,20 @@ public class ParticipantOptionsServiceImplTest {
     }
     
     @Test
-    public void canCrudScopeOfSharingOPtion() {
+    public void canCrudSharingScopeOption() {
         optionsService.setOption(testUser.getStudyIdentifier(), testUser.getUser().getHealthCode(),
-                ParticipantOption.ScopeOfSharing.ALL_QUALIFIED_RESEARCHERS);
+                SharingScope.ALL_QUALIFIED_RESEARCHERS);
         
-        String value = optionsService.getOption(testUser.getUser().getHealthCode(), ParticipantOption.SCOPE_OF_SHARING);
-        assertEquals(ParticipantOption.ScopeOfSharing.ALL_QUALIFIED_RESEARCHERS.name(), value);
+        String value = optionsService.getOption(testUser.getUser().getHealthCode(), ParticipantOption.SHARING_SCOPE);
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS.name(), value);
         
-        ParticipantOption.ScopeOfSharing sharing = optionsService.getScopeOfSharing(testUser.getUser().getHealthCode());
-        assertEquals(ParticipantOption.ScopeOfSharing.ALL_QUALIFIED_RESEARCHERS, sharing);
+        SharingScope sharing = optionsService.getSharingScope(testUser.getUser().getHealthCode());
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, sharing);
         
         // After deletion, the default value is no sharing
-        optionsService.deleteOption(testUser.getUser().getHealthCode(), ParticipantOption.SCOPE_OF_SHARING);
-        sharing = optionsService.getScopeOfSharing(testUser.getUser().getHealthCode());
-        assertEquals(ParticipantOption.ScopeOfSharing.NO_SHARING, sharing);
+        optionsService.deleteOption(testUser.getUser().getHealthCode(), ParticipantOption.SHARING_SCOPE);
+        sharing = optionsService.getSharingScope(testUser.getUser().getHealthCode());
+        assertEquals(SharingScope.NO_SHARING, sharing);
     }
     
 }

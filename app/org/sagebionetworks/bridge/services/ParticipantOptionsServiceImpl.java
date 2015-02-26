@@ -7,6 +7,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -31,8 +32,8 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
     }
     
     @Override
-    public void setOption(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption.ScopeOfSharing option) {
-        setOption(studyIdentifier, healthCode, ParticipantOption.SCOPE_OF_SHARING, option.name());
+    public void setOption(StudyIdentifier studyIdentifier, String healthCode, SharingScope option) {
+        setOption(studyIdentifier, healthCode, ParticipantOption.SHARING_SCOPE, option.name());
     }
     
     @Override
@@ -43,9 +44,9 @@ public class ParticipantOptionsServiceImpl implements ParticipantOptionsService 
         return optionsDao.getOption(healthCode, option);
     }
 
-    public ParticipantOption.ScopeOfSharing getScopeOfSharing(String healthCode) {
-        String value = getOption(healthCode, ParticipantOption.SCOPE_OF_SHARING);
-        return Enum.valueOf(ParticipantOption.ScopeOfSharing.class, value);
+    public SharingScope getSharingScope(String healthCode) {
+        String value = getOption(healthCode, ParticipantOption.SHARING_SCOPE);
+        return Enum.valueOf(SharingScope.class, value);
     }
     
     @Override

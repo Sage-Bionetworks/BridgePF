@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -22,7 +23,7 @@ public interface ParticipantOptionsService {
      * @param healthCode
      * @param option
      */
-    public void setOption(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption.ScopeOfSharing option);
+    public void setOption(StudyIdentifier studyIdentifier, String healthCode, SharingScope option);
     
     /**
      * Get an option for a participant. Returns the default value for the option if the option 
@@ -40,7 +41,7 @@ public interface ParticipantOptionsService {
      * @param option
      * @param cls
      */
-    public ParticipantOption.ScopeOfSharing getScopeOfSharing(String healthCode);
+    public SharingScope getSharingScope(String healthCode);
     
     /**
      * Get a participant option as a boolean

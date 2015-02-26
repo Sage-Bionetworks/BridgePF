@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models;
 
 import java.util.Set;
 
-import org.sagebionetworks.bridge.dao.ParticipantOption.ScopeOfSharing;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.Account;
 
@@ -20,7 +20,7 @@ public class User implements BridgeEntity {
     private String studyKey;
     private boolean consent;
     private boolean signedMostRecentConsent;
-    private ScopeOfSharing dataSharing;
+    private SharingScope sharingScope;
     private Set<String> roles = Sets.newHashSet();
 
     public User() {
@@ -130,12 +130,12 @@ public class User implements BridgeEntity {
         this.signedMostRecentConsent = signedMostRecentConsent;
     }
 
-    public ScopeOfSharing getDataSharing() {
-        return dataSharing;
+    public SharingScope getSharingScope() {
+        return sharingScope;
     }
 
-    public void setDataSharing(ScopeOfSharing dataSharing) {
-        this.dataSharing = dataSharing;
+    public void setSharingScope(SharingScope sharingScope) {
+        this.sharingScope = sharingScope;
     }
 
     public boolean isInRole(String role) {
@@ -153,6 +153,8 @@ public class User implements BridgeEntity {
         result = prime * result + ((id == null) ? 0 : id.hashCode());
         result = prime * result + ((lastName == null) ? 0 : lastName.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + ((sharingScope == null) ? 0 : sharingScope.hashCode());
+        result = prime * result + (signedMostRecentConsent ? 1231 : 1237);
         result = prime * result + ((studyKey == null) ? 0 : studyKey.hashCode());
         result = prime * result + ((username == null) ? 0 : username.hashCode());
         return result;
@@ -198,6 +200,10 @@ public class User implements BridgeEntity {
             if (other.roles != null)
                 return false;
         } else if (!roles.equals(other.roles))
+            return false;
+        if (sharingScope != other.sharingScope)
+            return false;
+        if (signedMostRecentConsent != other.signedMostRecentConsent)
             return false;
         if (studyKey == null) {
             if (other.studyKey != null)
