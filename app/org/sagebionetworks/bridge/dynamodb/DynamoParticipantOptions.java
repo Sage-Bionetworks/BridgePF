@@ -46,7 +46,7 @@ public class DynamoParticipantOptions {
     @DynamoDBAttribute
     public String getData() {
         try {
-            return BridgeObjectMapper.get().writeValueAsString(options);    
+            return BridgeObjectMapper.get().writeValueAsString(options);
         } catch(JsonProcessingException e) {
             throw new BridgeServiceException(e);
         }

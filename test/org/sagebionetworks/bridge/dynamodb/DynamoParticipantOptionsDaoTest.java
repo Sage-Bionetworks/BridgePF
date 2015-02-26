@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Map;
-
 import javax.annotation.Resource;
 
 import org.junit.AfterClass;
@@ -11,7 +9,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.ParticipantOptionsDao.Option;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
@@ -39,53 +38,23 @@ public class DynamoParticipantOptionsDaoTest {
     }
     
     @Test
-    public void crudOptionForParticipant() {
-        Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
-        String healthCode = "AAA";
-        Option option = Option.DATA_SHARING;
-        
-        String value = optionsDao.getOption(healthCode, option);
-        assertEquals("Value is default value", "true", value);
-        
-        optionsDao.setOption(study, healthCode, Option.DATA_SHARING, "false");
-        
-        value = optionsDao.getOption(healthCode, option);
-        assertEquals("Value is value 'false'", "false", value);
-        
-        Map<Option,String> allOptions = optionsDao.getAllParticipantOptions(healthCode);
-        assertEquals("One value in the map", 1, allOptions.size());
-        assertEquals("Value in map is 'false'", "false", allOptions.get(Option.DATA_SHARING));
-        
-        optionsDao.deleteOption(healthCode, option);
-        
-        value = optionsDao.getOption(healthCode, option);
-        assertEquals("Value is default value", "true", value);
-        
-        optionsDao.deleteAllParticipantOptions(healthCode);
-    }
-
-    @Test
-    public void canGetAllOptionsForMultipleParticipants() {
+    public void canChangeSharingScope() {
         Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
         String healthCode1 = "AAA";
-        String healthCode2 = "BBB";
-        String healthCode3 = "CCC";
-        Option option = Option.DATA_SHARING;
-
-        optionsDao.setOption(study, healthCode1, Option.DATA_SHARING, "AAA");
-        optionsDao.setOption(study, healthCode2, Option.DATA_SHARING, "BBB");
-        optionsDao.setOption(study, healthCode3, Option.DATA_SHARING, "CCC");
         
-        OptionLookup lookup = optionsDao.getOptionForAllStudyParticipants(study, option);
-        assertEquals("AAA", lookup.get("AAA"));
-        assertEquals("BBB", lookup.get("BBB"));
-        assertEquals("CCC", lookup.get("CCC"));
-        assertEquals("true", lookup.get("DDD"));
+        optionsDao.setOption(study, healthCode1, ParticipantOption.SHARING_SCOPE, SharingScope.ALL_QUALIFIED_RESEARCHERS.name());
         
-        // Now delete them all
+        OptionLookup lookup = optionsDao.getOptionForAllStudyParticipants(study, ParticipantOption.SHARING_SCOPE);
+        // Either way will work, as a string or as a proper enumeration.
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS.name(), lookup.get("AAA"));
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, lookup.getSharingScope("AAA"));
+        
         optionsDao.deleteAllParticipantOptions("AAA");
-        optionsDao.deleteAllParticipantOptions("BBB");
-        optionsDao.deleteAllParticipantOptions("CCC");
+        
+        // After deletion, should return to the default value
+        lookup = optionsDao.getOptionForAllStudyParticipants(study, ParticipantOption.SHARING_SCOPE);
+        assertEquals(SharingScope.NO_SHARING.name(), lookup.get("AAA"));
+        assertEquals(SharingScope.NO_SHARING, lookup.getSharingScope("AAA"));
     }
     
 }
