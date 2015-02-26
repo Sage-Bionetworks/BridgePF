@@ -232,5 +232,4 @@ public class StormpathAccountTest {
         assertEquals(1, acct.getRoles().size());
         assertEquals("aRole", acct.getRoles().iterator().next());
     }
-    
 }

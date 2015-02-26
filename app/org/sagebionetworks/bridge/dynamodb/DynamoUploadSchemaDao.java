@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 /** DynamoDB implementation of the {@link org.sagebionetworks.bridge.dao.UploadSchemaDao} */
@@ -111,7 +112,8 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     }
 
     /** {@inheritDoc} */
-    public @Nonnull List<UploadSchema> getUploadSchemasForStudyAsMap(@Nonnull String studyId) {
-        return studyIdIndex.query(UploadSchema.class, "studyId", studyId);
+    @Override
+    public @Nonnull List<UploadSchema> getUploadSchemasForStudy(@Nonnull StudyIdentifier studyId) {
+        return studyIdIndex.query(UploadSchema.class, "studyId", studyId.getIdentifier());
     }
 }

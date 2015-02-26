@@ -150,8 +150,6 @@ public class StormpathAccountDao implements AccountDao {
             
             status = client.executeMethod(post);
             responseBody = post.getResponseBody();
-            
-            System.out.println(status);
 
         } catch(ResourceException e) {
             rethrowResourceException(e, null);
@@ -304,17 +302,21 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     private void rethrowResourceException(ResourceException e, Account account) {
-        logger.info("Stormpath error code: " + e.getCode() + ", exception: " + e.getMessage());
         switch(e.getCode()) {
         case 2001: // must be unique (email isn't unique)
+            logger.info(String.format("Stormpath error: %s, exception: %s, mapped to EntityAlreadyExistsException", e.getCode(), e.getMessage()));
             throw new EntityAlreadyExistsException(account);
         case 400:
+            logger.info(String.format("Stormpath error: %s, exception: %s, mapped to BadRequestException", e.getCode(), e.getMessage()));
             throw new BadRequestException("Invalid email or password");
         case 404:
-        case 7104: // account not found in the directory
-        case 2016: // "Property value does not match a known resource." somehow this equals not found
+        case 7102: // Login attempt failed because the Account is not verified. 
+        case 7104: // Account not found in the directory
+        case 2016: // Property value does not match a known resource. Somehow this equals not found.
+            logger.info(String.format("Stormpath error: %s, exception: %s, mapped to EntityNotFoundException", e.getCode(), e.getMessage()));
             throw new EntityNotFoundException(Account.class);
         default:
+            logger.info(String.format("Stormpath error: %s, exception: %s, mapped to ServiceUnavailableException", e.getCode(), e.getMessage()));
             throw new ServiceUnavailableException(e);
         }
     }

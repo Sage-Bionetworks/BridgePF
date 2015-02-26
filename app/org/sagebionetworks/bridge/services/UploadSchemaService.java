@@ -89,7 +89,7 @@ public class UploadSchemaService {
      *         study ID to fetch all revisions of all schemas from
      * @return a list of upload schemas
      */
-    public List<UploadSchema> getUploadSchemasForStudy(String studyId) {
-        return uploadSchemaDao.getUploadSchemasForStudyAsMap(studyId);
+    public List<UploadSchema> getUploadSchemasForStudy(StudyIdentifier studyId) {
+        return uploadSchemaDao.getUploadSchemasForStudy(studyId);
     }
 }

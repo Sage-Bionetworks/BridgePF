@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.io.IOException;
 import java.util.Set;
@@ -94,7 +95,11 @@ class StormpathAccount implements Account {
     }
     @Override
     public void setFirstName(String firstName) {
-        acct.setGivenName(firstName);
+        if (isBlank(firstName)) {
+            acct.setGivenName(PLACEHOLDER_STRING);
+        } else {
+            acct.setGivenName(firstName);    
+        }
     }
     @Override
     public String getLastName() {
@@ -103,7 +108,11 @@ class StormpathAccount implements Account {
     }
     @Override
     public void setLastName(String lastName) {
-        acct.setSurname(lastName);
+        if (isBlank(lastName)) {
+            acct.setSurname(PLACEHOLDER_STRING);
+        } else {
+            acct.setSurname(lastName);    
+        }
     }
     @Override
     public String getPhone() {
@@ -242,12 +251,10 @@ class StormpathAccount implements Account {
             } 
             // Special case #2: phone without a version string
             else if (PHONE_ATTRIBUTE.equals(key)) {
-                versionKey = "[no version for phone]";
                 version = 2;
             }
             // Special case #3: existing consent signature has no version. Again, assume version 2 for now. 
             else if (oldConsentSignatureKey.equals(key)) {
-                versionKey = "[no version for consent signature]";
                 version = 2;
             }
         }
