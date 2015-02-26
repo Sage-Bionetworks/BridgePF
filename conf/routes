@@ -33,11 +33,13 @@ POST   /api/v1/surveys/:surveyGuid/:createdOn/:identifier  @controllers.SurveyRe
 GET    /api/v1/schedules   @controllers.ScheduleController.getSchedules
 
 # API - Consent
-POST   /api/v1/consent                       @controllers.ConsentController.give
+POST   /api/v1/consent                       @controllers.ConsentController.giveV1
+POST   /api/v2/consent                       @controllers.ConsentController.giveV2
 GET    /api/v1/consent                       @controllers.ConsentController.getConsentSignature
 POST   /api/v1/consent/email                 @controllers.ConsentController.emailCopy
 POST   /api/v1/consent/dataSharing/suspend   @controllers.ConsentController.suspendDataSharing
 POST   /api/v1/consent/dataSharing/resume    @controllers.ConsentController.resumeDataSharing
+POST   /api/v2/consent/dataSharing           @controllers.ConsentController.changeSharingScope
 
 # API - Upload
 POST   /api/v1/upload                  @controllers.UploadController.upload
