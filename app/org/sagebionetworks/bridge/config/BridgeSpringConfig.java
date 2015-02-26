@@ -32,6 +32,7 @@ import redis.clients.jedis.JedisPoolConfig;
 
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload;
@@ -43,7 +44,9 @@ import org.sagebionetworks.bridge.upload.DecryptHandler;
 import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler;
 import org.sagebionetworks.bridge.upload.ParseJsonHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
+import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
 import org.sagebionetworks.bridge.upload.UnzipHandler;
+import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
 import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 
 @ComponentScan(basePackages = "org.sagebionetworks.bridge")
@@ -61,15 +64,16 @@ public class BridgeSpringConfig {
         return CacheBuilder.newBuilder().build(cacheLoader);
     }
 
+    @Bean(name = "healthDataAttachmentDdbMapper")
+    @Autowired
+    public DynamoDBMapper healthDataAttachmentDdbMapper(AmazonDynamoDB client) {
+        return getMapperForClass(client, DynamoHealthDataAttachment.class);
+    }
+
     @Bean(name = "healthDataDdbMapper")
     @Autowired
     public DynamoDBMapper healthDataDdbMapper(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder()
-                .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE)
-                .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoHealthDataRecord.class))
-                .build();
-        return new DynamoDBMapper(client, mapperConfig);
+        return getMapperForClass(client, DynamoHealthDataRecord.class);
     }
 
     @Bean(name = "healthDataHealthCodeIndex")
@@ -152,34 +156,24 @@ public class BridgeSpringConfig {
     @Bean(name = "uploadDdbMapper")
     @Autowired
     public DynamoDBMapper uploadDdbMapper(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(
-                DynamoDBMapperConfig.SaveBehavior.UPDATE)
-                .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoUpload2.class)).build();
-        return new DynamoDBMapper(client, mapperConfig);
+        return getMapperForClass(client, DynamoUpload2.class);
     }
 
     // TODO: Remove this when the migration is done
     @Bean(name = "uploadDdbMapperOld")
     @Autowired
     public DynamoDBMapper uploadDdbMapperOld(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(
-                DynamoDBMapperConfig.SaveBehavior.UPDATE)
-                .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoUpload.class)).build();
-        return new DynamoDBMapper(client, mapperConfig);
+        return getMapperForClass(client, DynamoUpload.class);
     }
 
     @Bean(name = "uploadValidationHandlerList")
     @Autowired
     public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,
             DecryptHandler decryptHandler, UnzipHandler unzipHandler, ParseJsonHandler parseJsonHandler,
-            IosSchemaValidationHandler iosSchemaValidationHandler) {
-        // TODO: add handlers for the following:
-        // * download consent date
-        // * write intermediate artifacts
+            IosSchemaValidationHandler iosSchemaValidationHandler, TranscribeConsentHandler transcribeConsentHandler,
+            UploadArtifactsHandler uploadArtifactsHandler) {
         return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler, parseJsonHandler,
-                iosSchemaValidationHandler);
+                iosSchemaValidationHandler, transcribeConsentHandler, uploadArtifactsHandler);
     }
 
     @Bean(name = "uploadSchemaDdbMapper")
@@ -222,5 +216,13 @@ public class BridgeSpringConfig {
     @Autowired
     public Application getStormpathApplication(BridgeConfig config, Client client) {
         return client.getResource(config.getStormpathApplicationHref().trim(), Application.class);
+    }
+
+    private static DynamoDBMapper getMapperForClass(AmazonDynamoDB client, Class<?> clazz) {
+        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder()
+                .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE)
+                .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
+                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(clazz)).build();
+        return new DynamoDBMapper(client, mapperConfig);
     }
 }

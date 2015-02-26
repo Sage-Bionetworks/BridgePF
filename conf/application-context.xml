@@ -373,12 +373,7 @@
         <property name="accountDao" ref="accountDao" />
         </bean>
 
-    <bean id="consentService" class="org.sagebionetworks.bridge.services.ConsentServiceImpl">
-        <property name="accountDao" ref="accountDao" />
-        <property name="sendMailService" ref="sendEmailViaAmazonService"/>
-        <property name="studyConsentDao" ref="studyConsentDao"/>
-        <property name="userConsentDao" ref="userConsentDao"/>
-    </bean>
+    <bean id="consentService" class="org.sagebionetworks.bridge.services.ConsentServiceImpl" />
 
     <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">
         <property name="studyConsentDao" ref="studyConsentDao" />
@@ -451,6 +446,8 @@
     <bean id="cacheAdminService" class="org.sagebionetworks.bridge.services.CacheAdminService">
         <property name="jedisPool" ref="jedisPool"/>
     </bean>
+
+    <!-- everything else -->
 
     <bean id="backfillRecordFactory" class="org.sagebionetworks.bridge.services.backfill.BackfillRecordFactory">
         <property name="backfillDao" ref="backfillDao" />

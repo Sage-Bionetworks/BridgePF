@@ -51,7 +51,7 @@ public class DynamoUploadSchema implements UploadSchema {
 
     /**
      * This is the DynamoDB key. It is used by the DynamoDB mapper. This should not be used directly. The key format is
-     * "[studyID]$[schemaID]". The schema ID may contain dollar signs. The study ID may not. Since the key is created
+     * "[studyID]:[schemaID]". The schema ID may contain colons. The study ID may not. Since the key is created
      * from the study ID and schema ID, this will throw an InvalidEntityException if either one is blank.
      */
     @DynamoDBHashKey
@@ -63,7 +63,7 @@ public class DynamoUploadSchema implements UploadSchema {
         if (Strings.isNullOrEmpty(schemaId)) {
             throw new InvalidEntityException(this, String.format(Validate.CANNOT_BE_BLANK, "schemaId"));
         }
-        return String.format("%s$%s", studyId, schemaId);
+        return String.format("%s:%s", studyId, schemaId);
     }
 
     /**
@@ -77,7 +77,7 @@ public class DynamoUploadSchema implements UploadSchema {
         Preconditions.checkNotNull(key, Validate.CANNOT_BE_NULL, "key");
         Preconditions.checkArgument(!key.isEmpty(), Validate.CANNOT_BE_EMPTY_STRING, "key");
 
-        String[] parts = key.split("\\$", 2);
+        String[] parts = key.split(":", 2);
         Preconditions.checkArgument(parts.length == 2, "key has wrong number of parts");
         Preconditions.checkArgument(!parts[0].isEmpty(), "key has empty study ID");
         Preconditions.checkArgument(!parts[1].isEmpty(), "key has empty schema ID");

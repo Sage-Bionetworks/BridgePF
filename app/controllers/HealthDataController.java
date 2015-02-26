@@ -2,6 +2,7 @@ package controllers;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
@@ -18,19 +19,37 @@ public class HealthDataController extends BaseController {
         this.healthDataService = healthDataService;
     }
 
+    /* HEALTH DATA RECORD APIs */
+
     /**
      * Play controller for POST /worker/v2/healthdata. This API is used by worker apps to create health data records,
-     * generally from unpacking uploads. This API cannot be used to update existing records.
+     * generally from unpacking uploads.
      *
      * @return Play result, containing the unique ID of the record just created
      */
-    public Result createRecord() {
+    public Result createOrUpdateRecord() {
         // TODO: Until worker accounts are implemented, this will use admin accounts.
         getAuthenticatedAdminSession();
 
         HealthDataRecord record = parseJson(request(), HealthDataRecord.class);
-        String recordId = healthDataService.createRecord(record);
+        String recordId = healthDataService.createOrUpdateRecord(record);
         return okResult(recordId);
+    }
+
+    /**
+     * Play controller for GET /worker/v2/healthdata/byId. This API is used by worker apps to fetch health data records
+     * by the specified record ID.
+     *
+     * @param id
+     *         record ID
+     * @return Play result containing the health data record
+     */
+    public Result getRecordById(String id) {
+        // TODO: Until worker accounts are implemented, this will use admin accounts.
+        getAuthenticatedAdminSession();
+
+        HealthDataRecord record = healthDataService.getRecordById(id);
+        return okResult(record);
     }
 
     /**
@@ -47,5 +66,22 @@ public class HealthDataController extends BaseController {
 
         List<HealthDataRecord> recordList = healthDataService.getRecordsForUploadDate(uploadDate);
         return okResult(recordList);
+    }
+
+    /* HEALTH DATA ATTACHMENT APIs */
+
+    /**
+     * Play controller for POST /worker/v2/healthDataAttachment. This API is used by worker apps to create or update
+     * health data attachments, generally from unpacking uploads.
+     *
+     * @return Play result containing the unique ID of the attachment just created
+     */
+    public Result createOrUpdateAttachment() {
+        // TODO: Until worker accounts are implemented, this will use admin accounts.
+        getAuthenticatedAdminSession();
+
+        HealthDataAttachment attachment = parseJson(request(), HealthDataAttachment.class);
+        String attachmentId = healthDataService.createOrUpdateAttachment(attachment);
+        return okResult(attachmentId);
     }
 }
