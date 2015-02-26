@@ -41,4 +41,14 @@ public interface HealthDataRecord extends BridgeEntity {
 
     /** Calendar date the health data was uploaded. This is generally filled in by the Bridge server. */
     LocalDate getUploadDate();
+
+    /** Struct containing information about user consent and sharing options. */
+    HealthDataUserConsent getUserConsentMetadata();
+
+    /**
+     * Record version. This is used to detect concurrency conflicts. For creating new health data records, this field
+     * should be left unspecified. For updating records, this field should match the version of the most recent GET
+     * request.
+     */
+    Long getVersion();
 }

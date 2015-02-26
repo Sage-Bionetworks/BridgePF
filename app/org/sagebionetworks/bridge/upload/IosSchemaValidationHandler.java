@@ -507,18 +507,6 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
                 }
             }
         }
-
-        // debug messages to help debug
-        if (logger.isDebugEnabled()) {
-            try {
-                String recordJson = BridgeObjectMapper.get().writerWithDefaultPrettyPrinter().writeValueAsString(
-                        context.getHealthDataRecordBuilder().build());
-                logger.debug(String.format("Health Data Record: %s", recordJson));
-                logger.debug(String.format("Attachments: %s", Joiner.on(", ").join(attachmentMap.keySet())));
-            } catch (JsonProcessingException ex) {
-                logger.debug("Couldn't convert record builder into JSON", ex);
-            }
-        }
     }
 
     // For some reason, the iOS apps are sending timestamps in form "YYYY-MM-DD hh:mm:ss +ZZZZ", which is

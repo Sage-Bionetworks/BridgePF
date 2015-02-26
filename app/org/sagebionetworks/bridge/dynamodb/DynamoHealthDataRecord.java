@@ -5,13 +5,14 @@ import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.LocalDateToStringSerializer;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataUserConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.amazonaws.services.dynamodbv2.datamodeling.JsonMarshaller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -31,6 +32,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private int schemaRevision;
     private String studyId;
     private LocalDate uploadDate;
+    private HealthDataUserConsent userConsentMetadata;
     private Long version;
 
     /** {@inheritDoc} */
@@ -142,18 +144,25 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
         this.uploadDate = uploadDate;
     }
 
-    /**
-     * DynamoDB version, used for optimistic locking. This is used internally by Bridge and by DynamoDB and is not
-     * exposed to users.
-     */
+    /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = UserConsentMarshaller.class)
+    @Override
+    public HealthDataUserConsent getUserConsentMetadata() {
+        return userConsentMetadata;
+    }
+
+    /** @see #getUserConsentMetadata */
+    public void setUserConsentMetadata(HealthDataUserConsent userConsentMetadata) {
+        this.userConsentMetadata = userConsentMetadata;
+    }
+
+    /** {@inheritDoc} */
     @DynamoDBVersionAttribute
-    @JsonIgnore
     public Long getVersion() {
         return version;
     }
 
     /** @see #getVersion */
-    @JsonIgnore
     public void setVersion(Long version) {
         this.version = version;
     }
@@ -173,7 +182,14 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
             record.setSchemaRevision(getSchemaRevision());
             record.setStudyId(getStudyId());
             record.setUploadDate(getUploadDate());
+            record.setUserConsentMetadata(getUserConsentMetadata());
+            record.setVersion(getVersion());
             return record;
         }
+    }
+
+    // This is an empty class. It really only exists to parameterize JsonMarshaller, so we can pass it into the
+    // DynamoDBMarshalling annotation.
+    public static class UserConsentMarshaller extends JsonMarshaller<HealthDataUserConsent> {
     }
 }

@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.upload.UploadValidationTask;
@@ -35,17 +36,19 @@ public class UploadValidationService {
      * method returns immediately. Call UploadService.getUpload() to check for validation status and messages.
      * </p>
      * <p>
-     * Study comes from the controller and upload comes from UploadService.getUpload(), so neither field is user input,
-     * so validation is not needed.
+     * Study and user comes from the controller and upload comes from UploadService.getUpload(), so none of the fields
+     * are user input, so validation is not needed.
      * </p>
      *
      * @param study
      *         study this upload lives in
+     * @param user
+     *         user uploading
      * @param upload
      *         upload metadata object for the upload
      */
-    public void validateUpload(@Nonnull Study study, @Nonnull Upload upload) {
-        UploadValidationTask task = taskFactory.newTask(study, upload);
+    public void validateUpload(@Nonnull Study study, @Nonnull User user, @Nonnull Upload upload) {
+        UploadValidationTask task = taskFactory.newTask(study, user, upload);
         asyncExecutorService.execute(task);
     }
 }

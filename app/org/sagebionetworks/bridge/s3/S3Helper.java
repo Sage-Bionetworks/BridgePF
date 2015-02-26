@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.s3;
 
 import javax.annotation.Nonnull;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -56,5 +57,11 @@ public class S3Helper {
     public String readS3FileAsString(@Nonnull String bucket, @Nonnull String key) throws IOException {
         byte[] bytes = readS3FileAsBytes(bucket, key);
         return new String(bytes, Charsets.UTF_8);
+    }
+
+    public void writeBytesToS3(@Nonnull String bucket, @Nonnull String key, @Nonnull byte[] data) throws IOException {
+        try (InputStream dataInputStream = new ByteArrayInputStream(data)) {
+            s3Client.putObject(bucket, key, dataInputStream, null);
+        }
     }
 }

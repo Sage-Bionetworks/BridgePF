@@ -23,6 +23,24 @@ public abstract class HealthDataRecordBuilder {
     private int schemaRevision;
     private String studyId;
     private LocalDate uploadDate;
+    private HealthDataUserConsent userConsentMetadata;
+    private Long version;
+
+    /** Copies all fields from the specified record into the builder. This is useful for updating records. */
+    public HealthDataRecordBuilder copyOf(HealthDataRecord record) {
+        createdOn = record.getCreatedOn();
+        data = record.getData();
+        healthCode = record.getHealthCode();
+        id = record.getId();
+        metadata = record.getMetadata();
+        schemaId = record.getSchemaId();
+        schemaRevision = record.getSchemaRevision();
+        studyId = record.getStudyId();
+        uploadDate = record.getUploadDate();
+        userConsentMetadata = record.getUserConsentMetadata();
+        version = record.getVersion();
+        return this;
+    }
 
     /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getCreatedOn */
     public Long getCreatedOn() {
@@ -121,6 +139,27 @@ public abstract class HealthDataRecordBuilder {
     public HealthDataRecordBuilder withUploadDate(LocalDate uploadDate) {
         this.uploadDate = uploadDate;
         return this;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUserConsentMetadata */
+    public HealthDataUserConsent getUserConsentMetadata() {
+        return userConsentMetadata;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUserConsentMetadata */
+    public HealthDataRecordBuilder withUserConsentMetadata(HealthDataUserConsent userConsentMetadata) {
+        this.userConsentMetadata = userConsentMetadata;
+        return this;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getVersion */
+    public Long getVersion() {
+        return version;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getVersion */
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     /**
