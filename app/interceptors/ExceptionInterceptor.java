@@ -9,6 +9,7 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -33,6 +34,7 @@ public class ExceptionInterceptor implements MethodInterceptor {
     
     private static Set<Class<? extends BridgeServiceException>> quietExceptions = Sets.newHashSet();
     static {
+        quietExceptions.add(BadRequestException.class);
         quietExceptions.add(InvalidEntityException.class);
         quietExceptions.add(EntityAlreadyExistsException.class);
         quietExceptions.add(EntityNotFoundException.class);
@@ -62,15 +64,13 @@ public class ExceptionInterceptor implements MethodInterceptor {
             }
             
             if (!config.isLocal() && quietExceptions.contains(throwable.getClass())) {
-                // quiet exceptions, just a one liner at the debug level. May suppress eventually.
                 if (throwable instanceof InvalidEntityException) {
-                    // For the near future, log this in the event it represents an error
-                    // on our side.
+                    // For the near future, log this in the event it represents an error on our side.
                     Http.Request request = Http.Context.current().request();
                     String bodyContent = request.body().asText();
-                    logger.debug(throwable.getMessage() + ": " + bodyContent);
+                    logger.debug(throwable.getMessage() + ": " + bodyContent, throwable);
                 } else {
-                    logger.debug(throwable.getMessage());
+                    logger.debug(throwable.getMessage(), throwable);
                 }
             } else {
                 // stuff we don't expect, log the stacktrace at the error level
