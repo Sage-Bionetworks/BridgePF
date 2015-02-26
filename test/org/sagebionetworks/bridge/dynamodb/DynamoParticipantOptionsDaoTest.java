@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
@@ -37,23 +38,23 @@ public class DynamoParticipantOptionsDaoTest {
     }
     
     @Test
-    public void testScopeOfDataSharing() {
+    public void canChangeSharingScope() {
         Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
         String healthCode1 = "AAA";
         
-        optionsDao.setOption(study, healthCode1, ParticipantOption.SCOPE_OF_SHARING, ParticipantOption.ScopeOfSharing.ALL_QUALIFIED_RESEARCHERS.name());
+        optionsDao.setOption(study, healthCode1, ParticipantOption.SHARING_SCOPE, SharingScope.ALL_QUALIFIED_RESEARCHERS.name());
         
-        OptionLookup lookup = optionsDao.getOptionForAllStudyParticipants(study, ParticipantOption.SCOPE_OF_SHARING);
+        OptionLookup lookup = optionsDao.getOptionForAllStudyParticipants(study, ParticipantOption.SHARING_SCOPE);
         // Either way will work, as a string or as a proper enumeration.
-        assertEquals(ParticipantOption.ScopeOfSharing.ALL_QUALIFIED_RESEARCHERS.name(), lookup.get("AAA"));
-        assertEquals(ParticipantOption.ScopeOfSharing.ALL_QUALIFIED_RESEARCHERS, lookup.getScopeOfSharing("AAA"));
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS.name(), lookup.get("AAA"));
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, lookup.getSharingScope("AAA"));
         
         optionsDao.deleteAllParticipantOptions("AAA");
         
         // After deletion, should return to the default value
-        lookup = optionsDao.getOptionForAllStudyParticipants(study, ParticipantOption.SCOPE_OF_SHARING);
-        assertEquals(ParticipantOption.ScopeOfSharing.NO_SHARING.name(), lookup.get("AAA"));
-        assertEquals(ParticipantOption.ScopeOfSharing.NO_SHARING, lookup.getScopeOfSharing("AAA"));
+        lookup = optionsDao.getOptionForAllStudyParticipants(study, ParticipantOption.SHARING_SCOPE);
+        assertEquals(SharingScope.NO_SHARING.name(), lookup.get("AAA"));
+        assertEquals(SharingScope.NO_SHARING, lookup.getSharingScope("AAA"));
     }
     
 }

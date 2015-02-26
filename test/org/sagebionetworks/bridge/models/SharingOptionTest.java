@@ -5,7 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -16,13 +16,13 @@ public class SharingOptionTest {
     @Test
     public void sharingOptionUsesCorrectDefaults() {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put("scope", ParticipantOption.ScopeOfSharing.SPONSORS_AND_PARTNERS.name().toLowerCase());
+        node.put("scope", SharingScope.SPONSORS_AND_PARTNERS.name().toLowerCase());
         
         SharingOption option = SharingOption.fromJson(node, 1);
-        assertEquals(ParticipantOption.ScopeOfSharing.NO_SHARING, option.getScopeOfSharing());
+        assertEquals(SharingScope.NO_SHARING, option.getSharingScope());
         
         option = SharingOption.fromJson(node, 2);
-        assertEquals(ParticipantOption.ScopeOfSharing.SPONSORS_AND_PARTNERS, option.getScopeOfSharing());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, option.getSharingScope());
         
         try {
             node = JsonNodeFactory.instance.objectNode();
@@ -36,7 +36,7 @@ public class SharingOptionTest {
     @Test
     public void sharingOptionFailsGracefully() {
         SharingOption option = SharingOption.fromJson(null, 1);
-        assertEquals(ParticipantOption.ScopeOfSharing.NO_SHARING, option.getScopeOfSharing());
+        assertEquals(SharingScope.NO_SHARING, option.getSharingScope());
         
         try {
             option = SharingOption.fromJson(null, 11);

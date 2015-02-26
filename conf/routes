@@ -39,7 +39,7 @@ GET    /api/v1/consent                       @controllers.ConsentController.getC
 POST   /api/v1/consent/email                 @controllers.ConsentController.emailCopy
 POST   /api/v1/consent/dataSharing/suspend   @controllers.ConsentController.suspendDataSharing
 POST   /api/v1/consent/dataSharing/resume    @controllers.ConsentController.resumeDataSharing
-POST   /api/v2/consent/dataSharing           @controllers.ConsentController.changeDataSharing
+POST   /api/v2/consent/dataSharing           @controllers.ConsentController.changeSharingScope
 
 # API - Upload
 POST   /api/v1/upload                  @controllers.UploadController.upload

@@ -16,7 +16,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -87,9 +87,9 @@ public class AuthenticationServiceImplTest {
     }
     
     @Test 
-    public void signInSetsScopeOfSharing() { 
+    public void signInSetsSharingScope() { 
         UserSession newSession = authService.signIn(testUser.getStudy(), testUser.getSignIn());
-        assertEquals(ParticipantOption.ScopeOfSharing.NO_SHARING, newSession.getUser().getDataSharing()); // this is the default.
+        assertEquals(SharingScope.NO_SHARING, newSession.getUser().getSharingScope()); // this is the default.
     }
 
     @Test
