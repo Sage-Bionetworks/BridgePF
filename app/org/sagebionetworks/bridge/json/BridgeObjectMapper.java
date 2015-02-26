@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.surveys.DataType;
@@ -71,6 +72,9 @@ public class BridgeObjectMapper extends ObjectMapper {
         serializers.addDeserializer(Operator.class, new OperatorJsonDeserializer());
         serializers.addSerializer(Operator.class, new LowercaseEnumJsonSerializer());
 
+        serializers.addDeserializer(SharingScope.class, new SharingScopeDeserializer());
+        serializers.addSerializer(SharingScope.class, new LowercaseEnumJsonSerializer());
+        
         this.registerModule(serializers);
     }
     
