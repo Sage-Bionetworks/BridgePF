@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 
 import com.amazonaws.AmazonClientException;
@@ -72,11 +73,11 @@ public class SendMailViaAmazonService implements SendMailService {
     public void setFromEmail(String fromEmail) {
         this.fromEmail = fromEmail;
     }
-
+    @Autowired
     public void setEmailClient(AmazonSimpleEmailServiceClient emailClient) {
         this.emailClient = emailClient;
     }
-
+    @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }

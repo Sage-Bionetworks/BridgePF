@@ -6,13 +6,17 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
@@ -30,6 +34,7 @@ import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
@@ -46,9 +51,69 @@ import org.sagebionetworks.bridge.upload.S3DownloadHandler;
 import org.sagebionetworks.bridge.upload.UnzipHandler;
 import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 
-@ComponentScan(basePackages = "org.sagebionetworks.bridge")
+//@ComponentScan(basePackages = "org.sagebionetworks.bridge")
 @Configuration
 public class BridgeSpringConfig {
+    
+    @Bean(name = "healthCodeEncryptor")
+    @Resource(name = "bridgeConfig")
+    public AesGcmEncryptor healthCodeEncryptor(BridgeConfig bridgeConfig) {
+        return new AesGcmEncryptor(bridgeConfig.getHealthCodeKey());
+    }
+    
+    @Bean(name = "awsCredentials")
+    @Resource(name = "bridgeConfig")
+    public BasicAWSCredentials awsCredentials(BridgeConfig bridgeConfig) {
+        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key"), bridgeConfig.getProperty("aws.secret.key"));
+    }
+    
+    @Bean(name = "s3UploadCredentials")
+    @Resource(name = "bridgeConfig")
+    public BasicAWSCredentials s3UploadCredentials(BridgeConfig bridgeConfig) {
+        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.upload"), bridgeConfig.getProperty("aws.secret.key.upload"));
+    }
+    
+    @Bean(name = "s3CmsCredentials")
+    @Resource(name = "bridgeConfig")
+    public BasicAWSCredentials s3CmsCredentials(BridgeConfig bridgeConfig) {
+        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.upload.cms"), bridgeConfig.getProperty("aws.secret.key.upload.cms"));
+    }
+    
+    @Bean(name = "dynamoDbClient")
+    @Resource(name = "awsCredentials")
+    public AmazonDynamoDBClient dynamoDbClient(BasicAWSCredentials awsCredentials) {
+        return new AmazonDynamoDBClient(awsCredentials);
+    }
+    
+    @Bean(name = "s3Client")
+    @Resource(name = "awsCredentials")
+    public AmazonS3Client s3Client(BasicAWSCredentials awsCredentials) {
+        return new AmazonS3Client(awsCredentials);
+    }
+    
+    @Bean(name = "s3UploadClient")
+    @Resource(name = "s3UploadCredentials")
+    public AmazonS3Client s3UploadClient(BasicAWSCredentials s3UploadCredentials) {
+        return new AmazonS3Client(s3UploadCredentials);
+    }
+
+    @Bean(name = "s3CmsClient")
+    @Resource(name = "s3CmsCredentials")
+    public AmazonS3Client s3CmsClient(BasicAWSCredentials s3CmsCredentials) {
+        return new AmazonS3Client(s3CmsCredentials);
+    }
+    
+    @Bean(name ="uploadTokenServiceClient")
+    @Resource(name = "s3UploadCredentials")
+    public AWSSecurityTokenServiceClient uploadTokenServiceClient(BasicAWSCredentials s3UploadCredentials) {
+        return new AWSSecurityTokenServiceClient(s3UploadCredentials);
+    }
+    
+    @Bean(name = "bridgeConfig")
+    public BridgeConfig bridgeConfig() {
+        return BridgeConfigFactory.getConfig();
+    }
+    
     @Bean(name = "asyncExecutorService")
     @Resource(name = "numAsyncWorkerThreads")
     public ExecutorService asyncExecutorService(Integer numAsyncWorkerThreads) {
@@ -223,4 +288,11 @@ public class BridgeSpringConfig {
     public Application getStormpathApplication(BridgeConfig config, Client client) {
         return client.getResource(config.getStormpathApplicationHref().trim(), Application.class);
     }
+    
+    @Bean(name = "sesClient")
+    @Resource(name="awsCredentials")
+    public AmazonSimpleEmailServiceClient sesClient(BasicAWSCredentials awsCredentials) {
+        return new AmazonSimpleEmailServiceClient(awsCredentials);
+    }
+    
 }

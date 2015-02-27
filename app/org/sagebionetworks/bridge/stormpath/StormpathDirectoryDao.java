@@ -12,6 +12,8 @@ import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.stormpath.sdk.application.AccountStoreMapping;
 import com.stormpath.sdk.application.Application;
@@ -25,6 +27,7 @@ import com.stormpath.sdk.group.GroupCriteria;
 import com.stormpath.sdk.group.GroupList;
 import com.stormpath.sdk.group.Groups;
 
+@Component
 public class StormpathDirectoryDao implements DirectoryDao {
 
     private static Logger logger = LoggerFactory.getLogger(StormpathDirectoryDao.class);
@@ -32,10 +35,11 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private BridgeConfig config;
     private Client client;
 
+    @Autowired
     public void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.config = bridgeConfig;
     }
-
+    @Autowired
     public void setStormpathClient(Client client) {
         this.client = client;
     }

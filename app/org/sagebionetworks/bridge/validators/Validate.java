@@ -2,17 +2,13 @@ package org.sagebionetworks.bridge.validators;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import global.JsonSchemaValidator;
 
 import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
 import org.springframework.validation.FieldError;
@@ -20,16 +16,11 @@ import org.springframework.validation.MapBindingResult;
 import org.springframework.validation.ObjectError;
 import org.springframework.validation.Validator;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.github.fge.jsonschema.core.report.ProcessingMessage;
-import com.github.fge.jsonschema.core.report.ProcessingReport;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class Validate {
-    
-    private final static JsonSchemaValidator schemaValidator = new JsonSchemaValidator();
     
     public static final String CANNOT_BE_BLANK = "%s cannot be missing, null, or blank";
     public static final String CANNOT_BE_EMPTY_STRING = "%s cannot be an empty string";
@@ -38,24 +29,6 @@ public class Validate {
     public static final String CANNOT_BE_NULL_OR_EMPTY = "%s cannot be null or empty";
     public static final String CANNOT_BE_ZERO_OR_NEGATIVE = "%s cannot be negative";
     public static final String WRONG_TYPE = "%s is the wrong type";
-
-    public static void jsonWithSchema(Tracker tracker, JsonNode node) {
-        MapBindingResult errors = new MapBindingResult(Maps.newHashMap(), tracker.getName());
-        try {
-            ProcessingReport report = schemaValidator.validate(tracker, node);
-            for (ProcessingMessage message : report) {
-                errors.rejectValue("data", "invalid: " + message.getMessage());
-            }
-        } catch(Throwable throwable) {
-            throw new BadRequestException(throwable);
-        }
-        if (errors.hasErrors()) {
-            String message = convertBindingResultToMessage(errors);
-            Map<String,List<String>> map = convertBindingResultToSimpleMap(errors);
-            
-            throw new InvalidEntityException(new DynamoHealthDataRecord(), message, map);
-        }
-    }
     
     public static void entityThrowingException(Validator validator, Object object) {
         checkNotNull(validator);

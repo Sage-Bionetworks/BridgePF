@@ -7,19 +7,24 @@ import java.util.List;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.sagebionetworks.bridge.validators.Validate;
-import org.springframework.validation.Validator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class SchedulePlanServiceImpl implements SchedulePlanService {
     
     private SchedulePlanDao schedulePlanDao;
-    private Validator validator;
-    
+    private SchedulePlanValidator validator;
+
+    @Autowired
     public void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
         this.schedulePlanDao = schedulePlanDao;
     }
     
-    public void setValidator(Validator validator) {
+    @Autowired
+    public void setValidator(SchedulePlanValidator validator) {
         this.validator = validator;
     }
 

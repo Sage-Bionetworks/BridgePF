@@ -24,7 +24,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class UserAdminServiceImpl implements UserAdminService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserAdminServiceImpl.class);
@@ -37,31 +39,31 @@ public class UserAdminServiceImpl implements UserAdminService {
     private StudyService studyService;
     private DistributedLockDao lockDao;
 
+    @Autowired
     public void setAuthenticationService(AuthenticationServiceImpl authenticationService) {
         this.authenticationService = authenticationService;
     }
-    
+    @Autowired
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
-
+    @Autowired
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
-
     @Autowired
     public void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
     }
-
+    @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-
+    @Autowired
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
-    
+    @Autowired
     public void setHealthIdDao(HealthIdDao healthIdDao) {
         this.healthIdDao = healthIdDao;
     }

@@ -15,7 +15,10 @@ import org.sagebionetworks.bridge.models.BackfillStatus;
 import org.sagebionetworks.bridge.models.BackfillTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 abstract class AsyncBackfillTemplate implements BackfillService {
 
     private final Logger logger = LoggerFactory.getLogger(AsyncBackfillTemplate.class);
@@ -23,16 +26,18 @@ abstract class AsyncBackfillTemplate implements BackfillService {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private DistributedLockDao lockDao;
+    private BackfillDao backfillDao;
+    private BackfillRecordFactory backfillRecordFactory;
+
+    @Autowired
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
-
-    private BackfillDao backfillDao;
+    @Autowired
     public void setBackfillDao(BackfillDao backfillDao) {
         this.backfillDao = backfillDao;
     }
-
-    private BackfillRecordFactory backfillRecordFactory;
+    @Autowired
     public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
         this.backfillRecordFactory = backfillRecordFactory;
     }

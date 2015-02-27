@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import play.libs.Json;
 import play.mvc.Controller;
@@ -51,18 +52,22 @@ public abstract class BaseController extends Controller {
     protected CacheProvider cacheProvider;
     protected BridgeConfig bridgeConfig;
     
+    @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
 
+    @Autowired
     public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
 
+    @Autowired
     public void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
     
+    @Autowired
     public void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.bridgeConfig = bridgeConfig;
     }

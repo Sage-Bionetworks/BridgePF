@@ -15,6 +15,8 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -30,6 +32,7 @@ import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
+@Component
 public class DynamoSurveyResponseDao implements SurveyResponseDao {
 
     private DynamoDBMapper responseMapper;
@@ -41,6 +44,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         }
     };
 
+    @Autowired
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
@@ -48,6 +52,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         responseMapper = new DynamoDBMapper(client, mapperConfig);
     }
     
+    @Autowired
     public void setSurveyDao(DynamoSurveyDao surveyDao) {
         this.surveyDao = surveyDao;
     }

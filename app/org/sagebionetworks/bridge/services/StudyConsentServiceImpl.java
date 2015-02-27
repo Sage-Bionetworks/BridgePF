@@ -11,18 +11,24 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.validators.StudyConsentValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
+@Component
 public class StudyConsentServiceImpl implements StudyConsentService {
 
     private Validator validator;
     private StudyConsentDao studyConsentDao;
 
-    public void setValidator(Validator validator) {
+    @Autowired
+    public void setValidator(StudyConsentValidator validator) {
         this.validator = validator;
     }
     
+    @Autowired
     public void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
