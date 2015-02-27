@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
@@ -14,20 +13,25 @@ import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.validators.SurveyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
+@Component
 public class SurveyServiceImpl implements SurveyService {
 
     private Validator validator;
-    
     private SurveyDao surveyDao;
     
+    @Autowired
     public void setSurveyDao(SurveyDao surveyDao) {
         this.surveyDao = surveyDao;
     }
     
-    public void setValidator(Validator validator) {
+    @Autowired
+    public void setValidator(SurveyValidator validator) {
         this.validator = validator;
     }
 

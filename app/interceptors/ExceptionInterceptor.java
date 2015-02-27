@@ -19,6 +19,8 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import play.libs.Json;
 import play.mvc.Http;
@@ -27,6 +29,7 @@ import play.mvc.Results;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
 
+@Component
 public class ExceptionInterceptor implements MethodInterceptor {
 
     private static Logger logger = LoggerFactory.getLogger(ExceptionInterceptor.class);
@@ -42,6 +45,7 @@ public class ExceptionInterceptor implements MethodInterceptor {
     
     private BridgeConfig config;
     
+    @Autowired
     public void setBridgeConfig(BridgeConfig config) {
         this.config = config;
     }

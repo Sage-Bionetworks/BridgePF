@@ -6,7 +6,8 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
 import java.util.List;
-import java.util.Map;
+
+import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -17,12 +18,12 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.Tracker;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import com.google.common.collect.Maps;
-
+@Component
 public class StudyServiceImpl implements StudyService {
 
     public Study load(String identifier) throws EntityNotFoundException {
@@ -36,47 +37,36 @@ public class StudyServiceImpl implements StudyService {
     private BridgeConfig config;
     private StudyValidator validator;
     private CacheProvider cacheProvider;
-    private Map<String,Tracker> trackersByIdentifier = Maps.newHashMap();
     
+    @Resource(name="uploadCertificateService")
     public void setUploadCertificateService(UploadCertificateService uploadCertService) {
         this.uploadCertService = uploadCertService;
     }
-    
+    @Autowired
     public void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
-
+    @Autowired
     public void setValidator(StudyValidator validator) {
         this.validator = validator;
     }
+    @Autowired
     public void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
     }
-
+    @Autowired
     public void setDirectoryDao(DirectoryDao directoryDao) {
         this.directoryDao = directoryDao;
     }
-
+    @Autowired
     public void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.config = bridgeConfig;
     }
-    
+    @Autowired
     public void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
-
-    public void setTrackers(List<Tracker> trackers) {
-        if (trackers != null) {
-            for (Tracker tracker : trackers) {
-                trackersByIdentifier.put(tracker.getIdentifier(), tracker);
-            }
-        }
-    }
-
-    @Override
-    public Tracker getTracker(String trackerId) {
-        return trackersByIdentifier.get(trackerId);
-    }
+    
     @Override
     public Study getStudy(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");

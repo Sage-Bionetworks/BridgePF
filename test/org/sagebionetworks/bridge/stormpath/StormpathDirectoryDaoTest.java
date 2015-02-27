@@ -44,16 +44,18 @@ public class StormpathDirectoryDaoTest {
     public void crudDirectory() {
         identifier = TestUtils.randomName();
         String stormpathHref = directoryDao.createDirectoryForStudy(identifier);
+        System.out.println("So when you create a directory, you get: " + stormpathHref);
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
         // Verify the directory and mapping were created
         Directory directory = getDirectory(stormpathHref);
+        
         assertEquals("Name is the right one", identifier + " ("+config.getEnvironment().name().toLowerCase()+")", directory.getName());
         assertTrue("Mapping exists for new directory in the right application", containsMapping(stormpathHref));
         assertTrue("The researcher group was created", researcherGroupExists(directory, identifier));
         
         Directory newDirectory = directoryDao.getDirectoryForStudy(identifier);
-        assertEquals("Directory is in map", directory.getHref(), newDirectory.getHref());
+        assertEquals(directory.getHref(), newDirectory.getHref());
         
         directoryDao.deleteDirectoryForStudy(identifier);
         

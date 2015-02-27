@@ -4,6 +4,8 @@ import java.util.Date;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.amazonaws.auth.AWSSessionCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
@@ -15,6 +17,7 @@ import com.amazonaws.services.securitytoken.model.GetSessionTokenResult;
 /**
  * Generates session-based, temporary credentials.
  */
+@Component
 public class UploadSessionCredentialsService {
 
     /**
@@ -32,6 +35,7 @@ public class UploadSessionCredentialsService {
 
     private volatile Credentials credentials;
 
+    @Autowired
     public UploadSessionCredentialsService(AWSSecurityTokenServiceClient tokenServiceClient) {
         this.tokenServiceClient = tokenServiceClient;
         credentials = generateCredentials();

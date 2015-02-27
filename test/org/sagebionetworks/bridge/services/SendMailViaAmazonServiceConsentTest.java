@@ -79,7 +79,7 @@ public class SendMailViaAmazonServiceConsentTest {
             }
         };
     }
-
+    
     @Test
     public void sendConsentEmail() {
         ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null);

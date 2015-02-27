@@ -11,7 +11,10 @@ import org.sagebionetworks.bridge.models.HealthIdImpl;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class HealthCodeServiceImpl implements HealthCodeService {
 
     private final Logger logger = LoggerFactory.getLogger(HealthCodeServiceImpl.class);
@@ -19,9 +22,11 @@ public class HealthCodeServiceImpl implements HealthCodeService {
     private HealthIdDao healthIdDao;
     private HealthCodeDao healthCodeDao;
 
+    @Autowired
     public void setHealthIdDao(HealthIdDao healthIdDao) {
         this.healthIdDao = healthIdDao;
     }
+    @Autowired
     public void setHealthCodeDao(HealthCodeDao healthCodeDao) {
         this.healthCodeDao = healthCodeDao;
     }

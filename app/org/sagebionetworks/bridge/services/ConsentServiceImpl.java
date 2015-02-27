@@ -20,7 +20,9 @@ import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ConsentServiceImpl implements ConsentService {
 
     private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
@@ -35,19 +37,19 @@ public class ConsentServiceImpl implements ConsentService {
     public void setStringOps(JedisStringOps stringOps) {
         this.stringOps = stringOps;
     }
-
+    @Autowired
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
-    
+    @Autowired
     public void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
     }
-
+    @Autowired
     public void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
-
+    @Autowired
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
