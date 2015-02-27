@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -17,6 +19,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.PreencodedMimeBodyPart;
+import javax.mail.util.ByteArrayDataSource;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.format.DateTimeFormat;
@@ -31,6 +34,7 @@ import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
+import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.regions.Region;
@@ -39,8 +43,10 @@ import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.simpleemail.model.RawMessage;
 import com.amazonaws.services.simpleemail.model.SendRawEmailRequest;
 import com.amazonaws.services.simpleemail.model.SendRawEmailResult;
+import com.fasterxml.jackson.core.util.ByteArrayBuilder;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
+import com.lowagie.text.DocumentException;
 
 public class SendMailViaAmazonService implements SendMailService {
     
@@ -61,6 +67,7 @@ public class SendMailViaAmazonService implements SendMailService {
     private static final String MIME_TYPE_TSV = "text/tab-separated-value";
     private static final String MIME_TYPE_HTML = "text/html";
     private static final String MIME_TYPE_TEXT = "text/plain";
+    private static final String MIME_TYPE_PDF = "application/pdf";
     private static final String DELIMITER = "\t";
     private static final String NEWLINE = "\n";
     private static final Region region = Region.getRegion(Regions.US_EAST_1);
@@ -80,15 +87,34 @@ public class SendMailViaAmazonService implements SendMailService {
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-    
+
     @Override
     public void sendConsentAgreement(User user, ConsentSignature consentSignature, StudyConsent studyConsent) {
+
         try {
-            Study study = studyService.getStudy(studyConsent.getStudyKey());
-            
-            String body = createSignedDocument(user, consentSignature, studyConsent);
-            MimeBodyPart bodyPart = new MimeBodyPart();
-            bodyPart.setContent(body, MIME_TYPE_HTML);
+            final String consentDoc = createSignedDocument(user, consentSignature, studyConsent);
+
+            // Consent agreement as message body in HTML
+            final MimeBodyPart bodyPart = new MimeBodyPart();
+            bodyPart.setContent(consentDoc, MIME_TYPE_HTML);
+
+            // Consent agreement as a PDF attachment
+            ByteArrayBuilder byteArrayBuilder = new ByteArrayBuilder();
+            ITextRenderer renderer = new ITextRenderer();
+            String consentDocWithSig = consentDoc.replace("cid:consentSignature",
+                    "data:" + consentSignature.getImageMimeType() +
+                    ";base64," + consentSignature.getImageData());
+            renderer.setDocumentFromString(consentDocWithSig);
+            renderer.layout();
+            renderer.createPDF(byteArrayBuilder);
+            byteArrayBuilder.flush();
+            final byte[] pdfBytes = byteArrayBuilder.toByteArray();
+            byteArrayBuilder.close();
+
+            final MimeBodyPart pdfPart = new MimeBodyPart();
+            DataSource source = new ByteArrayDataSource(pdfBytes, MIME_TYPE_PDF);
+            pdfPart.setDataHandler(new DataHandler(source));
+            pdfPart.setFileName("consent.pdf");
 
             // Write signature image as an attachment, if it exists. Because of the validation in ConsentSignature, if
             // imageData is present, so will imageMimeType.
@@ -102,16 +128,17 @@ public class SendMailViaAmazonService implements SendMailService {
                 sigPart.setHeader(HEADER_CONTENT_DISPOSITION, HEADER_CONTENT_DISPOSITION_CONSENT_VALUE);
                 sigPart.setContent(consentSignature.getImageData(), consentSignature.getImageMimeType());
             }
-            
-            // As recommended by Amazon, we send the emails separately.
+
+            // As recommended by Amazon, we send the emails separately
+            final Study study = studyService.getStudy(studyConsent.getStudyKey());
             String subject = String.format(CONSENT_EMAIL_SUBJECT, study.getName());
-            
-            sendEmailTo(subject, user.getEmail(), bodyPart, sigPart);
+
+            sendEmailTo(subject, user.getEmail(), bodyPart, pdfPart, sigPart);
             Set<String> emailAddresses = commaListToSet(study.getConsentNotificationEmail());
             for (String email : emailAddresses) {
-                sendEmailTo(subject, email, bodyPart, sigPart);
+                sendEmailTo(subject, email, bodyPart, pdfPart, sigPart);
             }
-        } catch(IOException | MessagingException e) {
+        } catch(IOException | MessagingException | DocumentException e) {
             throw new BridgeServiceException(e);
         }
     }
