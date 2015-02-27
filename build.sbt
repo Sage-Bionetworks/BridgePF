@@ -27,6 +27,7 @@ libraryDependencies ++= Seq(
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC2.1",
   "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC2.1",
   "redis.clients" % "jedis" % "2.6.1",
+  "org.xhtmlrenderer" % "flying-saucer-pdf" % "9.0.7",
   "nl.jqno.equalsverifier" % "equalsverifier" % "1.6"
 )
 
