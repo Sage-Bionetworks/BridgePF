@@ -406,7 +406,7 @@
     </bean>
 
     <bean id="sendEmailViaAmazonService" class="org.sagebionetworks.bridge.services.SendMailViaAmazonService">
-        <property name="fromEmail" value="support@sagebridge.org" />
+        <property name="supportEmail" value="support@sagebridge.org" />
         <property name="emailClient" ref="sesClient" />
         <property name="studyService" ref="studyService" />
     </bean>
