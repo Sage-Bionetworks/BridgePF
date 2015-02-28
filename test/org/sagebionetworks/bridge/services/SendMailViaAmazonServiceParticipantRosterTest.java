@@ -41,7 +41,7 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         argument = ArgumentCaptor.forClass(SendRawEmailRequest.class);
 
         service = new SendMailViaAmazonService();
-        service.setFromEmail("test-sender@sagebase.org");
+        service.setSupportEmail("test-sender@sagebase.org");
         service.setEmailClient(emailClient);
     }
     

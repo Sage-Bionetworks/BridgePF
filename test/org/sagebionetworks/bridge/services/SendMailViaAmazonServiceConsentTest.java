@@ -37,11 +37,13 @@ public class SendMailViaAmazonServiceConsentTest {
     private StudyService studyService;
     private StudyConsent studyConsent;
     private ArgumentCaptor<SendRawEmailRequest> argument;
-
+    private Study study;
+    
     @Before
     public void setUp() throws Exception {
-        Study study = new DynamoStudy();
+        study = new DynamoStudy();
         study.setIdentifier("api");
+        study.setSupportEmail("study-support-email@study.com");
         study.setMinAgeOfConsent(17);
 
         studyService = mock(StudyService.class);
@@ -52,7 +54,7 @@ public class SendMailViaAmazonServiceConsentTest {
         argument = ArgumentCaptor.forClass(SendRawEmailRequest.class);
 
         service = new SendMailViaAmazonService();
-        service.setFromEmail("test-sender@sagebase.org");
+        service.setSupportEmail("test-sender@sagebase.org");
         service.setEmailClient(emailClient);
         service.setStudyService(studyService);
 
@@ -81,6 +83,20 @@ public class SendMailViaAmazonServiceConsentTest {
     }
 
     @Test
+    public void whenNoStudySupportEmailUsesDefaultSupportEmail() {
+        study.setSupportEmail(""); // just a blank string, tricky
+        
+        ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null);
+        User user = new User();
+        user.setEmail("test-user@sagebase.org");
+        service.sendConsentAgreement(user, consent, studyConsent);
+        
+        verify(emailClient).sendRawEmail(argument.capture());
+        SendRawEmailRequest req = argument.getValue();
+        assertEquals("Correct sender", "test-sender@sagebase.org", req.getSource());
+    }
+    
+    @Test
     public void sendConsentEmail() {
         ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null);
         User user = new User();
@@ -92,7 +108,7 @@ public class SendMailViaAmazonServiceConsentTest {
 
         // validate from
         SendRawEmailRequest req = argument.getValue();
-        assertEquals("Correct sender", "test-sender@sagebase.org", req.getSource());
+        assertEquals("Correct sender", study.getSupportEmail(), req.getSource());
 
         // validate to
         List<String> toList = req.getDestinations();
@@ -119,7 +135,7 @@ public class SendMailViaAmazonServiceConsentTest {
 
         // validate from
         SendRawEmailRequest req = argument.getValue();
-        assertEquals("Correct sender", "test-sender@sagebase.org", req.getSource());
+        assertEquals("Correct sender", study.getSupportEmail(), req.getSource());
 
         // validate to
         List<String> toList = req.getDestinations();
