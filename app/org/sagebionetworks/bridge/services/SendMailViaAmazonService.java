@@ -108,7 +108,8 @@ public class SendMailViaAmazonService implements SendMailService {
             // As recommended by Amazon, we send the emails separately.
             String subject = String.format(CONSENT_EMAIL_SUBJECT, study.getName());
             
-            String sendFromEmail = isNotBlank(study.getSupportEmail()) ? study.getSupportEmail() : supportEmail;
+            String sendFromEmail = isNotBlank(study.getSupportEmail()) ?
+                    String.format("%s <%s>", study.getName(), study.getSupportEmail()) : supportEmail;
            
             sendEmailTo(subject, sendFromEmail, user.getEmail(), bodyPart, sigPart);
             Set<String> emailAddresses = commaListToSet(study.getConsentNotificationEmail());
