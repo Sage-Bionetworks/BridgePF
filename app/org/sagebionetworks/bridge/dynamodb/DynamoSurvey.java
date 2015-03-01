@@ -177,10 +177,11 @@ public class DynamoSurvey implements Survey {
     public List<SurveyElement> getElements() {
         return elements;
     }
-    
+
     @Override
     @DynamoDBIgnore
-    @JsonProperty("questions")
+    // @JsonProperty("questions")
+    @JsonIgnore
     public List<SurveyQuestion> getUnmodifiableQuestionList() {
         ImmutableList.Builder<SurveyQuestion> builder = new ImmutableList.Builder<SurveyQuestion>();
         for (SurveyElement element : elements) {
