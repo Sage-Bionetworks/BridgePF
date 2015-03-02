@@ -77,6 +77,9 @@ public class StormpathAccountDao implements AccountDao {
     }
     @Resource(name = "stormpathClient")
     public void setStormpathClient(Client client) {
+        if (client == null) {
+            throw new RuntimeException("client null in setter");
+        }
         this.client = client;
     }
     @Autowired
@@ -89,7 +92,7 @@ public class StormpathAccountDao implements AccountDao {
             encryptors.put(encryptor.getVersion(), encryptor);
         }
     }
-    
+
     @Override
     public Iterator<Account> getAllAccounts() {
         Iterator<Account> combinedIterator = null;
@@ -232,7 +235,7 @@ public class StormpathAccountDao implements AccountDao {
     public Account getAccount(Study study, String email) {
         checkNotNull(study);
         checkArgument(isNotBlank(email));
-        
+
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
         
         AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email))
