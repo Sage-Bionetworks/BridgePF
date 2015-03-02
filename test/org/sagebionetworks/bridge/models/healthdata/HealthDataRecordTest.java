@@ -18,6 +18,7 @@ import org.springframework.validation.MapBindingResult;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -257,19 +258,25 @@ public class HealthDataRecordTest {
                 "   \"schemaId\":\"json schema\",\n" +
                 "   \"schemaRevision\":3,\n" +
                 "   \"studyId\":\"json study\",\n" +
-                "   \"uploadDate\":\"2014-02-12\"\n" +
+                "   \"uploadDate\":\"2014-02-12\",\n" +
+                "   \"uploadId\":\"json upload\",\n" +
+                "   \"userSharingScope\":\"all_qualified_researchers\",\n" +
+                "   \"version\":42\n" +
                 "}";
         long measuredTimeMillis = new DateTime(2014, 2, 12, 13, 45, BridgeConstants.LOCAL_TIME_ZONE).getMillis();
 
         // convert to POJO
         HealthDataRecord record = BridgeObjectMapper.get().readValue(jsonText, HealthDataRecord.class);
+        assertEquals(measuredTimeMillis, record.getCreatedOn().longValue());
         assertEquals("json healthcode", record.getHealthCode());
         assertEquals("json record ID", record.getId());
-        assertEquals(measuredTimeMillis, record.getCreatedOn().longValue());
         assertEquals("json schema", record.getSchemaId());
         assertEquals(3, record.getSchemaRevision());
         assertEquals("json study", record.getStudyId());
         assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
+        assertEquals("json upload", record.getUploadId());
+        assertEquals(ParticipantOption.SharingScope.ALL_QUALIFIED_RESEARCHERS, record.getUserSharingScope());
+        assertEquals(42, record.getVersion().longValue());
 
         assertEquals(1, record.getData().size());
         assertEquals("myDataValue", record.getData().get("myData").asText());
@@ -282,13 +289,16 @@ public class HealthDataRecordTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(10, jsonMap.size());
+        assertEquals(13, jsonMap.size());
         assertEquals("json healthcode", jsonMap.get("healthCode"));
         assertEquals("json record ID", jsonMap.get("id"));
         assertEquals("json schema", jsonMap.get("schemaId"));
         assertEquals(3, jsonMap.get("schemaRevision"));
         assertEquals("json study", jsonMap.get("studyId"));
         assertEquals("2014-02-12", jsonMap.get("uploadDate"));
+        assertEquals("json upload", jsonMap.get("uploadId"));
+        assertEquals("all_qualified_researchers", jsonMap.get("userSharingScope"));
+        assertEquals(42, jsonMap.get("version"));
         assertEquals("HealthData", jsonMap.get("type"));
 
         DateTime convertedMeasuredTime = DateTime.parse((String) jsonMap.get("createdOn"));

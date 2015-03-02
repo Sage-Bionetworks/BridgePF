@@ -7,6 +7,7 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
+import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -14,6 +15,7 @@ import org.sagebionetworks.bridge.models.upload.Upload;
 /** This class encapsulates data read and generated during the process of upload validation. */
 public class UploadValidationContext {
     private Study study;
+    private User user;
     private Upload upload;
     private boolean success = true;
     private List<String> messageList = new ArrayList<>();
@@ -35,6 +37,14 @@ public class UploadValidationContext {
     /** @see #getStudy */
     public void setStudy(Study study) {
         this.study = study;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     /**
@@ -124,8 +134,8 @@ public class UploadValidationContext {
 
     /**
      * Health Data Record Builder, used to build a health data record that will be written to the health data record
-     * table. This is initially created by IosSchemaValidationHandler and is finalized and persisted by
-     * UploadArtifactsHandler.
+     * table. This is initially created by IosSchemaValidationHandler, is further updated by the
+     * TranscribeConsentHandler, and is finalized and persisted by UploadArtifactsHandler.
      */
     public HealthDataRecordBuilder getHealthDataRecordBuilder() {
         return healthDataRecordBuilder;

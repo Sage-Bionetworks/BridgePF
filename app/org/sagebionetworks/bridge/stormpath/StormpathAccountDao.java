@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 
+import javax.annotation.Resource;
+
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.SimpleHttpConnectionManager;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
@@ -55,6 +57,7 @@ import com.stormpath.sdk.impl.resource.AbstractResource;
 import com.stormpath.sdk.resource.ResourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class StormpathAccountDao implements AccountDao {
 
@@ -64,21 +67,28 @@ public class StormpathAccountDao implements AccountDao {
     private Client client;
     private StudyService studyService;
     private SortedMap<Integer,Encryptor> encryptors = Maps.newTreeMap();
-    
+
+    @Autowired
     public void setStormpathApplication(Application application) {
         this.application = application;
     }
-    
+
+    @Resource(name = "stormpathClient")
     public void setStormpathClient(Client client) {
+        if (client == null) {
+            throw new RuntimeException("client null in setter");
+        }
         this.client = client;
     }
-    
+
+    @Autowired
     public void setEncryptors(List<Encryptor> list) {
         for (Encryptor encryptor : list) {
             encryptors.put(encryptor.getVersion(), encryptor);
         }
     }
-    
+
+    @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
@@ -225,7 +235,7 @@ public class StormpathAccountDao implements AccountDao {
     public Account getAccount(Study study, String email) {
         checkNotNull(study);
         checkArgument(isNotBlank(email));
-        
+
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
         
         AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email))
