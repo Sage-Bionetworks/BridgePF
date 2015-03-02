@@ -111,13 +111,13 @@ public class AuthenticationServiceImplTest {
 
     @Test(expected = NullPointerException.class)
     public void requestPasswordResetFailsOnNull() throws Exception {
-        authService.requestResetPassword(null);
+        authService.requestResetPassword(testUser.getStudy(), null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void requestPasswordResetFailsOnEmptyString() throws Exception {
-        Email email = new Email("");
-        authService.requestResetPassword(email);
+        Email email = new Email("", testUser.getStudyIdentifier());
+        authService.requestResetPassword(testUser.getStudy(), email);
     }
 
     @Test(expected = BridgeServiceException.class)
@@ -142,7 +142,7 @@ public class AuthenticationServiceImplTest {
     public void canResendEmailVerification() throws Exception {
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
         try {
-            Email email = new Email(user.getEmail());
+            Email email = new Email(user.getEmail(), testUser.getStudyIdentifier());
             authService.resendEmailVerification(user.getStudyIdentifier(), email);
         } catch (ConsentRequiredException e) {
         } finally {

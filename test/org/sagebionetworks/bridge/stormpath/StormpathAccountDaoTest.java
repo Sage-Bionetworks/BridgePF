@@ -166,7 +166,7 @@ public class StormpathAccountDaoTest {
         try {
             accountDao.signUp(study, signUp, false); // don't send email
             
-            Email emailObj = new Email(signUp.getEmail());
+            Email emailObj = new Email(signUp.getEmail(), study.getStudyIdentifier());
             accountDao.resendEmailVerificationToken(study.getStudyIdentifier(), emailObj); // now send email
         } finally {
             accountDao.deleteAccount(study, signUp.getEmail());
@@ -191,27 +191,41 @@ public class StormpathAccountDaoTest {
     @Test
     public void requestResetPassword() {
         String emailString = "bridge-tester+43@sagebridge.org";
-        StormpathAccountDao dao = new StormpathAccountDao();
+        
         Application application = mock(Application.class);
+        Directory directory = mock(Directory.class);
+        Client client = mock(Client.class);
+        when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
+        
+        StormpathAccountDao dao = new StormpathAccountDao();
         dao.setStormpathApplication(application);
+        dao.setStormpathClient(client);
         
-        dao.requestResetPassword(new Email(emailString));
+        dao.requestResetPassword(study, new Email(emailString, study.getStudyIdentifier()));
         
-        verify(application).sendPasswordResetEmail(emailString);
+        verify(client).getResource(study.getStormpathHref(), Directory.class);
+        verify(application).sendPasswordResetEmail(emailString, directory);
     }
     
     @Test(expected = BridgeServiceException.class)
     public void requestPasswordRequestThrowsException() {
         String emailString = "bridge-tester+43@sagebridge.org";
-        StormpathAccountDao dao = new StormpathAccountDao();
         
         Application application = mock(Application.class);
+        Directory directory = mock(Directory.class);
+        Client client = mock(Client.class);
+        when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
+        
+        StormpathAccountDao dao = new StormpathAccountDao();
+        dao.setStormpathApplication(application);
+        dao.setStormpathClient(client);
+        
         com.stormpath.sdk.error.Error error = mock(com.stormpath.sdk.error.Error.class);
         ResourceException e = new ResourceException(error);
-        when(application.sendPasswordResetEmail(emailString)).thenThrow(e);
+        when(application.sendPasswordResetEmail(emailString, directory)).thenThrow(e);
         dao.setStormpathApplication(application);
         
-        dao.requestResetPassword(new Email(emailString));
+        dao.requestResetPassword(study, new Email(emailString, study.getStudyIdentifier()));
     }
 
     @Test
