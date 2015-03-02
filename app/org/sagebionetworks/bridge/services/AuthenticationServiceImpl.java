@@ -1,9 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -26,6 +24,7 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.SignUpValidator;
@@ -48,6 +47,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private SignInValidator signInValidator;
     private SignUpValidator signUpValidator;
     private PasswordResetValidator passwordResetValidator;
+    private EmailValidator emailValidator;
 
     @Autowired
     public void setDistributedLockDao(DistributedLockDao lockDao) {
@@ -88,6 +88,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Autowired
     public void setPasswordResetValidator(PasswordResetValidator validator) {
         this.passwordResetValidator = validator;
+    }
+    @Autowired
+    public void setEmailValidator(EmailValidator validator) {
+        this.emailValidator = validator;
     }
 
     @Override
@@ -163,17 +167,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public void resendEmailVerification(StudyIdentifier studyIdentifier, Email email) {
         checkNotNull(studyIdentifier, "StudyIdentifier object cannnot be null");
         checkNotNull(email, "Email object cannnot be null");
-        checkNotNull(email.getEmail(), "Email is required");
+        
+        Validate.entityThrowingException(emailValidator, email);
         
         accountDao.resendEmailVerificationToken(studyIdentifier, email);
     }
 
     @Override
-    public void requestResetPassword(Email email) throws BridgeServiceException {
-        checkNotNull(email, "Email object cannot cannot be null");
-        checkArgument(StringUtils.isNotBlank(email.getEmail()), "Email is required");
+    public void requestResetPassword(Study study, Email email) throws BridgeServiceException {
+        checkNotNull(study);
+        checkNotNull(email);
+        
+        Validate.entityThrowingException(emailValidator, email);
 
-        accountDao.requestResetPassword(email);
+        accountDao.requestResetPassword(study, email);
     }
 
     @Override

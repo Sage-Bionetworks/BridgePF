@@ -2,6 +2,7 @@ package controllers;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
@@ -79,7 +80,9 @@ public class AuthenticationController extends BaseController {
 
     public Result requestResetPassword() throws Exception {
         Email email = Email.fromJson(requestToJSON(request()));
-        authenticationService.requestResetPassword(email);
+        Study study = getStudyOrThrowException(email);
+        
+        authenticationService.requestResetPassword(study, email);
         return okResult("An email has been sent allowing you to set a new password.");
     }
 
@@ -87,5 +90,16 @@ public class AuthenticationController extends BaseController {
         PasswordReset passwordReset = PasswordReset.fromJson(requestToJSON(request()));
         authenticationService.resetPassword(passwordReset);
         return okResult("Password has been changed.");
+    }
+    
+    private Study getStudyOrThrowException(Email email) {
+        if (email.getStudyIdentifier() != null) {
+            return studyService.getStudy(email.getStudyIdentifier());
+        }
+        String studyString = getStudyIdentifier();
+        if (studyString != null) {
+            return studyService.getStudy(studyString);
+        }
+        throw new EntityNotFoundException(Study.class);
     }
 }

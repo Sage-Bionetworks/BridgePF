@@ -55,6 +55,7 @@ import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupMembership;
 import com.stormpath.sdk.impl.resource.AbstractResource;
 import com.stormpath.sdk.resource.ResourceException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -187,11 +188,13 @@ public class StormpathAccountDao implements AccountDao {
     }
 
     @Override
-    public void requestResetPassword(Email email) {
+    public void requestResetPassword(Study study, Email email) {
+        checkNotNull(study);
         checkNotNull(email);
-        
+
         try {
-            application.sendPasswordResetEmail(email.getEmail());
+            Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
+            application.sendPasswordResetEmail(email.getEmail(), directory);
         } catch (ResourceException e) {
             rethrowResourceException(e, null);
         }

@@ -25,7 +25,7 @@ public interface AuthenticationService {
     
     public void resendEmailVerification(StudyIdentifier studyIdentifier, Email email);
 
-    public void requestResetPassword(Email email);
+    public void requestResetPassword(Study study, Email email);
 
     public void resetPassword(PasswordReset passwordReset);
     
