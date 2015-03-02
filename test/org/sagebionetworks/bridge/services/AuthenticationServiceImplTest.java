@@ -185,8 +185,8 @@ public class AuthenticationServiceImplTest {
 
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
         try {
-            authService.signUp(user.getSignUp(), user.getStudy(), false);
-            authService.signUp(user.getSignUp(), tempStudy, false);
+            authService.signUp(user.getStudy(), user.getSignUp(), false);
+            authService.signUp(tempStudy, user.getSignUp(), false);
             fail("Should not get here");
         } catch (EntityAlreadyExistsException e) {
             assertEquals("Account already exists.", e.getMessage());

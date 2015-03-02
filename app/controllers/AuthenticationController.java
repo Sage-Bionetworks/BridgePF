@@ -56,7 +56,7 @@ public class AuthenticationController extends BaseController {
     public Result signUp() throws Exception {
         SignUp signUp = SignUp.fromJson(requestToJSON(request()), false);
         Study study = studyService.getStudy(getStudyIdentifier());
-        authenticationService.signUp(signUp, study, true);
+        authenticationService.signUp(study, signUp, true);
         return createdResult("Signed up.");
     }
 

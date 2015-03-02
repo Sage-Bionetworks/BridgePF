@@ -128,10 +128,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void signUp(SignUp signUp, Study study, boolean sendEmail) {
+    public void signUp(Study study, SignUp signUp, boolean sendEmail) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
-        checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
 
         String lockId = null;
         try {
