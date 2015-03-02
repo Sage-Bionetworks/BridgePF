@@ -1,18 +1,17 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.LocalDateToStringSerializer;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataUserConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
-import com.amazonaws.services.dynamodbv2.datamodeling.JsonMarshaller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -32,7 +31,8 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private int schemaRevision;
     private String studyId;
     private LocalDate uploadDate;
-    private HealthDataUserConsent userConsentMetadata;
+    private String uploadId;
+    private ParticipantOption.SharingScope userSharingScope;
     private Long version;
 
     /** {@inheritDoc} */
@@ -145,15 +145,26 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBMarshalling(marshallerClass = UserConsentMarshaller.class)
     @Override
-    public HealthDataUserConsent getUserConsentMetadata() {
-        return userConsentMetadata;
+    public String getUploadId() {
+        return uploadId;
     }
 
-    /** @see #getUserConsentMetadata */
-    public void setUserConsentMetadata(HealthDataUserConsent userConsentMetadata) {
-        this.userConsentMetadata = userConsentMetadata;
+    /** @see #getUploadId */
+    public void setUploadId(String uploadId) {
+        this.uploadId = uploadId;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
+    @Override
+    public ParticipantOption.SharingScope getUserSharingScope() {
+        return userSharingScope;
+    }
+
+    /** @see #getUserSharingScope */
+    public void setUserSharingScope(ParticipantOption.SharingScope userSharingScope) {
+        this.userSharingScope = userSharingScope;
     }
 
     /** {@inheritDoc} */
@@ -182,14 +193,10 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
             record.setSchemaRevision(getSchemaRevision());
             record.setStudyId(getStudyId());
             record.setUploadDate(getUploadDate());
-            record.setUserConsentMetadata(getUserConsentMetadata());
+            record.setUploadId(getUploadId());
+            record.setUserSharingScope(getUserSharingScope());
             record.setVersion(getVersion());
             return record;
         }
-    }
-
-    // This is an empty class. It really only exists to parameterize JsonMarshaller, so we can pass it into the
-    // DynamoDBMarshalling annotation.
-    public static class UserConsentMarshaller extends JsonMarshaller<HealthDataUserConsent> {
     }
 }

@@ -107,8 +107,7 @@ DELETE /admin/v1/cache/:cacheKey @controllers.CacheAdminController.removeItem(ca
 
 # Worker - Health Data
 POST /worker/v2/healthdata @controllers.HealthDataController.createOrUpdateRecord
-GET /worker/v2/healthdata/byId/:id @controllers.HealthDataController.getRecordById(id: String)
-GET /worker/v2/healthdata/byUploadDate/:uploadDate @controllers.HealthDataController.getRecordsForUploadDate(uploadDate: String)
+GET /worker/v2/healthdata @controllers.HealthDataController.getRecord
 POST /worker/v2/healthDataAttachment @controllers.HealthDataController.createOrUpdateAttachment
 
 # Lunch

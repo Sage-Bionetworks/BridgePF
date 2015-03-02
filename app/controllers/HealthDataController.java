@@ -2,11 +2,14 @@ package controllers;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import play.mvc.Http;
 import play.mvc.Result;
 
 /** Play controller for health data APIs. */
@@ -34,6 +37,32 @@ public class HealthDataController extends BaseController {
         HealthDataRecord record = parseJson(request(), HealthDataRecord.class);
         String recordId = healthDataService.createOrUpdateRecord(record);
         return okResult(recordId);
+    }
+
+    /**
+     * Play controller for GET /worker/v2/healthdata. This routes to {@link #getRecordById} if the "id" query
+     * parameters is specified, or to {@link #getRecordsForUploadDate} if the "uploadDate" query parameter is
+     * specified. If neither parameter is specified, this throws an exception. If both are specified, the behavior is
+     * undefined.
+     *
+     * @return result of either getRecordById or getRecordsForUploadDate, depending on how the request is routed
+     */
+    public Result getRecord() throws Exception {
+        Http.Request request = request();
+
+        // by id
+        String id = request.getQueryString("id");
+        if (StringUtils.isNotBlank(id)) {
+            return getRecordById(id);
+        }
+
+        // by upload date
+        String uploadDate = request.getQueryString("uploadDate");
+        if (StringUtils.isNotBlank(uploadDate)) {
+            return getRecordsForUploadDate(uploadDate);
+        }
+
+        throw new BadRequestException("Request to get health data record with neither id nor uploadDate");
     }
 
     /**

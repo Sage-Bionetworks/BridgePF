@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
@@ -135,28 +136,23 @@ public class ConsentServiceImplTest {
     @Test
     public void cannotConsentIfTooYoung() {
         LocalDate now = LocalDate.now();
-        int year = now.getYear();
-        int month = now.getMonthOfYear();
-        int day = now.getDayOfMonth();
-
-        // The API study is set for 17 years... just go with that as it exists, it's easiest
-        String today18YearsAgo = String.format("%s-%2d-%2d", year - 18, month, day).replaceAll(" ", "0");
-        String yesterday18YearsAgo = String.format("%s-%2d-%2d", year - 18, month, day - 1).replaceAll(" ", "0");
-        String tomorrow18YearsAgo = String.format("%s-%2d-%2d", year - 18, month, day + 1).replaceAll(" ", "0");
+        LocalDate today18YearsAgo = now.minusYears(18);
+        LocalDate yesterday18YearsAgo = today18YearsAgo.minusDays(1);
+        LocalDate tomorrow18YearsAgo = today18YearsAgo.plusDays(1);
 
         // This will work
-        ConsentSignature sig = ConsentSignature.create("Test User", today18YearsAgo, null, null);
+        ConsentSignature sig = ConsentSignature.create("Test User", DateUtils.getCalendarDateString(today18YearsAgo), null, null);
         consentService.consentToResearch(study, testUser.getUser(), sig, false);
         consentService.withdrawConsent(study, testUser.getUser());
 
         // Also okay
-        sig = ConsentSignature.create("Test User", yesterday18YearsAgo, null, null);
+        sig = ConsentSignature.create("Test User", DateUtils.getCalendarDateString(yesterday18YearsAgo), null, null);
         consentService.consentToResearch(study, testUser.getUser(), sig, false);
         consentService.withdrawConsent(study, testUser.getUser());
 
         // But this is not, one day to go
         try {
-            sig = ConsentSignature.create("Test User", tomorrow18YearsAgo, null, null);
+            sig = ConsentSignature.create("Test User", DateUtils.getCalendarDateString(tomorrow18YearsAgo), null, null);
             consentService.consentToResearch(study, testUser.getUser(), sig, false);
         } catch (InvalidEntityException e) {
             consentService.withdrawConsent(study, testUser.getUser());
