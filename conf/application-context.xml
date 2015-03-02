@@ -2,37 +2,34 @@
    xmlns:context="http://www.springframework.org/schema/context"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xmlns:mvc="http://www.springframework.org/schema/mvc"
+   xmlns:util="http://www.springframework.org/schema/util"
    xsi:schemaLocation="
         http://www.springframework.org/schema/beans     
         http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
         http://www.springframework.org/schema/context 
         http://www.springframework.org/schema/context/spring-context-3.0.xsd
         http://www.springframework.org/schema/mvc
-        http://www.springframework.org/schema/mvc/spring-mvc.xsd">
-
-    <context:annotation-config base-package="controllers,filters,interceptors,models,org.sagebionetworks.bridge"/>
+        http://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/util 
+        http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+        
+    <context:annotation-config base-package="
+        controllers,
+        filters,
+        interceptors,
+        models,
+        org.sagebionetworks.bridge
+    "/>
     <bean class="org.sagebionetworks.bridge.config.BridgeSpringConfig" />
 
-    <bean id="sendEmailViaAmazonService" class="org.sagebionetworks.bridge.services.SendMailViaAmazonService">
-        <property name="fromEmail" value="support@sagebridge.org" />
-    </bean>
-    
     <bean id="numAsyncWorkerThreads" class="java.lang.Integer">
         <constructor-arg value="20" />
     </bean>
     
-    <bean id="accountDao" class="org.sagebionetworks.bridge.stormpath.StormpathAccountDao">
-        <property name="encryptors">
-            <list>
-                <ref bean="healthCodeEncryptor"/>
-            </list>
-        </property>
-    </bean>
-
-    <bean id="BaseController" class="controllers.BaseController" abstract="true"/>
-    
-    <bean id="AdminController" class="controllers.AdminController" abstract="true" parent="BaseController"/>
-    
+    <util:list id="encryptorList">
+        <ref bean="healthCodeEncryptor"/>
+    </util:list>
+     
     <bean id="proxiedController" class="org.springframework.aop.framework.ProxyFactoryBean">
         <property name="proxyTargetClass" value="true"/>
         <property name="interceptorNames">
@@ -43,134 +40,71 @@
         </property>
     </bean>
     
-    <bean id="controllers.ApplicationController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.ApplicationController" parent="BaseController">
-            </bean>
-        </property>
+    <bean id="ApplicationControllerProxied" parent="proxiedController">
+        <property name="targetName" value="applicationController"/>
     </bean>
 
-    <bean id="controllers.AuthenticationController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.AuthenticationController" parent="BaseController">
-            </bean>
-        </property>
+    <bean id="AuthenticationControllerProxied" parent="proxiedController">
+        <property name="targetName" value="authenticationController"/>
     </bean>
 
-    <bean id="controllers.HealthDataController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.HealthDataController" parent="BaseController" />
-        </property>
+    <bean id="HealthDataControllerProxied" parent="proxiedController">
+        <property name="targetName" value="healthDataController"/>
     </bean>
 
-    <bean id="controllers.UserProfileController" parent="proxiedController">
-        <property name="target" ref="controllers.UserProfileController"/>
-        <!-- 
-            <bean class="controllers.UserProfileController" parent="BaseController">
-                <property name="userProfileService" ref="userProfileService"/>
-                <property name="viewCache" ref="viewCache"/>
-            </bean>
-        </property>
-         -->
+    <bean id="UserProfileControllerProxied" parent="proxiedController">
+        <property name="targetName" value="userProfileController"/>
     </bean>
 
-    <bean id="controllers.UploadSchemaController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.UploadSchemaController" parent="BaseController" />
-        </property>
+    <bean id="UploadSchemaControllerProxied" parent="proxiedController">
+        <property name="targetName" value="uploadSchemaController"/>
     </bean>
 
-    <bean id="controllers.ConsentController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.ConsentController" parent="BaseController">
-                <property name="consentService" ref="consentService" />
-                <property name="optionsService" ref="optionsService" />
-            </bean>
-        </property>
+    <bean id="ConsentControllerProxied" parent="proxiedController">
+        <property name="targetName" value="consentController"/>
     </bean>
     
-    <bean id="controllers.ScheduleController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.ScheduleController" parent="BaseController">
-                <property name="schedulePlanService" ref="schedulePlanService" />
-            </bean>
-        </property>
+    <bean id="ScheduleControllerProxied" parent="proxiedController">
+        <property name="targetName" value="scheduleController"/>
     </bean>
     
-    <bean id="controllers.BackfillController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.BackfillController" parent="AdminController" />
-        </property>
+    <bean id="BackfillControllerProxied" parent="proxiedController">
+        <property name="targetName" value="backfillController" />
     </bean>
 
-    <bean id="controllers.StudyConsentController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.StudyConsentController" parent="AdminController">
-                <property name="studyConsentService" ref="studyConsentService" />
-            </bean>
-        </property>
+    <bean id="StudyConsentControllerProxied" parent="proxiedController">
+        <property name="targetName" value="studyConsentController"/>
     </bean>
 
-    <bean id="controllers.SurveyController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.SurveyController" parent="BaseController">
-                <property name="surveyService" ref="surveyService" />
-                <property name="viewCache" ref="viewCache" />
-            </bean>
-        </property>
+    <bean id="SurveyControllerProxied" parent="proxiedController">
+        <property name="targetName" value="surveyController"/>
     </bean>
 
-    <bean id="controllers.UploadController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.UploadController" parent="BaseController">
-                <property name="uploadService" ref="uploadService" />
-            </bean>
-        </property>
+    <bean id="UploadControllerProxied" parent="proxiedController">
+        <property name="targetName" value="uploadController"/>
     </bean>
 
-    <bean id="controllers.SurveyResponseController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.SurveyResponseController" parent="BaseController">
-                <property name="surveyResponseService" ref="surveyResponseService" />
-            </bean>
-        </property>
+    <bean id="SurveyResponseControllerProxied" parent="proxiedController">
+        <property name="targetName" value="surveyResponseController"/>
     </bean>
     
-    <bean id="controllers.UserManagementControler" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.UserManagementController" parent="AdminController">
-                <property name="userAdminService" ref="userAdminService" />
-            </bean>
-        </property>
+    <bean id="UserManagementControllerProxied" parent="proxiedController">
+        <property name="targetName" value="userManagementController"/>
     </bean>    
 
-    <bean id="controllers.SchedulePlanController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.SchedulePlanController" parent="BaseController">
-                <property name="schedulePlanService" ref="schedulePlanService" />
-            </bean>
-        </property>
+    <bean id="SchedulePlanControllerProxied" parent="proxiedController">
+        <property name="targetName" value="schedulePlanController"/>
     </bean>
     
-    <bean id="controllers.StudyController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.StudyController" parent="BaseController">
-                <property name="userProfileService" ref="userProfileService" />
-            </bean>
-        </property>
+    <bean id="StudyControllerProxied" parent="proxiedController">
+        <property name="targetName" value="studyController"/>
     </bean>
     
-    <bean id="controllers.CacheAdminController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.CacheAdminController" parent="BaseController">
-                <property name="cacheAdminService" ref="cacheAdminService" />
-            </bean>
-        </property>
+    <bean id="CacheAdminControllerProxied" parent="proxiedController">
+        <property name="targetName" value="cacheAdminController"/>
     </bean>
 
-    <bean id="controllers.LunchController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.LunchController" parent="BaseController" />
-        </property>
+    <bean id="LunchControllerProxied" parent="proxiedController">
+        <property name="targetName" value="lunchController"/>
     </bean>
 </beans>

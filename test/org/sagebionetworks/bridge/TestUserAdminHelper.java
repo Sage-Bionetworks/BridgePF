@@ -15,6 +15,8 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Sets;
 
@@ -24,6 +26,7 @@ import com.google.common.collect.Sets;
  * block), call deleteUser() with the TestUser object that was returned, and the user will
  * be deleted (if there's a session, the session will also be cleaned up).
  */
+@Component
 public class TestUserAdminHelper {
 
     private static final String PASSWORD = "P4ssword";
@@ -80,15 +83,15 @@ public class TestUserAdminHelper {
             return study.getStudyIdentifier();
         }
     }
-
+    @Autowired
     public void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
     }
-
+    @Autowired
     public void setAuthService(AuthenticationService authService) {
         this.authService = authService;
     }
-
+    @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }

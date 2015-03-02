@@ -4,11 +4,13 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+
 import play.mvc.Result;
 
 /** Play controller for health data APIs. */
+@Controller("healthDataController")
 public class HealthDataController extends BaseController {
     private HealthDataService healthDataService;
 

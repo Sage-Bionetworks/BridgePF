@@ -14,9 +14,11 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
+@Controller("authenticationController")
 public class AuthenticationController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);

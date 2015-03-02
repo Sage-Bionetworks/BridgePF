@@ -30,7 +30,7 @@ import play.mvc.Results;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
 
-@Component
+@Component("exceptionInterceptor")
 public class ExceptionInterceptor implements MethodInterceptor {
 
     private static Logger logger = LoggerFactory.getLogger(ExceptionInterceptor.class);

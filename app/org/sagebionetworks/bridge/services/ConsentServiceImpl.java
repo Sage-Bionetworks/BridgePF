@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
@@ -37,7 +39,7 @@ public class ConsentServiceImpl implements ConsentService {
     public void setStringOps(JedisStringOps stringOps) {
         this.stringOps = stringOps;
     }
-    @Autowired
+    @Resource(name="stormpathAccountDao")
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }

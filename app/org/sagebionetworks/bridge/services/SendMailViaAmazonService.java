@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import javax.annotation.Resource;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -32,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.stereotype.Component;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.regions.Region;
@@ -43,6 +45,7 @@ import com.amazonaws.services.simpleemail.model.SendRawEmailResult;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 
+@Component("sendEmailViaAmazonService")
 public class SendMailViaAmazonService implements SendMailService {
     
     private static final Logger logger = LoggerFactory.getLogger(SendMailViaAmazonService.class);
@@ -66,7 +69,7 @@ public class SendMailViaAmazonService implements SendMailService {
     private static final String NEWLINE = "\n";
     private static final Region region = Region.getRegion(Regions.US_EAST_1);
 
-    private String fromEmail;
+    private String fromEmail = "support@sagebridge.org";
     private AmazonSimpleEmailServiceClient emailClient;
     private StudyService studyService;
 
@@ -77,7 +80,7 @@ public class SendMailViaAmazonService implements SendMailService {
     public void setEmailClient(AmazonSimpleEmailServiceClient emailClient) {
         this.emailClient = emailClient;
     }
-    @Autowired
+    @Resource(name="studyService")
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }

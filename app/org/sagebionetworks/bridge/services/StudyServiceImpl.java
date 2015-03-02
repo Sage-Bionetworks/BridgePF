@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("studyService")
 public class StudyServiceImpl implements StudyService {
 
     public Study load(String identifier) throws EntityNotFoundException {

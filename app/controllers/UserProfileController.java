@@ -15,7 +15,7 @@ import com.google.common.base.Supplier;
 
 import play.mvc.Result;
 
-@Controller("controllers.UserProfileController")
+@Controller("userProfileController")
 public class UserProfileController extends BaseController {
     
     private UserProfileService userProfileService;
