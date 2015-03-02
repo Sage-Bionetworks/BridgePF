@@ -6,8 +6,6 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -20,8 +18,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
  */
 @Component
 public class ParseJsonHandler implements UploadValidationHandler {
-    private static final Logger logger = LoggerFactory.getLogger(ParseJsonHandler.class);
-
     /** {@inheritDoc} */
     @Override
     public void handle(@Nonnull UploadValidationContext context) {
@@ -41,12 +37,9 @@ public class ParseJsonHandler implements UploadValidationHandler {
                 JsonNode jsonNode = BridgeObjectMapper.get().readTree(oneUnzippedData.getValue());
                 jsonDataMap.put(entryName, jsonNode);
                 unzippedDataIter.remove();
-
-                logger.debug(String.format("Found JSON file %s", entryName));
             } catch (Exception ex) {
                 // Can't parse this as a JSON node. This could be normal (for example, for audio files). Ignore the
                 // error and move on.
-                logger.debug(String.format("Found non-JSON file %s", entryName));
             }
         }
 
