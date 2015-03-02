@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.LocalDateToStringSerializer;
@@ -11,7 +12,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -31,6 +31,8 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private int schemaRevision;
     private String studyId;
     private LocalDate uploadDate;
+    private String uploadId;
+    private ParticipantOption.SharingScope userSharingScope;
     private Long version;
 
     /** {@inheritDoc} */
@@ -142,18 +144,36 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
         this.uploadDate = uploadDate;
     }
 
-    /**
-     * DynamoDB version, used for optimistic locking. This is used internally by Bridge and by DynamoDB and is not
-     * exposed to users.
-     */
+    /** {@inheritDoc} */
+    @Override
+    public String getUploadId() {
+        return uploadId;
+    }
+
+    /** @see #getUploadId */
+    public void setUploadId(String uploadId) {
+        this.uploadId = uploadId;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
+    @Override
+    public ParticipantOption.SharingScope getUserSharingScope() {
+        return userSharingScope;
+    }
+
+    /** @see #getUserSharingScope */
+    public void setUserSharingScope(ParticipantOption.SharingScope userSharingScope) {
+        this.userSharingScope = userSharingScope;
+    }
+
+    /** {@inheritDoc} */
     @DynamoDBVersionAttribute
-    @JsonIgnore
     public Long getVersion() {
         return version;
     }
 
     /** @see #getVersion */
-    @JsonIgnore
     public void setVersion(Long version) {
         this.version = version;
     }
@@ -173,6 +193,9 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
             record.setSchemaRevision(getSchemaRevision());
             record.setStudyId(getStudyId());
             record.setUploadDate(getUploadDate());
+            record.setUploadId(getUploadId());
+            record.setUserSharingScope(getUserSharingScope());
+            record.setVersion(getVersion());
             return record;
         }
     }

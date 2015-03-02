@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -41,4 +42,17 @@ public interface HealthDataRecord extends BridgeEntity {
 
     /** Calendar date the health data was uploaded. This is generally filled in by the Bridge server. */
     LocalDate getUploadDate();
+
+    /** ID of the upload this health data record was built from, if applicable. */
+    String getUploadId();
+
+    /** Whether this record should be shared with all researchers, only study researchers, or not at all. */
+    ParticipantOption.SharingScope getUserSharingScope();
+
+    /**
+     * Record version. This is used to detect concurrency conflicts. For creating new health data records, this field
+     * should be left unspecified. For updating records, this field should match the version of the most recent GET
+     * request.
+     */
+    Long getVersion();
 }
