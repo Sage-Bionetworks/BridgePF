@@ -22,12 +22,12 @@ public class HealthDataServiceTest {
     private static final HealthDataDao DAO = new DynamoHealthDataDao();
 
     @Test(expected = InvalidEntityException.class)
-    public void createRecordNullRecord() {
-        new HealthDataService().createRecord(null);
+    public void createOrUpdateRecordNullRecord() {
+        new HealthDataService().createOrUpdateRecord(null);
     }
 
     @Test(expected = InvalidEntityException.class)
-    public void createRecordInvalidRecord() {
+    public void createOrUpdateRecordInvalidRecord() {
         // build and overwrite data
         DynamoHealthDataRecord record = (DynamoHealthDataRecord) DAO.getRecordBuilder()
                 .withHealthCode("valid healthcode").withSchemaId("valid schema").withSchemaRevision(3)
@@ -35,24 +35,24 @@ public class HealthDataServiceTest {
         record.setData(null);
 
         // execute
-        new HealthDataService().createRecord(record);
+        new HealthDataService().createOrUpdateRecord(record);
     }
 
     @Test
-    public void createRecordSuccess() {
+    public void createOrUpdateRecordSuccess() {
         // record
         HealthDataRecord record = DAO.getRecordBuilder().withHealthCode("valid healthcode")
                 .withSchemaId("valid schema").withSchemaRevision(3).withStudyId("valid study").build();
 
         // mock dao
         HealthDataDao mockDao = mock(HealthDataDao.class);
-        when(mockDao.createRecord(record)).thenReturn("mock record ID");
+        when(mockDao.createOrUpdateRecord(record)).thenReturn("mock record ID");
 
         HealthDataService svc = new HealthDataService();
         svc.setHealthDataDao(mockDao);
 
         // execute and validate
-        String retVal = svc.createRecord(record);
+        String retVal = svc.createOrUpdateRecord(record);
         assertEquals("mock record ID", retVal);
     }
 

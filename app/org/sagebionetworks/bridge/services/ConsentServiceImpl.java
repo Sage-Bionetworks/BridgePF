@@ -36,18 +36,22 @@ public class ConsentServiceImpl implements ConsentService {
         this.stringOps = stringOps;
     }
 
+    @Autowired
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
-    
+
+    @Autowired
     public void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
     }
 
+    @Autowired
     public void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
     }
 
+    @Autowired
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
@@ -100,6 +104,11 @@ public class ConsentServiceImpl implements ConsentService {
 
         user.setConsent(true);
         return user;
+    }
+
+    @Override
+    public UserConsent getUserConsent(StudyIdentifier studyIdentifier, User user) {
+        return userConsentDao.getUserConsent(user.getHealthCode(), studyIdentifier);
     }
 
     @Override

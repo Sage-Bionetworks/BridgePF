@@ -22,14 +22,14 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class DynamoHealthDataDaoTest {
     @Test
-    public void createRecord() {
+    public void createOrUpdateRecord() {
         // mock mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
         DynamoHealthDataDao dao = new DynamoHealthDataDao();
         dao.setMapper(mockMapper);
 
         // execute
-        String id = dao.createRecord(new DynamoHealthDataRecord());
+        String id = dao.createOrUpdateRecord(new DynamoHealthDataRecord());
 
         // validate that the returned ID matches the ID received by the DDB mapper
         ArgumentCaptor<DynamoHealthDataRecord> arg = ArgumentCaptor.forClass(DynamoHealthDataRecord.class);

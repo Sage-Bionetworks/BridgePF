@@ -6,18 +6,29 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.dao.HealthDataAttachmentDao;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachmentBuilder;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.validators.HealthDataRecordValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /** Service handler for health data APIs. */
 @Component
 public class HealthDataService {
+    private HealthDataAttachmentDao healthDataAttachmentDao;
     private HealthDataDao healthDataDao;
+
+    /** Health data attachment DAO. This is configured by Spring. */
+    @Autowired
+    public void setHealthDataAttachmentDao(HealthDataAttachmentDao healthDataAttachmentDao) {
+        this.healthDataAttachmentDao = healthDataAttachmentDao;
+    }
 
     /** Health data DAO. This is configured by Spring. */
     @Autowired
@@ -25,15 +36,17 @@ public class HealthDataService {
         this.healthDataDao = healthDataDao;
     }
 
+    /* HEALTH DATA RECORD APIs */
+
     /**
-     * Creates and persists a health data record, using the passed in prototype object as the base. This method is
-     * generally used by worker apps as part of upload unpacking.
+     * Creates (or updates) and persists a health data record, using the passed in prototype object as the base. This
+     * method is generally used by worker apps as part of upload unpacking.
      *
      * @param record
      *         the prototype record to create from and persist, must be non-null and have valid fields
      * @return the record ID of the persisted record
      */
-    public String createRecord(HealthDataRecord record) {
+    public String createOrUpdateRecord(HealthDataRecord record) {
         // validate record
         if (record == null) {
             throw new InvalidEntityException(String.format(Validate.CANNOT_BE_NULL, "HealthDataRecord"));
@@ -43,7 +56,7 @@ public class HealthDataService {
         // TODO: validate health code, schema ID against DDB tables
 
         // call through to DAO
-        return healthDataDao.createRecord(record);
+        return healthDataDao.createOrUpdateRecord(record);
     }
 
     /**
@@ -64,6 +77,23 @@ public class HealthDataService {
 
         // call through to DAO
         return healthDataDao.deleteRecordsForHealthCode(healthCode);
+    }
+
+    /**
+     * Gets the health data record using the record ID.
+     *
+     * @param id
+     *         record ID
+     * @return health data record
+     */
+    public HealthDataRecord getRecordById(String id) {
+        // validate ID
+        if (StringUtils.isBlank(id)) {
+            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "id"));
+        }
+
+        // call through to DAO
+        return healthDataDao.getRecordById(id);
     }
 
     /**
@@ -90,5 +120,40 @@ public class HealthDataService {
 
         // call through to DAO
         return healthDataDao.getRecordsForUploadDate(uploadDate);
+    }
+
+    /* HEALTH DATA ATTACHMENT APIs */
+
+    /**
+     * Creates or updates a health data attachment. If the specified attachment has no ID, this is consider a new
+     * attachment will be created. If the specified attachment does have an ID, this is considered updating an existing
+     * attachment.
+     *
+     * @param attachment
+     *         health data attachment to create or update
+     * @return attachment ID of the created or updated attachment
+     */
+    public String createOrUpdateAttachment(HealthDataAttachment attachment) {
+        // validate attachment
+        if (attachment == null) {
+            throw new InvalidEntityException(String.format(Validate.CANNOT_BE_NULL, "HealthDataAttachment"));
+        }
+        // TODO: validate fields for non-null-ness and non-emptiness
+        // TODO: validate record ID against records
+
+        // call through to DAO
+        return healthDataAttachmentDao.createOrUpdateAttachment(attachment);
+    }
+
+    /* BUILDERS */
+
+    /** Returns a builder object, used for building attachments, for create or update. */
+    public HealthDataAttachmentBuilder getAttachmentBuilder() {
+        return healthDataAttachmentDao.getRecordBuilder();
+    }
+
+    /** Returns a builder object, used for building records, for create or update. */
+    public HealthDataRecordBuilder getRecordBuilder() {
+        return healthDataDao.getRecordBuilder();
     }
 }
