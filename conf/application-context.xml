@@ -141,16 +141,7 @@
         <property name="dynamoDbClient" ref="dynamoDbClient" />
     </bean>
     
-    <bean id="accountDao" class="org.sagebionetworks.bridge.stormpath.StormpathAccountDao">
-        <property name="stormpathApplication" ref="stormpathApplication"/>
-        <property name="stormpathClient" ref="stormpathClient"/>
-        <property name="studyService" ref="studyService"/>
-        <property name="encryptors">
-            <list>
-                <ref bean="healthCodeEncryptor"/>
-            </list>
-        </property>
-    </bean>
+    <bean id="accountDao" class="org.sagebionetworks.bridge.stormpath.StormpathAccountDao" />
 
     <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor">
         <property name="bridgeConfig" ref="bridgeConfig"/>

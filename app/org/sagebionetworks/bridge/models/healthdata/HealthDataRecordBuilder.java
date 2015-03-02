@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.healthdata;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.joda.time.LocalDate;
 
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.validators.HealthDataRecordValidator;
@@ -23,7 +24,8 @@ public abstract class HealthDataRecordBuilder {
     private int schemaRevision;
     private String studyId;
     private LocalDate uploadDate;
-    private HealthDataUserConsent userConsentMetadata;
+    private String uploadId;
+    private ParticipantOption.SharingScope userSharingScope;
     private Long version;
 
     /** Copies all fields from the specified record into the builder. This is useful for updating records. */
@@ -37,7 +39,8 @@ public abstract class HealthDataRecordBuilder {
         schemaRevision = record.getSchemaRevision();
         studyId = record.getStudyId();
         uploadDate = record.getUploadDate();
-        userConsentMetadata = record.getUserConsentMetadata();
+        uploadId = record.getUploadId();
+        userSharingScope = record.getUserSharingScope();
         version = record.getVersion();
         return this;
     }
@@ -141,14 +144,25 @@ public abstract class HealthDataRecordBuilder {
         return this;
     }
 
-    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUserConsentMetadata */
-    public HealthDataUserConsent getUserConsentMetadata() {
-        return userConsentMetadata;
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUploadId */
+    public String getUploadId() {
+        return uploadId;
     }
 
-    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUserConsentMetadata */
-    public HealthDataRecordBuilder withUserConsentMetadata(HealthDataUserConsent userConsentMetadata) {
-        this.userConsentMetadata = userConsentMetadata;
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUploadId */
+    public HealthDataRecordBuilder withUploadId(String uploadId) {
+        this.uploadId = uploadId;
+        return this;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUserSharingScope */
+    public ParticipantOption.SharingScope getUserSharingScope() {
+        return userSharingScope;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.healthdata.HealthDataRecord#getUserSharingScope */
+    public HealthDataRecordBuilder withUserSharingScope(ParticipantOption.SharingScope userSharingScope) {
+        this.userSharingScope = userSharingScope;
         return this;
     }
 
@@ -173,6 +187,7 @@ public abstract class HealthDataRecordBuilder {
      *     <li>createdOn defaults to the current time</li>
      *     <li>data and metadata default to an empty ObjectNode</li>
      *     <li>uploadDate defaults to the current calendar date (as measured in Pacific local time)</li>
+     *     <li>userSharingScope defaults to NO_SHARING</li>
      *   </ul>
      * </p>
      */
@@ -189,6 +204,9 @@ public abstract class HealthDataRecordBuilder {
         }
         if (uploadDate == null) {
             uploadDate = DateUtils.getCurrentCalendarDateInLocalTime();
+        }
+        if (userSharingScope == null) {
+            userSharingScope = ParticipantOption.SharingScope.NO_SHARING;
         }
 
         // build and validate
