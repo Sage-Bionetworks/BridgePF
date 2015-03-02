@@ -43,7 +43,7 @@ import com.stormpath.sdk.tenant.Tenant;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StormpathAccountDaoTest {
 
-    @Resource
+    @Resource(name="stormpathAccountDao")
     private StormpathAccountDao accountDao;
     
     @Resource

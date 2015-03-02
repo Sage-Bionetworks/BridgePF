@@ -20,7 +20,7 @@
   <logger name="org.sagebionetworks.bridge" level="DEBUG" additivity="false">
     <appender-ref ref="STDOUT" />
   </logger>
-  <logger name="org.springframework" level="INFO" additivity="false">
+  <logger name="org.springframework" level="DEBUG" additivity="false">
     <appender-ref ref="STDOUT" />
   </logger>
 </configuration>

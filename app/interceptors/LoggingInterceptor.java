@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import play.mvc.Http;
 import play.mvc.Result;
 
-@Component
+@Component("loggingInterceptor")
 public class LoggingInterceptor implements MethodInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(LoggingInterceptor.class);

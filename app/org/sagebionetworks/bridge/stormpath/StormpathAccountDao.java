@@ -59,7 +59,9 @@ import com.stormpath.sdk.resource.ResourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component("stormpathAccountDao")
 public class StormpathAccountDao implements AccountDao {
 
     private static Logger logger = LoggerFactory.getLogger(StormpathAccountDao.class);
@@ -68,7 +70,7 @@ public class StormpathAccountDao implements AccountDao {
     private Client client;
     private StudyService studyService;
     private SortedMap<Integer,Encryptor> encryptors = Maps.newTreeMap();
-    
+
     @Resource(name = "stormpathApplication")
     public void setStormpathApplication(Application application) {
         this.application = application;
@@ -81,6 +83,7 @@ public class StormpathAccountDao implements AccountDao {
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
+    @Resource(name="encryptorList")
     public void setEncryptors(List<Encryptor> list) {
         for (Encryptor encryptor : list) {
             encryptors.put(encryptor.getVersion(), encryptor);

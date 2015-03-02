@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
-@Component
+@Component("uploadCertificateService")
 public class UploadCertificateServiceImpl implements UploadCertificateService {
 
     private static final BridgeConfig CONFIG = BridgeConfigFactory.getConfig();

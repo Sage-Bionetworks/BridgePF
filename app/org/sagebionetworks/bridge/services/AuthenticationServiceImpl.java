@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AuthenticationServiceImpl implements AuthenticationService {
-
+    
     private final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
     
     private DistributedLockDao lockDao;
@@ -105,6 +105,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signIn, "Sign in cannot be null");
 
+        checkNotNull(lockDao);
+        checkNotNull(cacheProvider);
+        checkNotNull(config);
+        checkNotNull(consentService);
+        checkNotNull(optionsService);
+        checkNotNull(accountDao);
+        checkNotNull(healthCodeService);
+        checkNotNull(signInValidator);
+        checkNotNull(signUpValidator);
+        checkNotNull(passwordResetValidator);        
+        
         Validate.entityThrowingException(signInValidator, signIn);
 
         Account account = accountDao.authenticate(study, signIn);

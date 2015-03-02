@@ -3,6 +3,7 @@ package controllers;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
@@ -12,6 +13,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 /** Play controller for the /researcher/v1/uploadSchema APIs */
+@Controller("uploadSchemaController")
 public class UploadSchemaController extends BaseController {
     private UploadSchemaService uploadSchemaService;
 

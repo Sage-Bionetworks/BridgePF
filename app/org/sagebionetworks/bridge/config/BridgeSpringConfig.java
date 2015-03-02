@@ -51,7 +51,7 @@ import org.sagebionetworks.bridge.upload.S3DownloadHandler;
 import org.sagebionetworks.bridge.upload.UnzipHandler;
 import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 
-//@ComponentScan(basePackages = "org.sagebionetworks.bridge")
+@ComponentScan({"controllers","filters","interceptors","models","org.sagebionetworks.bridge"})
 @Configuration
 public class BridgeSpringConfig {
     

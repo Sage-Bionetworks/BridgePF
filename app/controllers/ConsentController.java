@@ -8,21 +8,25 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import play.mvc.Result;
 
+@Controller("consentController")
 public class ConsentController extends BaseController {
 
     private ConsentService consentService;
     
     private ParticipantOptionsService optionsService;
 
+    @Autowired
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
-    
+    @Autowired
     public void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }

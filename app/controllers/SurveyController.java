@@ -16,11 +16,14 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.services.SurveyService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import com.google.common.base.Supplier;
 
 import play.mvc.Result;
 
+@Controller("surveyController")
 public class SurveyController extends BaseController {
 
     private static final String MOSTRECENT_KEY = "mostrecent";
@@ -29,11 +32,12 @@ public class SurveyController extends BaseController {
     private SurveyService surveyService;
     
     private ViewCache viewCache;
-    
+
+    @Autowired
     public void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
     }
-    
+    @Autowired
     public void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
     }
