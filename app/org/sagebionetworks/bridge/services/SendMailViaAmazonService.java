@@ -6,6 +6,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -93,27 +94,19 @@ public class SendMailViaAmazonService implements SendMailService {
     @Override
     public void sendConsentAgreement(User user, ConsentSignature consentSignature, StudyConsent studyConsent) {
 
-        try {
-            final String consentDoc = createSignedDocument(user, consentSignature, studyConsent);
 
+            final String consentDoc = createSignedDocument(user, consentSignature, studyConsent);
+            try {
             // Consent agreement as message body in HTML
             final MimeBodyPart bodyPart = new MimeBodyPart();
             bodyPart.setContent(consentDoc, MIME_TYPE_HTML);
 
             // Consent agreement as a PDF attachment
-            ByteArrayBuilder byteArrayBuilder = new ByteArrayBuilder();
-            ITextRenderer renderer = new ITextRenderer();
             // Embed the signature image
             String consentDocWithSig = consentDoc.replace("cid:consentSignature",
                     "data:" + consentSignature.getImageMimeType() +
                     ";base64," + consentSignature.getImageData());
-            renderer.setDocumentFromString(consentDocWithSig);
-            renderer.layout();
-            renderer.createPDF(byteArrayBuilder);
-            byteArrayBuilder.flush();
-            final byte[] pdfBytes = byteArrayBuilder.toByteArray();
-            byteArrayBuilder.close();
-
+            final byte[] pdfBytes = createPdf(consentDocWithSig);
             final MimeBodyPart pdfPart = new MimeBodyPart();
             DataSource source = new ByteArrayDataSource(pdfBytes, MIME_TYPE_PDF);
             pdfPart.setDataHandler(new DataHandler(source));
@@ -144,7 +137,7 @@ public class SendMailViaAmazonService implements SendMailService {
             for (String email : emailAddresses) {
                 sendEmailTo(subject, supportEmail, email, bodyPart, pdfPart, sigPart);
             }
-        } catch(IOException | MessagingException | DocumentException e) {
+        } catch(IOException | MessagingException e) {
             throw new BridgeServiceException(e);
         }
     }
@@ -260,26 +253,38 @@ public class SendMailViaAmazonService implements SendMailService {
         return Collections.emptySet();
     }
 
-    private String createSignedDocument(User user, ConsentSignature consent, StudyConsent studyConsent)
-            throws IOException {
-
-        String filePath = studyConsent.getPath();
-        FileSystemResource resource = new FileSystemResource(filePath);
-        InputStreamReader isr = new InputStreamReader(resource.getInputStream(), "UTF-8");
-        String consentAgreementHTML = CharStreams.toString(isr);
-
-        String signingDate = fmt.print(DateUtils.getCurrentMillisFromEpoch());
-
-        String html = consentAgreementHTML.replace("@@name@@", consent.getName());
-        html = html.replace("@@signing.date@@", signingDate);
-        html = html.replace("@@email@@", user.getEmail());
-        return html;
+    private String createSignedDocument(User user, ConsentSignature consent, StudyConsent studyConsent) {
+        final String filePath = studyConsent.getPath();
+        final FileSystemResource resource = new FileSystemResource(filePath);
+        try (InputStreamReader isr = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);) {
+            String consentAgreementHTML = CharStreams.toString(isr);
+            String signingDate = fmt.print(DateUtils.getCurrentMillisFromEpoch());
+            String html = consentAgreementHTML.replace("@@name@@", consent.getName());
+            html = html.replace("@@signing.date@@", signingDate);
+            html = html.replace("@@email@@", user.getEmail());
+            return html;
+        } catch (IOException e) {
+            throw new BridgeServiceException(e);
+        }
     }
-    
+
     private void append(StringBuilder sb, String value, boolean withComma) {
         sb.append( (value != null) ? value.replaceAll("\t", " ") : "" );
         if (withComma) {
             sb.append(DELIMITER);
+        }
+    }
+ 
+    private byte[] createPdf(final String consentDoc) {
+        try (ByteArrayBuilder byteArrayBuilder = new ByteArrayBuilder();) {
+            ITextRenderer renderer = new ITextRenderer();
+            renderer.setDocumentFromString(consentDoc);
+            renderer.layout();
+            renderer.createPDF(byteArrayBuilder);
+            byteArrayBuilder.flush();
+            return byteArrayBuilder.toByteArray();
+        } catch (DocumentException e) {
+            throw new BridgeServiceException(e);
         }
     }
 }
