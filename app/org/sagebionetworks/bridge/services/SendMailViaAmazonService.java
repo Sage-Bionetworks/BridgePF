@@ -101,6 +101,7 @@ public class SendMailViaAmazonService implements SendMailService {
             // Consent agreement as a PDF attachment
             ByteArrayBuilder byteArrayBuilder = new ByteArrayBuilder();
             ITextRenderer renderer = new ITextRenderer();
+            // Embed the signature image
             String consentDocWithSig = consentDoc.replace("cid:consentSignature",
                     "data:" + consentSignature.getImageMimeType() +
                     ";base64," + consentSignature.getImageData());
