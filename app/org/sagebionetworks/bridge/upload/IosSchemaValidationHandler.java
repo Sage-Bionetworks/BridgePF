@@ -94,6 +94,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
         recordBuilder.withHealthCode(upload.getHealthCode());
         recordBuilder.withStudyId(studyId);
         recordBuilder.withUploadDate(upload.getUploadDate());
+        recordBuilder.withUploadId(uploadId);
 
         // create an empty object node in our record builder, which we'll fill in as we go
         ObjectNode dataMap = BridgeObjectMapper.get().createObjectNode();
@@ -117,34 +118,17 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
         List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForStudy(study);
         UploadSchema surveySchema = uploadSchemaService.getUploadSchema(study, SCHEMA_IOS_SURVEY);
 
-        if (jsonDataMap.size() == 1) {
-            handleNonJsonData(context, uploadId, unzippedDataMap, item, schemaList, recordBuilder, attachmentMap);
+        if (!unzippedDataMap.isEmpty()) {
+            handleNonJsonData(context, uploadId, jsonDataMap, unzippedDataMap, item, schemaList, recordBuilder,
+                    attachmentMap);
         } else {
             // This means our data is in JSON format, so we can look inside it to figure out what it is.
-
-            if (!unzippedDataMap.isEmpty()) {
-                // We don't expect a mix of JSON and non-JSON, but we can just ignore the non-JSON data.
-                addMessageAndWarn(context, String.format(
-                         "upload ID %s contains both JSON data and non-JSON data; ignoring non-JSON data", uploadId));
-            }
 
             if (isSurvey(jsonDataMap)) {
                 handleSurvey(context, uploadId, jsonDataMap, item, taskRunId, surveySchema, recordBuilder,
                         attachmentMap, dataMap);
             } else {
                 handleJsonData(context, uploadId, jsonDataMap, schemaList, recordBuilder, attachmentMap, dataMap);
-            }
-        }
-
-        // debug messages to help debug
-        if (logger.isDebugEnabled()) {
-            try {
-                String recordJson = BridgeObjectMapper.get().writerWithDefaultPrettyPrinter().writeValueAsString(
-                        context.getHealthDataRecordBuilder().build());
-                logger.debug(String.format("Health Data Record: %s", recordJson));
-                logger.debug(String.format("Attachments: %s", Joiner.on(", ").join(attachmentMap.keySet())));
-            } catch (JsonProcessingException ex) {
-                logger.debug("Couldn't convert record builder into JSON", ex);
             }
         }
     }
@@ -223,7 +207,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
 
         // sanity check filenames with the info.json file list
         for (String oneFilename : fileNameSet) {
-            if (!infoJsonFilesByName.containsKey(oneFilename)) {
+            if (!oneFilename.equals(FILENAME_INFO_JSON) && !infoJsonFilesByName.containsKey(oneFilename)) {
                 addMessageAndWarn(context, String.format(
                         "upload ID %s contains filename %s not found in info.json", uploadId, oneFilename));
             }
@@ -238,91 +222,101 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
     }
 
     private static void handleNonJsonData(UploadValidationContext context, String uploadId,
-            Map<String, byte[]> unzippedDataMap, String infoJsonItem, List<UploadSchema> schemaList,
-            HealthDataRecordBuilder recordBuilder, Map<String, byte[]> attachmentMap)
+            Map<String, JsonNode> jsonDataMap, Map<String, byte[]> unzippedDataMap, String infoJsonItem,
+            List<UploadSchema> schemaList, HealthDataRecordBuilder recordBuilder, Map<String, byte[]> attachmentMap)
             throws UploadValidationException {
-        // This means the only JSON file we have is info.json. So we should expect exactly one non-JSON file to
-        // upload with it.
-        if (unzippedDataMap.isEmpty()) {
-            // info.json with no actual data? We can't do anything with this. Game over.
-            throw new UploadValidationException("No data files other than info.json");
-        } else if (unzippedDataMap.size() > 1) {
-            // Multiple data files? We don't have any way of distinguishing between two data files in the same
-            // upload. Game over.
-            throw new UploadValidationException(String.format("Multiple non-JSON files in upload: %s",
-                    Joiner.on(", ").join(unzippedDataMap.keySet())));
-        } else {
-            // At this point, there's always exactly 1 element in unzippedDataMap.
+        // Attempting to parse into the non-JSON data is an exercise in madness. Our best strategy here is to
+        // match the "item" field in info.json with one of the schema names, and pick the one with the latest
+        // revision.
+        if (StringUtils.isBlank(infoJsonItem)) {
+            // No "item" field means we have no one of identifying this. Game over.
+            throw new UploadValidationException(
+                    "info.json in non-JSON upload has blank \"item\" field to identify the schema with.");
+        }
 
-            // Even though there's only 1 item in the unzippedDataMap, the only way to get it is to iterate
-            // through it.
-            String filename = null;
-            byte[] fileData = null;
-            for (Map.Entry<String, byte[]> oneFile : unzippedDataMap.entrySet()) {
-                filename = oneFile.getKey();
-                fileData = oneFile.getValue();
+        // Try to find the schema.
+        UploadSchema latestSchema = null;
+        for (UploadSchema oneSchema : schemaList) {
+            if (oneSchema.getName().equals(infoJsonItem)) {
+                if (latestSchema == null || oneSchema.getRevision() > latestSchema.getRevision()) {
+                    latestSchema = oneSchema;
+                }
             }
+        }
+        if (latestSchema == null) {
+            // No schema, no health data record. Game over.
+            throw new UploadValidationException(String.format("No schema found for item %s", infoJsonItem));
+        }
 
-            // Attempting to parse into the non-JSON data is an exercise in madness. Our best strategy here is to
-            // match the "item" field in info.json with one of the schema names, and pick the one with the latest
-            // revision.
-            if (StringUtils.isBlank(infoJsonItem)) {
-                // No "item" field means we have no one of identifying this. Game over.
-                throw new UploadValidationException(
-                        "info.json in non-JSON upload has blank \"item\" field to identify the schema with.");
-            }
+        // We found the schema.
+        String schemaId = latestSchema.getSchemaId();
+        int schemaRev = latestSchema.getRevision();
+        recordBuilder.withSchemaId(schemaId);
+        recordBuilder.withSchemaRevision(schemaRev);
 
-            // Try to find the schema.
-            UploadSchema latestSchema = null;
-            for (UploadSchema oneSchema : schemaList) {
-                if (oneSchema.getName().equals(infoJsonItem)) {
-                    if (latestSchema == null || oneSchema.getRevision() > latestSchema.getRevision()) {
-                        latestSchema = oneSchema;
+        // Schema should have a field that's in ATTACHMENT_TYPE_SET, to store the attachment ref in.
+        List<UploadFieldDefinition> fieldDefList = latestSchema.getFieldDefinitions();
+        if (fieldDefList.isEmpty()) {
+            // No fields at all? Game over.
+            throw new UploadValidationException(String.format("Identified schema ID %s rev %d has no fields",
+                    schemaId, schemaRev));
+        }
+
+        // Find fields of type in ATTACHMENT_TYPE_SET to store the attachment ref in. The field name is the same as the
+        // filename.
+        Set<String> fieldNameSet = new HashSet<>();
+        for (UploadFieldDefinition oneFieldDef : fieldDefList) {
+            String fieldName = oneFieldDef.getName();
+            fieldNameSet.add(fieldName);
+
+            if (ATTACHMENT_TYPE_SET.contains(oneFieldDef.getType())) {
+                byte[] data = unzippedDataMap.get(fieldName);
+                if (data != null) {
+                    // Write this to the attachment map. UploadArtifactsHandler will take care of the rest.
+                    attachmentMap.put(fieldName, data);
+                } else {
+                    JsonNode jsonData = jsonDataMap.get(fieldName);
+                    if (jsonData != null) {
+                        // Convert to raw bytes, then add to attachment map.
+                        try {
+                            attachmentMap.put(fieldName, BridgeObjectMapper.get().writeValueAsBytes(jsonData));
+                        } catch (JsonProcessingException ex) {
+                            addMessageAndWarn(context, String.format(
+                                    "Upload ID %s attachment field %s could not be converted to JSON: %s", uploadId,
+                                    fieldName, ex.getMessage()));
+                        }
+                    } else if (oneFieldDef.isRequired()) {
+                        addMessageAndWarn(context, String.format(
+                                "Upload ID %s with schema ID %s has required field %s with no corresponding file",
+                                uploadId,
+                                schemaId, fieldName));
                     }
                 }
+            } else {
+                addMessageAndWarn(context, String.format("Upload ID %s with schema ID %s has non-attachment field %s",
+                        uploadId, schemaId, fieldName));
             }
-            if (latestSchema == null) {
-                // No schema, no health data record. Game over.
-                throw new UploadValidationException(String.format("No schema found for item %s", infoJsonItem));
-            }
+        }
 
-            // We found the schema.
-            String schemaId = latestSchema.getSchemaId();
-            int schemaRev = latestSchema.getRevision();
-            recordBuilder.withSchemaId(schemaId);
-            recordBuilder.withSchemaRevision(schemaRev);
-
-            // Schema should have a field that's in ATTACHMENT_TYPE_SET, to store the attachment ref in.
-            List<UploadFieldDefinition> fieldDefList = latestSchema.getFieldDefinitions();
-            if (fieldDefList.isEmpty()) {
-                // No fields at all? Game over.
-                throw new UploadValidationException(String.format("Identified schema ID %s rev %d has no fields",
-                        schemaId, schemaRev));
-            }
-            if (fieldDefList.size() > 1) {
-                // We expect exactly one field (since we don't know how to fill in the other fields). But if
-                // there's more than one (as long as one of them is a ATTACHMENT_TYPE_SET), we should be okay.
+        // validate file names against field names
+        for (String oneFilename : unzippedDataMap.keySet()) {
+            if (!fieldNameSet.contains(oneFilename)) {
                 addMessageAndWarn(context, String.format(
-                        "upload ID %s filename %s identified schema ID %s rev %d has multiple fields", uploadId,
-                        filename, schemaId, schemaRev));
+                        "Upload ID %s with schema ID %s has file %s with no corresponding field", uploadId, schemaId,
+                        oneFilename));
+            }
+        }
+        for (String oneJsonFilename : jsonDataMap.keySet()) {
+            if (oneJsonFilename.equals(FILENAME_INFO_JSON)) {
+                // skip info.json
+                continue;
             }
 
-            UploadFieldDefinition attachmentFieldDef = null;
-            for (UploadFieldDefinition oneFieldDef : fieldDefList) {
-                if (ATTACHMENT_TYPE_SET.contains(oneFieldDef.getType())) {
-                    // just the first one
-                    attachmentFieldDef = oneFieldDef;
-                    break;
-                }
+            if (!fieldNameSet.contains(oneJsonFilename)) {
+                addMessageAndWarn(context, String.format(
+                        "Upload ID %s with schema ID %s has JSON file %s with no corresponding field", uploadId,
+                        schemaId, oneJsonFilename));
             }
-            if (attachmentFieldDef == null) {
-                // We have no field to write this into. Game over.
-                throw new UploadValidationException(String.format(
-                        "Identified schema ID %s rev %d has no field for non-JSON data", schemaId, schemaRev));
-            }
-
-            // Write this to the attachment map. UploadArtifactsHandler will take care of the rest.
-            attachmentMap.put(attachmentFieldDef.getName(), fileData);
         }
     }
 
@@ -388,7 +382,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
             Map<String, byte[]> attachmentMap, ObjectNode dataMap) throws UploadValidationException {
         // JSON data may contain more than one JSON file. However, Health Data Records stores a single map.
         // Flatten all the JSON maps together (other than info.json).
-        Map<String, JsonNode> dataFieldMap = flattenJsonDataMap(context, uploadId, jsonDataMap);
+        Map<String, JsonNode> dataFieldMap = flattenJsonDataMap(jsonDataMap);
         Set<String> keySet = dataFieldMap.keySet();
 
         // select schema
@@ -407,14 +401,11 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
         copyJsonDataToHealthData(context, uploadId, dataFieldMap, schema, dataMap, attachmentMap);
     }
 
-    private static Map<String, JsonNode> flattenJsonDataMap(UploadValidationContext context, String uploadId,
-            Map<String, JsonNode> jsonDataMap) {
-        // We may have duplicate keys. If there are, remember those keys and log a warning afterwards.
-        Set<String> keySet = new HashSet<>();
-        Set<String> dupKeySet = new HashSet<>();
+    private static Map<String, JsonNode> flattenJsonDataMap(Map<String, JsonNode> jsonDataMap) {
         Map<String, JsonNode> dataFieldMap = new HashMap<>();
         for (Map.Entry<String, JsonNode> oneJsonFile : jsonDataMap.entrySet()) {
-            if (oneJsonFile.getKey().equals(FILENAME_INFO_JSON)) {
+            String filename = oneJsonFile.getKey();
+            if (filename.equals(FILENAME_INFO_JSON)) {
                 // Not info.json. Skip.
                 continue;
             }
@@ -422,23 +413,10 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
             JsonNode oneJsonFileNode = oneJsonFile.getValue();
             Iterator<String> fieldNameIter = oneJsonFileNode.fieldNames();
             while (fieldNameIter.hasNext()) {
+                // Pre-pend file name with field name, so if there are duplicate filenames, they get disambiguated.
                 String oneFieldName = fieldNameIter.next();
-
-                // dupe field check
-                if (keySet.contains(oneFieldName)) {
-                    dupKeySet.add(oneFieldName);
-                } else {
-                    keySet.add(oneFieldName);
-                }
-
-                // If it's a dupe, the last one wins, based on JsonNode.fieldNames() iterator.
-                dataFieldMap.put(oneFieldName, oneJsonFileNode.get(oneFieldName));
+                dataFieldMap.put(filename + "." + oneFieldName, oneJsonFileNode.get(oneFieldName));
             }
-        }
-
-        if (!dupKeySet.isEmpty()) {
-            addMessageAndWarn(context, String.format("Upload ID %s contains duplicate keys (%s)", uploadId,
-                    Joiner.on(", ").join(dupKeySet)));
         }
 
         return dataFieldMap;

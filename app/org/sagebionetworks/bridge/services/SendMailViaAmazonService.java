@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -72,12 +74,12 @@ public class SendMailViaAmazonService implements SendMailService {
     private static final String NEWLINE = "\n";
     private static final Region region = Region.getRegion(Regions.US_EAST_1);
 
-    private String fromEmail;
+    private String supportEmail;
     private AmazonSimpleEmailServiceClient emailClient;
     private StudyService studyService;
 
-    public void setFromEmail(String fromEmail) {
-        this.fromEmail = fromEmail;
+    public void setSupportEmail(String supportEmail) {
+        this.supportEmail = supportEmail;
     }
 
     public void setEmailClient(AmazonSimpleEmailServiceClient emailClient) {
@@ -134,16 +136,19 @@ public class SendMailViaAmazonService implements SendMailService {
             final Study study = studyService.getStudy(studyConsent.getStudyKey());
             String subject = String.format(CONSENT_EMAIL_SUBJECT, study.getName());
 
-            sendEmailTo(subject, user.getEmail(), bodyPart, pdfPart, sigPart);
+            final String sendFromEmail = isNotBlank(study.getSupportEmail()) ?
+                    String.format("%s <%s>", study.getName(), study.getSupportEmail()) : supportEmail;
+
+            sendEmailTo(subject, sendFromEmail, user.getEmail(), bodyPart, pdfPart, sigPart);
             Set<String> emailAddresses = commaListToSet(study.getConsentNotificationEmail());
             for (String email : emailAddresses) {
-                sendEmailTo(subject, email, bodyPart, pdfPart, sigPart);
+                sendEmailTo(subject, supportEmail, email, bodyPart, pdfPart, sigPart);
             }
         } catch(IOException | MessagingException | DocumentException e) {
             throw new BridgeServiceException(e);
         }
     }
-    
+
     @Override
     public void sendStudyParticipantsRoster(Study study, List<StudyParticipant> participants) {
         try {
@@ -160,7 +165,7 @@ public class SendMailViaAmazonService implements SendMailService {
             csvPart.setContent(body, MIME_TYPE_TSV);
             
             String subject = String.format(PARTICIPANTS_EMAIL_SUBJECT, study.getName());
-            sendEmailTo(subject, study.getConsentNotificationEmail(), bodyPart, csvPart);
+            sendEmailTo(subject, supportEmail, study.getConsentNotificationEmail(), bodyPart, csvPart);
             
         } catch(MessagingException | AmazonClientException | IOException e) {
             throw new BridgeServiceException(e);
@@ -216,7 +221,7 @@ public class SendMailViaAmazonService implements SendMailService {
         return sb.toString();
     }
 
-    private void sendEmailTo(String subject, String toEmail, MimeBodyPart... parts) throws AmazonClientException,
+    private void sendEmailTo(String subject, String fromEmail, String toEmail, MimeBodyPart... parts) throws AmazonClientException,
             MessagingException, IOException {
 
         // Create email using JavaMail

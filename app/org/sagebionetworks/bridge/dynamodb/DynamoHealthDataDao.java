@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 /** DynamoDB implementation of {@link org.sagebionetworks.bridge.dao.HealthDataDao}. */
@@ -45,18 +46,22 @@ public class DynamoHealthDataDao implements HealthDataDao {
 
     /** {@inheritDoc} */
     @Override
-    public String createRecord(@Nonnull HealthDataRecord record) {
-        // create record ID
-        String id = BridgeUtils.generateGuid();
+    public String createOrUpdateRecord(@Nonnull HealthDataRecord record) {
         DynamoHealthDataRecord dynamoRecord = (DynamoHealthDataRecord) record;
-        dynamoRecord.setId(id);
+
+        if (StringUtils.isBlank(dynamoRecord.getId())) {
+            // This record doesn't have its ID assigned yet (new record). Create an ID and assign it.
+            String id = BridgeUtils.generateGuid();
+            dynamoRecord.setId(id);
+        }
 
         // persist to DDB
         mapper.save(dynamoRecord);
-        return id;
+        return dynamoRecord.getId();
     }
 
     /** {@inheritDoc} */
+    @Override
     public int deleteRecordsForHealthCode(@Nonnull String healthCode) {
         // query for the keys we need to delete
         List<HealthDataRecord> keysToDelete = healthCodeIndex.queryKeys(HealthDataRecord.class, "healthCode",
@@ -67,6 +72,12 @@ public class DynamoHealthDataDao implements HealthDataDao {
         BridgeUtils.ifFailuresThrowException(failureList);
 
         return keysToDelete.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public HealthDataRecord getRecordById(@Nonnull String id) {
+        return mapper.load(DynamoHealthDataRecord.class, id);
     }
 
     /** {@inheritDoc} */
