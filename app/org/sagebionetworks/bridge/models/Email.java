@@ -14,16 +14,16 @@ public class Email implements BridgeEntity {
     private final String email;
     private final StudyIdentifier studyIdentifier;
     
-    public Email(String email, StudyIdentifier studyIdentifier) {
-        this.email = email;
+    public Email(StudyIdentifier studyIdentifier, String email) {
         this.studyIdentifier = studyIdentifier;
+        this.email = email;
     }
     
     public static final Email fromJson(JsonNode node) {
         String email = JsonUtils.asText(node, EMAIL_FIELD);
         String study = JsonUtils.asText(node, STUDY_FIELD);
         StudyIdentifier studyIdentifier = (study == null) ? null : new StudyIdentifierImpl(study);
-        return new Email(email, studyIdentifier);
+        return new Email(studyIdentifier, email);
     }
 
     public String getEmail() {

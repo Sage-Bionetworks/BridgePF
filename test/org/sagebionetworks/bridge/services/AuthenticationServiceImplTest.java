@@ -117,7 +117,7 @@ public class AuthenticationServiceImplTest {
 
     @Test(expected = InvalidEntityException.class)
     public void requestPasswordResetFailsOnEmptyString() throws Exception {
-        Email email = new Email("", testUser.getStudyIdentifier());
+        Email email = new Email(testUser.getStudyIdentifier(), "");
         authService.requestResetPassword(testUser.getStudy(), email);
     }
     
@@ -143,7 +143,7 @@ public class AuthenticationServiceImplTest {
     public void canResendEmailVerification() throws Exception {
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
         try {
-            Email email = new Email(user.getEmail(), testUser.getStudyIdentifier());
+            Email email = new Email(testUser.getStudyIdentifier(), user.getEmail());
             authService.resendEmailVerification(user.getStudyIdentifier(), email);
         } catch (ConsentRequiredException e) {
         } finally {
