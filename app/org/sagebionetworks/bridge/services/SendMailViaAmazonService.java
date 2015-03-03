@@ -56,18 +56,16 @@ import com.lowagie.text.DocumentException;
 
 @Component("sendEmailViaAmazonService")
 public class SendMailViaAmazonService implements SendMailService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(SendMailViaAmazonService.class);
 
-    private static final DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, yyyy");
+    private static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern("MMMM d, yyyy");
     private static final String CONSENT_EMAIL_SUBJECT = "Consent Agreement for %s";
     private static final String HEADER_CONTENT_DISPOSITION_CONSENT_VALUE = "inline";
     private static final String HEADER_CONTENT_ID_CONSENT_VALUE = "<consentSignature>";
-    
     private static final String PARTICIPANTS_EMAIL_SUBJECT = "Study participants for %s";
     private static final String HEADER_CONTENT_DISPOSITION_PARTICIPANTS_VALUE = "attachment; filename=participants.csv";
     private static final String HEADER_CONTENT_ID_PARTICIPANTS_VALUE = "<participantsCSV>";
-    
     private static final String HEADER_CONTENT_DISPOSITION = "Content-Disposition";
     private static final String HEADER_CONTENT_TRANSFER_ENCODING = "Content-Transfer-Encoding";
     private static final String HEADER_CONTENT_TRANSFER_ENCODING_VALUE = "base64";
@@ -77,7 +75,7 @@ public class SendMailViaAmazonService implements SendMailService {
     private static final String MIME_TYPE_PDF = "application/pdf";
     private static final String DELIMITER = "\t";
     private static final String NEWLINE = "\n";
-    private static final Region region = Region.getRegion(Regions.US_EAST_1);
+    private static final Region REGION = Region.getRegion(Regions.US_EAST_1);
 
     private String supportEmail;
     private AmazonSimpleEmailServiceClient emailClient;
@@ -99,9 +97,8 @@ public class SendMailViaAmazonService implements SendMailService {
     @Override
     public void sendConsentAgreement(User user, ConsentSignature consentSignature, StudyConsent studyConsent) {
 
-
-            final String consentDoc = createSignedDocument(user, consentSignature, studyConsent);
-            try {
+        final String consentDoc = createSignedDocument(user, consentSignature, studyConsent);
+        try {
             // Consent agreement as message body in HTML
             final MimeBodyPart bodyPart = new MimeBodyPart();
             bodyPart.setContent(consentDoc, MIME_TYPE_HTML);
@@ -169,7 +166,7 @@ public class SendMailViaAmazonService implements SendMailService {
             throw new BridgeServiceException(e);
         }
     }
-    
+
     String createInlineParticipantRoster(List<StudyParticipant> participants) {
         StringBuilder sb = new StringBuilder();
         if (participants.size() == 0) {
@@ -200,7 +197,7 @@ public class SendMailViaAmazonService implements SendMailService {
         }
         return sb.toString();
     }
-    
+
     String createParticipantCSV(List<StudyParticipant> participants) {
         StringBuilder sb = new StringBuilder();
         append(sb, "Email", true);
@@ -245,7 +242,7 @@ public class SendMailViaAmazonService implements SendMailService {
         SendRawEmailRequest req = new SendRawEmailRequest(sesRawMessage);
         req.setSource(fromEmail);
         req.setDestinations(Collections.singleton(toEmail));
-        emailClient.setRegion(region);
+        emailClient.setRegion(REGION);
         SendRawEmailResult result = emailClient.sendRawEmail(req);
 
         logger.info(String.format("Sent email to SES with message ID %s", result.getMessageId()));
@@ -263,7 +260,7 @@ public class SendMailViaAmazonService implements SendMailService {
         final FileSystemResource resource = new FileSystemResource(filePath);
         try (InputStreamReader isr = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);) {
             String consentAgreementHTML = CharStreams.toString(isr);
-            String signingDate = fmt.print(DateUtils.getCurrentMillisFromEpoch());
+            String signingDate = FORMATTER.print(DateUtils.getCurrentMillisFromEpoch());
             String html = consentAgreementHTML.replace("@@name@@", consent.getName());
             html = html.replace("@@signing.date@@", signingDate);
             html = html.replace("@@email@@", user.getEmail());
