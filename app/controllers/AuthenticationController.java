@@ -92,6 +92,16 @@ public class AuthenticationController extends BaseController {
         return okResult("Password has been changed.");
     }
     
+    /**
+     * Unauthenticated calls that require a study (most of the calls not requiring authentication, including this one),
+     * should include the study identifier as part of the JSON payload. This call handles such JSON and converts it to a
+     * study. As a fallback for existing clients, it also looks for the study information in the query string or
+     * headers. If the study cannot be found in any of these places, it throws an exception, because the API will not
+     * work correctly without it.
+     * 
+     * @param email
+     * @return
+     */
     private Study getStudyOrThrowException(Email email) {
         if (email.getStudyIdentifier() != null) {
             return studyService.getStudy(email.getStudyIdentifier());
