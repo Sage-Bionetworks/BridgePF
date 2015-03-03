@@ -14,6 +14,8 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -26,10 +28,12 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.Lists;
 
+@Component
 public class DynamoSchedulePlanDao implements SchedulePlanDao {
 
     private DynamoDBMapper mapper;
 
+    @Autowired
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)

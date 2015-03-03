@@ -12,16 +12,20 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.services.SurveyResponseService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
+@Controller("surveyResponseController")
 public class SurveyResponseController extends BaseController {
     
     private SurveyResponseService responseService;
-    
+
+    @Autowired
     public void setSurveyResponseService(SurveyResponseService responseService) {
         this.responseService = responseService;
     }

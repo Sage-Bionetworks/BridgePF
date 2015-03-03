@@ -1,12 +1,13 @@
 package org.sagebionetworks.bridge.models;
 
-import java.util.List;
-
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 /**
  * Study decorator for JSON production. The Stormpath hostname isn't visible.
+ * 
+ * NOTE: Could just use @JsonIgnore, but we want to serialize this into Redis and in
+ * that case, the value would be lost on deserialization. 
  */
 @BridgeTypeName("Study")
 public class StudyInfo {
@@ -34,9 +35,6 @@ public class StudyInfo {
     }
     public int getMaxNumOfParticipants() {
         return study.getMaxNumOfParticipants();
-    }
-    public List<String> getTrackers() {
-        return study.getTrackers();
     }
     public String getHostname() {
         return study.getHostname();

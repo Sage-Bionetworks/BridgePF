@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.studies;
 
-import java.util.List;
-
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 public interface Study extends BridgeEntity, StudyIdentifier {
@@ -31,8 +29,6 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     
     public String getConsentNotificationEmail();
     public void setConsentNotificationEmail(String email);
-    
-    public List<String> getTrackers();
     
     public String getStormpathHref();
     public void setStormpathHref(String stormpathHref);

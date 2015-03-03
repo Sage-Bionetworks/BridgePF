@@ -9,16 +9,21 @@ import org.sagebionetworks.bridge.models.BackfillRecord;
 import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+@Component
 public class BackfillRecordFactory {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private BackfillDao backfillDao;
+    
+    @Autowired
     public void setBackfillDao(BackfillDao backfillDao) {
         this.backfillDao = backfillDao;
     }

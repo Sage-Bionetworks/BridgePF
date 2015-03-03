@@ -9,16 +9,20 @@ import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.UserProfileService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
 import play.mvc.Result;
 
+@Controller("studyController")
 public class StudyController extends BaseController {
 
     private UserProfileService userProfileService;
 
+    @Autowired
     public void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
     }

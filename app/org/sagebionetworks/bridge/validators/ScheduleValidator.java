@@ -9,9 +9,11 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+@Component
 public class ScheduleValidator implements Validator {
 
     public static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";

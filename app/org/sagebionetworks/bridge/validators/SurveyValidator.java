@@ -20,11 +20,13 @@ import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import com.google.common.collect.Sets;
 
+@Component
 public class SurveyValidator implements Validator {
 
     @Override

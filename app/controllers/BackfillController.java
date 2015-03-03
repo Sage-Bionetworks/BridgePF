@@ -7,9 +7,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
+@Controller
 public class BackfillController extends BaseController implements ApplicationContextAware  {
 
     private final Logger logger = LoggerFactory.getLogger(BackfillService.class);

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import javax.annotation.Resource;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.mail.Message;
@@ -36,7 +37,9 @@ import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.stereotype.Component;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.amazonaws.AmazonClientException;
@@ -51,6 +54,7 @@ import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import com.lowagie.text.DocumentException;
 
+@Component("sendEmailViaAmazonService")
 public class SendMailViaAmazonService implements SendMailService {
     
     private static final Logger logger = LoggerFactory.getLogger(SendMailViaAmazonService.class);
@@ -79,14 +83,15 @@ public class SendMailViaAmazonService implements SendMailService {
     private AmazonSimpleEmailServiceClient emailClient;
     private StudyService studyService;
 
+    @Resource(name="supportEmail")
     public void setSupportEmail(String supportEmail) {
         this.supportEmail = supportEmail;
     }
-
+    @Autowired
     public void setEmailClient(AmazonSimpleEmailServiceClient emailClient) {
         this.emailClient = emailClient;
     }
-
+    @Resource(name="studyService")
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
