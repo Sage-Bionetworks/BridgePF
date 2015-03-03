@@ -8,13 +8,17 @@ import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.StudyConsentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
+@Controller("studyConsentController")
 public class StudyConsentController extends BaseController {
 
     private StudyConsentService studyConsentService;
 
+    @Autowired
     public void setStudyConsentService(StudyConsentService studyConsentService) {
         this.studyConsentService = studyConsentService;
     }

@@ -7,8 +7,13 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class StudyConsentBootstrapper {
+    
+    @Autowired
     public StudyConsentBootstrapper(StudyService studyService, StudyConsentDao studyConsentDao) {
         try {
             studyService.getStudy("api");
@@ -16,8 +21,6 @@ public class StudyConsentBootstrapper {
             Study study = new DynamoStudy();
             study.setName("Test Study");
             study.setIdentifier("api");
-            study.getTrackers().add("pb-tracker");
-            study.getTrackers().add("med-tracker");
             study.setHostname("api-local.sagebridge.org");
             study.setMinAgeOfConsent(18);
             study.setResearcherRole("api_researcher");

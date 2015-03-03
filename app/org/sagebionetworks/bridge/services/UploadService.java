@@ -4,10 +4,13 @@ import static com.amazonaws.services.s3.Headers.SERVER_SIDE_ENCRYPTION;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Resource;
+
 import java.net.URL;
 import java.util.Date;
 
 import com.google.common.base.Strings;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -18,9 +21,12 @@ import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
+import org.sagebionetworks.bridge.validators.UploadValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 import com.amazonaws.HttpMethod;
@@ -28,6 +34,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
+@Component
 public class UploadService {
 
     private static final Logger logger = LoggerFactory.getLogger(UploadService.class);
@@ -41,19 +48,24 @@ public class UploadService {
     private UploadDao uploadDao;
     private Validator validator;
 
+    @Autowired
     public void setUploadSessionCredentialsService(UploadSessionCredentialsService uploadCredentialsService) {
         this.uploadCredentailsService = uploadCredentialsService;
     }
+    @Resource(name = "s3UploadClient")
     public void setS3UploadClient(AmazonS3 s3UploadClient) {
         this.s3UploadClient = s3UploadClient;
     }
+    @Resource(name = "s3Client")
     public void setS3Client(AmazonS3 s3Client) {
         this.s3Client = s3Client;
     }
+    @Autowired
     public void setUploadDao(UploadDao uploadDao) {
         this.uploadDao = uploadDao;
     }
-    public void setValidator(Validator validator) {
+    @Autowired
+    public void setValidator(UploadValidator validator) {
         this.validator = validator;
     }
 

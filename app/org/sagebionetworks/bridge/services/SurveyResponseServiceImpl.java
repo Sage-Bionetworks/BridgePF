@@ -19,20 +19,25 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.validators.SurveyAnswerValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.MapBindingResult;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 
+@Component
 public class SurveyResponseServiceImpl implements SurveyResponseService {
 
     private SurveyResponseDao surveyResponseDao;
     private DynamoSurveyDao surveyDao;
 
+    @Autowired
     public void setSurveyResponseDao(SurveyResponseDao surveyResponseDao) {
         this.surveyResponseDao = surveyResponseDao;
     }
 
+    @Autowired
     public void setSurveyDao(DynamoSurveyDao surveyDao) {
         this.surveyDao = surveyDao;
     }

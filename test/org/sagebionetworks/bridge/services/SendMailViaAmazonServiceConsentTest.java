@@ -84,7 +84,7 @@ public class SendMailViaAmazonServiceConsentTest {
             }
         };
     }
-
+    
     @Test
     public void whenNoStudySupportEmailUsesDefaultSupportEmail() {
         study.setSupportEmail(""); // just a blank string, tricky

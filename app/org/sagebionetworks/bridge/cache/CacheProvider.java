@@ -9,15 +9,19 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * A wrapper around whatever cache provider we ultimately decide to go with (probably Redis). 
  * Assuming for the moment that we can store objects, by serialization if we have to.
  */
+@Component
 public class CacheProvider {
     
     private JedisStringOps stringOps;
 
+    @Autowired
     public void setStringOps(JedisStringOps stringOps) {
         this.stringOps = stringOps;
     }

@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.List;
@@ -56,7 +55,6 @@ public class DynamoStudyDaoTest {
         assertEquals("Max participants was set", 10, study.getMaxNumOfParticipants());
         assertNotNull("Study deployment was set", study.getStormpathHref());
         assertNotNull("Study hostname was set", study.getHostname());
-        assertTrue("Contains tracker", study.getTrackers().contains("sage:bp"));
         assertEquals("support@test.com", study.getSupportEmail());
         assertEquals("consent-notification@test.com", study.getConsentNotificationEmail());
         
@@ -125,8 +123,6 @@ public class DynamoStudyDaoTest {
         study.setMinAgeOfConsent(18);
         study.setName(TestUtils.randomName());
         study.setResearcherRole(study.getIdentifier()+"_researcher");
-        study.getTrackers().add("sage:med");
-        study.getTrackers().add("sage:bp");
         study.setHostname("test.sagebridge.org");
         study.setStormpathHref("http://test/local/");
         study.setSupportEmail("support@test.com");

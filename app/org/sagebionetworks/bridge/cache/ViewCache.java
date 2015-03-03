@@ -5,11 +5,14 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 
+@Component
 public class ViewCache {
     
     private static final Logger logger = LoggerFactory.getLogger(ViewCache.class);
@@ -26,6 +29,7 @@ public class ViewCache {
     
     private CacheProvider cache;
     
+    @Autowired
     public void setCacheProvider(CacheProvider cacheProvider) {
         this.cache = cacheProvider;
     }

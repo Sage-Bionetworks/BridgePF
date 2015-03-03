@@ -8,21 +8,25 @@ import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.UserProfileService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import com.google.common.base.Supplier;
 
 import play.mvc.Result;
 
+@Controller("userProfileController")
 public class UserProfileController extends BaseController {
     
     private UserProfileService userProfileService;
     
     private ViewCache viewCache;
-    
+
+    @Autowired
     public void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
     }
-    
+    @Autowired
     public void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
     }

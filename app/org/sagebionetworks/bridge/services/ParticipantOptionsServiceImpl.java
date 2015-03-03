@@ -12,11 +12,15 @@ import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ParticipantOptionsServiceImpl implements ParticipantOptionsService {
 
     private ParticipantOptionsDao optionsDao;
     
+    @Autowired
     public void setParticipantOptionsDao(ParticipantOptionsDao participantOptionsDao) {
         this.optionsDao = participantOptionsDao;
     }

@@ -2,8 +2,11 @@ package controllers;
 
 import java.security.SecureRandom;
 
+import org.springframework.stereotype.Controller;
+
 import play.mvc.Result;
 
+@Controller("lunchController")
 public class LunchController extends BaseController {
 
     private static final SecureRandom random = new SecureRandom();

@@ -5,9 +5,11 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+@Component
 public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
     

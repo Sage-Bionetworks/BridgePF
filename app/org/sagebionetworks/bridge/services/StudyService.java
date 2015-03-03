@@ -4,11 +4,8 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.Tracker;
 
 public interface StudyService {
-
-    public Tracker getTracker(String trackerId);
 
     public Study getStudy(String identifier);
     
