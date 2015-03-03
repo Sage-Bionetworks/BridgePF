@@ -71,10 +71,11 @@ public class SendMailViaAmazonService implements SendMailService {
     private static final String NEWLINE = "\n";
     private static final Region region = Region.getRegion(Regions.US_EAST_1);
 
-    private String supportEmail = "support@sagebridge.org";
+    private String supportEmail;
     private AmazonSimpleEmailServiceClient emailClient;
     private StudyService studyService;
 
+    @Resource(name="supportEmail")
     public void setSupportEmail(String supportEmail) {
         this.supportEmail = supportEmail;
     }

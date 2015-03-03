@@ -4,6 +4,7 @@ import static com.amazonaws.services.s3.Headers.SERVER_SIDE_ENCRYPTION;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Resource;
 
 import java.net.URL;
 import java.util.Date;
@@ -51,11 +52,11 @@ public class UploadService {
     public void setUploadSessionCredentialsService(UploadSessionCredentialsService uploadCredentialsService) {
         this.uploadCredentailsService = uploadCredentialsService;
     }
-    @Autowired
+    @Resource(name = "s3UploadClient")
     public void setS3UploadClient(AmazonS3 s3UploadClient) {
         this.s3UploadClient = s3UploadClient;
     }
-    @Autowired
+    @Resource(name = "s3Client")
     public void setS3Client(AmazonS3 s3Client) {
         this.s3Client = s3Client;
     }
