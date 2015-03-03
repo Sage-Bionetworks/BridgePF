@@ -131,12 +131,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public void signUp(Study study, SignUp signUp, boolean sendEmail) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
-
+        
+        Validate.entityThrowingException(signUpValidator, signUp);
+        
         String lockId = null;
         try {
             lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail());
-
-            Validate.entityThrowingException(signUpValidator, signUp);
             if (consentService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }

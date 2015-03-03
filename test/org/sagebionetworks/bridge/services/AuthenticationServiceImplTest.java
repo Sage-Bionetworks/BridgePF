@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
@@ -114,12 +115,12 @@ public class AuthenticationServiceImplTest {
         authService.requestResetPassword(testUser.getStudy(), null);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = InvalidEntityException.class)
     public void requestPasswordResetFailsOnEmptyString() throws Exception {
         Email email = new Email("", testUser.getStudyIdentifier());
         authService.requestResetPassword(testUser.getStudy(), email);
     }
-
+    
     @Test(expected = BridgeServiceException.class)
     public void resetPasswordWithBadTokenFails() throws Exception {
         authService.resetPassword(new PasswordReset("foo", "newpassword"));
