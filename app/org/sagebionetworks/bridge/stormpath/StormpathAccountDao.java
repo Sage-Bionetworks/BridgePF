@@ -55,6 +55,7 @@ import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupMembership;
 import com.stormpath.sdk.impl.resource.AbstractResource;
 import com.stormpath.sdk.resource.ResourceException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -132,7 +133,7 @@ public class StormpathAccountDao implements AccountDao {
     @Override
     public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
         checkNotNull(email);
-
+        
         // This is painful, it's not in the Java SDK. I hope we can come back to this when it's in their SDK
         // and move it over.
         SimpleHttpConnectionManager manager = new SimpleHttpConnectionManager();
@@ -170,6 +171,7 @@ public class StormpathAccountDao implements AccountDao {
         }
         // If it *wasn't* a 202, then there should be a JSON message included with the response...
         if (status != 202) {
+
             // One common response, that the email no longer exists, we have mapped to a 404, so do that 
             // here as well. Otherwise we treat it on the API side as a 503 error, a service unavailable problem.
             JsonNode node = null;
@@ -187,11 +189,13 @@ public class StormpathAccountDao implements AccountDao {
     }
 
     @Override
-    public void requestResetPassword(Email email) {
+    public void requestResetPassword(Study study, Email email) {
+        checkNotNull(study);
         checkNotNull(email);
-        
+
         try {
-            application.sendPasswordResetEmail(email.getEmail());
+            Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
+            application.sendPasswordResetEmail(email.getEmail(), directory);
         } catch (ResourceException e) {
             rethrowResourceException(e, null);
         }
@@ -269,6 +273,7 @@ public class StormpathAccountDao implements AccountDao {
                 updateGroups(directory, account);
             }
         } catch(ResourceException e) {
+            e.printStackTrace();
             rethrowResourceException(e, account);
         }
     }
@@ -315,7 +320,7 @@ public class StormpathAccountDao implements AccountDao {
         switch(e.getCode()) {
         case 2001: // must be unique (email isn't unique)
             logger.info(String.format("Stormpath error: %s, exception: %s, mapped to EntityAlreadyExistsException", e.getCode(), e.getMessage()));
-            throw new EntityAlreadyExistsException(account);
+            throw new EntityAlreadyExistsException(account, "Account already exists.");
         case 400:
             logger.info(String.format("Stormpath error: %s, exception: %s, mapped to BadRequestException", e.getCode(), e.getMessage()));
             throw new BadRequestException("Invalid email or password");
