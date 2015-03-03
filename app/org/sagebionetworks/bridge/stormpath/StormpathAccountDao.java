@@ -272,7 +272,6 @@ public class StormpathAccountDao implements AccountDao {
                 updateGroups(directory, account);
             }
         } catch(ResourceException e) {
-            e.printStackTrace();
             rethrowResourceException(e, account);
         }
     }
