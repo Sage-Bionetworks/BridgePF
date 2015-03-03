@@ -6,6 +6,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.User;
@@ -30,7 +32,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         this.accountDao = accountDao;
     }
     
-    @Autowired
+    @Resource(name = "asyncExecutorService")
     public void setExecutorService(ExecutorService executorService) {
         this.executorService = executorService;
     }
