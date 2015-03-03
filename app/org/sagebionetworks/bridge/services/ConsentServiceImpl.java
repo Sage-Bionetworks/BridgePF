@@ -107,11 +107,6 @@ public class ConsentServiceImpl implements ConsentService {
     }
 
     @Override
-    public UserConsent getUserConsent(StudyIdentifier studyIdentifier, User user) {
-        return userConsentDao.getUserConsent(user.getHealthCode(), studyIdentifier);
-    }
-
-    @Override
     public boolean hasUserConsentedToResearch(StudyIdentifier studyIdentifier, User user) {
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
