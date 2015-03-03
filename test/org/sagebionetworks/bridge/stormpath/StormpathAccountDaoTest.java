@@ -166,7 +166,7 @@ public class StormpathAccountDaoTest {
         try {
             accountDao.signUp(study, signUp, false); // don't send email
             
-            Email emailObj = new Email(signUp.getEmail(), study.getStudyIdentifier());
+            Email emailObj = new Email(study.getStudyIdentifier(), signUp.getEmail());
             accountDao.resendEmailVerificationToken(study.getStudyIdentifier(), emailObj); // now send email
         } finally {
             accountDao.deleteAccount(study, signUp.getEmail());
@@ -201,7 +201,7 @@ public class StormpathAccountDaoTest {
         dao.setStormpathApplication(application);
         dao.setStormpathClient(client);
         
-        dao.requestResetPassword(study, new Email(emailString, study.getStudyIdentifier()));
+        dao.requestResetPassword(study, new Email(study.getStudyIdentifier(), emailString));
         
         verify(client).getResource(study.getStormpathHref(), Directory.class);
         verify(application).sendPasswordResetEmail(emailString, directory);
@@ -225,7 +225,7 @@ public class StormpathAccountDaoTest {
         when(application.sendPasswordResetEmail(emailString, directory)).thenThrow(e);
         dao.setStormpathApplication(application);
         
-        dao.requestResetPassword(study, new Email(emailString, study.getStudyIdentifier()));
+        dao.requestResetPassword(study, new Email(study.getStudyIdentifier(), emailString));
     }
 
     @Test
