@@ -74,7 +74,7 @@ public class UserAdminServiceImpl implements UserAdminService {
         checkNotNull(signUp, "Sign up cannot be null");
         checkNotNull(signUp.getEmail(), "Sign up email cannot be null");
 
-        authenticationService.signUp(signUp, study, false);
+        authenticationService.signUp(study, signUp, false);
 
         SignIn signIn = new SignIn(signUp.getUsername(), signUp.getPassword());
         UserSession newUserSession = null;
