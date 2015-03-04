@@ -4,10 +4,12 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import play.mvc.Http;
 import play.mvc.Result;
 
+@Component("loggingInterceptor")
 public class LoggingInterceptor implements MethodInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(LoggingInterceptor.class);

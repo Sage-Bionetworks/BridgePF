@@ -8,15 +8,18 @@ import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.services.UploadService;
 import org.sagebionetworks.bridge.services.UploadValidationService;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+
 import play.mvc.Result;
 
+@Controller("uploadController")
 public class UploadController extends BaseController {
 
     private UploadService uploadService;
     private UploadValidationService uploadValidationService;
 
+    @Autowired
     public void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
     }

@@ -10,10 +10,12 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * Backfills health ID and health code.
  */
+@Component
 public class HealthCodeBackfill extends AsyncBackfillTemplate {
 
     private BackfillRecordFactory backfillRecordFactory;

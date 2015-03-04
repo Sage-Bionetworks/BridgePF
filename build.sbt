@@ -24,8 +24,8 @@ libraryDependencies ++= Seq(
   "org.bouncycastle" % "bcpkix-jdk15on" % "1.51",
   "com.github.fge" % "json-schema-validator" % "2.2.5",
   "commons-httpclient" % "commons-httpclient" % "3.1",
-  "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC2.1",
-  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC2.1",
+  "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC3.1",
+  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC3.1",
   "redis.clients" % "jedis" % "2.6.1",
   "org.xhtmlrenderer" % "flying-saucer-pdf" % "9.0.7",
   "nl.jqno.equalsverifier" % "equalsverifier" % "1.6"

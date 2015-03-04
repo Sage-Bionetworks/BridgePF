@@ -9,16 +9,20 @@ import java.security.KeyPair;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.BcCertificateFactory;
 import org.sagebionetworks.bridge.crypto.CertificateFactory;
 import org.sagebionetworks.bridge.crypto.KeyPairFactory;
 import org.sagebionetworks.bridge.crypto.PemUtils;
+import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
+@Component("uploadCertificateService")
 public class UploadCertificateServiceImpl implements UploadCertificateService {
 
     private static final BridgeConfig CONFIG = BridgeConfigFactory.getConfig();
@@ -26,12 +30,13 @@ public class UploadCertificateServiceImpl implements UploadCertificateService {
     private static final String CERT_BUCKET = CONFIG.getProperty("upload.cms.cert.bucket");
 
     private final CertificateFactory certificateFactory;
+    private AmazonS3 s3CmsClient;
 
     public UploadCertificateServiceImpl() {
         certificateFactory = new BcCertificateFactory();
     }
 
-    private AmazonS3 s3CmsClient;
+    @Resource(name="s3CmsClient")
     public void setS3CmsClient(AmazonS3 s3CmsClient) {
         this.s3CmsClient = s3CmsClient;
     }

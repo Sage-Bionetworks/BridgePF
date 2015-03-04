@@ -11,6 +11,8 @@ import org.sagebionetworks.bridge.dao.BackfillDao;
 import org.sagebionetworks.bridge.models.BackfillRecord;
 import org.sagebionetworks.bridge.models.BackfillStatus;
 import org.sagebionetworks.bridge.models.BackfillTask;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -23,11 +25,13 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 
+@Component
 public class DynamoBackfillDao implements BackfillDao {
 
     private DynamoDBMapper taskMapper;
     private DynamoDBMapper recordMapper;
 
+    @Autowired
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig taskMapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)

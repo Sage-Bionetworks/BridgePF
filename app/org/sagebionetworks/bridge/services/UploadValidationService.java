@@ -1,11 +1,12 @@
 package org.sagebionetworks.bridge.services;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Resource;
+
 import java.util.concurrent.ExecutorService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -19,7 +20,7 @@ public class UploadValidationService {
     private UploadValidationTaskFactory taskFactory;
 
     /** Async thread pool. This is configured by Spring. */
-    @Autowired
+    @Resource(name = "asyncExecutorService")
     public void setAsyncExecutorService(ExecutorService asyncExecutorService) {
         this.asyncExecutorService = asyncExecutorService;
     }

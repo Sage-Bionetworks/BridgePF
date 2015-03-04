@@ -6,6 +6,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.User;
@@ -13,7 +15,10 @@ import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class UserProfileServiceImpl implements UserProfileService {
     
     private AccountDao accountDao;
@@ -22,14 +27,17 @@ public class UserProfileServiceImpl implements UserProfileService {
     
     private SendMailService sendMailService;
 
+    @Autowired
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
     
+    @Resource(name = "asyncExecutorService")
     public void setExecutorService(ExecutorService executorService) {
         this.executorService = executorService;
     }
     
+    @Autowired
     public void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
     }

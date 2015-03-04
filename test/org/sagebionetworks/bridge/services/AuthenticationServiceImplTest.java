@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.PasswordReset;
 import org.sagebionetworks.bridge.models.SignIn;
@@ -111,15 +112,15 @@ public class AuthenticationServiceImplTest {
 
     @Test(expected = NullPointerException.class)
     public void requestPasswordResetFailsOnNull() throws Exception {
-        authService.requestResetPassword(null);
+        authService.requestResetPassword(testUser.getStudy(), null);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = InvalidEntityException.class)
     public void requestPasswordResetFailsOnEmptyString() throws Exception {
-        Email email = new Email("");
-        authService.requestResetPassword(email);
+        Email email = new Email(testUser.getStudyIdentifier(), "");
+        authService.requestResetPassword(testUser.getStudy(), email);
     }
-
+    
     @Test(expected = BridgeServiceException.class)
     public void resetPasswordWithBadTokenFails() throws Exception {
         authService.resetPassword(new PasswordReset("foo", "newpassword"));
@@ -142,7 +143,7 @@ public class AuthenticationServiceImplTest {
     public void canResendEmailVerification() throws Exception {
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
         try {
-            Email email = new Email(user.getEmail());
+            Email email = new Email(testUser.getStudyIdentifier(), user.getEmail());
             authService.resendEmailVerification(user.getStudyIdentifier(), email);
         } catch (ConsentRequiredException e) {
         } finally {
@@ -185,8 +186,8 @@ public class AuthenticationServiceImplTest {
 
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
         try {
-            authService.signUp(user.getSignUp(), user.getStudy(), false);
-            authService.signUp(user.getSignUp(), tempStudy, false);
+            authService.signUp(user.getStudy(), user.getSignUp(), false);
+            authService.signUp(tempStudy, user.getSignUp(), false);
             fail("Should not get here");
         } catch (EntityAlreadyExistsException e) {
             assertEquals("Account already exists.", e.getMessage());
