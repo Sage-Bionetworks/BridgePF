@@ -5,17 +5,21 @@ import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.UserAdminService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+@Controller("userManagementController")
 public class UserManagementController extends BaseController {
 
     private static final String CONSENT_FIELD = "consent";
 
     private UserAdminService userAdminService;
 
+    @Autowired
     public void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
     }

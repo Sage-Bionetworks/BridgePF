@@ -6,13 +6,15 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import play.mvc.Http;
 import play.mvc.Result;
 
 /** Play controller for health data APIs. */
+@Controller("healthDataController")
 public class HealthDataController extends BaseController {
     private HealthDataService healthDataService;
 

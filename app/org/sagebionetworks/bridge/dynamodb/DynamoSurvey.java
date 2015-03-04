@@ -177,7 +177,7 @@ public class DynamoSurvey implements Survey {
     public List<SurveyElement> getElements() {
         return elements;
     }
-    
+
     @Override
     @DynamoDBIgnore
     @JsonProperty("questions")

@@ -1,14 +1,20 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import javax.annotation.Resource;
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -17,6 +23,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.PreencodedMimeBodyPart;
+import javax.mail.util.ByteArrayDataSource;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.format.DateTimeFormat;
@@ -30,7 +37,10 @@ import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.stereotype.Component;
+import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.regions.Region;
@@ -39,9 +49,12 @@ import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.simpleemail.model.RawMessage;
 import com.amazonaws.services.simpleemail.model.SendRawEmailRequest;
 import com.amazonaws.services.simpleemail.model.SendRawEmailResult;
+import com.fasterxml.jackson.core.util.ByteArrayBuilder;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
+import com.lowagie.text.DocumentException;
 
+@Component("sendEmailViaAmazonService")
 public class SendMailViaAmazonService implements SendMailService {
     
     private static final Logger logger = LoggerFactory.getLogger(SendMailViaAmazonService.class);
@@ -61,34 +74,48 @@ public class SendMailViaAmazonService implements SendMailService {
     private static final String MIME_TYPE_TSV = "text/tab-separated-value";
     private static final String MIME_TYPE_HTML = "text/html";
     private static final String MIME_TYPE_TEXT = "text/plain";
+    private static final String MIME_TYPE_PDF = "application/pdf";
     private static final String DELIMITER = "\t";
     private static final String NEWLINE = "\n";
     private static final Region region = Region.getRegion(Regions.US_EAST_1);
 
-    private String fromEmail;
+    private String supportEmail;
     private AmazonSimpleEmailServiceClient emailClient;
     private StudyService studyService;
 
-    public void setFromEmail(String fromEmail) {
-        this.fromEmail = fromEmail;
+    @Resource(name="supportEmail")
+    public void setSupportEmail(String supportEmail) {
+        this.supportEmail = supportEmail;
     }
-
+    @Autowired
     public void setEmailClient(AmazonSimpleEmailServiceClient emailClient) {
         this.emailClient = emailClient;
     }
-
+    @Resource(name="studyService")
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-    
+
     @Override
     public void sendConsentAgreement(User user, ConsentSignature consentSignature, StudyConsent studyConsent) {
-        try {
-            Study study = studyService.getStudy(studyConsent.getStudyKey());
-            
-            String body = createSignedDocument(user, consentSignature, studyConsent);
-            MimeBodyPart bodyPart = new MimeBodyPart();
-            bodyPart.setContent(body, MIME_TYPE_HTML);
+
+
+            final String consentDoc = createSignedDocument(user, consentSignature, studyConsent);
+            try {
+            // Consent agreement as message body in HTML
+            final MimeBodyPart bodyPart = new MimeBodyPart();
+            bodyPart.setContent(consentDoc, MIME_TYPE_HTML);
+
+            // Consent agreement as a PDF attachment
+            // Embed the signature image
+            String consentDocWithSig = consentDoc.replace("cid:consentSignature",
+                    "data:" + consentSignature.getImageMimeType() +
+                    ";base64," + consentSignature.getImageData());
+            final byte[] pdfBytes = createPdf(consentDocWithSig);
+            final MimeBodyPart pdfPart = new MimeBodyPart();
+            DataSource source = new ByteArrayDataSource(pdfBytes, MIME_TYPE_PDF);
+            pdfPart.setDataHandler(new DataHandler(source));
+            pdfPart.setFileName("consent.pdf");
 
             // Write signature image as an attachment, if it exists. Because of the validation in ConsentSignature, if
             // imageData is present, so will imageMimeType.
@@ -102,20 +129,24 @@ public class SendMailViaAmazonService implements SendMailService {
                 sigPart.setHeader(HEADER_CONTENT_DISPOSITION, HEADER_CONTENT_DISPOSITION_CONSENT_VALUE);
                 sigPart.setContent(consentSignature.getImageData(), consentSignature.getImageMimeType());
             }
-            
-            // As recommended by Amazon, we send the emails separately.
+
+            // As recommended by Amazon, we send the emails separately
+            final Study study = studyService.getStudy(studyConsent.getStudyKey());
             String subject = String.format(CONSENT_EMAIL_SUBJECT, study.getName());
-            
-            sendEmailTo(subject, user.getEmail(), bodyPart, sigPart);
+
+            final String sendFromEmail = isNotBlank(study.getSupportEmail()) ?
+                    String.format("%s <%s>", study.getName(), study.getSupportEmail()) : supportEmail;
+
+            sendEmailTo(subject, sendFromEmail, user.getEmail(), bodyPart, pdfPart, sigPart);
             Set<String> emailAddresses = commaListToSet(study.getConsentNotificationEmail());
             for (String email : emailAddresses) {
-                sendEmailTo(subject, email, bodyPart, sigPart);
+                sendEmailTo(subject, supportEmail, email, bodyPart, pdfPart, sigPart);
             }
         } catch(IOException | MessagingException e) {
             throw new BridgeServiceException(e);
         }
     }
-    
+
     @Override
     public void sendStudyParticipantsRoster(Study study, List<StudyParticipant> participants) {
         try {
@@ -132,7 +163,7 @@ public class SendMailViaAmazonService implements SendMailService {
             csvPart.setContent(body, MIME_TYPE_TSV);
             
             String subject = String.format(PARTICIPANTS_EMAIL_SUBJECT, study.getName());
-            sendEmailTo(subject, study.getConsentNotificationEmail(), bodyPart, csvPart);
+            sendEmailTo(subject, supportEmail, study.getConsentNotificationEmail(), bodyPart, csvPart);
             
         } catch(MessagingException | AmazonClientException | IOException e) {
             throw new BridgeServiceException(e);
@@ -188,7 +219,7 @@ public class SendMailViaAmazonService implements SendMailService {
         return sb.toString();
     }
 
-    private void sendEmailTo(String subject, String toEmail, MimeBodyPart... parts) throws AmazonClientException,
+    private void sendEmailTo(String subject, String fromEmail, String toEmail, MimeBodyPart... parts) throws AmazonClientException,
             MessagingException, IOException {
 
         // Create email using JavaMail
@@ -227,26 +258,38 @@ public class SendMailViaAmazonService implements SendMailService {
         return Collections.emptySet();
     }
 
-    private String createSignedDocument(User user, ConsentSignature consent, StudyConsent studyConsent)
-            throws IOException {
-
-        String filePath = studyConsent.getPath();
-        FileSystemResource resource = new FileSystemResource(filePath);
-        InputStreamReader isr = new InputStreamReader(resource.getInputStream(), "UTF-8");
-        String consentAgreementHTML = CharStreams.toString(isr);
-
-        String signingDate = fmt.print(DateUtils.getCurrentMillisFromEpoch());
-
-        String html = consentAgreementHTML.replace("@@name@@", consent.getName());
-        html = html.replace("@@signing.date@@", signingDate);
-        html = html.replace("@@email@@", user.getEmail());
-        return html;
+    private String createSignedDocument(User user, ConsentSignature consent, StudyConsent studyConsent) {
+        final String filePath = studyConsent.getPath();
+        final FileSystemResource resource = new FileSystemResource(filePath);
+        try (InputStreamReader isr = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);) {
+            String consentAgreementHTML = CharStreams.toString(isr);
+            String signingDate = fmt.print(DateUtils.getCurrentMillisFromEpoch());
+            String html = consentAgreementHTML.replace("@@name@@", consent.getName());
+            html = html.replace("@@signing.date@@", signingDate);
+            html = html.replace("@@email@@", user.getEmail());
+            return html;
+        } catch (IOException e) {
+            throw new BridgeServiceException(e);
+        }
     }
-    
+
     private void append(StringBuilder sb, String value, boolean withComma) {
         sb.append( (value != null) ? value.replaceAll("\t", " ") : "" );
         if (withComma) {
             sb.append(DELIMITER);
+        }
+    }
+ 
+    private byte[] createPdf(final String consentDoc) {
+        try (ByteArrayBuilder byteArrayBuilder = new ByteArrayBuilder();) {
+            ITextRenderer renderer = new ITextRenderer();
+            renderer.setDocumentFromString(consentDoc);
+            renderer.layout();
+            renderer.createPDF(byteArrayBuilder);
+            byteArrayBuilder.flush();
+            return byteArrayBuilder.toByteArray();
+        } catch (DocumentException e) {
+            throw new BridgeServiceException(e);
         }
     }
 }

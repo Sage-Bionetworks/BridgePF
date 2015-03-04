@@ -48,7 +48,7 @@ public interface AccountDao {
      * one-time verification token. 
      * @param email
      */
-    public void requestResetPassword(Email email);
+    public void requestResetPassword(Study study, Email email);
     
     /**
      * Reset a password, supplying a new password and the one-time verification token that was sent via email 

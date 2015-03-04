@@ -7,17 +7,21 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.redis.RedisKey;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Sets;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
+@Component
 public class CacheAdminService {
 
     private final String SUFFIX = RedisKey.SEPARATOR + RedisKey.SESSION.getSuffix(); 
     private JedisPool jedisPool;
     
+    @Autowired
     public void setJedisPool(JedisPool jedisPool) {
         this.jedisPool = jedisPool;
     }

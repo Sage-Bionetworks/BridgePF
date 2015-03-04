@@ -16,6 +16,7 @@ import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.http.HeaderNames.X_FORWARDED_PROTO
 import play.api.http.Status.MOVED_PERMANENTLY
 import play.api.mvc.Action
+import play.api.mvc.Controller;
 import play.api.mvc.Handler
 import play.api.mvc.RequestHeader
 import play.api.mvc.Results.BadRequest
@@ -73,6 +74,6 @@ object GlobalWithFilters extends WithFilters (
 object AppContext {
   private val context = new ClassPathXmlApplicationContext("application-context.xml")
   def getBean[T](controllerClass: Class[T]) = {
-    context.getBean(controllerClass)
+    context.getBean(controllerClass.getSimpleName()+"Proxied").asInstanceOf[T]
   }
 }

@@ -2,6 +2,7 @@ package controllers;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
@@ -14,9 +15,11 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
+@Controller("authenticationController")
 public class AuthenticationController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
@@ -55,7 +58,7 @@ public class AuthenticationController extends BaseController {
     public Result signUp() throws Exception {
         SignUp signUp = SignUp.fromJson(requestToJSON(request()), false);
         Study study = studyService.getStudy(getStudyIdentifier());
-        authenticationService.signUp(signUp, study, true);
+        authenticationService.signUp(study, signUp, true);
         return createdResult("Signed up.");
     }
 
@@ -79,7 +82,9 @@ public class AuthenticationController extends BaseController {
 
     public Result requestResetPassword() throws Exception {
         Email email = Email.fromJson(requestToJSON(request()));
-        authenticationService.requestResetPassword(email);
+        Study study = getStudyOrThrowException(email);
+        
+        authenticationService.requestResetPassword(study, email);
         return okResult("An email has been sent allowing you to set a new password.");
     }
 
@@ -87,5 +92,26 @@ public class AuthenticationController extends BaseController {
         PasswordReset passwordReset = PasswordReset.fromJson(requestToJSON(request()));
         authenticationService.resetPassword(passwordReset);
         return okResult("Password has been changed.");
+    }
+    
+    /**
+     * Unauthenticated calls that require a study (most of the calls not requiring authentication, including this one),
+     * should include the study identifier as part of the JSON payload. This call handles such JSON and converts it to a
+     * study. As a fallback for existing clients, it also looks for the study information in the query string or
+     * headers. If the study cannot be found in any of these places, it throws an exception, because the API will not
+     * work correctly without it.
+     * 
+     * @param email
+     * @return
+     */
+    private Study getStudyOrThrowException(Email email) {
+        if (email.getStudyIdentifier() != null) {
+            return studyService.getStudy(email.getStudyIdentifier());
+        }
+        String studyString = getStudyIdentifier();
+        if (studyString != null) {
+            return studyService.getStudy(studyString);
+        }
+        throw new EntityNotFoundException(Study.class);
     }
 }

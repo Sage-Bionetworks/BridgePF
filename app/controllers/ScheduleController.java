@@ -8,15 +8,19 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
 import com.google.common.collect.Lists;
 
+@Controller("scheduleController")
 public class ScheduleController extends BaseController {
 
     private SchedulePlanService schedulePlanService;
     
+    @Autowired
     public void setSchedulePlanService(SchedulePlanService schedulePlanService) {
         this.schedulePlanService = schedulePlanService;
     }

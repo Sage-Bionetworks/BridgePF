@@ -6,11 +6,12 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
+import org.springframework.stereotype.Controller;
 
 import play.libs.Json;
 import play.mvc.Result;
 
-@org.springframework.stereotype.Controller
+@Controller("applicationController")
 public class ApplicationController extends BaseController {
 
     private static final UserSession EMPTY_USER_SESSION = new UserSession();

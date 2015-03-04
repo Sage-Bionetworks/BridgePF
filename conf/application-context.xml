@@ -2,169 +2,38 @@
    xmlns:context="http://www.springframework.org/schema/context"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xmlns:mvc="http://www.springframework.org/schema/mvc"
+   xmlns:util="http://www.springframework.org/schema/util"
    xsi:schemaLocation="
         http://www.springframework.org/schema/beans     
-        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/context 
-        http://www.springframework.org/schema/context/spring-context-3.0.xsd
+        http://www.springframework.org/schema/context/spring-context.xsd
         http://www.springframework.org/schema/mvc
-        http://www.springframework.org/schema/mvc/spring-mvc.xsd">
-
-    <context:annotation-config />
+        http://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/util 
+        http://www.springframework.org/schema/util/spring-util.xsd">
+        
+    <context:annotation-config base-package="
+        controllers,
+        filters,
+        interceptors,
+        models,
+        org.sagebionetworks.bridge
+    "/>
     <bean class="org.sagebionetworks.bridge.config.BridgeSpringConfig" />
 
-    <bean id="bridgeConfig" class="org.sagebionetworks.bridge.config.BridgeConfigFactory"
-            factory-method="getConfig" />
-
-    <bean id="healthCodeEncryptor" class="org.sagebionetworks.bridge.crypto.AesGcmEncryptor">
-        <constructor-arg value="#{bridgeConfig.healthCodeKey}" />
-    </bean>
-
-    <bean id="awsCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
-        <constructor-arg index="0" value="#{bridgeConfig.getProperty('aws.key')}"/>
-        <constructor-arg index="1" value="#{bridgeConfig.getProperty('aws.secret.key')}"/>
-    </bean>
-
-    <bean id="s3UploadCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
-        <constructor-arg index="0" value="#{bridgeConfig.getProperty('aws.key.upload')}"/>
-        <constructor-arg index="1" value="#{bridgeConfig.getProperty('aws.secret.key.upload')}"/>
-    </bean>
-
-    <bean id="s3CmsCredentials" class="com.amazonaws.auth.BasicAWSCredentials">
-        <constructor-arg index="0" value="#{bridgeConfig.getProperty('aws.key.upload.cms')}"/>
-        <constructor-arg index="1" value="#{bridgeConfig.getProperty('aws.secret.key.upload.cms')}"/>
-    </bean>
-
-    <!-- Simple Email Service -->
-
-    <bean id="sesClient" class="com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient">
-        <constructor-arg index="0">
-            <ref bean="awsCredentials" />
-        </constructor-arg>
+    <bean id="numAsyncWorkerThreads" class="java.lang.Integer">
+        <constructor-arg value="20" />
     </bean>
     
-    <!-- S3 -->
-
-    <bean id="s3Client" class="com.amazonaws.services.s3.AmazonS3Client">
-        <constructor-arg index="0">
-            <ref bean="awsCredentials" />
-        </constructor-arg>
-    </bean>
-
-    <bean id="s3UploadClient" class="com.amazonaws.services.s3.AmazonS3Client">
-        <constructor-arg index="0">
-            <ref bean="s3UploadCredentials" />
-        </constructor-arg>
-    </bean>
-
-    <bean id="uploadTokenServiceClient" class="com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient">
-        <constructor-arg index="0">
-            <ref bean="s3UploadCredentials" />
-        </constructor-arg>
-    </bean>
-
-    <bean id="s3CmsClient" class="com.amazonaws.services.s3.AmazonS3Client">
-        <constructor-arg index="0">
-            <ref bean="s3CmsCredentials" />
-        </constructor-arg>
+    <bean id="supportEmail" class="java.lang.String">
+        <constructor-arg value="Bridge (Sage Bionetworks) &lt;support@sagebridge.org&gt;" />
     </bean>
     
-    <!-- Caching -->
-
-    <bean id="viewCache" class="org.sagebionetworks.bridge.cache.ViewCache">
-        <property name="cacheProvider" ref="cacheProvider"/>
-    </bean>
-
-    <bean id="cacheProvider" class="org.sagebionetworks.bridge.cache.CacheProvider">
-        <property name="stringOps" ref="stringOps"/>
-    </bean>
-    
-    <bean id="stringOps" class="org.sagebionetworks.bridge.redis.JedisStringOps">
-        <property name="jedisPool" ref="jedisPool"/>
-    </bean>
-    
-    <!-- DynamoDB -->
-
-    <bean id="dynamoDbClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient">
-        <constructor-arg index="0">
-            <ref bean="awsCredentials" />
-        </constructor-arg>
-    </bean>
-
-    <bean id="healthCodeDao" class="org.sagebionetworks.bridge.dynamodb.DynamoHealthCodeDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-    </bean>
-
-    <bean id="healthIdDao" class="org.sagebionetworks.bridge.dynamodb.DynamoHealthIdDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-    </bean>
-
-    <bean id="studyConsentDao" class="org.sagebionetworks.bridge.dynamodb.DynamoStudyConsentDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-    </bean>
-
-    <bean id="userConsentDao" class="org.sagebionetworks.bridge.dynamodb.DynamoUserConsentDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-    </bean>
-
-    <bean id="surveyDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-        <property name="surveyResponseDao" ref="surveyResponseDao" />
-        <property name="schedulePlanDao" ref="schedulePlanDao" />
-    </bean>
-    
-    <bean id="surveyResponseDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponseDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-        <property name="surveyDao" ref="surveyDao"/>
-    </bean>
-
-    <bean id="uploadDao" class="org.sagebionetworks.bridge.dynamodb.DynamoUploadDao" />
-
-    <bean id="schedulePlanDao" class="org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlanDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-    </bean>
-
-    <bean id="participantOptionsDao" class="org.sagebionetworks.bridge.dynamodb.DynamoParticipantOptionsDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-    </bean>
- 
-    <bean id="studyDao" class="org.sagebionetworks.bridge.dynamodb.DynamoStudyDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-    </bean>
-    
-    <bean id="directoryDao" class="org.sagebionetworks.bridge.stormpath.StormpathDirectoryDao">
-        <property name="bridgeConfig" ref="bridgeConfig"/>
-        <property name="stormpathClient" ref="stormpathClient"/>
-    </bean>
-    
-    <bean id="backfillDao" class="org.sagebionetworks.bridge.dynamodb.DynamoBackfillDao">
-        <property name="dynamoDbClient" ref="dynamoDbClient" />
-    </bean>
-    
-    <bean id="accountDao" class="org.sagebionetworks.bridge.stormpath.StormpathAccountDao" />
-
-    <bean id="exceptionInterceptor" class="interceptors.ExceptionInterceptor">
-        <property name="bridgeConfig" ref="bridgeConfig"/>
-    </bean>
-    
-    <bean id="loggingInterceptor" class="interceptors.LoggingInterceptor"/>
-    
-    <!-- Redis -->
-
-    <bean id="distributedLockDao" class="org.sagebionetworks.bridge.redis.RedisDistributedLockDao"/>
-
-    <!-- Play controllers. -->
-
-    <bean id="BaseController" class="controllers.BaseController" abstract="true">
-        <property name="authenticationService" ref="authenticationService" />
-        <property name="studyService" ref="studyService" />
-        <property name="cacheProvider" ref="cacheProvider" />
-        <property name="bridgeConfig" ref="bridgeConfig" />
-    </bean>
-
-    <bean id="AdminController" class="controllers.AdminController" abstract="true" parent="BaseController">
-    </bean>
-
+    <util:list id="encryptorList">
+        <ref bean="healthCodeEncryptor"/>
+    </util:list>
+     
     <bean id="proxiedController" class="org.springframework.aop.framework.ProxyFactoryBean">
         <property name="proxyTargetClass" value="true"/>
         <property name="interceptorNames">
@@ -174,288 +43,72 @@
             </list>
         </property>
     </bean>
-
-    <bean id="controllers.ApplicationController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.ApplicationController" parent="BaseController">
-            </bean>
-        </property>
+    
+    <bean id="ApplicationControllerProxied" parent="proxiedController">
+        <property name="targetName" value="applicationController"/>
     </bean>
 
-    <bean id="controllers.AuthenticationController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.AuthenticationController" parent="BaseController">
-            </bean>
-        </property>
+    <bean id="AuthenticationControllerProxied" parent="proxiedController">
+        <property name="targetName" value="authenticationController"/>
     </bean>
 
-    <bean id="controllers.HealthDataController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.HealthDataController" parent="BaseController" />
-        </property>
+    <bean id="HealthDataControllerProxied" parent="proxiedController">
+        <property name="targetName" value="healthDataController"/>
     </bean>
 
-    <bean id="controllers.TrackerController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.TrackerController" parent="BaseController">
-                <property name="jsonSchemaValidator">
-                    <bean class="global.JsonSchemaValidator"/>
-                </property>
-            </bean>
-        </property>
+    <bean id="UserProfileControllerProxied" parent="proxiedController">
+        <property name="targetName" value="userProfileController"/>
     </bean>
 
-    <bean id="controllers.UserProfileController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.UserProfileController" parent="BaseController">
-                <property name="userProfileService" ref="userProfileService"/>
-                <property name="viewCache" ref="viewCache"/>
-            </bean>
-        </property>
+    <bean id="UploadSchemaControllerProxied" parent="proxiedController">
+        <property name="targetName" value="uploadSchemaController"/>
     </bean>
 
-    <bean id="controllers.UploadSchemaController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.UploadSchemaController" parent="BaseController" />
-        </property>
-    </bean>
-
-    <bean id="controllers.ConsentController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.ConsentController" parent="BaseController">
-                <property name="consentService" ref="consentService" />
-                <property name="optionsService" ref="optionsService" />
-            </bean>
-        </property>
+    <bean id="ConsentControllerProxied" parent="proxiedController">
+        <property name="targetName" value="consentController"/>
     </bean>
     
-    <bean id="controllers.ScheduleController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.ScheduleController" parent="BaseController">
-                <property name="schedulePlanService" ref="schedulePlanService" />
-            </bean>
-        </property>
+    <bean id="ScheduleControllerProxied" parent="proxiedController">
+        <property name="targetName" value="scheduleController"/>
     </bean>
     
-    <bean id="controllers.BackfillController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.BackfillController" parent="AdminController" />
-        </property>
+    <bean id="BackfillControllerProxied" parent="proxiedController">
+        <property name="targetName" value="backfillController" />
     </bean>
 
-    <bean id="controllers.StudyConsentController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.StudyConsentController" parent="AdminController">
-                <property name="studyConsentService" ref="studyConsentService" />
-            </bean>
-        </property>
+    <bean id="StudyConsentControllerProxied" parent="proxiedController">
+        <property name="targetName" value="studyConsentController"/>
     </bean>
 
-    <bean id="controllers.SurveyController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.SurveyController" parent="BaseController">
-                <property name="surveyService" ref="surveyService" />
-                <property name="viewCache" ref="viewCache" />
-            </bean>
-        </property>
+    <bean id="SurveyControllerProxied" parent="proxiedController">
+        <property name="targetName" value="surveyController"/>
     </bean>
 
-    <bean id="controllers.UploadController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.UploadController" parent="BaseController">
-                <property name="uploadService" ref="uploadService" />
-            </bean>
-        </property>
+    <bean id="UploadControllerProxied" parent="proxiedController">
+        <property name="targetName" value="uploadController"/>
     </bean>
 
-    <bean id="controllers.SurveyResponseController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.SurveyResponseController" parent="BaseController">
-                <property name="surveyResponseService" ref="surveyResponseService" />
-            </bean>
-        </property>
+    <bean id="SurveyResponseControllerProxied" parent="proxiedController">
+        <property name="targetName" value="surveyResponseController"/>
     </bean>
     
-    <bean id="controllers.UserManagementControler" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.UserManagementController" parent="AdminController">
-                <property name="userAdminService" ref="userAdminService" />
-            </bean>
-        </property>
+    <bean id="UserManagementControllerProxied" parent="proxiedController">
+        <property name="targetName" value="userManagementController"/>
     </bean>    
 
-    <bean id="controllers.SchedulePlanController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.SchedulePlanController" parent="BaseController">
-                <property name="schedulePlanService" ref="schedulePlanService" />
-            </bean>
-        </property>
+    <bean id="SchedulePlanControllerProxied" parent="proxiedController">
+        <property name="targetName" value="schedulePlanController"/>
     </bean>
     
-    <bean id="controllers.StudyController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.StudyController" parent="BaseController">
-                <property name="userProfileService" ref="userProfileService" />
-            </bean>
-        </property>
+    <bean id="StudyControllerProxied" parent="proxiedController">
+        <property name="targetName" value="studyController"/>
     </bean>
     
-    <bean id="controllers.CacheAdminController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.CacheAdminController" parent="BaseController">
-                <property name="cacheAdminService" ref="cacheAdminService" />
-            </bean>
-        </property>
-    </bean>
-    
-    <bean id="studyService" class="org.sagebionetworks.bridge.services.StudyServiceImpl">
-        <property name="uploadCertificateService" ref="uploadCertificateService"/>
-        <property name="studyDao" ref="studyDao"/>
-        <property name="directoryDao" ref="directoryDao"/>
-        <property name="distributedLockDao" ref="distributedLockDao"/>
-        <property name="bridgeConfig" ref="bridgeConfig"/>
-        <property name="cacheProvider" ref="cacheProvider"/>
-        <property name="validator">
-            <bean class="org.sagebionetworks.bridge.validators.StudyValidator"/>
-        </property>
-        <property name="trackers">
-            <list>
-                <ref bean="pb-tracker"/>
-                <ref bean="med-tracker"/>
-            </list>
-        </property>
+    <bean id="CacheAdminControllerProxied" parent="proxiedController">
+        <property name="targetName" value="cacheAdminController"/>
     </bean>
 
-    <bean id="pb-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
-        <property name="name" value="Blood Pressure Reading"/>
-        <property name="type" value="BloodPressure"/>
-        <!-- It should be bp-tracker, but I screwed this up when creating the API study.
-            Not currently in use, but if it ever is, I'll update in each environment.
-         -->
-        <property name="identifier" value="pb-tracker"/>
-        <property name="schemaFile" value="file:conf/schemas/bloodpressure.json"/>
-    </bean>
-
-    <bean id="med-tracker" class="org.sagebionetworks.bridge.models.studies.Tracker">
-        <property name="name" value="Medication"/>
-        <property name="type" value="Medication"/>
-        <property name="identifier" value="med-tracker"/>
-        <property name="schemaFile" value="file:conf/schemas/medication.json"/>
-    </bean>
-
-    <bean id="controllers.LunchController" parent="proxiedController">
-        <property name="target">
-            <bean class="controllers.LunchController" parent="BaseController" />
-        </property>
-    </bean>
- 
-    <!-- Services -->
-
-    <bean id="healthCodeService" class="org.sagebionetworks.bridge.services.HealthCodeServiceImpl">
-        <property name="healthIdDao" ref="healthIdDao" />
-        <property name="healthCodeDao" ref="healthCodeDao" />
-    </bean>
-
-    <bean id="authenticationService" class="org.sagebionetworks.bridge.services.AuthenticationServiceImpl" />
-
-    <bean id="userProfileService" class="org.sagebionetworks.bridge.services.UserProfileServiceImpl">
-        <property name="executorService" ref="asyncExecutorService" />
-        <property name="sendMailService" ref="sendEmailViaAmazonService" />
-        <property name="accountDao" ref="accountDao" />
-        </bean>
-
-    <bean id="consentService" class="org.sagebionetworks.bridge.services.ConsentServiceImpl" />
-
-    <bean id="studyConsentService" class="org.sagebionetworks.bridge.services.StudyConsentServiceImpl">
-        <property name="studyConsentDao" ref="studyConsentDao" />
-        <property name="validator">
-            <bean class="org.sagebionetworks.bridge.validators.StudyConsentValidator"/>
-        </property>
-    </bean>
-
-    <bean id="uploadSessionCredentialsService" class="org.sagebionetworks.bridge.services.UploadSessionCredentialsService">
-        <constructor-arg ref="uploadTokenServiceClient" />
-    </bean>
-
-    <bean id="uploadService" class="org.sagebionetworks.bridge.services.UploadService">
-        <property name="uploadSessionCredentialsService" ref="uploadSessionCredentialsService" />
-        <property name="s3UploadClient" ref="s3UploadClient" />
-        <property name="s3Client" ref="s3Client" />
-        <property name="uploadDao" ref="uploadDao" />
-        <property name="validator">
-            <bean class="org.sagebionetworks.bridge.validators.UploadValidator"/>
-        </property>
-    </bean>
-
-    <bean id="uploadCertificateService" class="org.sagebionetworks.bridge.services.UploadCertificateServiceImpl">
-        <property name="s3CmsClient" ref="s3CmsClient" />
-    </bean>
-
-    <bean id="sendEmailViaAmazonService" class="org.sagebionetworks.bridge.services.SendMailViaAmazonService">
-        <property name="fromEmail" value="support@sagebridge.org" />
-        <property name="emailClient" ref="sesClient" />
-        <property name="studyService" ref="studyService" />
-    </bean>
-    
-    <bean id="userAdminService" class="org.sagebionetworks.bridge.services.UserAdminServiceImpl">
-        <property name="authenticationService" ref="authenticationService" />
-        <property name="accountDao" ref="accountDao" />
-        <property name="healthIdDao" ref="healthIdDao" />
-        <property name="consentService" ref="consentService" />
-        <property name="studyService" ref="studyService" />
-        <property name="distributedLockDao" ref="distributedLockDao"/>
-    </bean>
-    
-    <bean id="surveyService" class="org.sagebionetworks.bridge.services.SurveyServiceImpl">
-        <property name="surveyDao" ref="surveyDao"/>
-        <property name="validator">
-            <bean class="org.sagebionetworks.bridge.validators.SurveyValidator"/>
-        </property>
-    </bean> 
-    
-    <bean id="schedulePlanService" class="org.sagebionetworks.bridge.services.SchedulePlanServiceImpl">
-        <property name="schedulePlanDao" ref="schedulePlanDao"/>
-        <property name="validator">
-            <bean class="org.sagebionetworks.bridge.validators.SchedulePlanValidator"/>
-        </property>
-    </bean>
-    
-    <bean id="studyConsentBootstrapper" class="org.sagebionetworks.bridge.StudyConsentBootstrapper">
-        <constructor-arg index="0" ref="studyService" />
-        <constructor-arg index="1" ref="studyConsentDao" />
-    </bean>
-    
-    <bean id="surveyResponseService" class="org.sagebionetworks.bridge.services.SurveyResponseServiceImpl">
-        <property name="surveyResponseDao" ref="surveyResponseDao"/>
-        <property name="surveyDao" ref="surveyDao"/>
-    </bean>
-    
-    <bean id="optionsService" class="org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl">
-        <property name="participantOptionsDao" ref="participantOptionsDao"/>
-    </bean>
-    
-    <bean id="cacheAdminService" class="org.sagebionetworks.bridge.services.CacheAdminService">
-        <property name="jedisPool" ref="jedisPool"/>
-    </bean>
-
-    <!-- everything else -->
-
-    <bean id="backfillRecordFactory" class="org.sagebionetworks.bridge.services.backfill.BackfillRecordFactory">
-        <property name="backfillDao" ref="backfillDao" />
-    </bean>
-
-    <bean id="backfillTemplate" abstract="true" class="org.sagebionetworks.bridge.services.backfill.AsyncBackfillTemplate">
-        <property name="distributedLockDao" ref="distributedLockDao" />
-        <property name="backfillDao" ref="backfillDao" />
-        <property name="backfillRecordFactory" ref="backfillRecordFactory" />
-    </bean>
-
-    <bean id="healthCodeBackfill" parent="backfillTemplate" class="org.sagebionetworks.bridge.services.backfill.HealthCodeBackfill" />
-
-    <bean id="studyIdBackfill" parent="backfillTemplate" class="org.sagebionetworks.bridge.services.backfill.StudyIdBackfill" />
-
-    <!-- CONSTANTS -->
-    <bean id="numAsyncWorkerThreads" class="java.lang.Integer">
-        <constructor-arg value="20" />
+    <bean id="LunchControllerProxied" parent="proxiedController">
+        <property name="targetName" value="lunchController"/>
     </bean>
 </beans>
