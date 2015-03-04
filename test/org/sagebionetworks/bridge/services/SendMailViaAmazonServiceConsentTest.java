@@ -123,7 +123,6 @@ public class SendMailViaAmazonServiceConsentTest {
         assertTrue("Contains consent content", rawMessage.contains("Had this been a real study"));
         assertTrue("Name transposed to document", rawMessage.contains("Test 2"));
         assertTrue("Email transposed to document", rawMessage.contains(user.getEmail()));
-        assertTrue("Has the PDF consent document", rawMessage.contains("pdf"));
     }
 
     @Test
