@@ -41,6 +41,12 @@ public enum UploadFieldType {
     /** A floating point number, generally represented as a double in Java */
     FLOAT,
 
+    /**
+     * A JSON blob that's small enough to fit in the health data. (Generally something that's only a few hundred
+     * characters at most.
+     */
+    INLINE_JSON_BLOB,
+
     /** An integer value, generally represented as a long in Java (64-bit signed integer) */
     INT,
 
