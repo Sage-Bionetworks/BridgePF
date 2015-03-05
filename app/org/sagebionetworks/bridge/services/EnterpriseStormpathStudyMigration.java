@@ -2,8 +2,11 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.Map;
 
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudyDao;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,9 +63,16 @@ public class EnterpriseStormpathStudyMigration implements ApplicationListener<Co
     
     private StudyService studyService;
     
+    private StudyDao studyDao;
+    
+    private CacheProvider cacheProvider;
+    
     @Autowired
-    public EnterpriseStormpathStudyMigration(StudyService studyService) {
+    public EnterpriseStormpathStudyMigration(StudyService studyService, DynamoStudyDao studyDao,
+            CacheProvider cacheProvider) {
         this.studyService = studyService;
+        this.studyDao = studyDao;
+        this.cacheProvider = cacheProvider;
     }
     
     @Override
@@ -75,10 +85,11 @@ public class EnterpriseStormpathStudyMigration implements ApplicationListener<Co
                 if (enterpriseHref != null) {
                     if (!study.getStormpathHref().equals(enterpriseHref)) {
                         log("Migrating '%s' to HREF %s", studyId, enterpriseHref);
-                        /*
                         study.setStormpathHref(enterpriseHref);
-                        studyService.updateStudy(study);
-                        */
+                        
+                        // Side-step the study service's rules preventing setting Stormpath HREF
+                        studyDao.updateStudy(study);
+                        cacheProvider.setStudy(study);
                     } else {
                         log("Study '%s' already migrated to %s", studyId, enterpriseHref);
                     }
