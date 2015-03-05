@@ -90,6 +90,7 @@ public class ConsentController extends BaseController {
         final User user = consentService.consentToResearch(study, session.getUser(), consent,
                 sharing.getSharingScope(), true);
 
+        user.setSharingScope(sharing.getSharingScope());
         updateSessionUser(session, user);
         setSessionToken(session.getSessionToken());
         return createdResult("Consent to research has been recorded.");
