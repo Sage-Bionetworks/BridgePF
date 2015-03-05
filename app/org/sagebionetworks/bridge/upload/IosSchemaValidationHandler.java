@@ -350,6 +350,11 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
     }
 
     private static boolean isSurvey(Map<String, JsonNode> jsonDataMap) {
+        // Degenerate case: There's only one file and it's info.json. This is vacuously not a survey.
+        if (jsonDataMap.size() == 1 && jsonDataMap.containsKey(FILENAME_INFO_JSON)) {
+            return false;
+        }
+
         // Check if it's a survey. We can tell if it's a survey by looking at one of the JSON files (other than
         // info.json) and looking for specific survey keys, as listed in SURVEY_KEY_SET.
         for (Map.Entry<String, JsonNode> oneJsonFile : jsonDataMap.entrySet()) {
@@ -363,12 +368,15 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
             JsonNode oneJsonFileNode = oneJsonFile.getValue();
             Set<String> fieldNameSet = ImmutableSet.copyOf(oneJsonFileNode.fieldNames());
 
-            // We only need to look at one (other than info.json). Either they're all surveys, or none of them are.
-            return fieldNameSet.containsAll(SURVEY_KEY_SET);
+            if (!fieldNameSet.containsAll(SURVEY_KEY_SET)) {
+                // This JSON file doesn't have the required keys for surveys. We know it's not a survey, so
+                // short-circuit and return false.
+                return false;
+            }
         }
 
-        // If there are no JSON entries other than info.json, then it's definitely not a survey.
-        return false;
+        // If we make it this far, that means all files we saw are surveys.
+        return true;
     }
 
     private static void handleSurvey(UploadValidationContext context, String uploadId,
