@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -31,6 +32,7 @@ public class ConsentServiceImpl implements ConsentService {
 
     private AccountDao accountDao;
     private JedisStringOps stringOps;
+    private ParticipantOptionsService optionsService;
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
@@ -42,6 +44,10 @@ public class ConsentServiceImpl implements ConsentService {
     @Resource(name="stormpathAccountDao")
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
+    }
+    @Autowired
+    public void setOptionsService(ParticipantOptionsService optionsService) {
+        this.optionsService = optionsService;
     }
     @Autowired
     public void setSendMailService(SendMailService sendMailService) {
@@ -71,11 +77,12 @@ public class ConsentServiceImpl implements ConsentService {
 
     @Override
     public User consentToResearch(final Study study, final User user, final ConsentSignature consentSignature,
-            final boolean sendEmail) {
+            final SharingScope sharingScope, final boolean sendEmail) {
 
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        checkNotNull(sharingScope, Validate.CANNOT_BE_NULL, "sharingScope");
 
         if (user.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
@@ -98,17 +105,14 @@ public class ConsentServiceImpl implements ConsentService {
             throw e;
         }
 
+        optionsService.setOption(study, user.getHealthCode(), sharingScope);
+
         if (sendEmail) {
             sendMailService.sendConsentAgreement(user, consentSignature, studyConsent);
         }
 
         user.setConsent(true);
         return user;
-    }
-
-    @Override
-    public UserConsent getUserConsent(StudyIdentifier studyIdentifier, User user) {
-        return userConsentDao.getUserConsent(user.getHealthCode(), studyIdentifier);
     }
 
     @Override
@@ -134,14 +138,12 @@ public class ConsentServiceImpl implements ConsentService {
         } else {
             return false;
         }
-
     }
 
     @Override
     public void withdrawConsent(Study study, User user) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
-        
         if (userConsentDao.withdrawConsent(user.getHealthCode(), study)) {
             decrementStudyEnrollment(study);
             Account account = accountDao.getAccount(study, user.getEmail());
@@ -149,6 +151,7 @@ public class ConsentServiceImpl implements ConsentService {
             accountDao.updateAccount(study, account);
             user.setConsent(false);
         }
+        optionsService.deleteAllParticipantOptions(user.getHealthCode());
     }
 
     @Override

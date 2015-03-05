@@ -8,8 +8,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.models.SharingOption;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.User;
@@ -85,7 +87,8 @@ public class UserAdminServiceImpl implements UserAdminService {
             if (consentUser) {
                 String sig = String.format("[Signature for %s]", signUp.getEmail());;
                 ConsentSignature consent = ConsentSignature.create(sig, "1989-08-19", null, null);
-                consentService.consentToResearch(study, newUserSession.getUser(), consent, false);
+                consentService.consentToResearch(study, newUserSession.getUser(), consent,
+                        SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
             }
         }
         if (!signUserIn) {
