@@ -5,12 +5,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
-import org.sagebionetworks.bridge.models.SharingOption;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -77,12 +77,12 @@ public class ConsentServiceImpl implements ConsentService {
 
     @Override
     public User consentToResearch(final Study study, final User user, final ConsentSignature consentSignature,
-            final SharingOption sharingOption, final boolean sendEmail) {
+            final SharingScope sharingScope, final boolean sendEmail) {
 
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
-        checkNotNull(sharingOption, Validate.CANNOT_BE_NULL, "sharingOption");
+        checkNotNull(sharingScope, Validate.CANNOT_BE_NULL, "sharingScope");
 
         if (user.doesConsent()) {
             throw new EntityAlreadyExistsException(consentSignature);
@@ -105,7 +105,7 @@ public class ConsentServiceImpl implements ConsentService {
             throw e;
         }
 
-        optionsService.setOption(study, user.getHealthCode(), sharingOption.getSharingScope());
+        optionsService.setOption(study, user.getHealthCode(), sharingScope);
 
         if (sendEmail) {
             sendMailService.sendConsentAgreement(user, consentSignature, studyConsent);

@@ -16,7 +16,7 @@ public class SharingOption {
     
     private final SharingScope sharingScope;
     
-    public SharingOption(SharingScope scope) {
+    SharingOption(SharingScope scope) {
         this.sharingScope = scope;
     }
     
