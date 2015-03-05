@@ -88,7 +88,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                 String sig = String.format("[Signature for %s]", signUp.getEmail());;
                 ConsentSignature consent = ConsentSignature.create(sig, "1989-08-19", null, null);
                 consentService.consentToResearch(study, newUserSession.getUser(), consent,
-                        new SharingOption(SharingScope.ALL_QUALIFIED_RESEARCHERS), false);
+                        SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
             }
         }
         if (!signUserIn) {

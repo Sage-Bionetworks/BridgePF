@@ -87,8 +87,9 @@ public class ConsentController extends BaseController {
         final JsonNode node = requestToJSON(request());
         final ConsentSignature consent = ConsentSignature.createFromJson(node);
         final SharingOption sharing = SharingOption.fromJson(node, version);
-        final User user = consentService.consentToResearch(study, session.getUser(), consent, sharing, true);
-        
+        final User user = consentService.consentToResearch(study, session.getUser(), consent,
+                sharing.getSharingScope(), true);
+
         updateSessionUser(session, user);
         setSessionToken(session.getSessionToken());
         return createdResult("Consent to research has been recorded.");
