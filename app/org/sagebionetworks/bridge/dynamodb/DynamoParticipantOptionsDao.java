@@ -94,18 +94,15 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         Map<ParticipantOption,String> map = Maps.newHashMap();
         DynamoParticipantOptions options = mapper.load(keyObject);
         if (options == null) {
-            for (ParticipantOption opt : ParticipantOption.values()) {
-                map.put(opt, null);
-            }
-        } else {
-            for (ParticipantOption opt : ParticipantOption.values()) {
-                String value = opt.getDefaultValue();
-                if (options.getOptions().get(opt.name()) != null) {
-                    value = options.getOptions().get(opt.name());
-                }
-                map.put(opt, value);
-            }
+            return map;
         }
+        for (ParticipantOption opt : ParticipantOption.values()) {
+            String value = opt.getDefaultValue();
+            if (options.getOptions().get(opt.name()) != null) {
+                value = options.getOptions().get(opt.name());
+            }
+            map.put(opt, value);
+        }        
         return map;
     }
     
