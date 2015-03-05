@@ -78,10 +78,10 @@ public class EnterpriseStormpathStudyMigration implements ApplicationListener<Co
     @Override
     public void onApplicationEvent(final ContextRefreshedEvent event) {
         Environment env = BridgeConfigFactory.getConfig().getEnvironment();
-        try {
-            for (Study study : studyService.getStudies()) {
-                String studyId = study.getIdentifier();
-                String enterpriseHref = map.get(env).get(studyId);
+        for (Study study : studyService.getStudies()) {
+            String studyId = study.getIdentifier();
+            String enterpriseHref = map.get(env).get(studyId);
+            try {
                 if (enterpriseHref != null) {
                     if (!study.getStormpathHref().equals(enterpriseHref)) {
                         log("Migrating '%s' to HREF %s", studyId, enterpriseHref);
@@ -96,9 +96,9 @@ public class EnterpriseStormpathStudyMigration implements ApplicationListener<Co
                 } else {
                     log("No enterprise HREF found for '%s'", studyId, "");
                 }
+            } catch(Throwable e) {
+                e.printStackTrace();
             }
-        } catch(Throwable e) {
-            e.printStackTrace();
         }
     }
     
