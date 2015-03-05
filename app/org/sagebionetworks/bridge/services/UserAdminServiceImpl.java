@@ -11,7 +11,6 @@ import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
-import org.sagebionetworks.bridge.models.SharingOption;
 import org.sagebionetworks.bridge.models.SignIn;
 import org.sagebionetworks.bridge.models.SignUp;
 import org.sagebionetworks.bridge.models.User;
@@ -22,11 +21,10 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Preconditions;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.google.common.base.Preconditions;
 
 @Component("userAdminService")
 public class UserAdminServiceImpl implements UserAdminService {
@@ -88,7 +86,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                 String sig = String.format("[Signature for %s]", signUp.getEmail());;
                 ConsentSignature consent = ConsentSignature.create(sig, "1989-08-19", null, null);
                 consentService.consentToResearch(study, newUserSession.getUser(), consent,
-                        SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
+                        SharingScope.NO_SHARING, false);
             }
         }
         if (!signUserIn) {
