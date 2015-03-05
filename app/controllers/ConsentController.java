@@ -81,16 +81,15 @@ public class ConsentController extends BaseController {
     }
 
     private Result giveConsentForVersion(int version) throws Exception {
+
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final JsonNode node = requestToJSON(request());
-        
         final ConsentSignature consent = ConsentSignature.createFromJson(node);
-        final User user = consentService.consentToResearch(study, session.getUser(), consent, true);
-        
-        SharingOption sharing = SharingOption.fromJson(node, version);
-        optionsService.setOption(study, session.getUser().getHealthCode(), sharing.getSharingScope());
-        
+        final SharingOption sharing = SharingOption.fromJson(node, version);
+        final User user = consentService.consentToResearch(study, session.getUser(), consent,
+                sharing.getSharingScope(), true);
+
         updateSessionUser(session, user);
         setSessionToken(session.getSessionToken());
         return createdResult("Consent to research has been recorded.");
