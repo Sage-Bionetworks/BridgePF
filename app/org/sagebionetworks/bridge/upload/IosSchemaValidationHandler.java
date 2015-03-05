@@ -9,6 +9,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -45,9 +47,11 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
             UploadFieldType.ATTACHMENT_JSON_TABLE);
 
     private static final String FILENAME_INFO_JSON = "info.json";
+    private static final Pattern FILENAME_TIMESTAMP_PATTERN = Pattern.compile("-\\d{8,}");
     private static final String KEY_ANSWERS = "answers";
     private static final String KEY_FILENAME = "filename";
     private static final String KEY_FILES = "files";
+    private static final String KEY_IDENTIFIER = "identifier";
     private static final String KEY_ITEM = "item";
     private static final String KEY_TASK_RUN = "taskRun";
     private static final String KEY_TASK_RUN_ID = "taskRunId";
@@ -108,10 +112,16 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
         JsonNode taskRunNode = infoJson.get(KEY_TASK_RUN);
         String taskRunId = taskRunNode != null ? taskRunNode.textValue() : null;
         JsonNode itemNode = infoJson.get(KEY_ITEM);
+        if (itemNode == null) {
+            // fall back to "identifier"
+            itemNode = infoJson.get(KEY_IDENTIFIER);
+        }
         String item = itemNode != null ? itemNode.textValue() : null;
 
-        // validate file list
+        // validate and normalize filenames
         validateInfoJsonFileList(context, uploadId, jsonDataMap, unzippedDataMap, infoJson, recordBuilder);
+        removeTimestampsFromFilenames(jsonDataMap);
+        removeTimestampsFromFilenames(unzippedDataMap);
 
         // get schemas
         // TODO: cache this
@@ -219,6 +229,25 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
             createdOn = DateUtils.getCurrentDateTime();
         }
         recordBuilder.withCreatedOn(createdOn.getMillis());
+    }
+
+    private static <T> void removeTimestampsFromFilenames(Map<String, T> fileMap) {
+        // Sometimes filenames include timestamps. This breaks parsing, since we use filenames as key prefixes.
+        // Normalize the filenames by removing timestamps. Assume any string of 8 or more digit is a timestamps. Also
+        // remove the dash at the start of a timestamp. Filenames are generally unique even without timestamps, so we
+        // don't have to worry about duplicate filenames.
+
+        // Make a copy of the file map key set. This way, we can iterate over the filenames and modify the map without
+        // hitting concurrent modification exceptions.
+        ImmutableSet<String> filenameSet = ImmutableSet.copyOf(fileMap.keySet());
+        for (String oneFilename : filenameSet) {
+            Matcher filenameMatcher = FILENAME_TIMESTAMP_PATTERN.matcher(oneFilename);
+            if (filenameMatcher.find()) {
+                T fileData = fileMap.remove(oneFilename);
+                String newFilename = filenameMatcher.replaceAll("");
+                fileMap.put(newFilename, fileData);
+            }
+        }
     }
 
     private static void handleNonJsonData(UploadValidationContext context, String uploadId,
@@ -478,6 +507,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
                     // non-JSON data, so this is not a match.
                     return false;
                 case ATTACHMENT_JSON_BLOB:
+                case INLINE_JSON_BLOB:
                     // JSON blobs are always JSON blobs. We don't need to do any special validation.
                     return true;
                 case ATTACHMENT_JSON_TABLE:
