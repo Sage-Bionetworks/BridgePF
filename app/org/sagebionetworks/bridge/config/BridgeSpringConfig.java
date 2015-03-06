@@ -283,8 +283,8 @@ public class BridgeSpringConfig {
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
     @Bean(name = "stormpathApplication")
-    @Autowired
-    public Application getStormpathApplication(Client client) {
+    public Application getStormpathApplication() {
+        Client client = getStormpathClient();
         BridgeConfig config = BridgeConfigFactory.getConfig();
         return client.getResource(config.getStormpathApplicationHref().trim(), Application.class);
     }
