@@ -21,6 +21,10 @@ public class BridgeConfig {
     private static final String STORMPATH_SECRET =  "stormpath.secret";
     private static final String STORMPATH_APPLICATION_HREF =  "stormpath.application.href";
     
+    //private static final String ENTERPRISE_STORMPATH_ID =  "enterprise.stormpath.id";
+    //private static final String ENTERPRISE_STORMPATH_SECRET =  "enterprise.stormpath.secret";
+    //private static final String ENTERPRISE_STORMPATH_APPLICATION_HREF =  "enterprise.stormpath.application.href";
+    
     private static final String CONFIG_FILE = "bridge.conf";
     private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
