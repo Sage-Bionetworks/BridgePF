@@ -17,13 +17,13 @@ public class BridgeConfig {
 
     private final Logger logger = LoggerFactory.getLogger(BridgeConfig.class);
 
-    private static final String STORMPATH_ID =  "stormpath.id";
-    private static final String STORMPATH_SECRET =  "stormpath.secret";
-    private static final String STORMPATH_APPLICATION_HREF =  "stormpath.application.href";
+    //private static final String STORMPATH_ID =  "stormpath.id";
+    //private static final String STORMPATH_SECRET =  "stormpath.secret";
+    //private static final String STORMPATH_APPLICATION_HREF =  "stormpath.application.href";
     
-    //private static final String ENTERPRISE_STORMPATH_ID =  "enterprise.stormpath.id";
-    //private static final String ENTERPRISE_STORMPATH_SECRET =  "enterprise.stormpath.secret";
-    //private static final String ENTERPRISE_STORMPATH_APPLICATION_HREF =  "enterprise.stormpath.application.href";
+    private static final String ENTERPRISE_STORMPATH_ID =  "enterprise.stormpath.id";
+    private static final String ENTERPRISE_STORMPATH_SECRET =  "enterprise.stormpath.secret";
+    private static final String ENTERPRISE_STORMPATH_APPLICATION_HREF =  "enterprise.stormpath.application.href";
     
     private static final String CONFIG_FILE = "bridge.conf";
     private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
@@ -165,15 +165,15 @@ public class BridgeConfig {
     }
 
     public String getStormpathId() {
-        return getProperty(STORMPATH_ID);
+        return getProperty(ENTERPRISE_STORMPATH_ID);
     }
 
     public String getStormpathSecret() {
-        return getProperty(STORMPATH_SECRET);
+        return getProperty(ENTERPRISE_STORMPATH_SECRET);
     }
 
     public String getStormpathApplicationHref() {
-        return getProperty(STORMPATH_APPLICATION_HREF);
+        return getProperty(ENTERPRISE_STORMPATH_APPLICATION_HREF);
     }
     
     public String getPassword() {
