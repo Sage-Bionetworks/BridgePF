@@ -117,26 +117,26 @@ public class EnterpriseStormpathStudyMigration implements ApplicationListener<Co
     @Override
     public void onApplicationEvent(final ContextRefreshedEvent event) {
         // Switch to backMap to undo this migration.
-        Map<Environment, Map<String, String>> currentMap = foreMap;
+        Map<Environment, Map<String, String>> targetMap = foreMap;
         
         Environment env = BridgeConfigFactory.getConfig().getEnvironment();
         for (Study study : studyService.getStudies()) {
             String studyId = study.getIdentifier();
-            String enterpriseHref = currentMap.get(env).get(studyId);
+            String targetHref = targetMap.get(env).get(studyId);
             try {
-                if (enterpriseHref != null) {
-                    if (!study.getStormpathHref().equals(enterpriseHref)) {
-                        log("Migrating '%s' to HREF %s", studyId, enterpriseHref);
-                        study.setStormpathHref(enterpriseHref);
+                if (targetHref != null) {
+                    if (!study.getStormpathHref().equals(targetHref)) {
+                        log("Migrating '%s' to HREF %s", studyId, targetHref);
+                        study.setStormpathHref(targetHref);
                         
                         // Side-step the study service's rules preventing setting Stormpath HREF
                         studyDao.updateStudy(study);
                         cacheProvider.setStudy(study);
                     } else {
-                        log("Study '%s' already migrated to %s", studyId, enterpriseHref);
+                        log("Study '%s' already migrated to %s", studyId, targetHref);
                     }
                 } else {
-                    log("No enterprise HREF found for '%s'", studyId, "");
+                    log("No target HREF found for '%s'", studyId, "");
                 }
             } catch(Throwable e) {
                 e.printStackTrace();
