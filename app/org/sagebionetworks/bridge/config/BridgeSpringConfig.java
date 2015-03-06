@@ -271,8 +271,8 @@ public class BridgeSpringConfig {
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
     @Bean(name = "stormpathClient")
-    @Autowired
-    public Client getStormpathClient(BridgeConfig config) {
+    public Client getStormpathClient() {
+        BridgeConfig config = BridgeConfigFactory.getConfig();
         ApiKey apiKey = ApiKeys.builder()
             .setId(config.getStormpathId().trim())
             .setSecret(config.getStormpathSecret().trim()).build();
@@ -284,7 +284,8 @@ public class BridgeSpringConfig {
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
     @Bean(name = "stormpathApplication")
     @Autowired
-    public Application getStormpathApplication(BridgeConfig config, Client client) {
+    public Application getStormpathApplication(Client client) {
+        BridgeConfig config = BridgeConfigFactory.getConfig();
         return client.getResource(config.getStormpathApplicationHref().trim(), Application.class);
     }
     
