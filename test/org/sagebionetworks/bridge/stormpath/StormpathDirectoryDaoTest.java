@@ -44,7 +44,6 @@ public class StormpathDirectoryDaoTest {
     public void crudDirectory() {
         identifier = TestUtils.randomName();
         String stormpathHref = directoryDao.createDirectoryForStudy(identifier);
-        System.out.println("So when you create a directory, you get: " + stormpathHref);
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
         // Verify the directory and mapping were created
