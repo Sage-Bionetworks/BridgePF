@@ -22,7 +22,46 @@ public class EnterpriseStormpathStudyMigration implements ApplicationListener<Co
     
     private static Logger logger = LoggerFactory.getLogger(EnterpriseStormpathStudyMigration.class);
 
-    private Map<Environment, Map<String, String>> map = Maps.newHashMap();
+    private Map<Environment, Map<String, String>> backMap = Maps.newHashMap();
+    {
+        Map<String, String> devMap = Maps.newHashMap();
+        devMap.put("api", "https://api.stormpath.com/v1/directories/3ba1ejfAfv92UDVIxf7NfC");
+        devMap.put("asthma", "https://api.stormpath.com/v1/directories/4sOoADO5ECY1s3OHdunSgI");
+        devMap.put("diabetes", "https://api.stormpath.com/v1/directories/4vtkNSllemC4BqkoDZG8DQ");
+        devMap.put("breastcancer", "https://api.stormpath.com/v1/directories/4qQZB6H4iWg8dMRcL0m9CQ");
+        devMap.put("parkinson", "https://api.stormpath.com/v1/directories/22YzVbWKvfpkrTlElkOV7L");
+        devMap.put("cardiovascular", "https://api.stormpath.com/v1/directories/4u9f38BvszxjgLP1pcUc6g");
+        backMap.put(Environment.DEV, devMap);
+        
+        Map<String, String> localMap = Maps.newHashMap();
+        localMap.put("api", "https://api.stormpath.com/v1/directories/shHutmsq4TcjyJQ5ayMoQ");
+        localMap.put("asthma", "https://api.stormpath.com/v1/directories/2DGqdHVdIisE3kkUwWLsP5");
+        localMap.put("diabetes", "https://api.stormpath.com/v1/directories/2NAUsiL5Dyi0PWEYQnadyl");
+        localMap.put("breastcancer", "https://api.stormpath.com/v1/directories/28fmQ8b2bGwdS1WalKVkxP");
+        localMap.put("parkinson", "https://api.stormpath.com/v1/directories/22YzVbWKvfpkrTlElkOV7L");
+        localMap.put("cardiovascular", "https://api.stormpath.com/v1/directories/2IE5hJgSNocN5m1KuRnGVP");
+        backMap.put(Environment.LOCAL, localMap);
+        
+        Map<String, String> prodMap = Maps.newHashMap();
+        prodMap.put("api", "https://api.stormpath.com/v1/directories/4Jb1NU1Y02Kj90AmQNvwOk");
+        prodMap.put("asthma", "https://api.stormpath.com/v1/directories/2OdYxUzrW5zey7smIjisKG");
+        prodMap.put("diabetes", "https://api.stormpath.com/v1/directories/2Sccth4ec9AG7tOaLNapIk");
+        prodMap.put("breastcancer", "https://api.stormpath.com/v1/directories/2N0NeQS9jUOyXMEsr8RTzk");
+        prodMap.put("parkinson", "https://api.stormpath.com/v1/directories/2LBCiDSxADmICe5lhcubzM");
+        prodMap.put("cardiovascular", "https://api.stormpath.com/v1/directories/2QcdpFd4GhW8U7uXmMTeqM");
+        backMap.put(Environment.PROD, prodMap);
+       
+        Map<String, String> uatMap = Maps.newHashMap();
+        uatMap.put("api", "https://api.stormpath.com/v1/directories/3waQUoBI8OD0WwSor4GKDu");
+        uatMap.put("asthma", "https://api.stormpath.com/v1/directories/1598H3pnU7thNAwpMFf1mt");
+        uatMap.put("diabetes", "https://api.stormpath.com/v1/directories/1BCmdCiGFjo9XM05OC3jh0");
+        uatMap.put("breastcancer", "https://api.stormpath.com/v1/directories/13YBJgfx0fNiB8nFlW6KSx");
+        uatMap.put("parkinson", "https://api.stormpath.com/v1/directories/11myoVPBaJbxUEfpizO0Rf");
+        uatMap.put("cardiovascular", "https://api.stormpath.com/v1/directories/17okRDMhoKnlIILRkt5Bw6");
+        backMap.put(Environment.UAT, uatMap);
+    }
+    
+    private Map<Environment, Map<String, String>> foreMap = Maps.newHashMap();
     {
         Map<String, String> devMap = Maps.newHashMap();
         devMap.put("api", "https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM");
@@ -31,7 +70,7 @@ public class EnterpriseStormpathStudyMigration implements ApplicationListener<Co
         devMap.put("breastcancer", "https://enterprise.stormpath.io/v1/directories/4rz8FLlnVoZ6cGMwrc8X8U");
         devMap.put("parkinson", "https://enterprise.stormpath.io/v1/directories/4IXDCXpED2utTaG01kSlSP");
         devMap.put("cardiovascular", "https://enterprise.stormpath.io/v1/directories/3fSQrW63h6xUeFtINpByyD");
-        map.put(Environment.DEV, devMap);
+        foreMap.put(Environment.DEV, devMap);
         
         Map<String, String> localMap = Maps.newHashMap();
         localMap.put("api", "https://enterprise.stormpath.io/v1/directories/7W9Lyy4h6PhtxVak4DlIWo");
@@ -40,7 +79,7 @@ public class EnterpriseStormpathStudyMigration implements ApplicationListener<Co
         localMap.put("breastcancer", "https://enterprise.stormpath.io/v1/directories/4xIGs427YuEyAU0B8Pxr18");
         localMap.put("parkinson", "https://enterprise.stormpath.io/v1/directories/6MxAdNVQlABZKRyl9E7YJJ");
         localMap.put("cardiovascular", "https://enterprise.stormpath.io/v1/directories/2HFZCevSHzHs89dHeGRnif");
-        map.put(Environment.LOCAL, localMap);
+        foreMap.put(Environment.LOCAL, localMap);
         
         Map<String, String> prodMap = Maps.newHashMap();
         prodMap.put("api", "https://enterprise.stormpath.io/v1/directories/4MFGMk7w7My1SvN0ciqlW");
@@ -49,7 +88,7 @@ public class EnterpriseStormpathStudyMigration implements ApplicationListener<Co
         prodMap.put("breastcancer", "https://enterprise.stormpath.io/v1/directories/58w4lsjabqmMZJHd6krQpO");
         prodMap.put("parkinson", "https://enterprise.stormpath.io/v1/directories/gFAoPqsU5f8p637M6ChcT");
         prodMap.put("cardiovascular", "https://enterprise.stormpath.io/v1/directories/3KBfBRW2DLjcdvE0r5JuMn");
-        map.put(Environment.PROD, prodMap);
+        foreMap.put(Environment.PROD, prodMap);
        
         Map<String, String> uatMap = Maps.newHashMap();
         uatMap.put("api", "https://enterprise.stormpath.io/v1/directories/E1Wsr9r3k9dHVZcCCNmDa");
@@ -58,7 +97,7 @@ public class EnterpriseStormpathStudyMigration implements ApplicationListener<Co
         uatMap.put("breastcancer", "https://enterprise.stormpath.io/v1/directories/53uVeYNPcHpF0rsQB1aK94");
         uatMap.put("parkinson", "https://enterprise.stormpath.io/v1/directories/1dZ1XvoxWnLgJMVcnp0vMr");
         uatMap.put("cardiovascular", "https://enterprise.stormpath.io/v1/directories/4R76OdM8ePEjeVzbrGBqST");
-        map.put(Environment.UAT, uatMap);
+        foreMap.put(Environment.UAT, uatMap);
     }
     
     private StudyService studyService;
@@ -77,10 +116,13 @@ public class EnterpriseStormpathStudyMigration implements ApplicationListener<Co
     
     @Override
     public void onApplicationEvent(final ContextRefreshedEvent event) {
+        // Switch to backMap to undo this migration.
+        Map<Environment, Map<String, String>> currentMap = foreMap;
+        
         Environment env = BridgeConfigFactory.getConfig().getEnvironment();
         for (Study study : studyService.getStudies()) {
             String studyId = study.getIdentifier();
-            String enterpriseHref = map.get(env).get(studyId);
+            String enterpriseHref = currentMap.get(env).get(studyId);
             try {
                 if (enterpriseHref != null) {
                     if (!study.getStormpathHref().equals(enterpriseHref)) {
