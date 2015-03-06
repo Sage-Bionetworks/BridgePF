@@ -108,7 +108,7 @@ public class ConsentServiceImpl implements ConsentService {
         optionsService.setOption(study, user.getHealthCode(), sharingScope);
 
         if (sendEmail) {
-            sendMailService.sendConsentAgreement(user, consentSignature, studyConsent);
+            sendMailService.sendConsentAgreement(user, consentSignature, studyConsent, sharingScope);
         }
 
         user.setConsent(true);
@@ -168,7 +168,9 @@ public class ConsentServiceImpl implements ConsentService {
         if (consentSignature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
-        sendMailService.sendConsentAgreement(user, consentSignature, consent);
+
+        final SharingScope sharingScope = optionsService.getSharingScope(user.getHealthCode());
+        sendMailService.sendConsentAgreement(user, consentSignature, consent, sharingScope);
     }
 
     @Override

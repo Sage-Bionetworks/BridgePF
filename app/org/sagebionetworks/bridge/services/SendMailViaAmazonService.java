@@ -26,8 +26,10 @@ import javax.mail.internet.PreencodedMimeBodyPart;
 import javax.mail.util.ByteArrayDataSource;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.text.WordUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.User;
@@ -95,9 +97,10 @@ public class SendMailViaAmazonService implements SendMailService {
     }
 
     @Override
-    public void sendConsentAgreement(User user, ConsentSignature consentSignature, StudyConsent studyConsent) {
+    public void sendConsentAgreement(final User user, final ConsentSignature consentSignature,
+            final StudyConsent studyConsent, final SharingScope sharingScope) {
 
-        final String consentDoc = createSignedDocument(user, consentSignature, studyConsent);
+        final String consentDoc = createSignedDocument(user, consentSignature, studyConsent, sharingScope);
         try {
             // Consent agreement as message body in HTML
             final MimeBodyPart bodyPart = new MimeBodyPart();
@@ -137,7 +140,7 @@ public class SendMailViaAmazonService implements SendMailService {
             sendEmailTo(subject, sendFromEmail, user.getEmail(), bodyPart, pdfPart, sigPart);
             Set<String> emailAddresses = commaListToSet(study.getConsentNotificationEmail());
             for (String email : emailAddresses) {
-                sendEmailTo(subject, supportEmail, email, bodyPart, pdfPart, sigPart);
+                sendEmailTo(subject, sendFromEmail, email, bodyPart, pdfPart, sigPart);
             }
         } catch(IOException | MessagingException e) {
             throw new BridgeServiceException(e);
@@ -255,7 +258,8 @@ public class SendMailViaAmazonService implements SendMailService {
         return Collections.emptySet();
     }
 
-    private String createSignedDocument(User user, ConsentSignature consent, StudyConsent studyConsent) {
+    private String createSignedDocument(final User user, final ConsentSignature consent,
+            final StudyConsent studyConsent, final SharingScope sharingScope) {
         final String filePath = studyConsent.getPath();
         final FileSystemResource resource = new FileSystemResource(filePath);
         try (InputStreamReader isr = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);) {
@@ -264,6 +268,10 @@ public class SendMailViaAmazonService implements SendMailService {
             String html = consentAgreementHTML.replace("@@name@@", consent.getName());
             html = html.replace("@@signing.date@@", signingDate);
             html = html.replace("@@email@@", user.getEmail());
+            String sharing = sharingScope.name();
+            sharing = sharing.replace('_', ' ');
+            sharing = WordUtils.capitalizeFully(sharing).replace("And", "and");
+            html = html.replace("@@sharing@@", sharing);
             return html;
         } catch (IOException e) {
             throw new BridgeServiceException(e);
