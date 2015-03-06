@@ -26,6 +26,7 @@ import javax.mail.internet.PreencodedMimeBodyPart;
 import javax.mail.util.ByteArrayDataSource;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.text.WordUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -267,7 +268,10 @@ public class SendMailViaAmazonService implements SendMailService {
             String html = consentAgreementHTML.replace("@@name@@", consent.getName());
             html = html.replace("@@signing.date@@", signingDate);
             html = html.replace("@@email@@", user.getEmail());
-            html = html.replace("@@sharing@@", sharingScope.name());
+            String sharing = sharingScope.name();
+            sharing = sharing.replace('_', ' ');
+            sharing = WordUtils.capitalizeFully(sharing).replace("And", "and");
+            html = html.replace("@@sharing@@", sharing);
             return html;
         } catch (IOException e) {
             throw new BridgeServiceException(e);
