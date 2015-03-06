@@ -277,12 +277,9 @@ public class BridgeSpringConfig {
             .setId(bridgeConfig.getStormpathId().trim())
             .setSecret(bridgeConfig.getStormpathSecret().trim()).build();
         
-        return Clients.builder().setApiKey(apiKey).build();
-        /*
-        ClientBuilder builder = Clients.builder();
-        ((DefaultClientBuilder)builder).setBaseUrl("https://enterprise.stormpath.io/v1").setApiKey(apiKey);
-        return builder.build();
-        */
+        ClientBuilder clientBuilder = Clients.builder().setApiKey(apiKey);
+        ((DefaultClientBuilder)clientBuilder).setBaseUrl("https://enterprise.stormpath.io/v1");
+        return clientBuilder.build();        
     }
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.

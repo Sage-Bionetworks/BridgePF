@@ -124,7 +124,9 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(verification);
         
         try {
-            com.stormpath.sdk.account.Account acct = client.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
+            //Original version. Works, but Les at Stormpath used the more direct call below (in his sample code).
+            //com.stormpath.sdk.account.Account acct = client.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
+            com.stormpath.sdk.account.Account acct = client.verifyAccountEmail(verification.getSptoken());
             return (acct == null) ? null : new StormpathAccount(study, acct, encryptors);
         } catch(ResourceException e) {
             rethrowResourceException(e, null);
