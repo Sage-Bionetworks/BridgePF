@@ -77,9 +77,6 @@ public class StormpathAccountDao implements AccountDao {
     }
     @Resource(name = "stormpathClient")
     public void setStormpathClient(Client client) {
-        if (client == null) {
-            throw new RuntimeException("client null in setter");
-        }
         this.client = client;
     }
     @Autowired
