@@ -105,7 +105,7 @@ public class SendMailViaAmazonServiceConsentTest {
         ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null);
         User user = new User();
         user.setEmail("test-user@sagebase.org");
-        service.sendConsentAgreement(user, consent, studyConsent, SharingScope.NO_SHARING);
+        service.sendConsentAgreement(user, consent, studyConsent, SharingScope.SPONSORS_AND_PARTNERS);
 
         verify(emailClient).setRegion(any(Region.class));
         verify(emailClient).sendRawEmail(argument.capture());
@@ -125,7 +125,7 @@ public class SendMailViaAmazonServiceConsentTest {
         assertTrue("Name transposed to document", rawMessage.contains("Test 2"));
         assertTrue("Email transposed to document", rawMessage.contains(user.getEmail()));
         assertTrue("Has the PDF consent document", rawMessage.contains("pdf"));
-        assertTrue("Has sharing option", rawMessage.contains(SharingScope.NO_SHARING.name()));
+        assertTrue("Has sharing option", rawMessage.contains("Sponsors and Partners"));
     }
 
     @Test
