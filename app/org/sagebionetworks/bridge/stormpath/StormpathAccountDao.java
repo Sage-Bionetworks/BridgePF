@@ -46,15 +46,21 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
+import com.stormpath.sdk.api.ApiKey;
+import com.stormpath.sdk.api.ApiKeys;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationResult;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
 import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.client.ClientBuilder;
+import com.stormpath.sdk.client.Clients;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupMembership;
+import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 import com.stormpath.sdk.impl.resource.AbstractResource;
 import com.stormpath.sdk.resource.ResourceException;
+import com.stormpath.sdk.tenant.Tenant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,9 +83,6 @@ public class StormpathAccountDao implements AccountDao {
     }
     @Resource(name = "stormpathClient")
     public void setStormpathClient(Client client) {
-        if (client == null) {
-            throw new RuntimeException("client null in setter");
-        }
         this.client = client;
     }
     @Autowired
