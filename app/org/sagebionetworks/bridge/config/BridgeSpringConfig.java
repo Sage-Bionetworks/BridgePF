@@ -24,7 +24,9 @@ import com.stormpath.sdk.api.ApiKey;
 import com.stormpath.sdk.api.ApiKeys;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
+import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -273,7 +275,9 @@ public class BridgeSpringConfig {
         ApiKey apiKey = ApiKeys.builder()
             .setId(config.getStormpathId().trim())
             .setSecret(config.getStormpathSecret().trim()).build();
-        return Clients.builder().setApiKey(apiKey).build();
+        ClientBuilder builder = Clients.builder();
+        ((DefaultClientBuilder)builder).setBaseUrl("https://enterprise.stormpath.io").setApiKey(apiKey);
+        return builder.build();
     }
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
