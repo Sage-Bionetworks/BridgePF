@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
@@ -88,23 +89,23 @@ public class SendMailViaAmazonServiceConsentTest {
     @Test
     public void whenNoStudySupportEmailUsesDefaultSupportEmail() {
         study.setSupportEmail(""); // just a blank string, tricky
-        
+
         ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null);
         User user = new User();
         user.setEmail("test-user@sagebase.org");
-        service.sendConsentAgreement(user, consent, studyConsent);
-        
+        service.sendConsentAgreement(user, consent, studyConsent, SharingScope.NO_SHARING);
+
         verify(emailClient).sendRawEmail(argument.capture());
         SendRawEmailRequest req = argument.getValue();
         assertEquals("Correct sender", FROM_DEFAULT_AS_FORMATTED, req.getSource());
     }
-    
+
     @Test
     public void sendConsentEmail() {
         ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null);
         User user = new User();
         user.setEmail("test-user@sagebase.org");
-        service.sendConsentAgreement(user, consent, studyConsent);
+        service.sendConsentAgreement(user, consent, studyConsent, SharingScope.NO_SHARING);
 
         verify(emailClient).setRegion(any(Region.class));
         verify(emailClient).sendRawEmail(argument.capture());
@@ -124,6 +125,7 @@ public class SendMailViaAmazonServiceConsentTest {
         assertTrue("Name transposed to document", rawMessage.contains("Test 2"));
         assertTrue("Email transposed to document", rawMessage.contains(user.getEmail()));
         assertTrue("Has the PDF consent document", rawMessage.contains("pdf"));
+        assertTrue("Has sharing option", rawMessage.contains(SharingScope.NO_SHARING.name()));
     }
 
     @Test
@@ -132,7 +134,7 @@ public class SendMailViaAmazonServiceConsentTest {
                 TestConstants.DUMMY_IMAGE_DATA, "image/fake");
         User user = new User();
         user.setEmail("test-user@sagebase.org");
-        service.sendConsentAgreement(user, consent, studyConsent);
+        service.sendConsentAgreement(user, consent, studyConsent, SharingScope.SPONSORS_AND_PARTNERS);
 
         verify(emailClient).setRegion(any(Region.class));
         verify(emailClient).sendRawEmail(argument.capture());
