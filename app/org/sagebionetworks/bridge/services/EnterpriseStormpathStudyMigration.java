@@ -117,7 +117,7 @@ public class EnterpriseStormpathStudyMigration implements ApplicationListener<Co
     @Override
     public void onApplicationEvent(final ContextRefreshedEvent event) {
         // Switch to backMap to undo this migration.
-        Map<Environment, Map<String, String>> targetMap = foreMap;
+        Map<Environment, Map<String, String>> targetMap = backMap;
         
         Environment env = BridgeConfigFactory.getConfig().getEnvironment();
         for (Study study : studyService.getStudies()) {
