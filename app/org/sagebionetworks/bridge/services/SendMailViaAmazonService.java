@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-import javax.annotation.Resource;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
+import javax.annotation.Resource;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -26,7 +26,6 @@ import javax.mail.internet.PreencodedMimeBodyPart;
 import javax.mail.util.ByteArrayDataSource;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.text.WordUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -268,9 +267,14 @@ public class SendMailViaAmazonService implements SendMailService {
             String html = consentAgreementHTML.replace("@@name@@", consent.getName());
             html = html.replace("@@signing.date@@", signingDate);
             html = html.replace("@@email@@", user.getEmail());
-            String sharing = sharingScope.name();
-            sharing = sharing.replace('_', ' ');
-            sharing = WordUtils.capitalizeFully(sharing).replace("And", "and");
+            String sharing = "";
+            if (SharingScope.ALL_QUALIFIED_RESEARCHERS == sharingScope) {
+                sharing = "All Qualified Researchers";
+            } else if (SharingScope.SPONSORS_AND_PARTNERS == sharingScope) {
+                sharing = "Sponsors and Partners Only";
+            } else if (SharingScope.NO_SHARING == sharingScope) {
+                sharing = "Not Sharing";
+            }
             html = html.replace("@@sharing@@", sharing);
             return html;
         } catch (IOException e) {
