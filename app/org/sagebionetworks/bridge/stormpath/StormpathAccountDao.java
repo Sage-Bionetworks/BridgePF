@@ -222,6 +222,9 @@ public class StormpathAccountDao implements AccountDao {
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             
+            logger.error(directory.getName() + ": " + directory.getHref() + ", username: " + signIn.getUsername() + ", application: " + application.getHref());
+            System.out.println(directory.getName() + ": " + directory.getHref() + ", username: " + signIn.getUsername() + ", application: " + application.getHref());
+            
             UsernamePasswordRequest request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword(), directory);
             AuthenticationResult result = application.authenticateAccount(request);
             if (result.getAccount() != null) {
