@@ -16,13 +16,13 @@ public class SharingOptionTest {
     @Test
     public void sharingOptionUsesCorrectDefaults() {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put("scope", SharingScope.SPONSORS_AND_PARTNERS_ONLY.name().toLowerCase());
+        node.put("scope", SharingScope.SPONSORS_AND_PARTNERS.name().toLowerCase());
         
         SharingOption option = SharingOption.fromJson(node, 1);
         assertEquals(SharingScope.NO_SHARING, option.getSharingScope());
         
         option = SharingOption.fromJson(node, 2);
-        assertEquals(SharingScope.SPONSORS_AND_PARTNERS_ONLY, option.getSharingScope());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, option.getSharingScope());
         
         try {
             node = JsonNodeFactory.instance.objectNode();

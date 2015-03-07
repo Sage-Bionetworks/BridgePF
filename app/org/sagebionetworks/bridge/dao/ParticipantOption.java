@@ -23,7 +23,7 @@ public enum ParticipantOption {
          * Only export participant's data to a data set for the original study researchers and their affiliated research
          * partners.
          */
-        SPONSORS_AND_PARTNERS_ONLY,
+        SPONSORS_AND_PARTNERS,
         /**
          * Export participant's data to a data set that can be used by any researcher who qualifies given the governance
          * qualifications of this data set.

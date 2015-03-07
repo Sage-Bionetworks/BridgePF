@@ -207,7 +207,7 @@ public class ConsentServiceImplTest {
         try {
             ConsentSignature researchConsent = ConsentSignature.create("John Smith", "1990-11-11", null, null);
             consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), researchConsent,
-                    SharingScope.SPONSORS_AND_PARTNERS_ONLY, false);
+                    SharingScope.SPONSORS_AND_PARTNERS, false);
 
             assertTrue("Should be consented",
                     consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
@@ -234,7 +234,7 @@ public class ConsentServiceImplTest {
             // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
             consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
             consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), researchConsent,
-                    SharingScope.SPONSORS_AND_PARTNERS_ONLY, false);
+                    SharingScope.SPONSORS_AND_PARTNERS, false);
 
             assertTrue("Should still be consented.",
                     consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
