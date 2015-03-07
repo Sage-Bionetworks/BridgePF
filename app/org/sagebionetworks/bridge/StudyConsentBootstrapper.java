@@ -25,7 +25,7 @@ public class StudyConsentBootstrapper {
             study.setMinAgeOfConsent(18);
             study.setResearcherRole("api_researcher");
             study.setConsentNotificationEmail("bridge-testing+consent@sagebridge.org");
-            study.setStormpathHref("https://api.stormpath.com/v1/directories/shHutmsq4TcjyJQ5ayMoQ");
+            study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM");
             studyService.createStudy(study);
         }
         for (Study study : studyService.getStudies()) {
