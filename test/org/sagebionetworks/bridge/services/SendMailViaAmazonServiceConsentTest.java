@@ -105,7 +105,7 @@ public class SendMailViaAmazonServiceConsentTest {
         ConsentSignature consent = ConsentSignature.create("Test 2", "1950-05-05", null, null);
         User user = new User();
         user.setEmail("test-user@sagebase.org");
-        service.sendConsentAgreement(user, consent, studyConsent, SharingScope.SPONSORS_AND_PARTNERS_ONLY);
+        service.sendConsentAgreement(user, consent, studyConsent, SharingScope.SPONSORS_AND_PARTNERS);
 
         verify(emailClient).setRegion(any(Region.class));
         verify(emailClient).sendRawEmail(argument.capture());
@@ -134,7 +134,7 @@ public class SendMailViaAmazonServiceConsentTest {
                 TestConstants.DUMMY_IMAGE_DATA, "image/fake");
         User user = new User();
         user.setEmail("test-user@sagebase.org");
-        service.sendConsentAgreement(user, consent, studyConsent, SharingScope.SPONSORS_AND_PARTNERS_ONLY);
+        service.sendConsentAgreement(user, consent, studyConsent, SharingScope.SPONSORS_AND_PARTNERS);
 
         verify(emailClient).setRegion(any(Region.class));
         verify(emailClient).sendRawEmail(argument.capture());

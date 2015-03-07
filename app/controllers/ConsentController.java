@@ -61,7 +61,7 @@ public class ConsentController extends BaseController {
    }
 
     public Result resumeDataSharing() throws Exception {
-        return changeSharingScope(SharingScope.SPONSORS_AND_PARTNERS_ONLY,
+        return changeSharingScope(SharingScope.SPONSORS_AND_PARTNERS,
                 "Data sharing with the study researchers has been resumed.");
     }
     
