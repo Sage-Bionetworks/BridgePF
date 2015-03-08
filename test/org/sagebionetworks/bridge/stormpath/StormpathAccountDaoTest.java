@@ -185,7 +185,7 @@ public class StormpathAccountDaoTest {
         dao.setStormpathClient(client);
         
         dao.verifyEmail(study, verification);
-        verify(tenant).verifyAccountEmail("tokenAAA");
+        verify(client).verifyAccountEmail("tokenAAA");
     }
 
     @Test
