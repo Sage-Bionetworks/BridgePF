@@ -71,7 +71,7 @@ public class SendMailViaAmazonService implements SendMailService {
     private static final String HEADER_CONTENT_TRANSFER_ENCODING = "Content-Transfer-Encoding";
     private static final String HEADER_CONTENT_TRANSFER_ENCODING_VALUE = "base64";
     private static final String MIME_TYPE_TSV = "text/tab-separated-value";
-    private static final String MIME_TYPE_HTML = "text/html";
+    private static final String SUB_TYPE_HTML = "html";
     private static final String MIME_TYPE_TEXT = "text/plain";
     private static final String MIME_TYPE_PDF = "application/pdf";
     private static final String DELIMITER = "\t";
@@ -103,7 +103,7 @@ public class SendMailViaAmazonService implements SendMailService {
         try {
             // Consent agreement as message body in HTML
             final MimeBodyPart bodyPart = new MimeBodyPart();
-            bodyPart.setContent(consentDoc, MIME_TYPE_HTML);
+            bodyPart.setText(consentDoc, StandardCharsets.UTF_8.name(), SUB_TYPE_HTML);
 
             // Consent agreement as a PDF attachment
             // Embed the signature image
