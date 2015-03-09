@@ -98,6 +98,10 @@ public class SendMailViaAmazonService implements SendMailService {
     @Override
     public void sendConsentAgreement(final User user, final ConsentSignature consentSignature,
             final StudyConsent studyConsent, final SharingScope sharingScope) {
+        
+        final Study study = studyService.getStudy(studyConsent.getStudyKey());
+        final String sendFromEmail = isNotBlank(study.getSupportEmail()) ?
+                String.format("%s <%s>", study.getName(), study.getSupportEmail()) : supportEmail;
 
         final String consentDoc = createSignedDocument(user, consentSignature, studyConsent, sharingScope);
         try {
@@ -130,18 +134,16 @@ public class SendMailViaAmazonService implements SendMailService {
             }
 
             // As recommended by Amazon, we send the emails separately
-            final Study study = studyService.getStudy(studyConsent.getStudyKey());
             String subject = String.format(CONSENT_EMAIL_SUBJECT, study.getName());
-
-            final String sendFromEmail = isNotBlank(study.getSupportEmail()) ?
-                    String.format("%s <%s>", study.getName(), study.getSupportEmail()) : supportEmail;
 
             sendEmailTo(subject, sendFromEmail, user.getEmail(), bodyPart, pdfPart, sigPart);
             Set<String> emailAddresses = commaListToSet(study.getConsentNotificationEmail());
             for (String email : emailAddresses) {
                 sendEmailTo(subject, sendFromEmail, email, bodyPart, pdfPart, sigPart);
             }
-        } catch(IOException | MessagingException e) {
+        } catch(MessagingException e) {
+            throw new BridgeServiceException(e.getMessage() + ", fromEmail: " + sendFromEmail);
+        } catch(IOException e) {
             throw new BridgeServiceException(e);
         }
     }
@@ -164,7 +166,9 @@ public class SendMailViaAmazonService implements SendMailService {
             String subject = String.format(PARTICIPANTS_EMAIL_SUBJECT, study.getName());
             sendEmailTo(subject, supportEmail, study.getConsentNotificationEmail(), bodyPart, csvPart);
             
-        } catch(MessagingException | AmazonClientException | IOException e) {
+        } catch(MessagingException e) {
+            throw new BridgeServiceException(e.getMessage() + ", fromEmail: " + study.getConsentNotificationEmail());
+        } catch(AmazonClientException | IOException e) {
             throw new BridgeServiceException(e);
         }
     }
