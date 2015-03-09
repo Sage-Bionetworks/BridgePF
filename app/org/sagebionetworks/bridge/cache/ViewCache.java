@@ -47,7 +47,7 @@ public class ViewCache {
             if (value == null) {
                 value = cacheView(key, supplier);
             } else {
-                //logger.debug("Retrieving " +key.getKey()+"' JSON from cache");
+                logger.debug("Retrieving " +key.getKey()+"' JSON from cache");
             }
             return value;
         } catch(JsonProcessingException e) {
@@ -60,7 +60,7 @@ public class ViewCache {
      * @param key
      */
     public <T> void removeView(ViewCacheKey<T> key) {
-        //logger.debug("Deleting JSON for '" +key.getKey() +"'");
+        logger.debug("Deleting JSON for '" +key.getKey() +"'");
         cache.removeString(key.getKey());
     }
     
@@ -77,7 +77,7 @@ public class ViewCache {
     }
     
     private <T> String cacheView(ViewCacheKey<T> key, Supplier<T> supplier) throws JsonProcessingException {
-        //logger.debug("Caching JSON for " +key.getKey()+"'");
+        logger.debug("Caching JSON for " +key.getKey()+"'");
         T object = supplier.get();
         String value = BridgeObjectMapper.get().writeValueAsString(object);
         cache.setString(key.getKey(), value);
