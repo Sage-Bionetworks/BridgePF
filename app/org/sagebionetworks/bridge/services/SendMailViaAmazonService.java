@@ -103,7 +103,7 @@ public class SendMailViaAmazonService implements SendMailService {
         try {
             // Consent agreement as message body in HTML
             final MimeBodyPart bodyPart = new MimeBodyPart();
-            bodyPart.setText(consentDoc, "UTF-8", SUB_TYPE_HTML);
+            bodyPart.setText(consentDoc, StandardCharsets.UTF_8.name(), SUB_TYPE_HTML);
 
             // Consent agreement as a PDF attachment
             // Embed the signature image
