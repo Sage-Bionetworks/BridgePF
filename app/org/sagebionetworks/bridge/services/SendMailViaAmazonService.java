@@ -44,6 +44,7 @@ import org.springframework.stereotype.Component;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
@@ -141,7 +142,7 @@ public class SendMailViaAmazonService implements SendMailService {
             for (String email : emailAddresses) {
                 sendEmailTo(subject, sendFromEmail, email, bodyPart, pdfPart, sigPart);
             }
-        } catch(MessagingException e) {
+        } catch(MessagingException | AmazonServiceException e) {
             throw new BridgeServiceException(e.getMessage() + ", fromEmail: " + sendFromEmail);
         } catch(IOException e) {
             throw new BridgeServiceException(e);
@@ -166,7 +167,7 @@ public class SendMailViaAmazonService implements SendMailService {
             String subject = String.format(PARTICIPANTS_EMAIL_SUBJECT, study.getName());
             sendEmailTo(subject, supportEmail, study.getConsentNotificationEmail(), bodyPart, csvPart);
             
-        } catch(MessagingException e) {
+        } catch(MessagingException | AmazonServiceException e) {
             throw new BridgeServiceException(e.getMessage() + ", fromEmail: " + study.getConsentNotificationEmail());
         } catch(AmazonClientException | IOException e) {
             throw new BridgeServiceException(e);
