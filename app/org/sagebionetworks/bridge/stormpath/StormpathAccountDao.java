@@ -241,7 +241,7 @@ public class StormpathAccountDao implements AccountDao {
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
         
         AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email))
-                .withGroups().withGroupMemberships());
+                .withCustomData().withGroups().withGroupMemberships());
         if (accounts.iterator().hasNext()) {
             com.stormpath.sdk.account.Account acct = accounts.iterator().next();
             return new StormpathAccount(study.getStudyIdentifier(), acct, encryptors);
