@@ -242,7 +242,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             healthId = healthCodeService.createMapping(study);
             account.setHealthId(healthId.getId());
             accountDao.updateAccount(study, account);
-            logger.debug("Health ID/code pair created for " + account.getEmail() + " in study " + study.getName());
+            logger.debug("Health ID/code pair created for " + account.getId() + " in study " + study.getName());
         }
         return healthId.getCode();
     }
