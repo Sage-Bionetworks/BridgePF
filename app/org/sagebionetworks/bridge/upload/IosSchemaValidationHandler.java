@@ -20,8 +20,6 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -40,8 +38,6 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 // so that it only runs in the iOS context.
 @Component
 public class IosSchemaValidationHandler implements UploadValidationHandler {
-    private static final Logger logger = LoggerFactory.getLogger(IosSchemaValidationHandler.class);
-
     private static final Set<UploadFieldType> ATTACHMENT_TYPE_SET = EnumSet.of(UploadFieldType.ATTACHMENT_BLOB,
             UploadFieldType.ATTACHMENT_CSV, UploadFieldType.ATTACHMENT_JSON_BLOB,
             UploadFieldType.ATTACHMENT_JSON_TABLE);
@@ -632,8 +628,8 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
         }
     }
 
+    // This method used to add warnings to the log. It has since been decided that these log warnings are not useful.
     private static void addMessageAndWarn(UploadValidationContext context, String message) {
         context.addMessage(message);
-        logger.warn(message);
     }
 }
