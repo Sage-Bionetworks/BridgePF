@@ -20,7 +20,7 @@ import org.joda.time.LocalDate;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
@@ -113,7 +113,7 @@ public class DynamoUploadDaoMockTest {
         try {
             dao.getUpload("test-get-404");
             fail();
-        } catch (BridgeServiceException ex) {
+        } catch (NotFoundException ex) {
             thrown = ex;
         }
         assertNotNull(thrown);

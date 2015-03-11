@@ -9,6 +9,7 @@ import javax.annotation.Resource;
 import java.net.URL;
 import java.util.Date;
 
+import com.amazonaws.AmazonClientException;
 import com.google.common.base.Strings;
 
 import org.joda.time.DateTime;
@@ -16,6 +17,7 @@ import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -135,12 +137,17 @@ public class UploadService {
 
         // We don't want to kick off upload validation on an upload that already has upload validation.
         if (!upload.canBeValidated()) {
-            logger.warn("uploadComplete called for upload %s, which is already complete", uploadId);
+            logger.warn(String.format("uploadComplete called for upload %s, which is already complete", uploadId));
             return;
         }
 
         final String objectId = upload.getObjectId();
-        ObjectMetadata obj = s3Client.getObjectMetadata(BUCKET, objectId);
+        ObjectMetadata obj;
+        try {
+            obj = s3Client.getObjectMetadata(BUCKET, objectId);
+        } catch (AmazonClientException ex) {
+            throw new NotFoundException(ex);
+        }
         String sse = obj.getSSEAlgorithm();
         if (!AES_256_SERVER_SIDE_ENCRYPTION.equals(sse)) {
             logger.error("Missing S3 server-side encryption (SSE) for presigned upload " + uploadId + ".");
