@@ -2,6 +2,7 @@ package interceptors;
 
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import models.ExceptionMessage;
 
 import org.aopalliance.intercept.MethodInterceptor;
@@ -16,6 +17,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.slf4j.Logger;
@@ -28,23 +30,17 @@ import play.mvc.Http;
 import play.mvc.Results;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Sets;
 
 @Component("exceptionInterceptor")
 public class ExceptionInterceptor implements MethodInterceptor {
 
     private static Logger logger = LoggerFactory.getLogger(ExceptionInterceptor.class);
-    
-    private static Set<Class<? extends BridgeServiceException>> quietExceptions = Sets.newHashSet();
-    static {
-        quietExceptions.add(BadRequestException.class);
-        quietExceptions.add(InvalidEntityException.class);
-        quietExceptions.add(EntityAlreadyExistsException.class);
-        quietExceptions.add(EntityNotFoundException.class);
-        quietExceptions.add(UnauthorizedException.class);
-        quietExceptions.add(NotAuthenticatedException.class);
-    }
-    
+
+    private static Set<Class<? extends BridgeServiceException>> quietExceptions = ImmutableSet.of(
+            BadRequestException.class, InvalidEntityException.class, EntityAlreadyExistsException.class,
+            EntityNotFoundException.class, NotFoundException.class, UnauthorizedException.class,
+            NotAuthenticatedException.class);
+
     private BridgeConfig config;
     
     @Autowired
@@ -57,8 +53,6 @@ public class ExceptionInterceptor implements MethodInterceptor {
         try {
             return method.proceed();
         } catch(Throwable throwable) {
-            throwable = Throwables.getRootCause(throwable);
-            
             // Consent exceptions return a session payload (you are signed in),
             // but a 412 error status code.
             if (throwable instanceof ConsentRequiredException) {

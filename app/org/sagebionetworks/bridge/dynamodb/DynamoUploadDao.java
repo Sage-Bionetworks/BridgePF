@@ -16,6 +16,7 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
@@ -82,7 +83,7 @@ public class DynamoUploadDao implements UploadDao {
             }
         }
 
-        throw new BridgeServiceException(String.format("Upload ID %s not found", uploadId), HttpStatus.SC_NOT_FOUND);
+        throw new NotFoundException(String.format("Upload ID %s not found", uploadId));
     }
 
     /** {@inheritDoc} */
