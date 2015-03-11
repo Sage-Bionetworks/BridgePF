@@ -10,12 +10,10 @@ import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
