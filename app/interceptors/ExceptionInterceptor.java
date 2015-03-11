@@ -3,6 +3,7 @@ package interceptors;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
+
 import models.ExceptionMessage;
 
 import org.aopalliance.intercept.MethodInterceptor;
@@ -29,13 +30,12 @@ import play.libs.Json;
 import play.mvc.Http;
 import play.mvc.Results;
 
-import com.google.common.base.Throwables;
-
 @Component("exceptionInterceptor")
 public class ExceptionInterceptor implements MethodInterceptor {
 
     private static Logger logger = LoggerFactory.getLogger(ExceptionInterceptor.class);
 
+    @SuppressWarnings("unchecked")
     private static Set<Class<? extends BridgeServiceException>> quietExceptions = ImmutableSet.of(
             BadRequestException.class, InvalidEntityException.class, EntityAlreadyExistsException.class,
             EntityNotFoundException.class, NotFoundException.class, UnauthorizedException.class,
