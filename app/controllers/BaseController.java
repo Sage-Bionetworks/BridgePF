@@ -161,8 +161,8 @@ public abstract class BaseController extends Controller {
     /**
      * Retrieving the study (domain) from a header or the server host name has been deprecated in favor 
      * of including it directly in the JSON for calls where declaring the study is required. We continue 
-     * to support the retrieval of the study from the header, hostname, or other locations for backwards 
-     * compatability.
+     * to support the retrieval of the study from the header, host name, or other locations for backwards 
+     * compatibility.
      * @return
      */
     @Deprecated
