@@ -118,8 +118,6 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         scan.addFilterCondition("studyKey", condition);
         
         List<DynamoParticipantOptions> mappings = mapper.scan(DynamoParticipantOptions.class, scan);
-        List<FailedBatch> failures = mapper.batchDelete(mappings);
-        BridgeUtils.ifFailuresThrowException(failures);
         
         OptionLookup map = new OptionLookup(option.getDefaultValue());
         for (DynamoParticipantOptions opt : mappings) {
