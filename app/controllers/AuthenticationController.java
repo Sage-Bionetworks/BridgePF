@@ -1,8 +1,12 @@
 package controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.Email;
 import org.sagebionetworks.bridge.models.EmailVerification;
 import org.sagebionetworks.bridge.models.PasswordReset;
@@ -16,6 +20,8 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import play.mvc.Result;
 
@@ -32,8 +38,10 @@ public class AuthenticationController extends BaseController {
             return okResult(new UserSessionInfo(session));
         }
         try {
-            Study study = studyService.getStudy(getStudyIdentifier());
-            SignIn signIn = SignIn.fromJson(requestToJSON(request()));
+            JsonNode json = requestToJSON(request());
+            SignIn signIn = SignIn.fromJson(json);
+            Study study = getStudyOrThrowException(json);
+            
             session = authenticationService.signIn(study, signIn);
             setSessionToken(session.getSessionToken());
             Result result = okResult(new UserSessionInfo(session));
@@ -56,33 +64,39 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result signUp() throws Exception {
-        SignUp signUp = SignUp.fromJson(requestToJSON(request()), false);
-        Study study = studyService.getStudy(getStudyIdentifier());
+        JsonNode json = requestToJSON(request());
+        SignUp signUp = SignUp.fromJson(json, false);
+        Study study = getStudyOrThrowException(json);
+
         authenticationService.signUp(study, signUp, true);
         return createdResult("Signed up.");
     }
 
     public Result verifyEmail() throws Exception {
-        Study study = studyService.getStudy(getStudyIdentifier());
-        EmailVerification ev = EmailVerification.fromJson(requestToJSON(request()));
+        JsonNode json = requestToJSON(request());
+        EmailVerification emailVerification = EmailVerification.fromJson(json);
+        Study study = getStudyOrThrowException(json);
+        
         // In normal course of events (verify email, consent to research),
         // an exception is thrown. Code after this line will rarely execute
-        UserSession session = authenticationService.verifyEmail(study, ev);
+        UserSession session = authenticationService.verifyEmail(study, emailVerification);
         setSessionToken(session.getSessionToken());
         return okResult(new UserSessionInfo(session));
     }
     
     public Result resendEmailVerification() throws Exception {
-        Email email = Email.fromJson(requestToJSON(request()));
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl(getStudyIdentifier());
+        JsonNode json = requestToJSON(request());
+        Email email = Email.fromJson(json);
+        StudyIdentifier studyIdentifier = getStudyIdentifierOrThrowException(json);
         
         authenticationService.resendEmailVerification(studyIdentifier, email);
         return okResult("A request to verify an email address was re-sent.");
     }
 
     public Result requestResetPassword() throws Exception {
-        Email email = Email.fromJson(requestToJSON(request()));
-        Study study = getStudyOrThrowException(email);
+        JsonNode json = requestToJSON(request());
+        Email email = Email.fromJson(json);
+        Study study = getStudyOrThrowException(json);
         
         authenticationService.requestResetPassword(study, email);
         return okResult("An email has been sent allowing you to set a new password.");
@@ -104,13 +118,28 @@ public class AuthenticationController extends BaseController {
      * @param email
      * @return
      */
-    private Study getStudyOrThrowException(Email email) {
-        if (email.getStudyIdentifier() != null) {
-            return studyService.getStudy(email.getStudyIdentifier());
+    @SuppressWarnings("deprecation")
+    private Study getStudyOrThrowException(JsonNode node) {
+        String studyId = JsonUtils.asText(node, STUDY_PROPERTY);
+        if (isNotBlank(studyId)) {
+            return studyService.getStudy(studyId);
         }
-        String studyString = getStudyIdentifier();
-        if (studyString != null) {
-            return studyService.getStudy(studyString);
+        studyId = getStudyIdentifier();
+        if (studyId != null) {
+            return studyService.getStudy(studyId);
+        }
+        throw new EntityNotFoundException(Study.class);
+    }
+    
+    @SuppressWarnings("deprecation")
+    private StudyIdentifier getStudyIdentifierOrThrowException(JsonNode node) {
+        String studyId = JsonUtils.asText(node, STUDY_PROPERTY);
+        if (isNotBlank(studyId)) {
+            return new StudyIdentifierImpl(studyId);
+        }
+        studyId = getStudyIdentifier();
+        if (studyId != null) {
+            return new StudyIdentifierImpl(studyId);
         }
         throw new EntityNotFoundException(Study.class);
     }
