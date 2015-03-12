@@ -1,9 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
-
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Greatly trimmed user session object that is embedded in the initial render of the
@@ -37,10 +34,6 @@ public class UserSessionInfo {
     public boolean isSignedMostRecentConsent() {
         return signedMostRecentConsent;
     }
-    /**
-     * FIXME: BridgeObjectMapper is not correctly using this serializer, even though it's added as a module.
-     */
-    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public SharingScope getSharingScope() {
         return sharingScope;
     }

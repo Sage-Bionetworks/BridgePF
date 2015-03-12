@@ -4,11 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.surveys.DataType;
-import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -59,23 +55,11 @@ public class BridgeObjectMapper extends ObjectMapper {
             }
         });
         SimpleModule serializers = new SimpleModule();
-        
         serializers.addDeserializer(Schedule.class, new ScheduleDeserializer());
         serializers.addSerializer(Schedule.class, new ScheduleSerializer());
-        
-        serializers.addDeserializer(ActivityType.class, new ActivityTypeDeserializer());
-        serializers.addSerializer(ActivityType.class, new LowercaseEnumJsonSerializer());
-        
-        serializers.addDeserializer(DataType.class, new DataTypeJsonDeserializer());
-        serializers.addSerializer(DataType.class, new LowercaseEnumJsonSerializer());
-        
-        serializers.addDeserializer(Operator.class, new OperatorJsonDeserializer());
-        serializers.addSerializer(Operator.class, new LowercaseEnumJsonSerializer());
-
-        serializers.addDeserializer(SharingScope.class, new SharingScopeDeserializer());
-        serializers.addSerializer(SharingScope.class, new LowercaseEnumJsonSerializer());
-        
         this.registerModule(serializers);
+        
+        this.registerModule(new LowercaseEnumModule());
     }
     
     private class ExtraFieldSerializer extends BeanSerializerBase {
