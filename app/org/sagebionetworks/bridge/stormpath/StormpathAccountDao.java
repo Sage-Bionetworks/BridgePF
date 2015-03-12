@@ -118,8 +118,6 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(verification);
         
         try {
-            //Original version. Works, but Les at Stormpath used the more direct call below (in his sample code).
-            //com.stormpath.sdk.account.Account acct = client.getCurrentTenant().verifyAccountEmail(verification.getSptoken());
             com.stormpath.sdk.account.Account acct = client.verifyAccountEmail(verification.getSptoken());
             return (acct == null) ? null : new StormpathAccount(study, acct, encryptors);
         } catch(ResourceException e) {
@@ -314,21 +312,21 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     private void rethrowResourceException(ResourceException e, Account account) {
+        logger.info(String.format("Stormpath error: %s: %s", e.getCode(), e.getMessage()));
         switch(e.getCode()) {
         case 2001: // must be unique (email isn't unique)
-            logger.info(String.format("Stormpath error: %s, exception: %s, mapped to EntityAlreadyExistsException", e.getCode(), e.getMessage()));
             throw new EntityAlreadyExistsException(account, "Account already exists.");
+        // These are validation errors, like "password doesn't include an upper-case character"
         case 400:
-            logger.info(String.format("Stormpath error: %s, exception: %s, mapped to BadRequestException", e.getCode(), e.getMessage()));
-            throw new BadRequestException("Invalid email or password");
+        case 2007:
+        case 2008:
+            throw new BadRequestException(e.getDeveloperMessage());
         case 404:
         case 7102: // Login attempt failed because the Account is not verified. 
         case 7104: // Account not found in the directory
         case 2016: // Property value does not match a known resource. Somehow this equals not found.
-            logger.info(String.format("Stormpath error: %s, exception: %s, mapped to EntityNotFoundException", e.getCode(), e.getMessage()));
             throw new EntityNotFoundException(Account.class);
         default:
-            logger.info(String.format("Stormpath error: %s, exception: %s, mapped to ServiceUnavailableException", e.getCode(), e.getMessage()));
             throw new ServiceUnavailableException(e);
         }
     }
