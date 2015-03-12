@@ -6,7 +6,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
@@ -164,7 +163,6 @@ public class DynamoSurveyResponse implements SurveyResponse {
     }
     @Override
     @DynamoDBIgnore
-    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public Status getStatus() {
         if (startedOn == 0L && completedOn == 0L) {
             return Status.UNSTARTED;
