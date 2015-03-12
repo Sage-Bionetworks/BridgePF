@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
@@ -13,7 +12,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -64,7 +62,6 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
     }
 
     @Override
-    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     @DynamoDBIgnore
     public UIHint getUiHint() {
         return hint;

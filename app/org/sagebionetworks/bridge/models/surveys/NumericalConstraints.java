@@ -2,12 +2,6 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.EnumSet;
 
-import org.sagebionetworks.bridge.json.LowercaseEnumJsonSerializer;
-import org.sagebionetworks.bridge.json.UnitDeserializer;
-
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 public class NumericalConstraints extends Constraints {
     
     private Unit unit;
@@ -19,11 +13,9 @@ public class NumericalConstraints extends Constraints {
         setSupportedHints(EnumSet.of(UIHint.NUMBERFIELD, UIHint.SLIDER));    
     }
     
-    @JsonSerialize(using = LowercaseEnumJsonSerializer.class)
     public Unit getUnit() {
         return unit;
     }
-    @JsonDeserialize(using = UnitDeserializer.class)
     public void setUnit(Unit unit) {
         this.unit = unit;
     }

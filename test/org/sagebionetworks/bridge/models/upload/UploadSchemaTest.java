@@ -306,7 +306,9 @@ public class UploadSchemaTest {
 
     @Test
     public void testSerialization() throws Exception {
-        // start with JSON
+        // start with JSON. Some objects may already be serialized using upper-case enums
+        // so leave this test string as it is. We know from other tests that lower-case 
+        // strings work.
         String jsonText = "{\n" +
                 "   \"name\":\"Test Schema\",\n" +
                 "   \"revision\":3,\n" +
@@ -361,12 +363,12 @@ public class UploadSchemaTest {
         Map<String, Object> fooJsonMap = fieldDefJsonList.get(0);
         assertEquals("foo", fooJsonMap.get("name"));
         assertTrue((boolean) fooJsonMap.get("required"));
-        assertEquals("INT", fooJsonMap.get("type"));
+        assertEquals("int", fooJsonMap.get("type"));
 
         Map<String, Object> barJsonMap = fieldDefJsonList.get(1);
         assertEquals("bar", barJsonMap.get("name"));
         assertFalse((boolean) barJsonMap.get("required"));
-        assertEquals("STRING", barJsonMap.get("type"));
+        assertEquals("string", barJsonMap.get("type"));
     }
 
     @Test
