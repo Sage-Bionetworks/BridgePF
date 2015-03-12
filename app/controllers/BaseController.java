@@ -158,6 +158,14 @@ public abstract class BaseController extends Controller {
         cacheProvider.setUserSession(session.getSessionToken(), session);
     }
     
+    /**
+     * Retrieving the study (domain) from a header or the server host name has been deprecated in favor 
+     * of including it directly in the JSON for calls where declaring the study is required. We continue 
+     * to support the retrieval of the study from the header, host name, or other locations for backwards 
+     * compatibility.
+     * @return
+     */
+    @Deprecated
     protected String getStudyIdentifier() {
         // Bridge-Study header: api
         String value = request().getHeader(BRIDGE_STUDY_HEADER);

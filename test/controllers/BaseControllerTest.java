@@ -77,6 +77,7 @@ public class BaseControllerTest {
     }
     
     @Test
+    @SuppressWarnings("deprecation")
     public void studyExtractableFromBridgeHostHeader() {
         Http.Request mockRequest = mock(Http.Request.class);
         when(mockRequest.getHeader(BridgeConstants.BRIDGE_HOST_HEADER)).thenReturn(HOSTNAME);
@@ -96,6 +97,7 @@ public class BaseControllerTest {
     }
     
     @Test 
+    @SuppressWarnings("deprecation")
     public void studyExtractableFromBridgeStudyHeader() {
         Http.Request mockRequest = mock(Http.Request.class);
         when(mockRequest.getHeader(BridgeConstants.BRIDGE_STUDY_HEADER)).thenReturn(STUDY_IDENTIFIER);
@@ -116,6 +118,7 @@ public class BaseControllerTest {
     }
     
     @Test
+    @SuppressWarnings("deprecation")
     public void whenNoHeaderPresentUseHost() {
         Http.Request mockRequest = mock(Http.Request.class);
         
@@ -136,6 +139,7 @@ public class BaseControllerTest {
     }
     
     @Test
+    @SuppressWarnings("deprecation")
     public void studyHeaderHigherPrecedenceThanOtherStudyLocations() {
         Http.Request mockRequest = mock(Http.Request.class);
         
