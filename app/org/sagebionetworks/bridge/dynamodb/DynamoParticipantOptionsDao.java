@@ -32,6 +32,11 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
                 .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoParticipantOptions.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
+    
+    // Why? So we can mock the mapper.
+    protected void setMapper(DynamoDBMapper mapper) {
+        this.mapper = mapper;
+    }
 
     @Override
     public void setOption(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value) {

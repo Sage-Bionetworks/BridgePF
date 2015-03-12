@@ -1,6 +1,13 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import java.util.ArrayList;
 
 import javax.annotation.Resource;
 
@@ -12,9 +19,15 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
+import com.google.common.collect.Maps;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -57,4 +70,48 @@ public class DynamoParticipantOptionsDaoTest {
         assertEquals(SharingScope.NO_SHARING, lookup.getSharingScope("AAA"));
     }
     
+    @Test
+    public void getAllParticipantOptions() {
+        // Verify we're only calling load
+        DynamoParticipantOptions options = getOptionsForUser();
+        
+        DynamoDBMapper mapper = mock(DynamoDBMapper.class);
+        when(mapper.load(any())).thenReturn(options);
+
+        DynamoParticipantOptionsDao optionsDao = new DynamoParticipantOptionsDao();
+        optionsDao.setMapper(mapper);
+        
+        optionsDao.getAllParticipantOptions("aaa");
+        
+        verify(mapper).load(any());
+        verifyNoMoreInteractions(mapper);
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Test
+    public void getOptionForAllStudyParticipants() {
+        // Verify we're only calling scan
+
+        PaginatedScanList<DynamoParticipantOptions> results = mock(PaginatedScanList.class);
+        when(results.iterator()).thenReturn(new ArrayList<DynamoParticipantOptions>().iterator());
+        
+        DynamoDBMapper mapper = mock(DynamoDBMapper.class);
+        when(mapper.scan(any(Class.class), any(DynamoDBScanExpression.class))).thenReturn(results);
+
+        DynamoParticipantOptionsDao optionsDao = new DynamoParticipantOptionsDao();
+        optionsDao.setMapper(mapper);
+        
+        optionsDao.getOptionForAllStudyParticipants(new StudyIdentifierImpl("api"), ParticipantOption.SHARING_SCOPE);
+        
+        verify(mapper).scan(any(Class.class), any(DynamoDBScanExpression.class));
+        verifyNoMoreInteractions(mapper);
+    }
+
+    private DynamoParticipantOptions getOptionsForUser() {
+        DynamoParticipantOptions options = new DynamoParticipantOptions();
+        options.setHealthCode("aaa");
+        options.setStudyKey("api");
+        options.setOptions(Maps.<String,String>newHashMap());
+        return options;
+    }
 }

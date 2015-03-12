@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULES_API;
 import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_URL;
@@ -84,11 +85,11 @@ public class AuthenticationControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
+                node.put(STUDY_PROPERTY, testUser.getStudyIdentifier().getIdentifier());
                 node.put(USERNAME, testUser.getUsername());
                 node.put(PASSWORD, testUser.getPassword());
                 
                 WSRequestHolder holder = WS.url(TEST_BASE_URL + SIGN_IN_URL);
-                holder.setHeader(BridgeConstants.BRIDGE_STUDY_HEADER, "api");
                 Response response = holder.post(node).get(TIMEOUT);
 
                 WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
@@ -119,11 +120,11 @@ public class AuthenticationControllerTest {
                     saveSecondStudyWithSchedulePlan();
                     
                     ObjectNode node = JsonNodeFactory.instance.objectNode();
+                    node.put(STUDY_PROPERTY, testUser.getStudy().getIdentifier());
                     node.put(USERNAME, testUser.getUsername());
                     node.put(PASSWORD, testUser.getPassword());
                     
                     WSRequestHolder holder = WS.url(TEST_BASE_URL + SIGN_IN_URL);
-                    holder.setHeader(BridgeConstants.BRIDGE_STUDY_HEADER, "api");
                     Response response = holder.post(node).get(TIMEOUT);
                     WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 

@@ -19,6 +19,8 @@ public class BridgeConstants {
     public static final String ADMIN_GROUP = "admin";
 
     public static final String TEST_USERS_GROUP = "test_users";
+    
+    public static final String STUDY_PROPERTY = "study";
 
     public static final DateTimeZone LOCAL_TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");
 
