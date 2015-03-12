@@ -173,7 +173,7 @@ public class UploadValidationStatusTest {
         assertEquals(4, jsonMap.size());
         assertEquals("UploadValidationStatus", jsonMap.get("type"));
         assertEquals("json-upload", jsonMap.get("id"));
-        assertEquals("SUCCEEDED", jsonMap.get("status"));
+        assertEquals("succeeded", jsonMap.get("status"));
 
         List<String> messageJsonList = (List<String>) jsonMap.get("messageList");
         assertEquals(3, messageJsonList.size());

@@ -118,6 +118,6 @@ public class UploadFieldDefinitionTest {
         assertEquals(3, jsonMap.size());
         assertEquals("test-field", jsonMap.get("name"));
         assertFalse((boolean) jsonMap.get("required"));
-        assertEquals("INT", jsonMap.get("type"));
+        assertEquals("int", jsonMap.get("type"));
     }
 }
