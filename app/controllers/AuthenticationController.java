@@ -118,28 +118,25 @@ public class AuthenticationController extends BaseController {
      * @param email
      * @return
      */
-    @SuppressWarnings("deprecation")
     private Study getStudyOrThrowException(JsonNode node) {
-        String studyId = JsonUtils.asText(node, STUDY_PROPERTY);
-        if (isNotBlank(studyId)) {
-            return studyService.getStudy(studyId);
-        }
-        studyId = getStudyIdentifier();
-        if (studyId != null) {
-            return studyService.getStudy(studyId);
-        }
-        throw new EntityNotFoundException(Study.class);
+        String studyId = getStudyStringOrThrowException(node);
+        return studyService.getStudy(studyId);
+    }
+    
+    private StudyIdentifier getStudyIdentifierOrThrowException(JsonNode node) {
+        String studyId = getStudyStringOrThrowException(node);
+        return new StudyIdentifierImpl(studyId);
     }
     
     @SuppressWarnings("deprecation")
-    private StudyIdentifier getStudyIdentifierOrThrowException(JsonNode node) {
+    private String getStudyStringOrThrowException(JsonNode node) {
         String studyId = JsonUtils.asText(node, STUDY_PROPERTY);
         if (isNotBlank(studyId)) {
-            return new StudyIdentifierImpl(studyId);
+            return studyId;
         }
         studyId = getStudyIdentifier();
         if (studyId != null) {
-            return new StudyIdentifierImpl(studyId);
+            return studyId;
         }
         throw new EntityNotFoundException(Study.class);
     }
