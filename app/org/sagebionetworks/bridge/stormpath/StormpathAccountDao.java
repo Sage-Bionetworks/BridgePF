@@ -218,6 +218,9 @@ public class StormpathAccountDao implements AccountDao {
         checkArgument(isNotBlank(signIn.getPassword()));
         
         try {
+            System.out.println(" XXX " + study.getIdentifier());
+            System.out.println(" XXX " + study.getName());
+            System.out.println(" XXX " + study.getStormpathHref());
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             
             UsernamePasswordRequest request = new UsernamePasswordRequest(signIn.getUsername(), signIn.getPassword(), directory);
