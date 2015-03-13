@@ -2,6 +2,7 @@ package controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_DEPRECATED_STATUS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static play.test.Helpers.running;
@@ -17,6 +18,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -52,7 +54,7 @@ public class ConsentControllerTest {
         running(testServer(3333), new TestUtils.FailableRunnable() {
             public void testCode() throws Exception {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put("scope", "no_sharing");
+                node.put("scope", SharingScope.NO_SHARING.name().toLowerCase());
                 
                 // First, verify this header isn't on *every* endpoint
                 WSRequestHolder holder = WS.url(TEST_BASE_URL + "/api/v1/consent/email");
@@ -64,17 +66,17 @@ public class ConsentControllerTest {
                 holder = WS.url(TEST_BASE_URL + "/api/v1/consent/dataSharing/suspend");
                 response = holder.post(node).get(TIMEOUT);
                 headerValue = response.getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
-                assertEquals("deprecated", headerValue);
+                assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
                 
                 holder = WS.url(TEST_BASE_URL + "/api/v1/consent/dataSharing/resume");
                 response = holder.post(node).get(TIMEOUT);
                 headerValue = response.getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
-                assertEquals("deprecated", headerValue);
+                assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
                 
                 holder = WS.url(TEST_BASE_URL + "/api/v1/consent");
                 response = holder.post(node).get(TIMEOUT);
                 headerValue = response.getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
-                assertEquals("deprecated", headerValue);
+                assertEquals(BRIDGE_DEPRECATED_STATUS, headerValue);
                 
             }
         });
