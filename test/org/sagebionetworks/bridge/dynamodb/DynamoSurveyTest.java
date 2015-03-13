@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -29,12 +30,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class DynamoSurveyTest {
     
+    private Survey newSurvey;
     private Survey survey;
     
     @Before
     public void before() throws Exception {
         SurveyValidator validator = new SurveyValidator();
-        DynamoSurvey newSurvey = new TestSurvey(false);
+        newSurvey = new TestSurvey(false);
         try {
             Validate.entityThrowingException(validator, newSurvey);
         } catch(Throwable t) {
@@ -55,7 +57,8 @@ public class DynamoSurveyTest {
     
     @Test
     public void yetAnotherSerializationTest() {
-        assertEquals("Correct serialize/deserialize survey", survey.hashCode(), survey.hashCode());
+        // What? What does this even test?
+        assertEquals("Correct serialize/deserialize survey", newSurvey.hashCode(), survey.hashCode());
     }
     
     @Test
@@ -120,5 +123,16 @@ public class DynamoSurveyTest {
         // There's only one question in the question list
         assertEquals(1, survey.getUnmodifiableQuestionList().size());
         assertEquals(DynamoSurveyQuestion.class, survey.getUnmodifiableQuestionList().get(0).getClass());
+    }
+    
+    // This was a legacy property that we want removed. It cuts the size of surveys by half 
+    // (before compression)
+    @Test
+    public void surveyJsonDoesNotIncludeQuestionsProperty() throws Exception {
+        ObjectMapper mapper = BridgeObjectMapper.get();
+        String json = mapper.writeValueAsString(survey);
+        
+        System.out.println(json);
+        assertFalse(json.contains("\"questions\""));
     }
 }
