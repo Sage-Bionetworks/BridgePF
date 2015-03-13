@@ -16,10 +16,6 @@ import org.slf4j.LoggerFactory;
 public class BridgeConfig {
 
     private final Logger logger = LoggerFactory.getLogger(BridgeConfig.class);
-
-    //private static final String STORMPATH_ID =  "stormpath.id";
-    //private static final String STORMPATH_SECRET =  "stormpath.secret";
-    //private static final String STORMPATH_APPLICATION_HREF =  "stormpath.application.href";
     
     private static final String ENTERPRISE_STORMPATH_ID =  "enterprise.stormpath.id";
     private static final String ENTERPRISE_STORMPATH_SECRET =  "enterprise.stormpath.secret";
@@ -45,7 +41,6 @@ public class BridgeConfig {
     private static final String HEALTHCODE_KEY = "bridge.healthcode.key";
     private static final String HEALTHCODE_SALT = "bridge.healthcode.salt";
     
-    private static final String HEROKU_AUTH_TOKEN = "heroku.auth.token";
     private static final String HEROKU_APPNAME = "heroku.appname";
     private static final String HEROKU_SSL_ENDPOINT = "heroku.ssl.endpoint";
     private static final String STUDY_HOSTNAME = "study.hostname";
@@ -199,10 +194,6 @@ public class BridgeConfig {
     public String getStudyHostname(String identifier) {
         checkNotNull(identifier);
         return identifier + getStudyHostnamePostfix();
-    }
-
-    public String getHerokuAuthToken() {
-        return getProperty(HEROKU_AUTH_TOKEN);
     }
     
     public String getHerokuAppName() {
