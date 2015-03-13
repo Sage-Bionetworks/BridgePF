@@ -8,11 +8,7 @@
 .grunt
 TODO.txt
 tmp
-phantomjsdriver.log
 target
-application.log
-node_modules
-bower_components
 project/project/target
 project/target
 build
@@ -25,7 +21,7 @@ setup.sh
 .vagrant
 verify.rb
 .dpl
-/project
+/logs
 
 # IntelliJ project files
 *.iml
