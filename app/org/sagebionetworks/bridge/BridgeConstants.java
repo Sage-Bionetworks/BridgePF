@@ -4,6 +4,10 @@ import org.joda.time.DateTimeZone;
 
 public class BridgeConstants {
 
+    public static final String BRIDGE_API_STATUS_HEADER = "Bridge-Api-Status";
+    
+    public static final String BRIDGE_DEPRECATED_STATUS = "deprecated";
+    
     public static final String SESSION_TOKEN_HEADER = "Bridge-Session";
 
     public static final String BRIDGE_STUDY_HEADER = "Bridge-Study";
