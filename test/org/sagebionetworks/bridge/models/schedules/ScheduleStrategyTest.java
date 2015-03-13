@@ -129,7 +129,7 @@ public class ScheduleStrategyTest {
     }
     
     @Test
-    @Ignore
+    @Ignore // Don't believe this functionality is wanted anymore
     public void canRequestScheduleV2AndStillGetOldFields() throws Exception {
         Schedule schedule = createSchedule("new variant");
         
