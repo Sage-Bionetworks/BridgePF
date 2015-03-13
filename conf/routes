@@ -1,9 +1,7 @@
 # Top level views
 OPTIONS    /*all                       @controllers.ApplicationController.preflight(all: String)
-GET        /                           @controllers.ApplicationController.loadPublicApp
-GET        /app/                       @controllers.ApplicationController.loadApp
-GET        /index.html                 @controllers.ApplicationController.redirectToPublicApp
-GET        /consent/:sessionToken      @controllers.ApplicationController.loadConsent(sessionToken: String)
+GET        /                           @controllers.ApplicationController.loadApp
+GET        /index.html                 @controllers.ApplicationController.loadApp
 GET        /mobile/verifyEmail.html    @controllers.ApplicationController.verifyEmail
 GET        /mobile/resetPassword.html  @controllers.ApplicationController.resetPassword
 
