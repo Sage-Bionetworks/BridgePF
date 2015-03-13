@@ -132,7 +132,6 @@ public class DynamoSurveyTest {
         ObjectMapper mapper = BridgeObjectMapper.get();
         String json = mapper.writeValueAsString(survey);
         
-        System.out.println(json);
         assertFalse(json.contains("\"questions\""));
     }
 }
