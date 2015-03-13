@@ -39,6 +39,7 @@
         <property name="interceptorNames">
             <list>
                 <value>loggingInterceptor</value>
+                <value>deprecationInterceptor</value>
                 <value>exceptionInterceptor</value>
             </list>
         </property>

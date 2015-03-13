@@ -39,6 +39,7 @@ public class ConsentController extends BaseController {
         return okResult(sig);
     }
 
+    @Deprecated
     public Result giveV1() throws Exception {
         return giveConsentForVersion(1);
     }
@@ -55,11 +56,13 @@ public class ConsentController extends BaseController {
         return okResult("Emailed consent.");
     }
 
+    @Deprecated
     public Result suspendDataSharing() throws Exception {
         return changeSharingScope(SharingScope.NO_SHARING, 
                 "Data sharing with the study researchers has been suspended.");
-   }
+    }
 
+    @Deprecated
     public Result resumeDataSharing() throws Exception {
         return changeSharingScope(SharingScope.SPONSORS_AND_PARTNERS,
                 "Data sharing with the study researchers has been resumed.");
