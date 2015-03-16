@@ -96,28 +96,4 @@ public class StormpathAccountIteratorTest {
         return count;
     }
     
-    /*
-    @Override
-    public Iterator<Account> getAllAccounts() {
-        Iterator<Account> combinedIterator = null;
-        for (Study study : studyService.getStudies()) {
-            Iterator<Account> studyIterator = getStudyAccounts(study);
-            if (combinedIterator ==  null) {
-                combinedIterator = studyIterator;
-            } else {
-                combinedIterator = Iterators.concat(combinedIterator, studyIterator);    
-            }
-        }
-        return combinedIterator;
-    }
-
-    @Override
-    public Iterator<Account> getStudyAccounts(Study study) {
-        checkNotNull(study);
-        
-        Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-        return new StormpathAccountIterator(study, encryptors, directory.getAccounts().iterator());
-    }
-         */
-    
 }
