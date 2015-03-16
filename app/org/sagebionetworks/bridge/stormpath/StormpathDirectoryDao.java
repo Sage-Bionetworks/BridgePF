@@ -4,8 +4,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import java.util.List;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
@@ -16,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.stormpath.sdk.application.AccountStoreMapping;
+import com.stormpath.sdk.application.AccountStoreMappingCriteria;
+import com.stormpath.sdk.application.AccountStoreMappings;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directories;
@@ -32,6 +32,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
 
     private static Logger logger = LoggerFactory.getLogger(StormpathDirectoryDao.class);
 
+    private static final AccountStoreMappingCriteria asmCriteria = AccountStoreMappings.criteria().limitTo(100);
     private BridgeConfig config;
     private Client client;
 
@@ -144,12 +145,9 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private AccountStoreMapping getApplicationMapping(String href, Application app) {
         // This is tedious but I see no way to search for or make a reference to this 
         // mapping without iterating through the application's mappings.
-        AccountStoreMappingPageIterator iterator = new AccountStoreMappingPageIterator(app);
-        for (List<AccountStoreMapping> list : iterator) {
-            for (AccountStoreMapping mapping : list) {
-                if (mapping.getAccountStore().getHref().equals(href)) {
-                    return mapping;
-                }
+        for (AccountStoreMapping mapping : app.getAccountStoreMappings(asmCriteria)) {
+            if (mapping.getAccountStore().getHref().equals(href)) {
+                return mapping;
             }
         }
         return null;
