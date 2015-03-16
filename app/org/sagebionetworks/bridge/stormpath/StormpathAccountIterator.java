@@ -1,40 +1,41 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import java.util.Iterator;
+import java.util.SortedMap;
 
-import com.stormpath.sdk.account.Account;
-import com.stormpath.sdk.account.AccountCriteria;
-import com.stormpath.sdk.account.AccountList;
-import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.impl.account.DefaultAccountCriteria;
+import org.sagebionetworks.bridge.crypto.Encryptor;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.studies.Study;
 
-/**
- * Iterates through Stormpath accounts page by page.
- */
-public class StormpathAccountIterator extends PageIterator<Account> {
+public final class StormpathAccountIterator implements Iterator<Account> {
 
-    // 100 is the maximum allowed page size according to the Stormpath API docs.
-    // Eventually iterating through users will be pretty slow.
-    private static final int DEFAULT_PAGE_SIZE = 100;
+    private final Study study;
+    private final SortedMap<Integer,Encryptor> encryptors;
+    private final Iterator<com.stormpath.sdk.account.Account> iterator;
     
-    private final Application app;
-
-    public StormpathAccountIterator(Application app) {
-        this.app = app;
+    public StormpathAccountIterator(Study study, SortedMap<Integer,Encryptor> encryptors, Iterator<com.stormpath.sdk.account.Account> iterator) {
+        this.study = study;
+        this.encryptors = encryptors;
+        this.iterator = iterator;
+    }
+    
+    @Override
+    public boolean hasNext() {
+        return iterator.hasNext();
     }
 
     @Override
-    public int pageSize() {
-        return DEFAULT_PAGE_SIZE;
+    public Account next() {
+        com.stormpath.sdk.account.Account acct = iterator.next();
+        if (acct != null) {
+            return new StormpathAccount(study, acct, encryptors);
+        }
+        return null;
     }
 
     @Override
-    public Iterator<Account> nextPage() {
-        AccountCriteria criteria = new DefaultAccountCriteria();
-        criteria.offsetBy(pageStart());
-        criteria.limitTo(pageSize());
-        criteria.withCustomData();
-        AccountList list = app.getAccounts(criteria);
-        return list.iterator();
+    public void remove() {
+        iterator.remove();
     }
+
 }

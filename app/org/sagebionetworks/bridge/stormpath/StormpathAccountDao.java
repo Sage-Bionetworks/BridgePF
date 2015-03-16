@@ -109,7 +109,7 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(study);
         
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-        return new DirectoryAccountIterator(directory, study, encryptors);
+        return new StormpathAccountIterator(study, encryptors, directory.getAccounts().iterator());
     }
 
     @Override
