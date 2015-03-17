@@ -16,9 +16,9 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import play.libs.WS;
-import play.libs.WS.Response;
-import play.libs.WS.WSRequestHolder;
+import play.libs.ws.WS;
+import play.libs.ws.WSResponse;
+import play.libs.ws.WSRequestHolder;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -31,7 +31,7 @@ public class ApplicationControllerTest {
             public void run() {
                 WSRequestHolder holder = WS.url(TEST_BASE_URL + "/anything");
                 holder.setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix());
-                Response response = holder.options().get(TIMEOUT);
+                WSResponse response = holder.options().get(TIMEOUT);
                 assertEquals(200, response.getStatus());
                 assertEquals("https://assets.sagebridge.org", response.getHeader(ACCESS_CONTROL_ALLOW_ORIGIN));
                 assertEquals("HEAD, GET, OPTIONS, POST, PUT, DELETE", response.getHeader(ACCESS_CONTROL_ALLOW_METHODS));

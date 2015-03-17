@@ -22,9 +22,9 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import play.libs.WS;
-import play.libs.WS.Response;
-import play.libs.WS.WSRequestHolder;
+import play.libs.ws.WS;
+import play.libs.ws.WSResponse;
+import play.libs.ws.WSRequestHolder;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -58,7 +58,7 @@ public class ConsentControllerTest {
                 
                 // First, verify this header isn't on *every* endpoint
                 WSRequestHolder holder = WS.url(TEST_BASE_URL + "/api/v1/consent/email");
-                Response response = holder.post(node).get(TIMEOUT);
+                WSResponse response = holder.post(node).get(TIMEOUT);
                 String headerValue = response.getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
                 assertNull(headerValue);
                 

@@ -11,8 +11,8 @@ import play.api.http.HeaderNames
 import org.sagebionetworks.bridge.BridgeConstants
 
 object CorsFilter extends Filter {
-  def apply(nextFilter: (RequestHeader) => Future[SimpleResult])
-        (requestHeader: RequestHeader): Future[SimpleResult] = {
+  def apply(nextFilter: (RequestHeader) => Future[Result])
+        (requestHeader: RequestHeader): Future[Result] = {
     nextFilter(requestHeader) map {result => result.withHeaders(
         ACCESS_CONTROL_ALLOW_ORIGIN -> ("https://" + BridgeConstants.ASSETS_HOST),
         ACCESS_CONTROL_ALLOW_METHODS -> "HEAD, GET, OPTIONS, POST, PUT, DELETE",
