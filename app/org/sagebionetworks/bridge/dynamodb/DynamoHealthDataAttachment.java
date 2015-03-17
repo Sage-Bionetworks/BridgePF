@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachmentBuilder;
 
 /** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment}. */
-@DynamoThroughput(writeCapacity=50, readCapacity=25)
+@DynamoThroughput(readCapacity=50, writeCapacity=25)
 @DynamoDBTable(tableName = "HealthDataAttachment")
 public class DynamoHealthDataAttachment implements HealthDataAttachment {
     private String id;
