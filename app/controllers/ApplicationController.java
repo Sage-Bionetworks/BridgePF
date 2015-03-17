@@ -28,9 +28,9 @@ public class ApplicationController extends BaseController {
     }
 
     public Result preflight(String all) {
-        response().setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "https://" + ASSETS_HOST);
+        response().setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*");
         response().setHeader(ACCESS_CONTROL_ALLOW_METHODS, "HEAD, GET, OPTIONS, POST, PUT, DELETE");
-        response().setHeader(ACCESS_CONTROL_ALLOW_HEADERS, "*");
+        response().setHeader(ACCESS_CONTROL_ALLOW_HEADERS, "Content-Type");
         return ok();
     }
 }
