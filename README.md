@@ -16,7 +16,7 @@ Development
 2. Connect to the Vagrant box `vagrant ssh`.
 3. In the Vagrant box, go to the shared project folder `cd /vagrant`.
 4. Launch the Play console `activator`.
-5. Within Play console, run `test`.
+5. Within the Play console, run `test`.
 
 Deployment
 ------------------
