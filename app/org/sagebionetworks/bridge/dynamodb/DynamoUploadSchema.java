@@ -29,7 +29,7 @@ import org.sagebionetworks.bridge.validators.Validate;
  * The DynamoDB implementation of UploadSchema. This is a mutable class with getters and setters so that it can work
  * with the DynamoDB mapper.
  */
-@DynamoThroughput(writeCapacity=50, readCapacity=25)
+@DynamoThroughput(readCapacity=50, writeCapacity=25)
 @DynamoDBTable(tableName = "UploadSchema")
 public class DynamoUploadSchema implements UploadSchema {
     private List<UploadFieldDefinition> fieldDefList;

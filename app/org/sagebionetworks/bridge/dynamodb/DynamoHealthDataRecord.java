@@ -20,7 +20,7 @@ import com.fasterxml.jackson.datatype.joda.deser.LocalDateDeserializer;
 import org.joda.time.LocalDate;
 
 /** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataRecord}. */
-@DynamoThroughput(writeCapacity=50, readCapacity=50)
+@DynamoThroughput(readCapacity=50, writeCapacity=50)
 @DynamoDBTable(tableName = "HealthDataRecord3")
 public class DynamoHealthDataRecord implements HealthDataRecord {
     private Long createdOn;
