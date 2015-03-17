@@ -21,7 +21,7 @@ import play.api.mvc.Handler
 import play.api.mvc.RequestHeader
 import play.api.mvc.Results.BadRequest
 import play.api.mvc.Results.Redirect
-import play.api.mvc.SimpleResult
+import play.api.mvc.Result
 import play.api.mvc.WithFilters
 import play.filters.gzip.GzipFilter
 import play.libs.Json
@@ -53,7 +53,7 @@ object GlobalWithFilters extends WithFilters (
     return AppContext.getBean(controllerClass)
   }
 
-  override def onBadRequest(request: RequestHeader, error: String): Future[SimpleResult] = {
+  override def onBadRequest(request: RequestHeader, error: String): Future[Result] = {
     val page = views.html.defaultpages.badRequest(request, Json.toJson(new StatusMessage(error)).toString())
     val results = BadRequest(page)
     Future.successful(results)

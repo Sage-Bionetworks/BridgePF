@@ -41,9 +41,10 @@ import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import play.libs.WS;
-import play.libs.WS.Response;
-import play.libs.WS.WSRequestHolder;
+import play.libs.ws.WS;
+import play.libs.ws.WSCookie;
+import play.libs.ws.WSResponse;
+import play.libs.ws.WSRequestHolder;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -90,9 +91,9 @@ public class AuthenticationControllerTest {
                 node.put(PASSWORD, testUser.getPassword());
                 
                 WSRequestHolder holder = WS.url(TEST_BASE_URL + SIGN_IN_URL);
-                Response response = holder.post(node).get(TIMEOUT);
+                WSResponse response = holder.post(node).get(TIMEOUT);
 
-                WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+                WSCookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 
                 // All of a sudden, there's no cookie being set. I have no idea why.
                 assertNotNull("There's a cookie", cookie);
@@ -125,8 +126,8 @@ public class AuthenticationControllerTest {
                     node.put(PASSWORD, testUser.getPassword());
                     
                     WSRequestHolder holder = WS.url(TEST_BASE_URL + SIGN_IN_URL);
-                    Response response = holder.post(node).get(TIMEOUT);
-                    WS.Cookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+                    WSResponse response = holder.post(node).get(TIMEOUT);
+                    WSCookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 
                     // Now, try and access schedules in the wrong study (one with a plan), you do not get it.
                     holder = WS.url(TEST_BASE_URL + SCHEDULES_API);

@@ -16,7 +16,7 @@ public class LoggingInterceptor implements MethodInterceptor {
 
     @Override
     public Object invoke(MethodInvocation method) throws Throwable {
-        Result result = (Result)method.proceed();
+        final Result result = (Result)method.proceed();
         if (logger.isInfoEnabled()) {
             // Common Log Format for access logging, minus the first part which 
             // is already part of our standard logging output.
@@ -29,8 +29,7 @@ public class LoggingInterceptor implements MethodInterceptor {
             String requestId = header(request, "X-Request-Id", "-");
             String userAgent = header(request, "User-Agent", "-");
             
-            play.mvc.Results.Status statusObj = (play.mvc.Results.Status)result;
-            int status = statusObj.getWrappedSimpleResult().header().status();
+            int status = result.toScala().header().status();
             
             String output = String.format("%s [%s] \"%s %s %s\" %s %s", address, requestId, verb, path, version, status, userAgent);
             logger.info(output);

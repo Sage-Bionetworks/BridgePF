@@ -31,7 +31,7 @@ object GlobalWithFiltersSpec extends PlaySpecification {
         })
       val request = FakeRequest().withHeaders(ACCEPT_ENCODING -> "deflate, gzip, sdch")
       val result = jsonAction(request).run
-      header(CONTENT_ENCODING, result) must not beSome("gzip")
+      header(CONTENT_ENCODING, result) must beSome("gzip")
     }
   }
 
