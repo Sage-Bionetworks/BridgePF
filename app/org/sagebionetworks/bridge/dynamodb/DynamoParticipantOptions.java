@@ -15,6 +15,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Maps;
 
+@DynamoThroughput(readCapacity=50, writeCapacity=25)
 @DynamoDBTable(tableName = "ParticipantOptions")
 public class DynamoParticipantOptions { 
     
