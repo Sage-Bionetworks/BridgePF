@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -51,19 +50,27 @@ public class UserProfileServiceImplTest {
         userProfile.setFirstName("Test");
         userProfile.setLastName("Powers");
         userProfile.setPhone("123-456-7890");
+        userProfile.setAttribute("can_be_recontacted", "true");
+        
+        // You cannot reset a field through the attributes. These should do NOTHING.
+        userProfile.setAttribute("firstName", "NotTest");
+        userProfile.setAttribute("lastName", "NotPowers");
+        userProfile.setAttribute("phone", "Not123-456-7890");
+        userProfile.setAttribute("email", "NotEmail");
+        userProfile.setAttribute("username", "NotUsername");
 
         User updatedUser = profileService.updateProfile(testUser.getStudy(), testUser.getUser(), userProfile);
-        
         userProfile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
         
         assertEquals("Test", updatedUser.getFirstName());
         assertEquals("Powers", updatedUser.getLastName());
-        
         assertEquals("Test", userProfile.getFirstName());
         assertEquals("Powers", userProfile.getLastName());
         assertEquals(testUser.getEmail(), userProfile.getEmail());
         assertEquals(testUser.getUsername(), userProfile.getUsername());
         assertEquals("123-456-7890", userProfile.getPhone());
+        assertEquals("true", userProfile.getAttribute("can_be_recontacted"));
+        assertNull(userProfile.getAttribute("some_unknown_attribute"));
     }
     
     @Test(expected = BridgeServiceException.class)

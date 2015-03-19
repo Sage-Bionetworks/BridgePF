@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import java.util.Set;
+
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 public interface Study extends BridgeEntity, StudyIdentifier {
@@ -35,5 +37,7 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     
     public String getHostname();
     public void setHostname(String hostname);
-    
+
+    public Set<String> getUserProfileAttributes();
+    public void setUserProfileAttributes(Set<String> attributes);
 }

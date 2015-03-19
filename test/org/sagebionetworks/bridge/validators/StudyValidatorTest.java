@@ -6,6 +6,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 
 public class StudyValidatorTest {
+    
     @Test(expected = InvalidEntityException.class)
     public void cannotCreateIdentifierWithUppercase() {
         DynamoStudy study = new DynamoStudy();
@@ -81,6 +82,13 @@ public class StudyValidatorTest {
         study.setIdentifier("test3");
         study.setName("Belgium Waffles [Test]");
         study.setConsentNotificationEmail("test@test.com,asdf,test2@test.com");
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void cannotAddConflictingUserProfileAttribute() {
+        DynamoStudy study = new DynamoStudy();
+        study.getUserProfileAttributes().add("username");
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
     
