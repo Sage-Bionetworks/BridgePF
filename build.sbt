@@ -5,6 +5,7 @@ version := "0.1-SNAPSHOT"
 scalaVersion := "2.11.2"
 
 libraryDependencies ++= Seq(
+  cache,
   filters,
   "com.amazonaws" % "aws-java-sdk" % "1.9.23",
   "com.newrelic.agent.java" % "newrelic-agent" % "3.14.0",
