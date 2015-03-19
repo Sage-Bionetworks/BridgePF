@@ -239,7 +239,7 @@ public class JsonUtils {
     public static Set<String> asStringSet(JsonNode parent, String property) {
         Set<String> results = new HashSet<>();
         if (parent != null && parent.hasNonNull(property)) {
-            ArrayNode array = JsonUtils.asArrayNode(parent, property);
+            ArrayNode array = (ArrayNode)parent.get(property);
             for (int i = 0; i < array.size(); i++) {
                 results.add(array.get(i).asText());
             }
