@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   "org.apache.shiro" % "shiro-core" % "1.2.3",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.51",
   "org.bouncycastle" % "bcpkix-jdk15on" % "1.51",
-  "com.github.fge" % "json-schema-validator" % "2.2.6",
+  "javax.mail" % "mail" % "1.4.7",
   "commons-httpclient" % "commons-httpclient" % "3.1",
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC3.1",
   "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC3.1",
