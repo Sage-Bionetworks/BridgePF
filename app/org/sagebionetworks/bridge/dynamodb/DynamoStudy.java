@@ -17,7 +17,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -41,7 +40,7 @@ public class DynamoStudy implements Study {
     private static final String VERSION_PROPERTY = "version";
     private static final String SUPPORT_EMAIL_PROPERTY = "supportEmail";
     private static final String CONSENT_NOTIFICATION_EMAIL_PROPERTY = "consentNotificationEmail";
-    private static final String USER_PROFILE_ATTRIBUTES_PROPERTY = "profileAttributes";
+    private static final String USER_PROFILE_ATTRIBUTES_PROPERTY = "userProfileAttributes";
     
     private String name;
     private String identifier;
@@ -189,12 +188,10 @@ public class DynamoStudy implements Study {
         this.consentNotificationEmail = consentNotificationEmail;
     }
     @DynamoDBIgnore
-    @JsonProperty("profileAttributes")
     @Override
     public Set<String> getUserProfileAttributes() {
         return profileAttributes;
     }
-    @JsonProperty("profileAttributes")
     @Override
     public void setUserProfileAttributes(Set<String> profileAttributes) {
         this.profileAttributes = profileAttributes;

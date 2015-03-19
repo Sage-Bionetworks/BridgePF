@@ -3,9 +3,7 @@ package org.sagebionetworks.bridge.models;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;
