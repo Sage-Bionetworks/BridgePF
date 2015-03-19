@@ -11,19 +11,37 @@
     </script>
     <link href="//@assetsHost/mobile/styles/normalize.css" type="text/css" rel="stylesheet"/>
     <link href="//@assetsHost/mobile/styles/mobile.css" type="text/css" rel="stylesheet"/>
+    <style type="text/css">
+    	.message { margin: 10px 10px; }
+    	.message2 { margin: 10px 20px; text-align: left; }
+    </style>
 </head>
 <body>
-
+<script>
+var emails = {
+    api: "bridgeit@@sagebase.org",
+    asthma: "asthmamobilehealth@@mssm.edu",
+    breastcancer: "BCSapp@@sagebase.org",
+    cardiovascular: "myheartcounts-support@@stanford.edu",
+    diabetes: "GlucoSuccess.help@@partners.org",
+    parkinson: "PDapp@@sagebase.org"
+};
+</script>
 <div class="logo_box"><img id="logo" onerror="this.style.visibility='hidden'"/></div>
 <div class="message" id="m1">Verifying...</div>
 <div class="message" id="m2"></div>
+<div class="message2" id="m3"></div>
+<div class="message2" id="m4"></div>
 
 <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
 <script src="//@assetsHost/mobile/script.js"></script>
 <script>
 function success() {
+    return failure();
     $("#m1").text("Your email address has now been verified.");
-    $("#m2").text("You can now leave this web page and go back to the "+titles[host]+" application.");
+    $("#m2").html("<p>You can now leave this web page and go back to the "+titles[host]+" application.</p>");
+    $("#m3").html("<p>We are sending a copy of your consent to your email address. Please check your spam folder if you do not receive your consent. You may also try adding <code>"+emails[qd.study]+"</code> to your contacts before resending the consent.</p>");
+    $("#m4").html("<p>Yahoo users, Yahoo often fails to deliver these consent emails. You may wish to register again using another email address.</p>");
 }
 function failure() {
     $("#m1").text("Your email address could not be verified.");
@@ -51,6 +69,8 @@ try {
                 if (message === "Account not found.") {
                     $("#m1").text("It looks like your email address has already been verified.");
                     $("#m2").text("You can try using the "+titles[host]+" application at this point.");
+                    $("#m3").html("<p>We are sending a copy of your consent to your email address. Please check your spam folder if you do not receive your consent. You may also try adding <code>"+emails[qd.study]+"</code> to your contacts before resending the consent.</p>");
+                    $("#m4").html("<p>Yahoo users, Yahoo often fails to deliver these consent emails. You may wish to register again using another email address.</p>");
                 } else {
                     failure();
                 }
