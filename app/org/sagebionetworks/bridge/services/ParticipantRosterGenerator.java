@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import java.util.Collections;
+
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -48,6 +49,11 @@ public class ParticipantRosterGenerator implements Runnable {
                     p.setLastName(account.getLastName());
                     p.setEmail(account.getEmail());
                     p.setPhone(account.getPhone());
+                    for (String attribute : study.getUserProfileAttributes()) {
+                        String value = account.getAttribute(attribute);
+                        // Whether present or not, add an entry.
+                        p.put(attribute, value);
+                    }
                     participants.add(p);
                 }
             }

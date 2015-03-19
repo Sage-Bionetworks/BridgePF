@@ -45,7 +45,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     public UserProfile getProfile(Study study, String email) {
         Account account = accountDao.getAccount(study, email);
-        return profileFromAccount(account);
+        return profileFromAccount(study, account);
     }
     
     @Override
@@ -54,6 +54,10 @@ public class UserProfileServiceImpl implements UserProfileService {
         account.setFirstName(profile.getFirstName());
         account.setLastName(profile.getLastName());
         account.setPhone(profile.getPhone());
+        for(String attribute : study.getUserProfileAttributes()) {
+            String value = profile.getAttribute(attribute);
+            account.setAttribute(attribute, value);
+        }
         accountDao.updateAccount(study, account);
         user.setFirstName(profile.getFirstName());
         user.setLastName(profile.getLastName());
@@ -73,13 +77,16 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     @Override
-    public UserProfile profileFromAccount(Account account) {
+    public UserProfile profileFromAccount(Study study, Account account) {
         UserProfile profile = new UserProfile();
         profile.setFirstName(account.getFirstName());
         profile.setLastName(account.getLastName());
         profile.setUsername(account.getUsername());
         profile.setEmail(account.getEmail());
         profile.setPhone(account.getPhone());
+        for (String attribute : study.getUserProfileAttributes()) {
+            profile.setAttribute(attribute, account.getAttribute(attribute));
+        }
         return profile;
     }
 

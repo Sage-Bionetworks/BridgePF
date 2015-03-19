@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer;
 
-@SuppressWarnings("rawtypes")
+@SuppressWarnings({"rawtypes", "serial"})
 class LowercaseEnumSerializer extends StdScalarSerializer<Enum> {
 
     public LowercaseEnumSerializer() {

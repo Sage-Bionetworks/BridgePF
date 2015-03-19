@@ -1,6 +1,7 @@
 package controllers;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.models.User;
@@ -34,7 +35,7 @@ public class UserProfileController extends BaseController {
     public Result getUserProfile() throws Exception {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
-
+        
         ViewCacheKey<UserProfile> cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getId(), study.getIdentifier());
         String json = viewCache.getView(cacheKey, new Supplier<UserProfile>() {
             @Override public UserProfile get() {
@@ -49,7 +50,7 @@ public class UserProfileController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         User user = session.getUser();
-        UserProfile profile = UserProfile.fromJson(requestToJSON(request()));
+        UserProfile profile = UserProfile.fromJson(study.getUserProfileAttributes(), requestToJSON(request()));
         user = userProfileService.updateProfile(study, user, profile);
         updateSessionUser(session, user);
         

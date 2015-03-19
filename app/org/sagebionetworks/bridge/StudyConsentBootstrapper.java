@@ -10,13 +10,17 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("studyConsentBootstrapper")
 public class StudyConsentBootstrapper {
     
     @Autowired
     public StudyConsentBootstrapper(StudyService studyService, StudyConsentDao studyConsentDao) {
         try {
-            studyService.getStudy("api");
+            Study study = studyService.getStudy("api");
+            if (study.getUserProfileAttributes().isEmpty()) {
+                study.getUserProfileAttributes().add("can_be_recontacted");
+                studyService.updateStudy(study);
+            }
         } catch(EntityNotFoundException e) {
             Study study = new DynamoStudy();
             study.setName("Test Study");
@@ -26,6 +30,7 @@ public class StudyConsentBootstrapper {
             study.setResearcherRole("api_researcher");
             study.setConsentNotificationEmail("bridge-testing+consent@sagebridge.org");
             study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM");
+            study.getUserProfileAttributes().add("can_be_recontacted");
             studyService.createStudy(study);
         }
         for (Study study : studyService.getStudies()) {

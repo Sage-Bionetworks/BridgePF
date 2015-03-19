@@ -120,6 +120,7 @@ public class StormpathAccountDaoTest {
             account.setHealthId("abc");
             account.setUsername("tester");
             account.setConsentSignature(sig);
+            account.setAttribute("attribute_one", "value of attribute one");
             
             accountDao.updateAccount(study, account);
             Account newAccount = accountDao.getAccount(study, account.getEmail());
@@ -134,6 +135,8 @@ public class StormpathAccountDaoTest {
             assertEquals(account.getConsentSignature(), newAccount.getConsentSignature());
             assertEquals(1, newAccount.getRoles().size());
             assertEquals(account.getRoles().iterator().next(), newAccount.getRoles().iterator().next());
+            assertEquals("value of attribute one", account.getAttribute("attribute_one"));
+            assertNull(account.getAttribute("attribute_two"));
 
             // Just remove a group... this gets into verifying and avoiding saving the underlying
             // Stormpath account. 
