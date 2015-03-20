@@ -6,6 +6,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.ISODateTimeFormat;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,21 +45,15 @@ public class Metrics {
     }
 
     public String toJsonString() {
-        try {
-            return MAPPER.writeValueAsString(json);
-        } catch (JsonProcessingException e) {
-            final String msg = "Failed to write metrics.";
-            logger.error(msg, e);
-            return msg;
-        }
+        return json.toString();
     }
 
     public void start() {
-        json.put("start", DateTime.now(DateTimeZone.UTC).toString(ISODateTimeFormat.dateTime()));
+        json.put("start", DateUtils.getCurrentISODateTime());
     }
 
     public void end() {
-        json.put("end", DateTime.now(DateTimeZone.UTC).toString(ISODateTimeFormat.dateTime()));
+        json.put("end", DateUtils.getCurrentISODateTime());
     }
 
     public void setRequestId(String requestId) {
