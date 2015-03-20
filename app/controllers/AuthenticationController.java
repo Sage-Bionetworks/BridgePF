@@ -1,7 +1,7 @@
 package controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -17,21 +17,16 @@ import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import play.mvc.Result;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 @Controller("authenticationController")
 public class AuthenticationController extends BaseController {
 
-    private final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
-
     public Result signIn() throws Exception {
-        final long start = System.nanoTime();
         UserSession session = getSessionIfItExists();
         if (session != null) {
             setSessionToken(session.getSessionToken());
@@ -45,8 +40,6 @@ public class AuthenticationController extends BaseController {
             session = authenticationService.signIn(study, signIn);
             setSessionToken(session.getSessionToken());
             Result result = okResult(new UserSessionInfo(session));
-            final long end = System.nanoTime();
-            logger.info("sign in controller " + (end - start));
             return result;
         } catch(ConsentRequiredException e) {
             setSessionToken(e.getUserSession().getSessionToken());
