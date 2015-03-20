@@ -35,7 +35,7 @@ public class ApplicationControllerTest {
                 assertEquals(200, response.getStatus());
                 assertEquals("*", response.getHeader(ACCESS_CONTROL_ALLOW_ORIGIN));
                 assertEquals("HEAD, GET, OPTIONS, POST, PUT, DELETE", response.getHeader(ACCESS_CONTROL_ALLOW_METHODS));
-                assertEquals("Content-Type", response.getHeader(ACCESS_CONTROL_ALLOW_HEADERS));
+                assertEquals("Content-Type, User-Agent", response.getHeader(ACCESS_CONTROL_ALLOW_HEADERS));
             }
         });
     }
