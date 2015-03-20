@@ -3,9 +3,9 @@ package controllers;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
-import static play.mvc.Http.HeaderNames.ACCESS_CONTROL_ALLOW_HEADERS;
 import static play.mvc.Http.HeaderNames.ACCESS_CONTROL_ALLOW_METHODS;
 import static play.mvc.Http.HeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static play.mvc.Http.HeaderNames.ACCESS_CONTROL_ALLOW_HEADERS;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
 
@@ -33,9 +33,9 @@ public class ApplicationControllerTest {
                 holder.setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix());
                 WSResponse response = holder.options().get(TIMEOUT);
                 assertEquals(200, response.getStatus());
-                assertEquals("https://assets.sagebridge.org", response.getHeader(ACCESS_CONTROL_ALLOW_ORIGIN));
+                assertEquals("*", response.getHeader(ACCESS_CONTROL_ALLOW_ORIGIN));
                 assertEquals("HEAD, GET, OPTIONS, POST, PUT, DELETE", response.getHeader(ACCESS_CONTROL_ALLOW_METHODS));
-                assertEquals("*", response.getHeader(ACCESS_CONTROL_ALLOW_HEADERS));
+                assertEquals("Content-Type", response.getHeader(ACCESS_CONTROL_ALLOW_HEADERS));
             }
         });
     }
