@@ -1,5 +1,7 @@
 package filters
 
+import scala.concurrent.Future
+
 import play.api.http.HeaderNames._
 import play.api.http.Status._
 import play.api.mvc._
@@ -14,9 +16,9 @@ object CorsFilter extends Filter {
   def apply(nextFilter: (RequestHeader) => Future[Result])
         (requestHeader: RequestHeader): Future[Result] = {
     nextFilter(requestHeader) map {result => result.withHeaders(
-        ACCESS_CONTROL_ALLOW_ORIGIN -> ("https://" + BridgeConstants.ASSETS_HOST),
+        ACCESS_CONTROL_ALLOW_ORIGIN -> "*",
         ACCESS_CONTROL_ALLOW_METHODS -> "HEAD, GET, OPTIONS, POST, PUT, DELETE",
-        ACCESS_CONTROL_ALLOW_HEADERS -> "*")
+        ACCESS_CONTROL_ALLOW_HEADERS -> "Content-Type, User-Agent")
     }
   }
 }

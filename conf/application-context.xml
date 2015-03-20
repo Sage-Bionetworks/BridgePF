@@ -36,7 +36,7 @@
         <property name="proxyTargetClass" value="true"/>
         <property name="interceptorNames">
             <list>
-                <value>loggingInterceptor</value>
+                <value>metricsInterceptor</value>
                 <value>deprecationInterceptor</value>
                 <value>exceptionInterceptor</value>
             </list>
