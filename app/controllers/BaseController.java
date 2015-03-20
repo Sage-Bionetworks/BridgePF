@@ -1,18 +1,18 @@
 package controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.ADMIN_GROUP;
-
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_HOST_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_STUDY_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.METRICS_EXPIRE_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
-
-import javax.annotation.Nonnull;
 
 import java.util.Collection;
 
-import com.google.common.base.Strings;
+import javax.annotation.Nonnull;
 
+import models.Metrics;
+import models.RequestUtils;
 import models.StatusMessage;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http.Cookie;
@@ -41,18 +42,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Strings;
 
 public abstract class BaseController extends Controller {
 
     private static Logger logger = LoggerFactory.getLogger(BaseController.class);
-    
+
     private static ObjectMapper mapper = BridgeObjectMapper.get();
-    
+
     protected AuthenticationService authenticationService;
     protected StudyService studyService;
     protected CacheProvider cacheProvider;
     protected BridgeConfig bridgeConfig;
-    
+
     @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
@@ -67,31 +69,39 @@ public abstract class BaseController extends Controller {
     public void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
-    
+
     @Autowired
     public void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.bridgeConfig = bridgeConfig;
     }
-    
+
     /**
      * Returns a session. Will not throw exception if user is not authorized or has not consented to research.
      * @return session if it exists, or null otherwise.
      */
-    protected UserSession getSessionIfItExists() {
+    UserSession getSessionIfItExists() {
         String sessionToken = getSessionToken();
         if (sessionToken == null){
             return null;
         }
-        return authenticationService.getSession(sessionToken);
+        UserSession session = authenticationService.getSession(sessionToken);
+        Metrics metrics = getMetrics();
+	if (metrics != null) {
+            metrics.setSessionId(session.getInternalSessionToken());
+            User user = session.getUser();
+            if (user != null) {
+                metrics.setUserId(user.getId());
+            }
+            metrics.setStudy(session.getStudyIdentifier().getIdentifier());
+	}
+        return session;
     }
-    
+
     /**
      * Retrieve a user's session or throw an exception if the user is not authenticated. 
      * User does not have to give consent. 
-     * @return
-     * @throws Exception
      */
-    protected UserSession getAuthenticatedSession() throws NotAuthenticatedException {
+    UserSession getAuthenticatedSession() throws NotAuthenticatedException {
         String sessionToken = getSessionToken();
         if (sessionToken == null || sessionToken.isEmpty()) {
             throw new NotAuthenticatedException();
@@ -100,17 +110,20 @@ public abstract class BaseController extends Controller {
         if (session == null || !session.isAuthenticated()) {
             throw new NotAuthenticatedException();
         }
+        Metrics metrics = getMetrics();
+	if (metrics != null) {
+            metrics.setSessionId(session.getInternalSessionToken());
+            metrics.setUserId(session.getUser().getId());
+            metrics.setStudy(session.getStudyIdentifier().getIdentifier());
+	}
         return session;
     }
-    
+
     /**
      * Retrieve user's session using the Bridge-Session header or cookie, throwing an exception if the session doesn't
      * exist (user not authorized) or consent has not been given.
-     * 
-     * @return
-     * @throws Exception
      */
-    protected UserSession getAuthenticatedAndConsentedSession() throws NotAuthenticatedException, ConsentRequiredException {
+    UserSession getAuthenticatedAndConsentedSession() throws NotAuthenticatedException, ConsentRequiredException {
         UserSession session = getAuthenticatedSession();
         if (!session.getUser().isConsent()) {
             throw new ConsentRequiredException(session);
@@ -121,15 +134,15 @@ public abstract class BaseController extends Controller {
     /**
      * Checks if the user is in the "admin" group.
      */
-    protected UserSession getAuthenticatedAdminSession() throws NotAuthenticatedException, UnauthorizedException {
+    UserSession getAuthenticatedAdminSession() throws NotAuthenticatedException, UnauthorizedException {
         UserSession session = getAuthenticatedSession();
         if (!session.getUser().isInRole(ADMIN_GROUP)) {
             throw new UnauthorizedException();
         }
         return session;
     }
-    
-    protected UserSession getAuthenticatedResearcherSession() throws NotAuthenticatedException, UnauthorizedException {
+
+    UserSession getAuthenticatedResearcherSession() throws NotAuthenticatedException, UnauthorizedException {
         UserSession session = getAuthenticatedSession();
         User user = session.getUser();
         StudyIdentifier studyId = session.getStudyIdentifier();
@@ -138,8 +151,8 @@ public abstract class BaseController extends Controller {
         }
         return session;
     }
-    
-    protected UserSession getAuthenticatedResearcherOrAdminSession() throws NotAuthenticatedException, UnauthorizedException {
+
+    UserSession getAuthenticatedResearcherOrAdminSession() throws NotAuthenticatedException, UnauthorizedException {
         UserSession session = getAuthenticatedSession();
         User user = session.getUser();
         StudyIdentifier studyId = session.getStudyIdentifier();
@@ -148,25 +161,24 @@ public abstract class BaseController extends Controller {
         }
         return session;
     }
-    
-    protected void setSessionToken(String sessionToken) {
+
+    void setSessionToken(String sessionToken) {
         response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
 
-    protected void updateSessionUser(UserSession session, User user) {
+    void updateSessionUser(UserSession session, User user) {
         session.setUser(user);
         cacheProvider.setUserSession(session.getSessionToken(), session);
     }
-    
+
     /**
      * Retrieving the study (domain) from a header or the server host name has been deprecated in favor 
      * of including it directly in the JSON for calls where declaring the study is required. We continue 
      * to support the retrieval of the study from the header, host name, or other locations for backwards 
      * compatibility.
-     * @return
      */
     @Deprecated
-    protected String getStudyIdentifier() {
+    String getStudyIdentifier() {
         // Bridge-Study header: api
         String value = request().getHeader(BRIDGE_STUDY_HEADER);
         if (value != null) {
@@ -198,7 +210,7 @@ public abstract class BaseController extends Controller {
         logger.warn("Study identifier retrieved from Host header ("+value+")");
         return getIdentifierFromHostname(value);
     }
-    
+
     private String getIdentifierFromHostname(String hostname) {
         if (hostname.indexOf(":") > -1) {
             hostname = hostname.split(":")[0];
@@ -206,7 +218,7 @@ public abstract class BaseController extends Controller {
         String postfix = bridgeConfig.getStudyHostnamePostfix();
         return (postfix == null) ? "api" : hostname.split(postfix)[0];
     }
-    
+
     private String getSessionToken() {
         String[] session = request().headers().get(SESSION_TOKEN_HEADER);
         if (session == null || session.length == 0 || session[0].isEmpty()) {
@@ -219,15 +231,15 @@ public abstract class BaseController extends Controller {
         return session[0];
     }
 
-    protected Result okResult(String message) {
+    Result okResult(String message) {
         return ok(Json.toJson(new StatusMessage(message)));
     }
-    
-    protected Result okResult(Object obj) {
+
+    Result okResult(Object obj) {
         return ok(mapper.valueToTree(obj));
     }
-    
-    protected Result okResult(Collection<?> items) throws Exception {
+
+    Result okResult(Collection<?> items) throws Exception {
         ArrayNode itemsNode = mapper.createArrayNode();
         for (Object item : items) {
             JsonNode node = mapper.valueToTree(item);
@@ -241,11 +253,7 @@ public abstract class BaseController extends Controller {
         return ok(json);
     }
 
-    protected Result errorResult(String message) {
-        return internalServerError(Json.toJson(new StatusMessage(message)));
-    }
-    
-    protected Result createdResult(Object obj) throws Exception {
+    Result createdResult(Object obj) throws Exception {
         return created(mapper.valueToTree(obj));
     }
 
@@ -254,7 +262,7 @@ public abstract class BaseController extends Controller {
     // because the root object in the JSON is an array (which is legal). OTOH,
     // if asJson() works, you will get an error if you call asText(), as Play
     // seems to only allow processing the body content one time in a request.
-    protected JsonNode requestToJSON(Request request) {
+    JsonNode requestToJSON(Request request) {
         try {
             JsonNode node = request().body().asJson();
             if (node == null) {
@@ -276,7 +284,7 @@ public abstract class BaseController extends Controller {
      *         class to parse the JSON as
      * @return object parsed from JSON, will be non-null
      */
-    protected static @Nonnull <T> T parseJson(Request request, Class<? extends T> clazz) {
+    static @Nonnull <T> T parseJson(Request request, Class<? extends T> clazz) {
         try {
             // Calling request.body() twice is safe. (Has been confirmed using "play debug" and stepping through this
             // code in a debugger.)
@@ -295,7 +303,15 @@ public abstract class BaseController extends Controller {
         } catch (Throwable ex) {
             throw new InvalidEntityException("Error parsing JSON in request body");
         }
-
         throw new InvalidEntityException("Expected JSON in the request body is missing");
+    }
+
+    /**
+     * Retrieves the metrics object from the cache
+     */
+    Metrics getMetrics() {
+        final String requestId = RequestUtils.getRequestId(request());
+        final String cacheKey = Metrics.getCacheKey(requestId);
+        return (Metrics)Cache.get(cacheKey);
     }
 }
