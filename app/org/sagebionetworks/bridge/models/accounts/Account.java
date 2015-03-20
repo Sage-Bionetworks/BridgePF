@@ -24,6 +24,9 @@ public interface Account extends BridgeEntity {
     public String getPhone();
     public void setPhone(String phone);
     
+    public String getAttribute(String name);
+    public void setAttribute(String name, String value);
+
     public String getEmail();
     public void setEmail(String email);
     

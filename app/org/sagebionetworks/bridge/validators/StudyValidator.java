@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
@@ -33,6 +34,12 @@ public class StudyValidator implements Validator {
         }
         if (StringUtils.isBlank(study.getName())) {
             errors.rejectValue("name", "is null or blank");
+        }
+        for (String userProfileAttribute : study.getUserProfileAttributes()) {
+            if (UserProfile.FIXED_PROPERTIES.contains(userProfileAttribute)) {
+                String msg = String.format("'%s' conflicts with existing user profile property", userProfileAttribute);
+                errors.rejectValue("userProfileAttributes", msg);
+            }
         }
         validateEmails(errors, study.getSupportEmail(), "supportEmail");
         validateEmails(errors, study.getConsentNotificationEmail(), "consentNotificationEmail");

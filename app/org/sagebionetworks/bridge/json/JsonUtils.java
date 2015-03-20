@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.json;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 
 /**
@@ -227,27 +226,25 @@ public class JsonUtils {
     }
 
     public static List<String> asStringList(JsonNode parent, String property) {
+        List<String> results = new ArrayList<>();
         if (parent != null && parent.hasNonNull(property)) {
             ArrayNode array = JsonUtils.asArrayNode(parent, property);
-            List<String> results = Lists.newArrayListWithCapacity(array.size());
             for (int i=0; i < array.size(); i++) {
                 results.add(array.get(i).asText());
             }
-            return results;
         }
-        return Collections.emptyList();
+        return results;
     }
 
     public static Set<String> asStringSet(JsonNode parent, String property) {
+        Set<String> results = new HashSet<>();
         if (parent != null && parent.hasNonNull(property)) {
-            ArrayNode array = JsonUtils.asArrayNode(parent, property);
-            Set<String> results = Sets.newHashSetWithExpectedSize(array.size());
+            ArrayNode array = (ArrayNode)parent.get(property);
             for (int i = 0; i < array.size(); i++) {
                 results.add(array.get(i).asText());
             }
-            return results;
         }
-        return Collections.<String>emptySet();
+        return results;
     }
 
     public static ArrayNode asArrayNode(List<UIHint> list) {

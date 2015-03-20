@@ -1,29 +1,51 @@
 package org.sagebionetworks.bridge.models;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import org.sagebionetworks.bridge.json.JsonUtils;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Sets;
 
 public class UserProfile {
+    
+    public static final String FIRST_NAME_FIELD = "firstName";
+    public static final String LAST_NAME_FIELD = "lastName";
+    public static final String EMAIL_FIELD = "email";
+    public static final String USERNAME_FIELD = "username";
+    public static final String PHONE_FIELD = "phone";
+    
+    public static final Set<String> FIXED_PROPERTIES = Sets.newHashSet(FIRST_NAME_FIELD, LAST_NAME_FIELD,
+            PHONE_FIELD, EMAIL_FIELD, USERNAME_FIELD);
     
     private String firstName;
     private String lastName;
     private String username;
     private String phone;
     private String email;
-    
-    private static final String FIRST_NAME_FIELD = "firstName";
-    private static final String LAST_NAME_FIELD = "lastName";
-    private static final String PHONE_NAME_FIELD = "phone";
-    
+    private Map<String,String> attributes;
+
     public UserProfile() {
+        attributes = new HashMap<>();
     }
 
-    public static UserProfile fromJson(JsonNode node) {
+    public static UserProfile fromJson(Set<String> attributes, JsonNode node) {
         UserProfile profile = new UserProfile();
         profile.setFirstName(JsonUtils.asText(node, FIRST_NAME_FIELD));
         profile.setLastName(JsonUtils.asText(node, LAST_NAME_FIELD));
-        profile.setPhone(JsonUtils.asText(node, PHONE_NAME_FIELD));
+        profile.setPhone(JsonUtils.asText(node, PHONE_FIELD));
+        for (String attribute : attributes) {
+            String value = JsonUtils.asText(node, attribute);
+            if (value != null) {
+                profile.getAttributes().put(attribute, value);
+            }
+        }
         return profile;
     }
     
@@ -60,6 +82,29 @@ public class UserProfile {
     }
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+    public void removeAttribute(String name) {
+        if (isNotBlank(name)) {
+            attributes.remove(name);
+        }
+    }
+    public void setAttribute(String name, String value) {
+        if (isNotBlank(name) && isNotBlank(value) && !UserProfile.FIXED_PROPERTIES.contains(name)) {
+            attributes.put(name, value);
+        }
+    }
+    public String getAttribute(String name) {
+        return attributes.get(name);
+    }
+    // These next two cause Jackson to add attributes to the properties of the 
+    // UserProfile object (flattened... not as the value of an attributes property).
+    @JsonAnyGetter
+    Map<String,String> getAttributes() {
+        return attributes;
+    }
+    @JsonAnySetter
+    void setAttributes(Map<String,String> attributes) {
+        this.attributes = attributes;
     }
 
 }

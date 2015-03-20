@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
+import java.util.Set;
+
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -44,5 +46,8 @@ public class StudyInfo {
     }
     public String getConsentNotificationEmail() {
         return study.getConsentNotificationEmail();
+    }
+    public Set<String> getUserProfileAttributes() {
+        return study.getUserProfileAttributes();
     }
 }

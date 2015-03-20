@@ -1,8 +1,11 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -16,10 +19,12 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @DynamoDBTable(tableName = "Study")
+@BridgeTypeName("Study")
 public class DynamoStudy implements Study {
 
     // We need the unconfigured mapper for setData/getData.
@@ -35,6 +40,7 @@ public class DynamoStudy implements Study {
     private static final String VERSION_PROPERTY = "version";
     private static final String SUPPORT_EMAIL_PROPERTY = "supportEmail";
     private static final String CONSENT_NOTIFICATION_EMAIL_PROPERTY = "consentNotificationEmail";
+    private static final String USER_PROFILE_ATTRIBUTES_PROPERTY = "userProfileAttributes";
     
     private String name;
     private String identifier;
@@ -47,6 +53,7 @@ public class DynamoStudy implements Study {
     private int maxNumOfParticipants;
     private Long version;
     private StudyIdentifier studyIdentifier;
+    private Set<String> profileAttributes;
 
     public static DynamoStudy fromJson(JsonNode node) {
         DynamoStudy study = new DynamoStudy();
@@ -57,6 +64,7 @@ public class DynamoStudy implements Study {
         study.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
         study.setSupportEmail(JsonUtils.asText(node, SUPPORT_EMAIL_PROPERTY));
         study.setConsentNotificationEmail(JsonUtils.asText(node, CONSENT_NOTIFICATION_EMAIL_PROPERTY));
+        study.setUserProfileAttributes(JsonUtils.asStringSet(node, USER_PROFILE_ATTRIBUTES_PROPERTY));
         return study;
     }
 
@@ -69,6 +77,7 @@ public class DynamoStudy implements Study {
     }
     
     public DynamoStudy() {
+        profileAttributes = new HashSet<>();
     }
     
     @Override
@@ -178,6 +187,15 @@ public class DynamoStudy implements Study {
     public void setConsentNotificationEmail(String consentNotificationEmail) {
         this.consentNotificationEmail = consentNotificationEmail;
     }
+    @DynamoDBIgnore
+    @Override
+    public Set<String> getUserProfileAttributes() {
+        return profileAttributes;
+    }
+    @Override
+    public void setUserProfileAttributes(Set<String> profileAttributes) {
+        this.profileAttributes = profileAttributes;
+    }
     
     @DynamoDBAttribute
     @JsonIgnore
@@ -190,6 +208,13 @@ public class DynamoStudy implements Study {
         node.put(SUPPORT_EMAIL_PROPERTY, supportEmail);
         node.put(CONSENT_NOTIFICATION_EMAIL_PROPERTY, consentNotificationEmail);
         node.put(HOSTNAME_PROPERTY, hostname);
+        ArrayNode array = JsonNodeFactory.instance.arrayNode();
+        if (profileAttributes != null) {
+            for (String att : profileAttributes) {
+                array.add(att);
+            }
+        }
+        node.set(USER_PROFILE_ATTRIBUTES_PROPERTY, array);    
         return node.toString();
     }
     public void setData(String data) {
@@ -202,6 +227,7 @@ public class DynamoStudy implements Study {
             this.consentNotificationEmail = JsonUtils.asText(node, CONSENT_NOTIFICATION_EMAIL_PROPERTY);
             this.stormpathHref = JsonUtils.asText(node, STORMPATH_HREF_PROPERTY);
             this.hostname = JsonUtils.asText(node, HOSTNAME_PROPERTY);
+            this.profileAttributes = JsonUtils.asStringSet(node, USER_PROFILE_ATTRIBUTES_PROPERTY);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         }
@@ -221,6 +247,7 @@ public class DynamoStudy implements Study {
         result = prime * result + ((consentNotificationEmail == null) ? 0 : consentNotificationEmail.hashCode());
         result = prime * result + ((stormpathHref == null) ? 0 : stormpathHref.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
+        result = prime * result + ((profileAttributes == null) ? 0 : profileAttributes.hashCode());
         return result;
     }
 
@@ -277,6 +304,11 @@ public class DynamoStudy implements Study {
                 return false;
         } else if (!version.equals(other.version))
             return false;
+        if (profileAttributes == null) {
+            if (other.profileAttributes != null)
+                return false;
+        } else if (!profileAttributes.equals(other.profileAttributes))
+            return false;
         return true;
     }
 
@@ -285,6 +317,7 @@ public class DynamoStudy implements Study {
         return "DynamoStudy [name=" + name + ", identifier=" + identifier + ", researcherRole=" + researcherRole
                 + ", stormpathHref=" + stormpathHref + ", hostname=" + hostname + ", minAgeOfConsent="
                 + minAgeOfConsent + ", maxNumOfParticipants=" + maxNumOfParticipants + ", supportEmail=" + supportEmail
-                + ", consentNotificationEmail=" + consentNotificationEmail + ", version=" + version + "]";
+                + ", consentNotificationEmail=" + consentNotificationEmail + ", version=" + version
+                + ", userProfileAttributes=" + profileAttributes + "]";
     }
 }
