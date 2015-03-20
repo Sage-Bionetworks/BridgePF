@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.ADMIN_GROUP;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_HOST_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_STUDY_HEADER;
-import static org.sagebionetworks.bridge.BridgeConstants.METRICS_EXPIRE_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 
 import java.util.Collection;

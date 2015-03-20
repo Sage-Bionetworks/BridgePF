@@ -1,81 +1,40 @@
 package org.sagebionetworks.bridge.models.studies;
 
-public final class StudyParticipant {
-    
-    private String firstName;
-    private String lastName;
-    private String phone;
-    private String email;
+import java.util.HashMap;
+
+import org.sagebionetworks.bridge.models.UserProfile;
+
+@SuppressWarnings("serial")
+public final class StudyParticipant extends HashMap<String,String> {
+
+    public String getEmpty(Object key) {
+        String value = super.get(key);
+        return (value == null) ? "" : value;
+    }
     
     public String getFirstName() {
-        return firstName;
+        return getEmpty(UserProfile.FIRST_NAME_FIELD);
     }
     public void setFirstName(String firstName) {
-        this.firstName = firstName;
+        put(UserProfile.FIRST_NAME_FIELD, firstName);
     }
     public String getLastName() {
-        return lastName;
+        return getEmpty(UserProfile.LAST_NAME_FIELD);
     }
     public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-    public String getPhone() {
-        return phone;
-    }
-    public void setPhone(String phone) {
-        this.phone = phone;
+        put(UserProfile.LAST_NAME_FIELD, lastName);
     }
     public String getEmail() {
-        return email;
+        return getEmpty(UserProfile.EMAIL_FIELD);
     }
     public void setEmail(String email) {
-        this.email = email;
+        put(UserProfile.EMAIL_FIELD, email);
     }
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((email == null) ? 0 : email.hashCode());
-        result = prime * result + ((firstName == null) ? 0 : firstName.hashCode());
-        result = prime * result + ((lastName == null) ? 0 : lastName.hashCode());
-        result = prime * result + ((phone == null) ? 0 : phone.hashCode());
-        return result;
+    public String getPhone() {
+        return getEmpty(UserProfile.PHONE_FIELD);
     }
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        StudyParticipant other = (StudyParticipant) obj;
-        if (email == null) {
-            if (other.email != null)
-                return false;
-        } else if (!email.equals(other.email))
-            return false;
-        if (firstName == null) {
-            if (other.firstName != null)
-                return false;
-        } else if (!firstName.equals(other.firstName))
-            return false;
-        if (lastName == null) {
-            if (other.lastName != null)
-                return false;
-        } else if (!lastName.equals(other.lastName))
-            return false;
-        if (phone == null) {
-            if (other.phone != null)
-                return false;
-        } else if (!phone.equals(other.phone))
-            return false;
-        return true;
-    }
-    @Override
-    public String toString() {
-        return "StudyParticipant [firstName=" + firstName + ", lastName=" + lastName + ", phone=" + phone + ", email="
-                + email + "]";
+    public void setPhone(String phone) {
+        put(UserProfile.PHONE_FIELD, phone);
     }
 
 }

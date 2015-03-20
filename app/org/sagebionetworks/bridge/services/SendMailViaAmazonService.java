@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -153,11 +155,11 @@ public class SendMailViaAmazonService implements SendMailService {
     public void sendStudyParticipantsRoster(Study study, List<StudyParticipant> participants) {
         try {
             // Very simple for now, let's just see it work.
-            String body = createInlineParticipantRoster(participants);
+            String body = createInlineParticipantRoster(study, participants);
             MimeBodyPart bodyPart = new MimeBodyPart();
             bodyPart.setContent(body, MIME_TYPE_TEXT);
             
-            body = createParticipantCSV(participants);
+            body = createParticipantCSV(study, participants);
             MimeBodyPart csvPart = new MimeBodyPart();
             csvPart.setContentID(HEADER_CONTENT_ID_PARTICIPANTS_VALUE);
             csvPart.setHeader(HEADER_CONTENT_DISPOSITION, HEADER_CONTENT_DISPOSITION_PARTICIPANTS_VALUE);
@@ -174,7 +176,7 @@ public class SendMailViaAmazonService implements SendMailService {
         }
     }
 
-    String createInlineParticipantRoster(List<StudyParticipant> participants) {
+    String createInlineParticipantRoster(Study study, List<StudyParticipant> participants) {
         StringBuilder sb = new StringBuilder();
         if (participants.size() == 0) {
             sb.append("There are no users enrolled in this study.");
@@ -188,36 +190,42 @@ public class SendMailViaAmazonService implements SendMailService {
             StudyParticipant participant = participants.get(i);
             
             sb.append(NEWLINE).append(participant.getEmail()).append(" (");
-            if (participant.getFirstName() == null && participant.getLastName() == null) {
+            if (isEmpty(participant.getFirstName()) && isEmpty(participant.getLastName())) {
                 sb.append("No name given");
-            } else if (participant.getFirstName() != null && participant.getLastName() != null) {
+            } else if (isNotEmpty(participant.getFirstName()) && isNotEmpty(participant.getLastName())) {
                 sb.append(participant.getFirstName()).append(" ").append(participant.getLastName());
-            } else if (participant.getFirstName() != null) {
+            } else {
                 sb.append(participant.getFirstName());
-            } else if (participant.getLastName() != null) {
                 sb.append(participant.getLastName());
             }
             sb.append(")"+NEWLINE);
-            if (participant.getPhone() != null) {
-                sb.append("Phone: ").append(participant.getPhone()).append(NEWLINE);    
+            sb.append("Phone: ").append(participant.getPhone()).append(NEWLINE);    
+            for (String attribute : study.getUserProfileAttributes()) {
+                sb.append(StringUtils.capitalize(attribute)).append(": ").append(participant.getEmpty(attribute)).append(NEWLINE);
             }
         }
         return sb.toString();
     }
 
-    String createParticipantCSV(List<StudyParticipant> participants) {
+    String createParticipantCSV(Study study, List<StudyParticipant> participants) {
         StringBuilder sb = new StringBuilder();
-        append(sb, "Email", true);
+        append(sb, "Email", false);
         append(sb, "First Name", true);
         append(sb, "Last Name", true);
-        append(sb, "Phone", false);
+        append(sb, "Phone", true);
+        for (String attribute : study.getUserProfileAttributes()) {
+            append(sb, StringUtils.capitalize(attribute), true);
+        }
         sb.append(NEWLINE);
         for (int i=0; i < participants.size(); i++) {
             StudyParticipant participant = participants.get(i);
-            append(sb, participant.getEmail(), true);
+            append(sb, participant.getEmail(), false);
             append(sb, participant.getFirstName(), true);
             append(sb, participant.getLastName(), true);
-            append(sb, participant.getPhone(), false);
+            append(sb, participant.getPhone(), true);
+            for (String attribute : study.getUserProfileAttributes()) {
+                append(sb, participant.getEmpty(attribute), true);
+            }
             sb.append(NEWLINE);
         }
         return sb.toString();
@@ -287,13 +295,6 @@ public class SendMailViaAmazonService implements SendMailService {
         }
     }
 
-    private void append(StringBuilder sb, String value, boolean withComma) {
-        sb.append( (value != null) ? value.replaceAll("\t", " ") : "" );
-        if (withComma) {
-            sb.append(DELIMITER);
-        }
-    }
- 
     private byte[] createPdf(final String consentDoc) {
         try (ByteArrayBuilder byteArrayBuilder = new ByteArrayBuilder();) {
             ITextRenderer renderer = new ITextRenderer();
@@ -306,4 +307,12 @@ public class SendMailViaAmazonService implements SendMailService {
             throw new BridgeServiceException(e);
         }
     }
+    
+    private void append(StringBuilder sb, String value, boolean withComma) {
+        if (withComma) {
+            sb.append(DELIMITER);
+        }
+        sb.append(value.replaceAll("\t", " "));
+    }
+    
 }

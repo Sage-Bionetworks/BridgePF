@@ -13,6 +13,6 @@ public interface UserProfileService {
     
     public void sendStudyParticipantRoster(Study study);
     
-    public UserProfile profileFromAccount(Account account);
+    public UserProfile profileFromAccount(Study study, Account account);
     
 }

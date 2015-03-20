@@ -123,6 +123,14 @@ class StormpathAccount implements Account {
         encryptTo(PHONE_ATTRIBUTE, phone);
     }
     @Override
+    public String getAttribute(String name) {
+        return decryptFrom(name);
+    }
+    @Override
+    public void setAttribute(String name, String value) {
+        encryptTo(name, value);
+    }
+    @Override
     public String getEmail() {
         return acct.getEmail();
     }

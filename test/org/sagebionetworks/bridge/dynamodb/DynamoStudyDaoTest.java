@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -19,11 +20,14 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoStudyDaoTest {
 
+    private final Set<String> EXTRA_USER_PROFILE_ATTRIBUTES = Sets.newHashSet("can-publish", "can-recontact");
+    
     @Resource
     DynamoStudyDao studyDao;
     
@@ -57,7 +61,8 @@ public class DynamoStudyDaoTest {
         assertNotNull("Study hostname was set", study.getHostname());
         assertEquals("support@test.com", study.getSupportEmail());
         assertEquals("consent-notification@test.com", study.getConsentNotificationEmail());
-        
+        assertEquals(EXTRA_USER_PROFILE_ATTRIBUTES, study.getUserProfileAttributes());
+
         String identifier = study.getIdentifier();
         studyDao.deleteStudy(study.getIdentifier());
         try {
@@ -127,6 +132,7 @@ public class DynamoStudyDaoTest {
         study.setStormpathHref("http://test/local/");
         study.setSupportEmail("support@test.com");
         study.setConsentNotificationEmail("consent-notification@test.com");
+        study.setUserProfileAttributes(EXTRA_USER_PROFILE_ATTRIBUTES);
         return study;
     }
     
