@@ -58,24 +58,24 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
 
         String output = service.createInlineParticipantRoster(study, participants);
         
-        assertEquals("1", "There is 1 user enrolled in this study:\n\ntest@test.com (First Last)\nPhone: (123) 456-7890\nRecontact: true\n", output);
+        assertEquals("There is 1 user enrolled in this study:\n\ntest@test.com (First Last)\nPhone: (123) 456-7890\nRecontact: true\n", output);
         
         participant.setLastName(null);
         output = service.createInlineParticipantRoster(study, participants);
-        assertEquals("2", "There is 1 user enrolled in this study:\n\ntest@test.com (First)\nPhone: (123) 456-7890\nRecontact: true\n", output);
+        assertEquals("There is 1 user enrolled in this study:\n\ntest@test.com (First)\nPhone: (123) 456-7890\nRecontact: true\n", output);
         
         participant.setFirstName(null);
         participant.setLastName("Last");
         output = service.createInlineParticipantRoster(study, participants);
-        assertEquals("3", "There is 1 user enrolled in this study:\n\ntest@test.com (Last)\nPhone: (123) 456-7890\nRecontact: true\n", output);
+        assertEquals("There is 1 user enrolled in this study:\n\ntest@test.com (Last)\nPhone: (123) 456-7890\nRecontact: true\n", output);
         
         participant.setPhone(null);
         output = service.createInlineParticipantRoster(study, participants);
-        assertEquals("4", "There is 1 user enrolled in this study:\n\ntest@test.com (Last)\nPhone: \nRecontact: true\n", output);
+        assertEquals("There is 1 user enrolled in this study:\n\ntest@test.com (Last)\nPhone: \nRecontact: true\n", output);
         
         participant.remove("recontact");
         output = service.createInlineParticipantRoster(study, participants);
-        assertEquals("5", "There is 1 user enrolled in this study:\n\ntest@test.com (Last)\nPhone: \nRecontact: \n", output);
+        assertEquals("There is 1 user enrolled in this study:\n\ntest@test.com (Last)\nPhone: \nRecontact: \n", output);
         
         StudyParticipant numberTwo = new StudyParticipant();
         numberTwo.setEmail("test2@test.com");
@@ -100,31 +100,31 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         List<StudyParticipant> participants = Lists.newArrayList(participant);
 
         String output = service.createParticipantCSV(study, participants);
-        assertEquals("1", "Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\tFirst\tLast\t(123) 456-7890\t\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\tFirst\tLast\t(123) 456-7890\t\n", output);
         
         participant.setLastName(null);
         output = service.createParticipantCSV(study, participants);
-        assertEquals("2", "Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\tFirst\t\t(123) 456-7890\t\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\tFirst\t\t(123) 456-7890\t\n", output);
         
         participant.setFirstName(null);
         participant.setLastName("Last");
         output = service.createParticipantCSV(study, participants);
-        assertEquals("3", "Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\t\tLast\t(123) 456-7890\t\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\t\tLast\t(123) 456-7890\t\n", output);
         
         participant.setPhone(null);
         output = service.createParticipantCSV(study, participants);
-        assertEquals("4", "Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\n", output);
         
         StudyParticipant numberTwo = new StudyParticipant();
         numberTwo.setEmail("test2@test.com");
         
         participants.add(numberTwo);
         output = service.createParticipantCSV(study, participants);
-        assertEquals("5", "Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\ntest2@test.com\t\t\t\t\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\ntest2@test.com\t\t\t\t\n", output);
         
         participants.clear();
         output = service.createParticipantCSV(study, participants);
-        assertEquals("6", "Email\tFirst Name\tLast Name\tPhone\tRecontact\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tPhone\tRecontact\n", output);
     }
     
     @Test
