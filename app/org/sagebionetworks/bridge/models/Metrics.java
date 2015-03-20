@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.ISODateTimeFormat;
@@ -15,7 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * Request-scope metrics.
+ * Request-scoped metrics.
  */
 public class Metrics {
 
@@ -33,9 +32,15 @@ public class Metrics {
         return requestId + ":" + Metrics.class.getSimpleName();
     }
 
-    public Metrics() {
+    public Metrics(final String requestId) {
         json = MAPPER.createObjectNode();
         json.put("version", VERSION);
+        start();
+        setRequestId(requestId);
+    }
+
+    public String getCacheKey() {
+        return Metrics.getCacheKey(json.get("request_id").asText());
     }
 
     public String toJsonString() {
@@ -57,7 +62,8 @@ public class Metrics {
     }
 
     public void setRequestId(String requestId) {
-        put("request_id", requestId);
+        checkArgument(isNotBlank(requestId), "Request ID cannot be blank.");
+        json.put("request_id", requestId);
     }
 
     public void setRemoteAddress(String remoteAddress) {
@@ -105,7 +111,7 @@ public class Metrics {
     }
 
     private void put(final String field, final String value) {
-        if (StringUtils.isNotBlank(value)) {
+        if (isNotBlank(value)) {
             json.put(field, value);
         }
     }
