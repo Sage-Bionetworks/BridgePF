@@ -9,8 +9,9 @@ import static org.mockito.Mockito.when;
 import java.util.HashMap;
 import java.util.Map;
 
+import models.Metrics;
+
 import org.junit.Test;
-import org.sagebionetworks.bridge.models.Metrics;
 
 import play.mvc.Http;
 import play.mvc.Http.Context;

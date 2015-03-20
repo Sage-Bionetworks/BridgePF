@@ -1,9 +1,10 @@
-package org.sagebionetworks.bridge.models;
+package models;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import models.Metrics;
 
 import org.junit.Test;
 
@@ -45,6 +46,18 @@ public class MetricsTest {
         metrics.setStudy("api");
         json = metrics.toJsonString();
         assertTrue(json.contains("\"study\":\"api\""));
+    }
+
+    @Test
+    public void testSetSession() {
+        String requestId = "12345";
+        Metrics metrics = new Metrics(requestId);
+        metrics.setSessionId(null);
+        String json = metrics.toJsonString();
+        assertFalse(json.contains("\"session_id\":"));
+        metrics.setSessionId("d839fe");
+        json = metrics.toJsonString();
+        assertTrue(json.contains("\"session_id\":\"d839fe\""));
     }
 
     @Test(expected = IllegalArgumentException.class)

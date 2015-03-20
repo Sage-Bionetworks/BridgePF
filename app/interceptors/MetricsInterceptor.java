@@ -1,8 +1,13 @@
 package interceptors;
 
+import static org.apache.http.HttpHeaders.USER_AGENT;
+import static org.sagebionetworks.bridge.BridgeConstants.METRICS_EXPIRE_SECONDS;
+import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
+import models.Metrics;
+import models.RequestUtils;
+
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.sagebionetworks.bridge.models.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -17,13 +22,10 @@ public class MetricsInterceptor implements MethodInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsInterceptor.class);
 
-    /** Expires in the cache after 60 seconds. */
-    private static final int EXPIRE = 60;
-
     @Override
     public Object invoke(MethodInvocation method) throws Throwable {
         final Metrics metrics = initMetrics();
-        Cache.set(metrics.getCacheKey(), metrics, EXPIRE);
+        Cache.set(metrics.getCacheKey(), metrics, METRICS_EXPIRE_SECONDS);
         try {
             final Result result = (Result)method.proceed();
             metrics.setStatus(result.toScala().header().status());
@@ -37,21 +39,12 @@ public class MetricsInterceptor implements MethodInterceptor {
 
     Metrics initMetrics() {
         final Request request = Http.Context.current().request();
-        final Metrics metrics = new Metrics(getRequestId(request));
+        final Metrics metrics = new Metrics(RequestUtils.getRequestId(request));
         metrics.setMethod(request.method());
         metrics.setUri(request.path());
         metrics.setProtocol(request.version());
-        metrics.setRemoteAddress(header(request, "X-Forwarded-For", request.remoteAddress()));
-        metrics.setUserAgent(header(request, "User-Agent", null));
+        metrics.setRemoteAddress(RequestUtils.header(request, X_FORWARDED_FOR_HEADER, request.remoteAddress()));
+        metrics.setUserAgent(RequestUtils.header(request, USER_AGENT, null));
         return metrics;
-    }
-
-    private String getRequestId(final Request request) {
-        return header(request, "X-Request-Id", "-");
-    }
-
-    private String header(final Request request, final String name, final String defaultVal) {
-        String[] values = request.headers().get(name);
-        return (values != null && values.length > 0) ? values[0] : defaultVal;
     }
 }
