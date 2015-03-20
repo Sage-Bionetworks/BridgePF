@@ -7,9 +7,10 @@ public class UserSession {
     private boolean authenticated;
     private String environment;
     private String sessionToken;
+    private String internalSessionToken;
     private User user;
     private StudyIdentifier studyIdentifier;
-    
+
     public UserSession() {
         this.user = new User();
     }
@@ -19,6 +20,12 @@ public class UserSession {
     }
     public void setSessionToken(String sessionToken) {
         this.sessionToken = sessionToken;
+    }
+    public String getInternalSessionToken() {
+        return internalSessionToken;
+    }
+    public void setInternalSessionToken(String internalSessionToken) {
+        this.internalSessionToken = internalSessionToken;
     }
     public boolean isAuthenticated() {
         return authenticated;
@@ -43,11 +50,5 @@ public class UserSession {
     }
     public void setUser(User user) {
         this.user = user;
-    }
-
-    @Override
-    public String toString() {
-        return "UserSession [authenticated=" + authenticated + ", environment=" + environment + ", sessionToken="
-                + sessionToken + ", studyIdentifier=" + studyIdentifier + ", user=" + user + "]";
     }
 }
