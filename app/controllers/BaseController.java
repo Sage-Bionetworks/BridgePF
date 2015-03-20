@@ -103,6 +103,8 @@ public abstract class BaseController extends Controller {
         if (session == null || !session.isAuthenticated()) {
             throw new NotAuthenticatedException();
         }
+        Metrics metrics = getMetrics();
+        metrics.setSessionId(session.getSessionId());
         return session;
     }
 
