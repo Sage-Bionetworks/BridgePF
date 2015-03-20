@@ -3,29 +3,28 @@ Bridge (Sage Bionetworks)
 
 [![Build Status](https://travis-ci.org/Sage-Bionetworks/BridgePF.svg?branch=develop)](https://travis-ci.org/Sage-Bionetworks/BridgePF)
 
+Development
+------------------
+##### Prerequisites
+
+1. Install VirtualBox and Vagrant.
+2. Create the configuration file `~/.sbt/bridge.conf`.
+
+##### How to test locally
+
+1. Initialize Vagrant `vagrant up`.
+2. Connect to the Vagrant box `vagrant ssh`.
+3. In the Vagrant box, go to the shared project folder `cd /vagrant`.
+4. Launch the Play console `activator`.
+5. Within the Play console, run `test`.
+
+Deployment
+------------------
+[How to deploy, rollback, and patch](https://github.com/Sage-Bionetworks/BridgePF/wiki/Production%20Deployment)
+
 Documentation
--------------
-REST API - [see here](https://sagebionetworks.jira.com/wiki/display/BRIDGE/Bridge+REST+API)
-Java SDK - [see here](https://github.com/Sage-Bionetworks/BridgeJavaSDK)
-iOS SDK  - [see here](https://github.com/Sage-Bionetworks/Bridge-iOS-SDK)
-
-Installation
-------------
-
-Install Play Framework 2.2.x, node + npm, and bower (npm install -g bower). 
-
-To get up and running, first start play and generate the Eclipse meta 
-files:
-
-    play (starts play CLI)
-    eclipse (within the CLI)
-
-It should be possible to import the project as an existing project in Eclipse. 
-Play will handle Java-based dependencies. 
-
-Tests
------
-
-For Play tests (including integration tests using PhantomJS and Selenium), run
-
-    play test
+------------------
+* [REST API](https://sagebionetworks.jira.com/wiki/display/BRIDGE/Bridge+REST+API)
+* [Security Overview](https://sagebionetworks.jira.com/wiki/display/BRIDGE/Security+Overview)
+* [Java SDK](https://github.com/Sage-Bionetworks/BridgeJavaSDK)
+* [iOS SDK](https://github.com/Sage-Bionetworks/Bridge-iOS-SDK)
