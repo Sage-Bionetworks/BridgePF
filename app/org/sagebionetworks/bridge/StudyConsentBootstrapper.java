@@ -17,10 +17,6 @@ public class StudyConsentBootstrapper {
     public StudyConsentBootstrapper(StudyService studyService, StudyConsentDao studyConsentDao) {
         try {
             Study study = studyService.getStudy("api");
-            if (study.getUserProfileAttributes().isEmpty()) {
-                study.getUserProfileAttributes().add("can_be_recontacted");
-                studyService.updateStudy(study);
-            }
         } catch(EntityNotFoundException e) {
             Study study = new DynamoStudy();
             study.setName("Test Study");
