@@ -7,7 +7,10 @@ scalaVersion := "2.11.2"
 libraryDependencies ++= Seq(
   cache,
   filters,
-  "com.amazonaws" % "aws-java-sdk" % "1.9.23",
+  "com.amazonaws" % "aws-java-sdk-s3" % "1.9.23",
+  "com.amazonaws" % "aws-java-sdk-sts" % "1.9.23",
+  "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.9.23",
+  "com.amazonaws" % "aws-java-sdk-ses" % "1.9.23",
   "com.newrelic.agent.java" % "newrelic-agent" % "3.14.0",
   "org.springframework" % "spring-context" % "4.0.7.RELEASE",
   "org.apache.commons" % "commons-lang3" % "3.3.2",
