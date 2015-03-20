@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models;
+package models;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -96,6 +96,10 @@ public class Metrics {
 
     public void setUserId(String userId) {
         put("user_id", userId);
+    }
+
+    public void setSessionId(String sessionId) {
+        put("session_id", sessionId);
     }
 
     public void setSpToken(String spToken) {

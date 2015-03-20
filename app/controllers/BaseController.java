@@ -1,18 +1,18 @@
 package controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.ADMIN_GROUP;
-
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_HOST_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_STUDY_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.METRICS_EXPIRE_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
-
-import javax.annotation.Nonnull;
 
 import java.util.Collection;
 
-import com.google.common.base.Strings;
+import javax.annotation.Nonnull;
 
+import models.Metrics;
+import models.RequestUtils;
 import models.StatusMessage;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http.Cookie;
@@ -41,18 +42,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Strings;
 
 public abstract class BaseController extends Controller {
 
     private static Logger logger = LoggerFactory.getLogger(BaseController.class);
-    
+
     private static ObjectMapper mapper = BridgeObjectMapper.get();
-    
+
     protected AuthenticationService authenticationService;
     protected StudyService studyService;
     protected CacheProvider cacheProvider;
     protected BridgeConfig bridgeConfig;
-    
+
     @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
@@ -67,7 +69,7 @@ public abstract class BaseController extends Controller {
     public void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
-    
+
     @Autowired
     public void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.bridgeConfig = bridgeConfig;
@@ -82,7 +84,10 @@ public abstract class BaseController extends Controller {
         if (sessionToken == null){
             return null;
         }
-        return authenticationService.getSession(sessionToken);
+        UserSession session = authenticationService.getSession(sessionToken);
+        Metrics metrics = getMetrics();
+        metrics.setSessionId(session.getSessionId());
+        return session;
     }
 
     /**
@@ -286,5 +291,16 @@ public abstract class BaseController extends Controller {
             throw new InvalidEntityException("Error parsing JSON in request body");
         }
         throw new InvalidEntityException("Expected JSON in the request body is missing");
+    }
+
+    private Metrics getMetrics() {
+        final String requestId = RequestUtils.getRequestId(request());
+        final String cacheKey = Metrics.getCacheKey(requestId);
+        Metrics metrics = (Metrics)Cache.get(cacheKey);
+        if (metrics == null) {
+            metrics = new Metrics(requestId);
+            Cache.set(cacheKey, metrics, METRICS_EXPIRE_SECONDS);
+        }
+        return metrics;
     }
 }
