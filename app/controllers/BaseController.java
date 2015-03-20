@@ -86,12 +86,14 @@ public abstract class BaseController extends Controller {
         }
         UserSession session = authenticationService.getSession(sessionToken);
         Metrics metrics = getMetrics();
-        metrics.setSessionId(session.getSessionId());
-        User user = session.getUser();
-        if (user != null) {
-            metrics.setUserId(user.getId());
-        }
-        metrics.setStudy(session.getStudyIdentifier().getIdentifier());
+	if (metrics != null) {
+            metrics.setSessionId(session.getInternalSessionToken());
+            User user = session.getUser();
+            if (user != null) {
+                metrics.setUserId(user.getId());
+            }
+            metrics.setStudy(session.getStudyIdentifier().getIdentifier());
+	}
         return session;
     }
 
@@ -109,9 +111,11 @@ public abstract class BaseController extends Controller {
             throw new NotAuthenticatedException();
         }
         Metrics metrics = getMetrics();
-        metrics.setSessionId(session.getSessionId());
-        metrics.setUserId(session.getUser().getId());
-        metrics.setStudy(session.getStudyIdentifier().getIdentifier());
+	if (metrics != null) {
+            metrics.setSessionId(session.getInternalSessionToken());
+            metrics.setUserId(session.getUser().getId());
+            metrics.setStudy(session.getStudyIdentifier().getIdentifier());
+	}
         return session;
     }
 
@@ -302,14 +306,12 @@ public abstract class BaseController extends Controller {
         throw new InvalidEntityException("Expected JSON in the request body is missing");
     }
 
+    /**
+     * Retrieves the metrics object from the cache
+     */
     Metrics getMetrics() {
         final String requestId = RequestUtils.getRequestId(request());
         final String cacheKey = Metrics.getCacheKey(requestId);
-        Metrics metrics = (Metrics)Cache.get(cacheKey);
-        if (metrics == null) {
-            metrics = new Metrics(requestId);
-            Cache.set(cacheKey, metrics, METRICS_EXPIRE_SECONDS);
-        }
-        return metrics;
+        return (Metrics)Cache.get(cacheKey);
     }
 }

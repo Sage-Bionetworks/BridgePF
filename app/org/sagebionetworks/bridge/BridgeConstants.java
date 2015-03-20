@@ -14,11 +14,10 @@ public class BridgeConstants {
 
     public static final String BRIDGE_HOST_HEADER = "Bridge-Host";
 
+    /** Used by Heroku to pass in the request ID */
     public static final String X_REQUEST_ID_HEADER = "X-Request-Id";
 
     public static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
-
-    public static final String USER_AGENT_HEADER = "User-Agent";
 
     public static final String CUSTOM_DATA_HEALTH_CODE_SUFFIX = "_code";
 

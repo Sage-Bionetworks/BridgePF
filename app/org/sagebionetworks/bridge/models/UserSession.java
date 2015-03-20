@@ -7,7 +7,7 @@ public class UserSession {
     private boolean authenticated;
     private String environment;
     private String sessionToken;
-    private String sessionId;
+    private String internalSessionToken;
     private User user;
     private StudyIdentifier studyIdentifier;
 
@@ -21,11 +21,11 @@ public class UserSession {
     public void setSessionToken(String sessionToken) {
         this.sessionToken = sessionToken;
     }
-    public String getSessionId() {
-        return sessionId;
+    public String getInternalSessionToken() {
+        return internalSessionToken;
     }
-    public void setSessionId(String sessionId) {
-        this.sessionId = sessionId;
+    public void setInternalSessionToken(String internalSessionToken) {
+        this.internalSessionToken = internalSessionToken;
     }
     public boolean isAuthenticated() {
         return authenticated;
