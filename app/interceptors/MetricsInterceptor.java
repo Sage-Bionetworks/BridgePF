@@ -22,31 +22,36 @@ public class MetricsInterceptor implements MethodInterceptor {
 
     @Override
     public Object invoke(MethodInvocation method) throws Throwable {
-        final Request request = Http.Context.current().request();
-        final Metrics metrics = new Metrics();
-        metrics.start();
-        final String requestId = header(request, "X-Request-Id", null);
-        metrics.setRequestId(requestId);
-        metrics.setMethod(request.method());
-        metrics.setUri(request.path());
-        metrics.setProtocol(request.version());
-        metrics.setRemoteAddress(header(request, "X-Forwarded-For", request.remoteAddress()));
-        metrics.setUserAgent(header(request, "User-Agent", null));
-        final String cacheKey = Metrics.getCacheKey(requestId);
-        Cache.set(cacheKey, metrics, EXPIRE);
+        final Metrics metrics = initMetrics();
+        Cache.set(metrics.getCacheKey(), metrics, EXPIRE);
         try {
             final Result result = (Result)method.proceed();
             metrics.setStatus(result.toScala().header().status());
             return result;
         } finally {
-            Cache.remove(cacheKey);
+            Cache.remove(metrics.getCacheKey());
             metrics.end();
             logger.info(metrics.toJsonString());
         }
     }
 
-    private String header(Http.Request request, String name, String defaultValue) {
+    Metrics initMetrics() {
+        final Request request = Http.Context.current().request();
+        final Metrics metrics = new Metrics(getRequestId(request));
+        metrics.setMethod(request.method());
+        metrics.setUri(request.path());
+        metrics.setProtocol(request.version());
+        metrics.setRemoteAddress(header(request, "X-Forwarded-For", request.remoteAddress()));
+        metrics.setUserAgent(header(request, "User-Agent", null));
+        return metrics;
+    }
+
+    private String getRequestId(final Request request) {
+        return header(request, "X-Request-Id", "-");
+    }
+
+    private String header(final Request request, final String name, final String defaultVal) {
         String[] values = request.headers().get(name);
-        return (values != null && values.length > 0) ? values[0] : defaultValue;
+        return (values != null && values.length > 0) ? values[0] : defaultVal;
     }
 }
