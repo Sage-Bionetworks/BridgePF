@@ -59,11 +59,11 @@ public class UserProfileServiceImplTest {
         profile.setAttribute("email", "NotEmail");
         profile.setAttribute("username", "NotUsername");
 
-        User updatedUser = profileService.updateProfile(testUser.getStudy(), testUser.getUser(), profile);
+        profileService.updateProfile(testUser.getStudy(), testUser.getUser(), profile);
         profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
         
-        assertEquals("First name is persisted", "Test", updatedUser.getFirstName());
-        assertEquals("Last name is persisted", "Powers", updatedUser.getLastName());
+        assertEquals("First name is persisted", "Test", profile.getFirstName());
+        assertEquals("Last name is persisted", "Powers", profile.getLastName());
         assertEquals("Email is persisted", testUser.getEmail(), profile.getEmail());
         assertEquals("Username is persisted", testUser.getUsername(), profile.getUsername());
         assertEquals("Phone is persisted", "123-456-7890", profile.getPhone());
