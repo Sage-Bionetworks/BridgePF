@@ -46,60 +46,58 @@ public class UserProfileServiceImplTest {
     
     @Test
     public void canUpdateUserProfile() {
-        UserProfile userProfile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
-        userProfile.setFirstName("Test");
-        userProfile.setLastName("Powers");
-        userProfile.setPhone("123-456-7890");
-        userProfile.setAttribute("can_be_recontacted", "true");
+        UserProfile profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
+        profile.setFirstName("Test");
+        profile.setLastName("Powers");
+        profile.setPhone("123-456-7890");
+        profile.setAttribute("can_be_recontacted", "true");
         
         // You cannot reset a field through the attributes. These should do NOTHING.
-        userProfile.setAttribute("firstName", "NotTest");
-        userProfile.setAttribute("lastName", "NotPowers");
-        userProfile.setAttribute("phone", "Not123-456-7890");
-        userProfile.setAttribute("email", "NotEmail");
-        userProfile.setAttribute("username", "NotUsername");
+        profile.setAttribute("firstName", "NotTest");
+        profile.setAttribute("lastName", "NotPowers");
+        profile.setAttribute("phone", "Not123-456-7890");
+        profile.setAttribute("email", "NotEmail");
+        profile.setAttribute("username", "NotUsername");
 
-        User updatedUser = profileService.updateProfile(testUser.getStudy(), testUser.getUser(), userProfile);
-        userProfile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
+        User updatedUser = profileService.updateProfile(testUser.getStudy(), testUser.getUser(), profile);
+        profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
         
-        assertEquals("Test", updatedUser.getFirstName());
-        assertEquals("Powers", updatedUser.getLastName());
-        assertEquals("Test", userProfile.getFirstName());
-        assertEquals("Powers", userProfile.getLastName());
-        assertEquals(testUser.getEmail(), userProfile.getEmail());
-        assertEquals(testUser.getUsername(), userProfile.getUsername());
-        assertEquals("123-456-7890", userProfile.getPhone());
-        assertEquals("true", userProfile.getAttribute("can_be_recontacted"));
-        assertNull(userProfile.getAttribute("some_unknown_attribute"));
+        assertEquals("First name is persisted", "Test", updatedUser.getFirstName());
+        assertEquals("Last name is persisted", "Powers", updatedUser.getLastName());
+        assertEquals("Email is persisted", testUser.getEmail(), profile.getEmail());
+        assertEquals("Username is persisted", testUser.getUsername(), profile.getUsername());
+        assertEquals("Phone is persisted", "123-456-7890", profile.getPhone());
+        assertEquals("Attribute is persisted", "true", profile.getAttribute("can_be_recontacted"));
+        assertNull("Unknown attribute is null", profile.getAttribute("some_unknown_attribute"));
     }
-    
+
     @Test(expected = BridgeServiceException.class)
     public void getErrorIfNoConsentEmailSet() {
         testUser.getStudy().setConsentNotificationEmail(null);
         profileService.sendStudyParticipantRoster(testUser.getStudy());
     }
-    
+
     @Test
     public void cannotBreakProfileWithBadFirstLastName() {
-        UserProfile userProfile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
-        userProfile.setFirstName("");
-        userProfile.setLastName(null);
-        profileService.updateProfile(testUser.getStudy(), testUser.getUser(), userProfile);
-        
-        userProfile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
-        assertNull(userProfile.getFirstName());
-        assertNull(userProfile.getLastName());
+        UserProfile profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
+        profile.setFirstName("");
+        profile.setLastName(null);
+        profileService.updateProfile(testUser.getStudy(), testUser.getUser(), profile);
+
+        profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
+        assertNull(profile.getFirstName());
+        assertNull(profile.getLastName());
     }
-    
+
     @Test
     public void canRetrieveStudyParticipants() {
         // Do not send email when this service is called.
         ExecutorService service = mock(ExecutorService.class);
         profileService.setExecutorService(service);
-        
+
         // All we an really do here is verify no error is thrown.
         profileService.sendStudyParticipantRoster(testUser.getStudy());
-        
+
         verify(service).submit(any(Runnable.class));
     }
 }
