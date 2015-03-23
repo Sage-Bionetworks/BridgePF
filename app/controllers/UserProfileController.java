@@ -36,7 +36,6 @@ public class UserProfileController extends BaseController {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        /*
         ViewCacheKey<UserProfile> cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getId(), study.getIdentifier());
         String json = viewCache.getView(cacheKey, new Supplier<UserProfile>() {
             @Override public UserProfile get() {
@@ -44,9 +43,6 @@ public class UserProfileController extends BaseController {
             }
         });
         return ok(json).as(BridgeConstants.JSON_MIME_TYPE);
-        */
-        UserProfile profile = userProfileService.getProfile(study, session.getUser().getEmail());
-        return okResult(profile);
     }
 
     public Result updateUserProfile() throws Exception {
@@ -58,8 +54,8 @@ public class UserProfileController extends BaseController {
         user = userProfileService.updateProfile(study, user, profile);
         updateSessionUser(session, user);
         
-        //ViewCacheKey<UserProfile> cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getId(), study.getIdentifier());
-        //viewCache.removeView(cacheKey);
+        ViewCacheKey<UserProfile> cacheKey = viewCache.getCacheKey(UserProfile.class, session.getUser().getId(), study.getIdentifier());
+        viewCache.removeView(cacheKey);
         
         return okResult("Profile updated.");
     }

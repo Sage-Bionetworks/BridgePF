@@ -17,7 +17,6 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -78,7 +77,7 @@ public class UserProfileServiceImplTest {
     }
 
     @Test
-    public void cannotBreakProfileWithBadFirstLastName() {
+    public void cannotBreakProfileWithBadNameValues() {
         UserProfile profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
         profile.setFirstName("");
         profile.setLastName(null);
