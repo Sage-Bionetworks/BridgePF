@@ -17,7 +17,7 @@ public class ViewCache {
     
     private static final Logger logger = LoggerFactory.getLogger(ViewCache.class);
     
-    public class ViewCacheKey<T> {
+    public final class ViewCacheKey<T> {
         private final String key;
         public ViewCacheKey(String key) {
             this.key = key;
