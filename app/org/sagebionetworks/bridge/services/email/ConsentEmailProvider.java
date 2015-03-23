@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services.email;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -113,7 +114,10 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     private String createSignedDocument() {
         final String filePath = studyConsent.getPath();
         final FileSystemResource resource = new FileSystemResource(filePath);
-        try (InputStreamReader isr = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);) {
+        
+        try (InputStream is = resource.getInputStream();
+             InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);) {
+            
             String consentAgreementHTML = CharStreams.toString(isr);
             String signingDate = FORMATTER.print(DateUtils.getCurrentMillisFromEpoch());
             String html = consentAgreementHTML.replace("@@name@@", consentSignature.getName());
