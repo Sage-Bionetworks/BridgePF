@@ -27,6 +27,7 @@ public class ConsentControllerMockedTest {
         StudyIdentifier studyId = mock(StudyIdentifier.class);
         when(session.getStudyIdentifier()).thenReturn(studyId);
         User user = mock(User.class);
+        when(user.getHealthCode()).thenReturn("healthCode");
         when(session.getUser()).thenReturn(user);
 
         ConsentController controller = spy(new ConsentController());
@@ -47,7 +48,7 @@ public class ConsentControllerMockedTest {
 
         controller.changeSharingScope(SharingScope.NO_SHARING, "message");
         InOrder inOrder = inOrder(optionsService, consentService);
-        inOrder.verify(optionsService).setOption(study, null, SharingScope.NO_SHARING);
+        inOrder.verify(optionsService).setOption(study, "healthCode", SharingScope.NO_SHARING);
         inOrder.verify(consentService).emailConsentAgreement(study, user);
     }
 }
