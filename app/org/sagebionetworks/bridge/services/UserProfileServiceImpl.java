@@ -72,6 +72,9 @@ public class UserProfileServiceImpl implements UserProfileService {
         if (isBlank(study.getConsentNotificationEmail())) {
             throw new BridgeServiceException("Participant roster cannot be sent because no consent notification contact email exists for this study.");
         }
+        // Getting the study accounts would be the time-consuming activity here, but in fact only the 
+        // first page is retrieved and the rest is retrieved in the new thread during page iteration.
+        // Not clear though from this code, and could change with the implementation.
         Iterator<Account> accounts = accountDao.getStudyAccounts(study);
         executorService.submit(new ParticipantRosterGenerator(accounts, study, sendMailService));
     }
