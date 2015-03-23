@@ -43,7 +43,7 @@ public class ConsentController extends BaseController {
     public Result giveV1() throws Exception {
         return giveConsentForVersion(1);
     }
-    
+
     public Result giveV2() throws Exception {
         return giveConsentForVersion(2);
     }
@@ -51,7 +51,6 @@ public class ConsentController extends BaseController {
     public Result emailCopy() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
-        
         consentService.emailConsentAgreement(study, session.getUser());
         return okResult("Emailed consent.");
     }
@@ -72,14 +71,15 @@ public class ConsentController extends BaseController {
         SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), 2);
         return changeSharingScope(sharing.getSharingScope(), "Data sharing has been changed.");
     }
-    
-    private Result changeSharingScope(SharingScope sharingScope, String message) {
+
+    Result changeSharingScope(SharingScope sharingScope, String message) {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final User user = session.getUser();
-        
-        optionsService.setOption(session.getStudyIdentifier(), user.getHealthCode(), sharingScope);
+        final Study study = studyService.getStudy(session.getStudyIdentifier());
+        optionsService.setOption(study, user.getHealthCode(), sharingScope);
         user.setSharingScope(sharingScope);
         updateSessionUser(session, user);
+        consentService.emailConsentAgreement(study, user);
         return okResult(message);
     }
 
