@@ -1,7 +1,7 @@
-package org.sagebionetworks.bridge.services;
+package org.sagebionetworks.bridge.services.email;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.eq;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,6 +17,9 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
+import org.sagebionetworks.bridge.services.ParticipantRosterGenerator;
+import org.sagebionetworks.bridge.services.SendMailService;
+import org.sagebionetworks.bridge.services.email.ParticipantRosterProvider;
 
 import com.google.common.collect.Lists;
 
@@ -26,7 +29,7 @@ public class ParticipantRosterGeneratorTest {
     
     private ParticipantRosterGenerator generator;
     
-    private ArgumentCaptor<List<StudyParticipant>> argument;
+    private ArgumentCaptor<ParticipantRosterProvider> argument;
     
     private SendMailService sendMailService;
     
@@ -34,10 +37,11 @@ public class ParticipantRosterGeneratorTest {
     public void before() {
         study = new DynamoStudy();
         study.setIdentifier("test");
+        study.getUserProfileAttributes().add("can_recontact");
         
         @SuppressWarnings("unchecked")
-        Class<List<StudyParticipant>> listClass = (Class<List<StudyParticipant>>)(Class<?>)List.class;
-        argument = ArgumentCaptor.forClass(listClass);
+        Class<ParticipantRosterProvider> providerClass = (Class<ParticipantRosterProvider>)(Class<?>)List.class;
+        argument = ArgumentCaptor.forClass(providerClass);
         
         sendMailService = mock(SendMailService.class);
         
@@ -54,9 +58,11 @@ public class ParticipantRosterGeneratorTest {
     @Test
     public void generatorCreatesRoster() {
         generator.run();
-        verify(sendMailService).sendStudyParticipantsRoster(eq(study), argument.capture());
+        verify(sendMailService).sendEmail(argument.capture());
         
-        List<StudyParticipant> participants = argument.getValue();
+        ParticipantRosterProvider provider = argument.getValue();
+        
+        List<StudyParticipant> participants = provider.getParticipants();
         
         // They're all there
         assertEquals(2, participants.size());
@@ -71,6 +77,8 @@ public class ParticipantRosterGeneratorTest {
         assertEquals("Last", p.getLastName());
         assertEquals("first.last@test.com", p.getEmail());
         assertEquals("(206) 111-2222", p.getPhone());
+        assertEquals("true", p.get("can_recontact"));
+        assertNull(p.get("another_attribute"));
     }
 
     private Account createAccount(String email, String firstName, String lastName, String phone, boolean hasConsented) {
@@ -79,6 +87,7 @@ public class ParticipantRosterGeneratorTest {
         when(account.getFirstName()).thenReturn(firstName);
         when(account.getLastName()).thenReturn(lastName);
         when(account.getPhone()).thenReturn(phone);
+        when(account.getAttribute("can_recontact")).thenReturn("true");
         if (hasConsented) {
             ConsentSignature sig = ConsentSignature.create(firstName + " " + lastName, "1970-02-02", null, null);
             when(account.getConsentSignature()).thenReturn(sig);

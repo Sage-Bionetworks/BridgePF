@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import java.util.Collections;
-
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -9,6 +8,8 @@ import java.util.List;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
+import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
+import org.sagebionetworks.bridge.services.email.ParticipantRosterProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +59,9 @@ public class ParticipantRosterGenerator implements Runnable {
                 }
             }
             Collections.sort(participants, STUDY_PARTICIPANT_COMPARATOR);
-            sendMailService.sendStudyParticipantsRoster(study, participants);
+            
+            MimeTypeEmailProvider roster = new ParticipantRosterProvider(study, participants);
+            sendMailService.sendEmail(roster);
         } catch(Exception e) {
             logger.error(e.getMessage(), e);
         }
