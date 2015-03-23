@@ -1,11 +1,10 @@
 package models;
 
 import static com.google.common.base.Preconditions.checkArgument;
+
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -14,8 +13,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * Request-scoped metrics.
  */
 public class Metrics {
-
-    private static final Logger logger = LoggerFactory.getLogger(Metrics.class);
 
     /** The version of the metrics schema. */
     private static final int VERSION = 1;
