@@ -20,6 +20,8 @@ import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
+import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
+import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,7 +110,8 @@ public class ConsentServiceImpl implements ConsentService {
         optionsService.setOption(study, user.getHealthCode(), sharingScope);
 
         if (sendEmail) {
-            sendMailService.sendConsentAgreement(user, consentSignature, studyConsent, sharingScope);
+            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, user, consentSignature, studyConsent, sharingScope);
+            sendMailService.sendEmail(consentEmail);
         }
 
         user.setConsent(true);
@@ -170,7 +173,8 @@ public class ConsentServiceImpl implements ConsentService {
         }
 
         final SharingScope sharingScope = optionsService.getSharingScope(user.getHealthCode());
-        sendMailService.sendConsentAgreement(user, consentSignature, consent, sharingScope);
+        MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, user, consentSignature, consent, sharingScope); 
+        sendMailService.sendEmail(consentEmail);
     }
 
     @Override
