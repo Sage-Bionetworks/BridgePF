@@ -34,10 +34,10 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
     }
     
     @Override
-    public MimeTypeEmail getEmail(String defaultFromEmail) throws MessagingException {
+    public MimeTypeEmail getEmail(String defaultSender) throws MessagingException {
         MimeTypeEmailBuilder builder = new MimeTypeEmailBuilder();
         
-        builder.withSender(defaultFromEmail).withRecipient(study.getConsentNotificationEmail());
+        builder.withSender(defaultSender).withRecipient(study.getConsentNotificationEmail());
         
         String subject = String.format(PARTICIPANTS_EMAIL_SUBJECT, study.getName());
         builder.withSubject(subject);

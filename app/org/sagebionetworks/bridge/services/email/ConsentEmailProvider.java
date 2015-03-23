@@ -58,14 +58,14 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     }
 
     @Override
-    public MimeTypeEmail getEmail(String defaultFromEmail) throws MessagingException {
+    public MimeTypeEmail getEmail(String defaultSender) throws MessagingException {
         MimeTypeEmailBuilder builder = new MimeTypeEmailBuilder();
         
         String subject = String.format(CONSENT_EMAIL_SUBJECT, study.getName());
         builder.withSubject(subject);
         
         final String sendFromEmail = isNotBlank(study.getSupportEmail()) ?
-                String.format("%s <%s>", study.getName(), study.getSupportEmail()) : defaultFromEmail;
+                String.format("%s <%s>", study.getName(), study.getSupportEmail()) : defaultSender;
         builder.withSender(sendFromEmail);
         
         builder.withRecipient(user.getEmail());
