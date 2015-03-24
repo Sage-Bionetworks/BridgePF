@@ -1,6 +1,7 @@
 package interceptors;
 
 import models.ExceptionMessage;
+import models.RequestUtils;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -17,8 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import play.libs.Json;
+import play.mvc.Http;
 import play.mvc.Result;
 import play.mvc.Results;
+import play.mvc.Http.Request;
 
 @Component("exceptionInterceptor")
 public class ExceptionInterceptor implements MethodInterceptor {
@@ -43,16 +46,19 @@ public class ExceptionInterceptor implements MethodInterceptor {
     }
 
     private void logException(final Throwable throwable) {
+        final Request request = Http.Context.current().request();
+        final String requestId = RequestUtils.getRequestId(request);
+        final String msg = "request: " + requestId + " " + throwable.getMessage();
         final boolean noStackTrace = throwable.getClass().isAnnotationPresent(NoStackTraceException.class);
         if (noStackTrace && config.isLocal()) {
-            logger.debug(throwable.getMessage(), throwable);
+            logger.debug(msg, throwable);
             return;
         }
         if (noStackTrace) {
-            logger.debug(throwable.getMessage());
+            logger.debug(msg);
             return;
         }
-        logger.error(throwable.getMessage(), throwable);
+        logger.error(msg, throwable);
     }
 
     private Result getResult(final Throwable throwable) {
