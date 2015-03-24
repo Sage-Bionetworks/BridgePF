@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.exceptions;
 import org.apache.commons.httpclient.HttpStatus;
 import org.sagebionetworks.bridge.models.UserSession;
 
+@NoStackTraceException
 public class ConsentRequiredException extends BridgeServiceException {
     private static final long serialVersionUID = 3057825897435345541L;
     

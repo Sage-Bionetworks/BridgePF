@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.exceptions;
 
 import org.apache.http.HttpStatus;
 
+@NoStackTraceException
 public class BadRequestException extends BridgeServiceException {
     private static final long serialVersionUID = -3629409697634918499L;
 
