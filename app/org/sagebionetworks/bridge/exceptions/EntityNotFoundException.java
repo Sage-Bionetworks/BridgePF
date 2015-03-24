@@ -4,6 +4,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+@NoStackTraceException
 public class EntityNotFoundException extends BridgeServiceException {
     private static final long serialVersionUID = 884196407390465867L;
     
