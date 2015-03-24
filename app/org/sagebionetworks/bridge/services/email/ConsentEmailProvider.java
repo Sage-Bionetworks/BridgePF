@@ -123,15 +123,8 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
             String html = consentAgreementHTML.replace("@@name@@", consentSignature.getName());
             html = html.replace("@@signing.date@@", signingDate);
             html = html.replace("@@email@@", user.getEmail());
-            String sharing = "";
-            if (SharingScope.ALL_QUALIFIED_RESEARCHERS == sharingScope) {
-                sharing = "All Qualified Researchers";
-            } else if (SharingScope.SPONSORS_AND_PARTNERS == sharingScope) {
-                sharing = "Sponsors and Partners Only";
-            } else if (SharingScope.NO_SHARING == sharingScope) {
-                sharing = "Not Sharing";
-            }
-            html = html.replace("@@sharing@@", sharing);
+            String sharingLabel = (sharingScope == null) ? "" : sharingScope.getLabel();
+            html = html.replace("@@sharing@@", sharingLabel);
             return html;
         } catch (IOException e) {
             throw new BridgeServiceException(e);

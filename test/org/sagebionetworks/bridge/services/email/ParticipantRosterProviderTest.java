@@ -7,7 +7,9 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 
@@ -38,35 +40,18 @@ public class ParticipantRosterProviderTest {
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
         String output = provider.createInlineParticipantRoster();
         
-        assertEquals("There is 1 user enrolled in this study:\n\ntest@test.com (First Last)\nPhone: (123) 456-7890\nRecontact: true\n", output);
-        
-        participant.setLastName(null);
-        output = provider.createInlineParticipantRoster();
-        assertEquals("There is 1 user enrolled in this study:\n\ntest@test.com (First)\nPhone: (123) 456-7890\nRecontact: true\n", output);
-        
-        participant.setFirstName(null);
-        participant.setLastName("Last");
-        output = provider.createInlineParticipantRoster();
-        assertEquals("There is 1 user enrolled in this study:\n\ntest@test.com (Last)\nPhone: (123) 456-7890\nRecontact: true\n", output);
-        
-        participant.setPhone(null);
-        output = provider.createInlineParticipantRoster();
-        assertEquals("There is 1 user enrolled in this study:\n\ntest@test.com (Last)\nPhone: \nRecontact: true\n", output);
-        
-        participant.remove("recontact");
-        output = provider.createInlineParticipantRoster();
-        assertEquals("There is 1 user enrolled in this study:\n\ntest@test.com (Last)\nPhone: \nRecontact: \n", output);
+        assertEquals("There is 1 user enrolled in this study. Please see the attached TSV file.\n", output);
         
         StudyParticipant numberTwo = new StudyParticipant();
         numberTwo.setEmail("test2@test.com");
         
         participants.add(numberTwo);
         output = provider.createInlineParticipantRoster();
-        assertTrue(output.contains("There are 2 users enrolled in this study:"));
+        assertTrue(output.contains("There are 2 users enrolled in this study. Please see the attached TSV file.\n"));
         
         participants.clear();
         output = provider.createInlineParticipantRoster();
-        assertTrue(output.contains("There are no users enrolled in this study."));
+        assertTrue(output.contains("There are no users enrolled in this study.\n"));
     }
     
     @Test
@@ -75,37 +60,45 @@ public class ParticipantRosterProviderTest {
         participant.setFirstName("First");
         participant.setLastName("Last");
         participant.setEmail("test@test.com");
-        // Tab snuck into this string should be converted to a space
-        participant.setPhone("(123)\t456-7890");
+        participant.setPhone("(123)\t456-7890"); // Tab snuck into this string should be converted to a space
+        participant.put("recontact", "false");
+        participant.put(UserProfile.SHARING_SCOPE_FIELD, SharingScope.NO_SHARING.name());
         List<StudyParticipant> participants = Lists.newArrayList(participant);
 
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
         String output = provider.createParticipantTSV();
-        assertEquals("Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\tFirst\tLast\t(123) 456-7890\t\n", output);
+        
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\tFirst\tLast\tNot Sharing\t(123) 456-7890\tfalse\n", output);
         
         participant.setLastName(null);
         output = provider.createParticipantTSV();
-        assertEquals("Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\tFirst\t\t(123) 456-7890\t\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\tFirst\t\tNot Sharing\t(123) 456-7890\tfalse\n", output);
         
         participant.setFirstName(null);
         participant.setLastName("Last");
         output = provider.createParticipantTSV();
-        assertEquals("Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\t\tLast\t(123) 456-7890\t\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\t\tLast\tNot Sharing\t(123) 456-7890\tfalse\n", output);
         
         participant.setPhone(null);
         output = provider.createParticipantTSV();
-        assertEquals("Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\t\tLast\tNot Sharing\t\tfalse\n", output);
+        
+        participant.remove(UserProfile.SHARING_SCOPE_FIELD);
+        output = provider.createParticipantTSV();
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\tfalse\n", output);
         
         StudyParticipant numberTwo = new StudyParticipant();
         numberTwo.setEmail("test2@test.com");
         
+        // This is pretty broken, but you should still get output. 
         participants.add(numberTwo);
         output = provider.createParticipantTSV();
-        assertEquals("Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\ntest2@test.com\t\t\t\t\n", output);
+        
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\tfalse\ntest2@test.com\t\t\t\t\t\n", output);
         
         participants.clear();
         output = provider.createParticipantTSV();
-        assertEquals("Email\tFirst Name\tLast Name\tPhone\tRecontact\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\n", output);
     }
 
 }

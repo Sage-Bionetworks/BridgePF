@@ -2,11 +2,12 @@ package org.sagebionetworks.bridge.models.studies;
 
 import java.util.HashMap;
 
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.UserProfile;
 
 @SuppressWarnings("serial")
 public final class StudyParticipant extends HashMap<String,String> {
-
+    
     public String getEmpty(Object key) {
         String value = super.get(key);
         return (value == null) ? "" : value;
@@ -35,6 +36,15 @@ public final class StudyParticipant extends HashMap<String,String> {
     }
     public void setPhone(String phone) {
         put(UserProfile.PHONE_FIELD, phone);
+    }
+    public SharingScope getSharingScope() {
+        String name = get(UserProfile.SHARING_SCOPE_FIELD);
+        return (name == null) ? null : SharingScope.valueOf(name);
+    }
+    public void setSharingScope(SharingScope scope) {
+        if (scope != null) {
+            put(UserProfile.SHARING_SCOPE_FIELD, scope.name());    
+        }
     }
 
 }
