@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.exceptions;
 
 import org.apache.commons.httpclient.HttpStatus;
 
+@NoStackTraceException
 public class UnauthorizedException extends BridgeServiceException {
     private static final long serialVersionUID = 6356584260615251518L;
 
