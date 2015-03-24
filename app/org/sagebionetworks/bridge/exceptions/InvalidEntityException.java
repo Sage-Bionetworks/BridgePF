@@ -7,6 +7,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+@NoStackTraceException
 @SuppressWarnings("serial")
 public class InvalidEntityException extends BridgeServiceException {
 
