@@ -7,33 +7,24 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NoStackTraceException;
 import org.sagebionetworks.bridge.models.UserSessionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import play.libs.Json;
 import play.mvc.Http;
+import play.mvc.Http.Request;
 import play.mvc.Result;
 import play.mvc.Results;
-import play.mvc.Http.Request;
 
 @Component("exceptionInterceptor")
 public class ExceptionInterceptor implements MethodInterceptor {
 
-    private static final Logger logger = LoggerFactory.getLogger(ExceptionInterceptor.class);
-
-    private BridgeConfig config;
-
-    @Autowired
-    public void setBridgeConfig(BridgeConfig config) {
-        this.config = config;
-    }
+    private final Logger logger = LoggerFactory.getLogger(ExceptionInterceptor.class);
 
     @Override
     public Object invoke(MethodInvocation method) throws Throwable {
@@ -49,13 +40,8 @@ public class ExceptionInterceptor implements MethodInterceptor {
         final Request request = Http.Context.current().request();
         final String requestId = RequestUtils.getRequestId(request);
         final String msg = "request: " + requestId + " " + throwable.getMessage();
-        final boolean noStackTrace = throwable.getClass().isAnnotationPresent(NoStackTraceException.class);
-        if (noStackTrace && config.isLocal()) {
-            logger.debug(msg, throwable);
-            return;
-        }
-        if (noStackTrace) {
-            logger.debug(msg);
+        if (throwable.getClass().isAnnotationPresent(NoStackTraceException.class)) {
+            logger.info(msg);
             return;
         }
         logger.error(msg, throwable);
