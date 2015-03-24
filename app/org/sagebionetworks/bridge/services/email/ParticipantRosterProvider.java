@@ -1,14 +1,12 @@
 package org.sagebionetworks.bridge.services.email;
 
-import static org.apache.commons.lang3.StringUtils.isEmpty;
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-
 import java.util.List;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeBodyPart;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 
@@ -65,29 +63,11 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
         if (participants.size() == 0) {
             sb.append("There are no users enrolled in this study.");
         } else if (participants.size() == 1) {
-            sb.append("There is 1 user enrolled in this study:");
+            sb.append("There is 1 user enrolled in this study. Please see the attached TSV file.");
         } else {
-            sb.append("There are "+participants.size()+" users enrolled in this study:");
+            sb.append("There are "+participants.size()+" users enrolled in this study. Please see the attached TSV file.");
         }
         sb.append(NEWLINE);
-        for (int i=0; i < participants.size(); i++) {
-            StudyParticipant participant = participants.get(i);
-            
-            sb.append(NEWLINE).append(participant.getEmail()).append(" (");
-            if (isEmpty(participant.getFirstName()) && isEmpty(participant.getLastName())) {
-                sb.append("No name given");
-            } else if (isNotEmpty(participant.getFirstName()) && isNotEmpty(participant.getLastName())) {
-                sb.append(participant.getFirstName()).append(" ").append(participant.getLastName());
-            } else {
-                sb.append(participant.getFirstName());
-                sb.append(participant.getLastName());
-            }
-            sb.append(")"+NEWLINE);
-            sb.append("Phone: ").append(participant.getPhone()).append(NEWLINE);    
-            for (String attribute : study.getUserProfileAttributes()) {
-                sb.append(StringUtils.capitalize(attribute)).append(": ").append(participant.getEmpty(attribute)).append(NEWLINE);
-            }
-        }
         return sb.toString();
     }
 
@@ -96,6 +76,7 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
         append(sb, "Email", false);
         append(sb, "First Name", true);
         append(sb, "Last Name", true);
+        append(sb, "Sharing Scope", true);
         append(sb, "Phone", true);
         for (String attribute : study.getUserProfileAttributes()) {
             append(sb, StringUtils.capitalize(attribute), true);
@@ -106,6 +87,8 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
             append(sb, participant.getEmail(), false);
             append(sb, participant.getFirstName(), true);
             append(sb, participant.getLastName(), true);
+            SharingScope scope = participant.getSharingScope();
+            append(sb, (scope == null) ? "" : scope.getLabel(), true);
             append(sb, participant.getPhone(), true);
             for (String attribute : study.getUserProfileAttributes()) {
                 append(sb, participant.getEmpty(attribute), true);
