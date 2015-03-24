@@ -12,6 +12,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
@@ -54,6 +55,7 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         participant.setLastName("Last");
         participant.setEmail("test@test.com");
         participant.setPhone("(123) 456-7890");
+        participant.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         List<StudyParticipant> participants = Lists.newArrayList(participant);
         
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
@@ -70,13 +72,13 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         assertEquals("Correct recipient", "consent-notification@test.com", toList.get(0));
 
         // Validate message content. MIME message must be ASCII
-        String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.US_ASCII);
+        String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.UTF_8);
         
         assertTrue("Has right subject", 
             rawMessage.contains("Study participants for Test Study"));
-        assertTrue("CSV has the participant", 
-            rawMessage.contains("Email\tFirst Name\tLast Name\tPhone\tRecontact\ntest@test.com\tFirst\tLast\t(123) 456-7890"));
+        assertTrue("TSV has the participant", 
+            rawMessage.contains("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\tFirst\tLast\tAll Qualified Researchers\t(123) 456-7890"));
         assertTrue("text description of participant", 
-            rawMessage.contains("There is 1 user enrolled in this study:\n\ntest@test.com (First Last)\nPhone: (123) 456-7890"));
+            rawMessage.contains("There is 1 user enrolled in this study. Please see the attached TSV file.\n"));
     }
 }
