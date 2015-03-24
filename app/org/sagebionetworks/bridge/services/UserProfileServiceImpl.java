@@ -26,6 +26,10 @@ public class UserProfileServiceImpl implements UserProfileService {
     private ExecutorService executorService;
     
     private SendMailService sendMailService;
+    
+    private HealthCodeService healthCodeService;
+    
+    private ParticipantOptionsService optionsService;
 
     @Autowired
     public void setAccountDao(AccountDao accountDao) {
@@ -40,6 +44,16 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Autowired
     public void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
+    }
+    
+    @Autowired
+    public void setHealthCodeSerivce(HealthCodeService healthCodeService) {
+        this.healthCodeService = healthCodeService;
+    }
+    
+    @Autowired
+    public void setParticipantOptionsService(ParticipantOptionsService optionsService) {
+        this.optionsService = optionsService;
     }
 
     @Override
@@ -76,7 +90,8 @@ public class UserProfileServiceImpl implements UserProfileService {
         // first page is retrieved and the rest is retrieved in the new thread during page iteration.
         // Not clear though from this code, and could change with the implementation.
         Iterator<Account> accounts = accountDao.getStudyAccounts(study);
-        executorService.submit(new ParticipantRosterGenerator(accounts, study, sendMailService));
+        executorService.submit(new ParticipantRosterGenerator(
+            accounts, study, sendMailService, healthCodeService, optionsService));
     }
 
     @Override
