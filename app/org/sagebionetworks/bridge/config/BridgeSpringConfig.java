@@ -124,6 +124,12 @@ public class BridgeSpringConfig {
         return Executors.newFixedThreadPool(bridgeConfig.getPropertyAsInt("async.worker.thread.count"));
     }
 
+    @Bean(name = "supportEmail")
+    @Resource(name = "bridgeConfig")
+    public String supportEmail(BridgeConfig bridgeConfig) {
+        return bridgeConfig.getProperty("support.email");
+    }
+
     @Bean(name = "cmsEncryptorCache")
     @Autowired
     public LoadingCache<String, CmsEncryptor> cmsEncryptorCache(CmsEncryptorCacheLoader cacheLoader) {
