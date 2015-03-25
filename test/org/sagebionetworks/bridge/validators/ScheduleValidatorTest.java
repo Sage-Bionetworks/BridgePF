@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -54,8 +55,8 @@ public class ScheduleValidatorTest {
         schedule.addActivity(new Activity("Label", "task:AAA"));
         schedule.setScheduleType(ScheduleType.ONCE);
 
-        long startsOn = DateUtils.getCurrentMillisFromEpoch();
-        long endsOn = startsOn + 1; // should be at least an hour later
+        DateTime startsOn = DateUtils.getCurrentDateTime();
+        DateTime endsOn = startsOn.plusHours(1); // should be at least an hour later
         
         schedule.setStartsOn(startsOn);
         schedule.setEndsOn(endsOn);
@@ -66,7 +67,7 @@ public class ScheduleValidatorTest {
             assertEquals("endsOn should be at least an hour after the startsOn time", e.getErrors().get("endsOn").get(0));
         }
         
-        endsOn = startsOn + (60 * 60 * 1000);
+        endsOn = startsOn.plusHours(1);
         schedule.setEndsOn(endsOn);
         Validate.entityThrowingException(validator, schedule);
     }
@@ -75,8 +76,10 @@ public class ScheduleValidatorTest {
     public void surveyRelativePathIsInvalid() {
         schedule.addActivity(new Activity("Label", "/api/v1/surveys/AAA/published"));
         schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.setStartsOn(DateUtils.getCurrentMillisFromEpoch());
-        schedule.setEndsOn(schedule.getStartsOn() + 1);
+        
+        DateTime now = DateUtils.getCurrentDateTime();
+        schedule.setStartsOn(now);
+        schedule.setEndsOn(now.plusHours(1));
 
         try {
             Validate.entityThrowingException(validator, schedule);

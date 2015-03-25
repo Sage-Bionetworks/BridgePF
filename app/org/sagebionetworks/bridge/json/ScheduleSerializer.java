@@ -31,14 +31,14 @@ public class ScheduleSerializer extends JsonSerializer<Schedule> {
         gen.writeStartObject();
         writeString(gen, LABEL_PROPERTY, schedule.getLabel());
         writeString(gen, CRON_TRIGGER_PROPERTY, schedule.getCronTrigger());
-        if (schedule.getStartsOn() != null && schedule.getStartsOn() != 0L) {
-            writeString(gen, STARTS_ON_PROPERTY, DateUtils.convertToISODateTime(schedule.getStartsOn()));    
+        if (schedule.getStartsOn() != null) {
+            writeString(gen, STARTS_ON_PROPERTY, DateUtils.getISODateTime(schedule.getStartsOn()));    
         }
-        if (schedule.getEndsOn() != null && schedule.getEndsOn() != 0L) {
-            writeString(gen, ENDS_ON_PROPERTY, DateUtils.convertToISODateTime(schedule.getEndsOn()));    
+        if (schedule.getEndsOn() != null) {
+            writeString(gen, ENDS_ON_PROPERTY, DateUtils.getISODateTime(schedule.getEndsOn()));    
         }
-        if (schedule.getExpires() != null && schedule.getExpires() != 0L) {
-            writeString(gen, EXPIRES_PROPERTY, DateUtils.convertToDuration(schedule.getExpires()));    
+        if (schedule.getExpires() != null) {
+            writeString(gen, EXPIRES_PROPERTY, schedule.getExpires().toString());    
         }
         writeString(gen, SCHEDULE_TYPE_PROPERTY, schedule.getScheduleType().name().toLowerCase());
         if (schedule.getActivities() != null && !schedule.getActivities().isEmpty()) {

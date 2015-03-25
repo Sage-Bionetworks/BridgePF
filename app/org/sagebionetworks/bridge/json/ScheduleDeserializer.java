@@ -42,9 +42,9 @@ public class ScheduleDeserializer extends JsonDeserializer<Schedule> {
         schedule.setLabel(JsonUtils.asText(node, LABEL_PROPERTY));
         schedule.setScheduleType(JsonUtils.asScheduleType(node, SCHEDULE_TYPE_PROPERTY));
         schedule.setCronTrigger(JsonUtils.asText(node, CRON_TRIGGER_PROPERTY));
-        schedule.setStartsOn(JsonUtils.asMillisDurationLong(node, STARTS_ON_PROPERTY));
-        schedule.setEndsOn(JsonUtils.asMillisDurationLong(node, ENDS_ON_PROPERTY));
-        schedule.setExpires(JsonUtils.asMillisDurationLong(node, EXPIRES_PROPERTY));
+        schedule.setStartsOn(JsonUtils.asDateTime(node, STARTS_ON_PROPERTY));
+        schedule.setEndsOn(JsonUtils.asDateTime(node, ENDS_ON_PROPERTY));
+        schedule.setExpires(JsonUtils.asDuration(node, EXPIRES_PROPERTY));
         
         return schedule;
     }

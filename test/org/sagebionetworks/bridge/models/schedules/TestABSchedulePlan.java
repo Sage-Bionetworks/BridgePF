@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import org.joda.time.Duration;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -12,7 +13,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
             setScheduleType(ScheduleType.RECURRING);
             setCronTrigger("* * *");
             addActivity(new Activity("Do AAA task", "task:AAA"));
-            setExpires(new Long(60000));
+            setExpires(Duration.parse("PT60S"));
             setLabel("Schedule 1");
         }
     };
@@ -22,7 +23,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
             setScheduleType(ScheduleType.RECURRING);
             setCronTrigger("* * *");
             addActivity(new Activity("Do BBB task", "task:BBB"));
-            setExpires(new Long(60000));
+            setExpires(Duration.parse("PT60S"));
             setLabel("Schedule 2");
         }
     };
@@ -32,7 +33,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
             setScheduleType(ScheduleType.RECURRING);
             setCronTrigger("* * *");
             addActivity(new Activity("Do CCC task", "task:CCC"));
-            setExpires(new Long(60000));
+            setExpires(Duration.parse("PT60S"));
             setLabel("Schedule 3");
         }
     };

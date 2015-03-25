@@ -24,6 +24,7 @@ libraryDependencies ++= Seq(
   "org.apache.shiro" % "shiro-core" % "1.2.3",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.51",
   "org.bouncycastle" % "bcpkix-jdk15on" % "1.51",
+  "org.quartz-scheduler" % "quartz" % "2.2.1",
   "javax.mail" % "mail" % "1.4.7",
   "commons-httpclient" % "commons-httpclient" % "3.1",
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC3.1",
