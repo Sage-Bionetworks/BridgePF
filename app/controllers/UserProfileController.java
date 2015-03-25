@@ -1,13 +1,18 @@
 package controllers;
 
-import org.sagebionetworks.bridge.BridgeConstants;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.UserProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -19,13 +24,19 @@ import play.mvc.Result;
 @Controller("userProfileController")
 public class UserProfileController extends BaseController {
     
-    private UserProfileService userProfileService;
+    protected UserProfileService userProfileService;
     
-    private ViewCache viewCache;
+    protected ParticipantOptionsService optionsService;
+    
+    protected ViewCache viewCache;
 
     @Autowired
     public void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
+    }
+    @Autowired
+    public void setParticipantOptionsService(ParticipantOptionsService optionsService) {
+        this.optionsService = optionsService;
     }
     @Autowired
     public void setViewCache(ViewCache viewCache) {
@@ -58,5 +69,21 @@ public class UserProfileController extends BaseController {
         viewCache.removeView(cacheKey);
         
         return okResult("Profile updated.");
+    }
+    
+    public Result createExternalIdentifier() throws Exception {
+        UserSession session = getAuthenticatedSession();
+
+        ExternalIdentifier externalId = ExternalIdentifier.fromJson(requestToJSON(request()));
+        
+        // TODO: An annotation-based validator would make these trivial validations 
+        // easier to factor out.
+        if (isBlank(externalId.getIdentifier())) {
+            throw new InvalidEntityException(externalId);
+        }
+        optionsService.setOption(session.getStudyIdentifier(), session.getUser().getHealthCode(), 
+            ParticipantOption.EXTERNAL_IDENTIFIER, externalId.getIdentifier());
+        
+        return okResult("External identifier added to user profile.");
     }
 }
