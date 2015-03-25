@@ -1,10 +1,37 @@
 package org.sagebionetworks.bridge.config;
 
-import javax.annotation.Resource;
-
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import javax.annotation.Resource;
+
+import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
+import org.sagebionetworks.bridge.crypto.CmsEncryptor;
+import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
+import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
+import org.sagebionetworks.bridge.dynamodb.DynamoUpload;
+import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
+import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
+import org.sagebionetworks.bridge.dynamodb.TableNameOverrideFactory;
+import org.sagebionetworks.bridge.s3.S3Helper;
+import org.sagebionetworks.bridge.upload.DecryptHandler;
+import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler;
+import org.sagebionetworks.bridge.upload.ParseJsonHandler;
+import org.sagebionetworks.bridge.upload.S3DownloadHandler;
+import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
+import org.sagebionetworks.bridge.upload.UnzipHandler;
+import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
+import org.sagebionetworks.bridge.upload.UploadValidationHandler;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -27,34 +54,6 @@ import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
 import com.stormpath.sdk.impl.client.DefaultClientBuilder;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
-
-import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
-import org.sagebionetworks.bridge.crypto.CmsEncryptor;
-import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
-import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
-import org.sagebionetworks.bridge.dynamodb.DynamoUpload;
-import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
-import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
-import org.sagebionetworks.bridge.dynamodb.TableNameOverrideFactory;
-import org.sagebionetworks.bridge.s3.S3Helper;
-import org.sagebionetworks.bridge.upload.DecryptHandler;
-import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler;
-import org.sagebionetworks.bridge.upload.ParseJsonHandler;
-import org.sagebionetworks.bridge.upload.S3DownloadHandler;
-import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
-import org.sagebionetworks.bridge.upload.UnzipHandler;
-import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
-import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 
 @ComponentScan({"controllers","filters","interceptors","models","org.sagebionetworks.bridge"})
 @Configuration
@@ -113,16 +112,22 @@ public class BridgeSpringConfig {
     public AWSSecurityTokenServiceClient uploadTokenServiceClient(BasicAWSCredentials s3UploadCredentials) {
         return new AWSSecurityTokenServiceClient(s3UploadCredentials);
     }
-    
+
     @Bean(name = "bridgeConfig")
     public BridgeConfig bridgeConfig() {
         return BridgeConfigFactory.getConfig();
     }
-    
+
     @Bean(name = "asyncExecutorService")
-    @Resource(name = "numAsyncWorkerThreads")
-    public ExecutorService asyncExecutorService(Integer numAsyncWorkerThreads) {
-        return Executors.newFixedThreadPool(numAsyncWorkerThreads);
+    @Resource(name = "bridgeConfig")
+    public ExecutorService asyncExecutorService(BridgeConfig bridgeConfig) {
+        return Executors.newFixedThreadPool(bridgeConfig.getPropertyAsInt("async.worker.thread.count"));
+    }
+
+    @Bean(name = "supportEmail")
+    @Resource(name = "bridgeConfig")
+    public String supportEmail(BridgeConfig bridgeConfig) {
+        return bridgeConfig.getProperty("support.email");
     }
 
     @Bean(name = "cmsEncryptorCache")
