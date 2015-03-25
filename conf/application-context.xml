@@ -15,23 +15,14 @@
         filters,
         interceptors,
         models,
-        org.sagebionetworks.bridge
-    "/>
+        org.sagebionetworks.bridge" />
 
     <bean class="org.sagebionetworks.bridge.config.BridgeSpringConfig" />
 
-    <bean id="numAsyncWorkerThreads" class="java.lang.Integer">
-        <constructor-arg value="20" />
-    </bean>
-    
-    <bean id="supportEmail" class="java.lang.String">
-        <constructor-arg value="Bridge (Sage Bionetworks) &lt;support@sagebridge.org&gt;" />
-    </bean>
-    
     <util:list id="encryptorList">
         <ref bean="healthCodeEncryptor"/>
     </util:list>
-     
+
     <bean id="proxiedController" class="org.springframework.aop.framework.ProxyFactoryBean">
         <property name="proxyTargetClass" value="true"/>
         <property name="interceptorNames">
@@ -42,7 +33,7 @@
             </list>
         </property>
     </bean>
-    
+
     <bean id="ApplicationControllerProxied" parent="proxiedController">
         <property name="targetName" value="applicationController"/>
     </bean>
