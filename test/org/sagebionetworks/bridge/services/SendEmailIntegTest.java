@@ -8,7 +8,9 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -33,9 +35,10 @@ public class SendEmailIntegTest {
 
     @Test
     public void test() {
-        ConsentSignature consent = ConsentSignature.create("Eggplant McTester", "1970-05-01", IMG, "image/png");
-        User user = new User();
-        user.setEmail(studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER).getSupportEmail());
+        final ConsentSignature signature = ConsentSignature.create("Eggplant McTester", "1970-05-01", IMG, "image/png");
+        final User user = new User();
+        final Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
+        user.setEmail(study.getSupportEmail());
         StudyConsent studyConsent = new StudyConsent() {
             @Override
             public String getStudyKey() {
@@ -58,6 +61,7 @@ public class SendEmailIntegTest {
                 return 17;
             }
         };
-        sendEmailService.sendConsentAgreement(user, consent, studyConsent, SharingScope.SPONSORS_AND_PARTNERS);
+        sendEmailService.sendEmail(new ConsentEmailProvider(
+                study, user, signature, studyConsent, SharingScope.SPONSORS_AND_PARTNERS));
     }
 }
