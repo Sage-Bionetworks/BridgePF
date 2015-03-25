@@ -48,6 +48,12 @@ public interface HealthDataRecord extends BridgeEntity {
 
     /** Whether this record should be shared with all researchers, only study researchers, or not at all. */
     ParticipantOption.SharingScope getUserSharingScope();
+    
+    /**
+     * An external identifier that relates this record to other external health data records (analogous to the internal
+     * healthCode).
+     */
+    String getUserExternalId();
 
     /**
      * Record version. This is used to detect concurrency conflicts. For creating new health data records, this field
