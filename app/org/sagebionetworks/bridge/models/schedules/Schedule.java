@@ -4,6 +4,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
+import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 
@@ -15,6 +18,7 @@ public class Schedule implements BridgeEntity {
     public static final String TYPE_PROPERTY_NAME = "type";
     public static final String ACTIVITIES_PROPERTY = "activities";
     public static final String SCHEDULE_TYPE_PROPERTY = "scheduleType";
+    public static final String DELAY_PROPERTY = "delay";
     public static final String EXPIRES_PROPERTY = "expires";
     public static final String ENDS_ON_PROPERTY = "endsOn";
     public static final String STARTS_ON_PROPERTY = "startsOn";
@@ -27,9 +31,10 @@ public class Schedule implements BridgeEntity {
     private String label;
     private ScheduleType scheduleType;
     private String cronTrigger;
-    private Long startsOn;
-    private Long endsOn;
-    private Long expires;
+    private DateTime startsOn;
+    private DateTime endsOn;
+    private Period delay;
+    private Duration expires;
     private List<Activity> activities = Lists.newArrayList();
     
     public List<Activity> getActivities() {
@@ -60,23 +65,29 @@ public class Schedule implements BridgeEntity {
     public void setCronTrigger(String cronTrigger) {
         this.cronTrigger = cronTrigger;
     }
-    public Long getStartsOn() {
+    public DateTime getStartsOn() {
         return startsOn;
     }
-    public void setStartsOn(Long startsOn) {
+    public void setStartsOn(DateTime startsOn) {
         this.startsOn = startsOn;
     }
-    public Long getEndsOn() {
+    public DateTime getEndsOn() {
         return endsOn;
     }
-    public void setEndsOn(Long endsOn) {
+    public void setEndsOn(DateTime endsOn) {
         this.endsOn = endsOn;
     }
-    public Long getExpires() {
+    public Duration getExpires() {
         return expires;
     }
-    public void setExpires(Long expires) {
+    public void setExpires(Duration expires) {
         this.expires = expires;
+    }
+    public Period getDelay() {
+        return delay;
+    }
+    public void setDelay(Period delay) {
+        this.delay = delay;
     }
     public boolean isScheduleFor(GuidCreatedOnVersionHolder keys) {
         for (Activity activity : activities) {
@@ -94,6 +105,7 @@ public class Schedule implements BridgeEntity {
         result = prime * result + ((cronTrigger == null) ? 0 : cronTrigger.hashCode());
         result = prime * result + ((endsOn == null) ? 0 : endsOn.hashCode());
         result = prime * result + ((expires == null) ? 0 : expires.hashCode());
+        result = prime * result + ((delay == null) ? 0 : delay.hashCode());
         result = prime * result + ((label == null) ? 0 : label.hashCode());
         result = prime * result + ((scheduleType == null) ? 0 : scheduleType.hashCode());
         result = prime * result + ((startsOn == null) ? 0 : startsOn.hashCode());
@@ -128,6 +140,11 @@ public class Schedule implements BridgeEntity {
                 return false;
         } else if (!expires.equals(other.expires))
             return false;
+        if (delay == null) {
+            if (other.delay != null)
+                return false;
+        } else if (!delay.equals(other.delay))
+            return false;
         if (label == null) {
             if (other.label != null)
                 return false;
@@ -145,7 +162,7 @@ public class Schedule implements BridgeEntity {
     @Override
     public String toString() {
         return "Schedule [label=" + label + ", scheduleType=" + scheduleType + ", cronTrigger=" + cronTrigger
-                + ", startsOn=" + startsOn + ", endsOn=" + endsOn + ", expires=" + expires + ", activities="
-                + activities + "]";
+                        + ", startsOn=" + startsOn + ", endsOn=" + endsOn + ", expires=" + expires + ", delay=" + delay
+                        + ", activities=" + activities + "]";
     }
 }    

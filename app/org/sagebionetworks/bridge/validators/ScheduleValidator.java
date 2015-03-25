@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.ACTIVITIES_PROPERTY;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -79,8 +80,9 @@ public class ScheduleValidator implements Validator {
             }
         }
         if (schedule.getStartsOn() != null && schedule.getEndsOn() != null) {
-            long oneHourLater = schedule.getStartsOn() + (1000 * 60 * 60);
-            if (schedule.getEndsOn() < oneHourLater) {
+            
+            DateTime oneHourLater = schedule.getStartsOn().plusHours(1);
+            if (schedule.getEndsOn().isBefore(oneHourLater)) {
                 errors.rejectValue(Schedule.ENDS_ON_PROPERTY, "should be at least an hour after the startsOn time");
             }
         }
