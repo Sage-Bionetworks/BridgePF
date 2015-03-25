@@ -40,11 +40,9 @@ public class BridgeConfig {
     private static final String HEALTHCODE_PASSWORD = "bridge.healthcode.pwd";
     private static final String HEALTHCODE_KEY = "bridge.healthcode.key";
     private static final String HEALTHCODE_SALT = "bridge.healthcode.salt";
-    
-    private static final String HEROKU_APPNAME = "heroku.appname";
-    private static final String HEROKU_SSL_ENDPOINT = "heroku.ssl.endpoint";
+
     private static final String STUDY_HOSTNAME = "study.hostname";
-    
+
     private final String user;
     private final Environment environment;
     private final Properties properties;
@@ -194,14 +192,6 @@ public class BridgeConfig {
     public String getStudyHostname(String identifier) {
         checkNotNull(identifier);
         return identifier + getStudyHostnamePostfix();
-    }
-    
-    public String getHerokuAppName() {
-        return getProperty(HEROKU_APPNAME);
-    }
-    
-    public String getHerokuSslEndpoint() {
-        return getProperty(HEROKU_SSL_ENDPOINT);
     }
 
     ///////////////////////////
