@@ -21,8 +21,8 @@ public class UserProfile {
     public static final String USERNAME_FIELD = "username";
     public static final String PHONE_FIELD = "phone";
     /**
-     * This field is not part of the profile, but it is used on export to expose one of the participant 
-     * option values, so studies cannot override the field value.
+     * This field isn't part of the profile, but it is used to export sharing in the participant roster, 
+     * so we do not allow researchers to override it.
      */
     public static final String SHARING_SCOPE_FIELD = "sharing";
     
