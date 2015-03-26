@@ -31,15 +31,10 @@ public class BridgeConfig {
     // Property name for the environment
     private static final String ENVIRONMENT = "bridge.env";
 
-    // Property name for the encryption password
-    private static final String PASSWORD = "bridge.pwd";
-    
     // For testing, a host name may be specified that will override the actual host name of the server
     private static final String BRIDGE_HOST = "bridge.host";
 
-    private static final String HEALTHCODE_PASSWORD = "bridge.healthcode.pwd";
     private static final String HEALTHCODE_KEY = "bridge.healthcode.key";
-    private static final String HEALTHCODE_SALT = "bridge.healthcode.salt";
 
     private static final String STUDY_HOSTNAME = "study.hostname";
 
@@ -168,27 +163,15 @@ public class BridgeConfig {
     public String getStormpathApplicationHref() {
         return getProperty(ENTERPRISE_STORMPATH_APPLICATION_HREF);
     }
-    
-    public String getPassword() {
-        return getProperty(PASSWORD);
-    }
-
-    public String getHealthCodePassword() {
-        return getProperty(HEALTHCODE_PASSWORD);
-    }
 
     public String getHealthCodeKey() {
         return getProperty(HEALTHCODE_KEY);
     }
 
-    public String getHealthCodeSalt() {
-        return getProperty(HEALTHCODE_SALT);
-    }
-    
     public String getStudyHostnamePostfix() {
         return getProperty(STUDY_HOSTNAME);
     }
-    
+
     public String getStudyHostname(String identifier) {
         checkNotNull(identifier);
         return identifier + getStudyHostnamePostfix();

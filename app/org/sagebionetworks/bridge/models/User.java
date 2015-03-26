@@ -2,14 +2,21 @@ package org.sagebionetworks.bridge.models;
 
 import java.util.Set;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
+import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.Account;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Sets;
 
 @BridgeTypeName("User")
 public class User implements BridgeEntity {
+
+    private static final Encryptor encryptor = new AesGcmEncryptor(
+            BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
 
     private String id;
     private String username;
@@ -71,12 +78,22 @@ public class User implements BridgeEntity {
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
-    
+
+    @JsonIgnore
     public String getHealthCode() {
+        return encryptor.decrypt(healthCode);
+    }
+
+    @JsonIgnore
+    public void setHealthCode(String healthCode) {
+        this.healthCode = encryptor.encrypt(healthCode);
+    }
+
+    public String getEncryptedHealthCode() {
         return healthCode;
     }
 
-    public void setHealthCode(String healthCode) {
+    public void setEncryptedHealthCode(String healthCode) {
         this.healthCode = healthCode;
     }
 
