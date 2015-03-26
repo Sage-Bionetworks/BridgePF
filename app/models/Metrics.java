@@ -94,8 +94,12 @@ public class Metrics {
         put("sp_token", spToken);
     }
 
-    public void setUploadSize(String uploadSize) {
-        put("upload_size", uploadSize);
+    public void setUploadId(String uploadId) {
+        put("upload_id", uploadId);
+    }
+
+    public void setUploadSize(long uploadSize) {
+        json.put("upload_size", uploadSize);
     }
 
     public void setSharingOption(String sharingOption) {
