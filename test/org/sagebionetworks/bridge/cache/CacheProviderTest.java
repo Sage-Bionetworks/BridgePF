@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.cache;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -8,23 +10,50 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
+import org.sagebionetworks.bridge.redis.RedisKey;
 
 import com.google.common.collect.Maps;
 
 public class CacheProviderTest {
 
     private CacheProvider cacheProvider;
-    
+
     @Before
     public void before() {
         cacheProvider = new CacheProvider();
         cacheProvider.setStringOps(getSimpleStringOps());
     }
-    
+
+    @Test
+    public void testUserSession() throws Exception {
+        User user = new User();
+        user.setEmail("email");
+        user.setId("id");
+        final String healthCode = "some health code";
+        user.setHealthCode(healthCode);
+        UserSession session = new UserSession();
+        session.setUser(user);
+        String key = getClass().getName() + "userSession";
+        cacheProvider.setUserSession(key, session);
+        String cached = cacheProvider.getString(RedisKey.SESSION.getRedisKey(key));
+        assertNotNull(cached);
+        assertFalse("Health code should be encrypted", cached.contains(healthCode));
+        session = cacheProvider.getUserSession(key);
+        assertNotNull(session);
+        assertNotNull(session.getUser());
+        assertEquals(healthCode, session.getUser().getHealthCode());
+    }
+
     @Test
     public void addAndRemoveViewFromCacheProvider() throws Exception {
         Study study = new DynamoStudy();
