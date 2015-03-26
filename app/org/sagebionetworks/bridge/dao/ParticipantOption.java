@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.dao;
 public enum ParticipantOption {
 
     SHARING_SCOPE(SharingScope.NO_SHARING.name()),
-    EMAIL_NOTIFICATIONS("on");
+    EMAIL_NOTIFICATIONS(Boolean.TRUE.toString());
     
     private final String defaultValue;
     

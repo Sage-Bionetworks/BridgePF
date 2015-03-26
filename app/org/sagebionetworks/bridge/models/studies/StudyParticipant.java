@@ -46,5 +46,10 @@ public final class StudyParticipant extends HashMap<String,String> {
             put(UserProfile.SHARING_SCOPE_FIELD, scope.name());    
         }
     }
-
+    public String getNotifyByEmail() {
+        return getEmpty(UserProfile.NOTIFY_BY_EMAIL_FIELD);
+    }
+    public void setNotifyByEmail(String notifyByEmail) {
+        put(UserProfile.NOTIFY_BY_EMAIL_FIELD, notifyByEmail);
+    }
 }
