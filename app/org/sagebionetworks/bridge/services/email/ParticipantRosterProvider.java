@@ -91,7 +91,7 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
             append(sb, participant.getPhone(), true);
             SharingScope scope = participant.getSharingScope();
             append(sb, (scope == null) ? "" : scope.getLabel(), true);
-            append(sb, participant.getNotifyByEmail(), true);
+            append(sb, participant.getNotifyByEmail().toString(), true);
             for (String attribute : study.getUserProfileAttributes()) {
                 append(sb, participant.getEmpty(attribute), true);
             }

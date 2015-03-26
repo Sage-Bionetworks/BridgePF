@@ -69,8 +69,13 @@ public class ParticipantRosterGeneratorTest {
         
         OptionLookup lookup = mock(OptionLookup.class);
         when(lookup.getSharingScope(anyString())).thenReturn(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+        
+        OptionLookup emailLookup = mock(OptionLookup.class);
+        when(emailLookup.get(anyString())).thenReturn(Boolean.TRUE.toString());
+        
         when(healthCodeService.getMapping(anyString())).thenReturn(healthId);
         when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.SHARING_SCOPE)).thenReturn(lookup);
+        when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.EMAIL_NOTIFICATIONS)).thenReturn(emailLookup);
         
         Account account1 = createAccount(lookup, "zanadine@test.com", "FirstZ", "LastZ", "(206) 333-444", true);
         Account account2 = createAccount(lookup, "first.last@test.com", "First", "Last", "(206) 111-2222", true);
