@@ -27,6 +27,8 @@ import com.google.common.collect.Maps;
 
 public class EmailControllerTest {
 
+    private AccountDao accountDao;
+    
     private Study study;
     
     private Map<String,String[]> map(String[] values) {
@@ -58,7 +60,7 @@ public class EmailControllerTest {
         study = new DynamoStudy();
         study.setIdentifier("api");
         
-        AccountDao accountDao = mock(AccountDao.class);
+        accountDao = mock(AccountDao.class);
         when(accountDao.getAccount(study, "bridge-testing@sagebase.org")).thenReturn(account);
         
         HealthId healthId = mock(HealthId.class);
@@ -105,6 +107,16 @@ public class EmailControllerTest {
         mockContext("study", "api");
         
         EmailController controller = createController();
+        controller.unsubscribeFromEmail();
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void noAccountThrowsException() throws Exception {
+        mockContext("data[email]", "bridge-testing@sagebase.org", "study", "api");
+        
+        EmailController controller = createController();
+        when(accountDao.getAccount(study, "bridge-testing@sagebase.org")).thenReturn(null);
+        
         controller.unsubscribeFromEmail();
     }
     
