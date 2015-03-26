@@ -67,15 +67,19 @@ public class ParticipantRosterGeneratorTest {
             }
         };
         
-        OptionLookup lookup = mock(OptionLookup.class);
-        when(lookup.getSharingScope(anyString())).thenReturn(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+        OptionLookup sharingLookup = mock(OptionLookup.class);
+        when(sharingLookup.getSharingScope(anyString())).thenReturn(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         when(healthCodeService.getMapping(anyString())).thenReturn(healthId);
-        when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.SHARING_SCOPE)).thenReturn(lookup);
+        when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.SHARING_SCOPE)).thenReturn(sharingLookup);
         
-        Account account1 = createAccount(lookup, "zanadine@test.com", "FirstZ", "LastZ", "(206) 333-444", true);
-        Account account2 = createAccount(lookup, "first.last@test.com", "First", "Last", "(206) 111-2222", true);
+        OptionLookup externalIdLookup = mock(OptionLookup.class);
+        when(externalIdLookup.get(anyString())).thenReturn("ABC-123-XYZ");
+        when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.EXTERNAL_IDENTIFIER)).thenReturn(externalIdLookup);
+        
+        Account account1 = createAccount("zanadine@test.com", "FirstZ", "LastZ", "(206) 333-444", true);
+        Account account2 = createAccount("first.last@test.com", "First", "Last", "(206) 111-2222", true);
         // Gail will not have the key for the consent record, and will be filtered out.
-        Account account3 = createAccount(lookup, "gail.tester@test.com", "Gail", "Tester", null, false);
+        Account account3 = createAccount("gail.tester@test.com", "Gail", "Tester", null, false);
         
         Iterator<Account> iterator = Lists.newArrayList(account1, account2, account3).iterator();
         
@@ -108,8 +112,7 @@ public class ParticipantRosterGeneratorTest {
         assertNull(p.get("another_attribute"));
     }
 
-    private Account createAccount(OptionLookup lookup, String email, String firstName, String lastName, String phone,
-                    boolean hasConsented) {
+    private Account createAccount(String email, String firstName, String lastName, String phone, boolean hasConsented) {
         Account account = mock(Account.class);
         when(account.getEmail()).thenReturn(email);
         when(account.getFirstName()).thenReturn(firstName);

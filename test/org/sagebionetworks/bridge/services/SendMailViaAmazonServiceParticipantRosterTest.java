@@ -77,7 +77,7 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         assertTrue("Has right subject", 
             rawMessage.contains("Study participants for Test Study"));
         assertTrue("TSV has the participant", 
-            rawMessage.contains("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\tFirst\tLast\tAll Qualified Researchers\t(123) 456-7890"));
+            rawMessage.contains("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\tFirst\tLast\tAll Qualified Researchers\t\t(123) 456-7890\t\n"));
         assertTrue("text description of participant", 
             rawMessage.contains("There is 1 user enrolled in this study. Please see the attached TSV file.\n"));
     }

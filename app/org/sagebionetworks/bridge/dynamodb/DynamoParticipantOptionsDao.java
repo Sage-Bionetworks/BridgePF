@@ -123,8 +123,8 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         List<DynamoParticipantOptions> mappings = mapper.scan(DynamoParticipantOptions.class, scan);
         
         OptionLookup map = new OptionLookup(option.getDefaultValue());
-        for (DynamoParticipantOptions opt : mappings) {
-            map.put(opt.getHealthCode(), opt.getOptions().get(option.name()));
+        for (DynamoParticipantOptions mapping : mappings) {
+            map.put(mapping.getHealthCode(), mapping.getOptions().get(option.name()));
         }
         return map;
     }

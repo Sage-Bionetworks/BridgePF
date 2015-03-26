@@ -77,7 +77,7 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
         append(sb, "First Name", true);
         append(sb, "Last Name", true);
         append(sb, "Sharing Scope", true);
-        append(sb, "External Id", true);
+        append(sb, "External ID", true);
         append(sb, "Phone", true);
         for (String attribute : study.getUserProfileAttributes()) {
             append(sb, StringUtils.capitalize(attribute), true);
