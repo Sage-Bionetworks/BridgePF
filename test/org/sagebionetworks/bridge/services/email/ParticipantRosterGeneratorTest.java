@@ -72,10 +72,6 @@ public class ParticipantRosterGeneratorTest {
         when(healthCodeService.getMapping(anyString())).thenReturn(healthId);
         when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.SHARING_SCOPE)).thenReturn(sharingLookup);
         
-        OptionLookup externalIdLookup = mock(OptionLookup.class);
-        when(externalIdLookup.get(anyString())).thenReturn("ABC-123-XYZ");
-        when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.EXTERNAL_IDENTIFIER)).thenReturn(externalIdLookup);
-        
         Account account1 = createAccount("zanadine@test.com", "FirstZ", "LastZ", "(206) 333-444", true);
         Account account2 = createAccount("first.last@test.com", "First", "Last", "(206) 111-2222", true);
         // Gail will not have the key for the consent record, and will be filtered out.
