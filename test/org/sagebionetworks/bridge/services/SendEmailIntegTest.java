@@ -38,7 +38,7 @@ public class SendEmailIntegTest {
         final ConsentSignature signature = ConsentSignature.create("Eggplant McTester", "1970-05-01", IMG, "image/png");
         final User user = new User();
         final Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
-        user.setEmail("eggplant.mctester@tester.com");
+        user.setEmail("bridge-testing@sagebridge.org");
         StudyConsent studyConsent = new StudyConsent() {
             @Override
             public String getStudyKey() {
