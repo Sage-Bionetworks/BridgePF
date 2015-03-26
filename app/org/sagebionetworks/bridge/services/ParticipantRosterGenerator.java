@@ -53,9 +53,10 @@ public class ParticipantRosterGenerator implements Runnable {
         try {
             OptionLookup sharingLookup = optionsService.getOptionForAllStudyParticipants(
                 study, ParticipantOption.SHARING_SCOPE);
+            /* Do not include this in the participant roster.
             OptionLookup externalIdLookup = optionsService.getOptionForAllStudyParticipants(
                 study, ParticipantOption.EXTERNAL_IDENTIFIER);
-            
+            */
             List<StudyParticipant> participants = Lists.newArrayList();
             while (accounts.hasNext()) {
                 Account account = accounts.next();
@@ -64,7 +65,7 @@ public class ParticipantRosterGenerator implements Runnable {
                     String healthCode = healthCodeService.getMapping(account.getHealthId()).getCode();
                     SharingScope sharing = sharingLookup.getSharingScope(healthCode);
                     
-                    String externalId = externalIdLookup.get(healthCode);
+                    // String externalId = externalIdLookup.get(healthCode);
 
                     StudyParticipant participant = new StudyParticipant();
                     participant.setFirstName(account.getFirstName());
@@ -72,7 +73,7 @@ public class ParticipantRosterGenerator implements Runnable {
                     participant.setEmail(account.getEmail());
                     participant.setPhone(account.getPhone());
                     participant.setSharingScope(sharing);
-                    participant.setExternalId(externalId);
+                    // participant.setExternalId(externalId);
                     for (String attribute : study.getUserProfileAttributes()) {
                         String value = account.getAttribute(attribute);
                         // Whether present or not, add an entry.
