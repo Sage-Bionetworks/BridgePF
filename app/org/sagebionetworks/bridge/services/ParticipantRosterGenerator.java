@@ -53,7 +53,7 @@ public class ParticipantRosterGenerator implements Runnable {
         try {
             OptionLookup sharingLookup = optionsService.getOptionForAllStudyParticipants(
                 study, ParticipantOption.SHARING_SCOPE);
-            
+
             List<StudyParticipant> participants = Lists.newArrayList();
             while (accounts.hasNext()) {
                 Account account = accounts.next();
