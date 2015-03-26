@@ -19,11 +19,11 @@ import play.mvc.Result;
 @Controller("emailController")
 public class EmailController extends BaseController {
 
-    protected AccountDao accountDao;
+    private AccountDao accountDao;
 
-    protected ParticipantOptionsService optionsService;
+    private ParticipantOptionsService optionsService;
 
-    protected HealthCodeService healthCodeService;
+    private HealthCodeService healthCodeService;
 
     @Autowired
     public void setAccountDao(AccountDao accountDao) {
