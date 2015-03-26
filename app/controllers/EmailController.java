@@ -42,18 +42,15 @@ public class EmailController extends BaseController {
     }
 
     /**
-     * An URL to which a POST can be sent to set the user's email notification preference to "off". Do not need to be
-     * authenticated to call this endpoint. Cannot turn email notifications back on through this endpoint. Not
-     * considered a public part of the API at this time, although publicly accessible. Subject to change without warning
-     * or backwards compatability.
+     * An URL to which a POST can be sent to set the user's email notification preference to "off". Cannot turn email
+     * notifications back on through this endpoint. Not considered a public part of the API at this time, although
+     * publicly accessible. The token that is submitted is set in the configuration, and must match to allow this 
+     * call to succeed. Subject to change without warning or backwards compatibility.
      * 
      * @return
      * @throws Exception
      */
     public Result unsubscribeFromEmail() throws Exception {
-        // Standards for submitting to this URL are fluid. We should accept a well-formed JSON payload if
-        // we publicize this endpoint. Right now our concern is to receive data from MailChimp that
-        // looks like an HTTP form post, and contains this information:
         String token = getParameter("token");
         if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
             throw new UnauthorizedException();
