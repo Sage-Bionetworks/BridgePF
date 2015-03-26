@@ -306,7 +306,7 @@ public abstract class BaseController extends Controller {
     }
 
     /**
-     * Retrieves the metrics object from the cache
+     * Retrieves the metrics object from the cache. Can be null if the metrics is not in the cache.
      */
     Metrics getMetrics() {
         final String requestId = RequestUtils.getRequestId(request());

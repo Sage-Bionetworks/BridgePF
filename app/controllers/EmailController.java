@@ -5,6 +5,7 @@ import java.util.Map;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -54,6 +55,11 @@ public class EmailController extends BaseController {
         // we publicize this endpoint. Right now our concern is to receive data from MailChimp that
         // looks like an HTTP form post, and contains this information:
 
+        String token = getParameter("token");
+        if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
+            throw new UnauthorizedException();
+        }
+        
         // Study has to be provided as an URL parameter:
         String studyId = getParameter("study");
         if (studyId == null) {

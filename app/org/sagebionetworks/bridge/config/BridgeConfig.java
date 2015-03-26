@@ -25,6 +25,9 @@ public class BridgeConfig {
     private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
 
+    // Property for a token that is checked before user is unsubscribed from further emails
+    private static final String EMAIL_UNSUBSCRIBE_TOKEN = "email.unsubscribe.token";
+    
     // Property name for the user
     private static final String USER = "bridge.user";
 
@@ -145,6 +148,10 @@ public class BridgeConfig {
         return Environment.PROD.equals(environment);
     }
 
+    public String getEmailUnsubscribeToken() {
+        return getProperty(EMAIL_UNSUBSCRIBE_TOKEN);
+    }
+    
     public String getHost() {
         return getProperty(BRIDGE_HOST);
     }

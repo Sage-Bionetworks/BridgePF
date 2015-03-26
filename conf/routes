@@ -19,6 +19,7 @@ GET    /api/v1/profile                   @controllers.UserProfileController.getU
 POST   /api/v1/profile                   @controllers.UserProfileController.updateUserProfile
 
 # API - User Settings
+POST   /api/v1/profile/external-id       @controllers.UserProfileController.createExternalIdentifier
 POST   /api/v1/profile/unsubscribe       @controllers.EmailController.unsubscribeFromEmail
 
 # API - Survey Responses
