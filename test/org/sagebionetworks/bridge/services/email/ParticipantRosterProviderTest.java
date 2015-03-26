@@ -68,24 +68,29 @@ public class ParticipantRosterProviderTest {
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
         String output = provider.createParticipantTSV();
         
-        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\tFirst\tLast\tNot Sharing\t\t(123) 456-7890\tfalse\n", output);
+        // assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\tFirst\tLast\tNot Sharing\t\t(123) 456-7890\tfalse\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\tFirst\tLast\tNot Sharing\t(123) 456-7890\tfalse\n", output);
         
         participant.setLastName(null);
         output = provider.createParticipantTSV();
-        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\tFirst\t\tNot Sharing\t\t(123) 456-7890\tfalse\n", output);
+        // assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\tFirst\t\tNot Sharing\t\t(123) 456-7890\tfalse\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\tFirst\t\tNot Sharing\t(123) 456-7890\tfalse\n", output);
         
         participant.setFirstName(null);
         participant.setLastName("Last");
         output = provider.createParticipantTSV();
-        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\t\tLast\tNot Sharing\t\t(123) 456-7890\tfalse\n", output);
+        // assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\t\tLast\tNot Sharing\t\t(123) 456-7890\tfalse\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\t\tLast\tNot Sharing\t(123) 456-7890\tfalse\n", output);
         
         participant.setPhone(null);
         output = provider.createParticipantTSV();
-        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\t\tLast\tNot Sharing\t\t\tfalse\n", output);
+        // assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\t\tLast\tNot Sharing\t\t\tfalse\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\t\tLast\tNot Sharing\t\tfalse\n", output);
         
         participant.remove(UserProfile.SHARING_SCOPE_FIELD);
         output = provider.createParticipantTSV();
-        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\t\tfalse\n", output);
+        // assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\t\tfalse\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\tfalse\n", output);
         
         StudyParticipant numberTwo = new StudyParticipant();
         numberTwo.setEmail("test2@test.com");
@@ -94,11 +99,12 @@ public class ParticipantRosterProviderTest {
         participants.add(numberTwo);
         output = provider.createParticipantTSV();
         
-        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\t\tfalse\ntest2@test.com\t\t\t\t\t\t\n", output);
+        // assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\t\tfalse\ntest2@test.com\t\t\t\t\t\t\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\t\tLast\t\t\tfalse\ntest2@test.com\t\t\t\t\t\n", output);
         
         participants.clear();
         output = provider.createParticipantTSV();
-        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tExternal ID\tPhone\tRecontact\n", output);
+        assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\n", output);
     }
 
 }
