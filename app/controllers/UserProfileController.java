@@ -24,11 +24,11 @@ import play.mvc.Result;
 @Controller("userProfileController")
 public class UserProfileController extends BaseController {
     
-    protected UserProfileService userProfileService;
+    private UserProfileService userProfileService;
     
-    protected ParticipantOptionsService optionsService;
+    private ParticipantOptionsService optionsService;
     
-    protected ViewCache viewCache;
+    private ViewCache viewCache;
 
     @Autowired
     public void setUserProfileService(UserProfileService userProfileService) {
@@ -74,7 +74,7 @@ public class UserProfileController extends BaseController {
     public Result createExternalIdentifier() throws Exception {
         UserSession session = getAuthenticatedSession();
 
-        ExternalIdentifier externalId = ExternalIdentifier.fromJson(requestToJSON(request()));
+        ExternalIdentifier externalId = parseJson(request(), ExternalIdentifier.class);
         
         // TODO: An annotation-based validator would make these trivial validations 
         // easier to factor out.

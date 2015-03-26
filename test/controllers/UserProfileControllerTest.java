@@ -32,6 +32,8 @@ import play.mvc.Result;
 
 public class UserProfileControllerTest {
 
+    private ParticipantOptionsService optionsService;
+    
     private StudyIdentifier studyIdentifier = new StudyIdentifierImpl("api");
     
     @Test
@@ -45,7 +47,7 @@ public class UserProfileControllerTest {
         assertEquals("application/json", contentType(result));
         assertEquals("{\"message\":\"External identifier added to user profile.\"}", contentAsString(result));
         
-        verify(controller.optionsService).setOption(studyIdentifier, "healthCode", 
+        verify(optionsService).setOption(studyIdentifier, "healthCode", 
             ParticipantOption.EXTERNAL_IDENTIFIER, "ABC-123-XYZ");
     }
     
@@ -61,7 +63,7 @@ public class UserProfileControllerTest {
         } catch(InvalidEntityException e) {
             assertEquals("ExternalIdentifier is not valid.", e.getMessage());
         }
-        verifyNoMoreInteractions(controller.optionsService);
+        verifyNoMoreInteractions(optionsService);
     }
     
     private Http.Context mockContext(String json) throws Exception {
@@ -90,11 +92,11 @@ public class UserProfileControllerTest {
     }
     
     private UserProfileController controllerForExternalIdTests() {
-        ParticipantOptionsService optionsService = mock(ParticipantOptionsServiceImpl.class);
+        optionsService = mock(ParticipantOptionsServiceImpl.class);
         
         UserProfileController controller = spy(new UserProfileController());
-        doReturn(mockSession()).when(controller).getAuthenticatedSession();
         controller.setParticipantOptionsService(optionsService);
+        doReturn(mockSession()).when(controller).getAuthenticatedSession();
 
         return controller;
     }
