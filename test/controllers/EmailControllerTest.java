@@ -91,7 +91,7 @@ public class EmailControllerTest {
         controller.unsubscribeFromEmail();
         
         verify(controller.optionsService).setOption(study, "healthCode", 
-            ParticipantOption.EMAIL_NOTIFICATIONS, "off");
+            ParticipantOption.EMAIL_NOTIFICATIONS, "false");
     }
     
     @Test(expected = EntityNotFoundException.class)

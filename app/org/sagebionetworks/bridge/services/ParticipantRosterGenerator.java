@@ -64,7 +64,7 @@ public class ParticipantRosterGenerator implements Runnable {
                     String healthCode = healthCodeService.getMapping(account.getHealthId()).getCode();
                     SharingScope sharing = sharingLookup.getSharingScope(healthCode);
                     
-                    String notifyByEmail = emailLookup.get(healthCode);
+                    Boolean notifyByEmail = Boolean.valueOf(emailLookup.get(healthCode));
 
                     StudyParticipant participant = new StudyParticipant();
                     participant.setFirstName(account.getFirstName());

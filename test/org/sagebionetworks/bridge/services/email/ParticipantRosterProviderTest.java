@@ -34,7 +34,7 @@ public class ParticipantRosterProviderTest {
         participant.setLastName("Last");
         participant.setEmail("test@test.com");
         participant.setPhone("(123) 456-7890");
-        participant.setNotifyByEmail("false");
+        participant.setNotifyByEmail(Boolean.FALSE);
         participant.put("recontact", "true");
         List<StudyParticipant> participants = Lists.newArrayList(participant);
 
@@ -62,7 +62,7 @@ public class ParticipantRosterProviderTest {
         participant.setLastName("Last");
         participant.setEmail("test@test.com");
         participant.setPhone("(123)\t456-7890"); // Tab snuck into this string should be converted to a space
-        participant.setNotifyByEmail("false");
+        participant.setNotifyByEmail(Boolean.FALSE);
         participant.put("recontact", "false");
         participant.put(UserProfile.SHARING_SCOPE_FIELD, SharingScope.NO_SHARING.name());
         List<StudyParticipant> participants = Lists.newArrayList(participant);
