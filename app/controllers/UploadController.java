@@ -1,5 +1,7 @@
 package controllers;
 
+import models.Metrics;
+
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -42,6 +44,11 @@ public class UploadController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         UploadRequest uploadRequest = UploadRequest.fromJson(requestToJSON(request()));
         UploadSession uploadSession = uploadService.createUpload(session.getUser(), uploadRequest);
+        final Metrics metrics = getMetrics();
+        if (metrics != null) {
+            metrics.setUploadSize(uploadRequest.getContentLength());
+            metrics.setUploadId(uploadSession.getId());
+        }
         return okResult(uploadSession);
     }
 
@@ -50,6 +57,12 @@ public class UploadController extends BaseController {
      * through the Upload Validation Service.
      */
     public Result uploadComplete(String uploadId) throws Exception {
+
+        final Metrics metrics = getMetrics();
+        if (metrics != null) {
+            metrics.setUploadId(uploadId);
+        }
+
         UserSession session = getAuthenticatedAndConsentedSession();
 
         // mark upload as complete
@@ -62,4 +75,5 @@ public class UploadController extends BaseController {
 
         return ok("Upload " + uploadId + " complete!");
     }
+
 }
