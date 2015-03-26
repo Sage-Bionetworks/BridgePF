@@ -54,7 +54,7 @@ public class ParticipantRosterGenerator implements Runnable {
             OptionLookup sharingLookup = optionsService.getOptionForAllStudyParticipants(
                 study, ParticipantOption.SHARING_SCOPE);
             OptionLookup externalIdLookup = optionsService.getOptionForAllStudyParticipants(
-                            study, ParticipantOption.EXTERNAL_IDENTIFIER);
+                study, ParticipantOption.EXTERNAL_IDENTIFIER);
             
             List<StudyParticipant> participants = Lists.newArrayList();
             while (accounts.hasNext()) {
