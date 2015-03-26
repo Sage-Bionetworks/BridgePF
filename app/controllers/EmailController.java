@@ -62,8 +62,10 @@ public class EmailController extends BaseController {
         if (email == null) {
             throw new EntityNotFoundException(User.class);
         }
-        
         Account account = accountDao.getAccount(study, email);
+        if (account == null) {
+            throw new EntityNotFoundException(User.class);
+        }
         HealthId healthId = healthCodeService.getMapping(account.getHealthId());
         if (healthId == null) {
             throw new EntityNotFoundException(User.class);
