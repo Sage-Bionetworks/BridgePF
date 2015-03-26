@@ -54,19 +54,16 @@ public class EmailController extends BaseController {
         // Standards for submitting to this URL are fluid. We should accept a well-formed JSON payload if
         // we publicize this endpoint. Right now our concern is to receive data from MailChimp that
         // looks like an HTTP form post, and contains this information:
-
         String token = getParameter("token");
         if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
             throw new UnauthorizedException();
         }
-        
         // Study has to be provided as an URL parameter:
         String studyId = getParameter("study");
         if (studyId == null) {
             throw new EntityNotFoundException(Study.class);
         }
         Study study = studyService.getStudy(studyId);
-
         // MailChimp submits email as data[email]
         String email = getParameter("data[email]");
         if (email == null) {
@@ -83,7 +80,6 @@ public class EmailController extends BaseController {
         if (healthId == null) {
             throw new EntityNotFoundException(User.class);
         }
-
         optionsService.setOption(study, healthId.getCode(), ParticipantOption.EMAIL_NOTIFICATIONS, Boolean.FALSE.toString());
 
         return ok("You have been unsubscribed from future email.").as("text/plain");
