@@ -27,6 +27,8 @@ import com.google.common.collect.Maps;
 
 public class EmailControllerTest {
 
+    private ParticipantOptionsService optionsService;
+    
     private AccountDao accountDao;
     
     private Study study;
@@ -52,7 +54,7 @@ public class EmailControllerTest {
     }
     
     private EmailController createController() {
-        ParticipantOptionsService optionsService = mock(ParticipantOptionsServiceImpl.class);
+        optionsService = mock(ParticipantOptionsServiceImpl.class);
         
         Account account = mock(Account.class);
         when(account.getHealthId()).thenReturn("healthId");
@@ -90,7 +92,7 @@ public class EmailControllerTest {
         EmailController controller = createController();
         controller.unsubscribeFromEmail();
         
-        verify(controller.optionsService).setOption(study, "healthCode", 
+        verify(optionsService).setOption(study, "healthCode", 
             ParticipantOption.EMAIL_NOTIFICATIONS, "false");
     }
     
