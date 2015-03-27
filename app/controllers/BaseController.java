@@ -79,20 +79,20 @@ public abstract class BaseController extends Controller {
      * @return session if it exists, or null otherwise.
      */
     UserSession getSessionIfItExists() {
-        String sessionToken = getSessionToken();
+        final String sessionToken = getSessionToken();
         if (sessionToken == null){
             return null;
         }
-        UserSession session = authenticationService.getSession(sessionToken);
-        Metrics metrics = getMetrics();
-	if (metrics != null) {
+        final UserSession session = authenticationService.getSession(sessionToken);
+        final Metrics metrics = getMetrics();
+        if (metrics != null && session != null) {
             metrics.setSessionId(session.getInternalSessionToken());
             User user = session.getUser();
             if (user != null) {
                 metrics.setUserId(user.getId());
             }
             metrics.setStudy(session.getStudyIdentifier().getIdentifier());
-	}
+        }
         return session;
     }
 
@@ -101,20 +101,20 @@ public abstract class BaseController extends Controller {
      * User does not have to give consent. 
      */
     UserSession getAuthenticatedSession() throws NotAuthenticatedException {
-        String sessionToken = getSessionToken();
+        final String sessionToken = getSessionToken();
         if (sessionToken == null || sessionToken.isEmpty()) {
             throw new NotAuthenticatedException();
         }
-        UserSession session = authenticationService.getSession(sessionToken);
+        final UserSession session = authenticationService.getSession(sessionToken);
         if (session == null || !session.isAuthenticated()) {
             throw new NotAuthenticatedException();
         }
-        Metrics metrics = getMetrics();
-	if (metrics != null) {
+        final Metrics metrics = getMetrics();
+        if (metrics != null && session != null) {
             metrics.setSessionId(session.getInternalSessionToken());
             metrics.setUserId(session.getUser().getId());
             metrics.setStudy(session.getStudyIdentifier().getIdentifier());
-	}
+        }
         return session;
     }
 
