@@ -10,15 +10,11 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 
