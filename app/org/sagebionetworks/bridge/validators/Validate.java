@@ -33,7 +33,7 @@ public class Validate {
     public static void entityThrowingException(Validator validator, Object object) {
         checkNotNull(validator);
         checkArgument(object instanceof BridgeEntity);
-        checkArgument(validator.supports(object.getClass()), "Invalid validator");
+        //checkArgument(validator.supports(object.getClass()), "Invalid validator");
         checkNotNull(object);
         
         String entityName = BridgeUtils.getTypeName(object.getClass());
