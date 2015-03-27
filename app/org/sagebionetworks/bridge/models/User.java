@@ -81,20 +81,20 @@ public class User implements BridgeEntity {
 
     @JsonIgnore
     public String getHealthCode() {
-        return encryptor.decrypt(healthCode);
+        return healthCode;
     }
 
     @JsonIgnore
     public void setHealthCode(String healthCode) {
-        this.healthCode = encryptor.encrypt(healthCode);
+        this.healthCode = healthCode;
     }
 
     public String getEncryptedHealthCode() {
-        return healthCode;
+        return encryptor.encrypt(healthCode);
     }
 
     public void setEncryptedHealthCode(String healthCode) {
-        this.healthCode = healthCode;
+        this.healthCode = encryptor.decrypt(healthCode);
     }
 
     public String getId() {
