@@ -1,27 +1,17 @@
 package org.sagebionetworks.bridge.models;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.json.JsonUtils;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class SignIn implements BridgeEntity {
 
-    private static final String PASSWORD_FIELD = "password";
-    private static final String USERNAME_FIELD = "username";
-    
     private final String username;
     private final String password;
     
-    public SignIn(String username, String password) {
+    public SignIn(@JsonProperty("username") String username, @JsonProperty("password") String password) {
         this.username = username;
         this.password = password;
-    }
-    
-    public static final SignIn fromJson(JsonNode node) {
-        String username = JsonUtils.asText(node, USERNAME_FIELD);
-        String password = JsonUtils.asText(node, PASSWORD_FIELD);
-        return new SignIn(username, password);
     }
 
     public String getUsername() {
