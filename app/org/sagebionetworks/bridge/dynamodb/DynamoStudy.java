@@ -79,7 +79,7 @@ public class DynamoStudy implements Study {
         // phone numbers), we'll update studies with the phone attribute (no 
         // longer forbidden); then remove this on a future deploy (no rush, 
         // but before a new study where this isn't just assumed).
-        // profileAttributes.add("phone");
+        profileAttributes.add("phone");
     }
     
     @Override
