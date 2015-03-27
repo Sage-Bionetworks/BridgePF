@@ -85,13 +85,15 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
         sb.append(NEWLINE);
         for (int i=0; i < participants.size(); i++) {
             StudyParticipant participant = participants.get(i);
+            SharingScope scope = participant.getSharingScope();
+            Boolean notifyByEmail = participant.getNotifyByEmail();
+            
             append(sb, participant.getEmail(), false);
             append(sb, participant.getFirstName(), true);
             append(sb, participant.getLastName(), true);
             append(sb, participant.getPhone(), true);
-            SharingScope scope = participant.getSharingScope();
             append(sb, (scope == null) ? "" : scope.getLabel(), true);
-            append(sb, participant.getNotifyByEmail().toString(), true);
+            append(sb, (notifyByEmail == null) ? "" : notifyByEmail.toString(), true);
             for (String attribute : study.getUserProfileAttributes()) {
                 append(sb, participant.getEmpty(attribute), true);
             }

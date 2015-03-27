@@ -96,6 +96,8 @@ public class ParticipantRosterProviderTest {
         // This is pretty broken, but you should still get output. 
         participants.add(numberTwo);
         output = provider.createParticipantTSV();
+        System.out.println(output);
+        
         assertEquals("Email\tFirst Name\tLast Name\tPhone\tSharing Scope\tEmail Notifications\tRecontact\ntest@test.com\t\tLast\t\t\tfalse\tfalse\ntest2@test.com\t\t\t\t\t\t\n", output);
         
         participants.clear();
