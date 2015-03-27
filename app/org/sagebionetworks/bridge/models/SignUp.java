@@ -4,7 +4,6 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.json.JsonUtils;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;
 

@@ -68,6 +68,10 @@ public class ParticipantRosterGeneratorTest {
             }
         };
         
+        OptionLookup emailLookup = mock(OptionLookup.class);
+        when(emailLookup.get(anyString())).thenReturn(Boolean.TRUE.toString());
+        when(optionsService.getOptionForAllStudyParticipants(study, ParticipantOption.EMAIL_NOTIFICATIONS)).thenReturn(emailLookup);
+
         OptionLookup sharingLookup = mock(OptionLookup.class);
         when(sharingLookup.getSharingScope(anyString())).thenReturn(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         when(healthCodeService.getMapping(anyString())).thenReturn(healthId);

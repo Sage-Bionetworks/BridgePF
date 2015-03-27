@@ -53,7 +53,9 @@ public class ParticipantRosterGenerator implements Runnable {
         try {
             OptionLookup sharingLookup = optionsService.getOptionForAllStudyParticipants(
                 study, ParticipantOption.SHARING_SCOPE);
-
+            OptionLookup emailLookup = optionsService.getOptionForAllStudyParticipants(
+                study, ParticipantOption.EMAIL_NOTIFICATIONS);
+            
             List<StudyParticipant> participants = Lists.newArrayList();
             while (accounts.hasNext()) {
                 Account account = accounts.next();
@@ -61,12 +63,15 @@ public class ParticipantRosterGenerator implements Runnable {
                     
                     String healthCode = healthCodeService.getMapping(account.getHealthId()).getCode();
                     SharingScope sharing = sharingLookup.getSharingScope(healthCode);
+                    
+                    Boolean notifyByEmail = Boolean.valueOf(emailLookup.get(healthCode));
 
                     StudyParticipant participant = new StudyParticipant();
                     participant.setFirstName(account.getFirstName());
                     participant.setLastName(account.getLastName());
                     participant.setEmail(account.getEmail());
                     participant.setSharingScope(sharing);
+                    participant.setNotifyByEmail(notifyByEmail);
                     for (String attribute : study.getUserProfileAttributes()) {
                         String value = account.getAttribute(attribute);
                         // Whether present or not, add an entry.
