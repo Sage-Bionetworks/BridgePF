@@ -56,6 +56,7 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         participant.setEmail("test@test.com");
         participant.setPhone("(123) 456-7890");
         participant.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+        participant.setNotifyByEmail(Boolean.FALSE);
         List<StudyParticipant> participants = Lists.newArrayList(participant);
         
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
@@ -77,7 +78,7 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         assertTrue("Has right subject", 
             rawMessage.contains("Study participants for Test Study"));
         assertTrue("TSV has the participant", 
-            rawMessage.contains("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\tFirst\tLast\tAll Qualified Researchers\t(123) 456-7890\t\n"));
+            rawMessage.contains("Email\tFirst Name\tLast Name\tPhone\tSharing Scope\tEmail Notifications\tRecontact\ntest@test.com\tFirst\tLast\t(123) 456-7890\tAll Qualified Researchers\tfalse\t\n"));
         assertTrue("text description of participant", 
             rawMessage.contains("There is 1 user enrolled in this study. Please see the attached TSV file.\n"));
     }
