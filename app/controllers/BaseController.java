@@ -258,9 +258,7 @@ public abstract class BaseController extends Controller {
 
     // This is needed or tests fail. It appears to be a bug in Play Framework,
     // that the asJson() method doesn't return a node in that context, possibly
-    // because the root object in the JSON is an array (which is legal). OTOH,
-    // if asJson() works, you will get an error if you call asText(), as Play
-    // seems to only allow processing the body content one time in a request.
+    // because the root object in the JSON is an array (which is legal). 
     JsonNode requestToJSON(Request request) {
         try {
             JsonNode node = request().body().asJson();
