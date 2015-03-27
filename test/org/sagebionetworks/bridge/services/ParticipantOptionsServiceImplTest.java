@@ -78,4 +78,10 @@ public class ParticipantOptionsServiceImplTest {
         assertEquals(SharingScope.NO_SHARING, sharing);
     }
     
+    @Test
+    public void theDefaultValueOfEmailNotificationsIsTrue() {
+        String value = optionsService.getOption(testUser.getUser().getHealthCode(), ParticipantOption.EMAIL_NOTIFICATIONS);
+        assertEquals("true", value);
+    }
+    
 }
