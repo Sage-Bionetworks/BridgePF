@@ -33,7 +33,6 @@ public class StudyConsentBootstrapper {
             Study study = new DynamoStudy();
             study.setName("Test Study");
             study.setIdentifier("api");
-            study.setHostname("api-local.sagebridge.org");
             study.setMinAgeOfConsent(18);
             study.setResearcherRole("api_researcher");
             study.setConsentNotificationEmail("bridge-testing+consent@sagebridge.org");
