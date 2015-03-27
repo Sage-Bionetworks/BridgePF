@@ -22,7 +22,8 @@ public class StudyConsentBootstrapper {
         try {
             Study study = studyService.getStudy("api");
             try {
-                if (study.getUserProfileAttributes().isEmpty()) {
+                if (study.getUserProfileAttributes().size() < 2) {
+                    study.getUserProfileAttributes().add("phone");
                     study.getUserProfileAttributes().add("can_be_recontacted");
                     studyService.updateStudy(study);
                 }
@@ -37,6 +38,7 @@ public class StudyConsentBootstrapper {
             study.setResearcherRole("api_researcher");
             study.setConsentNotificationEmail("bridge-testing+consent@sagebridge.org");
             study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM");
+            study.getUserProfileAttributes().add("phone");
             study.getUserProfileAttributes().add("can_be_recontacted");
             studyService.createStudy(study);
         }

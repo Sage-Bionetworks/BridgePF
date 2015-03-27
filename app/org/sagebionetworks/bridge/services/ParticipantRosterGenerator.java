@@ -66,7 +66,6 @@ public class ParticipantRosterGenerator implements Runnable {
                     participant.setFirstName(account.getFirstName());
                     participant.setLastName(account.getLastName());
                     participant.setEmail(account.getEmail());
-                    participant.setPhone(account.getPhone());
                     participant.setSharingScope(sharing);
                     for (String attribute : study.getUserProfileAttributes()) {
                         String value = account.getAttribute(attribute);
