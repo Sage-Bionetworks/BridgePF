@@ -21,10 +21,11 @@ public class UserProfile {
     public static final String USERNAME_FIELD = "username";
     public static final String PHONE_FIELD = "phone";
     /**
-     * This field isn't part of the profile, but it is used to export sharing in the participant roster, 
-     * so we do not allow researchers to override it.
+     * These fields are not part of the profile, but they are used on export to expose one of the participant option
+     * values, so studies cannot override the field value.
      */
     public static final String SHARING_SCOPE_FIELD = "sharing";
+    public static final String NOTIFY_BY_EMAIL_FIELD = "notifyByEmail";
     
     public static final Set<String> FIXED_PROPERTIES = Sets.newHashSet(FIRST_NAME_FIELD, LAST_NAME_FIELD,
             PHONE_FIELD, EMAIL_FIELD, USERNAME_FIELD, SHARING_SCOPE_FIELD);
