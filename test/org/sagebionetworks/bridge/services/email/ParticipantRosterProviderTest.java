@@ -24,6 +24,7 @@ public class ParticipantRosterProviderTest {
         study = new DynamoStudy();
         study.setName("Test Study");
         study.setConsentNotificationEmail("consent-notification@test.com");
+        study.getUserProfileAttributes().add("phone");
         study.getUserProfileAttributes().add("recontact");
     }
 
@@ -33,7 +34,7 @@ public class ParticipantRosterProviderTest {
         participant.setFirstName("First");
         participant.setLastName("Last");
         participant.setEmail("test@test.com");
-        participant.setPhone("(123) 456-7890");
+        participant.put("phone", "(123) 456-7890");
         participant.put("recontact", "true");
         List<StudyParticipant> participants = Lists.newArrayList(participant);
 
@@ -60,7 +61,7 @@ public class ParticipantRosterProviderTest {
         participant.setFirstName("First");
         participant.setLastName("Last");
         participant.setEmail("test@test.com");
-        participant.setPhone("(123)\t456-7890"); // Tab snuck into this string should be converted to a space
+        participant.put("phone", "(123)\t456-7890"); // Tab snuck into this string should be converted to a space
         participant.put("recontact", "false");
         participant.put(UserProfile.SHARING_SCOPE_FIELD, SharingScope.NO_SHARING.name());
         List<StudyParticipant> participants = Lists.newArrayList(participant);
@@ -79,7 +80,7 @@ public class ParticipantRosterProviderTest {
         output = provider.createParticipantTSV();
         assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\t\tLast\tNot Sharing\t(123) 456-7890\tfalse\n", output);
         
-        participant.setPhone(null);
+        participant.remove("phone");
         output = provider.createParticipantTSV();
         assertEquals("Email\tFirst Name\tLast Name\tSharing Scope\tPhone\tRecontact\ntest@test.com\t\tLast\tNot Sharing\t\tfalse\n", output);
         

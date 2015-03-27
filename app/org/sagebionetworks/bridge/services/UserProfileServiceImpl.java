@@ -67,7 +67,6 @@ public class UserProfileServiceImpl implements UserProfileService {
         Account account = accountDao.getAccount(study, user.getEmail());
         account.setFirstName(profile.getFirstName());
         account.setLastName(profile.getLastName());
-        account.setPhone(profile.getPhone());
         for(String attribute : study.getUserProfileAttributes()) {
             String value = profile.getAttribute(attribute);
             account.setAttribute(attribute, value);
@@ -101,7 +100,6 @@ public class UserProfileServiceImpl implements UserProfileService {
         profile.setLastName(account.getLastName());
         profile.setUsername(account.getUsername());
         profile.setEmail(account.getEmail());
-        profile.setPhone(account.getPhone());
         for (String attribute : study.getUserProfileAttributes()) {
             profile.setAttribute(attribute, account.getAttribute(attribute));
         }

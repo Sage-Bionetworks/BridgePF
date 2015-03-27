@@ -19,7 +19,6 @@ public class UserProfile {
     public static final String LAST_NAME_FIELD = "lastName";
     public static final String EMAIL_FIELD = "email";
     public static final String USERNAME_FIELD = "username";
-    public static final String PHONE_FIELD = "phone";
     /**
      * This field isn't part of the profile, but it is used to export sharing in the participant roster, 
      * so we do not allow researchers to override it.
@@ -27,12 +26,11 @@ public class UserProfile {
     public static final String SHARING_SCOPE_FIELD = "sharing";
     
     public static final Set<String> FIXED_PROPERTIES = Sets.newHashSet(FIRST_NAME_FIELD, LAST_NAME_FIELD,
-            PHONE_FIELD, EMAIL_FIELD, USERNAME_FIELD, SHARING_SCOPE_FIELD);
+            EMAIL_FIELD, USERNAME_FIELD, SHARING_SCOPE_FIELD);
     
     private String firstName;
     private String lastName;
     private String username;
-    private String phone;
     private String email;
     private Map<String,String> attributes;
 
@@ -44,7 +42,6 @@ public class UserProfile {
         UserProfile profile = new UserProfile();
         profile.setFirstName(JsonUtils.asText(node, FIRST_NAME_FIELD));
         profile.setLastName(JsonUtils.asText(node, LAST_NAME_FIELD));
-        profile.setPhone(JsonUtils.asText(node, PHONE_FIELD));
         for (String attribute : attributes) {
             String value = JsonUtils.asText(node, attribute);
             if (value != null) {
@@ -80,13 +77,6 @@ public class UserProfile {
     }
     public void setEmail(String email) {
         this.email = email;
-    }
-    
-    public String getPhone() {
-        return phone;
-    }
-    public void setPhone(String phone) {
-        this.phone = phone;
     }
     public void removeAttribute(String name) {
         if (isNotBlank(name)) {

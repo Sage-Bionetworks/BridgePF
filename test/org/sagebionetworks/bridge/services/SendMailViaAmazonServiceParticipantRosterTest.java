@@ -54,7 +54,7 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         participant.setFirstName("First");
         participant.setLastName("Last");
         participant.setEmail("test@test.com");
-        participant.setPhone("(123) 456-7890");
+        participant.put("phone", "(123) 456-7890");
         participant.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         List<StudyParticipant> participants = Lists.newArrayList(participant);
         
