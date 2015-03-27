@@ -38,9 +38,6 @@ public class StudyInfo {
     public int getMaxNumOfParticipants() {
         return study.getMaxNumOfParticipants();
     }
-    public String getHostname() {
-        return study.getHostname();
-    }
     public String getSupportEmail() {
         return study.getSupportEmail();
     }
