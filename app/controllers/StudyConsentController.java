@@ -48,7 +48,7 @@ public class StudyConsentController extends BaseController {
     public Result addConsent() throws Exception {
         UserSession session = getAuthenticatedResearcherOrAdminSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
-        StudyConsentForm form = StudyConsentForm.fromJson(requestToJSON(request()));
+        StudyConsentForm form = parseJson(request(), StudyConsentForm.class);
         StudyConsent studyConsent = studyConsentService.addConsent(studyId, form);
         return createdResult(studyConsent);
     }
