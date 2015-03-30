@@ -13,7 +13,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 public class AesGcmEncryptor implements Encryptor {
 
     public static final Integer VERSION = new Integer(2);
-    
+
     public static void main(String[] args) {
         if (args.length < 2) {
             throw new RuntimeException("Must supply at least 2 parameters: "

@@ -25,26 +25,22 @@ public class BridgeConfig {
     private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
 
+    // Property for a token that is checked before user is unsubscribed from further emails
+    private static final String EMAIL_UNSUBSCRIBE_TOKEN = "email.unsubscribe.token";
+    
     // Property name for the user
     private static final String USER = "bridge.user";
 
     // Property name for the environment
     private static final String ENVIRONMENT = "bridge.env";
 
-    // Property name for the encryption password
-    private static final String PASSWORD = "bridge.pwd";
-    
     // For testing, a host name may be specified that will override the actual host name of the server
     private static final String BRIDGE_HOST = "bridge.host";
 
-    private static final String HEALTHCODE_PASSWORD = "bridge.healthcode.pwd";
     private static final String HEALTHCODE_KEY = "bridge.healthcode.key";
-    private static final String HEALTHCODE_SALT = "bridge.healthcode.salt";
-    
-    private static final String HEROKU_APPNAME = "heroku.appname";
-    private static final String HEROKU_SSL_ENDPOINT = "heroku.ssl.endpoint";
+
     private static final String STUDY_HOSTNAME = "study.hostname";
-    
+
     private final String user;
     private final Environment environment;
     private final Properties properties;
@@ -147,6 +143,10 @@ public class BridgeConfig {
         return Environment.PROD.equals(environment);
     }
 
+    public String getEmailUnsubscribeToken() {
+        return getProperty(EMAIL_UNSUBSCRIBE_TOKEN);
+    }
+    
     public String getHost() {
         return getProperty(BRIDGE_HOST);
     }
@@ -170,38 +170,18 @@ public class BridgeConfig {
     public String getStormpathApplicationHref() {
         return getProperty(ENTERPRISE_STORMPATH_APPLICATION_HREF);
     }
-    
-    public String getPassword() {
-        return getProperty(PASSWORD);
-    }
-
-    public String getHealthCodePassword() {
-        return getProperty(HEALTHCODE_PASSWORD);
-    }
 
     public String getHealthCodeKey() {
         return getProperty(HEALTHCODE_KEY);
     }
 
-    public String getHealthCodeSalt() {
-        return getProperty(HEALTHCODE_SALT);
-    }
-    
     public String getStudyHostnamePostfix() {
         return getProperty(STUDY_HOSTNAME);
     }
-    
+
     public String getStudyHostname(String identifier) {
         checkNotNull(identifier);
         return identifier + getStudyHostnamePostfix();
-    }
-    
-    public String getHerokuAppName() {
-        return getProperty(HEROKU_APPNAME);
-    }
-    
-    public String getHerokuSslEndpoint() {
-        return getProperty(HEROKU_SSL_ENDPOINT);
     }
 
     ///////////////////////////

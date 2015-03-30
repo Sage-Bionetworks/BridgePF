@@ -2,8 +2,10 @@ package org.sagebionetworks.bridge.dao;
 
 public enum ParticipantOption {
 
-    SHARING_SCOPE(SharingScope.NO_SHARING.name());
-    
+    SHARING_SCOPE(SharingScope.NO_SHARING.name()),
+    EMAIL_NOTIFICATIONS(Boolean.TRUE.toString()),
+    EXTERNAL_IDENTIFIER(null);
+
     private final String defaultValue;
     
     private ParticipantOption(String defaultValue) {

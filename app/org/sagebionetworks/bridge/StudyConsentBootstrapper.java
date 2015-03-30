@@ -20,8 +20,8 @@ public class StudyConsentBootstrapper {
     @Autowired
     public StudyConsentBootstrapper(StudyService studyService, StudyConsentDao studyConsentDao) {
         try {
+            Study study = studyService.getStudy("api");
             try {
-                Study study = studyService.getStudy("api");
                 if (study.getUserProfileAttributes().isEmpty()) {
                     study.getUserProfileAttributes().add("can_be_recontacted");
                     studyService.updateStudy(study);
