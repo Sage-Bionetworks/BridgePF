@@ -15,8 +15,12 @@ POST   /api/v1/auth/verifyEmail             @controllers.AuthenticationControlle
 POST   /api/v1/auth/resendEmailVerification @controllers.AuthenticationController.resendEmailVerification
 
 # API - Users
-GET    /api/v1/profile      @controllers.UserProfileController.getUserProfile
-POST   /api/v1/profile      @controllers.UserProfileController.updateUserProfile
+GET    /api/v1/profile                   @controllers.UserProfileController.getUserProfile
+POST   /api/v1/profile                   @controllers.UserProfileController.updateUserProfile
+
+# API - User Settings
+POST   /api/v1/profile/external-id       @controllers.UserProfileController.createExternalIdentifier
+POST   /api/v1/profile/unsubscribe       @controllers.EmailController.unsubscribeFromEmail
 
 # API - Survey Responses
 GET    /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.getSurveyResponse(guid: String)

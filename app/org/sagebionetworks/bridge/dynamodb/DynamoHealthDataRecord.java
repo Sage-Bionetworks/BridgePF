@@ -34,6 +34,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private LocalDate uploadDate;
     private String uploadId;
     private ParticipantOption.SharingScope userSharingScope;
+    private String userExternalId;
     private Long version;
 
     /** {@inheritDoc} */
@@ -167,6 +168,17 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     public void setUserSharingScope(ParticipantOption.SharingScope userSharingScope) {
         this.userSharingScope = userSharingScope;
     }
+    
+    /** {@inheritDoc} */
+    @Override
+    public String getUserExternalId() {
+        return userExternalId;
+    }
+
+    /** @see #getUserExternalId */
+    public void setUserExternalId(String userExternalId) {
+        this.userExternalId = userExternalId;
+    }
 
     /** {@inheritDoc} */
     @DynamoDBVersionAttribute
@@ -196,6 +208,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
             record.setUploadDate(getUploadDate());
             record.setUploadId(getUploadId());
             record.setUserSharingScope(getUserSharingScope());
+            record.setUserExternalId(getUserExternalId());
             record.setVersion(getVersion());
             return record;
         }

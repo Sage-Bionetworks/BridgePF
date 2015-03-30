@@ -261,6 +261,7 @@ public class HealthDataRecordTest {
                 "   \"uploadDate\":\"2014-02-12\",\n" +
                 "   \"uploadId\":\"json upload\",\n" +
                 "   \"userSharingScope\":\"all_qualified_researchers\",\n" +
+                "   \"userExternalId\":\"ABC-123-XYZ\",\n" +
                 "   \"version\":42\n" +
                 "}";
         long measuredTimeMillis = new DateTime(2014, 2, 12, 13, 45, BridgeConstants.LOCAL_TIME_ZONE).getMillis();
@@ -276,6 +277,7 @@ public class HealthDataRecordTest {
         assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
         assertEquals("json upload", record.getUploadId());
         assertEquals(ParticipantOption.SharingScope.ALL_QUALIFIED_RESEARCHERS, record.getUserSharingScope());
+        assertEquals("ABC-123-XYZ", record.getUserExternalId());
         assertEquals(42, record.getVersion().longValue());
 
         assertEquals(1, record.getData().size());
@@ -289,7 +291,7 @@ public class HealthDataRecordTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(13, jsonMap.size());
+        assertEquals(14, jsonMap.size());
         assertEquals("json healthcode", jsonMap.get("healthCode"));
         assertEquals("json record ID", jsonMap.get("id"));
         assertEquals("json schema", jsonMap.get("schemaId"));
@@ -298,6 +300,7 @@ public class HealthDataRecordTest {
         assertEquals("2014-02-12", jsonMap.get("uploadDate"));
         assertEquals("json upload", jsonMap.get("uploadId"));
         assertEquals("all_qualified_researchers", jsonMap.get("userSharingScope"));
+        assertEquals("ABC-123-XYZ", jsonMap.get("userExternalId"));
         assertEquals(42, jsonMap.get("version"));
         assertEquals("HealthData", jsonMap.get("type"));
 
