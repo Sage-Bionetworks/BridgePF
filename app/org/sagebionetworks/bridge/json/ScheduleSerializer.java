@@ -1,19 +1,22 @@
 package org.sagebionetworks.bridge.json;
 
 import static org.sagebionetworks.bridge.models.schedules.Schedule.ACTIVITIES_PROPERTY;
-import static org.sagebionetworks.bridge.models.schedules.Schedule.ACTIVITY_REF_PROPERTY;
-import static org.sagebionetworks.bridge.models.schedules.Schedule.ACTIVITY_TYPE_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.CRON_TRIGGER_PROPERTY;
+import static org.sagebionetworks.bridge.models.schedules.Schedule.DELAY_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.ENDS_ON_PROPERTY;
+import static org.sagebionetworks.bridge.models.schedules.Schedule.EVENT_ID_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.EXPIRES_PROPERTY;
+import static org.sagebionetworks.bridge.models.schedules.Schedule.FREQUENCY_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.LABEL_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.SCHEDULE_TYPE_NAME;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.SCHEDULE_TYPE_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.STARTS_ON_PROPERTY;
+import static org.sagebionetworks.bridge.models.schedules.Schedule.TIMES_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.TYPE_PROPERTY_NAME;
 
 import java.io.IOException;
 
+import org.joda.time.LocalTime;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 
@@ -40,6 +43,15 @@ public class ScheduleSerializer extends JsonSerializer<Schedule> {
         if (schedule.getExpires() != null) {
             writeString(gen, EXPIRES_PROPERTY, schedule.getExpires().toString());    
         }
+        if (schedule.getEventId() != null) {
+            writeString(gen, EVENT_ID_PROPERTY, schedule.getEventId());
+        }
+        if (schedule.getDelay() != null) {
+            writeString(gen, DELAY_PROPERTY, schedule.getDelay().toString());    
+        }
+        if (schedule.getFrequency() != null) {
+            writeString(gen, FREQUENCY_PROPERTY, schedule.getFrequency().toString());    
+        }
         writeString(gen, SCHEDULE_TYPE_PROPERTY, schedule.getScheduleType().name().toLowerCase());
         if (schedule.getActivities() != null && !schedule.getActivities().isEmpty()) {
             gen.writeFieldName(ACTIVITIES_PROPERTY);
@@ -48,9 +60,14 @@ public class ScheduleSerializer extends JsonSerializer<Schedule> {
                 gen.writeObject(activity);
             }
             gen.writeEndArray();
-            Activity act = schedule.getActivities().get(0);
-            writeString(gen, ACTIVITY_TYPE_PROPERTY, act.getActivityType().name().toLowerCase());
-            writeString(gen, ACTIVITY_REF_PROPERTY, act.getRef());
+        }
+        if (schedule.getTimes() != null && !schedule.getTimes().isEmpty()) {
+            gen.writeFieldName(TIMES_PROPERTY);
+            gen.writeStartArray();
+            for (LocalTime time : schedule.getTimes()) {
+                gen.writeString(time.toString());
+            }
+            gen.writeEndArray();
         }
         gen.writeStringField(TYPE_PROPERTY_NAME, SCHEDULE_TYPE_NAME);
         gen.writeEndObject();
