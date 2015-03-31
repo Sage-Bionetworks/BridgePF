@@ -53,33 +53,38 @@ public class EmailController extends BaseController {
     public Result unsubscribeFromEmail() throws Exception {
         String token = getParameter("token");
         if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
-            throw new UnauthorizedException();
+            return ok("Not authorized.\n").as("text/plain");
         }
         // Study has to be provided as an URL parameter:
         String studyId = getParameter("study");
         if (studyId == null) {
-            throw new EntityNotFoundException(Study.class);
+            return ok("Study not found.\n").as("text/plain");
         }
-        Study study = studyService.getStudy(studyId);
+        Study study = null;
+        try {
+            study = studyService.getStudy(studyId);
+        } catch(EntityNotFoundException e) {
+            return ok("Study not found.\n").as("text/plain");
+        }
         // MailChimp submits email as data[email]
         String email = getParameter("data[email]");
         if (email == null) {
             email = getParameter("email");
         }
         if (email == null) {
-            throw new EntityNotFoundException(User.class);
+            return ok("Email not found.\n").as("text/plain");
         }
         Account account = accountDao.getAccount(study, email);
         if (account == null) {
-            throw new EntityNotFoundException(User.class);
+            return ok("Account not found.\n").as("text/plain");
         }
         HealthId healthId = healthCodeService.getMapping(account.getHealthId());
         if (healthId == null) {
-            throw new EntityNotFoundException(User.class);
+            return ok("Health code not found.\n").as("text/plain");
         }
         optionsService.setOption(study, healthId.getCode(), ParticipantOption.EMAIL_NOTIFICATIONS, Boolean.FALSE.toString());
 
-        return ok("You have been unsubscribed from future email.").as("text/plain");
+        return ok("You have been unsubscribed from future email.\n").as("text/plain");
     }
 
     // This doesn't appear to be in Play's API
