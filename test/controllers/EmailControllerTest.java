@@ -6,7 +6,6 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static play.test.Helpers.contentAsString;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -23,7 +22,6 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
