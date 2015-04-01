@@ -17,7 +17,10 @@ public class EmailValidator implements Validator {
     @Override
     public void validate(Object obj, Errors errors) {
         Email email = (Email)obj;
-        
+
+        if (email.getStudyIdentifier() == null) {
+            errors.rejectValue("study", "required");
+        }
         if (StringUtils.isBlank(email.getEmail())) {
             errors.rejectValue("email", "required");
         }
