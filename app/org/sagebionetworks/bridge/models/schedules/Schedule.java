@@ -21,7 +21,7 @@ public final class Schedule implements BridgeEntity {
     public static final String SCHEDULE_TYPE_PROPERTY = "scheduleType";
     public static final String EVENT_ID_PROPERTY = "eventId";
     public static final String DELAY_PROPERTY = "delay";
-    public static final String FREQUENCY_PROPERTY = "frequency";
+    public static final String INTERVAL_PROPERTY = "interval";
     public static final String EXPIRES_PROPERTY = "expires";
     public static final String CRON_TRIGGER_PROPERTY = "cronTrigger";
     public static final String STARTS_ON_PROPERTY = "startsOn";
@@ -34,7 +34,7 @@ public final class Schedule implements BridgeEntity {
     private ScheduleType scheduleType;
     private String eventId;
     private Period delay;
-    private Period frequency;
+    private Period interval;
     private Period expires;
     private String cronTrigger;
     private DateTime startsOn;
@@ -58,9 +58,17 @@ public final class Schedule implements BridgeEntity {
     public void setTimes(List<LocalTime> times) {
         this.times = times;
     }
+    public void setTimes(String... times) {
+        for (String time : times) {
+            addTime(time);
+        }
+    }
     public void addTime(LocalTime time) {
         checkNotNull(time);
         this.times.add(time);
+    }
+    public void addTime(String time) {
+        addTime(LocalTime.parse(time));
     }
     public String getLabel() {
         return label;
@@ -86,11 +94,17 @@ public final class Schedule implements BridgeEntity {
     public void setStartsOn(DateTime startsOn) {
         this.startsOn = startsOn;
     }
+    public void setStartsOn(String startsOn) {
+        setStartsOn(DateTime.parse(startsOn));
+    }
     public DateTime getEndsOn() {
         return endsOn;
     }
     public void setEndsOn(DateTime endsOn) {
         this.endsOn = endsOn;
+    }
+    public void setEndsOn(String endsOn) {
+        setEndsOn(DateTime.parse(endsOn));
     }
     public Period getExpires() {
         return expires;
@@ -98,17 +112,26 @@ public final class Schedule implements BridgeEntity {
     public void setExpires(Period expires) {
         this.expires = expires;
     }
+    public void setExpires(String expires) {
+        setExpires(Period.parse(expires));
+    }
     public Period getDelay() {
         return delay;
     }
     public void setDelay(Period delay) {
         this.delay = delay;
     }
-    public Period getFrequency() {
-        return frequency;
+    public void setDelay(String delay) {
+        setDelay(Period.parse(delay));
     }
-    public void setFrequency(Period frequency) {
-        this.frequency = frequency;
+    public Period getInterval() {
+        return interval;
+    }
+    public void setInterval(Period interval) {
+        this.interval = interval;
+    }
+    public void setInterval(String interval) {
+        setInterval(Period.parse(interval));
     }
     public String getEventId() {
         return eventId;
@@ -133,7 +156,7 @@ public final class Schedule implements BridgeEntity {
         result = prime * result + Objects.hashCode(endsOn);
         result = prime * result + Objects.hashCode(expires);
         result = prime * result + Objects.hashCode(delay);
-        result = prime * result + Objects.hashCode(frequency);
+        result = prime * result + Objects.hashCode(interval);
         result = prime * result + Objects.hashCode(label);
         result = prime * result + Objects.hashCode(scheduleType);
         result = prime * result + Objects.hashCode(startsOn);
@@ -154,12 +177,12 @@ public final class Schedule implements BridgeEntity {
                 && Objects.equals(endsOn, other.endsOn) && Objects.equals(expires, other.expires)
                 && Objects.equals(label, other.label) && Objects.equals(scheduleType, other.scheduleType) 
                 && Objects.equals(startsOn, other.startsOn) && Objects.equals(eventId, other.eventId) 
-                && Objects.equals(frequency, other.frequency) && Objects.equals(times, other.times)
+                && Objects.equals(interval, other.interval) && Objects.equals(times, other.times)
                 && Objects.equals(delay, other.delay));
     }
     @Override
     public String toString() {
-        return String.format("Schedule [label=%s, scheduleType=%s, cronTrigger=%s, startsOn=%s, endsOn=%s, delay=%s, expires=%s, frequency=%s, times=%s, eventId=%s, activities=%s]", 
-            label, scheduleType, cronTrigger, startsOn, endsOn, delay, expires, frequency, times, eventId, activities);
+        return String.format("Schedule [label=%s, scheduleType=%s, cronTrigger=%s, startsOn=%s, endsOn=%s, delay=%s, expires=%s, interval=%s, times=%s, eventId=%s, activities=%s]", 
+            label, scheduleType, cronTrigger, startsOn, endsOn, delay, expires, interval, times, eventId, activities);
     }
 }    

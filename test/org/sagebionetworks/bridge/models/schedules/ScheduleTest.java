@@ -32,7 +32,7 @@ public class ScheduleTest {
         schedule.setStartsOn(DateTime.parse("2015-02-02T10:10:10.000Z"));
         schedule.setEndsOn(DateTime.parse("2015-01-01T10:10:10.000Z"));
         schedule.setEventId("eventId");
-        schedule.setFrequency(Period.parse("P3D"));
+        schedule.setInterval(Period.parse("P3D"));
         schedule.setLabel("label");
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setTimes(Lists.newArrayList(LocalTime.parse("10:10"), LocalTime.parse("14:00")));
@@ -45,7 +45,7 @@ public class ScheduleTest {
         assertEquals("P2D", schedule.getExpires().toString());
         assertEquals("eventId", schedule.getEventId());
         assertEquals("label", schedule.getLabel());
-        assertEquals("P3D", schedule.getFrequency().toString());
+        assertEquals("P3D", schedule.getInterval().toString());
         assertEquals(ScheduleType.RECURRING, schedule.getScheduleType());
         assertEquals("2015-02-02T10:10:10.000Z", schedule.getStartsOn().toString());
         assertEquals("2015-01-01T10:10:10.000Z", schedule.getEndsOn().toString());
