@@ -22,8 +22,8 @@ import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.simpleemail.model.SendRawEmailRequest;
 import com.amazonaws.services.simpleemail.model.SendRawEmailResult;
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-import com.newrelic.agent.deps.com.google.common.base.Joiner;
 
 public class SendMailViaAmazonServiceParticipantRosterTest {
     
