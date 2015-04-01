@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.models.schedules.Schedule.DELAY_PROPERT
 import static org.sagebionetworks.bridge.models.schedules.Schedule.ENDS_ON_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.EVENT_ID_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.EXPIRES_PROPERTY;
-import static org.sagebionetworks.bridge.models.schedules.Schedule.FREQUENCY_PROPERTY;
+import static org.sagebionetworks.bridge.models.schedules.Schedule.INTERVAL_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.LABEL_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.SCHEDULE_TYPE_NAME;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.SCHEDULE_TYPE_PROPERTY;
@@ -49,8 +49,8 @@ public class ScheduleSerializer extends JsonSerializer<Schedule> {
         if (schedule.getDelay() != null) {
             writeString(gen, DELAY_PROPERTY, schedule.getDelay().toString());    
         }
-        if (schedule.getFrequency() != null) {
-            writeString(gen, FREQUENCY_PROPERTY, schedule.getFrequency().toString());    
+        if (schedule.getInterval() != null) {
+            writeString(gen, INTERVAL_PROPERTY, schedule.getInterval().toString());    
         }
         writeString(gen, SCHEDULE_TYPE_PROPERTY, schedule.getScheduleType().name().toLowerCase());
         if (schedule.getActivities() != null && !schedule.getActivities().isEmpty()) {

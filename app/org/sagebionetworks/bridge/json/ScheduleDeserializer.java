@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.models.schedules.Schedule.DELAY_PROPERT
 import static org.sagebionetworks.bridge.models.schedules.Schedule.ENDS_ON_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.EVENT_ID_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.EXPIRES_PROPERTY;
-import static org.sagebionetworks.bridge.models.schedules.Schedule.FREQUENCY_PROPERTY;
+import static org.sagebionetworks.bridge.models.schedules.Schedule.INTERVAL_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.LABEL_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.SCHEDULE_TYPE_PROPERTY;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.STARTS_ON_PROPERTY;
@@ -51,7 +51,7 @@ public class ScheduleDeserializer extends JsonDeserializer<Schedule> {
         schedule.setEndsOn(JsonUtils.asDateTime(node, ENDS_ON_PROPERTY));
         schedule.setExpires(JsonUtils.asPeriod(node, EXPIRES_PROPERTY));
         schedule.setDelay(JsonUtils.asPeriod(node, DELAY_PROPERTY));
-        schedule.setFrequency(JsonUtils.asPeriod(node, FREQUENCY_PROPERTY));
+        schedule.setInterval(JsonUtils.asPeriod(node, INTERVAL_PROPERTY));
         schedule.setEventId(JsonUtils.asText(node, EVENT_ID_PROPERTY));
         return schedule;
     }

@@ -56,7 +56,7 @@ public class ScheduleValidatorTest {
         schedule.setScheduleType(ScheduleType.ONCE);
 
         DateTime startsOn = DateUtils.getCurrentDateTime();
-        DateTime endsOn = startsOn.plusHours(1); // should be at least an hour later
+        DateTime endsOn = startsOn.plusMinutes(10); // should be at least an hour later
         
         schedule.setStartsOn(startsOn);
         schedule.setEndsOn(endsOn);
@@ -66,10 +66,6 @@ public class ScheduleValidatorTest {
         } catch(InvalidEntityException e) {
             assertEquals("endsOn should be at least an hour after the startsOn time", e.getErrors().get("endsOn").get(0));
         }
-        
-        endsOn = startsOn.plusHours(1);
-        schedule.setEndsOn(endsOn);
-        Validate.entityThrowingException(validator, schedule);
     }
     
     @Test
@@ -105,4 +101,20 @@ public class ScheduleValidatorTest {
         assertEquals("2015-01-27T17:46:31.237Z", ref.getCreatedOn());
     }
     
+    @Test
+    public void mustHaveCronTriggerOrInterval() {
+        Schedule schedule = new Schedule();
+        try {
+            Validate.entityThrowingException(validator, schedule);
+        } catch(InvalidEntityException e) {
+            assertEquals("Schedule should have either a cron expression, or an interval", e.getErrors().get("Schedule").get(0));
+        }
+        
+        schedule.setInterval("P1D");
+        try {
+            Validate.entityThrowingException(validator, schedule);
+        } catch(InvalidEntityException e) {
+            assertNull(e.getErrors().get("Schedule"));
+        }
+    }
 }
