@@ -35,9 +35,6 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     public String getStormpathHref();
     public void setStormpathHref(String stormpathHref);
     
-    public String getHostname();
-    public void setHostname(String hostname);
-
     public Set<String> getUserProfileAttributes();
     public void setUserProfileAttributes(Set<String> attributes);
 }

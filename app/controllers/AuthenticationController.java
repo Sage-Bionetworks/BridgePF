@@ -34,7 +34,7 @@ public class AuthenticationController extends BaseController {
         }
         try {
             JsonNode json = requestToJSON(request());
-            SignIn signIn = SignIn.fromJson(json);
+            SignIn signIn = parseJson(request(), SignIn.class);
             Study study = getStudyOrThrowException(json);
             
             session = authenticationService.signIn(study, signIn);
@@ -59,6 +59,8 @@ public class AuthenticationController extends BaseController {
     public Result signUp() throws Exception {
         JsonNode json = requestToJSON(request());
         SignUp signUp = SignUp.fromJson(json, false);
+        signUp.getRoles().clear();
+        
         Study study = getStudyOrThrowException(json);
 
         authenticationService.signUp(study, signUp, true);
@@ -67,7 +69,7 @@ public class AuthenticationController extends BaseController {
 
     public Result verifyEmail() throws Exception {
         JsonNode json = requestToJSON(request());
-        EmailVerification emailVerification = EmailVerification.fromJson(json);
+        EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
         Study study = getStudyOrThrowException(json);
         
         // In normal course of events (verify email, consent to research),
@@ -79,7 +81,7 @@ public class AuthenticationController extends BaseController {
     
     public Result resendEmailVerification() throws Exception {
         JsonNode json = requestToJSON(request());
-        Email email = Email.fromJson(json);
+        Email email = parseJson(request(), Email.class);
         StudyIdentifier studyIdentifier = getStudyIdentifierOrThrowException(json);
         
         authenticationService.resendEmailVerification(studyIdentifier, email);
@@ -88,7 +90,7 @@ public class AuthenticationController extends BaseController {
 
     public Result requestResetPassword() throws Exception {
         JsonNode json = requestToJSON(request());
-        Email email = Email.fromJson(json);
+        Email email = parseJson(request(), Email.class);
         Study study = getStudyOrThrowException(json);
         
         authenticationService.requestResetPassword(study, email);
@@ -96,7 +98,7 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result resetPassword() throws Exception {
-        PasswordReset passwordReset = PasswordReset.fromJson(requestToJSON(request()));
+        PasswordReset passwordReset = parseJson(request(), PasswordReset.class);
         authenticationService.resetPassword(passwordReset);
         return okResult("Password has been changed.");
     }

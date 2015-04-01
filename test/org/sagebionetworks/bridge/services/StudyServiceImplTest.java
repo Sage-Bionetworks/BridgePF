@@ -114,7 +114,6 @@ public class StudyServiceImplTest {
         // these should have been changed
         assertEquals(identifier+"_researcher", study.getResearcherRole());
         assertNotEquals("http://local-test-junk", study.getStormpathHref());
-        assertNotEquals("local-hostname-test-junk", study.getHostname());
         verify(cache).getStudy(study.getIdentifier());
         verify(cache).setStudy(study);
         verifyNoMoreInteractions(cache);
@@ -139,7 +138,6 @@ public class StudyServiceImplTest {
         study.setMinAgeOfConsent(18);
         study.setResearcherRole(identifier+"_researcher");
         study.setStormpathHref("http://dev-test-junk");
-        study.setHostname("dev-hostname-test-junk");
         return study;
     }
 

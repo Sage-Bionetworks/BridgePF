@@ -48,6 +48,7 @@ public class ParticipantRosterGeneratorTest {
     public void before() {
         study = new DynamoStudy();
         study.setIdentifier("test");
+        study.getUserProfileAttributes().add("phone");
         study.getUserProfileAttributes().add("can_recontact");
         
         @SuppressWarnings("unchecked")
@@ -107,7 +108,7 @@ public class ParticipantRosterGeneratorTest {
         assertEquals("First", p.getFirstName());
         assertEquals("Last", p.getLastName());
         assertEquals("first.last@test.com", p.getEmail());
-        assertEquals("(206) 111-2222", p.getPhone());
+        assertEquals("(206) 111-2222", p.get("phone"));
         assertEquals("true", p.get("can_recontact"));
         assertNull(p.get("another_attribute"));
     }
@@ -117,8 +118,8 @@ public class ParticipantRosterGeneratorTest {
         when(account.getEmail()).thenReturn(email);
         when(account.getFirstName()).thenReturn(firstName);
         when(account.getLastName()).thenReturn(lastName);
-        when(account.getPhone()).thenReturn(phone);
         when(account.getHealthId()).thenReturn(email);
+        when(account.getAttribute("phone")).thenReturn(phone);
         when(account.getAttribute("can_recontact")).thenReturn("true");
         if (hasConsented) {
             ConsentSignature sig = ConsentSignature.create(firstName + " " + lastName, "1970-02-02", null, null);

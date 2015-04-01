@@ -58,7 +58,6 @@ public class DynamoStudyDaoTest {
         assertEquals("Name was set", "This is a test name", study.getName());
         assertEquals("Max participants was set", 10, study.getMaxNumOfParticipants());
         assertNotNull("Study deployment was set", study.getStormpathHref());
-        assertNotNull("Study hostname was set", study.getHostname());
         assertEquals("support@test.com", study.getSupportEmail());
         assertEquals("consent-notification@test.com", study.getConsentNotificationEmail());
         assertEquals(EXTRA_USER_PROFILE_ATTRIBUTES, study.getUserProfileAttributes());
@@ -128,7 +127,6 @@ public class DynamoStudyDaoTest {
         study.setMinAgeOfConsent(18);
         study.setName(TestUtils.randomName());
         study.setResearcherRole(study.getIdentifier()+"_researcher");
-        study.setHostname("test.sagebridge.org");
         study.setStormpathHref("http://test/local/");
         study.setSupportEmail("support@test.com");
         study.setConsentNotificationEmail("consent-notification@test.com");

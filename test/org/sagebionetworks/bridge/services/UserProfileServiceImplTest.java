@@ -48,13 +48,12 @@ public class UserProfileServiceImplTest {
         UserProfile profile = profileService.getProfile(testUser.getStudy(), testUser.getEmail());
         profile.setFirstName("Test");
         profile.setLastName("Powers");
-        profile.setPhone("123-456-7890");
+        profile.setAttribute("phone", "123-456-7890");
         profile.setAttribute("can_be_recontacted", "true");
         
         // You cannot reset a field through the attributes. These should do NOTHING.
         profile.setAttribute("firstName", "NotTest");
         profile.setAttribute("lastName", "NotPowers");
-        profile.setAttribute("phone", "Not123-456-7890");
         profile.setAttribute("email", "NotEmail");
         profile.setAttribute("username", "NotUsername");
 
@@ -65,7 +64,7 @@ public class UserProfileServiceImplTest {
         assertEquals("Last name is persisted", "Powers", profile.getLastName());
         assertEquals("Email is persisted", testUser.getEmail(), profile.getEmail());
         assertEquals("Username is persisted", testUser.getUsername(), profile.getUsername());
-        assertEquals("Phone is persisted", "123-456-7890", profile.getPhone());
+        assertEquals("Phone is persisted", "123-456-7890", profile.getAttribute("phone"));
         assertEquals("Attribute is persisted", "true", profile.getAttribute("can_be_recontacted"));
         assertNull("Unknown attribute is null", profile.getAttribute("some_unknown_attribute"));
     }
