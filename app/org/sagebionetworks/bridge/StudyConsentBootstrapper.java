@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import java.util.Set;
+
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -12,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.Sets;
+
 @Component("studyConsentBootstrapper")
 public class StudyConsentBootstrapper {
     
@@ -22,8 +26,9 @@ public class StudyConsentBootstrapper {
         try {
             Study study = studyService.getStudy("api");
             try {
-                if (study.getUserProfileAttributes().isEmpty()) {
-                    study.getUserProfileAttributes().add("can_be_recontacted");
+                Set<String> atts = Sets.newHashSet("phone", "can_be_recontacted");
+                if (study.getUserProfileAttributes().size() != atts.size()) {
+                    study.setUserProfileAttributes(atts);
                     studyService.updateStudy(study);
                 }
             } catch(Exception e) {
@@ -33,11 +38,11 @@ public class StudyConsentBootstrapper {
             Study study = new DynamoStudy();
             study.setName("Test Study");
             study.setIdentifier("api");
-            study.setHostname("api-local.sagebridge.org");
             study.setMinAgeOfConsent(18);
             study.setResearcherRole("api_researcher");
             study.setConsentNotificationEmail("bridge-testing+consent@sagebridge.org");
             study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM");
+            study.getUserProfileAttributes().add("phone");
             study.getUserProfileAttributes().add("can_be_recontacted");
             studyService.createStudy(study);
         }

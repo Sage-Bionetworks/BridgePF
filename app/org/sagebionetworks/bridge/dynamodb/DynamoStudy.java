@@ -35,7 +35,6 @@ public class DynamoStudy implements Study {
     private static final String MAX_NUM_OF_PARTICIPANTS_PROPERTY = "maxNumOfParticipants";
     private static final String MIN_AGE_OF_CONSENT_PROPERTY = "minAgeOfConsent";
     private static final String RESEARCHER_ROLE_PROPERTY = "researcherRole";
-    private static final String HOSTNAME_PROPERTY = "hostname";
     private static final String STORMPATH_HREF_PROPERTY = "stormpathHref";
     private static final String VERSION_PROPERTY = "version";
     private static final String SUPPORT_EMAIL_PROPERTY = "supportEmail";
@@ -46,7 +45,6 @@ public class DynamoStudy implements Study {
     private String identifier;
     private String researcherRole;
     private String stormpathHref;
-    private String hostname;
     private String supportEmail;
     private String consentNotificationEmail;
     private int minAgeOfConsent;
@@ -72,12 +70,16 @@ public class DynamoStudy implements Study {
         DynamoStudy study = fromJson(node);
         study.setStormpathHref(JsonUtils.asText(node, STORMPATH_HREF_PROPERTY));
         study.setResearcherRole(JsonUtils.asText(node, RESEARCHER_ROLE_PROPERTY));
-        study.setHostname(JsonUtils.asText(node, HOSTNAME_PROPERTY));
         return study;
     }
     
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
+        // This is temporary. We'll deploy this study (it'll continue to show
+        // phone numbers), we'll update studies with the phone attribute (no 
+        // longer forbidden); then remove this on a future deploy (no rush, 
+        // but before a new study where this isn't just assumed).
+        profileAttributes.add("phone");
     }
     
     @Override
@@ -151,15 +153,6 @@ public class DynamoStudy implements Study {
     public void setStormpathHref(String stormpathHref) {
         this.stormpathHref = stormpathHref;
     }
-    @DynamoDBIgnore
-    @Override
-    public String getHostname() {
-        return hostname;
-    }
-    @Override
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
-    }
     /**
      * A comma-separated list of email addresses that should be used to send technical 
      * support email to the research team from the application (optional).
@@ -207,7 +200,6 @@ public class DynamoStudy implements Study {
         node.put(STORMPATH_HREF_PROPERTY, stormpathHref);
         node.put(SUPPORT_EMAIL_PROPERTY, supportEmail);
         node.put(CONSENT_NOTIFICATION_EMAIL_PROPERTY, consentNotificationEmail);
-        node.put(HOSTNAME_PROPERTY, hostname);
         ArrayNode array = JsonNodeFactory.instance.arrayNode();
         if (profileAttributes != null) {
             for (String att : profileAttributes) {
@@ -226,7 +218,6 @@ public class DynamoStudy implements Study {
             this.supportEmail = JsonUtils.asText(node, SUPPORT_EMAIL_PROPERTY);
             this.consentNotificationEmail = JsonUtils.asText(node, CONSENT_NOTIFICATION_EMAIL_PROPERTY);
             this.stormpathHref = JsonUtils.asText(node, STORMPATH_HREF_PROPERTY);
-            this.hostname = JsonUtils.asText(node, HOSTNAME_PROPERTY);
             this.profileAttributes = JsonUtils.asStringSet(node, USER_PROFILE_ATTRIBUTES_PROPERTY);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
@@ -237,7 +228,6 @@ public class DynamoStudy implements Study {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((hostname == null) ? 0 : hostname.hashCode());
         result = prime * result + ((identifier == null) ? 0 : identifier.hashCode());
         result = prime * result + maxNumOfParticipants;
         result = prime * result + minAgeOfConsent;
@@ -260,11 +250,6 @@ public class DynamoStudy implements Study {
         if (getClass() != obj.getClass())
             return false;
         DynamoStudy other = (DynamoStudy) obj;
-        if (hostname == null) {
-            if (other.hostname != null)
-                return false;
-        } else if (!hostname.equals(other.hostname))
-            return false;
         if (identifier == null) {
             if (other.identifier != null)
                 return false;
@@ -315,9 +300,9 @@ public class DynamoStudy implements Study {
     @Override
     public String toString() {
         return "DynamoStudy [name=" + name + ", identifier=" + identifier + ", researcherRole=" + researcherRole
-                + ", stormpathHref=" + stormpathHref + ", hostname=" + hostname + ", minAgeOfConsent="
-                + minAgeOfConsent + ", maxNumOfParticipants=" + maxNumOfParticipants + ", supportEmail=" + supportEmail
-                + ", consentNotificationEmail=" + consentNotificationEmail + ", version=" + version
-                + ", userProfileAttributes=" + profileAttributes + "]";
+            + ", stormpathHref=" + stormpathHref + ", minAgeOfConsent=" + minAgeOfConsent
+            + ", maxNumOfParticipants=" + maxNumOfParticipants + ", supportEmail=" + supportEmail
+            + ", consentNotificationEmail=" + consentNotificationEmail + ", version=" + version
+            + ", userProfileAttributes=" + profileAttributes + "]";
     }
 }

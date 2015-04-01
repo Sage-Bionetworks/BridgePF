@@ -22,6 +22,7 @@ import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.simpleemail.model.SendRawEmailRequest;
 import com.amazonaws.services.simpleemail.model.SendRawEmailResult;
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 
 public class SendMailViaAmazonServiceParticipantRosterTest {
@@ -36,6 +37,7 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         study = new DynamoStudy();
         study.setName("Test Study");
         study.setConsentNotificationEmail("consent-notification@test.com");
+        study.getUserProfileAttributes().add("phone");
         study.getUserProfileAttributes().add("recontact");
 
         emailClient = mock(AmazonSimpleEmailServiceClient.class);
@@ -54,10 +56,12 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         participant.setFirstName("First");
         participant.setLastName("Last");
         participant.setEmail("test@test.com");
-        participant.setPhone("(123) 456-7890");
+        participant.put("phone", "(123) 456-7890");
         participant.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         participant.setNotifyByEmail(Boolean.FALSE);
         List<StudyParticipant> participants = Lists.newArrayList(participant);
+        
+        String header = row("Email", "First Name", "Last Name", "Sharing Scope", "Email Notifications", "Phone", "Recontact");
         
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
         service.sendEmail(provider);
@@ -75,11 +79,14 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         // Validate message content. MIME message must be ASCII
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.UTF_8);
         
-        assertTrue("Has right subject", 
-            rawMessage.contains("Study participants for Test Study"));
-        assertTrue("TSV has the participant", 
-            rawMessage.contains("Email\tFirst Name\tLast Name\tPhone\tSharing Scope\tEmail Notifications\tRecontact\ntest@test.com\tFirst\tLast\t(123) 456-7890\tAll Qualified Researchers\tfalse\t\n"));
-        assertTrue("text description of participant", 
-            rawMessage.contains("There is 1 user enrolled in this study. Please see the attached TSV file.\n"));
+        assertTrue("Has right subject", rawMessage.contains("Study participants for Test Study"));
+        String output = header + row("test@test.com", "First", "Last", "All Qualified Researchers", "false", "(123) 456-7890", "");
+        
+        assertTrue("TSV has the participant", rawMessage.contains(output));
+        assertTrue("text description of participant", rawMessage.contains("There is 1 user enrolled in this study."));
+    }
+    
+    private String row(String... values) {
+        return Joiner.on("\t").join(values) + "\n";
     }
 }
