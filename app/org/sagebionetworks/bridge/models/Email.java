@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
