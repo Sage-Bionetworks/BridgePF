@@ -43,9 +43,9 @@ public class EmailController extends BaseController {
 
     /**
      * An URL to which a POST can be sent to set the user's email notification preference to "off". Cannot turn email
-     * notifications back on through this endpoint. Not considered a public part of the API at this time, although
-     * publicly accessible. The token that is submitted is set in the configuration, and must match to allow this 
-     * call to succeed. Subject to change without warning or backwards compatibility.
+     * notifications back on through this endpoint. This cannot be part of the public API, because MailChimp doesn't
+     * deal with non-200 status codes. The token that is submitted is set in the configuration, and must match to allow
+     * this call to succeed. Subject to change without warning or backwards compatibility.
      * 
      * @return
      * @throws Exception
