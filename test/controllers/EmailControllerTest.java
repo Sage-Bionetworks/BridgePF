@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static play.test.Helpers.contentAsString;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -15,12 +16,12 @@ import org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import play.mvc.Http;
+import play.mvc.Result;
 
 import java.util.Map;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -90,7 +91,6 @@ public class EmailControllerTest {
         return controller;
     }
     
-    
     @Test
     public void updatesOptionToTurnOffEmail() throws Exception {
         mockContext("data[email]", "bridge-testing@sagebase.org", "study", "api", "token", "unsubscribeToken");
@@ -102,38 +102,42 @@ public class EmailControllerTest {
             ParticipantOption.EMAIL_NOTIFICATIONS, "false");
     }
     
-    @Test(expected = EntityNotFoundException.class)
+    @Test
     public void noStudyThrowsException() throws Exception {
         mockContext("data[email]", "bridge-testing@sagebase.org", "token", "unsubscribeToken");
         
         EmailController controller = createController();
-        controller.unsubscribeFromEmail();
+        Result result = controller.unsubscribeFromEmail();
+        contentAsString(result).contains("Study not found");
     }
     
-    @Test(expected = EntityNotFoundException.class)
+    @Test
     public void noEmailThrowsException() throws Exception {
         mockContext("study", "api", "token", "unsubscribeToken");
         
         EmailController controller = createController();
-        controller.unsubscribeFromEmail();
+        Result result = controller.unsubscribeFromEmail();
+        contentAsString(result).contains("Email not found");
     }
     
-    @Test(expected = EntityNotFoundException.class)
+    @Test
     public void noAccountThrowsException() throws Exception {
         mockContext("data[email]", "bridge-testing@sagebase.org", "study", "api", "token", "unsubscribeToken");
         
         EmailController controller = createController();
         when(accountDao.getAccount(study, "bridge-testing@sagebase.org")).thenReturn(null);
         
-        controller.unsubscribeFromEmail();
+        Result result = controller.unsubscribeFromEmail();
+        contentAsString(result).contains("Account not found");
     }
     
-    @Test(expected = UnauthorizedException.class)
+    @Test
     public void cannotMakeCallWithoutToken() throws Exception {
         mockContext("data[email]", "bridge-testing@sagebase.org", "study", "api");
         
         EmailController controller = createController();
-        controller.unsubscribeFromEmail();
+        Result result = controller.unsubscribeFromEmail();
+        contentAsString(result).contains("Not authorized");
     }
     
 }

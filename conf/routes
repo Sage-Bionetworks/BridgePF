@@ -21,6 +21,7 @@ POST   /api/v1/profile                   @controllers.UserProfileController.upda
 # API - User Settings
 POST   /api/v1/profile/external-id       @controllers.UserProfileController.createExternalIdentifier
 POST   /api/v1/profile/unsubscribe       @controllers.EmailController.unsubscribeFromEmail
+GET    /api/v1/profile/unsubscribe       @controllers.EmailController.unsubscribeFromEmail
 
 # API - Survey Responses
 GET    /api/v1/surveys/response/:guid                      @controllers.SurveyResponseController.getSurveyResponse(guid: String)

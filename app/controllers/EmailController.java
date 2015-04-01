@@ -4,10 +4,7 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.HealthId;
-import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.HealthCodeService;
@@ -43,43 +40,48 @@ public class EmailController extends BaseController {
 
     /**
      * An URL to which a POST can be sent to set the user's email notification preference to "off". Cannot turn email
-     * notifications back on through this endpoint. Not considered a public part of the API at this time, although
-     * publicly accessible. The token that is submitted is set in the configuration, and must match to allow this 
-     * call to succeed. Subject to change without warning or backwards compatibility.
+     * notifications back on through this endpoint. This cannot be part of the public API, because MailChimp doesn't
+     * deal with non-200 status codes. The token that is submitted is set in the configuration, and must match to allow
+     * this call to succeed. Subject to change without warning or backwards compatibility.
      * 
      * @return
      * @throws Exception
      */
     public Result unsubscribeFromEmail() throws Exception {
-        String token = getParameter("token");
-        if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
-            throw new UnauthorizedException();
-        }
-        // Study has to be provided as an URL parameter:
-        String studyId = getParameter("study");
-        if (studyId == null) {
-            throw new EntityNotFoundException(Study.class);
-        }
-        Study study = studyService.getStudy(studyId);
-        // MailChimp submits email as data[email]
-        String email = getParameter("data[email]");
-        if (email == null) {
-            email = getParameter("email");
-        }
-        if (email == null) {
-            throw new EntityNotFoundException(User.class);
-        }
-        Account account = accountDao.getAccount(study, email);
-        if (account == null) {
-            throw new EntityNotFoundException(User.class);
-        }
-        HealthId healthId = healthCodeService.getMapping(account.getHealthId());
-        if (healthId == null) {
-            throw new EntityNotFoundException(User.class);
-        }
-        optionsService.setOption(study, healthId.getCode(), ParticipantOption.EMAIL_NOTIFICATIONS, Boolean.FALSE.toString());
+        try {
+            String token = getParameter("token");
+            if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
+                throw new RuntimeException("Not authorized.");
+            }
+            // Study has to be provided as an URL parameter:
+            String studyId = getParameter("study");
+            if (studyId == null) {
+                throw new RuntimeException("Study not found.");
+            }
+            Study study = studyService.getStudy(studyId);
 
-        return ok("You have been unsubscribed from future email.").as("text/plain");
+            // MailChimp submits email as data[email]
+            String email = getParameter("data[email]");
+            if (email == null) {
+                email = getParameter("email");
+            }
+            if (email == null) {
+                throw new RuntimeException("Email not found.");
+            }
+            Account account = accountDao.getAccount(study, email);
+            if (account == null) {
+                throw new RuntimeException("Account not found.");
+            }
+            HealthId healthId = healthCodeService.getMapping(account.getHealthId());
+            if (healthId == null) {
+                throw new RuntimeException("Health code not found.");
+            }
+            optionsService.setOption(study, healthId.getCode(), ParticipantOption.EMAIL_NOTIFICATIONS, Boolean.FALSE.toString());
+
+            return ok("You have been unsubscribed from future email.");
+        } catch(Throwable throwable) {
+            return ok(throwable.getMessage());
+        }
     }
 
     // This doesn't appear to be in Play's API
