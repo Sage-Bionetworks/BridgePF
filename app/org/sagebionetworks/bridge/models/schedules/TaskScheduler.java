@@ -53,7 +53,7 @@ public class TaskScheduler {
     }
     
     public synchronized List<Task> getTasks() throws ParseException {
-        if (!tasks.isEmpty() || referenceTime == null) {
+        if (!tasks.isEmpty() || referenceTime == null || isPastEndsOn()) {
             return tasks;
         }
         if (schedule.getDelay() != null) {
@@ -76,6 +76,14 @@ public class TaskScheduler {
         }
     }
 
+    /**
+     * Scheduler has moved past the last valid time of the schedule. No tasks after this point.
+     * @return
+     */
+    private boolean isPastEndsOn() {
+        return (schedule.getEndsOn() != null && executionTime.isAfter(schedule.getEndsOn()));
+    }
+    
     private boolean isInWindow(Task task) {
         return (schedule.getStartsOn() == null || task.getStartsOn().isAfter(schedule.getStartsOn())) &&
                (schedule.getEndsOn() == null || task.getStartsOn().isBefore(schedule.getEndsOn()));

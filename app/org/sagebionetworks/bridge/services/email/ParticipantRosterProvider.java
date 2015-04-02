@@ -93,7 +93,7 @@ public class ParticipantRosterProvider implements MimeTypeEmailProvider {
             append(sb, participant.getLastName(), true);
             append(sb, participant.getPhone(), true);
             append(sb, (scope == null) ? "" : scope.getLabel(), true);
-            append(sb, (notifyByEmail == null) ? "" : notifyByEmail.toString(), true);
+            append(sb, (notifyByEmail == null) ? "" : notifyByEmail.toString().toLowerCase(), true);
             for (String attribute : study.getUserProfileAttributes()) {
                 append(sb, participant.getEmpty(attribute), true);
             }

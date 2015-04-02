@@ -28,6 +28,10 @@ public class ScheduleValidator implements Validator {
     public void validate(Object object, Errors errors) {
         Schedule schedule = (Schedule)object;
         
+        // interval should not be smaller than one day.
+        // delay *can* be smaller when used with cron, for example, so don't validate that.
+        // with an interval, less than a day wouldn't make sense. 
+        
         // Should have either a cron expression or an interval, but not both.
         if (isNotBlank(schedule.getCronTrigger()) && schedule.getInterval() != null) {
             errors.reject("should have either a cron expression, or an interval (not both)");
