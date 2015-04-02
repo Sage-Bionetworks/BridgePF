@@ -1,10 +1,9 @@
 package org.sagebionetworks.bridge.models.studies;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @BridgeTypeName("StudyConsent")
 public class StudyConsentForm implements BridgeEntity {
@@ -12,18 +11,9 @@ public class StudyConsentForm implements BridgeEntity {
     private final String path;
     private final int minAge;
 
-    private static final String PATH_FIELD = "path";
-    private static final String MIN_AGE_FIELD = "minAge";
-
-    public StudyConsentForm(String path, int minAge) {
+    public StudyConsentForm(@JsonProperty("path") String path, @JsonProperty("minAge") int minAge) {
         this.path = path;
         this.minAge = minAge;
-    }
-
-    public static final StudyConsentForm fromJson(JsonNode node) {
-        String path = JsonUtils.asText(node, PATH_FIELD);
-        int minAge = JsonUtils.asIntPrimitive(node, MIN_AGE_FIELD); 
-        return new StudyConsentForm(path, minAge);
     }
 
     public String getPath() {

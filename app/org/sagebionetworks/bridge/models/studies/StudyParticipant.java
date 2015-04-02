@@ -31,12 +31,6 @@ public final class StudyParticipant extends HashMap<String,String> {
     public void setEmail(String email) {
         put(UserProfile.EMAIL_FIELD, email);
     }
-    public String getPhone() {
-        return getEmpty(UserProfile.PHONE_FIELD);
-    }
-    public void setPhone(String phone) {
-        put(UserProfile.PHONE_FIELD, phone);
-    }
     public SharingScope getSharingScope() {
         String name = get(UserProfile.SHARING_SCOPE_FIELD);
         return (name == null) ? null : SharingScope.valueOf(name);

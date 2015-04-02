@@ -25,6 +25,7 @@ public class ParticipantRosterProviderTest {
         study = new DynamoStudy();
         study.setName("Test Study");
         study.setConsentNotificationEmail("consent-notification@test.com");
+        study.getUserProfileAttributes().add("phone");
         study.getUserProfileAttributes().add("recontact");
     }
 
@@ -34,7 +35,7 @@ public class ParticipantRosterProviderTest {
         participant.setFirstName("First");
         participant.setLastName("Last");
         participant.setEmail("test@test.com");
-        participant.setPhone("(123) 456-7890");
+        participant.put("phone", "(123) 456-7890");
         participant.setNotifyByEmail(Boolean.FALSE);
         participant.put("recontact", "true");
         List<StudyParticipant> participants = Lists.newArrayList(participant);
@@ -61,42 +62,42 @@ public class ParticipantRosterProviderTest {
         participant.setFirstName("First");
         participant.setLastName("Last");
         participant.setEmail("test@test.com");
-        participant.setPhone("(123)\t456-7890"); // Tab snuck into this string should be converted to a space
+        participant.put("phone", "(123)\t456-7890"); // Tab snuck into this string should be converted to a space
         participant.setNotifyByEmail(Boolean.FALSE);
         participant.put("recontact", "false");
         participant.put(UserProfile.SHARING_SCOPE_FIELD, SharingScope.NO_SHARING.name());
         List<StudyParticipant> participants = Lists.newArrayList(participant);
 
-        String headerString = row("Email", "First Name", "Last Name", "Phone", "Sharing Scope", "Email Notifications", "Recontact");
+        String headerString = row("Email", "First Name", "Last Name", "Sharing Scope", "Email Notifications", "Phone", "Recontact");
         
         ParticipantRosterProvider provider = new ParticipantRosterProvider(study, participants);
-        String output = headerString + row("test@test.com", "First", "Last", "(123) 456-7890", "Not Sharing", "false", "false");
-        assertEquals(output, provider.createParticipantTSV());
+        String output = headerString + row("test@test.com", "First", "Last", "Not Sharing", "false", "(123) 456-7890", "false");
+        assertEquals("1", output, provider.createParticipantTSV());
         
         participant.setLastName(null);
-        output = headerString + row("test@test.com","First","","(123) 456-7890","Not Sharing","false","false");
-        assertEquals(output, provider.createParticipantTSV());
+        output = headerString + row("test@test.com","First","","Not Sharing","false","(123) 456-7890","false");
+        assertEquals("2", output, provider.createParticipantTSV());
         
         participant.setFirstName(null);
         participant.setLastName("Last");
-        output = headerString + row("test@test.com","","Last","(123) 456-7890","Not Sharing","false","false");
-        assertEquals(output, provider.createParticipantTSV());
+        output = headerString + row("test@test.com","","Last","Not Sharing","false","(123) 456-7890","false");
+        assertEquals("3", output, provider.createParticipantTSV());
         
-        participant.setPhone(null);
-        output = headerString + row("test@test.com","","Last","","Not Sharing","false","false");
-        assertEquals(output, provider.createParticipantTSV());
+        participant.remove("phone");
+        output = headerString + row("test@test.com","","Last","Not Sharing","false","","false");
+        assertEquals("4", output, provider.createParticipantTSV());
         
         participant.remove(UserProfile.SHARING_SCOPE_FIELD);
-        output = headerString + row("test@test.com","","Last","","","false","false");
-        assertEquals(output, provider.createParticipantTSV());
+        output = headerString + row("test@test.com","","Last","","false","","false");
+        assertEquals("5", output, provider.createParticipantTSV());
         
         StudyParticipant numberTwo = new StudyParticipant();
         numberTwo.setEmail("test2@test.com");
         
         // This is pretty broken, but you should still get output. 
         participants.add(numberTwo);
-        output = headerString + row("test@test.com","","Last","","","false","false") + row("test2@test.com","","","","","","");
-        assertEquals(output, provider.createParticipantTSV());
+        output = headerString + row("test@test.com","","Last","","false","","false") + row("test2@test.com","","","","","","");
+        assertEquals("6", output, provider.createParticipantTSV());
         
         participants.clear();
         assertEquals(headerString, provider.createParticipantTSV());

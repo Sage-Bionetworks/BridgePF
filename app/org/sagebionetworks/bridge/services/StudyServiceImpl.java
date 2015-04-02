@@ -10,7 +10,6 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
@@ -34,7 +33,6 @@ public class StudyServiceImpl implements StudyService {
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
     private DistributedLockDao lockDao;
-    private BridgeConfig config;
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     
@@ -57,10 +55,6 @@ public class StudyServiceImpl implements StudyService {
     @Autowired
     public void setDirectoryDao(DirectoryDao directoryDao) {
         this.directoryDao = directoryDao;
-    }
-    @Autowired
-    public void setBridgeConfig(BridgeConfig bridgeConfig) {
-        this.config = bridgeConfig;
     }
     @Autowired
     public void setCacheProvider(CacheProvider cacheProvider) {
@@ -109,7 +103,6 @@ public class StudyServiceImpl implements StudyService {
             study.setStormpathHref(directory);
             uploadCertService.createCmsKeyPair(study.getIdentifier());
             // This may be removable at some point, as we're deprecating this means of communicating the study
-            study.setHostname(study.getIdentifier() + config.getStudyHostnamePostfix());
             study = studyDao.createStudy(study);
             cacheProvider.setStudy(study);
 
@@ -125,7 +118,6 @@ public class StudyServiceImpl implements StudyService {
 
         // These cannot be set through the API and will be null here, so they are set on update
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
-        study.setHostname(originalStudy.getHostname());
         study.setStormpathHref(originalStudy.getStormpathHref());
         study.setResearcherRole(originalStudy.getResearcherRole());
 

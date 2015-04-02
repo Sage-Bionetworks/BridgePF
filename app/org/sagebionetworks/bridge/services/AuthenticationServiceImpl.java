@@ -25,6 +25,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.EmailValidator;
+import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.SignUpValidator;
@@ -46,6 +47,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private ParticipantOptionsService optionsService;
     private AccountDao accountDao;
     private HealthCodeService healthCodeService;
+    private EmailVerificationValidator verificationValidator;
     private SignInValidator signInValidator;
     private SignUpValidator signUpValidator;
     private PasswordResetValidator passwordResetValidator;
@@ -78,6 +80,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Autowired
     public void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
+    }
+    @Autowired
+    public void setEmailVerificationValidator(EmailVerificationValidator validator) {
+        this.verificationValidator = validator;
     }
     @Autowired
     public void setSignInValidator(SignInValidator validator) {
@@ -152,8 +158,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public UserSession verifyEmail(Study study, EmailVerification verification) throws ConsentRequiredException {
         checkNotNull(verification, "Verification object cannot be null");
-        checkNotNull(verification.getSptoken(), "Email verification token is required");
 
+        Validate.entityThrowingException(verificationValidator, verification);
+        
         Account account = accountDao.verifyEmail(study, verification);
         UserSession session = getSessionFromAccount(study, account);
         cacheProvider.setUserSession(session.getSessionToken(), session);
