@@ -302,7 +302,7 @@ public abstract class BaseController extends Controller {
         }
         throw new InvalidEntityException("Expected JSON in the request body is missing");
     }
-
+    
     /**
      * Retrieves the metrics object from the cache. Can be null if the metrics is not in the cache.
      */
