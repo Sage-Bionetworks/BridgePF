@@ -17,105 +17,112 @@ import com.google.common.collect.Lists;
 /**
  * See: https://sagebionetworks.jira.com/wiki/display/BRIDGE/Schedule
  * 
+ * Not thread-safe. 
+ * 
  */
 public class TaskScheduler {
 
-    private CronExpression cronExpression;
-    private Schedule schedule;
-    private DateTime executionTime;
-    private DateTime referenceTime;
+    private final CronExpression cronExpression;
+    private final Schedule schedule;
+    private final DateTime executionTime;
+    private final DateTime endOfSchedulingWindow;
+    /**
+     * Although the map is final, you can change its contents and we do this for tests.
+     */
+    private final Map<String, DateTime> events;
     
-    private int count;
-    private List<Task> tasks;
-    
-    public TaskScheduler(Schedule schedule, Map<String,DateTime> events, int count) {
-        this.tasks = Lists.newArrayList();
-        this.count = (schedule.getScheduleType() == ScheduleType.ONCE) ? 
-            schedule.getActivities().size() : count;
+    public TaskScheduler(Schedule schedule, Map<String,DateTime> events) {
+        this.events = events;
         this.schedule = schedule;
         this.executionTime = events.get("now");
-        if (schedule.getEventId() == null) {
-            schedule.setEventId("enrollment");
-        }
-        this.referenceTime = events.get(schedule.getEventId());
-
-        if (schedule.getCronTrigger() != null) {
-            try {
-                this.cronExpression = new CronExpression(schedule.getCronTrigger());    
-            } catch(ParseException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        this.endOfSchedulingWindow = executionTime.plusDays(30); // 1 month. Arguably too long.
+        this.cronExpression = parseCronTrigger(schedule.getCronTrigger());
+        
         checkNotNull(schedule);
         checkNotNull(executionTime);
         // This is expected if the schedule provides an eventId, but that event has never occurred
         //checkNotNull(referenceTime); 
     }
     
-    public synchronized List<Task> getTasks() throws ParseException {
-        if (!tasks.isEmpty() || referenceTime == null || isPastEndsOn()) {
+    public synchronized List<Task> getTasks(int count) {
+        String eventId = (schedule.getEventId() == null) ? "enrollment" : schedule.getEventId();
+        DateTime scheduleTime = events.get(eventId);
+        
+        List<Task> tasks = Lists.newArrayList();
+        if (scheduleTime == null) {
             return tasks;
         }
         if (schedule.getDelay() != null) {
-            this.referenceTime = this.referenceTime.plus(schedule.getDelay());
+            scheduleTime = scheduleTime.plus(schedule.getDelay());
         }
-        int limit = 0;
+        int limit = (count*2);
         do {
-            addTaskForEachTimeAndActivity();
-            advanceSchedule();
-        } while (tasks.size() < count && limit++ < (count*2));
-        return tasks;
+            scheduleTime = addTaskForEachTimeAndActivity(tasks, scheduleTime);
+            scheduleTime = advanceSchedule(scheduleTime);
+        } while (--limit > 0 && scheduleTime.isBefore(endOfSchedulingWindow));
+        
+        return tasks.subList(0,  count);
     }
     
-    private void addTask(Activity activity) {
+    private CronExpression parseCronTrigger(String cronTrigger) {
+        if (cronTrigger != null) {
+            try {
+                return new CronExpression(schedule.getCronTrigger());    
+            } catch(ParseException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return null;
+    }
+    
+    private void addTask(List<Task> tasks, DateTime scheduleTime, Activity activity) {
         TaskBuilder builder = new TaskBuilder();
-        Task task = builder.withStartsOn(referenceTime).withEndsOn(getEndsOn(referenceTime, schedule))
-                        .withGuid(BridgeUtils.generateGuid()).withActivity(activity).build();
-        if (isInWindow(task) && isStillActive(task) && tasks.size() < count) {
+        Task task = builder
+            .withStartsOn(scheduleTime)
+            .withEndsOn(getEndsOn(scheduleTime, schedule))
+            .withGuid(BridgeUtils.generateGuid())
+            .withActivity(activity).build();
+
+        if (isStillActive(task) && isInScheduleWindow(task)) {
             tasks.add(task);
         }
     }
 
-    /**
-     * Scheduler has moved past the last valid time of the schedule. No tasks after this point.
-     * @return
-     */
-    private boolean isPastEndsOn() {
-        return (schedule.getEndsOn() != null && executionTime.isAfter(schedule.getEndsOn()));
-    }
-    
-    private boolean isInWindow(Task task) {
+    private boolean isInScheduleWindow(Task task) {
         return (schedule.getStartsOn() == null || task.getStartsOn().isAfter(schedule.getStartsOn())) &&
                (schedule.getEndsOn() == null || task.getStartsOn().isBefore(schedule.getEndsOn()));
     }
     
     private boolean isStillActive(Task task) {
-        return task.getEndsOn() == null || task.getEndsOn().isAfter(executionTime);
+        //return task.getEndsOn() == null || task.getEndsOn().isAfter(executionTime);
+        return (task.getStartsOn().isAfter(executionTime) || task.getEndsOn() == null || task.getEndsOn().isAfter(executionTime));
     }
     
-    protected void addTaskForEachTimeAndActivity() {
+    protected DateTime addTaskForEachTimeAndActivity(List<Task> tasks, DateTime scheduleTime) {
         // We're using whatever hour/minute/seconds were in the original event.
         if (schedule.getTimes().isEmpty()) {
             for (Activity activity : schedule.getActivities()) {
-                addTask(activity);    
+                addTask(tasks, scheduleTime, activity);
             }
         } else {
             for (LocalTime time : schedule.getTimes()) {
-                referenceTime = new DateTime(referenceTime).withTime(time);
+                scheduleTime = new DateTime(scheduleTime).withTime(time);
                 for (Activity activity : schedule.getActivities()) {
-                    addTask(activity);    
+                    addTask(tasks, scheduleTime, activity);
                 }
             }
         }
+        return scheduleTime;
     }
     
-    private void advanceSchedule() {
+    private DateTime advanceSchedule(DateTime scheduleTime) {
         if (schedule.getInterval() != null) {
-            referenceTime = referenceTime.plus(schedule.getInterval());    
+            return scheduleTime.plus(schedule.getInterval());    
         } else if (cronExpression != null) {
-            Date next = cronExpression.getNextValidTimeAfter(referenceTime.toDate());
-            referenceTime = new DateTime(next, referenceTime.getChronology());
+            Date next = cronExpression.getNextValidTimeAfter(scheduleTime.toDate());
+            return new DateTime(next, scheduleTime.getChronology());
         }
+        return scheduleTime;
     }
     
     private DateTime getEndsOn(DateTime startsOn, Schedule schedule) {

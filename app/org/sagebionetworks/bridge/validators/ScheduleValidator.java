@@ -5,6 +5,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.ACTIVITIES_PROPERTY;
 
 import org.joda.time.DateTime;
+import org.quartz.CronExpression;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.springframework.stereotype.Component;
@@ -51,6 +52,9 @@ public class ScheduleValidator implements Validator {
         }
         if (schedule.getScheduleType() == null) {
             errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, CANNOT_BE_NULL);
+        }
+        if (schedule.getCronTrigger() != null && !CronExpression.isValidExpression(schedule.getCronTrigger())) {
+            errors.rejectValue(Schedule.CRON_TRIGGER_PROPERTY, "is an invalid cron expression");
         }
         validateActivities(schedule, errors);
     }

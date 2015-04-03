@@ -45,7 +45,7 @@ public class TaskSchedulerTest {
         schedule.setExpires("PT24H");
         schedule.setEventId("enrollment");
         
-        List<Task> tasks = new TaskScheduler(schedule, events, 5).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(5);
         
         assertDate("2015-03-30T08:00:00.000-07:00", tasks.get(0).getStartsOn());
         assertDate("2015-03-31T08:00:00.000-07:00", tasks.get(0).getEndsOn());
@@ -60,7 +60,7 @@ public class TaskSchedulerTest {
         schedule.setInterval("P1W");
         schedule.setEventId("enrollment");
 
-        List<Task> tasks = new TaskScheduler(schedule, events, 1).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(1);
         
         assertDate("2015-04-23T10:00:00.000-07:00", tasks.get(0).getStartsOn());
         assertNull(tasks.get(0).getEndsOn());
@@ -74,7 +74,7 @@ public class TaskSchedulerTest {
         schedule.setInterval("P1W");
         schedule.setEventId("enrollment");
 
-        List<Task> tasks = new TaskScheduler(schedule, events, 1).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(1);
         
         assertEquals(ENROLLMENT_TIMESTAMP, tasks.get(0).getStartsOn());
         assertNull(tasks.get(0).getEndsOn());
@@ -88,8 +88,11 @@ public class TaskSchedulerTest {
         schedule.setCronTrigger("0 0 8 ? * MON,FRI *");
         schedule.setExpires("PT4H");
         
-        List<Task> tasks = new TaskScheduler(schedule, events, 6).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(6);
         
+        // This is the first friday after 3/23 enrollment. But this is wrong, because
+        // it's not supposed to create tasks that end before "now". We don't want 
+        // to iterate through the whole list from the beginning every time.
         assertDate("2015-03-27T08:00:00.000-07:00", tasks.get(0).getStartsOn());
         assertDate("2015-03-27T12:00:00.000-07:00", tasks.get(0).getEndsOn());
     }
@@ -103,7 +106,7 @@ public class TaskSchedulerTest {
         schedule.setExpires("PT1H");
         schedule.setEventId("medication");
         
-        List<Task> tasks = new TaskScheduler(schedule, events, 1).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(1);
         
         assertDate("2015-04-02T14:42:00.000-07:00", tasks.get(0).getStartsOn());
         assertDate("2015-04-02T15:42:00.000-07:00", tasks.get(0).getEndsOn());
@@ -118,7 +121,7 @@ public class TaskSchedulerTest {
         schedule.setDelay("P3D");
         schedule.setInterval("P7D");
 
-        List<Task> tasks = new TaskScheduler(schedule, events, 5).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(5);
         
         // "2015-03-23T10:00:00.000-07:00"
         List<String> output = Lists.newArrayList(
@@ -140,7 +143,7 @@ public class TaskSchedulerTest {
         schedule.setInterval("P2D");
         schedule.setTimes("07:00", "16:00");
         
-        List<Task> tasks = new TaskScheduler(schedule, events, 6).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(6);
         
         // "2015-03-23T10:00:00.000-07:00"
         List<String> output = Lists.newArrayList(
@@ -158,18 +161,17 @@ public class TaskSchedulerTest {
     
     // "after enrollment every day until 2015-03-26
     @Test
-    public void afterEnrollmentEverydayUntil26Task() throws Exception {
+    public void afterEnrollmentEverydayUntilMarch26Task() throws Exception {
+        // Now: 2015-03-26 14:40:00
         Schedule schedule = createSchedule();
         schedule.setScheduleType(RECURRING);
         schedule.setInterval("P1D");
         schedule.setDelay("P1D");
         schedule.setTimes("08:00");
         schedule.setEndsOn("2015-03-26T07:00:00-07:00");
-        
-        List<Task> tasks = new TaskScheduler(schedule, events, 20).getTasks();
 
-        // Critically, the time is just before 8am so the 26th task should not be generated,
-        // and the delay means the 23 won't be covered.
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(20);
+
         List<String> output = Lists.newArrayList(
             "2015-03-24T08:00:00.000-07:00", 
             "2015-03-25T08:00:00.000-07:00"
@@ -178,14 +180,41 @@ public class TaskSchedulerTest {
     }
     
     @Test
+    public void afterEnrollmentEverydayUntilMarch26TaskEntirelyInPastReturnsNoTasks() {
+        events.put("now", DateTime.parse("2015-04-10T07:00:00-07:00"));
+        
+        Schedule schedule = createSchedule();
+        schedule.setScheduleType(RECURRING);
+        schedule.setInterval("P1D");
+        schedule.setDelay("P1D");
+        schedule.setTimes("08:00");
+        schedule.setEndsOn("2015-03-26T07:00:00-07:00");
+
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(20);
+
+        List<String> output = Lists.newArrayList(
+            "2015-03-24T08:00:00.000-07:00", 
+            "2015-03-25T08:00:00.000-07:00"
+        );
+        assertDates(output, tasks);
+        
+    }
+    
+    @Test
     public void scheduleOutsideWindowGeneratesNoTasks() throws Exception {
         Schedule schedule = createSchedule();
         schedule.setScheduleType(RECURRING);
         schedule.setInterval("P1D");
-        schedule.setStartsOn("2015-03-27T07:00:00-07:00");
+        schedule.setStartsOn("2014-05-15T07:00:00-07:00");// before "now"
+        schedule.setEndsOn("2015-02-27T07:00:00-07:00");// before "now"
         
-        List<Task> tasks = new TaskScheduler(schedule, events, 1).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(1);
+        assertEquals(0, tasks.size());
         
+        // change now to be before startsOn
+        events.put("now", DateTime.parse("2014-03-15T07:00:00-07:00"));
+        
+        tasks = new TaskScheduler(schedule, events).getTasks(1);
         assertEquals(0, tasks.size());
     }
     
@@ -208,10 +237,10 @@ public class TaskSchedulerTest {
         schedule.setScheduleType(ONCE);
         schedule2.setEventId("task:task1");
 
-        List<Task> tasks = new TaskScheduler(schedule, events, 1).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(1);
         assertDates(Lists.newArrayList("2015-04-23T10:00:00.000-07:00"), tasks);
 
-        tasks = new TaskScheduler(schedule2, events, 1).getTasks();
+        tasks = new TaskScheduler(schedule2, events).getTasks(1);
         assertEquals(0, tasks.size()); // nothing has happened yet
         
         DateTime TASK1_EVENT = DateTime.parse("2015-04-25T15:32:14.023-07:00");
@@ -219,7 +248,7 @@ public class TaskSchedulerTest {
         // Now say that task was finished a couple of days after that:
         events.put("task:task1", TASK1_EVENT);
         
-        tasks = new TaskScheduler(schedule2, events, 1).getTasks();
+        tasks = new TaskScheduler(schedule2, events).getTasks(1);
         assertEquals(TASK1_EVENT, tasks.get(0).getStartsOn());
     }
     
@@ -242,11 +271,11 @@ public class TaskSchedulerTest {
         
         List<String> output = Lists.newArrayList("2015-04-12T09:31:26.345-07:00", "2015-04-12T12:31:26.345-07:00");
         
-        List<Task> tasks = new TaskScheduler(schedule, events, 2).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(2);
         assertDates(output, tasks);
         
         events.put("now", DateTime.parse("2015-04-13T08:00:00.000-07:00"));
-        tasks = new TaskScheduler(schedule, events, 2).getTasks();
+        tasks = new TaskScheduler(schedule, events).getTasks(2);
         assertDates(output, tasks);
     }
     
@@ -264,7 +293,7 @@ public class TaskSchedulerTest {
         schedule.getActivities().add(new Activity("Label2", "gaitTest"));
         schedule.setScheduleType(ONCE);
 
-        List<Task> tasks = new TaskScheduler(schedule, events, 10).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(10);
         
         assertEquals(2, tasks.size());
         assertNotEquals(tasks.get(0), tasks.get(1));
@@ -284,7 +313,7 @@ public class TaskSchedulerTest {
         schedule.setDelay("P1D");
         schedule.setExpires("P1D");
         
-        List<Task> tasks = new TaskScheduler(schedule, events, 1).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(1);
         
         assertEquals(0, tasks.size());
     }
@@ -295,7 +324,7 @@ public class TaskSchedulerTest {
         schedule.setEventId("anEvent"); // doesn't exist
         schedule.setScheduleType(ONCE);
 
-        List<Task> tasks = new TaskScheduler(schedule, events, 1).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(1);
         
         assertEquals(0, tasks.size()); // so no task created
     }
@@ -308,11 +337,11 @@ public class TaskSchedulerTest {
         schedule.setScheduleType(ONCE);
         
         events.put("anEvent", events.get("now").minusHours(3));
-        List<Task> tasks = new TaskScheduler(schedule, events, 1).getTasks();
+        List<Task> tasks = new TaskScheduler(schedule, events).getTasks(1);
         assertEquals(events.get("now").minusHours(3), tasks.get(0).getStartsOn());
         
         events.put("anEvent", events.get("now").plusHours(8));
-        tasks = new TaskScheduler(schedule, events, 1).getTasks();
+        new TaskScheduler(schedule, events).getTasks(1);
         assertEquals(events.get("now").plusHours(8), tasks.get(0).getStartsOn());
     }
     

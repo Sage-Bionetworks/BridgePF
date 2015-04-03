@@ -117,4 +117,16 @@ public class ScheduleValidatorTest {
             assertNull(e.getErrors().get("Schedule"));
         }
     }
+    
+    @Test
+    public void rejectsInvalidCronExpression() {
+        Schedule schedule = new Schedule();
+        schedule.setCronTrigger("2 3 a");
+
+        try {
+            Validate.entityThrowingException(validator, schedule);
+        } catch(InvalidEntityException e) {
+            assertEquals("cronTrigger is an invalid cron expression", e.getErrors().get("cronTrigger").get(0));
+        }
+    }
 }

@@ -8,14 +8,12 @@ public final class Task {
 
     private final String guid;
     private final Activity activity;
-    private final String eventId;
     private final DateTime startsOn;
     private final DateTime endsOn;
     
-    Task(String guid, Activity activity, String eventId, DateTime startsOn, DateTime endsOn) {
+    Task(String guid, Activity activity, DateTime startsOn, DateTime endsOn) {
         this.guid = guid;
         this.activity = activity;
-        this.eventId = eventId;
         this.startsOn = startsOn;
         this.endsOn = endsOn;
     }
@@ -28,10 +26,6 @@ public final class Task {
         return activity;
     }
     
-    public String getEventId() {
-        return eventId;
-    }
-
     public DateTime getStartsOn() {
         return startsOn;
     }
@@ -44,9 +38,10 @@ public final class Task {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + Objects.hashCode(activity);
+        result = prime * result + Objects.hashCode(guid);
         result = prime * result + Objects.hashCode(startsOn);
         result = prime * result + Objects.hashCode(endsOn);
-        result = prime * result + Objects.hashCode(eventId);
         return result;
     }
 
@@ -57,12 +52,12 @@ public final class Task {
         if (obj == null || getClass() != obj.getClass())
             return false;
         Task other = (Task) obj;
-        return (Objects.equals(startsOn, other.startsOn) && Objects.equals(endsOn, other.endsOn) 
-                && Objects.equals(eventId, other.eventId));
+        return (Objects.equals(activity, other.activity) && Objects.equals(guid, other.guid)
+                && Objects.equals(startsOn, other.startsOn) && Objects.equals(endsOn, other.endsOn));
     }
     
     @Override
     public String toString() {
-        return String.format("Task [startsOn=%s, endsOn=%s, eventId=%s]", startsOn, endsOn, eventId);
+        return String.format("Task [guid=%s, activity=%s, startsOn=%s, endsOn=%s]", guid, activity, startsOn, endsOn);
     }
 }
