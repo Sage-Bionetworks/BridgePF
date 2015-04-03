@@ -23,7 +23,10 @@ public class SignUp implements BridgeEntity {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.roles = (roles == null) ? null : Sets.newHashSet(roles);
+        this.roles = Sets.newHashSet();
+        if (roles != null) {
+            this.roles.addAll(roles);
+        }
     }
 
     public static final SignUp fromJson(JsonNode node, boolean allowRoles) {
