@@ -1,5 +1,6 @@
 package controllers;
 
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -15,6 +16,7 @@ import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl;
 import org.sagebionetworks.bridge.services.StudyService;
 
+import play.data.DynamicForm;
 import play.mvc.Http;
 import play.mvc.Result;
 
@@ -49,14 +51,14 @@ public class EmailControllerTest {
         
         Http.Request request = mock(Http.Request.class);
         when(request.queryString()).thenReturn(map);
-
+        
         Http.Context context = mock(Http.Context.class);
         when(context.request()).thenReturn(request);
 
         Http.Context.current.set(context);
     }
     
-    private EmailController createController() {
+    private EmailController createController(String email) {
         optionsService = mock(ParticipantOptionsServiceImpl.class);
         
         Account account = mock(Account.class);
@@ -81,7 +83,12 @@ public class EmailControllerTest {
         BridgeConfig config = mock(BridgeConfig.class);
         when(config.getEmailUnsubscribeToken()).thenReturn("unsubscribeToken");
         
+        DynamicForm dynamicForm = mock(DynamicForm.class);
+        when(dynamicForm.get("data[email]")).thenReturn(email);
+        
         EmailController controller = spy(new EmailController());
+        
+        doReturn(dynamicForm).when(controller).getPostData();
         controller.setParticipantOptionsService(optionsService);
         controller.setStudyService(studyService);
         controller.setAccountDao(accountDao);
@@ -95,7 +102,7 @@ public class EmailControllerTest {
     public void updatesOptionToTurnOffEmail() throws Exception {
         mockContext("data[email]", "bridge-testing@sagebase.org", "study", "api", "token", "unsubscribeToken");
         
-        EmailController controller = createController();
+        EmailController controller = createController("bridge-testing@sagebase.org");
         controller.unsubscribeFromEmail();
         
         verify(optionsService).setOption(study, "healthCode", 
@@ -106,7 +113,7 @@ public class EmailControllerTest {
     public void noStudyThrowsException() throws Exception {
         mockContext("data[email]", "bridge-testing@sagebase.org", "token", "unsubscribeToken");
         
-        EmailController controller = createController();
+        EmailController controller = createController("bridge-testing@sagebase.org");
         Result result = controller.unsubscribeFromEmail();
         contentAsString(result).contains("Study not found");
     }
@@ -115,7 +122,7 @@ public class EmailControllerTest {
     public void noEmailThrowsException() throws Exception {
         mockContext("study", "api", "token", "unsubscribeToken");
         
-        EmailController controller = createController();
+        EmailController controller = createController(null);
         Result result = controller.unsubscribeFromEmail();
         contentAsString(result).contains("Email not found");
     }
@@ -124,7 +131,7 @@ public class EmailControllerTest {
     public void noAccountThrowsException() throws Exception {
         mockContext("data[email]", "bridge-testing@sagebase.org", "study", "api", "token", "unsubscribeToken");
         
-        EmailController controller = createController();
+        EmailController controller = createController("bridge-testing@sagebase.org");
         when(accountDao.getAccount(study, "bridge-testing@sagebase.org")).thenReturn(null);
         
         Result result = controller.unsubscribeFromEmail();
@@ -135,7 +142,7 @@ public class EmailControllerTest {
     public void cannotMakeCallWithoutToken() throws Exception {
         mockContext("data[email]", "bridge-testing@sagebase.org", "study", "api");
         
-        EmailController controller = createController();
+        EmailController controller = createController("bridge-testing@sagebase.org");
         Result result = controller.unsubscribeFromEmail();
         contentAsString(result).contains("Not authorized");
     }
