@@ -8,19 +8,14 @@ public class TaskBuilder {
     
     private String guid;
     private Activity activity;
-    private String activityId;
     private DateTime startsOn;
     private DateTime endsOn;
 
     public Task build() {
         checkNotNull(guid);
         checkNotNull(activity);
-        if (activity.getActivityType() == ActivityType.TASK) {
-            activityId = "task:" + activity.getRef();
-        } else {
-            activityId = "survey:" + activity.getSurvey().getGuid();
-        }
-        return new Task(guid, activity, activityId, startsOn, endsOn);
+        checkNotNull(startsOn);
+        return new Task(guid, activity, startsOn, endsOn);
     }
     
     public TaskBuilder withGuid(String guid) {

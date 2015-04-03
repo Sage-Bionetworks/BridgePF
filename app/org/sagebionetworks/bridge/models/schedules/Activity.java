@@ -43,10 +43,19 @@ public class Activity {
     }
     
     @JsonIgnore
+    public String getKey() {
+        if (activityType == ActivityType.TASK) {
+            return "task:" + ref;
+        } else {
+            return "survey:" + getSurvey().getGuid();
+        }
+    }
+    
+    @JsonIgnore
     public GuidCreatedOnVersionHolder getGuidCreatedOnVersionHolder() {
-        SurveyReference ref = getSurvey();
-        if (ref != null && ref.getCreatedOn() != null) {
-            return new GuidCreatedOnVersionHolderImpl(ref.getGuid(), DateUtils.convertToMillisFromEpoch(ref.getCreatedOn()));
+        SurveyReference sr = getSurvey();
+        if (sr != null && sr.getCreatedOn() != null) {
+            return new GuidCreatedOnVersionHolderImpl(sr.getGuid(), DateUtils.convertToMillisFromEpoch(sr.getCreatedOn()));
         }
         return null;
     }
