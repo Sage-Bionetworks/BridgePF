@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantOptions;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
+import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -79,9 +80,17 @@ public class ParticipantOptionsServiceImplTest {
     }
     
     @Test
-    public void theDefaultValueOfEmailNotificationsIsTrue() {
+    public void getDefaultValeFromSingleLookup() {
         String value = optionsService.getOption(testUser.getUser().getHealthCode(), ParticipantOption.EMAIL_NOTIFICATIONS);
         assertEquals("true", value);
+    }
+    
+    @Test
+    public void getDefaultValeFromBulkLookup() {
+        OptionLookup lookup = optionsService.getOptionForAllStudyParticipants(testUser.getStudyIdentifier(), ParticipantOption.EMAIL_NOTIFICATIONS);
+        assertEquals("true", lookup.get(testUser.getUser().getHealthCode()));
+        
+        assertEquals("true", lookup.get("AAA")); // any value returns the default, not just actual values in map.
     }
     
 }
