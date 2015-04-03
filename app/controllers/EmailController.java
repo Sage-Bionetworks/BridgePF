@@ -12,6 +12,8 @@ import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import play.data.DynamicForm;
+import play.data.Form;
 import play.mvc.Result;
 
 @Controller("emailController")
@@ -84,11 +86,19 @@ public class EmailController extends BaseController {
         }
     }
 
-    // This doesn't appear to be in Play's API
+
     private String getParameter(String paramName) {
         Map<String, String[]> parameters = request().queryString();
         String[] values = parameters.get(paramName);
-        return (values != null && values.length > 0) ? values[0] : null;
+        String param = (values != null && values.length > 0) ? values[0] : null;
+        if (param == null) {
+            DynamicForm requestData = Form.form().bindFromRequest();
+            param = requestData.get("data[email]");
+            if (param == null) {
+                param = requestData.get("email");
+            }
+        }
+        return param;
     }
 
 }
