@@ -102,7 +102,6 @@ public class StudyServiceImpl implements StudyService {
             String directory = directoryDao.createDirectoryForStudy(study.getIdentifier());
             study.setStormpathHref(directory);
             uploadCertService.createCmsKeyPair(study.getIdentifier());
-            // This may be removable at some point, as we're deprecating this means of communicating the study
             study = studyDao.createStudy(study);
             cacheProvider.setStudy(study);
 
@@ -121,6 +120,10 @@ public class StudyServiceImpl implements StudyService {
         study.setStormpathHref(originalStudy.getStormpathHref());
         study.setResearcherRole(originalStudy.getResearcherRole());
 
+        // When the version is out of sync in the cache, then an exception is thrown and the study 
+        // is not updated in the cache. At least we can delete the study before this, so the next 
+        // time it should succeed. Have not figured out why they get out of sync.
+        cacheProvider.removeStudy(study.getIdentifier());
         Study updatedStudy = studyDao.updateStudy(study);
         cacheProvider.setStudy(updatedStudy);
         
