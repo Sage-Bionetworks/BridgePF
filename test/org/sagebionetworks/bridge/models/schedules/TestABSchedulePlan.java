@@ -10,7 +10,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
     private Schedule schedule1 = new Schedule();
     {
         schedule1.setScheduleType(ScheduleType.RECURRING);
-        schedule1.setCronTrigger("* * *");
+        schedule1.setCronTrigger("0 0 8 ? * TUE *");
         schedule1.addActivity(new Activity("Do AAA task", "task:AAA"));
         schedule1.setExpires(Period.parse("PT60S"));
         schedule1.setLabel("Schedule 1");
@@ -18,7 +18,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
     private Schedule schedule2 = new Schedule();
     {
         schedule2.setScheduleType(ScheduleType.RECURRING);
-        schedule2.setCronTrigger("* * *");
+        schedule2.setCronTrigger("0 0 8 ? * TUE *");
         schedule2.addActivity(new Activity("Do BBB task", "task:BBB"));
         schedule2.setExpires(Period.parse("PT60S"));
         schedule2.setLabel("Schedule 2");
@@ -26,7 +26,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
     private Schedule schedule3 = new Schedule();
     {
         schedule3.setScheduleType(ScheduleType.RECURRING);
-        schedule3.setCronTrigger("* * *");
+        schedule3.setCronTrigger("0 0 8 ? * TUE *");
         schedule3.addActivity(new Activity("Do CCC task", "task:CCC"));
         schedule3.setExpires(Period.parse("PT60S"));
         schedule3.setLabel("Schedule 3");

@@ -131,7 +131,7 @@ public class ScheduleStrategyTest {
         schedule.setLabel(label);
         schedule.addActivity(new Activity("Test survey", SURVEY_URL));
         schedule.setScheduleType(ScheduleType.RECURRING);
-        schedule.setCronTrigger("0 */2 * * *");
+        schedule.setCronTrigger("0 0 8 ? * TUE *");
         return schedule;
     }
 

@@ -26,7 +26,7 @@ public class ScheduleTest {
         
         Schedule schedule = new Schedule();
         schedule.getActivities().add(activity);
-        schedule.setCronTrigger("* * *");
+        schedule.setCronTrigger("0 0 8 ? * TUE *");
         schedule.setDelay(Period.parse("P1D"));
         schedule.setExpires(Period.parse("P2D"));
         schedule.setStartsOn(DateTime.parse("2015-02-02T10:10:10.000Z"));
@@ -40,7 +40,7 @@ public class ScheduleTest {
         String string = BridgeObjectMapper.get().writeValueAsString(schedule);
         schedule = BridgeObjectMapper.get().readValue(string, Schedule.class);
         
-        assertEquals("* * *", schedule.getCronTrigger());
+        assertEquals("0 0 8 ? * TUE *", schedule.getCronTrigger());
         assertEquals("P1D", schedule.getDelay().toString());
         assertEquals("P2D", schedule.getExpires().toString());
         assertEquals("eventId", schedule.getEventId());
