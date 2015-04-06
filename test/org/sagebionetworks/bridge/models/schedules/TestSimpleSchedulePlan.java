@@ -10,7 +10,7 @@ public class TestSimpleSchedulePlan extends DynamoSchedulePlan {
     private Schedule schedule = new Schedule();
     {
         schedule.setScheduleType(ScheduleType.RECURRING);
-        schedule.setCronTrigger("* * *");
+        schedule.setCronTrigger("0 0 8 ? * TUE *");
         schedule.addActivity(new Activity("Do task CCC", "task:CCC"));
         schedule.setExpires(Period.parse("PT60S"));
         schedule.setLabel("Test label for the user");

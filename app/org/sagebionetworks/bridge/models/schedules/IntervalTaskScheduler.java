@@ -19,6 +19,12 @@ class IntervalTaskScheduler extends BaseTaskScheduler {
         try {
             
             DateTime datetime = getStartTimeBasedOnEvent(schedule, events);
+            /*
+            do {
+                addTaskForEachTime(tasks, datetime);
+                // The last check determines this is a one-time task, not to be repeated
+            } while(datetime.isBefore(until) && schedule.getInterval() == null);
+            */
             while(datetime.isBefore(until)) {
                 addTaskForEachTime(tasks, datetime);
                 // These are one-time tasks; may want to move out to a separate scheduler at some point.

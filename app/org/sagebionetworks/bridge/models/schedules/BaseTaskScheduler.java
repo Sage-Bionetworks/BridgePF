@@ -61,6 +61,10 @@ abstract class BaseTaskScheduler implements TaskScheduler {
     }
     
     protected List<Task> trimTasks(List<Task> tasks) {
+        /*
+        if (tasks.isEmpty()) {
+            return tasks;
+        }*/
         int count = (schedule.getScheduleType() == ScheduleType.ONCE) ? 1 : tasks.size();
         return tasks.subList(0, Math.min(tasks.size(), count));
     }
