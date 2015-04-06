@@ -1,13 +1,21 @@
+
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.models.schedules.Schedule.ACTIVITIES_PROPERTY;
 
+import java.util.List;
+
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
+import org.joda.time.Hours;
+import org.joda.time.LocalTime;
+import org.joda.time.Period;
 import org.quartz.CronExpression;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -29,34 +37,65 @@ public class ScheduleValidator implements Validator {
     public void validate(Object object, Errors errors) {
         Schedule schedule = (Schedule)object;
         
-        // interval should not be smaller than one day.
-        // delay *can* be smaller when used with cron, for example, so don't validate that.
-        // with an interval, less than a day wouldn't make sense. 
-        
-        // Should have either a cron expression or an interval, but not both.
-        if (isNotBlank(schedule.getCronTrigger()) && schedule.getInterval() != null) {
-            errors.reject("should have either a cron expression, or an interval (not both)");
-        } else if (isBlank(schedule.getCronTrigger()) && schedule.getInterval() == null) {
-            errors.reject("should have either a cron expression, or an interval");
+        if (schedule.getScheduleType() == null) {
+            errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, CANNOT_BE_NULL);
+        } else if (schedule.getScheduleType() == ScheduleType.ONCE){
+            // If it's a one-time task, it shouldn't have an interval. It can have a cron trigger, although this
+            // sounds like a totally worthless schedule. Still, "schedule this one time, the next Monday after 
+            // enrollment" or somesuch, is a thing.
+            if (schedule.getInterval() != null) {
+                errors.reject("executing once should not have an interval");
+            }
+        } else {
+            // Otherwise for recurring tasks, should have either a cron expression or an interval, but not both.
+            if (isNotBlank(schedule.getCronTrigger()) && schedule.getInterval() != null) {
+                errors.reject("recurring schedules should have either a cron expression, or an interval (not both)");
+            } else if (isBlank(schedule.getCronTrigger()) && schedule.getInterval() == null) {
+                errors.reject("recurring schedules should have either a cron expression, or an interval");
+            }
+            if (schedule.getCronTrigger() != null && !CronExpression.isValidExpression(schedule.getCronTrigger())) {
+                errors.rejectValue(Schedule.CRON_TRIGGER_PROPERTY, "is an invalid cron expression");
+            }
+            if (schedule.getInterval() != null && (schedule.getTimes() == null || schedule.getTimes().isEmpty())) {
+                errors.rejectValue(Schedule.TIMES_PROPERTY, "are required for interval-based schedules");
+            }
         }
-        /* I would like to do this, but I'm not absolutely certain it's necessary
-        if (schedule.getExpires() == null && schedule.getEndsOn() == null) {
-            errors.reject("should have either a duration until it expires, or an endsOn date and time");
+
+        // If the delay is smaller than 1 day, *and* there are times listed, this is ambiguous. Either increase the 
+        // delay or drop the times.
+        if (timesAmbiguous(schedule.getDelay(), schedule.getTimes())) {
+            errors.rejectValue(Schedule.DELAY_PROPERTY, "is less than one day, and times of day are also set for this schedule, which is ambiguous");
         }
-        */
+        if (isBlank(schedule.getCronTrigger()) && intervalTooShort(schedule.getInterval())) {
+            errors.rejectValue(Schedule.INTERVAL_PROPERTY, "must be at least one day");
+        }
         if (schedule.getStartsOn() != null && schedule.getEndsOn() != null) {
             DateTime oneHourLater = schedule.getStartsOn().plusHours(1);
             if (schedule.getEndsOn().isBefore(oneHourLater)) {
                 errors.rejectValue(Schedule.ENDS_ON_PROPERTY, "should be at least an hour after the startsOn time");
             }
         }
-        if (schedule.getScheduleType() == null) {
-            errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, CANNOT_BE_NULL);
-        }
-        if (schedule.getCronTrigger() != null && !CronExpression.isValidExpression(schedule.getCronTrigger())) {
-            errors.rejectValue(Schedule.CRON_TRIGGER_PROPERTY, "is an invalid cron expression");
-        }
         validateActivities(schedule, errors);
+    }
+    
+    private boolean intervalTooShort(Period interval) {
+        if (interval == null) {
+            return false;
+        }
+        DateTime now = DateTime.now();
+        DateTime dur = now.plus(interval);
+        DateTime hours24 = now.plusHours(24);
+        return dur.isBefore(hours24);
+    }
+    
+    private boolean timesAmbiguous(Period delay, List<LocalTime> times) {
+        if (delay == null || times == null || times.isEmpty()) {
+            return false;
+        }
+        DateTime now = DateTime.now();
+        DateTime dur = now.plus(delay);
+        DateTime hours24 = now.plusHours(24);
+        return !times.isEmpty() && dur.isBefore(hours24);
     }
 
     private void validateActivities(Schedule schedule, Errors errors) {
