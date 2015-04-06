@@ -2,17 +2,26 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.Objects;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import org.joda.time.DateTime;
 
 public final class Task {
 
     private final String guid;
+    private final String schedulePlanGuid;
     private final Activity activity;
     private final DateTime startsOn;
     private final DateTime endsOn;
     
-    Task(String guid, Activity activity, DateTime startsOn, DateTime endsOn) {
+    Task(String guid, String schedulePlanGuid, Activity activity, DateTime startsOn, DateTime endsOn) {
+        checkNotNull(guid);
+        checkNotNull(schedulePlanGuid);
+        checkNotNull(activity);
+        checkNotNull(startsOn);
+        // endsOn is okay to be null
         this.guid = guid;
+        this.schedulePlanGuid = schedulePlanGuid;
         this.activity = activity;
         this.startsOn = startsOn;
         this.endsOn = endsOn;
@@ -20,6 +29,10 @@ public final class Task {
     
     public String getGuid() {
         return guid;
+    }
+    
+    public String getSchedulePlanGuid() {
+        return schedulePlanGuid;
     }
     
     public Activity getActivity() {
@@ -40,6 +53,7 @@ public final class Task {
         int result = 1;
         result = prime * result + Objects.hashCode(activity);
         result = prime * result + Objects.hashCode(guid);
+        result = prime * result + Objects.hashCode(schedulePlanGuid);
         result = prime * result + Objects.hashCode(startsOn);
         result = prime * result + Objects.hashCode(endsOn);
         return result;
@@ -53,11 +67,13 @@ public final class Task {
             return false;
         Task other = (Task) obj;
         return (Objects.equals(activity, other.activity) && Objects.equals(guid, other.guid)
-                && Objects.equals(startsOn, other.startsOn) && Objects.equals(endsOn, other.endsOn));
+            && Objects.equals(schedulePlanGuid, other.schedulePlanGuid)
+            && Objects.equals(startsOn, other.startsOn) && Objects.equals(endsOn, other.endsOn));
     }
     
     @Override
     public String toString() {
-        return String.format("Task [guid=%s, activity=%s, startsOn=%s, endsOn=%s]", guid, activity, startsOn, endsOn);
+        return String.format("Task [guid=%s, activity=%s, schedulePlanGuid=%s, startsOn=%s, endsOn=%s]", 
+            guid, activity, schedulePlanGuid, startsOn, endsOn);
     }
 }
