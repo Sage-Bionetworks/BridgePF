@@ -8,8 +8,6 @@ import static org.sagebionetworks.bridge.models.schedules.Schedule.ACTIVITIES_PR
 import java.util.List;
 
 import org.joda.time.DateTime;
-import org.joda.time.Duration;
-import org.joda.time.Hours;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.quartz.CronExpression;
@@ -40,14 +38,13 @@ public class ScheduleValidator implements Validator {
         if (schedule.getScheduleType() == null) {
             errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, CANNOT_BE_NULL);
         } else if (schedule.getScheduleType() == ScheduleType.ONCE){
-            // If it's a one-time task, it shouldn't have an interval. It can have a cron trigger, although this
-            // sounds like a totally worthless schedule. Still, "schedule this one time, the next Monday after 
-            // enrollment" or somesuch, is a thing.
+            // If it's a one-time task, it shouldn't have an interval. It can have a cron trigger, eg "schedule this one
+            // time, the next Monday after enrollment" is a thing.
             if (schedule.getInterval() != null) {
                 errors.reject("executing once should not have an interval");
             }
         } else {
-            // Otherwise for recurring tasks, should have either a cron expression or an interval, but not both.
+            // Recurring tasks should have either a cron expression or an interval, but not both.
             if (isNotBlank(schedule.getCronTrigger()) && schedule.getInterval() != null) {
                 errors.reject("recurring schedules should have either a cron expression, or an interval (not both)");
             } else if (isBlank(schedule.getCronTrigger()) && schedule.getInterval() == null) {
@@ -61,8 +58,8 @@ public class ScheduleValidator implements Validator {
             }
         }
 
-        // If the delay is smaller than 1 day, *and* there are times listed, this is ambiguous. Either increase the 
-        // delay or drop the times.
+        // If the delay is smaller than 1 day, *and* there are times listed, this is ambiguous. Either increase the
+        // delay or switch to a cron schedule.
         if (timesAmbiguous(schedule.getDelay(), schedule.getTimes())) {
             errors.rejectValue(Schedule.DELAY_PROPERTY, "is less than one day, and times of day are also set for this schedule, which is ambiguous");
         }

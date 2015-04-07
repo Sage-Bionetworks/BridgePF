@@ -30,13 +30,9 @@ public class ActivityValidator implements Validator {
         if (activity.getActivityType() == null) {
             errors.rejectValue(ACTIVITY_TYPE_PROPERTY, CANNOT_BE_NULL);
         }
-        /* We would like to enforce this, but it is new prior to 1.0. After
-         * removing support for activityRef and activityType from schedules,
-         * enable this.
         if (isBlank(activity.getLabel())) {
             errors.rejectValue("label", CANNOT_BE_BLANK);
         }
-        */
         if (isBlank(activity.getRef())) {
             errors.rejectValue(REF_PROPERTY, CANNOT_BE_BLANK);
         }

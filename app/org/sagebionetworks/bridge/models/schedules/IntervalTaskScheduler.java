@@ -16,25 +16,16 @@ class IntervalTaskScheduler extends BaseTaskScheduler {
     @Override
     public List<Task> getTasks(Map<String, DateTime> events, DateTime until) {
         List<Task> tasks = Lists.newArrayList();
-        try {
-            
-            DateTime datetime = getStartTimeBasedOnEvent(schedule, events);
-            /*
-            do {
-                addTaskForEachTime(tasks, datetime);
-                // The last check determines this is a one-time task, not to be repeated
-            } while(datetime.isBefore(until) && schedule.getInterval() == null);
-            */
+        DateTime datetime = getStartTimeBasedOnEvent(schedule, events);
+        if (datetime != null) {
             while(datetime.isBefore(until)) {
                 addTaskForEachTime(tasks, datetime);
-                // These are one-time tasks; may want to move out to a separate scheduler at some point.
+                // A one-time task with no interval (for example); don't loop
                 if (schedule.getInterval() == null) {
-                    throw new IllegalStateException();
+                    return trimTasks(tasks);
                 }
                 datetime = datetime.plus(schedule.getInterval());
             }
-            
-        } catch(IllegalStateException e) {
         }
         return trimTasks(tasks);
     }

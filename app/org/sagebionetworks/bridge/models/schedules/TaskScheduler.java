@@ -8,9 +8,9 @@ import org.joda.time.DateTime;
 public interface TaskScheduler {
 
     /**
-     * Get all the tasks for the schedule that start before the until date and time. If the schedule has been used in
-     * the past, and a startedOn event exists in the event map for the schedule, tasks will only be returned with start 
-     * times after that time.
+     * Get all the tasks for the schedule that start before the "until" date and time. If the schedule has been used in
+     * the past, and the events map contains a startsOn event key for the schedule plan that generated the last tasks,
+     * then tasks will only be returned with start times after that time.
      * 
      * @param events
      * @param startAt
