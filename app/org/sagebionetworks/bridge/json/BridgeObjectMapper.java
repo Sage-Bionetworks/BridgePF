@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -19,6 +18,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.impl.ObjectIdWriter;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 
 /**
  * Use this version of the ObjectMapper in preference to its parent class. This version
@@ -54,11 +54,7 @@ public class BridgeObjectMapper extends ObjectMapper {
                 context.addBeanSerializerModifier(bsm);
             }
         });
-        SimpleModule serializers = new SimpleModule();
-        serializers.addDeserializer(Schedule.class, new ScheduleDeserializer());
-        serializers.addSerializer(Schedule.class, new ScheduleSerializer());
-        this.registerModule(serializers);
-        
+        this.registerModule(new JodaModule());
         this.registerModule(new LowercaseEnumModule());
     }
     

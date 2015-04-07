@@ -11,6 +11,7 @@ import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 
 public final class Schedule implements BridgeEntity {
@@ -55,6 +56,7 @@ public final class Schedule implements BridgeEntity {
     public List<LocalTime> getTimes() {
         return times;
     }
+    @JsonProperty("times")
     public void setTimes(List<LocalTime> times) {
         this.times = times;
     }
@@ -91,6 +93,7 @@ public final class Schedule implements BridgeEntity {
     public DateTime getStartsOn() {
         return startsOn;
     }
+    @JsonProperty("startsOn")
     public void setStartsOn(DateTime startsOn) {
         this.startsOn = startsOn;
     }
@@ -100,6 +103,7 @@ public final class Schedule implements BridgeEntity {
     public DateTime getEndsOn() {
         return endsOn;
     }
+    @JsonProperty("endsOn")
     public void setEndsOn(DateTime endsOn) {
         this.endsOn = endsOn;
     }
@@ -109,6 +113,7 @@ public final class Schedule implements BridgeEntity {
     public Period getExpires() {
         return expires;
     }
+    @JsonProperty("expires")
     public void setExpires(Period expires) {
         this.expires = expires;
     }
@@ -118,6 +123,7 @@ public final class Schedule implements BridgeEntity {
     public Period getDelay() {
         return delay;
     }
+    @JsonProperty("delay")
     public void setDelay(Period delay) {
         this.delay = delay;
     }
@@ -127,6 +133,7 @@ public final class Schedule implements BridgeEntity {
     public Period getInterval() {
         return interval;
     }
+    @JsonProperty("interval")
     public void setInterval(Period interval) {
         this.interval = interval;
     }
