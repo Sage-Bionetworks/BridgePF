@@ -30,51 +30,63 @@ public class ScheduleValidator implements Validator {
     public boolean supports(Class<?> clazz) {
         return Schedule.class.isAssignableFrom(clazz);
     }
-
+    
     @Override
     public void validate(Object object, Errors errors) {
         Schedule schedule = (Schedule)object;
         
         if (schedule.getScheduleType() == null) {
             errors.rejectValue(Schedule.SCHEDULE_TYPE_PROPERTY, CANNOT_BE_NULL);
-        } else if (schedule.getScheduleType() == ScheduleType.ONCE){
-            // If it's a one-time task, it shouldn't have an interval. It can have a cron trigger, eg "schedule this one
-            // time, the next Monday after enrollment" is a thing.
-            if (schedule.getInterval() != null) {
-                errors.reject("executing once should not have an interval");
-            }
-        } else {
-            // Recurring tasks should have either a cron expression or an interval, but not both.
-            if (isNotBlank(schedule.getCronTrigger()) && schedule.getInterval() != null) {
-                errors.reject("recurring schedules should have either a cron expression, or an interval (not both)");
-            } else if (isBlank(schedule.getCronTrigger()) && schedule.getInterval() == null) {
-                errors.reject("recurring schedules should have either a cron expression, or an interval");
-            }
-            if (schedule.getCronTrigger() != null && !CronExpression.isValidExpression(schedule.getCronTrigger())) {
-                errors.rejectValue(Schedule.CRON_TRIGGER_PROPERTY, "is an invalid cron expression");
-            }
-            if (schedule.getInterval() != null && (schedule.getTimes() == null || schedule.getTimes().isEmpty())) {
-                errors.rejectValue(Schedule.TIMES_PROPERTY, "are required for interval-based schedules");
-            }
         }
-
-        // If the delay is smaller than 1 day, *and* there are times listed, this is ambiguous. Either increase the
-        // delay or switch to a cron schedule.
-        if (timesAmbiguous(schedule.getDelay(), schedule.getTimes())) {
-            errors.rejectValue(Schedule.DELAY_PROPERTY, "is less than one day, and times of day are also set for this schedule, which is ambiguous");
+        if (oneTimeScheduleHasInterval(schedule)) {
+            errors.reject("executing once should not have an interval");
         }
-        if (isBlank(schedule.getCronTrigger()) && intervalTooShort(schedule.getInterval())) {
+        if (recurringScheduleLacksRepeatingInfo(schedule)) {
+            errors.reject("recurring schedules should have either a cron expression, or an interval");
+        }
+        if (cronExpressionInvalid(schedule)) {
+            errors.rejectValue(Schedule.CRON_TRIGGER_PROPERTY, "is an invalid cron expression");
+        }
+        if (intervalMissingTimes(schedule)) {
+            errors.rejectValue(Schedule.TIMES_PROPERTY, "are required for interval-based schedules");
+        }
+        if (intervalTooShort(schedule.getInterval())) {
             errors.rejectValue(Schedule.INTERVAL_PROPERTY, "must be at least one day");
         }
-        if (schedule.getStartsOn() != null && schedule.getEndsOn() != null) {
-            DateTime oneHourLater = schedule.getStartsOn().plusHours(1);
-            if (schedule.getEndsOn().isBefore(oneHourLater)) {
-                errors.rejectValue(Schedule.ENDS_ON_PROPERTY, "should be at least an hour after the startsOn time");
-            }
+        if (delayWithTimesAreAmbiguous(schedule.getDelay(), schedule.getTimes())) {
+            errors.rejectValue(Schedule.DELAY_PROPERTY, "is less than one day, and times of day are also set for this schedule, which is ambiguous");
+        }
+        if (timesNotOrderedChronologically(schedule)) {
+            errors.rejectValue(Schedule.ENDS_ON_PROPERTY, "should be at least an hour after the startsOn time");
         }
         validateActivities(schedule, errors);
     }
+
+    private boolean oneTimeScheduleHasInterval(Schedule schedule) {
+        return (schedule.getScheduleType() == ScheduleType.ONCE && schedule.getInterval() != null);
+    }
     
+    private boolean recurringScheduleLacksRepeatingInfo(Schedule schedule) {
+        boolean bothOrNeither = (schedule.getInterval() != null && isNotBlank(schedule.getCronTrigger()) || 
+                                (schedule.getInterval() == null && isBlank(schedule.getCronTrigger())) );
+        return (schedule.getScheduleType() == ScheduleType.RECURRING) && bothOrNeither;
+    }        
+
+    private boolean cronExpressionInvalid(Schedule schedule) {
+        return schedule.getCronTrigger() != null && !CronExpression.isValidExpression(schedule.getCronTrigger());
+    }
+    
+    private boolean intervalMissingTimes(Schedule schedule) {
+        return schedule.getInterval() != null && (schedule.getTimes() == null || schedule.getTimes().isEmpty());
+    }
+    
+    /**
+     * Interval currently must be at least 24 hours (this is because it is ambiguous to have an interval under
+     * twenty-four hours along with specific times of the day). For intervals under a day, a cron expression may work.
+     * 
+     * @param interval
+     * @return
+     */
     private boolean intervalTooShort(Period interval) {
         if (interval == null) {
             return false;
@@ -85,7 +97,14 @@ public class ScheduleValidator implements Validator {
         return dur.isBefore(hours24);
     }
     
-    private boolean timesAmbiguous(Period delay, List<LocalTime> times) {
+    /**
+     * It is ambiguous to have a delay less than one day long, as well as times. When using 
+     * interval scheduling (where times are required), the delay cannot be less than a day.
+     * @param delay
+     * @param times
+     * @return
+     */
+    private boolean delayWithTimesAreAmbiguous(Period delay, List<LocalTime> times) {
         if (delay == null || times == null || times.isEmpty()) {
             return false;
         }
@@ -93,6 +112,16 @@ public class ScheduleValidator implements Validator {
         DateTime dur = now.plus(delay);
         DateTime hours24 = now.plusHours(24);
         return !times.isEmpty() && dur.isBefore(hours24);
+    }
+    
+    private boolean timesNotOrderedChronologically(Schedule schedule) {
+        if (schedule.getStartsOn() != null && schedule.getEndsOn() != null) {
+            DateTime oneHourLater = schedule.getStartsOn().plusHours(1);
+            if (schedule.getEndsOn().isBefore(oneHourLater)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void validateActivities(Schedule schedule, Errors errors) {

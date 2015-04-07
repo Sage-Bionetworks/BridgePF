@@ -8,9 +8,13 @@ import org.joda.time.DateTime;
 public interface TaskScheduler {
 
     /**
-     * Get all the tasks for the schedule that start before the "until" date and time. If the schedule has been used in
-     * the past, and the events map contains a startsOn event key for the schedule plan that generated the last tasks,
-     * then tasks will only be returned with start times after that time.
+     * Get all the tasks for the schedule that start before up to the "until" date and time passed to the method. Tasks
+     * will be returned from the event that triggers the schedule (by default, the enrollment date of the user). If the
+     * events map contains a later event for the last time the schedule plan generated tasks, schedules will be
+     * generated after that date and time.
+     * 
+     * More information about schedules themselves can be found at:
+     * https://sagebionetworks.jira.com/wiki/display/BRIDGE/Schedule
      * 
      * @param events
      * @param startAt

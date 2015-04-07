@@ -10,9 +10,8 @@ import org.springframework.validation.Validator;
 
 public class ActivityValidator implements Validator {
     
-    public static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
-    public static final String CANNOT_BE_NULL = "cannot be null";
-    
+    private static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
+    private static final String CANNOT_BE_NULL = "cannot be null";
     private static final String ACTIVITY_TYPE_PROPERTY = "activityType";
     private static final String REF_PROPERTY = "ref";
     private static final String SURVEY_PROPERTY = "survey";
