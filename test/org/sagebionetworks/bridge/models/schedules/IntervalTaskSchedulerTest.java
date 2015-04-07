@@ -30,6 +30,24 @@ public class IntervalTaskSchedulerTest {
     }
     
     @Test
+    public void oneWeekAfterEnrollmentAt8amExpireAfter24hours() throws Exception {
+        Schedule schedule = new Schedule();
+        schedule.addActivity(new Activity("Take the tapping test", "task:tapTest"));
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setDelay("P1W");
+        schedule.setTimes("08:00");
+        schedule.setExpires("PT24H");
+        
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
+        assertDates(tasks, "2015-03-30 08:00");
+    }
+    
+    @Test
+    public void scheduleCreatesTasksOnDayAfterEventTime() {
+        //org.junit.Assert.fail("Not implemented");
+    }
+    
+    @Test
     public void onceScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
         
