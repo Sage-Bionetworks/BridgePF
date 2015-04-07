@@ -1,6 +1,8 @@
-package org.sagebionetworks.bridge.models.schedules;
+    package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.assertEquals;
+import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.dt;
+import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.RECURRING;
 
@@ -19,15 +21,12 @@ public class IntervalTaskSchedulerTest {
     private List<Task> tasks;
     
     private DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
-    private DateTime NOW = DateTime.parse("2015-03-26T14:40:00Z");
     
     @Before
     public void before() {
         events = Maps.newHashMap();
         // Enrolled on March 23, 2015 @ 10am GST
         events.put("enrollment", ENROLLMENT);
-        // Now is April 2nd, 2015 @ 2:40pm, GST
-        events.put("now", NOW);
     }
     
     @Test
@@ -35,7 +34,7 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusDays(1));
-        assertDate(tasks, "2015-03-23 09:40");
+        assertDates(tasks, "2015-03-23 09:40");
     }
     @Test
     public void onceStartsOnScheduleWorks() {
@@ -56,7 +55,7 @@ public class IntervalTaskSchedulerTest {
         
         schedule.setEndsOn("2015-04-23T13:40:00Z");
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
-        assertDate(tasks, "2015-03-23 09:40");
+        assertDates(tasks, "2015-03-23 09:40");
     }
     @Test
     public void onceStartEndsOnScheduleWorks() {
@@ -66,7 +65,7 @@ public class IntervalTaskSchedulerTest {
         
         // Should get the second of the tasks scheduled on day of enrollment
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
-        assertDate(tasks, "2015-03-23 13:40");
+        assertDates(tasks, "2015-03-23 13:40");
     }
     @Test
     public void onceDelayScheduleWorks() {
@@ -74,7 +73,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setDelay("P2D");
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusDays(3));
-        assertDate(tasks, "2015-03-25 09:40");
+        assertDates(tasks, "2015-03-25 09:40");
     }
     @Test
     public void onceDelayStartsOnScheduleWorks() {
@@ -93,7 +92,7 @@ public class IntervalTaskSchedulerTest {
         schedule.setEndsOn(dt("2015-04-04 10:00"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusDays(3));
-        assertDate(tasks, "2015-03-25 09:40");
+        assertDates(tasks, "2015-03-25 09:40");
         
         // With a delay *after* the end date, nothing happens
         schedule.setDelay("P2M");
@@ -109,7 +108,7 @@ public class IntervalTaskSchedulerTest {
         
         // Schedules in the window without any issue
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(3));
-        assertDate(tasks, "2015-05-23 09:40");
+        assertDates(tasks, "2015-05-23 09:40");
         
         schedule.setDelay("P6M");
         schedule.setStartsOn(dt("2015-05-01 00:00"));
@@ -132,11 +131,11 @@ public class IntervalTaskSchedulerTest {
         events.put("survey:AAA:completedOn", dt("2015-04-10 11:40"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
-        assertDate(tasks, "2015-04-10 09:40");
+        assertDates(tasks, "2015-04-10 09:40");
         
         schedule.getTimes().clear();
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
-        assertDate(tasks, "2015-04-10 11:40");
+        assertDates(tasks, "2015-04-10 11:40");
     }
     @Test
     public void onceEventStartsOnScheduleWorks() {
@@ -173,7 +172,7 @@ public class IntervalTaskSchedulerTest {
         
         events.put("survey:AAA:completedOn", dt("2015-04-10 00:00"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
-        assertDate(tasks, "2015-04-10 09:40");
+        assertDates(tasks, "2015-04-10 09:40");
     }
     @Test
     public void onceEventDelayScheduleWorks() {
@@ -183,17 +182,17 @@ public class IntervalTaskSchedulerTest {
         events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
-        assertDate(tasks, "2015-04-06 09:40");
+        assertDates(tasks, "2015-04-06 09:40");
         
         // This delays after the event by ~2 days, but then uses the supplied times
         schedule.setDelay("PT50H");
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
-        assertDate(tasks, "2015-04-04 09:40");
+        assertDates(tasks, "2015-04-04 09:40");
         
         // If we delete the times, it delays exactly 50 hours. (2 days, 2 hours)
         schedule.getTimes().clear();
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
-        assertDate(tasks, "2015-04-04 11:22");
+        assertDates(tasks, "2015-04-04 11:22");
     }
     @Test
     public void onceEventDelayStartsOnScheduleWorks() {
@@ -204,7 +203,7 @@ public class IntervalTaskSchedulerTest {
 
         events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
-        assertDate(tasks, "2015-04-06 09:40");
+        assertDates(tasks, "2015-04-06 09:40");
         
         // This should not return a task.
         schedule.setStartsOn(dt("2015-04-15 00:00"));
@@ -220,7 +219,7 @@ public class IntervalTaskSchedulerTest {
         
         events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
-        assertDate(tasks, "2015-04-06 09:40");
+        assertDates(tasks, "2015-04-06 09:40");
     }
     @Test
     public void onceEventDelayStartEndsOnScheduleWorks() {
@@ -233,7 +232,7 @@ public class IntervalTaskSchedulerTest {
         
         events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(6));
-        assertDate(tasks, "2015-04-02 12:22");
+        assertDates(tasks, "2015-04-02 12:22");
     }
     @Test
     public void onceEventDelayExpiresStartEndsOnScheduleWorks() {
@@ -431,10 +430,6 @@ public class IntervalTaskSchedulerTest {
         assertEquals(0, tasks.size());
     }
     
-    private DateTime dt(String string) {
-        return DateTime.parse(string.replace(" ", "T") + ":00Z");
-    }
-    
     private Schedule createScheduleWith(ScheduleType type) {
         Schedule schedule = new Schedule();
         schedule.setTimes("09:40", "13:40");
@@ -446,16 +441,4 @@ public class IntervalTaskSchedulerTest {
         return schedule;
     }
     
-    private void assertDate(List<Task> tasks, String date) {
-        assertEquals(1, tasks.size());
-        assertEquals(dt(date), tasks.get(0).getStartsOn());
-    }
-    
-    private void assertDates(List<Task> tasks, String... output) {
-        assertEquals(output.length, tasks.size());
-        for (int i=0; i < tasks.size(); i++) {
-            assertEquals(dt(output[i]), tasks.get(i).getStartsOn());
-        }
-    }
 }
-;

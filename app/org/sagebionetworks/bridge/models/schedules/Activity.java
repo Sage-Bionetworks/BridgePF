@@ -43,15 +43,6 @@ public class Activity {
     }
     
     @JsonIgnore
-    public String getKey() {
-        if (activityType == ActivityType.TASK) {
-            return "task:" + ref;
-        } else {
-            return "survey:" + getSurvey().getGuid();
-        }
-    }
-    
-    @JsonIgnore
     public GuidCreatedOnVersionHolder getGuidCreatedOnVersionHolder() {
         SurveyReference sr = getSurvey();
         if (sr != null && sr.getCreatedOn() != null) {

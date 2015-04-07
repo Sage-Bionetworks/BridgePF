@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
+
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +29,7 @@ abstract class BaseTaskScheduler implements TaskScheduler {
         // An event was specified, but it hasn't happened yet. So no tasks are generated.
         // OR, an event fires, but outside of the window for the schedule, so again, no tasks.
         if (event == null || !isInWindow(schedule, event)) {
-            throw new IllegalStateException();
+            return null;
         }
         if (schedule.getDelay() != null) {
             event = event.plus(schedule.getDelay());
@@ -48,10 +50,6 @@ abstract class BaseTaskScheduler implements TaskScheduler {
     }
     
     private void addTaskForEachActivityAtTime(List<Task> tasks, DateTime datetime) {
-        // This task falls outside of the scheduling window. Stop creating tasks.
-        if (isAfterEnd(schedule, datetime)) {
-            throw new IllegalStateException();
-        }
         if (isInWindow(schedule, datetime)) {
             for (Activity activity : schedule.getActivities()) {
                 Task task = new Task(BridgeUtils.generateGuid(), schedulePlanGuid, activity, datetime, getEndsOn(datetime, schedule));
@@ -61,17 +59,10 @@ abstract class BaseTaskScheduler implements TaskScheduler {
     }
     
     protected List<Task> trimTasks(List<Task> tasks) {
-        /*
-        if (tasks.isEmpty()) {
-            return tasks;
-        }*/
-        int count = (schedule.getScheduleType() == ScheduleType.ONCE) ? 1 : tasks.size();
+        int count = (schedule.getScheduleType() == ONCE) ? 
+            schedule.getActivities().size() :
+            tasks.size();
         return tasks.subList(0, Math.min(tasks.size(), count));
-    }
-    
-    private boolean isAfterEnd(Schedule schedule, DateTime datetime) {
-        DateTime endsOn = schedule.getEndsOn();
-        return (endsOn != null && datetime.isAfter(endsOn));
     }
     
     private boolean isInWindow(Schedule schedule, DateTime datetime) {

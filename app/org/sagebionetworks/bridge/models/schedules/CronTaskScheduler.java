@@ -19,19 +19,16 @@ class CronTaskScheduler extends BaseTaskScheduler {
     @Override
     public List<Task> getTasks(Map<String, DateTime> events, DateTime until) {
         List<Task> tasks = Lists.newArrayList();
-        try {
-            DateTime datetime = getStartTimeBasedOnEvent(schedule, events);
-            if (events.get("now").isAfter(datetime)) {
-                datetime = events.get("now");
-            }
+        DateTime datetime = getStartTimeBasedOnEvent(schedule, events);
+        if (datetime != null) {
             MutableTrigger trigger = parseTrigger(datetime, schedule.getCronTrigger());
             while (datetime.isBefore(until)) {
                 Date next = trigger.getFireTimeAfter(datetime.toDate());
                 datetime = new DateTime(next, datetime.getZone());
-                addTaskForEachTime(tasks, datetime);
+                if (datetime.isBefore(until)) {
+                    addTaskForEachTime(tasks, datetime);    
+                }
             }
-        } catch(IllegalStateException e) {
-            
         }
         return trimTasks(tasks);
     }
