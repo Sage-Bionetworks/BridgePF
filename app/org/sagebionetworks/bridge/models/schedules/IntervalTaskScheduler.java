@@ -12,7 +12,7 @@ import com.google.common.collect.Lists;
  * in order to schedule (rather than a cron expression). In addition, it also handles one-time, 
  * event-based task scheduling with no recurring schedule.
  */
-class IntervalTaskScheduler extends BaseTaskScheduler {
+class IntervalTaskScheduler extends TaskScheduler {
     
     IntervalTaskScheduler(String schedulePlanGuid, Schedule schedule) {
         super(schedulePlanGuid, schedule);

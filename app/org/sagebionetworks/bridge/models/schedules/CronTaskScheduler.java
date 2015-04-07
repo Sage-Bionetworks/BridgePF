@@ -10,7 +10,7 @@ import org.quartz.spi.MutableTrigger;
 
 import com.google.common.collect.Lists;
 
-class CronTaskScheduler extends BaseTaskScheduler {
+class CronTaskScheduler extends TaskScheduler {
 
     CronTaskScheduler(String schedulePlanGuid, Schedule schedule) {
         super(schedulePlanGuid, schedule);
