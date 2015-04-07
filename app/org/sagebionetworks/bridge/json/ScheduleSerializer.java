@@ -19,6 +19,7 @@ import java.io.IOException;
 import org.joda.time.LocalTime;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -52,7 +53,11 @@ public class ScheduleSerializer extends JsonSerializer<Schedule> {
         if (schedule.getInterval() != null) {
             writeString(gen, INTERVAL_PROPERTY, schedule.getInterval().toString());    
         }
-        writeString(gen, SCHEDULE_TYPE_PROPERTY, schedule.getScheduleType().name().toLowerCase());
+        ScheduleType type = schedule.getScheduleType();
+        if (type != null) {
+            writeString(gen, SCHEDULE_TYPE_PROPERTY, type.name().toLowerCase());    
+        }
+        
         if (schedule.getActivities() != null && !schedule.getActivities().isEmpty()) {
             gen.writeFieldName(ACTIVITIES_PROPERTY);
             gen.writeStartArray();

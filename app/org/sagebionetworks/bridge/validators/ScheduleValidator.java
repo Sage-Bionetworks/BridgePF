@@ -53,6 +53,9 @@ public class ScheduleValidator implements Validator {
         if (intervalTooShort(schedule.getInterval())) {
             errors.rejectValue(Schedule.INTERVAL_PROPERTY, "must be at least one day");
         }
+        if (periodTooShort(schedule.getExpires())) {
+            errors.rejectValue(Schedule.EXPIRES_PROPERTY, "must be at least one hour");
+        }
         if (delayWithTimesAreAmbiguous(schedule.getDelay(), schedule.getTimes())) {
             errors.rejectValue(Schedule.DELAY_PROPERTY, "is less than one day, and times of day are also set for this schedule, which is ambiguous");
         }
@@ -95,6 +98,16 @@ public class ScheduleValidator implements Validator {
         DateTime dur = now.plus(interval);
         DateTime hours24 = now.plusHours(24);
         return dur.isBefore(hours24);
+    }
+    
+    private boolean periodTooShort(Period period) {
+        if (period == null) {
+            return false;
+        }
+        DateTime now = DateTime.now();
+        DateTime dur = now.plus(period);
+        DateTime oneHour = now.plusHours(1);
+        return dur.isBefore(oneHour);
     }
     
     /**

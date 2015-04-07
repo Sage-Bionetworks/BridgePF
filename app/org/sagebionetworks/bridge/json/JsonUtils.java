@@ -92,13 +92,6 @@ public class JsonUtils {
         return 0L;
     }
 
-    public static Long asMillisDurationLong(JsonNode parent, String property) {
-        if (parent != null && parent.hasNonNull(property)) {
-            return DateUtils.convertToMillisFromDuration(parent.get(property).asText());
-        }
-        return null;
-    }
-    
     public static Period asPeriod(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             return Period.parse(parent.get(property).asText());
