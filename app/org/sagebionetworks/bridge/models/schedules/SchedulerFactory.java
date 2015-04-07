@@ -12,7 +12,6 @@ public class SchedulerFactory {
         if (schedule.getCronTrigger() != null) {
             return new CronTaskScheduler(schedulePlanGuid, schedule);
         }
-        // This has to handle one-time event-based tasks as well (that don't need an interval).
         return new IntervalTaskScheduler(schedulePlanGuid, schedule);
     };
     
