@@ -13,7 +13,7 @@ import com.google.common.collect.Lists;
  * event-based task scheduling with no recurring schedule.
  */
 class IntervalTaskScheduler extends BaseTaskScheduler {
-
+    
     IntervalTaskScheduler(String schedulePlanGuid, Schedule schedule) {
         super(schedulePlanGuid, schedule);
     }
