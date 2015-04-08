@@ -2,8 +2,13 @@ package org.sagebionetworks.bridge.json;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.text.DateFormat;
 
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.springframework.format.datetime.joda.DateTimeFormatterFactory;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -13,12 +18,14 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.impl.ObjectIdWriter;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
 
 /**
  * Use this version of the ObjectMapper in preference to its parent class. This version
@@ -56,6 +63,7 @@ public class BridgeObjectMapper extends ObjectMapper {
         });
         this.registerModule(new JodaModule());
         this.registerModule(new LowercaseEnumModule());
+        this.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
     }
     
     private class ExtraFieldSerializer extends BeanSerializerBase {
