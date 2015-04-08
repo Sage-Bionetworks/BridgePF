@@ -21,40 +21,40 @@ abstract class TaskScheduler {
     
     public abstract List<Task> getTasks(Map<String, DateTime> events, DateTime until);
     
-    protected DateTime getStartTimeBasedOnEvent(Schedule schedule, Map<String, DateTime> events) {
+    protected DateTime getScheduledTimeBasedOnEvent(Schedule schedule, Map<String, DateTime> events) {
         // If no event is specified, it's enrollment by default.
         String eventId = schedule.getEventId();
         if (eventId == null) {
             eventId = "enrollment";
         }
-        DateTime event = events.get(eventId);
+        DateTime eventTime = events.get(eventId);
         // An event was specified, but it hasn't happened yet. So no tasks are generated.
         // OR, an event fires, but outside of the window for the schedule, so again, no tasks.
-        if (event == null || !isInWindow(schedule, event)) {
+        if (eventTime == null || !isInWindow(schedule, eventTime)) {
             return null;
         }
         if (schedule.getDelay() != null) {
-            event = event.plus(schedule.getDelay());
+            eventTime = eventTime.plus(schedule.getDelay());
         }
-        return event;
+        return eventTime;
     }
     
-    protected void addTaskForEachTime(List<Task> tasks, DateTime datetime) {
+    protected void addTaskForEachTime(List<Task> tasks, DateTime scheduledTime) {
         if (schedule.getTimes().isEmpty()) {
             // We're using whatever hour/minute/seconds were in the original event.
-            addTaskForEachActivityAtTime(tasks, datetime);
+            addTaskForEachActivityAtTime(tasks, scheduledTime);
         } else {
             for (LocalTime time : schedule.getTimes()) {
-                datetime = new DateTime(datetime).withTime(time);
-                addTaskForEachActivityAtTime(tasks, datetime);
+                scheduledTime = new DateTime(scheduledTime).withTime(time);
+                addTaskForEachActivityAtTime(tasks, scheduledTime);
             }
         }
     }
     
-    private void addTaskForEachActivityAtTime(List<Task> tasks, DateTime datetime) {
-        if (isInWindow(schedule, datetime)) {
+    private void addTaskForEachActivityAtTime(List<Task> tasks, DateTime scheduledTime) {
+        if (isInWindow(schedule, scheduledTime)) {
             for (Activity activity : schedule.getActivities()) {
-                Task task = new Task(BridgeUtils.generateGuid(), schedulePlanGuid, activity, datetime, getEndsOn(datetime, schedule));
+                Task task = new Task(BridgeUtils.generateGuid(), schedulePlanGuid, activity, scheduledTime, getExpiresOn(scheduledTime, schedule));
                 tasks.add(task);
             }
         }
@@ -67,18 +67,18 @@ abstract class TaskScheduler {
         return tasks.subList(0, Math.min(tasks.size(), count));
     }
     
-    private boolean isInWindow(Schedule schedule, DateTime datetime) {
+    private boolean isInWindow(Schedule schedule, DateTime scheduledTime) {
         DateTime startsOn = schedule.getStartsOn();
         DateTime endsOn = schedule.getEndsOn();
-        return (startsOn == null || datetime.isEqual(startsOn) || datetime.isAfter(startsOn)) && 
-               (endsOn == null || datetime.isEqual(endsOn) || datetime.isBefore(endsOn));
+        return (startsOn == null || scheduledTime.isEqual(startsOn) || scheduledTime.isAfter(startsOn)) && 
+               (endsOn == null || scheduledTime.isEqual(endsOn) || scheduledTime.isBefore(endsOn));
     }
     
-    private DateTime getEndsOn(DateTime startsOn, Schedule schedule) {
-        if (schedule.getExpires() == null) {
+    private DateTime getExpiresOn(DateTime startsOn, Schedule scheduledTime) {
+        if (scheduledTime.getExpires() == null) {
             return null;
         }
-        return startsOn.plus(schedule.getExpires());
+        return startsOn.plus(scheduledTime.getExpires());
     }
 
 }

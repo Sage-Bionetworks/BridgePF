@@ -26,7 +26,7 @@ public class ScheduleTestUtils {
     public static void assertDates(List<Task> tasks, String... output) {
         assertEquals(output.length, tasks.size());
         for (int i=0; i < tasks.size(); i++) {
-            assertEquals(dt(output[i]), tasks.get(i).getStartsOn());
+            assertEquals(dt(output[i]), tasks.get(i).getScheduledOn());
         }
     }
 }

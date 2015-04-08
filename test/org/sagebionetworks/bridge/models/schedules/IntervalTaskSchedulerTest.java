@@ -139,8 +139,8 @@ public class IntervalTaskSchedulerTest {
         schedule.setExpires("P1W");
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(3));
-        assertEquals(dt("2015-03-23 09:40"), tasks.get(0).getStartsOn());
-        assertEquals(dt("2015-03-30 09:40"), tasks.get(0).getEndsOn());
+        assertEquals(dt("2015-03-23 09:40"), tasks.get(0).getScheduledOn());
+        assertEquals(dt("2015-03-30 09:40"), tasks.get(0).getExpiresOn());
     }
     @Test
     public void onceEventScheduleWorks() {
@@ -264,8 +264,8 @@ public class IntervalTaskSchedulerTest {
         
         events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(6));
-        assertEquals(dt("2015-04-02 12:22"), tasks.get(0).getStartsOn());
-        assertEquals(dt("2015-04-05 12:22"), tasks.get(0).getEndsOn());
+        assertEquals(dt("2015-04-02 12:22"), tasks.get(0).getScheduledOn());
+        assertEquals(dt("2015-04-05 12:22"), tasks.get(0).getExpiresOn());
     }
     @Test
     public void recurringScheduleWorks() {
