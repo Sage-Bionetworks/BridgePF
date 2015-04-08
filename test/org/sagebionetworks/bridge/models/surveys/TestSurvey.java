@@ -45,7 +45,9 @@ public class TestSurvey extends DynamoSurvey {
             mvc.setAllowOther(false);
             mvc.setAllowMultiple(true);
             setConstraints(mvc);
+            setTitle("Feelings");
             setPrompt("How do you feel today?");
+            setPromptDetail("Is that how you really feel?");
             setIdentifier("feeling");
             setUiHint(UIHint.LIST);
             setGuid(UUID.randomUUID().toString());
@@ -58,7 +60,9 @@ public class TestSurvey extends DynamoSurvey {
             c.setMinLength(2);
             c.setMaxLength(255);
             c.setPattern("\\d{3}-\\d{3}-\\d{4}");
+            setTitle("Emergencies");
             setPrompt("Please enter an emergency phone number (###-###-####)?");
+            setPromptDetail("This should be for someone besides yourself.");
             setIdentifier("name");
             setUiHint(UIHint.TEXTFIELD);
             setConstraints(c);
@@ -70,7 +74,9 @@ public class TestSurvey extends DynamoSurvey {
         {
             BooleanConstraints c = new BooleanConstraints();
             setPrompt("Do you have high blood pressure?");
+            setTitle("Blood Pressure");
             setIdentifier("high_bp");
+            setPromptDetail("Be honest: do you have high blood pressue?");
             setUiHint(UIHint.CHECKBOX);
             setConstraints(c);
             setGuid(UUID.randomUUID().toString());

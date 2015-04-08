@@ -1,24 +1,39 @@
 package org.sagebionetworks.bridge.models.surveys;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class SurveyQuestionOption {
 
     private final String label;
+    private final String detail;
     private final String value;
     private final Image image;
     
     @JsonCreator
-    public SurveyQuestionOption(@JsonProperty("label") String label, @JsonProperty("value") String value,
-            @JsonProperty("image") Image image) {
+    public SurveyQuestionOption(@JsonProperty("label") String label, @JsonProperty("detail") String detail, 
+        @JsonProperty("value") String value, @JsonProperty("image") Image image) {
         this.label = label;
+        this.detail = detail;
         this.value = value;
         this.image = image;
     }
     
+    public SurveyQuestionOption(String label, String value, Image image) {
+        this(label, null, value, null);
+    }
+    
+    public SurveyQuestionOption(String label) {
+        this(label, null, label, null);
+    }
+    
     public String getLabel() {
         return label;
+    }
+    public String getDetail() {
+        return detail;
     }
     public String getValue() {
         return value;
@@ -31,42 +46,29 @@ public class SurveyQuestionOption {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((image == null) ? 0 : image.hashCode());
-        result = prime * result + ((label == null) ? 0 : label.hashCode());
-        result = prime * result + ((value == null) ? 0 : value.hashCode());
+        result = prime * result + Objects.hashCode(image);
+        result = prime * result + Objects.hashCode(label);
+        result = prime * result + Objects.hashCode(detail);
+        result = prime * result + Objects.hashCode(value);
         return result;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        } else if (obj == null || getClass() != obj.getClass()) {
             return false;
-        if (getClass() != obj.getClass())
-            return false;
-        SurveyQuestionOption other = (SurveyQuestionOption) obj;
-        if (image == null) {
-            if (other.image != null)
-                return false;
-        } else if (!image.equals(other.image))
-            return false;
-        if (label == null) {
-            if (other.label != null)
-                return false;
-        } else if (!label.equals(other.label))
-            return false;
-        if (value == null) {
-            if (other.value != null)
-                return false;
-        } else if (!value.equals(other.value))
-            return false;
-        return true;
+        }
+        final SurveyQuestionOption that = (SurveyQuestionOption) obj;
+        return Objects.equals(image, that.image) && Objects.equals(label, that.label)
+                && Objects.equals(detail, that.detail) && Objects.equals(value, that.value);
     }
 
     @Override
     public String toString() {
-        return "SurveyQuestionOption [label=" + label + ", value=" + value + ", image=" + image + "]";
+        return String.format("SurveyQuestionOption [label=%s, detail=%s, value=%s, image=%s]", 
+            label, detail, value, image);
     }
     
 }
