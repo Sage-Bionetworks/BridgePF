@@ -74,11 +74,11 @@ abstract class TaskScheduler {
                (endsOn == null || scheduledTime.isEqual(endsOn) || scheduledTime.isBefore(endsOn));
     }
     
-    private DateTime getExpiresOn(DateTime startsOn, Schedule scheduledTime) {
-        if (scheduledTime.getExpires() == null) {
+    private DateTime getExpiresOn(DateTime scheduledTime, Schedule schedule) {
+        if (schedule.getExpires() == null) {
             return null;
         }
-        return startsOn.plus(scheduledTime.getExpires());
+        return scheduledTime.plus(schedule.getExpires());
     }
 
 }
