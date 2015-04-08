@@ -38,6 +38,10 @@ public class ScheduleTest {
         schedule.setTimes(Lists.newArrayList(LocalTime.parse("10:10"), LocalTime.parse("14:00")));
         
         String string = BridgeObjectMapper.get().writeValueAsString(schedule);
+        System.out.println(string);
+        // Dwayne points out these time values are hyper-specific, e.g. "10:10:00.000".
+        assertEquals("{\"label\":\"label\",\"scheduleType\":\"recurring\",\"eventId\":\"eventId\",\"cronTrigger\":\"0 0 8 ? * TUE *\",\"activities\":[{\"label\":\"label\",\"ref\":\"http://ref/\",\"activityType\":\"task\",\"type\":\"Activity\"}],\"delay\":\"P1D\",\"interval\":\"P3D\",\"expires\":\"P2D\",\"startsOn\":\"2015-02-02T10:10:10.000Z\",\"endsOn\":\"2015-01-01T10:10:10.000Z\",\"times\":[\"10:10:00.000\",\"14:00:00.000\"],\"type\":\"Schedule\"}", string);
+        
         schedule = BridgeObjectMapper.get().readValue(string, Schedule.class);
         
         assertEquals("0 0 8 ? * TUE *", schedule.getCronTrigger());
