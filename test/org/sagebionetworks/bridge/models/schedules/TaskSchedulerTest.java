@@ -49,8 +49,8 @@ public class TaskSchedulerTest {
         assertNotNull(task.getGuid());
         assertEquals("activity label", task.getActivity().getLabel());
         assertEquals("ref:task", task.getActivity().getRef());
-        assertNotNull(task.getStartsOn());
-        assertNotNull(task.getEndsOn());
+        assertNotNull(task.getScheduledOn());
+        assertNotNull(task.getExpiresOn());
     }
     
     
@@ -72,7 +72,7 @@ public class TaskSchedulerTest {
         schedule2.setEventId("task:task1");
 
         List<Task> tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusMonths(2));
-        assertEquals(dt("2015-04-23 10:00"), tasks.get(0).getStartsOn());
+        assertEquals(dt("2015-04-23 10:00"), tasks.get(0).getScheduledOn());
 
         tasks = SchedulerFactory.getScheduler("", schedule2).getTasks(events, NOW.plusMonths(2));
         assertEquals(0, tasks.size());
@@ -83,7 +83,7 @@ public class TaskSchedulerTest {
         events.put("task:task1", TASK1_EVENT);
         
         tasks = SchedulerFactory.getScheduler("", schedule2).getTasks(events, NOW.plusMonths(2));
-        assertEquals(TASK1_EVENT, tasks.get(0).getStartsOn());
+        assertEquals(TASK1_EVENT, tasks.get(0).getScheduledOn());
     }
     
     @Test
@@ -157,11 +157,11 @@ public class TaskSchedulerTest {
         
         events.put("scheduledOn:task:foo", NOW.minusHours(3));
         List<Task> tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
-        assertEquals(NOW.minusHours(3), tasks.get(0).getStartsOn());
+        assertEquals(NOW.minusHours(3), tasks.get(0).getScheduledOn());
 
         events.put("scheduledOn:task:foo", NOW.plusHours(8));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
-        assertEquals(NOW.plusHours(8), tasks.get(0).getStartsOn());
+        assertEquals(NOW.plusHours(8), tasks.get(0).getScheduledOn());
     }
     
 }

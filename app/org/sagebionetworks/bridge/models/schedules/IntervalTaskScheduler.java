@@ -21,7 +21,7 @@ class IntervalTaskScheduler extends TaskScheduler {
     @Override
     public List<Task> getTasks(Map<String, DateTime> events, DateTime until) {
         List<Task> tasks = Lists.newArrayList();
-        DateTime datetime = getStartTimeBasedOnEvent(schedule, events);
+        DateTime datetime = getScheduledTimeBasedOnEvent(schedule, events);
         if (datetime != null) {
             while(datetime.isBefore(until)) {
                 addTaskForEachTime(tasks, datetime);

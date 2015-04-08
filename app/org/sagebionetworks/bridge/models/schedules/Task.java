@@ -11,20 +11,20 @@ public final class Task {
     private final String guid;
     private final String schedulePlanGuid;
     private final Activity activity;
-    private final DateTime startsOn;
-    private final DateTime endsOn;
+    private final DateTime scheduledOn;
+    private final DateTime expiresOn;
     
-    Task(String guid, String schedulePlanGuid, Activity activity, DateTime startsOn, DateTime endsOn) {
+    Task(String guid, String schedulePlanGuid, Activity activity, DateTime scheduledOn, DateTime expiresOn) {
         checkNotNull(guid);
         checkNotNull(schedulePlanGuid);
         checkNotNull(activity);
-        checkNotNull(startsOn);
-        // endsOn is okay to be null
+        checkNotNull(scheduledOn);
+        // expiresOn can be null
         this.guid = guid;
         this.schedulePlanGuid = schedulePlanGuid;
         this.activity = activity;
-        this.startsOn = startsOn;
-        this.endsOn = endsOn;
+        this.scheduledOn = scheduledOn;
+        this.expiresOn = expiresOn;
     }
     
     public String getGuid() {
@@ -39,12 +39,12 @@ public final class Task {
         return activity;
     }
     
-    public DateTime getStartsOn() {
-        return startsOn;
+    public DateTime getScheduledOn() {
+        return scheduledOn;
     }
 
-    public DateTime getEndsOn() {
-        return endsOn;
+    public DateTime getExpiresOn() {
+        return expiresOn;
     }
 
     @Override
@@ -54,8 +54,8 @@ public final class Task {
         result = prime * result + Objects.hashCode(activity);
         result = prime * result + Objects.hashCode(guid);
         result = prime * result + Objects.hashCode(schedulePlanGuid);
-        result = prime * result + Objects.hashCode(startsOn);
-        result = prime * result + Objects.hashCode(endsOn);
+        result = prime * result + Objects.hashCode(scheduledOn);
+        result = prime * result + Objects.hashCode(expiresOn);
         return result;
     }
 
@@ -68,12 +68,12 @@ public final class Task {
         Task other = (Task) obj;
         return (Objects.equals(activity, other.activity) && Objects.equals(guid, other.guid)
             && Objects.equals(schedulePlanGuid, other.schedulePlanGuid)
-            && Objects.equals(startsOn, other.startsOn) && Objects.equals(endsOn, other.endsOn));
+            && Objects.equals(scheduledOn, other.scheduledOn) && Objects.equals(expiresOn, other.expiresOn));
     }
     
     @Override
     public String toString() {
-        return String.format("Task [guid=%s, activity=%s, schedulePlanGuid=%s, startsOn=%s, endsOn=%s]", 
-            guid, activity, schedulePlanGuid, startsOn, endsOn);
+        return String.format("Task [guid=%s, activity=%s, schedulePlanGuid=%s, scheduledOn=%s, expiresOn=%s]", 
+            guid, activity, schedulePlanGuid, scheduledOn, expiresOn);
     }
 }
