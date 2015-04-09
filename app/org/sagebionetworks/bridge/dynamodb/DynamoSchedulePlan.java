@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.Objects;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -24,20 +26,21 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * This object represents the row in DynamoDB, but also converts the strategy JSON column 
- * in DynamoDB into a sub-class of the ScheduleStrategy object, which implements specific 
- * algorithms for assigning users their schedules.
+ * This object represents the row in DynamoDB, but also converts the strategy JSON column in DynamoDB into a sub-class
+ * of the ScheduleStrategy object, which implements specific algorithms for assigning users their schedules.
  */
 @DynamoDBTable(tableName = "SchedulePlan")
 public class DynamoSchedulePlan implements SchedulePlan {
 
     private static final String GUID_PROPERTY = "guid";
+    private static final String LABEL_PROPERTY = "label";
     private static final String STUDY_KEY_PROPERTY = "studyKey";
     private static final String MODIFIED_ON_PROPERTY = "modifiedOn";
     private static final String STRATEGY_PROPERTY = "strategy";
     private static final String VERSION_PROPERTY = "version";
     
     private String guid;
+    private String label;
     private String studyKey;
     private Long version;
     private long modifiedOn;
@@ -46,6 +49,7 @@ public class DynamoSchedulePlan implements SchedulePlan {
     public static DynamoSchedulePlan fromJson(JsonNode node) {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid(JsonUtils.asText(node, GUID_PROPERTY));
+        plan.setLabel(JsonUtils.asText(node, LABEL_PROPERTY));
         plan.setModifiedOn(JsonUtils.asMillisSinceEpoch(node, MODIFIED_ON_PROPERTY));
         plan.setStudyKey(JsonUtils.asText(node, STUDY_KEY_PROPERTY));
         plan.setData(JsonUtils.asObjectNode(node, STRATEGY_PROPERTY));
@@ -101,6 +105,15 @@ public class DynamoSchedulePlan implements SchedulePlan {
     public void setStrategy(ScheduleStrategy strategy) {
         this.strategy = strategy;
     }
+    @Override
+    @DynamoDBAttribute
+    public String getLabel() {
+        return label;
+    }
+    @Override
+    public void setLabel(String label) {
+        this.label = label;
+    }
     @DynamoDBAttribute(attributeName="strategy")
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
     @JsonIgnore
@@ -125,46 +138,32 @@ public class DynamoSchedulePlan implements SchedulePlan {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((guid == null) ? 0 : guid.hashCode());
-        result = prime * result + (int) (modifiedOn ^ (modifiedOn >>> 32));
-        result = prime * result + ((strategy == null) ? 0 : strategy.hashCode());
-        result = prime * result + ((studyKey == null) ? 0 : studyKey.hashCode());
+        result = prime * result + Objects.hashCode(guid);
+        result = prime * result + Objects.hashCode(label);
+        result = prime * result + Objects.hashCode(modifiedOn);
+        result = prime * result + Objects.hashCode(strategy);
+        result = prime * result + Objects.hashCode(studyKey);
         return result;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
-        if (getClass() != obj.getClass())
-            return false;
+        }
         DynamoSchedulePlan other = (DynamoSchedulePlan) obj;
-        if (guid == null) {
-            if (other.guid != null)
-                return false;
-        } else if (!guid.equals(other.guid))
-            return false;
-        if (modifiedOn != other.modifiedOn)
-            return false;
-        if (strategy == null) {
-            if (other.strategy != null)
-                return false;
-        } else if (!strategy.equals(other.strategy))
-            return false;
-        if (studyKey == null) {
-            if (other.studyKey != null)
-                return false;
-        } else if (!studyKey.equals(other.studyKey))
-            return false;
-        return true;
+        return (Objects.equals(guid, other.guid) && Objects.equals(label, other.label)
+                && Objects.equals(modifiedOn, other.modifiedOn) && Objects.equals(strategy, other.strategy)
+                && Objects.equals(label, other.label) && Objects.equals(studyKey, other.studyKey));
     }
 
     @Override
     public String toString() {
-        return "DynamoSchedulePlan [guid=" + guid + ", studyKey=" + studyKey + ", modifiedOn=" + modifiedOn
-                + ", strategy=" + strategy + "]";
+        return String.format("DynamoSchedulePlan [guid=%s, label=%s, studyKey=%s, modifiedOn=%s, strategy=%s]",
+                guid, label, studyKey, modifiedOn, strategy);
     }
 
 }

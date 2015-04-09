@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
-import org.apache.commons.lang3.StringUtils;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
@@ -17,8 +18,11 @@ public class SchedulePlanValidator implements Validator {
     @Override
     public void validate(Object obj, Errors errors) {
         SchedulePlan plan = (SchedulePlan)obj;
-        if (StringUtils.isBlank(plan.getStudyKey())) {
-            errors.rejectValue("studyKey", "missing a study key");
+        if (isBlank(plan.getStudyKey())) {
+            errors.rejectValue("studyKey", "cannot be missing, null, or blank");
+        }
+        if (isBlank(plan.getLabel())) {
+            errors.rejectValue("label", "cannot be missing, null, or blank");
         }
         if (plan.getStrategy() == null) {
             errors.rejectValue("strategy", "cannot be null");

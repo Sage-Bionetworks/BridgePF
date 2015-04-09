@@ -34,6 +34,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
     
     public TestABSchedulePlan() {
         setGuid("AAA");
+        setLabel("Test A/B Schedule");
         setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         setStudyKey(TestConstants.TEST_STUDY_IDENTIFIER);
         
