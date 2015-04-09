@@ -42,7 +42,7 @@ public class ScheduleValidator implements Validator {
             errors.reject("executing once should not have an interval");
         }
         if (recurringScheduleLacksRepeatingInfo(schedule)) {
-            errors.reject("recurring schedules should have either a cron expression, or an interval");
+            errors.reject("recurring schedules should have either a cron expression, or an interval, but not both");
         }
         if (cronExpressionInvalid(schedule)) {
             errors.rejectValue(Schedule.CRON_TRIGGER_PROPERTY, "is an invalid cron expression");
@@ -96,8 +96,8 @@ public class ScheduleValidator implements Validator {
         }
         DateTime now = DateTime.now();
         DateTime dur = now.plus(interval);
-        DateTime hours24 = now.plusHours(24);
-        return dur.isBefore(hours24);
+        DateTime oneDay = now.plusDays(1);
+        return dur.isBefore(oneDay);
     }
     
     private boolean periodTooShort(Period period) {

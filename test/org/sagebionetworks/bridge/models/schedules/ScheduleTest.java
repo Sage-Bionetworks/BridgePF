@@ -57,4 +57,25 @@ public class ScheduleTest {
         assertEquals("label", activity.getLabel());
         assertEquals("http://ref/", activity.getRef());
     }
+    
+    @Test
+    public void testStringSetters() {
+        DateTime date = DateTime.parse("2015-02-02T10:10:10.000Z");
+        Period period = Period.parse("P1D");
+        Schedule schedule = new Schedule();
+        schedule.setDelay("P1D");
+        schedule.setEndsOn("2015-02-02T10:10:10.000Z");
+        schedule.setStartsOn("2015-02-02T10:10:10.000Z");
+        schedule.setExpires("P1D");
+        schedule.setInterval("P1D");
+        schedule.setTimes("10:10");
+        schedule.addTime("12:10");
+        
+        assertEquals(period, schedule.getDelay());
+        assertEquals(date, schedule.getEndsOn());
+        assertEquals(date, schedule.getStartsOn());
+        assertEquals(period, schedule.getExpires());
+        assertEquals(period, schedule.getInterval());
+        assertEquals(Lists.newArrayList(LocalTime.parse("10:10"), LocalTime.parse("12:10")), schedule.getTimes());
+    }
 }

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -29,6 +30,7 @@ public class ScheduleValidatorTest {
     public void mustHaveAtLeastOneActivityAndAScheduleType() {
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertEquals("activities cannot be null", e.getErrors().get("activities").get(0));
             assertEquals("scheduleType cannot be null", e.getErrors().get("scheduleType").get(0));
@@ -43,6 +45,7 @@ public class ScheduleValidatorTest {
         
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertEquals("scheduleType cannot be null", e.getErrors().get("scheduleType").get(0));
             assertEquals("activities[0].activityType cannot be null", e.getErrors().get("activities[0].activityType").get(0));
@@ -64,6 +67,7 @@ public class ScheduleValidatorTest {
         
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertEquals("endsOn should be at least an hour after the startsOn time", e.getErrors().get("endsOn").get(0));
         }
@@ -80,6 +84,7 @@ public class ScheduleValidatorTest {
 
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertTrue(e.getMessage().contains("must be an absolute URL to a survey resource API"));
         }
@@ -101,22 +106,53 @@ public class ScheduleValidatorTest {
         assertEquals("AAA", ref.getGuid());
         assertEquals("2015-01-27T17:46:31.237Z", ref.getCreatedOn());
     }
+
+    @Test
+    public void rejectsScheduleWithTwoBothCronTriggerAndInterval() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setInterval("P2D");
+        schedule.setCronTrigger("0 0 12 ? * TUE,THU,SAT *");
+        
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("Schedule recurring schedules should have either a cron expression, or an interval, but not both", e.getErrors().get("Schedule").get(0));
+        }
+    }
     
     @Test
-    public void recurringSchedulesMustHaveCronTriggerOrInterval() {
+    public void recurringSchedulesHasNeitherCronTriggerNorInterval() {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertEquals("Schedule recurring schedules should have either a cron expression, or an interval", e.getErrors().get("Schedule").get(0));
+            assertEquals("Schedule recurring schedules should have either a cron expression, or an interval, but not both", e.getErrors().get("Schedule").get(0));
         }
         
         schedule.setInterval("P1D");
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertNull(e.getErrors().get("Schedule"));
+        }
+    }
+    
+    @Test
+    public void expiresTooShort() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setExpires("PT30M");
+        
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("expires must be at least one hour", e.getErrors().get("expires").get(0));
         }
     }
     
@@ -128,6 +164,7 @@ public class ScheduleValidatorTest {
 
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertEquals("cronTrigger is an invalid cron expression", e.getErrors().get("cronTrigger").get(0));
         }
@@ -145,14 +182,10 @@ public class ScheduleValidatorTest {
         
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertEquals("interval must be at least one day", e.getErrors().get("interval").get(0));
         }
-    }
-    
-    @Test
-    public void rejectsDelayOfLessThanADay() {
-        
     }
     
     @Test 
@@ -163,6 +196,7 @@ public class ScheduleValidatorTest {
         
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertEquals("Schedule executing once should not have an interval", e.getErrors().get("Schedule").get(0));
         }
@@ -176,6 +210,7 @@ public class ScheduleValidatorTest {
         
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertEquals("times are required for interval-based schedules", e.getErrors().get("times").get(0));
         }
@@ -189,6 +224,7 @@ public class ScheduleValidatorTest {
         
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertEquals("interval must be at least one day", e.getErrors().get("interval").get(0));
         }
@@ -203,6 +239,7 @@ public class ScheduleValidatorTest {
         
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertEquals("delay is less than one day, and times of day are also set for this schedule, which is ambiguous", e.getErrors().get("delay").get(0));
         }

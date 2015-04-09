@@ -27,7 +27,7 @@ abstract class TaskScheduler {
         if (eventId == null) {
             eventId = "enrollment";
         }
-        DateTime eventTime = events.get(eventId);
+        DateTime eventTime = (events == null) ? null : events.get(eventId);
         // An event was specified, but it hasn't happened yet. So no tasks are generated.
         // OR, an event fires, but outside of the window for the schedule, so again, no tasks.
         if (eventTime == null || !isInWindow(schedule, eventTime)) {
