@@ -105,12 +105,15 @@ public class SurveyServiceTest {
         assertTrue("Survey has been versioned", survey.getCreatedOn() != 0L);
         assertTrue("Question #1 has a guid", survey.getElements().get(0).getGuid() != null);
         assertTrue("Question #2 has a guid", survey.getElements().get(1).getGuid() != null);
+        
+        SurveyQuestion question = (SurveyQuestion)survey.getElements().get(0);
 
         survey.setIdentifier("newIdentifier");
         surveyService.updateSurvey(survey);
         survey = surveyService.getSurvey(survey);
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
-
+        assertEquals("Blood Pressure", question.getTitle());
+        assertEquals("Be honest: do you have high blood pressue?", question.getPromptDetail());
         surveyService.deleteSurvey(studyIdentifier, survey);
 
         try {
