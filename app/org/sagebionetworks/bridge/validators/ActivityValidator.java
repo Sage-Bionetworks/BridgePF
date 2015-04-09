@@ -37,7 +37,7 @@ public class ActivityValidator implements Validator {
         }
         if (activity.getActivityType() == ActivityType.SURVEY) {
             if (!activity.getRef().startsWith("http://") && !activity.getRef().startsWith("https://")) {
-                errors.rejectValue(REF_PROPERTY, "must be an absolute URL to a survey resource API");
+                errors.rejectValue(REF_PROPERTY, "must be an absolute URL to retrieve a survey response");
             }                    
             // This never should be empty because it is generated from the ref property, which we know is not null.
             if (activity.getSurvey() == null) {
@@ -57,6 +57,5 @@ public class ActivityValidator implements Validator {
                 errors.popNestedPath();    
             }
         }
-        
     }
 }
