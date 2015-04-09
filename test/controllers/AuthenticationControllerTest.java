@@ -131,7 +131,6 @@ public class AuthenticationControllerTest {
 
                     // Now, try and access schedules in the wrong study (one with a plan), you do not get it.
                     holder = WS.url(TEST_BASE_URL + SCHEDULES_API);
-                    holder.setHeader(BridgeConstants.BRIDGE_STUDY_HEADER, secondStudy.getIdentifier());
                     holder.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue());
                     response = holder.get().get(TIMEOUT);
                     assertEquals("{\"items\":[],\"total\":0,\"type\":\"ResourceList\"}", response.getBody());
@@ -158,6 +157,8 @@ public class AuthenticationControllerTest {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setLabel("Schedule label");
+        schedule.setDelay("P1D");
+        schedule.addTimes("08:00");
         schedule.getActivities().add(new Activity("An Activity", "task:AAA"));
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);

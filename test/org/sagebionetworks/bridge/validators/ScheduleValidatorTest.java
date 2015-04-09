@@ -3,7 +3,9 @@ package org.sagebionetworks.bridge.validators;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -25,11 +27,13 @@ public class ScheduleValidatorTest {
     }
     
     @Test
-    public void mustHaveAtLeastOneActivity() {
+    public void mustHaveAtLeastOneActivityAndAScheduleType() {
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertEquals(1, e.getErrors().get("activities").size());
+            assertEquals("activities cannot be null", e.getErrors().get("activities").get(0));
+            assertEquals("scheduleType cannot be null", e.getErrors().get("scheduleType").get(0));
         }
     }
     
@@ -41,6 +45,7 @@ public class ScheduleValidatorTest {
         
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertEquals("scheduleType cannot be null", e.getErrors().get("scheduleType").get(0));
             assertEquals("activities[0].activityType cannot be null", e.getErrors().get("activities[0].activityType").get(0));
@@ -54,34 +59,34 @@ public class ScheduleValidatorTest {
         schedule.addActivity(new Activity("Label", "task:AAA"));
         schedule.setScheduleType(ScheduleType.ONCE);
 
-        long startsOn = DateUtils.getCurrentMillisFromEpoch();
-        long endsOn = startsOn + 1; // should be at least an hour later
+        DateTime startsOn = DateUtils.getCurrentDateTime();
+        DateTime endsOn = startsOn.plusMinutes(10); // should be at least an hour later
         
         schedule.setStartsOn(startsOn);
         schedule.setEndsOn(endsOn);
         
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
             assertEquals("endsOn should be at least an hour after the startsOn time", e.getErrors().get("endsOn").get(0));
         }
-        
-        endsOn = startsOn + (60 * 60 * 1000);
-        schedule.setEndsOn(endsOn);
-        Validate.entityThrowingException(validator, schedule);
     }
     
     @Test
     public void surveyRelativePathIsInvalid() {
         schedule.addActivity(new Activity("Label", "/api/v1/surveys/AAA/published"));
         schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.setStartsOn(DateUtils.getCurrentMillisFromEpoch());
-        schedule.setEndsOn(schedule.getStartsOn() + 1);
+        
+        DateTime now = DateUtils.getCurrentDateTime();
+        schedule.setStartsOn(now);
+        schedule.setEndsOn(now.plusHours(1));
 
         try {
             Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertTrue(e.getMessage().contains("must be an absolute URL to a survey resource API"));
+            assertEquals("Schedule is invalid: activities[0].ref must be an absolute URL to retrieve a survey response", e.getMessage());
         }
     }
     
@@ -100,6 +105,144 @@ public class ScheduleValidatorTest {
         ref = activity.getSurvey();
         assertEquals("AAA", ref.getGuid());
         assertEquals("2015-01-27T17:46:31.237Z", ref.getCreatedOn());
+    }
+
+    @Test
+    public void rejectsScheduleWithTwoBothCronTriggerAndInterval() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setInterval("P2D");
+        schedule.setCronTrigger("0 0 12 ? * TUE,THU,SAT *");
+        
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("Schedule recurring schedules should have either a cron expression, or an interval, but not both", e.getErrors().get("Schedule").get(0));
+        }
+    }
+    
+    @Test
+    public void recurringSchedulesHasNeitherCronTriggerNorInterval() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("Schedule recurring schedules should have either a cron expression, or an interval, but not both", e.getErrors().get("Schedule").get(0));
+        }
+        
+        schedule.setInterval("P1D");
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertNull(e.getErrors().get("Schedule"));
+        }
+    }
+    
+    @Test
+    public void expiresTooShort() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setExpires("PT30M");
+        
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("expires must be at least one hour", e.getErrors().get("expires").get(0));
+        }
+    }
+    
+    @Test
+    public void rejectsInvalidCronExpression() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setCronTrigger("2 3 a");
+
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("cronTrigger is an invalid cron expression", e.getErrors().get("cronTrigger").get(0));
+        }
+    }
+    
+    /**
+     * It's ambiguous what this means when longer intervals require a time of day as well...the interval, delay, and  
+     * times can all conflict with one another.
+     */
+    @Test
+    public void rejectsInvervalOfLessThanADay() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setInterval("PT30M");
+        
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("interval must be at least one day", e.getErrors().get("interval").get(0));
+        }
+    }
+    
+    @Test 
+    public void rejectOneTimeTaskWithInterval() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setInterval("P2D");
+        
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("Schedule executing once should not have an interval", e.getErrors().get("Schedule").get(0));
+        }
+    }
+    
+    @Test
+    public void schedulesWithIntervalsShouldHaveTimesOfDay() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setInterval("P2D");
+        
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("times are required for interval-based schedules", e.getErrors().get("times").get(0));
+        }
+    }
+    
+    @Test
+    public void intervalsShouldBeMoreThanADayLong() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setInterval("PT23H59M");
+        
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("interval must be at least one day", e.getErrors().get("interval").get(0));
+        }
+    }
+    
+    @Test
+    public void delaysWithTimesOfDayMustBeMoreThanOneDayLong() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.addTimes("08:00");
+        schedule.setDelay("PT5H");
+        
+        try {
+            Validate.entityThrowingException(validator, schedule);
+            fail("Should have thrown InvalidEntityException");
+        } catch(InvalidEntityException e) {
+            assertEquals("delay is less than one day, and times of day are also set for this schedule, which is ambiguous", e.getErrors().get("delay").get(0));
+        }
     }
     
 }

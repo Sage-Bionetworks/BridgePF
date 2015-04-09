@@ -20,8 +20,8 @@ public class UserProfile {
     public static final String EMAIL_FIELD = "email";
     public static final String USERNAME_FIELD = "username";
     /**
-     * These fields are not part of the profile, but they are used on export to expose one of the participant option
-     * values, so studies cannot override the field value.
+     * These fields are not part of the profile, but they are used on export to expose the participant option values, so
+     * studies cannot override these values as extended user profile attributes.
      */
     public static final String SHARING_SCOPE_FIELD = "sharing";
     public static final String NOTIFY_BY_EMAIL_FIELD = "notifyByEmail";

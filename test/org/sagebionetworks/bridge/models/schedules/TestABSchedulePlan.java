@@ -1,41 +1,36 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import org.joda.time.Period;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.DateUtils;
 
 public class TestABSchedulePlan extends DynamoSchedulePlan {
 
-    private Schedule schedule1 = new Schedule() {
-        {
-            setGuid("AAA");
-            setScheduleType(ScheduleType.RECURRING);
-            setCronTrigger("* * *");
-            addActivity(new Activity("Do AAA task", "task:AAA"));
-            setExpires(new Long(60000));
-            setLabel("Schedule 1");
-        }
-    };
-    private Schedule schedule2 = new Schedule() {
-        {
-            setGuid("BBB");
-            setScheduleType(ScheduleType.RECURRING);
-            setCronTrigger("* * *");
-            addActivity(new Activity("Do BBB task", "task:BBB"));
-            setExpires(new Long(60000));
-            setLabel("Schedule 2");
-        }
-    };
-    private Schedule schedule3 = new Schedule() {
-        {
-            setGuid("CCC");
-            setScheduleType(ScheduleType.RECURRING);
-            setCronTrigger("* * *");
-            addActivity(new Activity("Do CCC task", "task:CCC"));
-            setExpires(new Long(60000));
-            setLabel("Schedule 3");
-        }
-    };
+    private Schedule schedule1 = new Schedule();
+    {
+        schedule1.setScheduleType(ScheduleType.RECURRING);
+        schedule1.setCronTrigger("0 0 8 ? * TUE *");
+        schedule1.addActivity(new Activity("Do AAA task", "task:AAA"));
+        schedule1.setExpires(Period.parse("PT1H"));
+        schedule1.setLabel("Schedule 1");
+    }
+    private Schedule schedule2 = new Schedule();
+    {
+        schedule2.setScheduleType(ScheduleType.RECURRING);
+        schedule2.setCronTrigger("0 0 8 ? * TUE *");
+        schedule2.addActivity(new Activity("Do BBB task", "task:BBB"));
+        schedule2.setExpires(Period.parse("PT1H"));
+        schedule2.setLabel("Schedule 2");
+    }
+    private Schedule schedule3 = new Schedule();
+    {
+        schedule3.setScheduleType(ScheduleType.RECURRING);
+        schedule3.setCronTrigger("0 0 8 ? * TUE *");
+        schedule3.addActivity(new Activity("Do CCC task", "task:CCC"));
+        schedule3.setExpires(Period.parse("PT1H"));
+        schedule3.setLabel("Schedule 3");
+    }
     
     public TestABSchedulePlan() {
         setGuid("AAA");

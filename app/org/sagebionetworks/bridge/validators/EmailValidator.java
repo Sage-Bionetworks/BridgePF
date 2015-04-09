@@ -26,6 +26,4 @@ public class EmailValidator implements Validator {
         }
         // Eventually study will be required as well.
     }
-    
-
 }
