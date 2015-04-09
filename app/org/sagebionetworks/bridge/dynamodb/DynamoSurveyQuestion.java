@@ -163,8 +163,8 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
 
     @Override
     public String toString() {
-        return String.format("DynamoSurveyQuestion [constraints=%s, title=%s, hint=%s, prompt=%s, promptDetail=%s]", 
-            constraints, title, hint, prompt, promptDetail);
+        return String.format("DynamoSurveyQuestion [title=%s, hint=%s, prompt=%s, promptDetail=%s, constraints=%s]", 
+            title, hint, prompt, promptDetail, constraints);
     }
 
 }

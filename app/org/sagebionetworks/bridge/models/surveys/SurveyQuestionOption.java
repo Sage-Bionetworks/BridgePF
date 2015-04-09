@@ -21,7 +21,7 @@ public class SurveyQuestionOption {
         this.image = image;
     }
     
-    public SurveyQuestionOption(String label, String value, Image image) {
+    public SurveyQuestionOption(String label, String value) {
         this(label, null, value, null);
     }
     
