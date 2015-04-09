@@ -1,8 +1,5 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import org.sagebionetworks.bridge.validators.ScheduleValidator;
-import org.sagebionetworks.bridge.validators.Validate;
-
 public class SchedulerFactory {
 
     public static TaskScheduler getScheduler(String schedulePlanGuid, Schedule schedule) {
