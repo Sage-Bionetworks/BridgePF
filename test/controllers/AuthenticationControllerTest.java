@@ -157,6 +157,7 @@ public class AuthenticationControllerTest {
         
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setLabel("Schedule label");
         schedule.getActivities().add(new Activity("An Activity", "task:AAA"));
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
