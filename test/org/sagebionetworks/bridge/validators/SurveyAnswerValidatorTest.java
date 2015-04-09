@@ -57,9 +57,9 @@ public class SurveyAnswerValidatorTest {
     
     private List<SurveyQuestionOption> getOptions() {
         return Lists.<SurveyQuestionOption>newArrayList(
-            new SurveyQuestionOption("label 1", "1", null),
-            new SurveyQuestionOption("label 2", "2", null),
-            new SurveyQuestionOption("label 3", "3", null)
+            new SurveyQuestionOption("label 1", "Detail for label 1", "1", null),
+            new SurveyQuestionOption("label 2", "Detail for label 2", "2", null),
+            new SurveyQuestionOption("label 3", "Detail for label 3", "3", null)
         );        
     }
     @Test(expected = InvalidEntityException.class)
