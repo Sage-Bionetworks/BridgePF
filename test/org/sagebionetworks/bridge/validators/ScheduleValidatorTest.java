@@ -244,5 +244,5 @@ public class ScheduleValidatorTest {
             assertEquals("delay is less than one day, and times of day are also set for this schedule, which is ambiguous", e.getErrors().get("delay").get(0));
         }
     }
-
+    
 }
