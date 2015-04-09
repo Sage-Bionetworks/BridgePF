@@ -68,8 +68,8 @@ public class ScheduleTest {
         schedule.setStartsOn("2015-02-02T10:10:10.000Z");
         schedule.setExpires("P1D");
         schedule.setInterval("P1D");
-        schedule.setTimes("10:10");
-        schedule.addTime("12:10");
+        schedule.addTimes("10:10");
+        schedule.addTimes("12:10");
         
         assertEquals(period, schedule.getDelay());
         assertEquals(date, schedule.getEndsOn());

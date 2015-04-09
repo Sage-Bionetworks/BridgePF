@@ -110,7 +110,7 @@ public class TaskSchedulerTest {
         schedule.setEventId("foo");
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setDelay("P2D");
-        schedule.addTime("07:00");
+        schedule.addTimes("07:00");
 
         // Event is recorded in PDT. And when we get the task back, it is scheduled in PDT. 
         events.put("foo", DateTime.parse("2015-03-25T07:00:00.000-07:00"));
@@ -133,7 +133,7 @@ public class TaskSchedulerTest {
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setEventId("anEvent");
         schedule.setInterval("P1D");
-        schedule.setTimes("10:00");
+        schedule.addTimes("10:00");
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
         assertDates(tasks, "2015-04-12 10:00", "2015-04-13 10:00", "2015-04-14 10:00", "2015-04-15 10:00");

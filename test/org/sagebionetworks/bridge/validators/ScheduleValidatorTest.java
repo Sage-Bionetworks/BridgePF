@@ -234,7 +234,7 @@ public class ScheduleValidatorTest {
     public void delaysWithTimesOfDayMustBeMoreThanOneDayLong() {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.setTimes("08:00");
+        schedule.addTimes("08:00");
         schedule.setDelay("PT5H");
         
         try {
