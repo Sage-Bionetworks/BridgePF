@@ -60,17 +60,17 @@ public final class Schedule implements BridgeEntity {
     public void setTimes(List<LocalTime> times) {
         this.times = times;
     }
-    public void setTimes(String... times) {
-        for (String time : times) {
-            addTime(time);
+    public void addTimes(LocalTime... times) {
+        for (LocalTime time : times) {
+            checkNotNull(time);
+            this.times.add(time);
         }
     }
-    public void addTime(LocalTime time) {
-        checkNotNull(time);
-        this.times.add(time);
-    }
-    public void addTime(String time) {
-        addTime(LocalTime.parse(time));
+    public void addTimes(String... times) {
+        for (String time : times) {
+            checkNotNull(time);
+            this.times.add(LocalTime.parse(time));
+        }
     }
     public String getLabel() {
         return label;

@@ -35,7 +35,7 @@ public class IntervalTaskSchedulerTest {
         schedule.addActivity(new Activity("Take the tapping test", "task:tapTest"));
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setDelay("P1W");
-        schedule.setTimes("08:00");
+        schedule.addTimes("08:00");
         schedule.setExpires("PT24H");
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
@@ -445,7 +445,7 @@ public class IntervalTaskSchedulerTest {
 
     private Schedule createScheduleWith(ScheduleType type) {
         Schedule schedule = new Schedule();
-        schedule.setTimes("09:40", "13:40");
+        schedule.addTimes("09:40", "13:40");
         schedule.getActivities().add(new Activity("Label", "tapTest"));
         schedule.setScheduleType(type);
         if (type == RECURRING) {
