@@ -75,7 +75,7 @@ public class Validate {
     }
     private static Map<String,List<String>> convertBindingResultToSimpleMap(BindingResult errors) {
         Map<String,List<String>> map = Maps.newHashMap();
-
+        
         if (errors.hasGlobalErrors()) {
             List<String> list = Lists.newArrayList();
             for (ObjectError error : errors.getGlobalErrors()) {

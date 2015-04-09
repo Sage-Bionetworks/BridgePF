@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
@@ -17,7 +16,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -110,37 +108,6 @@ public class ScheduleStrategyTest {
         assertTrue("20% users assigned to C", Math.abs(countsByLabel.get("C").intValue()-200) < 50);
     }
     
-    @Test
-    public void canSendOldJsonAndCreateValidScheduleV2() throws Exception {
-        String json = "{\"label\":\"new variant\",\"cronTrigger\":\"0 */2 * * *\",\"scheduleType\":\"recurring\",\"activityRef\":\"https://parkinson-staging.sagebridge.org/api/v1/surveys/260666a8-e9fe-46df-8832-75d3e4f7448e/2014-12-04T18:35:46.587Z\",\"activityType\":\"survey\"}";
-        
-        Schedule schedule = mapper.readValue(json, Schedule.class);
-        Activity activity = schedule.getActivities().get(0);
-        assertEquals("https://parkinson-staging.sagebridge.org/api/v1/surveys/260666a8-e9fe-46df-8832-75d3e4f7448e/2014-12-04T18:35:46.587Z", activity.getRef());
-        assertEquals(ActivityType.SURVEY, activity.getActivityType());
-        
-        SurveyReference ref = activity.getSurvey();
-        assertEquals("260666a8-e9fe-46df-8832-75d3e4f7448e", ref.getGuid());
-        assertEquals("2014-12-04T18:35:46.587Z", ref.getCreatedOn());
-        
-        GuidCreatedOnVersionHolder keys = activity.getGuidCreatedOnVersionHolder();
-        assertEquals("260666a8-e9fe-46df-8832-75d3e4f7448e", keys.getGuid());
-        assertEquals(DateUtils.convertToMillisFromEpoch("2014-12-04T18:35:46.587Z"), keys.getCreatedOn());
-    }
-    
-    @Test
-    @Ignore // Don't believe this functionality is wanted anymore
-    public void canRequestScheduleV2AndStillGetOldFields() throws Exception {
-        Schedule schedule = createSchedule("new variant");
-        
-        String json = mapper.writeValueAsString(schedule);
-        
-        schedule = mapper.readValue(json, Schedule.class);
-        
-        //assertEquals(SURVEY_URL, schedule.getActivityRef());
-        //assertEquals(ActivityType.SURVEY, schedule.getActivityType());
-    }
-    
     private DynamoSchedulePlan createABSchedulePlan() {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         // plan.setGuid("a71eecc3-5e75-4a11-91f4-c587999cbb20");
@@ -164,7 +131,7 @@ public class ScheduleStrategyTest {
         schedule.setLabel(label);
         schedule.addActivity(new Activity("Test survey", SURVEY_URL));
         schedule.setScheduleType(ScheduleType.RECURRING);
-        schedule.setCronTrigger("0 */2 * * *");
+        schedule.setCronTrigger("0 0 8 ? * TUE *");
         return schedule;
     }
 

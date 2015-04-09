@@ -3,33 +3,44 @@ package org.sagebionetworks.bridge.models.schedules;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
+import java.util.Objects;
 
+import org.joda.time.DateTime;
+import org.joda.time.LocalTime;
+import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 
-public class Schedule implements BridgeEntity {
+public final class Schedule implements BridgeEntity {
 
     public static final String SCHEDULE_TYPE_NAME = "Schedule";
+    
+    public static final String LABEL_PROPERTY = "label";
+    public static final String SCHEDULE_TYPE_PROPERTY = "scheduleType";
+    public static final String EVENT_ID_PROPERTY = "eventId";
+    public static final String DELAY_PROPERTY = "delay";
+    public static final String INTERVAL_PROPERTY = "interval";
+    public static final String EXPIRES_PROPERTY = "expires";
+    public static final String CRON_TRIGGER_PROPERTY = "cronTrigger";
+    public static final String STARTS_ON_PROPERTY = "startsOn";
+    public static final String ENDS_ON_PROPERTY = "endsOn";
     public static final String TYPE_PROPERTY_NAME = "type";
     public static final String ACTIVITIES_PROPERTY = "activities";
-    public static final String SCHEDULE_TYPE_PROPERTY = "scheduleType";
-    public static final String EXPIRES_PROPERTY = "expires";
-    public static final String ENDS_ON_PROPERTY = "endsOn";
-    public static final String STARTS_ON_PROPERTY = "startsOn";
-    public static final String CRON_TRIGGER_PROPERTY = "cronTrigger";
-    public static final String LABEL_PROPERTY = "label";
-    
-    public static final String ACTIVITY_TYPE_PROPERTY = "activityType";
-    public static final String ACTIVITY_REF_PROPERTY = "activityRef";
+    public static final String TIMES_PROPERTY = "times";
    
     private String label;
     private ScheduleType scheduleType;
+    private String eventId;
+    private Period delay;
+    private Period interval;
+    private Period expires;
     private String cronTrigger;
-    private Long startsOn;
-    private Long endsOn;
-    private Long expires;
+    private DateTime startsOn;
+    private DateTime endsOn;
+    private List<LocalTime> times = Lists.newArrayList();
     private List<Activity> activities = Lists.newArrayList();
     
     public List<Activity> getActivities() {
@@ -41,6 +52,25 @@ public class Schedule implements BridgeEntity {
     public void addActivity(Activity activity) {
         checkNotNull(activity);
         this.activities.add(activity);
+    }
+    public List<LocalTime> getTimes() {
+        return times;
+    }
+    @JsonProperty("times")
+    public void setTimes(List<LocalTime> times) {
+        this.times = times;
+    }
+    public void addTimes(LocalTime... times) {
+        for (LocalTime time : times) {
+            checkNotNull(time);
+            this.times.add(time);
+        }
+    }
+    public void addTimes(String... times) {
+        for (String time : times) {
+            checkNotNull(time);
+            this.times.add(LocalTime.parse(time));
+        }
     }
     public String getLabel() {
         return label;
@@ -60,23 +90,61 @@ public class Schedule implements BridgeEntity {
     public void setCronTrigger(String cronTrigger) {
         this.cronTrigger = cronTrigger;
     }
-    public Long getStartsOn() {
+    public DateTime getStartsOn() {
         return startsOn;
     }
-    public void setStartsOn(Long startsOn) {
+    @JsonProperty("startsOn")
+    public void setStartsOn(DateTime startsOn) {
         this.startsOn = startsOn;
     }
-    public Long getEndsOn() {
+    public void setStartsOn(String startsOn) {
+        setStartsOn(DateTime.parse(startsOn));
+    }
+    public DateTime getEndsOn() {
         return endsOn;
     }
-    public void setEndsOn(Long endsOn) {
+    @JsonProperty("endsOn")
+    public void setEndsOn(DateTime endsOn) {
         this.endsOn = endsOn;
     }
-    public Long getExpires() {
+    public void setEndsOn(String endsOn) {
+        setEndsOn(DateTime.parse(endsOn));
+    }
+    public Period getExpires() {
         return expires;
     }
-    public void setExpires(Long expires) {
+    @JsonProperty("expires")
+    public void setExpires(Period expires) {
         this.expires = expires;
+    }
+    public void setExpires(String expires) {
+        setExpires(Period.parse(expires));
+    }
+    public Period getDelay() {
+        return delay;
+    }
+    @JsonProperty("delay")
+    public void setDelay(Period delay) {
+        this.delay = delay;
+    }
+    public void setDelay(String delay) {
+        setDelay(Period.parse(delay));
+    }
+    public Period getInterval() {
+        return interval;
+    }
+    @JsonProperty("interval")
+    public void setInterval(Period interval) {
+        this.interval = interval;
+    }
+    public void setInterval(String interval) {
+        setInterval(Period.parse(interval));
+    }
+    public String getEventId() {
+        return eventId;
+    }
+    public void setEventId(String eventId) {
+        this.eventId = eventId;
     }
     public boolean isScheduleFor(GuidCreatedOnVersionHolder keys) {
         for (Activity activity : activities) {
@@ -90,62 +158,38 @@ public class Schedule implements BridgeEntity {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((activities == null) ? 0 : activities.hashCode());
-        result = prime * result + ((cronTrigger == null) ? 0 : cronTrigger.hashCode());
-        result = prime * result + ((endsOn == null) ? 0 : endsOn.hashCode());
-        result = prime * result + ((expires == null) ? 0 : expires.hashCode());
-        result = prime * result + ((label == null) ? 0 : label.hashCode());
-        result = prime * result + ((scheduleType == null) ? 0 : scheduleType.hashCode());
-        result = prime * result + ((startsOn == null) ? 0 : startsOn.hashCode());
+        result = prime * result + Objects.hashCode(activities);
+        result = prime * result + Objects.hashCode(cronTrigger);
+        result = prime * result + Objects.hashCode(endsOn);
+        result = prime * result + Objects.hashCode(expires);
+        result = prime * result + Objects.hashCode(delay);
+        result = prime * result + Objects.hashCode(interval);
+        result = prime * result + Objects.hashCode(label);
+        result = prime * result + Objects.hashCode(scheduleType);
+        result = prime * result + Objects.hashCode(startsOn);
+        result = prime * result + Objects.hashCode(eventId);
+        result = prime * result + Objects.hashCode(times);
         return result;
     }
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
-        if (getClass() != obj.getClass())
-            return false;
+        }
         Schedule other = (Schedule) obj;
-        if (activities == null) {
-            if (other.activities != null)
-                return false;
-        } else if (!activities.equals(other.activities))
-            return false;
-        if (cronTrigger == null) {
-            if (other.cronTrigger != null)
-                return false;
-        } else if (!cronTrigger.equals(other.cronTrigger))
-            return false;
-        if (endsOn == null) {
-            if (other.endsOn != null)
-                return false;
-        } else if (!endsOn.equals(other.endsOn))
-            return false;
-        if (expires == null) {
-            if (other.expires != null)
-                return false;
-        } else if (!expires.equals(other.expires))
-            return false;
-        if (label == null) {
-            if (other.label != null)
-                return false;
-        } else if (!label.equals(other.label))
-            return false;
-        if (scheduleType != other.scheduleType)
-            return false;
-        if (startsOn == null) {
-            if (other.startsOn != null)
-                return false;
-        } else if (!startsOn.equals(other.startsOn))
-            return false;
-        return true;
+        return (Objects.equals(activities, other.activities) && Objects.equals(cronTrigger, other.cronTrigger)
+                && Objects.equals(endsOn, other.endsOn) && Objects.equals(expires, other.expires)
+                && Objects.equals(label, other.label) && Objects.equals(scheduleType, other.scheduleType) 
+                && Objects.equals(startsOn, other.startsOn) && Objects.equals(eventId, other.eventId) 
+                && Objects.equals(interval, other.interval) && Objects.equals(times, other.times)
+                && Objects.equals(delay, other.delay));
     }
     @Override
     public String toString() {
-        return "Schedule [label=" + label + ", scheduleType=" + scheduleType + ", cronTrigger=" + cronTrigger
-                + ", startsOn=" + startsOn + ", endsOn=" + endsOn + ", expires=" + expires + ", activities="
-                + activities + "]";
+        return String.format("Schedule [label=%s, scheduleType=%s, cronTrigger=%s, startsOn=%s, endsOn=%s, delay=%s, expires=%s, interval=%s, times=%s, eventId=%s, activities=%s]", 
+            label, scheduleType, cronTrigger, startsOn, endsOn, delay, expires, interval, times, eventId, activities);
     }
 }    

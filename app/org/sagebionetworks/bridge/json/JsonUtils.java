@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
@@ -90,18 +92,25 @@ public class JsonUtils {
         return 0L;
     }
 
-    public static Long asMillisDurationLong(JsonNode parent, String property) {
+    public static Period asPeriod(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
-            return DateUtils.convertToMillisFromDuration(parent.get(property).asText());
+            return Period.parse(parent.get(property).asText());
         }
         return null;
     }
-
+    
     public static long asMillisSinceEpoch(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             return DateUtils.convertToMillisFromEpoch(parent.get(property).asText());
         }
         return 0L;
+    }
+    
+    public static DateTime asDateTime(JsonNode parent, String property) {
+        if (parent != null && parent.hasNonNull(property)) {
+            return DateTime.parse(parent.get(property).asText());
+        }
+        return null;
     }
 
     public static JsonNode asJsonNode(JsonNode parent, String property) {
