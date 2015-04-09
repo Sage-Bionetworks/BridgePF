@@ -10,7 +10,7 @@ public class ConsentRequiredException extends BridgeServiceException {
     private final UserSession userSession;
     
     public ConsentRequiredException(UserSession userSession) {
-        super("Consent is required before signing in", HttpStatus.SC_PRECONDITION_FAILED);
+        super("Consent is required before signing in.", HttpStatus.SC_PRECONDITION_FAILED);
         this.userSession = userSession;
     }
 
