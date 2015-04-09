@@ -86,7 +86,7 @@ public class ScheduleValidatorTest {
             Validate.entityThrowingException(validator, schedule);
             fail("Should have thrown InvalidEntityException");
         } catch(InvalidEntityException e) {
-            assertTrue(e.getMessage().contains("must be an absolute URL to a survey resource API"));
+            assertEquals("Schedule is invalid: activities[0].ref must be an absolute URL to retrieve a survey response", e.getMessage());
         }
     }
     
