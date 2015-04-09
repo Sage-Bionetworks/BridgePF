@@ -43,11 +43,6 @@ public class IntervalTaskSchedulerTest {
     }
     
     @Test
-    public void scheduleCreatesTasksOnDayAfterEventTime() {
-        //org.junit.Assert.fail("Not implemented");
-    }
-    
-    @Test
     public void onceScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
         
@@ -447,7 +442,7 @@ public class IntervalTaskSchedulerTest {
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusWeeks(3));
         assertEquals(0, tasks.size());
     }
-    
+
     private Schedule createScheduleWith(ScheduleType type) {
         Schedule schedule = new Schedule();
         schedule.setTimes("09:40", "13:40");

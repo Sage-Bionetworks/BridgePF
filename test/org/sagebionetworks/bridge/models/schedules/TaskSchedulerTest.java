@@ -25,6 +25,7 @@ public class TaskSchedulerTest {
     private static final DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
     private static final DateTime NOW = DateTime.parse("2015-03-26T14:40:00Z");
     
+    List<Task> tasks;
     private Map<String,DateTime> events;
     
     @Before
@@ -35,24 +36,40 @@ public class TaskSchedulerTest {
     }
     
     @Test
+    public void schedulerIsPassedNoEvents() {
+        // Shouldn't happen, but then again, the events table starts empty.
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ONCE);
+        schedule.setDelay("P1D");
+        schedule.addActivity(new Activity("activity label", "task:ref"));
+        
+        Map<String,DateTime> empty = Maps.newHashMap();
+        
+        tasks = SchedulerFactory.getScheduler("schedulePlanGuid", schedule).getTasks(empty, NOW.plusWeeks(1));
+        assertEquals(0, tasks.size());
+        
+        tasks = SchedulerFactory.getScheduler("schedulePlanGuid", schedule).getTasks(null, NOW.plusWeeks(1));
+        assertEquals(0, tasks.size());
+    }
+    
+    @Test
     public void taskIsComplete() {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setLabel("This is a label");
-        schedule.addActivity(new Activity("activity label", "ref:task"));
+        schedule.addActivity(new Activity("activity label", "task:ref"));
         schedule.setExpires("P3D");
-        List<Task> tasks = SchedulerFactory.getScheduler("schedulePlanGuid", schedule).getTasks(events, NOW.plusWeeks(1));
         
+        tasks = SchedulerFactory.getScheduler("schedulePlanGuid", schedule).getTasks(events, NOW.plusWeeks(1));
         Task task = tasks.get(0);
         
         assertEquals("schedulePlanGuid", task.getSchedulePlanGuid());
         assertNotNull(task.getGuid());
         assertEquals("activity label", task.getActivity().getLabel());
-        assertEquals("ref:task", task.getActivity().getRef());
+        assertEquals("task:ref", task.getActivity().getRef());
         assertNotNull(task.getScheduledOn());
         assertNotNull(task.getExpiresOn());
     }
-    
     
     /**
      * Task #1 starts from enrollment. Every time it is scheduled, schedule Task#2 to 
@@ -71,7 +88,7 @@ public class TaskSchedulerTest {
         schedule2.setScheduleType(ONCE);
         schedule2.setEventId("task:task1");
 
-        List<Task> tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusMonths(2));
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusMonths(2));
         assertEquals(dt("2015-04-23 10:00"), tasks.get(0).getScheduledOn());
 
         tasks = SchedulerFactory.getScheduler("", schedule2).getTasks(events, NOW.plusMonths(2));
@@ -88,7 +105,22 @@ public class TaskSchedulerTest {
     
     @Test
     public void taskSchedulerWorksInDifferentTimezone() {
+        Schedule schedule = new Schedule();
+        schedule.addActivity(new Activity("A label", "task:foo"));
+        schedule.setEventId("foo");
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setDelay("P2D");
+        schedule.addTime("07:00");
+
+        // Event is recorded in PDT. And when we get the task back, it is scheduled in PDT. 
+        events.put("foo", DateTime.parse("2015-03-25T07:00:00.000-07:00"));
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusMonths(1));
+        assertEquals(DateTime.parse("2015-03-27T07:00:00.000-07:00"), tasks.get(0).getScheduledOn());
         
+        // Add an endsOn value in GMT, it shouldn't matter, it'll prevent event from firing
+        schedule.setEndsOn("2015-03-25T13:00:00.000Z"); // one hour before the event
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusMonths(1));
+        assertEquals(0, tasks.size());
     }
     
     @Test
@@ -103,7 +135,7 @@ public class TaskSchedulerTest {
         schedule.setInterval("P1D");
         schedule.setTimes("10:00");
         
-        List<Task> tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
         assertDates(tasks, "2015-04-12 10:00", "2015-04-13 10:00", "2015-04-14 10:00", "2015-04-15 10:00");
         
         events.put("now", dt("2015-04-13 08:00"));
@@ -122,7 +154,7 @@ public class TaskSchedulerTest {
         schedule.setEventId("anEvent");
         schedule.setCronTrigger("0 0 10 ? * MON,TUE,WED,THU,FRI,SAT,SUN *");
 
-        List<Task> tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
         assertDates(tasks, "2015-04-12 10:00", "2015-04-13 10:00", "2015-04-14 10:00", "2015-04-15 10:00");
         
         events.put("now", dt("2015-04-07 08:00"));
@@ -138,7 +170,7 @@ public class TaskSchedulerTest {
         schedule.getActivities().add(new Activity("Label2", "task:gaitTest"));
         schedule.setScheduleType(ONCE);
 
-        List<Task> tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(7));
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(7));
         assertEquals(2, tasks.size());
         assertNotEquals(tasks.get(0), tasks.get(1));
     }
@@ -156,7 +188,7 @@ public class TaskSchedulerTest {
         schedule.setScheduleType(ONCE);
         
         events.put("scheduledOn:task:foo", NOW.minusHours(3));
-        List<Task> tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
         assertEquals(NOW.minusHours(3), tasks.get(0).getScheduledOn());
 
         events.put("scheduledOn:task:foo", NOW.plusHours(8));
