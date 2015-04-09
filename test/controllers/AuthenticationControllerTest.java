@@ -165,6 +165,7 @@ public class AuthenticationControllerTest {
         
         // Create a schedule plan for a task that we can look for in this study...
         plan = new DynamoSchedulePlan();
+        plan.setLabel("Required schedule plan label");
         plan.setStudyKey(id);
         plan.setStrategy(strategy);
         

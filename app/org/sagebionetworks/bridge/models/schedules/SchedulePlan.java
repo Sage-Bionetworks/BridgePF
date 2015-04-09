@@ -9,6 +9,9 @@ public interface SchedulePlan extends BridgeEntity {
     public String getGuid();
     public void setGuid(String guid);
     
+    public String getLabel();
+    public void setLabel(String label);
+    
     public String getStudyKey();
     public void setStudyKey(String studyKey);
     
