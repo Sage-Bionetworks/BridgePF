@@ -83,7 +83,7 @@ public class DynamoStudyDaoTest {
             
             List<Study> studies = studyDao.getStudies();
             // The five studies, plus the API study we refuse to delete...
-            assertEquals("There are five studies", 6, studies.size());
+            assertEquals("There are six studies", 6, studies.size());
             
         } finally {
             for (String identifier : identifiers) {
