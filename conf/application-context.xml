@@ -42,10 +42,6 @@
         <property name="targetName" value="authenticationController"/>
     </bean>
 
-    <bean id="HealthDataControllerProxied" parent="proxiedController">
-        <property name="targetName" value="healthDataController"/>
-    </bean>
-
     <bean id="UserProfileControllerProxied" parent="proxiedController">
         <property name="targetName" value="userProfileController"/>
     </bean>
