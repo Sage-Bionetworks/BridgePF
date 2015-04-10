@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class EmailVerification {
+public class EmailVerification implements BridgeEntity {
 
     private final String sptoken;
 
