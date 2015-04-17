@@ -40,6 +40,41 @@ public class UploadSchemaController extends BaseController {
     }
 
     /**
+     * Play controller for DELETE /researcher/v1/uploadSchema/byIdAndRev/:schemaId/:rev. This API deletes an upload
+     * schema with the specified schema ID and revision. If the schema doesn't exist, this API throws a 404 exception.
+     *
+     * @param schemaId
+     *         schema ID of the upload schema to delete
+     * @param rev
+     *         revision number of the upload schema to delete, must be positive
+     * @return Play result with the OK message
+     */
+    public Result deleteUploadSchemaByIdAndRev(String schemaId, int rev) {
+        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        StudyIdentifier studyIdentifier = session.getStudyIdentifier();
+
+        uploadSchemaService.deleteUploadSchemaByIdAndRev(studyIdentifier, schemaId, rev);
+        return okResult("Deleted schema");
+    }
+
+    /**
+     * Play controller for DELETE /researcher/v1/uploadSchema/byId/:schemaId. This API deletes all revisions of the
+     * upload schema with the specified schema ID. If there are no schemas with this schema ID, this API throws a 404
+     * exception.
+     *
+     * @param schemaId
+     *         schema ID of the upload schemas to delete, must be non-null and non-empty
+     * @return Play result with the OK message
+     */
+    public Result deleteUploadSchemaById(String schemaId) {
+        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        StudyIdentifier studyIdentifier = session.getStudyIdentifier();
+
+        uploadSchemaService.deleteUploadSchemaById(studyIdentifier, schemaId);
+        return okResult("Deleted schemas");
+    }
+
+    /**
      * Play controller for GET /researcher/v1/uploadSchema/byId/:schemaId. This API fetches the upload schema with the
      * specified ID. If there is more than one revision of the schema, this fetches the latest revision. If the schema
      * doesn't exist, this API throws a 404 exception.
@@ -62,7 +97,6 @@ public class UploadSchemaController extends BaseController {
      * @return Play result with list of schemas for this study
      */
     public Result getUploadSchemasForStudy() throws Exception {
-        // TODO: When we implement worker accounts, they should have access to the API as well.
         UserSession session = getAuthenticatedResearcherOrAdminSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
 
