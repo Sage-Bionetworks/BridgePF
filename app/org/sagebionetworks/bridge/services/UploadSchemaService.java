@@ -2,8 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.List;
 
-import com.google.common.base.Strings;
-
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
@@ -55,6 +54,53 @@ public class UploadSchemaService {
 
     /**
      * <p>
+     * Service handler for deleting an upload schema with the specified study, schema ID, and revision. If the schema
+     * doesn't exist, this API throws an EntityNotFoundException.
+     * </p>
+     * <p>
+     * This method validates the schema ID and rev. However, it does not validate the study, as that is not user input.
+     * </p>
+     *
+     * @param studyIdentifier
+     *         study to delete the upload schema from, provided by the controller
+     * @param schemaId
+     *         schema ID of the upload schema to delete, must be non-null and non-empty
+     * @param rev
+     *         revision number of the upload schema to delete, must be positive
+     */
+    public void deleteUploadSchemaByIdAndRev(StudyIdentifier studyIdentifier, String schemaId, int rev) {
+        if (StringUtils.isBlank(schemaId)) {
+            throw new BadRequestException(String.format("Invalid schema ID %s", schemaId));
+        }
+        if (rev <= 0) {
+            throw new BadRequestException("Schema revision must be positive");
+        }
+        uploadSchemaDao.deleteUploadSchemaByIdAndRev(studyIdentifier, schemaId, rev);
+    }
+
+    /**
+     * <p>
+     * Service handler for deleting all revisions of the upload schema with the specified study and schema ID. If there
+     * are no schemas with this schema ID, this API throws an EntityNotFoundException.
+     * </p>
+     * <p>
+     * This method validates the schema ID. However, it does not validate the study, as that is not user input.
+     * </p>
+     *
+     * @param studyIdentifier
+     *         study to delete the upload schemas from, provided by the controller
+     * @param schemaId
+     *         schema ID of the upload schemas to delete, must be non-null and non-empty
+     */
+    public void deleteUploadSchemaById(StudyIdentifier studyIdentifier, String schemaId) {
+        if (StringUtils.isBlank(schemaId)) {
+            throw new BadRequestException(String.format("Invalid schema ID %s", schemaId));
+        }
+        uploadSchemaDao.deleteUploadSchemaById(studyIdentifier, schemaId);
+    }
+
+    /**
+     * <p>
      * Service handler for fetching upload schemas. This method fetches an upload schema for the specified study and
      * schema ID. If there is more than one revision of the schema, this fetches the latest revision. If the schema
      * doesn't exist, this handler throws an InvalidEntityException.
@@ -70,7 +116,7 @@ public class UploadSchemaService {
      * @return the fetched schema, will be non-null
      */
     public UploadSchema getUploadSchema(StudyIdentifier studyIdentifier, String schemaId) {
-        if (Strings.isNullOrEmpty(schemaId)) {
+        if (StringUtils.isBlank(schemaId)) {
             throw new BadRequestException(String.format("Invalid schema ID %s", schemaId));
         }
         return uploadSchemaDao.getUploadSchema(studyIdentifier.getIdentifier(), schemaId);

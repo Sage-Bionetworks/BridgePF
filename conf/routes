@@ -86,9 +86,11 @@ POST   /researcher/v1/study/participants @controllers.StudyController.sendStudyP
 POST   /researcher/v1/study              @controllers.StudyController.updateStudyForResearcher
 
 # Researchers - Upload Schemas
-GET    /researcher/v1/uploadSchema/byId/:schemaId  @controllers.UploadSchemaController.getUploadSchema(schemaId: String)
-GET    /researcher/v1/uploadSchema/forStudy   @controllers.UploadSchemaController.getUploadSchemasForStudy
 POST   /researcher/v1/uploadSchema            @controllers.UploadSchemaController.createOrUpdateUploadSchema
+GET    /researcher/v1/uploadSchema/byId/:schemaId  @controllers.UploadSchemaController.getUploadSchema(schemaId: String)
+DELETE /researcher/v1/uploadSchema/byId/:schemaId  @controllers.UploadSchemaController.deleteUploadSchemaById(schemaId: String)
+DELETE /researcher/v1/uploadSchema/byIdAndRev/:schemaId/:rev  @controllers.UploadSchemaController.deleteUploadSchemaByIdAndRev(schemaId: String, rev: Int)
+GET    /researcher/v1/uploadSchema/forStudy   @controllers.UploadSchemaController.getUploadSchemasForStudy
 
 # Admin - Studies
 GET    /admin/v1/studies/:identifier  @controllers.StudyController.getStudy(identifier: String)
