@@ -2,20 +2,22 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -61,6 +63,72 @@ public class UploadSchemaServiceTest {
     }
 
     @Test(expected = BadRequestException.class)
+    public void deleteByIdAndRevNullId() {
+        new UploadSchemaService().deleteUploadSchemaByIdAndRev(makeTestStudy(), null, 1);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void deleteByIdAndRevEmptyId() {
+        new UploadSchemaService().deleteUploadSchemaByIdAndRev(makeTestStudy(), "", 1);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void deleteByIdAndRevBlankId() {
+        new UploadSchemaService().deleteUploadSchemaByIdAndRev(makeTestStudy(), "   ", 1);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void deleteByIdAndRevNegativeRev() {
+        new UploadSchemaService().deleteUploadSchemaByIdAndRev(makeTestStudy(), "delete-schema", -1);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void deleteByIdAndRevZeroRev() {
+        new UploadSchemaService().deleteUploadSchemaByIdAndRev(makeTestStudy(), "delete-schema", 0);
+    }
+
+    @Test
+    public void deleteByIdAndRevSuccess() {
+        // mock dao
+        UploadSchemaDao mockDao = mock(UploadSchemaDao.class);
+        UploadSchemaService svc = new UploadSchemaService();
+        svc.setUploadSchemaDao(mockDao);
+
+        // execute and verify delete call
+        StudyIdentifier studyIdentifier = makeTestStudy();
+        svc.deleteUploadSchemaByIdAndRev(studyIdentifier, "delete-schema", 1);
+        verify(mockDao).deleteUploadSchemaByIdAndRev(studyIdentifier, "delete-schema", 1);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void deleteByIdNullId() {
+        new UploadSchemaService().deleteUploadSchemaById(makeTestStudy(), null);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void deleteByIdEmptyId() {
+        new UploadSchemaService().deleteUploadSchemaById(makeTestStudy(), "");
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void deleteByIdBlankId() {
+        new UploadSchemaService().deleteUploadSchemaById(makeTestStudy(), "   ");
+    }
+
+    @Test
+    public void deleteByIdSuccess() {
+        // mock dao
+        UploadSchemaDao mockDao = mock(UploadSchemaDao.class);
+        UploadSchemaService svc = new UploadSchemaService();
+        svc.setUploadSchemaDao(mockDao);
+
+        // execute and verify delete call
+        StudyIdentifier studyIdentifier = makeTestStudy();
+        svc.deleteUploadSchemaById(studyIdentifier, "delete-schema");
+        verify(mockDao).deleteUploadSchemaById(studyIdentifier, "delete-schema");
+    }
+
+    @Test(expected = BadRequestException.class)
     public void getNullSchemaId() {
         new UploadSchemaService().getUploadSchema(makeTestStudy(), null);
     }
@@ -68,6 +136,11 @@ public class UploadSchemaServiceTest {
     @Test(expected = BadRequestException.class)
     public void getEmptySchemaId() {
         new UploadSchemaService().getUploadSchema(makeTestStudy(), "");
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getBlankSchemaId() {
+        new UploadSchemaService().getUploadSchema(makeTestStudy(), "   ");
     }
 
     // Similarly, verify that the DAO receives and returns the right objects.
@@ -85,10 +158,22 @@ public class UploadSchemaServiceTest {
         assertSame(daoRetVal, svcRetVal);
     }
 
-    // Creates a minimal study for testing purposes. Note that these studies won't pass validation.
-    private static Study makeTestStudy() {
-        Study study = new DynamoStudy();
-        study.setIdentifier("test-study");
-        return study;
+    @Test
+    public void getSchemasForStudy() {
+        // mock dao
+        StudyIdentifier studyIdentifier = makeTestStudy();
+        List<UploadSchema> daoRetVal = ImmutableList.<UploadSchema>of(new DynamoUploadSchema());
+        UploadSchemaDao mockDao = mock(UploadSchemaDao.class);
+        when(mockDao.getUploadSchemasForStudy(studyIdentifier)).thenReturn(daoRetVal);
+
+        // execute and validate
+        UploadSchemaService svc = new UploadSchemaService();
+        svc.setUploadSchemaDao(mockDao);
+        List<UploadSchema> svcRetVal = svc.getUploadSchemasForStudy(studyIdentifier);
+        assertSame(daoRetVal, svcRetVal);
+    }
+
+    private static StudyIdentifier makeTestStudy() {
+        return new StudyIdentifierImpl("test-study");
     }
 }

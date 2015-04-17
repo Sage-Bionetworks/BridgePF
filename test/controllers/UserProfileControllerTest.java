@@ -15,6 +15,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.User;
@@ -23,9 +25,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import play.mvc.Http;
 import play.mvc.Result;
@@ -38,7 +37,7 @@ public class UserProfileControllerTest {
     
     @Test
     public void canSubmitExternalIdentifier() throws Exception {
-        Http.Context.current.set(mockContext("{\"identifier\":\"ABC-123-XYZ\"}"));
+        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}"));
         
         UserProfileController controller = controllerForExternalIdTests();
                 
@@ -53,7 +52,7 @@ public class UserProfileControllerTest {
     
     @Test
     public void externalIdentifierVerifiesIdentifierExists() throws Exception {
-        Http.Context.current.set(mockContext("{\"identifier\":\"\"}"));
+        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"identifier\":\"\"}"));
         
         UserProfileController controller = controllerForExternalIdTests();
 
@@ -65,22 +64,7 @@ public class UserProfileControllerTest {
         }
         verifyNoMoreInteractions(optionsService);
     }
-    
-    private Http.Context mockContext(String json) throws Exception {
-        JsonNode node = new ObjectMapper().readTree(json);
-        
-        Http.RequestBody body = mock(Http.RequestBody.class);
-        when(body.asJson()).thenReturn(node);
-        
-        Http.Request request = mock(Http.Request.class);
-        when(request.body()).thenReturn(body);
 
-        Http.Context context = mock(Http.Context.class);
-        when(context.request()).thenReturn(request);
-
-        return context;
-    }    
-    
     private UserSession mockSession() {
         User user = mock(User.class);
         when(user.getHealthCode()).thenReturn("healthCode");

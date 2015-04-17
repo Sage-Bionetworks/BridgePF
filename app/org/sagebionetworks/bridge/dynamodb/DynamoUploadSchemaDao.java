@@ -11,6 +11,7 @@ import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -77,6 +78,49 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
             throw new ConcurrentModificationException(uploadSchema);
         }
         return uploadSchema;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void deleteUploadSchemaByIdAndRev(@Nonnull StudyIdentifier studyIdentifier, @Nonnull String schemaId,
+            int rev) {
+        String studyId = studyIdentifier.getIdentifier();
+
+        // query DDB to make sure the schema exists before we issue a delete request
+        DynamoUploadSchema key = new DynamoUploadSchema();
+        key.setStudyId(studyId);
+        key.setSchemaId(schemaId);
+        key.setRevision(rev);
+        DynamoUploadSchema schemaToDelete = mapper.load(key);
+        if (schemaToDelete == null) {
+            throw new EntityNotFoundException(UploadSchema.class, String.format(
+                    "Upload schema not found for study %s, schema ID %s, revision %d", studyId, schemaId, rev));
+        }
+
+        // now delete it
+        mapper.delete(schemaToDelete);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void deleteUploadSchemaById(@Nonnull StudyIdentifier studyIdentifier, @Nonnull String schemaId) {
+        String studyId = studyIdentifier.getIdentifier();
+
+        // query DDB to get all of the rows that need to be deleted
+        DynamoUploadSchema key = new DynamoUploadSchema();
+        key.setStudyId(studyId);
+        key.setSchemaId(schemaId);
+        DynamoDBQueryExpression<DynamoUploadSchema> ddbQuery = new DynamoDBQueryExpression<DynamoUploadSchema>()
+                .withHashKeyValues(key);
+        List<DynamoUploadSchema> schemaList = mapper.query(DynamoUploadSchema.class, ddbQuery);
+        if (schemaList.isEmpty()) {
+            throw new EntityNotFoundException(UploadSchema.class, String.format(
+                    "Upload schema not found for study %s, schema ID %s", studyId, schemaId));
+        }
+
+        // now batch delete these schemas
+        List<DynamoDBMapper.FailedBatch> failureList = mapper.batchDelete(schemaList);
+        BridgeUtils.ifFailuresThrowException(failureList);
     }
 
     /** {@inheritDoc} */

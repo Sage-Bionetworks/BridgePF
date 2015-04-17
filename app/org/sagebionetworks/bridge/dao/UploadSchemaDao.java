@@ -22,9 +22,33 @@ public interface UploadSchemaDao {
     @Nonnull UploadSchema createOrUpdateUploadSchema(@Nonnull String studyId, @Nonnull UploadSchema uploadSchema);
 
     /**
+     * DAO method for deleting an upload schema with the specified study, schema ID, and revision. If the schema
+     * doesn't exist, this API throws an EntityNotFoundException.
+     *
+     * @param studyIdentifier
+     *         study to delete the upload schema from, must be non-null
+     * @param schemaId
+     *         schema ID of the upload schema to delete, must be non-null and non-empty
+     * @param rev
+     *         revision number of the upload schema to delete, must be positive
+     */
+    void deleteUploadSchemaByIdAndRev(@Nonnull StudyIdentifier studyIdentifier, @Nonnull String schemaId, int rev);
+
+    /**
+     * DAO method for deleting all revisions of the upload schema with the specified study and schema ID. If there are
+     * no schemas with this schema ID, this API throws an EntityNotFoundException.
+     *
+     * @param studyIdentifier
+     *         study to delete the upload schemas from, must be non-null
+     * @param schemaId
+     *         schema ID of the upload schemas to delete, must be non-null and non-empty
+     */
+    void deleteUploadSchemaById(@Nonnull StudyIdentifier studyIdentifier, @Nonnull String schemaId);
+
+    /**
      * DAO method for fetching upload schemas. This method fetches an upload schema for the specified study and schema
      * ID. If there is more than one revision of the schema, this fetches the latest revision. If the schema doesn't
-     * exist, this API throws an InvalidEntityException.
+     * exist, this API throws an EntityNotFoundException.
      *
      * @param studyId
      *         study to fetch the schema from, must be non-null and non-empty
@@ -43,6 +67,4 @@ public interface UploadSchemaDao {
      * @return a list of upload schemas
      */
     @Nonnull List<UploadSchema> getUploadSchemasForStudy(@Nonnull StudyIdentifier studyId);
-
-    // TODO add list and delete APIs
 }
