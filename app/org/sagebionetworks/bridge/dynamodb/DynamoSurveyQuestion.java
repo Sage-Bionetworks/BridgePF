@@ -21,7 +21,6 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
     
     private static final String CONSTRAINTS_PROPERTY = "constraints";
     private static final String UI_HINTS_PROPERTY = "uiHint";
-    private static final String TITLE_PROPERTY = "title";
     private static final String PROMPT_PROPERTY = "prompt";
     private static final String PROMPT_DETAIL_PROPERTY = "promptDetail";
     private static final String IDENTIFIER_PROPERTY = "identifier";
@@ -33,7 +32,6 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
         question.setType( JsonUtils.asText(node, TYPE_PROPERTY) );
         question.setIdentifier( JsonUtils.asText(node, IDENTIFIER_PROPERTY) );
         question.setGuid( JsonUtils.asText(node, GUID_PROPERTY) );
-        question.setTitle(JsonUtils.asText(node, TITLE_PROPERTY));
         question.setPrompt(JsonUtils.asText(node, PROMPT_PROPERTY));
         question.setPromptDetail(JsonUtils.asText(node, PROMPT_DETAIL_PROPERTY));
         question.setUiHint(JsonUtils.asUIHint(node, UI_HINTS_PROPERTY));
@@ -41,7 +39,6 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
         return question;
     }
 
-    private String title;
     private String prompt;
     private String promptDetail;
     private UIHint hint;
@@ -56,17 +53,6 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
         setIdentifier( entry.getIdentifier() );
         setGuid( entry.getGuid() );
         setData( entry.getData() );
-    }
-
-    @Override
-    @DynamoDBIgnore
-    public String getTitle() {
-        return title;
-    }
-    
-    @Override
-    public void setTitle(String title) {
-        this.title = title;
     }
     
     @Override
@@ -119,7 +105,6 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
     @JsonIgnore
     public JsonNode getData() {
         ObjectNode data = JsonNodeFactory.instance.objectNode();
-        data.put(TITLE_PROPERTY, title);
         data.put(PROMPT_PROPERTY, prompt);
         data.put(PROMPT_DETAIL_PROPERTY, promptDetail);
         data.put(UI_HINTS_PROPERTY, hint.name().toLowerCase());    
@@ -129,7 +114,6 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
 
     @Override
     public void setData(JsonNode data) {
-        this.title = JsonUtils.asText(data, TITLE_PROPERTY);
         this.prompt = JsonUtils.asText(data, PROMPT_PROPERTY);
         this.promptDetail = JsonUtils.asText(data, PROMPT_DETAIL_PROPERTY);
         this.hint = JsonUtils.asUIHint(data, UI_HINTS_PROPERTY);
@@ -142,12 +126,11 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
         int result = super.hashCode();
         result = prime * result + Objects.hashCode(constraints);
         result = prime * result + Objects.hashCode(hint);
-        result = prime * result + Objects.hashCode(title);
         result = prime * result + Objects.hashCode(prompt);
         result = prime * result + Objects.hashCode(promptDetail);
         return result;
     }
-
+    
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -157,14 +140,14 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
         }
         final DynamoSurveyQuestion that = (DynamoSurveyQuestion) obj;
         return Objects.equals(constraints, that.constraints) && Objects.equals(hint, that.hint)
-                && Objects.equals(title, that.title) && Objects.equals(prompt, that.prompt)
-                && Objects.equals(promptDetail, that.promptDetail);
+            && Objects.equals(prompt, that.prompt)
+            && Objects.equals(promptDetail, that.promptDetail);
     }
 
     @Override
     public String toString() {
-        return String.format("DynamoSurveyQuestion [title=%s, hint=%s, prompt=%s, promptDetail=%s, constraints=%s]", 
-            title, hint, prompt, promptDetail, constraints);
+        return String.format("DynamoSurveyQuestion [hint=%s, prompt=%s, promptDetail=%s, constraints=%s]", 
+            hint, prompt, promptDetail, constraints);
     }
 
 }
