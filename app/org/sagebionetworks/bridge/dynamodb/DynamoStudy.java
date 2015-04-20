@@ -75,11 +75,6 @@ public class DynamoStudy implements Study {
     
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
-        // This is temporary. We'll deploy this study (it'll continue to show
-        // phone numbers), we'll update studies with the phone attribute (no 
-        // longer forbidden); then remove this on a future deploy (no rush, 
-        // but before a new study where this isn't just assumed).
-        profileAttributes.add("phone");
     }
     
     @Override
