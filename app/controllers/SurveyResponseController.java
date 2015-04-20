@@ -76,8 +76,7 @@ public class SurveyResponseController extends BaseController {
 
     private List<SurveyAnswer> deserializeSurveyAnswers() throws JsonProcessingException, IOException {
         JsonNode node = requestToJSON(request());
-        List<SurveyAnswer> answers = JsonUtils.asSurveyAnswers(node);
-        return answers;
+        return JsonUtils.asEntityList(node, SurveyAnswer.class);
     }
 
     private SurveyResponse getSurveyResponseIfAuthorized(String identifier) {

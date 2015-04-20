@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.junit.Test;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse.Status;
 
@@ -44,7 +44,7 @@ public class DynamoSurveyResponseTest {
         addFifteenQuestions(answers);
         response.setAnswers(answers);
         
-        String string = JsonUtils.toJSON(response);
+        String string = new BridgeObjectMapper().writeValueAsString(response);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(string);
         DynamoSurveyResponse newResponse = DynamoSurveyResponse.fromJson(node);

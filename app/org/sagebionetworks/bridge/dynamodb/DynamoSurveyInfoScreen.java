@@ -31,7 +31,7 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
         question.setPrompt(JsonUtils.asText(node, PROMPT_PROPERTY));
         question.setPromptDetail(JsonUtils.asText(node, PROMPT_DETAIL_PROPERTY));
         question.setTitle(JsonUtils.asText(node, TITLE_PROPERTY));
-        question.setImage(JsonUtils.asImage(node, IMAGE_PROPERTY));
+        question.setImage(JsonUtils.asEntity(node, IMAGE_PROPERTY, Image.class));
         return question;
     }
     
@@ -113,7 +113,7 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
         this.prompt = JsonUtils.asText(data, PROMPT_PROPERTY);
         this.promptDetail = JsonUtils.asText(data, PROMPT_DETAIL_PROPERTY);
         this.title = JsonUtils.asText(data, TITLE_PROPERTY);
-        this.image = JsonUtils.asImage(data, IMAGE_PROPERTY);
+        this.image = JsonUtils.asEntity(data, IMAGE_PROPERTY, Image.class);
     }
 
     @Override

@@ -34,7 +34,7 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
         question.setGuid( JsonUtils.asText(node, GUID_PROPERTY) );
         question.setPrompt(JsonUtils.asText(node, PROMPT_PROPERTY));
         question.setPromptDetail(JsonUtils.asText(node, PROMPT_DETAIL_PROPERTY));
-        question.setUiHint(JsonUtils.asUIHint(node, UI_HINTS_PROPERTY));
+        question.setUiHint(JsonUtils.asEntity(node, UI_HINTS_PROPERTY, UIHint.class));
         question.setConstraints(JsonUtils.asConstraints(node, CONSTRAINTS_PROPERTY));
         return question;
     }
@@ -116,7 +116,7 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
     public void setData(JsonNode data) {
         this.prompt = JsonUtils.asText(data, PROMPT_PROPERTY);
         this.promptDetail = JsonUtils.asText(data, PROMPT_DETAIL_PROPERTY);
-        this.hint = JsonUtils.asUIHint(data, UI_HINTS_PROPERTY);
+        this.hint = JsonUtils.asEntity(data, UI_HINTS_PROPERTY, UIHint.class);
         this.constraints = JsonUtils.asConstraints(data, CONSTRAINTS_PROPERTY);
     }
 
