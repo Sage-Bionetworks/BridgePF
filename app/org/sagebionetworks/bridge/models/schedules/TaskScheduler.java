@@ -8,8 +8,9 @@ import java.util.Map;
 import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 
-abstract class TaskScheduler {
+public abstract class TaskScheduler {
 
     protected final String schedulePlanGuid;
     protected final Schedule schedule;
@@ -54,7 +55,12 @@ abstract class TaskScheduler {
     private void addTaskForEachActivityAtTime(List<Task> tasks, DateTime scheduledTime) {
         if (isInWindow(schedule, scheduledTime)) {
             for (Activity activity : schedule.getActivities()) {
-                Task task = new Task(BridgeUtils.generateGuid(), schedulePlanGuid, activity, scheduledTime, getExpiresOn(scheduledTime, schedule));
+                DynamoTask task = new DynamoTask();
+                task.setGuid(BridgeUtils.generateGuid());
+                task.setSchedulePlanGuid(schedulePlanGuid);
+                task.setActivity(activity);
+                task.setScheduledOn(scheduledTime);
+                task.setExpiresOn(getExpiresOn(scheduledTime, schedule));
                 tasks.add(task);
             }
         }

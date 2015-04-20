@@ -19,8 +19,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
@@ -79,7 +79,7 @@ public class DynamoSurveyResponseDaoTest {
         response.setVersion(1L);
         response.setData(data);
         
-        String string = JsonUtils.toJSON(response);
+        String string = new BridgeObjectMapper().writeValueAsString(response);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(string);
 
