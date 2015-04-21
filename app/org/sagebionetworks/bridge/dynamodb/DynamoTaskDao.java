@@ -4,11 +4,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Resource;
+
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.dao.TaskDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -20,12 +21,8 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
@@ -42,12 +39,9 @@ public class DynamoTaskDao implements TaskDao {
     
     private UserConsentDao userConsentDao;
 
-    @Autowired
-    public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
-                .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoTask.class)).build();
-        mapper = new DynamoDBMapper(client, mapperConfig);
+    @Resource(name = "taskDdbMapper")
+    public void setDdbMapper(DynamoDBMapper mapper) {
+        this.mapper = mapper;
     }
     
     @Autowired
@@ -59,44 +53,26 @@ public class DynamoTaskDao implements TaskDao {
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
-    
+
     @Override
     public List<Task> getTasks(StudyIdentifier studyIdentifier, User user, Period before, Period after) {
-        Set<String> guids = Sets.newHashSet();
-        
+        Set<String> naturalKeys = Sets.newHashSet();
         Map<String, DateTime> events = createEventsMap(studyIdentifier, user);
+        
         DateTime from = DateTime.now().minus(before);
         DateTime until = DateTime.now().plus(after);
+        List<Task> results = queryForTasks(studyIdentifier, user.getHealthCode(), from, until);
         
-        List<Task> results = Lists.newArrayList();
-        
-        // Get tasks from database. 
-        DynamoTask hashKey = new DynamoTask();
-        hashKey.setStudyHealthCodeKey(studyIdentifier, user.getHealthCode());
-        
-        Condition rangeKeyCondition = new Condition()
-            .withComparisonOperator(ComparisonOperator.BETWEEN.toString())
-            .withAttributeValueList(new AttributeValue().withS(from.toString()), 
-                                    new AttributeValue().withS(until.toString()));
-    
-        DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>()
-            .withHashKeyValues(hashKey)
-            .withRangeKeyCondition("scheduledOn", rangeKeyCondition);
-        
-        PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
-        
-        
-        // Get tasks from scheduler
-        List<Task> tasks = getTasksForPlans(studyIdentifier, user, events, until);
+        List<Task> tasks = scheduleTasksForPlans(studyIdentifier, user, events, until);
         for (Task task : tasks) {
-            if (!guids.contains(task.getGuid())) {
-                // create it, then add it.
+            if (!naturalKeys.contains(task.getNaturalKey())) {
+                ((DynamoTask)task).setStudyHealthCodeKey(studyIdentifier, user.getHealthCode());
                 mapper.save(task);
                 results.add(task);
+                System.out.println("Adding task: " + task.getNaturalKey());
             } 
-            guids.add(task.getGuid());
+            naturalKeys.add(task.getNaturalKey());
         }
-        
         return results;
     }
 
@@ -106,6 +82,30 @@ public class DynamoTaskDao implements TaskDao {
 
     @Override
     public void deleteTasks(String healthCode) {
+    }
+
+    private List<Task> queryForTasks(StudyIdentifier studyIdentifier, String healthCode, DateTime from, DateTime until) {
+        DynamoDBQueryExpression<DynamoTask> query = createQuery(studyIdentifier, healthCode, from, until);
+        PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
+        
+        List<Task> results = Lists.newArrayList();
+        results.addAll(queryResults);
+        return results;
+    }
+    
+    private DynamoDBQueryExpression<DynamoTask> createQuery(StudyIdentifier studyIdentifier, String healthCode, DateTime from, DateTime until) {
+        DynamoTask hashKey = new DynamoTask();
+        hashKey.setStudyHealthCodeKey(studyIdentifier, healthCode);
+        
+        Condition rangeKeyCondition = new Condition()
+            .withComparisonOperator(ComparisonOperator.BETWEEN.toString())
+            .withAttributeValueList(new AttributeValue().withS(from.toString()), 
+                                    new AttributeValue().withS(until.toString()));
+    
+        DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>()
+            .withHashKeyValues(hashKey)
+            .withRangeKeyCondition("scheduledOn", rangeKeyCondition);
+        return query;
     }
 
     /**
@@ -121,7 +121,7 @@ public class DynamoTaskDao implements TaskDao {
         return events;
     }
     
-    private List<Task> getTasksForPlans(StudyIdentifier studyIdentifier, User user, Map<String,DateTime> events, DateTime until) {
+    private List<Task> scheduleTasksForPlans(StudyIdentifier studyIdentifier, User user, Map<String,DateTime> events, DateTime until) {
         List<Task> tasks = Lists.newArrayList();
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyIdentifier);

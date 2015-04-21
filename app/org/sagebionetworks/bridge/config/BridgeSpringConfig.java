@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
+import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
@@ -38,6 +39,8 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Table;
@@ -257,6 +260,15 @@ public class BridgeSpringConfig {
         return new DynamoDBMapper(client, mapperConfig);
     }
 
+    @Bean(name = "taskDdbMapper")
+    @Autowired
+    public DynamoDBMapper taskDdbMapper(AmazonDynamoDB client) {
+        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
+                        .withConsistentReads(ConsistentReads.CONSISTENT)
+                        .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoTask.class)).build();
+        return new DynamoDBMapper(client, mapperConfig);
+    }
+    
     @Bean(name = "uploadSchemaStudyIdIndex")
     @Autowired
     public DynamoIndexHelper uploadSchemaStudyIdIndex(AmazonDynamoDB client) {
