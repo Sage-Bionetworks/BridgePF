@@ -71,7 +71,7 @@ public class UploadValidationTask implements Runnable {
                 context.setSuccess(false);
                 context.addMessage(String.format("Exception thrown from upload validation handler %s: %s", handlerName,
                         ex.getMessage()));
-                logger.warn(String.format(
+                logger.info(String.format(
                         "Exception thrown from upload validation handler %s for study %s, upload %s, filename %s",
                         handlerName, context.getStudy().getIdentifier(), context.getUpload().getUploadId(),
                         context.getUpload().getFilename()), ex);
