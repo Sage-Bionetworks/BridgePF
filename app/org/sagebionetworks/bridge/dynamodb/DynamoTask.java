@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Task;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.schedules.TaskStatus;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -29,11 +29,13 @@ public final class DynamoTask implements Task {
 
     private static final String ACTIVITY_PROPERTY = "activity";
     
-    private String studyHealthCodeKey;
+    private String healthCode;
     private String guid;
     private String schedulePlanGuid;
     private Long scheduledOn;
     private Long expiresOn;
+    private Long startedOn;
+    private Long finishedOn;
     private Activity activity;
     
     @JsonIgnore
@@ -42,16 +44,27 @@ public final class DynamoTask implements Task {
         return String.format("%s:%s:%s", schedulePlanGuid, scheduledOn, activity.getRef());
     }
     
+    @DynamoDBIgnore
+    public TaskStatus getStatus() {
+        if (finishedOn != null) {
+            return TaskStatus.FINISHED;
+        } else if (startedOn != null) {
+            return TaskStatus.STARTED;
+        } else if (expiresOn != null && DateTime.now().isAfter(expiresOn)) {
+            return TaskStatus.EXPIRED;
+        } else if (scheduledOn != null && DateTime.now().isBefore(scheduledOn)) {
+            return TaskStatus.SCHEDULED;
+        }
+        return TaskStatus.AVAILABLE;
+    }
+    
     @JsonIgnore
     @DynamoDBHashKey
-    public String getStudyHealthCodeKey() {
-        return studyHealthCodeKey;
+    public String getHealthCode() {
+        return healthCode;
     }
-    public void setStudyHealthCodeKey(String studyHealthCodeKey) {
-        this.studyHealthCodeKey = studyHealthCodeKey;
-    }
-    public void setStudyHealthCodeKey(StudyIdentifier identifier, String healthCode) {
-        this.studyHealthCodeKey = identifier.getIdentifier() + ":" + healthCode;
+    public void setHealthCode(String healthCode) {
+        this.healthCode = healthCode;
     }
     @DynamoDBAttribute
     public String getGuid() {
@@ -83,7 +96,6 @@ public final class DynamoTask implements Task {
     public void setScheduledOn(Long scheduledOn) {
         this.scheduledOn = scheduledOn;
     }
-    @JsonIgnore
     @DynamoDBIgnore
     public void setScheduledOn(DateTime scheduledOn) {
         if (scheduledOn != null) {
@@ -99,11 +111,40 @@ public final class DynamoTask implements Task {
     public void setExpiresOn(Long expiresOn) {
         this.expiresOn = expiresOn;
     }
-    @JsonIgnore
     @DynamoDBIgnore
     public void setExpiresOn(DateTime expiresOn) {
         if (expiresOn != null) {
             this.expiresOn = expiresOn.getMillis();    
+        }
+    }
+    @DynamoDBAttribute
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    public Long getStartedOn() {
+        return startedOn;
+    }
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    public void setStartedOn(Long startedOn) {
+        this.startedOn = startedOn;
+    }
+    @DynamoDBIgnore
+    public void setStartedOn(DateTime startedOn) {
+        if (startedOn != null) {
+            this.startedOn = startedOn.getMillis();
+        }
+    }
+    @DynamoDBAttribute
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    public Long getFinishedOn() {
+        return finishedOn;
+    }
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    public void setFinishedOn(Long finishedOn) {
+        this.finishedOn = finishedOn;
+    }
+    @DynamoDBIgnore
+    public void setFinishedOn(DateTime finishedOn) {
+        if (finishedOn != null) {
+            this.finishedOn = finishedOn.getMillis();
         }
     }
     @JsonIgnore
@@ -125,7 +166,9 @@ public final class DynamoTask implements Task {
         result = prime * result + Objects.hashCode(guid);
         result = prime * result + Objects.hashCode(schedulePlanGuid);
         result = prime * result + Objects.hashCode(scheduledOn);
-        result = prime * result + Objects.hashCode(studyHealthCodeKey);
+        result = prime * result + Objects.hashCode(startedOn);
+        result = prime * result + Objects.hashCode(finishedOn);
+        result = prime * result + Objects.hashCode(healthCode);
         return result;
     }
     @Override
@@ -136,13 +179,18 @@ public final class DynamoTask implements Task {
             return false;
         DynamoTask other = (DynamoTask) obj;
         return (Objects.equals(activity, other.activity) && Objects.equals(expiresOn, other.expiresOn) && 
-                Objects.equals(guid, other.guid) && Objects.equals(schedulePlanGuid, other.schedulePlanGuid) && 
-                Objects.equals(scheduledOn, other.scheduledOn) && Objects.equals(studyHealthCodeKey, other.studyHealthCodeKey));
+                Objects.equals(guid, other.guid) && Objects.equals(schedulePlanGuid, other.schedulePlanGuid) &&
+                Objects.equals(startedOn, other.startedOn) && Objects.equals(finishedOn, other.finishedOn) && 
+                Objects.equals(scheduledOn, other.scheduledOn) && Objects.equals(healthCode, other.healthCode));
     }
     @Override
     public String toString() {
-        return String.format("DynamoTask [studyHealthCodeKey=%s, guid=%s, schedulePlanGuid=%s, scheduledOn=%s, expiresOn=%s, activity=%s]",
-            studyHealthCodeKey, guid, schedulePlanGuid, new DateTime(scheduledOn).toString(), new DateTime(expiresOn).toString(), activity);
+        return String.format("DynamoTask [status=%s, healthCode=%s, guid=%s, schedulePlanGuid=%s, scheduledOn=%s, expiresOn=%s, startedOn=%s, finishedOn=%s, activity=%s]",
+            getStatus().name(), healthCode, guid, schedulePlanGuid, dt(scheduledOn), dt(expiresOn), dt(startedOn), dt(finishedOn), activity);
+    }
+    
+    private String dt(Long dt) {
+        return (dt == null) ? null : new DateTime(dt).toString();
     }
 
 }
