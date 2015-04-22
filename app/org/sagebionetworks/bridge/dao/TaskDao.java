@@ -16,11 +16,11 @@ public interface TaskDao {
      * 
      * @param studyIdentifier
      * @param user
-     * @param before
-     * @param until
+     * @param startsOn
+     * @param endsOn
      * @return
      */
-    public List<Task> getTasks(StudyIdentifier studyIdentifier, User user, Period before, Period after);
+    public List<Task> getTasks(User user, Period startsOn, Period endsOn);
     
     /**
      * Update the startedOn or completedOn timestamps of the tasks indicated in the collection. Tasks in this collection
