@@ -72,7 +72,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
     }
 
     // iOS data comes from a third party, and we have no control over the data format. So our data validation needs to
-    // be as flexible as possible. Which means our error handling strategy is to write a warning to the logs, and then
+    // be as flexible as possible. Which means our error handling strategy is to write a validation message, and then
     // attempt to recover. This will, however, cause cascading errors further down the validation chain.
     @Override
     public void handle(@Nonnull UploadValidationContext context)
@@ -144,7 +144,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
         JsonNode infoJson = jsonDataMap.get(FILENAME_INFO_JSON);
         if (infoJson == null) {
             // Recover by replacing this with an empty map
-            addMessageAndWarn(context, String.format("upload ID %s does not contain info.json file", uploadId));
+            context.addMessage(String.format("upload ID %s does not contain info.json file", uploadId));
             infoJson = BridgeObjectMapper.get().createObjectNode();
 
             // Add it back to the jsonDataMap, since all the logic assumes it contains info.json.
@@ -168,13 +168,12 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
         JsonNode fileList = infoJson.get(KEY_FILES);
         if (fileList == null) {
             // Recover by replacing this with an empty list
-            addMessageAndWarn(context,
-                    String.format("upload ID %s info.json does not contain file list", uploadId));
+            context.addMessage(String.format("upload ID %s info.json does not contain file list", uploadId));
             fileList = BridgeObjectMapper.get().createArrayNode();
         } else if (fileList.size() == 0) {
-            addMessageAndWarn(context, String.format("upload ID %s info.json contains empty file list", uploadId));
+            context.addMessage(String.format("upload ID %s info.json contains empty file list", uploadId));
         } else if (fileList.size() != fileNameSet.size() - 1) {
-            addMessageAndWarn(context, String.format("upload ID %s info.json reports %d files, but we found %d files",
+            context.addMessage(String.format("upload ID %s info.json reports %d files, but we found %d files",
                     uploadId, fileList.size(), fileNameSet.size() - 1));
         }
 
@@ -185,12 +184,12 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
             JsonNode filenameNode = oneFileJson.get(KEY_FILENAME);
             String filename = null;
             if (filenameNode == null) {
-                addMessageAndWarn(context, String.format("upload ID %s info.json contains file with no name",
+                context.addMessage(String.format("upload ID %s info.json contains file with no name",
                         uploadId));
             } else {
                 filename = filenameNode.textValue();
                 if (!fileNameSet.contains(filename)) {
-                    addMessageAndWarn(context, String.format(
+                    context.addMessage(String.format(
                             "upload ID %s info.json contains filename %s, not found in the archive", uploadId,
                             filename));
                 }
@@ -201,7 +200,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
             // the latest of these timestamps.
             JsonNode timestampNode = oneFileJson.get(KEY_TIMESTAMP);
             if (timestampNode == null) {
-                addMessageAndWarn(context, String.format("upload ID %s filename %s has no timestamp", uploadId,
+                context.addMessage(String.format("upload ID %s filename %s has no timestamp", uploadId,
                         filename));
             } else {
                 DateTime timestamp = parseTimestampHelper(context, uploadId, filename, timestampNode.textValue());
@@ -214,14 +213,14 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
         // sanity check filenames with the info.json file list
         for (String oneFilename : fileNameSet) {
             if (!oneFilename.equals(FILENAME_INFO_JSON) && !infoJsonFilesByName.containsKey(oneFilename)) {
-                addMessageAndWarn(context, String.format(
+                context.addMessage(String.format(
                         "upload ID %s contains filename %s not found in info.json", uploadId, oneFilename));
             }
         }
 
         if (createdOn == null) {
             // Recover by using current time.
-            addMessageAndWarn(context, String.format("upload ID %s has no timestamps, using current time", uploadId));
+            context.addMessage(String.format("upload ID %s has no timestamps, using current time", uploadId));
             createdOn = DateUtils.getCurrentDateTime();
         }
         recordBuilder.withCreatedOn(createdOn.getMillis());
@@ -306,19 +305,19 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
                         try {
                             attachmentMap.put(fieldName, BridgeObjectMapper.get().writeValueAsBytes(jsonData));
                         } catch (JsonProcessingException ex) {
-                            addMessageAndWarn(context, String.format(
+                            context.addMessage(String.format(
                                     "Upload ID %s attachment field %s could not be converted to JSON: %s", uploadId,
                                     fieldName, ex.getMessage()));
                         }
                     } else if (oneFieldDef.isRequired()) {
-                        addMessageAndWarn(context, String.format(
+                        context.addMessage(String.format(
                                 "Upload ID %s with schema ID %s has required field %s with no corresponding file",
                                 uploadId,
                                 schemaId, fieldName));
                     }
                 }
             } else {
-                addMessageAndWarn(context, String.format("Upload ID %s with schema ID %s has non-attachment field %s",
+                context.addMessage(String.format("Upload ID %s with schema ID %s has non-attachment field %s",
                         uploadId, schemaId, fieldName));
             }
         }
@@ -326,7 +325,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
         // validate file names against field names
         for (String oneFilename : unzippedDataMap.keySet()) {
             if (!fieldNameSet.contains(oneFilename)) {
-                addMessageAndWarn(context, String.format(
+                context.addMessage(String.format(
                         "Upload ID %s with schema ID %s has file %s with no corresponding field", uploadId, schemaId,
                         oneFilename));
             }
@@ -338,7 +337,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
             }
 
             if (!fieldNameSet.contains(oneJsonFilename)) {
-                addMessageAndWarn(context, String.format(
+                context.addMessage(String.format(
                         "Upload ID %s with schema ID %s has JSON file %s with no corresponding field", uploadId,
                         schemaId, oneJsonFilename));
             }
@@ -397,7 +396,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
         try {
             attachmentMap.put(KEY_ANSWERS, BridgeObjectMapper.get().writeValueAsBytes(answerArray));
         } catch (JsonProcessingException ex) {
-            addMessageAndWarn(context, String.format(
+            context.addMessage(String.format(
                     "Upload ID %s could not convert survey answers to JSON: %s", uploadId, ex.getMessage()));
         }
 
@@ -587,7 +586,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
                 try {
                     attachmentMap.put(fieldName, BridgeObjectMapper.get().writeValueAsBytes(fieldValue));
                 } catch (JsonProcessingException ex) {
-                    addMessageAndWarn(context, String.format(
+                    context.addMessage(String.format(
                             "Upload ID %s field %s could not be converted to JSON: %s", uploadId, fieldName,
                             ex.getMessage()));
                 }
@@ -604,14 +603,14 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
     private static DateTime parseTimestampHelper(UploadValidationContext context, String uploadId, String filename,
             String timestampStr) {
         if (StringUtils.isBlank(timestampStr)) {
-            addMessageAndWarn(context, String.format("upload ID %s filename %s has blank time stamp", uploadId,
+            context.addMessage(String.format("upload ID %s filename %s has blank time stamp", uploadId,
                     filename));
             return null;
         }
 
         // Detect if this is iOS non-standard format by checking to see if the 10th char is a space.
         if (timestampStr.charAt(10) == ' ') {
-            addMessageAndWarn(context, String.format("upload ID %s filename %s has non-standard timestamp format %s",
+            context.addMessage(String.format("upload ID %s filename %s has non-standard timestamp format %s",
                     uploadId, filename, timestampStr));
 
             // Attempt to convert this by replacing the 10th char with a T and then stripping out all spaces.
@@ -622,14 +621,9 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
         try {
             return DateUtils.parseISODateTime(timestampStr);
         } catch (RuntimeException ex) {
-            addMessageAndWarn(context, String.format("upload ID %s filename %s has invalid timestamp %s", uploadId,
+            context.addMessage(String.format("upload ID %s filename %s has invalid timestamp %s", uploadId,
                     filename, timestampStr));
             return null;
         }
-    }
-
-    // This method used to add warnings to the log. It has since been decided that these log warnings are not useful.
-    private static void addMessageAndWarn(UploadValidationContext context, String message) {
-        context.addMessage(message);
     }
 }

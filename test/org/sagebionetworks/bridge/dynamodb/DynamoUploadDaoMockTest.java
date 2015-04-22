@@ -3,18 +3,20 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.dynamodb.DynamoUploadDaoTest.createUploadRequest;
 
 import java.util.Collections;
 import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.junit.Test;
@@ -28,7 +30,7 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 public class DynamoUploadDaoMockTest {
     @Test
     public void createUpload() {
-        // mock DDB mapper (new)
+        // mock DDB mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
 
         // execute
@@ -50,8 +52,8 @@ public class DynamoUploadDaoMockTest {
     }
 
     @Test
-    public void getUploadFromNew() {
-        // mock DDB mapper (new)
+    public void getUpload() {
+        // mock DDB mapper
         DynamoUpload2 upload = new DynamoUpload2();
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
         ArgumentCaptor<DynamoUpload2> arg = ArgumentCaptor.forClass(DynamoUpload2.class);
@@ -68,46 +70,15 @@ public class DynamoUploadDaoMockTest {
     }
 
     @Test
-    public void getUploadFromOld() {
-        // mock DDB mapper (new)
-        DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
-        ArgumentCaptor<DynamoUpload2> arg = ArgumentCaptor.forClass(DynamoUpload2.class);
-        when(mockMapper.load(arg.capture())).thenReturn(null);
-
-        // mock DDB mapper (old)
-        DynamoUpload uploadOld = new DynamoUpload();
-        DynamoDBMapper mockMapperOld = mock(DynamoDBMapper.class);
-        ArgumentCaptor<DynamoUpload> argOld = ArgumentCaptor.forClass(DynamoUpload.class);
-        when(mockMapperOld.load(argOld.capture())).thenReturn(uploadOld);
-
-        // execute
-        DynamoUploadDao dao = new DynamoUploadDao();
-        dao.setDdbMapper(mockMapper);
-        dao.setDdbMapperOld(mockMapperOld);
-        Upload retVal = dao.getUpload("test-get-fallback");
-        assertSame(uploadOld, retVal);
-
-        // validate we passed in the expected key
-        assertEquals("test-get-fallback", arg.getValue().getUploadId());
-        assertEquals("test-get-fallback", argOld.getValue().getUploadId());
-    }
-
-    @Test
     public void getUploadNotFound() {
-        // mock DDB mapper (new)
+        // mock DDB mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
         ArgumentCaptor<DynamoUpload2> arg = ArgumentCaptor.forClass(DynamoUpload2.class);
         when(mockMapper.load(arg.capture())).thenReturn(null);
 
-        // mock DDB mapper (old)
-        DynamoDBMapper mockMapperOld = mock(DynamoDBMapper.class);
-        ArgumentCaptor<DynamoUpload> argOld = ArgumentCaptor.forClass(DynamoUpload.class);
-        when(mockMapperOld.load(argOld.capture())).thenReturn(null);
-
         // execute
         DynamoUploadDao dao = new DynamoUploadDao();
         dao.setDdbMapper(mockMapper);
-        dao.setDdbMapperOld(mockMapperOld);
 
         Exception thrown = null;
         try {
@@ -120,12 +91,11 @@ public class DynamoUploadDaoMockTest {
 
         // validate we passed in the expected key
         assertEquals("test-get-404", arg.getValue().getUploadId());
-        assertEquals("test-get-404", argOld.getValue().getUploadId());
     }
 
     @Test
-    public void uploadCompleteNew() {
-        // mock DDB mapper (new)
+    public void uploadComplete() {
+        // mock DDB mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
 
         // execute
@@ -144,36 +114,13 @@ public class DynamoUploadDaoMockTest {
     }
 
     @Test
-    public void uploadCompleteOld() {
-        // mock DDB mapper (old)
-        DynamoDBMapper mockMapperOld = mock(DynamoDBMapper.class);
-
-        // execute
-        DynamoUploadDao dao = new DynamoUploadDao();
-        dao.setDdbMapperOld(mockMapperOld);
-        dao.uploadComplete(new DynamoUpload());
-
-        // Verify our mock. We add complete=true only for the old code path.
-        ArgumentCaptor<DynamoUpload> argSave = ArgumentCaptor.forClass(DynamoUpload.class);
-        verify(mockMapperOld).save(argSave.capture());
-        assertTrue(argSave.getValue().isComplete());
-    }
-
-    // branch coverage
-    @Test
-    public void writeValidationStatusOld() {
-        new DynamoUploadDao().writeValidationStatus(new DynamoUpload(), UploadStatus.SUCCEEDED,
-                Collections.<String>emptyList());
-    }
-
-    @Test
-    public void writeValidationStatusNew() {
+    public void writeValidationStatus() {
         // create input
         DynamoUpload2 upload2 = new DynamoUpload2();
         upload2.setUploadId("test-upload");
         upload2.setValidationMessageList(Collections.<String>emptyList());
 
-        // mock DDB mapper (new)
+        // mock DDB mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
 
         // execute
@@ -198,7 +145,7 @@ public class DynamoUploadDaoMockTest {
         upload2.setUploadId("test-upload");
         upload2.setValidationMessageList(ImmutableList.of("pre-existing message"));
 
-        // mock DDB mapper (new)
+        // mock DDB mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
 
         // execute
@@ -215,5 +162,15 @@ public class DynamoUploadDaoMockTest {
         assertEquals(2, messageList.size());
         assertEquals("pre-existing message", messageList.get(0));
         assertEquals("appended this message", messageList.get(1));
+    }
+
+    private static UploadRequest createUploadRequest() {
+        final String text = "test upload dao";
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("name", "test-upload-dao-filename");
+        node.put("contentType", "text/plain");
+        node.put("contentLength", text.getBytes().length);
+        node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(text)));
+        return UploadRequest.fromJson(node);
     }
 }
