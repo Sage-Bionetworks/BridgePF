@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.Collection;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -9,18 +12,47 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.schedules.Task;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
+import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 
 public class BridgeUtils {
 
     public static String generateGuid() {
         return UUID.randomUUID().toString();
+    }
+    
+    /**
+     * Generate a key that is based on the natural key of the task (schedule plan GUID, scheduled start time of the
+     * task, and the activity reference), with some hashing to reduce unusual characters such as URL path characters in
+     * the string. The same key will be generated each time for the same task, and the key should never collide with
+     * another key within the scope of an individual user's tasks (this is ensured by the fact that a schedule plan
+     * cannot contain a schedule with identical activities).
+     * 
+     * @param task
+     * @return
+     */
+    public static String generateTaskGuid(Task task) {
+        checkNotNull(task.getSchedulePlanGuid());
+        checkNotNull(task.getScheduledOn());
+        checkNotNull(task.getActivity());
+        checkNotNull(task.getActivity().getRef());
+        
+        HashFunction hf = Hashing.murmur3_128();
+        HashCode hc = hf.newHasher()
+            .putString(task.getActivity().getRef(), Charsets.UTF_8)
+            .hash();
+        return String.format("%s%s%s", task.getSchedulePlanGuid().replaceAll("-", ""), task.getScheduledOn(),
+                        hc.toString());
     }
     
     public static String getTypeName(Class<?> clazz) {

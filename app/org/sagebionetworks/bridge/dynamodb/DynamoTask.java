@@ -38,12 +38,6 @@ public final class DynamoTask implements Task {
     private Long finishedOn;
     private Activity activity;
     
-    @JsonIgnore
-    @DynamoDBIgnore
-    public String getNaturalKey() {
-        return String.format("%s:%s:%s", schedulePlanGuid, scheduledOn, activity.getRef());
-    }
-    
     @DynamoDBIgnore
     public TaskStatus getStatus() {
         if (finishedOn != null) {

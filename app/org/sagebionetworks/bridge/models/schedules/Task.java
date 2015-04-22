@@ -1,13 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 public interface Task {
-
-    /**
-     * This is a key that uniquely defines a task based on the data in the task 
-     * (rather than the GUID, which is a synthetic key). A task is unique when 
-     * you include the schedule plan GUID, the scheduledOn time, and the activity ref.
-     */
-    public String getNaturalKey();
     
     public TaskStatus getStatus();
     
