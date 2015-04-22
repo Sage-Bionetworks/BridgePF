@@ -89,15 +89,15 @@ public class DynamoTaskDao implements TaskDao {
         
         // Reconcile saved and scheduler tasks, saving the unsaved tasks
         for (Task task : dbTasks) {
-            naturalKeys.add(task.getNaturalKey());
+            naturalKeys.add(task.getGuid());
         }
         for (Task task : scheduledTasks) {
-            if (naturalKeys.add(task.getNaturalKey())) {
+            if (naturalKeys.add(task.getGuid())) {
                 tasksToSave.add(task);
                 dbTasks.add(task);
             }
         }
-        
+
         List<FailedBatch> failures = mapper.batchSave(tasksToSave);
         BridgeUtils.ifFailuresThrowException(failures);
         
@@ -111,10 +111,18 @@ public class DynamoTaskDao implements TaskDao {
 
     @Override
     public void deleteTasks(String healthCode) {
+        DynamoTask hashKey = new DynamoTask();
+        hashKey.setHealthCode(healthCode);
+
+        DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>().withHashKeyValues(hashKey);
+        
+        PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
+        List<FailedBatch> failures = mapper.batchDelete(queryResults);
+        BridgeUtils.ifFailuresThrowException(failures);
     }
 
     private List<Task> queryForTasks(User user, DateTime from, DateTime until) {
-        DynamoDBQueryExpression<DynamoTask> query = createQuery(user, from, until);
+        DynamoDBQueryExpression<DynamoTask> query = createGetQuery(user, from, until);
         PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
         
         List<Task> results = Lists.newArrayList();
@@ -122,7 +130,7 @@ public class DynamoTaskDao implements TaskDao {
         return results;
     }
     
-    private DynamoDBQueryExpression<DynamoTask> createQuery(User user, DateTime from, DateTime until) {
+    private DynamoDBQueryExpression<DynamoTask> createGetQuery(User user, DateTime from, DateTime until) {
         DynamoTask hashKey = new DynamoTask();
         hashKey.setHealthCode(user.getHealthCode());
         

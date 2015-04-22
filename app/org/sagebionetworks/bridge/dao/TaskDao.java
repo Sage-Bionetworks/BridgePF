@@ -5,7 +5,6 @@ import java.util.List;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.schedules.Task;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface TaskDao {
     
@@ -23,8 +22,8 @@ public interface TaskDao {
     public List<Task> getTasks(User user, Period startsOn, Period endsOn);
     
     /**
-     * Update the startedOn or completedOn timestamps of the tasks indicated in the collection. Tasks in this collection
-     * should also have a GUID, but don't require any other fields.
+     * Update the startedOn or finishedOn timestamps of the tasks in the collection. 
+     * Tasks in this collection should also have a GUID, all other fields are ignored.
      * 
      * @param healthCode
      * @param tasks
