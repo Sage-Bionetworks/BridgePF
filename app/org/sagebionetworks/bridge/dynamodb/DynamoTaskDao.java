@@ -1,8 +1,13 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.models.schedules.TaskStatus.HIDE_FROM_USER;
+
+import java.util.ArrayList;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -10,7 +15,6 @@ import java.util.Set;
 import javax.annotation.Resource;
 
 import org.joda.time.DateTime;
-import org.joda.time.Period;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.TaskDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
@@ -36,6 +40,8 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -80,36 +86,43 @@ public class DynamoTaskDao implements TaskDao {
         this.userConsentDao = userConsentDao;
     }
 
-    /**
-     * Get all undeleted tasks up to the endsOn date. Only return tasks that have expired (issued but not started 
-     * before the expiration timestamp) within the startsOn to endsOn time window. The client may adjust this 
-     * window to include expired tasks for a period before the time of the call, or use "now" to eliminate 
-     * expired tasks entirely.
-     */
     @Override
-    public List<Task> getTasks(User user, Period startsOn, Period endsOn) {
-        DateTime from = DateTime.now().minus(startsOn);
-        DateTime until = DateTime.now().plus(endsOn);
-        
-        List<Task> dbTasks = queryForTasks(user.getHealthCode(), from, until);
-        List<Task> scheduledTasks = scheduleTasksForPlans(user, from, until);
+    public List<Task> getTasks(User user, DateTime startsOn, DateTime endsOn) {
+        List<Task> dbTasks = queryForTasks(user.getHealthCode(), startsOn, endsOn);
+        List<Task> scheduledTasks = scheduleTasksForPlans(user, startsOn, endsOn);
         Set<String> guids = new HashSet<>(Lists.transform(dbTasks, TASK_TO_GUID));
         
         // Reconcile saved and scheduler tasks, saving the unsaved tasks
         List<Task> tasksToSave = Lists.newArrayList();
-        for (Task task : scheduledTasks) {
-            // If it adds to the GUIDs set, it is new, so save it, UNLESS it is already expired 
-            // and the scheduled start time is not in the bounds of the query... in other words, 
-            // the user never saw this task at all. These are returned from the scheduler, but 
-            // don't save them in DDB. 
-            if (guids.add(task.getGuid()) && !taskExpiredOutsideOfTimeWindow(task, from)) {
-                tasksToSave.add(task);
-                dbTasks.add(task);
+        for (Task scheduledTask : scheduledTasks) {
+            // If it adds to the GUIDs set, it is new, so add it to be saved.
+            if (guids.add(scheduledTask.getGuid())) {
+                tasksToSave.add(scheduledTask);
+                dbTasks.add(scheduledTask);
             }
         }
         List<FailedBatch> failures = mapper.batchSave(tasksToSave);
         BridgeUtils.ifFailuresThrowException(failures);
         
+        // Filter out expired, deleted or finished tasks. We cannot do this in the query, 
+        // or the scheduler will just add the tasks back again. We need to see they exist.
+        for (Iterator<Task> i = dbTasks.iterator(); i.hasNext();) {
+            if (HIDE_FROM_USER.contains(i.next().getStatus())) {
+                i.remove();
+            }
+        }
+        Collections.sort(dbTasks, TASK_COMPARATOR);
+        return dbTasks;
+    }
+    
+    @Override
+    public List<Task> getTasksWithoutScheduling(User user, DateTime startsOn, DateTime endsOn) {
+        List<Task> dbTasks = queryForTasks(user.getHealthCode(), startsOn, endsOn);
+        for (Iterator<Task> i = dbTasks.iterator(); i.hasNext();) {
+            if (HIDE_FROM_USER.contains(i.next())) {
+                i.remove();
+            }
+        }
         Collections.sort(dbTasks, TASK_COMPARATOR);
         return dbTasks;
     }
@@ -118,20 +131,21 @@ public class DynamoTaskDao implements TaskDao {
     public void updateTasks(String healthCode, List<Task> tasks) {
         List<Task> tasksToSave = Lists.newArrayList();
         for (Task task : tasks) {
-            if (task != null) {
-                Task dbTask = mapper.load(task);
-                if (dbTask != null && task.getStartedOn() != null || task.getFinishedOn() != null) {
-                    if (task.getStartedOn() != null) {
-                        dbTask.setStartedOn(task.getStartedOn());
-                    }
-                    if (task.getFinishedOn() != null) {
-                        dbTask.setFinishedOn(task.getFinishedOn());
-                    }
-                    tasksToSave.add(dbTask);
+            // NOTE: it has to have health code and guid. This should be enforced in some kind of validation
+            task.setHealthCode(healthCode);
+            Task dbTask = mapper.load(task);
+            if (dbTask != null && (task.getStartedOn() != null || task.getFinishedOn() != null)) {
+                if (task.getStartedOn() != null) {
+                    dbTask.setStartedOn(task.getStartedOn());
                 }
+                if (task.getFinishedOn() != null) {
+                    dbTask.setFinishedOn(task.getFinishedOn());
+                }
+                tasksToSave.add(dbTask);
             }
         }
         if (!tasksToSave.isEmpty()) {
+            System.out.println("Updating: " + tasksToSave);
             List<FailedBatch> failures = mapper.batchSave(tasksToSave);
             BridgeUtils.ifFailuresThrowException(failures);
         }
@@ -151,19 +165,15 @@ public class DynamoTaskDao implements TaskDao {
         List<FailedBatch> failures = mapper.batchDelete(tasksToDelete);
         BridgeUtils.ifFailuresThrowException(failures);
     }
-    
-    private boolean taskExpiredOutsideOfTimeWindow(Task task, DateTime from) {
-        return (task.getStatus() == TaskStatus.EXPIRED && from.isAfter(task.getScheduledOn()));
-    }
 
-    private List<Task> queryForTasks(String healthCode, DateTime from, DateTime until) {
+    private List<Task> queryForTasks(String healthCode, DateTime startsOn, DateTime endsOn) {
         DynamoTask hashKey = new DynamoTask();
         hashKey.setHealthCode(healthCode);
         
         Condition rangeKeyCondition = new Condition()
             .withComparisonOperator(ComparisonOperator.BETWEEN.toString())
-            .withAttributeValueList(new AttributeValue().withN(new Long(from.getMillis()).toString()), 
-                                    new AttributeValue().withN(new Long(until.getMillis()).toString()));
+            .withAttributeValueList(new AttributeValue().withN(new Long(startsOn.getMillis()).toString()), 
+                                    new AttributeValue().withN(new Long(endsOn.getMillis()).toString()));
     
         DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>()
             .withHashKeyValues(hashKey)
@@ -198,11 +208,11 @@ public class DynamoTaskDao implements TaskDao {
      * @param studyIdentifier
      * @param user
      * @param events
-     * @param from
-     * @param until
+     * @param startsOn
+     * @param endsOn
      * @return
      */
-    private List<Task> scheduleTasksForPlans(User user, DateTime from, DateTime until) {
+    private List<Task> scheduleTasksForPlans(User user, DateTime startsOn, DateTime endsOn) {
         Map<String, DateTime> events = createEventsMap(user);
         StudyIdentifier studyId = new StudyIdentifierImpl(user.getStudyKey());
         List<Task> tasks = Lists.newArrayList();
@@ -212,8 +222,8 @@ public class DynamoTaskDao implements TaskDao {
             Schedule schedule = plan.getStrategy().getScheduleForUser(studyId, plan, user);
             TaskScheduler scheduler = SchedulerFactory.getScheduler(plan.getGuid(), schedule);
             
-            for (Task task : scheduler.getTasks(events, until)) {
-                if (from.isEqual(task.getScheduledOn()) || from.isBefore(task.getScheduledOn())) {
+            for (Task task : scheduler.getTasks(events, endsOn)) {
+                if (startsOn.isEqual(task.getScheduledOn()) || startsOn.isBefore(task.getScheduledOn())) {
                     ((DynamoTask)task).setHealthCode(user.getHealthCode());
                     tasks.add(task);
                 }

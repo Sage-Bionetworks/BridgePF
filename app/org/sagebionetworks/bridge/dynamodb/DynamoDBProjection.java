@@ -7,9 +7,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * For global indices, sets the projection type of the index. For range only indices, put 
- * this annotation on the method holding the range annotation, for hash/range indices, put 
- * this annotation on the method holding the hash key annotation.
+ * An optional annotation for global indices, sets the projection type of 
+ * the index. This annotation should go on the same method as the annotation 
+ * for the index.
  */
 import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 
