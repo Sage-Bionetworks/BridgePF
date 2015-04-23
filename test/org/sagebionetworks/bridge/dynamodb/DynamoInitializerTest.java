@@ -159,8 +159,6 @@ public class DynamoInitializerTest {
         TableDescription table = tables.get(1);
         assertEquals(3, table.getGlobalSecondaryIndexes().size());
         
-        System.out.println(table.getGlobalSecondaryIndexes());
-        
         GlobalSecondaryIndexDescription index = findIndex(table.getGlobalSecondaryIndexes(), "guid-index");
         assertEquals("INCLUDE", index.getProjection().getProjectionType());
         assertEquals("guid", index.getKeySchema().get(0).getAttributeName());

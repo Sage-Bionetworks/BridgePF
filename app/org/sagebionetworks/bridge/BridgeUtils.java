@@ -48,9 +48,7 @@ public class BridgeUtils {
         checkNotNull(task.getActivity().getRef());
         
         HashFunction hf = Hashing.murmur3_128();
-        HashCode hc = hf.newHasher()
-            .putString(task.getActivity().getRef(), Charsets.UTF_8)
-            .hash();
+        HashCode hc = hf.newHasher().putString(task.getActivity().getRef(), Charsets.UTF_8).hash();
         return String.format("%s%s%s", task.getSchedulePlanGuid().replaceAll("-", ""), 
             task.getScheduledOn(), hc.toString());
     }

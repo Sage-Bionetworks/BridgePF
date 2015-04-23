@@ -164,10 +164,7 @@ public class DynamoInitializer {
             if (hashKey == null) {
                 throw new RuntimeException("Missing hash key for DynamoDBTable " + clazz);
             }
-            // This supports local indices, and global indices with a hash only or a hash and range. For
-            // global secondary indices with hash/ranges, we currently set the projection to all attributes.
-            // There is no DDB SDK annotation for the projection, we'd have to create one to make this 
-            // configurable.
+            // This supports local indices, and global indices with a hash only or a hash and range. 
             for (Method method : methods) {
                 String attrName = null;
                 if (method.isAnnotationPresent(DynamoDBIndexHashKey.class)) {
@@ -256,7 +253,6 @@ public class DynamoInitializer {
 
     private static GlobalSecondaryIndexDescription createGlobalIndexDescr(String indexName, String hashAttrName,
                     String rangeAttrName) {
-        
         Preconditions.checkArgument(isNotBlank(indexName));
         
         List<KeySchemaElement> keys = Lists.newArrayList();
@@ -278,8 +274,6 @@ public class DynamoInitializer {
 
     private static LocalSecondaryIndexDescription createLocalIndexDescr(String indexName, String hashAttrName,
                     String rangeAttrName) {
-        // I don't see that there's ever a hash set for a local secondary index, but that's possible, 
-        // this code can be modified accordingly.
         LocalSecondaryIndexDescription localIndex = new LocalSecondaryIndexDescription()
             .withIndexName(indexName)
             .withKeySchema(new KeySchemaElement(rangeAttrName, KeyType.RANGE))

@@ -22,17 +22,6 @@ public abstract class TaskScheduler {
     
     public abstract List<Task> getTasks(Map<String, DateTime> events, DateTime until);
     
-    /**
-     * Generate a key that is based on the natural key of the task (schedule plan GUID, scheduled start time of the
-     * task, and the activity reference), with some hashing to reduce unusual characters such as URL path characters in
-     * the string. The same key will be generated each time for the same task, and the key should never collide with
-     * another key within the scope of an individual user's tasks (this is ensured by the fact that a schedule plan
-     * cannot contain a schedule with identical activities).
-     * 
-     * @param task
-     * @return
-     */
-    
     protected DateTime getScheduledTimeBasedOnEvent(Schedule schedule, Map<String, DateTime> events) {
         // If no event is specified, it's enrollment by default.
         String eventId = schedule.getEventId();
