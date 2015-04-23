@@ -90,14 +90,13 @@ public class DynamoTaskDaoTest {
 
     @Test
     public void createUpdateDeleteTasks() throws Exception {
-        DateTime startsOn = DateTime.now().minus(Period.parse("P1D"));
         DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
         
-        List<Task> tasks = taskDao.getTasks(user, startsOn, endsOn);
+        List<Task> tasks = taskDao.getTasks(user, endsOn);
         int collectionSize = tasks.size();
         
         // Should not increase the number of tasks
-        tasks = taskDao.getTasks(user, startsOn, endsOn);
+        tasks = taskDao.getTasks(user, endsOn);
         assertEquals(collectionSize, tasks.size());
         
         // Delete most information in tasks and delete one by finishing it
@@ -107,12 +106,12 @@ public class DynamoTaskDaoTest {
         assertEquals(TaskStatus.DELETED, task.getStatus());
         taskDao.updateTasks(user.getHealthCode(), tasks);
         
-        tasks = taskDao.getTasks(user, startsOn, endsOn);
+        tasks = taskDao.getTasks(user, endsOn);
         assertEquals(collectionSize-1, tasks.size());
         
         taskDao.deleteTasks(user.getHealthCode());
         
-        tasks = taskDao.getTasksWithoutScheduling(user, startsOn, endsOn);
+        tasks = taskDao.getTasksWithoutScheduling(user);
         assertEquals(0, tasks.size());
     }
 

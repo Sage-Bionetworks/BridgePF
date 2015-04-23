@@ -138,7 +138,7 @@ public class DynamoTaskDaoMockTest {
     }
     
     @SuppressWarnings("unchecked")
-    private void mockQuery(DateTime from, DateTime until, final DynamoTask... tasks) {
+    private void mockQuery(DateTime until, final DynamoTask... tasks) {
         List<DynamoTask> results = Lists.newArrayList();
         if (tasks != null) {
             for (final DynamoTask task : tasks) {
@@ -167,12 +167,11 @@ public class DynamoTaskDaoMockTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testOfFirstPeriod() throws Exception {
-        DateTime startsOn = NOW.plus(Period.parse("P2D"));
         DateTime endsOn = NOW.plus(Period.parse("P2D"));
 
-        mockQuery(startsOn, endsOn);
+        mockQuery(endsOn);
         
-        List<Task> tasks = taskDao.getTasks(user, startsOn, endsOn);
+        List<Task> tasks = taskDao.getTasks(user, endsOn);
         // These also show that stuff is getting sorted by label
         assertTask("2015-04-11T13:00:00.000-07:00", "task:task1", tasks.get(0));
         assertTask("2015-04-11T13:00:00.000-07:00", "task:task2", tasks.get(1));
@@ -191,12 +190,11 @@ public class DynamoTaskDaoMockTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testOfSecondPeriodWithDifferentStartTime() throws Exception {
-        DateTime startsOn = NOW.plus(Period.parse("P1D"));
         DateTime endsOn = NOW.plus(Period.parse("P4D"));
         
-        mockQuery(startsOn, endsOn);
+        mockQuery(endsOn);
         
-        List<Task> tasks = taskDao.getTasks(user, startsOn, endsOn);
+        List<Task> tasks = taskDao.getTasks(user, endsOn);
 
         // These also show that stuff is getting sorted by label
         assertTask("2015-04-12T13:00:00.000-07:00", "task:task1", tasks.get(0));
@@ -216,7 +214,6 @@ public class DynamoTaskDaoMockTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testIntegrationOfQueryResults() {
-        DateTime startsOn = NOW.plus(Period.parse("P2D"));
         DateTime endsOn = NOW.plus(Period.parse("P2D"));
         
         DynamoTask task1 = new DynamoTask();
@@ -235,9 +232,9 @@ public class DynamoTaskDaoMockTest {
         task2.setFinishedOn(DateTime.parse("2015-04-12T18:34:01.113-07:00").getMillis());
         task2.setGuid(BridgeUtils.generateTaskGuid(task2));
         
-        mockQuery(startsOn, endsOn, task1, task2);
+        mockQuery(endsOn, task1, task2);
         
-        List<Task> tasks = taskDao.getTasks(user, startsOn, endsOn);
+        List<Task> tasks = taskDao.getTasks(user, endsOn);
         
         assertEquals(TaskStatus.STARTED, tasks.get(0).getStatus());
         assertEquals(TaskStatus.EXPIRED, tasks.get(1).getStatus());
@@ -270,7 +267,7 @@ public class DynamoTaskDaoMockTest {
         task2.setFinishedOn(DateTime.parse("2015-04-12T18:34:01.113-07:00").getMillis());
         task2.setGuid(BridgeUtils.generateTaskGuid(task2));
         
-        mockQuery(NOW.minusDays(1), NOW.plusDays(2), task1, task2);
+        mockQuery(NOW.plusDays(2), task1, task2);
         
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         taskDao.deleteTasks("AAA");
@@ -301,7 +298,7 @@ public class DynamoTaskDaoMockTest {
         task2.setStartedOn(DateTime.parse("2015-04-12T18:30:23.334-07:00").getMillis());
         task2.setGuid(BridgeUtils.generateTaskGuid(task2));
         
-        mockQuery(NOW.minusDays(1), NOW.plusDays(2), task1, task2);
+        mockQuery(NOW.plusDays(2), task1, task2);
         
         Task task3 = new DynamoTask();
         task3.setSchedulePlanGuid("BBB");
