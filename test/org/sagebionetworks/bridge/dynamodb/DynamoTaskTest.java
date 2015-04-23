@@ -59,7 +59,11 @@ public class DynamoTaskTest {
         
         task.setFinishedOn(DateTime.now().getMillis());
         assertEquals(TaskStatus.FINISHED, task.getStatus());
-
+        
+        task = new DynamoTask();
+        task.setFinishedOn(DateTime.now().getMillis());
+        assertEquals(TaskStatus.DELETED, task.getStatus());
+        
         task = new DynamoTask();
         task.setScheduledOn(DateTime.now().minusHours(1).getMillis());
         task.setExpiresOn(DateTime.now().plusHours(1).getMillis());

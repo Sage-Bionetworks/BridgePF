@@ -51,8 +51,8 @@ public class BridgeUtils {
         HashCode hc = hf.newHasher()
             .putString(task.getActivity().getRef(), Charsets.UTF_8)
             .hash();
-        return String.format("%s%s%s", task.getSchedulePlanGuid().replaceAll("-", ""), task.getScheduledOn(),
-                        hc.toString());
+        return String.format("%s%s%s", task.getSchedulePlanGuid().replaceAll("-", ""), 
+            task.getScheduledOn(), hc.toString());
     }
     
     public static String getTypeName(Class<?> clazz) {

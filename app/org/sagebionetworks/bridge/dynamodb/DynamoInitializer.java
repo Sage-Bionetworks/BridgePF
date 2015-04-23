@@ -214,63 +214,7 @@ public class DynamoInitializer {
                     attributes.put(attrName, attribute);
                 }
             }
-            /*
-            // TODO: The secondary indices code only supports local indices and hash-only global indices.
-            // hash-and-range global indices would require rewriting this code to consider indices across multiple
-            // methods.
-            // secondary indices (local (range) and global (hash-only))
-            for (Method method : methods) {
-                boolean isLocalIndexKey = false;
-                boolean isGlobalIndexKey = false;
-                String attrName = null;
-                String indexName = null;
-                String rangeAttrName = null;
-                if (method.isAnnotationPresent(DynamoDBIndexRangeKey.class)) {
-                    DynamoDBIndexRangeKey indexKey = method.getAnnotation(DynamoDBIndexRangeKey.class);
-                    attrName = indexKey.attributeName();
-                    indexName = indexKey.localSecondaryIndexName();
-                    // This is a local range key (the name for the local index isn't blank), so process it
-                    isLocalIndexKey = (StringUtils.isNotBlank(indexName));
-                } else if (method.isAnnotationPresent(DynamoDBIndexHashKey.class)) {
-                    DynamoDBIndexHashKey indexKey = method.getAnnotation(DynamoDBIndexHashKey.class);
-                    attrName = indexKey.attributeName();
-                    indexName = indexKey.globalSecondaryIndexName();
-                    // Does this secondary global index hash key have a range key? If so, find it.
-                    rangeAttrName = findGlobalSecondaryIndexRangeAttrName(clazz, indexName);
-                    isGlobalIndexKey = true;
-                }
-                if (isLocalIndexKey || isGlobalIndexKey) {
-                    if (attrName == null || attrName.isEmpty()) {
-                        attrName = getAttributeName(method);
-                    }
-                    ScalarAttributeType attrType = getAttributeType(method);
-                    AttributeDefinition attribute = new AttributeDefinition(attrName, attrType);
-                    attributes.add(attribute);
 
-                    if (isLocalIndexKey) {
-                        LocalSecondaryIndexDescription localIndex = new LocalSecondaryIndexDescription()
-                                .withIndexName(indexName)
-                                .withKeySchema(hashKey, new KeySchemaElement(attrName, KeyType.RANGE))
-                                .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
-                        localIndices.add(localIndex);
-                    } else {
-                        List<KeySchemaElement> keys = Lists.newArrayList(new KeySchemaElement(attrName, KeyType.HASH));
-                        if (rangeAttrName != null) {
-                            keys.add(new KeySchemaElement(rangeAttrName, KeyType.RANGE));
-                        }
-                        // isGlobalIndexKey is always true in this branch
-                        GlobalSecondaryIndexDescription globalIndex = new GlobalSecondaryIndexDescription()
-                                .withIndexName(indexName)
-                                .withKeySchema(keys)
-                                .withProjection(new Projection().withProjectionType(ProjectionType.KEYS_ONLY))
-                                .withProvisionedThroughput(new ProvisionedThroughputDescription()
-                                        .withReadCapacityUnits(DEFAULT_READ_CAPACITY)
-                                        .withWriteCapacityUnits(DEFAULT_WRITE_CAPACITY));
-                        globalIndices.add(globalIndex);
-                    }
-                }
-            }
-            */
             // Throughput
             long writeCapacity = DEFAULT_WRITE_CAPACITY;
             long readCapacity = DEFAULT_READ_CAPACITY;

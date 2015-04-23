@@ -25,6 +25,7 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Task;
+import org.sagebionetworks.bridge.models.schedules.TaskStatus;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -88,19 +89,39 @@ public class DynamoTaskDaoTest {
     }
 
     @Test
-    public void createUpdateDeleteTasks() {
-        List<Task> tasks = taskDao.getTasks(user, Period.parse("P1D"), Period.parse("P4D"));
+    public void createUpdateDeleteTasks() throws Exception {
+        DateTime startsOn = DateTime.now().minus(Period.parse("P1D"));
+        DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
         
-        // Doing this again right away should not increase the number of tasks... I'd like to verify that in the db as well.
-        List<Task> tasksAgain = taskDao.getTasks(user, Period.parse("P1D"), Period.parse("P4D"));
-        assertEquals(tasks.size(), tasksAgain.size());
+        List<Task> tasks = taskDao.getTasks(user, startsOn, endsOn);
+        int collectionSize = tasks.size();
         
+        // Should not increase the number of tasks
+        tasks = taskDao.getTasks(user, startsOn, endsOn);
+        assertEquals(collectionSize, tasks.size());
+        
+        // Delete most information in tasks and delete one by finishing it
+        cleanTasks(tasks);
         Task task = tasks.get(1);
         task.setFinishedOn(new DateTime().getMillis());
-        
+        assertEquals(TaskStatus.DELETED, task.getStatus());
         taskDao.updateTasks(user.getHealthCode(), tasks);
         
+        tasks = taskDao.getTasks(user, startsOn, endsOn);
+        assertEquals(collectionSize-1, tasks.size());
+        
         taskDao.deleteTasks(user.getHealthCode());
+        
+        tasks = taskDao.getTasksWithoutScheduling(user, startsOn, endsOn);
+        assertEquals(0, tasks.size());
+    }
+
+    private void cleanTasks(List<Task> tasks) {
+        for (Task task : tasks) {
+            task.setHealthCode(null);
+            task.setActivity(null);
+            task.setSchedulePlanGuid(null);
+        }
     }
     
 }

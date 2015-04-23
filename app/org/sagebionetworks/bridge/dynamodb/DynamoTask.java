@@ -44,7 +44,9 @@ public final class DynamoTask implements Task {
     
     @DynamoDBIgnore
     public TaskStatus getStatus() {
-        if (finishedOn != null) {
+        if (finishedOn != null && startedOn == null) {
+            return TaskStatus.DELETED;
+        } else if (finishedOn != null && startedOn != null) {
             return TaskStatus.FINISHED;
         } else if (startedOn != null) {
             return TaskStatus.STARTED;
