@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /**
@@ -36,6 +37,7 @@ public class DynamoUploadSchema implements UploadSchema {
     private String name;
     private int rev;
     private String schemaId;
+    private UploadSchemaType schemaType;
     private String studyId;
 
     /** {@inheritDoc} */
@@ -125,6 +127,17 @@ public class DynamoUploadSchema implements UploadSchema {
     /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getSchemaId */
     public void setSchemaId(String schemaId) {
         this.schemaId = schemaId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public UploadSchemaType getSchemaType() {
+        return schemaType;
+    }
+
+    /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getSchemaType */
+    public void setSchemaType(UploadSchemaType schemaType) {
+        this.schemaType = schemaType;
     }
 
     /**
