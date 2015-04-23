@@ -11,8 +11,9 @@ import java.util.List;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -22,8 +23,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DynamoUploadDao implements UploadDao {
-    // TODO: remove mapperOld once the migration is complete
-    private DynamoDBMapper mapperOld;
     private DynamoDBMapper mapper;
 
     /**
@@ -33,15 +32,6 @@ public class DynamoUploadDao implements UploadDao {
     @Resource(name = "uploadDdbMapper")
     public void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
-    }
-
-    /**
-     * This DynamoDB mapper writes to the old version of the Upload table. It co-exists with setDdbMapper until the
-     * migration is complete. This is normally configured by Spring.
-     */
-    @Resource(name = "uploadDdbMapperOld")
-    public void setDdbMapperOld(DynamoDBMapper mapperOld) {
-        this.mapperOld = mapperOld;
     }
 
     /** {@inheritDoc} */
@@ -62,23 +52,11 @@ public class DynamoUploadDao implements UploadDao {
     @Override
     public Upload getUpload(@Nonnull String uploadId) {
         // Fetch upload from DynamoUpload2
-        {
-            DynamoUpload2 key = new DynamoUpload2();
-            key.setUploadId(uploadId);
-            DynamoUpload2 upload = mapper.load(key);
-            if (upload != null) {
-                return upload;
-            }
-        }
-
-        // Fall back to DynamoUpload
-        {
-            DynamoUpload keyOld = new DynamoUpload();
-            keyOld.setUploadId(uploadId);
-            DynamoUpload uploadOld = mapperOld.load(keyOld);
-            if (uploadOld != null) {
-                return uploadOld;
-            }
+        DynamoUpload2 key = new DynamoUpload2();
+        key.setUploadId(uploadId);
+        DynamoUpload2 upload = mapper.load(key);
+        if (upload != null) {
+            return upload;
         }
 
         throw new NotFoundException(String.format("Upload ID %s not found", uploadId));
@@ -87,18 +65,12 @@ public class DynamoUploadDao implements UploadDao {
     /** {@inheritDoc} */
     @Override
     public void uploadComplete(@Nonnull Upload upload) {
-        if (upload instanceof DynamoUpload2) {
-            DynamoUpload2 upload2 = (DynamoUpload2) upload;
-            upload2.setStatus(UploadStatus.VALIDATION_IN_PROGRESS);
+        DynamoUpload2 upload2 = (DynamoUpload2) upload;
+        upload2.setStatus(UploadStatus.VALIDATION_IN_PROGRESS);
 
-            // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
-            upload2.setUploadDate(LocalDate.now(DateTimeZone.forID(("America/Los_Angeles"))));
-            mapper.save(upload2);
-        } else {
-            DynamoUpload uploadOld = (DynamoUpload) upload;
-            uploadOld.setComplete(true);
-            mapperOld.save(uploadOld);
-        }
+        // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
+        upload2.setUploadDate(LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE));
+        mapper.save(upload2);
     }
 
     /**
@@ -110,11 +82,6 @@ public class DynamoUploadDao implements UploadDao {
     @Override
     public void writeValidationStatus(@Nonnull Upload upload, @Nonnull UploadStatus status,
             @Nonnull List<String> validationMessageList) {
-        // only for DynamoUpload2
-        if (!(upload instanceof DynamoUpload2)) {
-            return;
-        }
-
         // set status and append messages
         DynamoUpload2 upload2 = (DynamoUpload2) upload;
         upload2.setStatus(status);
