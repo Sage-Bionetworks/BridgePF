@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.assertEquals;
-import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.dt;
+import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.RECURRING;
@@ -44,7 +44,7 @@ public class CronTaskSchedulerTest {
     @Test
     public void onceStartsOnCronScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
-        schedule.setStartsOn(dt("2015-03-31 00:00"));
+        schedule.setStartsOn(asDT("2015-03-31 00:00"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusWeeks(2));
         assertEquals(0, tasks.size());
@@ -52,7 +52,7 @@ public class CronTaskSchedulerTest {
     @Test
     public void onceEndsOnCronScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
-        schedule.setEndsOn(dt("2015-03-31 00:00"));
+        schedule.setEndsOn(asDT("2015-03-31 00:00"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusWeeks(2));
         assertDates(tasks, "2015-03-25 09:15");
@@ -60,8 +60,8 @@ public class CronTaskSchedulerTest {
     @Test
     public void onceStartEndsOnCronScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
-        schedule.setStartsOn(dt("2015-03-23 00:00"));
-        schedule.setEndsOn(dt("2015-03-31 00:00"));
+        schedule.setStartsOn(asDT("2015-03-23 00:00"));
+        schedule.setEndsOn(asDT("2015-03-31 00:00"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusWeeks(2));
         assertDates(tasks, "2015-03-25 09:15");
@@ -85,7 +85,7 @@ public class CronTaskSchedulerTest {
     @Test
     public void recurringEndsOnCronScheduleWorks() {
         Schedule schedule = createScheduleWith(RECURRING);
-        schedule.setEndsOn(dt("2015-03-31 00:00"));
+        schedule.setEndsOn(asDT("2015-03-31 00:00"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusWeeks(2));
         assertDates(tasks, "2015-03-25 09:15", "2015-03-28 9:15");

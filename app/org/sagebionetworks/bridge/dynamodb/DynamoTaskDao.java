@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,10 +21,12 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SchedulerFactory;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
+import org.sagebionetworks.bridge.models.schedules.TaskStatus;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -32,10 +35,11 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
+@Component
 public class DynamoTaskDao implements TaskDao {
     
     private static final Comparator<Task> TASK_COMPARATOR = new Comparator<Task>() {
@@ -46,6 +50,12 @@ public class DynamoTaskDao implements TaskDao {
                 result = task1.getActivity().getLabel().compareTo(task2.getActivity().getLabel());
             }
             return result;
+        }
+    };
+
+    private static Function<Task,String> TASK_TO_GUID = new Function<Task, String>() {
+        @Override public String apply(Task task) {
+            return task.getGuid();
         }
     };
     
@@ -78,26 +88,25 @@ public class DynamoTaskDao implements TaskDao {
      */
     @Override
     public List<Task> getTasks(User user, Period startsOn, Period endsOn) {
-        Set<String> naturalKeys = Sets.newHashSet();
-        
         DateTime from = DateTime.now().minus(startsOn);
         DateTime until = DateTime.now().plus(endsOn);
         
-        List<Task> tasksToSave = Lists.newArrayList();
-        List<Task> dbTasks = queryForTasks(user, from, until);
+        List<Task> dbTasks = queryForTasks(user.getHealthCode(), from, until);
         List<Task> scheduledTasks = scheduleTasksForPlans(user, from, until);
+        Set<String> guids = new HashSet<>(Lists.transform(dbTasks, TASK_TO_GUID));
         
         // Reconcile saved and scheduler tasks, saving the unsaved tasks
-        for (Task task : dbTasks) {
-            naturalKeys.add(task.getGuid());
-        }
+        List<Task> tasksToSave = Lists.newArrayList();
         for (Task task : scheduledTasks) {
-            if (naturalKeys.add(task.getGuid())) {
+            // If it adds to the GUIDs set, it is new, so save it, UNLESS it is already expired 
+            // and the scheduled start time is not in the bounds of the query... in other words, 
+            // the user never saw this task at all. These are returned from the scheduler, but 
+            // don't save them in DDB. 
+            if (guids.add(task.getGuid()) && !taskExpiredOutsideOfTimeWindow(task, from)) {
                 tasksToSave.add(task);
                 dbTasks.add(task);
             }
         }
-
         List<FailedBatch> failures = mapper.batchSave(tasksToSave);
         BridgeUtils.ifFailuresThrowException(failures);
         
@@ -107,8 +116,27 @@ public class DynamoTaskDao implements TaskDao {
     
     @Override
     public void updateTasks(String healthCode, List<Task> tasks) {
+        List<Task> tasksToSave = Lists.newArrayList();
+        for (Task task : tasks) {
+            if (task != null) {
+                Task dbTask = mapper.load(task);
+                if (dbTask != null && task.getStartedOn() != null || task.getFinishedOn() != null) {
+                    if (task.getStartedOn() != null) {
+                        dbTask.setStartedOn(task.getStartedOn());
+                    }
+                    if (task.getFinishedOn() != null) {
+                        dbTask.setFinishedOn(task.getFinishedOn());
+                    }
+                    tasksToSave.add(dbTask);
+                }
+            }
+        }
+        if (!tasksToSave.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchSave(tasksToSave);
+            BridgeUtils.ifFailuresThrowException(failures);
+        }
     }
-
+    
     @Override
     public void deleteTasks(String healthCode) {
         DynamoTask hashKey = new DynamoTask();
@@ -117,32 +145,38 @@ public class DynamoTaskDao implements TaskDao {
         DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>().withHashKeyValues(hashKey);
         
         PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
-        List<FailedBatch> failures = mapper.batchDelete(queryResults);
+        List<DynamoTask> tasksToDelete = Lists.newArrayListWithCapacity(queryResults.size());
+        tasksToDelete.addAll(queryResults);
+        
+        List<FailedBatch> failures = mapper.batchDelete(tasksToDelete);
         BridgeUtils.ifFailuresThrowException(failures);
     }
-
-    private List<Task> queryForTasks(User user, DateTime from, DateTime until) {
-        DynamoDBQueryExpression<DynamoTask> query = createGetQuery(user, from, until);
-        PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
-        
-        List<Task> results = Lists.newArrayList();
-        results.addAll(queryResults);
-        return results;
-    }
     
-    private DynamoDBQueryExpression<DynamoTask> createGetQuery(User user, DateTime from, DateTime until) {
+    private boolean taskExpiredOutsideOfTimeWindow(Task task, DateTime from) {
+        return (task.getStatus() == TaskStatus.EXPIRED && from.isAfter(task.getScheduledOn()));
+    }
+
+    private List<Task> queryForTasks(String healthCode, DateTime from, DateTime until) {
         DynamoTask hashKey = new DynamoTask();
-        hashKey.setHealthCode(user.getHealthCode());
+        hashKey.setHealthCode(healthCode);
         
         Condition rangeKeyCondition = new Condition()
             .withComparisonOperator(ComparisonOperator.BETWEEN.toString())
-            .withAttributeValueList(new AttributeValue().withS(from.toString()), 
-                                    new AttributeValue().withS(until.toString()));
+            .withAttributeValueList(new AttributeValue().withN(new Long(from.getMillis()).toString()), 
+                                    new AttributeValue().withN(new Long(until.getMillis()).toString()));
     
         DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>()
             .withHashKeyValues(hashKey)
+            .withConsistentRead(false) 
             .withRangeKeyCondition("scheduledOn", rangeKeyCondition);
-        return query;
+        
+        PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
+        
+        List<Task> results = Lists.newArrayList();
+        for (DynamoTask task : queryResults) {
+            results.add(task);
+        }
+        return results;
     }
 
     /**

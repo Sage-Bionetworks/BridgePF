@@ -42,8 +42,7 @@ public class DynamoSurveyTest {
         } catch(Throwable t) {
             fail(t.getMessage());
         }
-        
-        String string = new BridgeObjectMapper().writeValueAsString(survey);
+        String string = new BridgeObjectMapper().writeValueAsString(newSurvey);
         
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(string);
