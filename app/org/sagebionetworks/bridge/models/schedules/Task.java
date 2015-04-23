@@ -4,6 +4,9 @@ public interface Task {
     
     public TaskStatus getStatus();
     
+    public String getHealthCode();
+    public void setHealthCode(String healthCode);
+    
     public String getGuid();
     public void setGuid(String guid);
     

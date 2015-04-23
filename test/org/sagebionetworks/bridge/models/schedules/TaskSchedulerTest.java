@@ -3,7 +3,8 @@ package org.sagebionetworks.bridge.models.schedules;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.dt;
+import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT;
+import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asLong;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 
@@ -89,18 +90,18 @@ public class TaskSchedulerTest {
         schedule2.setEventId("task:task1");
 
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusMonths(2));
-        assertEquals(dt("2015-04-23 10:00"), tasks.get(0).getScheduledOn());
+        assertEquals(asLong("2015-04-23 10:00"), tasks.get(0).getScheduledOn());
 
         tasks = SchedulerFactory.getScheduler("", schedule2).getTasks(events, NOW.plusMonths(2));
         assertEquals(0, tasks.size());
         
-        DateTime TASK1_EVENT = dt("2015-04-25 15:32");
+        DateTime TASK1_EVENT = asDT("2015-04-25 15:32");
         
         // Now say that task was finished a couple of days after that:
         events.put("task:task1", TASK1_EVENT);
         
         tasks = SchedulerFactory.getScheduler("", schedule2).getTasks(events, NOW.plusMonths(2));
-        assertEquals(TASK1_EVENT, tasks.get(0).getScheduledOn());
+        assertEquals(new Long(TASK1_EVENT.getMillis()), tasks.get(0).getScheduledOn());
     }
     
     @Test
@@ -115,7 +116,7 @@ public class TaskSchedulerTest {
         // Event is recorded in PDT. And when we get the task back, it is scheduled in PDT. 
         events.put("foo", DateTime.parse("2015-03-25T07:00:00.000-07:00"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusMonths(1));
-        assertEquals(DateTime.parse("2015-03-27T07:00:00.000-07:00"), tasks.get(0).getScheduledOn());
+        assertEquals(new Long(DateTime.parse("2015-03-27T07:00:00.000-07:00").getMillis()), tasks.get(0).getScheduledOn());
         
         // Add an endsOn value in GMT, it shouldn't matter, it'll prevent event from firing
         schedule.setEndsOn("2015-03-25T13:00:00.000Z"); // one hour before the event
@@ -126,7 +127,7 @@ public class TaskSchedulerTest {
     @Test
     public void taskSequencesGeneratedAtDifferentTimesAreTheSame() throws Exception {
         DateTime until = NOW.plusDays(20);
-        events.put("anEvent", dt("2015-04-12 08:31"));
+        events.put("anEvent", asDT("2015-04-12 08:31"));
         
         Schedule schedule = new Schedule();
         schedule.addActivity(new Activity("A label", "task:foo"));
@@ -138,7 +139,7 @@ public class TaskSchedulerTest {
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
         assertDates(tasks, "2015-04-12 10:00", "2015-04-13 10:00", "2015-04-14 10:00", "2015-04-15 10:00");
         
-        events.put("now", dt("2015-04-13 08:00"));
+        events.put("now", asDT("2015-04-13 08:00"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
         assertDates(tasks, "2015-04-12 10:00", "2015-04-13 10:00", "2015-04-14 10:00", "2015-04-15 10:00");
     }
@@ -146,7 +147,7 @@ public class TaskSchedulerTest {
     @Test
     public void cronTasksGeneratedAtDifferentTimesAreTheSame() throws Exception {
         DateTime until = NOW.plusDays(20);
-        events.put("anEvent", dt("2015-04-12 08:31"));
+        events.put("anEvent", asDT("2015-04-12 08:31"));
         
         Schedule schedule = new Schedule();
         schedule.addActivity(new Activity("A label", "task:foo"));
@@ -157,7 +158,7 @@ public class TaskSchedulerTest {
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
         assertDates(tasks, "2015-04-12 10:00", "2015-04-13 10:00", "2015-04-14 10:00", "2015-04-15 10:00");
         
-        events.put("now", dt("2015-04-07 08:00"));
+        events.put("now", asDT("2015-04-07 08:00"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
         assertDates(tasks, "2015-04-12 10:00", "2015-04-13 10:00", "2015-04-14 10:00", "2015-04-15 10:00");
     }
@@ -189,11 +190,11 @@ public class TaskSchedulerTest {
         
         events.put("scheduledOn:task:foo", NOW.minusHours(3));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
-        assertEquals(NOW.minusHours(3), tasks.get(0).getScheduledOn());
+        assertEquals(new Long(NOW.minusHours(3).getMillis()), tasks.get(0).getScheduledOn());
 
         events.put("scheduledOn:task:foo", NOW.plusHours(8));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
-        assertEquals(NOW.plusHours(8), tasks.get(0).getScheduledOn());
+        assertEquals(new Long(NOW.plusHours(8).getMillis()), tasks.get(0).getScheduledOn());
     }
     
 }

@@ -1,10 +1,14 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +49,10 @@ import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.amazonaws.services.dynamodbv2.model.TableStatus;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.reflect.ClassPath;
 import com.google.common.reflect.ClassPath.ClassInfo;
 
@@ -112,15 +119,17 @@ public class DynamoInitializer {
             logger.warn("Table " + tableName + " does not exist.");
         }
     }
-
+    
     /**
      * Converts the annotated DynamoDBTable types to a list of TableDescription.
      */
     static List<TableDescription> getAnnotatedTables(final List<Class<?>> classes) {
-        final List<TableDescription> tables = new ArrayList<TableDescription>();
+        // Initializer tried to create SurveyElement twice, possibly because the table class has two sub-classes?
+        // Resorting here to using a map to prevent duplicates.
+        final Map<String,TableDescription> tables = new HashMap<>();
         for (final Class<?> clazz : classes) {
             final List<KeySchemaElement> keySchema = new ArrayList<>();
-            final List<AttributeDefinition> attributes = new ArrayList<>();
+            final Map<String,AttributeDefinition> attributes = new HashMap<>();
             final List<GlobalSecondaryIndexDescription> globalIndices = new ArrayList<>();
             final List<LocalSecondaryIndexDescription> localIndices = new ArrayList<>();
             Method[] methods = clazz.getMethods();
@@ -137,7 +146,7 @@ public class DynamoInitializer {
                     keySchema.add(0, hashKey);
                     ScalarAttributeType attrType = getAttributeType(method);
                     AttributeDefinition attribute = new AttributeDefinition(attrName, attrType);
-                    attributes.add(attribute);
+                    attributes.put(attrName, attribute);
                 } else if (method.isAnnotationPresent(DynamoDBRangeKey.class)) {
                     // Range key
                     DynamoDBRangeKey rangeKeyAttr = method.getAnnotation(DynamoDBRangeKey.class);
@@ -149,12 +158,63 @@ public class DynamoInitializer {
                     keySchema.add(rangeKey);
                     ScalarAttributeType attrType = getAttributeType(method);
                     AttributeDefinition attribute = new AttributeDefinition(attrName, attrType);
-                    attributes.add(attribute);
+                    attributes.put(attrName, attribute);
                 }
             }
             if (hashKey == null) {
                 throw new RuntimeException("Missing hash key for DynamoDBTable " + clazz);
             }
+            // This supports local indices, and global indices with a hash only or a hash and range. For
+            // global secondary indices with hash/ranges, we currently set the projection to all attributes.
+            // There is no DDB SDK annotation for the projection, we'd have to create one to make this 
+            // configurable.
+            for (Method method : methods) {
+                String attrName = null;
+                if (method.isAnnotationPresent(DynamoDBIndexHashKey.class)) {
+                    // There is no localSecondaryIndexName attribute, so this is by definition a global index
+                    // with a hash and range key. Find the range annotation to complete this description
+                    DynamoDBIndexHashKey indexKey = method.getAnnotation(DynamoDBIndexHashKey.class);
+                    attrName = indexKey.attributeName();
+                    if (isBlank(attrName)) {
+                        attrName = getAttributeName(method);
+                    }
+                    String indexName = indexKey.globalSecondaryIndexName();
+                    String rangeAttrName = findIndexRangeAttrName(clazz, true, indexName);
+                    GlobalSecondaryIndexDescription descr = createGlobalIndexDescr(indexName, attrName, rangeAttrName);
+                    addProjectionIfAnnotated(method, indexName, descr);
+                    globalIndices.add(descr);
+                } else if (method.isAnnotationPresent(DynamoDBIndexRangeKey.class)) {
+                    DynamoDBIndexRangeKey indexKey = method.getAnnotation(DynamoDBIndexRangeKey.class);
+                    attrName = indexKey.attributeName();
+                    if (isBlank(attrName)) {
+                        attrName = getAttributeName(method);
+                    }
+                    // Local index, range only, there are none of these in our code base (except for tests)
+                    String indexName = indexKey.localSecondaryIndexName();
+                    if (isNotBlank(indexName)) {
+                        String hashAttrName = findIndexHashAttrName(clazz, indexName);
+                        LocalSecondaryIndexDescription descr = createLocalIndexDescr(indexName, hashAttrName, attrName);
+                        localIndices.add(descr);
+                    }
+                    // If this is a range key but has no index, it hasn't been added yet, and needs to be added now.
+                    // So here we search for the accompanying hash annotation and if it exists, we skip adding this.
+                    indexName = indexKey.globalSecondaryIndexName();
+                    if (isNotBlank(indexName)) {
+                        String hashAttrName = findIndexHashAttrName(clazz, indexName);
+                        if (hashAttrName == null) {
+                            GlobalSecondaryIndexDescription descr = createGlobalIndexDescr(indexName, null, attrName);
+                            addProjectionIfAnnotated(method, indexName, descr);
+                            globalIndices.add(descr);
+                        }
+                    }
+                }
+                if (attrName != null) {
+                    ScalarAttributeType attrType = getAttributeType(method);
+                    AttributeDefinition attribute = new AttributeDefinition(attrName, attrType);
+                    attributes.put(attrName, attribute);
+                }
+            }
+            /*
             // TODO: The secondary indices code only supports local indices and hash-only global indices.
             // hash-and-range global indices would require rewriting this code to consider indices across multiple
             // methods.
@@ -164,18 +224,21 @@ public class DynamoInitializer {
                 boolean isGlobalIndexKey = false;
                 String attrName = null;
                 String indexName = null;
+                String rangeAttrName = null;
                 if (method.isAnnotationPresent(DynamoDBIndexRangeKey.class)) {
                     DynamoDBIndexRangeKey indexKey = method.getAnnotation(DynamoDBIndexRangeKey.class);
                     attrName = indexKey.attributeName();
                     indexName = indexKey.localSecondaryIndexName();
-                    isLocalIndexKey = true;
+                    // This is a local range key (the name for the local index isn't blank), so process it
+                    isLocalIndexKey = (StringUtils.isNotBlank(indexName));
                 } else if (method.isAnnotationPresent(DynamoDBIndexHashKey.class)) {
                     DynamoDBIndexHashKey indexKey = method.getAnnotation(DynamoDBIndexHashKey.class);
                     attrName = indexKey.attributeName();
                     indexName = indexKey.globalSecondaryIndexName();
+                    // Does this secondary global index hash key have a range key? If so, find it.
+                    rangeAttrName = findGlobalSecondaryIndexRangeAttrName(clazz, indexName);
                     isGlobalIndexKey = true;
                 }
-
                 if (isLocalIndexKey || isGlobalIndexKey) {
                     if (attrName == null || attrName.isEmpty()) {
                         attrName = getAttributeName(method);
@@ -191,10 +254,14 @@ public class DynamoInitializer {
                                 .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
                         localIndices.add(localIndex);
                     } else {
+                        List<KeySchemaElement> keys = Lists.newArrayList(new KeySchemaElement(attrName, KeyType.HASH));
+                        if (rangeAttrName != null) {
+                            keys.add(new KeySchemaElement(rangeAttrName, KeyType.RANGE));
+                        }
                         // isGlobalIndexKey is always true in this branch
                         GlobalSecondaryIndexDescription globalIndex = new GlobalSecondaryIndexDescription()
                                 .withIndexName(indexName)
-                                .withKeySchema(new KeySchemaElement(attrName, KeyType.HASH))
+                                .withKeySchema(keys)
                                 .withProjection(new Projection().withProjectionType(ProjectionType.KEYS_ONLY))
                                 .withProvisionedThroughput(new ProvisionedThroughputDescription()
                                         .withReadCapacityUnits(DEFAULT_READ_CAPACITY)
@@ -203,6 +270,7 @@ public class DynamoInitializer {
                     }
                 }
             }
+            */
             // Throughput
             long writeCapacity = DEFAULT_WRITE_CAPACITY;
             long readCapacity = DEFAULT_READ_CAPACITY;
@@ -216,17 +284,113 @@ public class DynamoInitializer {
             final TableDescription table = (new TableDescription())
                     .withTableName(tableName)
                     .withKeySchema(keySchema)
-                    .withAttributeDefinitions(attributes)
+                    .withAttributeDefinitions(attributes.values())
                     .withGlobalSecondaryIndexes(globalIndices)
                     .withLocalSecondaryIndexes(localIndices)
                     .withProvisionedThroughput((new ProvisionedThroughputDescription())
-                            .withReadCapacityUnits(readCapacity)
-                            .withWriteCapacityUnits(writeCapacity));
-            tables.add(table);
+                    .withReadCapacityUnits(readCapacity)
+                    .withWriteCapacityUnits(writeCapacity));
+            tables.put(tableName, table);
         }
-        return tables;
+        return new ArrayList<>(tables.values());
     }
 
+    /**
+     * If the method is also annotated with a projection annotation, use the projection it
+     * indicates. For hash/range global indices, this annotation needs to be on the same method
+     * as @DynamoDBIndexHashKey. This is a Bridge-specific annotation, it's not in the AWS SDK. 
+     * @param method
+     * @param indexName
+     * @param descr
+     */
+    private static void addProjectionIfAnnotated(Method method, String indexName, GlobalSecondaryIndexDescription descr) {
+        DynamoDBProjection projection = method.getAnnotation(DynamoDBProjection.class);
+        if (projection != null && indexName.equals(projection.globalSecondaryIndexName())) {
+            descr.setProjection(new Projection().withProjectionType(projection.projectionType()));
+        }
+    }
+
+    private static GlobalSecondaryIndexDescription createGlobalIndexDescr(String indexName, String hashAttrName,
+                    String rangeAttrName) {
+        
+        Preconditions.checkArgument(isNotBlank(indexName));
+        
+        List<KeySchemaElement> keys = Lists.newArrayList();
+        if (hashAttrName != null) {
+            keys.add(new KeySchemaElement(hashAttrName, KeyType.HASH));
+        }
+        if (rangeAttrName != null) {
+            keys.add(new KeySchemaElement(rangeAttrName, KeyType.RANGE));
+        }
+        GlobalSecondaryIndexDescription globalIndex = new GlobalSecondaryIndexDescription()
+            .withIndexName(indexName)
+            .withKeySchema(keys)
+            .withProjection(new Projection().withProjectionType(ProjectionType.KEYS_ONLY))
+            .withProvisionedThroughput(new ProvisionedThroughputDescription()
+            .withReadCapacityUnits(DEFAULT_READ_CAPACITY)
+            .withWriteCapacityUnits(DEFAULT_WRITE_CAPACITY));
+        return globalIndex;
+    }
+
+    private static LocalSecondaryIndexDescription createLocalIndexDescr(String indexName, String hashAttrName,
+                    String rangeAttrName) {
+        // I don't see that there's ever a hash set for a local secondary index, but that's possible, 
+        // this code can be modified accordingly.
+        LocalSecondaryIndexDescription localIndex = new LocalSecondaryIndexDescription()
+            .withIndexName(indexName)
+            .withKeySchema(new KeySchemaElement(rangeAttrName, KeyType.RANGE))
+            .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
+        return localIndex;
+    }
+
+    static String findAttrName(Class<?> clazz, Function<Method,String> func) {
+        Method[] methods = clazz.getMethods();
+        for (Method method : methods) {
+            String attrName = func.apply(method);
+            if (attrName != null) {
+                return attrName;
+            }
+        }
+        return null;
+    }
+    
+    static String findIndexHashAttrName(final Class<?> clazz, final String indexName) {
+        if (isBlank(indexName)) {
+            return null;
+        }
+        return findAttrName(clazz, new Function<Method,String>() {
+            public String apply(Method method) {
+                if (method.isAnnotationPresent(DynamoDBIndexHashKey.class)) {
+                    DynamoDBIndexHashKey indexKey = method.getAnnotation(DynamoDBIndexHashKey.class);
+                    String thisIndexName = indexKey.globalSecondaryIndexName();
+                    if (indexName.equals(thisIndexName)) {
+                        return indexKey.attributeName();
+                    }
+                }
+                return null;
+            }
+        });
+    }
+    
+    static String findIndexRangeAttrName(final Class<?> clazz, final boolean isGlobal, final String indexName) {
+        if (isBlank(indexName)) {
+            return null;
+        }
+        return findAttrName(clazz, new Function<Method,String>() {
+            public String apply(Method method) {
+                if (method.isAnnotationPresent(DynamoDBIndexRangeKey.class)) {
+                    DynamoDBIndexRangeKey indexKey = method.getAnnotation(DynamoDBIndexRangeKey.class);
+                    String thisIndexName = (isGlobal) ? 
+                        indexKey.globalSecondaryIndexName() : indexKey.localSecondaryIndexName();
+                    if (indexName.equals(thisIndexName)) {
+                        return indexKey.attributeName();
+                    }
+                }
+                return null;
+            }
+        });
+    }
+    
     /**
      * Uses reflection to get all the annotated DynamoDBTable.
      */
@@ -288,7 +452,7 @@ public class DynamoInitializer {
         throw new RuntimeException("Unsupported return type " + clazz + " of method " + method.getName());
     }
 
-    static void initTables(final List<TableDescription> tables) {
+    static void initTables(final Collection<TableDescription> tables) {
         Map<String, TableDescription> existingTables = getExistingTables();
         Environment env = CONFIG.getEnvironment();
         if (Environment.UAT.equals(env) || Environment.PROD.equals(env)) {
@@ -370,9 +534,9 @@ public class DynamoInitializer {
         List<LocalSecondaryIndexDescription> localIndexDescs = table.getLocalSecondaryIndexes();
         for (LocalSecondaryIndexDescription localIndexDesc : localIndexDescs) {
             LocalSecondaryIndex localIndex = new LocalSecondaryIndex()
-                    .withIndexName(localIndexDesc.getIndexName())
-                    .withKeySchema(localIndexDesc.getKeySchema())
-                    .withProjection(localIndexDesc.getProjection());
+                .withIndexName(localIndexDesc.getIndexName())
+                .withKeySchema(localIndexDesc.getKeySchema())
+                .withProjection(localIndexDesc.getProjection());
             localIndices.add(localIndex);
         }
         if (localIndices.size() > 0) {

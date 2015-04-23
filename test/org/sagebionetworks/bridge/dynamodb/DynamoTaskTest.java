@@ -23,8 +23,8 @@ public class DynamoTaskTest {
     public void canRoundtripSerialize() throws Exception {
         DynamoTask task = new DynamoTask();
         task.setActivity(new Activity("Label", "task:foo"));
-        task.setScheduledOn(DateTime.parse("2015-05-04T02:10:00.000-07:00"));
-        task.setExpiresOn(DateTime.parse("2015-05-12T02:10:00.000-07:00"));
+        task.setScheduledOn(DateTime.parse("2015-05-04T02:10:00.000-07:00").getMillis());
+        task.setExpiresOn(DateTime.parse("2015-05-12T02:10:00.000-07:00").getMillis());
         task.setGuid("AAA-BBB-CCC");
         task.setSchedulePlanGuid("DDD-EEE-FFF");
         task.setHealthCode("FFF-GGG-HHH");

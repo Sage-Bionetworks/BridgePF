@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // This class is based on an older version of HealthDataRecord, but is really just a dummy table used to test
+// This class is based on an older version of HealthDataRecord, but is really just a dummy table used to test
 // DynamoInitializer.
 @DynamoThroughput(writeCapacity = 50, readCapacity = 30)
 @DynamoDBTable(tableName = "HealthDataRecord")

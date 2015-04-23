@@ -10,11 +10,6 @@ import org.joda.time.LocalTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 
-import com.google.common.base.Charsets;
-import com.google.common.hash.HashCode;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
-
 public abstract class TaskScheduler {
 
     protected final String schedulePlanGuid;
@@ -74,8 +69,11 @@ public abstract class TaskScheduler {
                 DynamoTask task = new DynamoTask();
                 task.setSchedulePlanGuid(schedulePlanGuid);
                 task.setActivity(activity);
-                task.setScheduledOn(scheduledTime);
-                task.setExpiresOn(getExpiresOn(scheduledTime, schedule));
+                task.setScheduledOn(scheduledTime.getMillis());
+                DateTime expiresOn = getExpiresOn(scheduledTime, schedule);
+                if (expiresOn != null) {
+                    task.setExpiresOn(getExpiresOn(scheduledTime, schedule).getMillis());    
+                }
                 task.setGuid(BridgeUtils.generateTaskGuid(task));
                 tasks.add(task);
             }

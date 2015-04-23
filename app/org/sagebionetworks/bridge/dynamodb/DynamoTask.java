@@ -14,10 +14,13 @@ import org.sagebionetworks.bridge.models.schedules.TaskStatus;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -51,103 +54,97 @@ public final class DynamoTask implements Task {
         }
         return TaskStatus.AVAILABLE;
     }
-    
     @JsonIgnore
     @DynamoDBHashKey
+    @DynamoDBIndexHashKey(attributeName = "healthCode", globalSecondaryIndexName = "healthCode-scheduledOn-index")
+    @DynamoDBProjection(projectionType=ProjectionType.ALL, globalSecondaryIndexName = "healthCode-scheduledOn-index")
+    @Override
     public String getHealthCode() {
         return healthCode;
     }
+    @Override
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
     }
-    @DynamoDBAttribute
+    @DynamoDBRangeKey
+    @Override
     public String getGuid() {
         return guid;
     }
+    @Override
     public void setGuid(String guid) {
         this.guid = guid;
     }
-    @DynamoDBAttribute    
+    @DynamoDBAttribute
+    @Override
     public String getSchedulePlanGuid() {
         return schedulePlanGuid;
     }
+    @Override
     public void setSchedulePlanGuid(String schedulePlanGuid) {
         this.schedulePlanGuid = schedulePlanGuid;
     }
     @DynamoDBIgnore
+    @Override
     public Activity getActivity() {
         return activity;
     }
+    @Override
     public void setActivity(Activity activity) {
         this.activity = activity;
     }
-    @DynamoDBRangeKey
     @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @DynamoDBIndexRangeKey(attributeName = "scheduledOn", globalSecondaryIndexName = "healthCode-scheduledOn-index")
+    @Override
     public Long getScheduledOn() {
         return scheduledOn;
     }
     @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @Override
     public void setScheduledOn(Long scheduledOn) {
         this.scheduledOn = scheduledOn;
     }
-    @DynamoDBIgnore
-    public void setScheduledOn(DateTime scheduledOn) {
-        if (scheduledOn != null) {
-            this.scheduledOn = scheduledOn.getMillis();    
-        }
-    }
     @DynamoDBAttribute
     @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @Override
     public Long getExpiresOn() {
         return expiresOn;
     }
     @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @Override
     public void setExpiresOn(Long expiresOn) {
         this.expiresOn = expiresOn;
     }
-    @DynamoDBIgnore
-    public void setExpiresOn(DateTime expiresOn) {
-        if (expiresOn != null) {
-            this.expiresOn = expiresOn.getMillis();    
-        }
-    }
     @DynamoDBAttribute
     @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @Override
     public Long getStartedOn() {
         return startedOn;
     }
     @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @Override
     public void setStartedOn(Long startedOn) {
         this.startedOn = startedOn;
     }
-    @DynamoDBIgnore
-    public void setStartedOn(DateTime startedOn) {
-        if (startedOn != null) {
-            this.startedOn = startedOn.getMillis();
-        }
-    }
     @DynamoDBAttribute
     @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @Override
     public Long getFinishedOn() {
         return finishedOn;
     }
     @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @Override
     public void setFinishedOn(Long finishedOn) {
         this.finishedOn = finishedOn;
     }
-    @DynamoDBIgnore
-    public void setFinishedOn(DateTime finishedOn) {
-        if (finishedOn != null) {
-            this.finishedOn = finishedOn.getMillis();
-        }
-    }
+    @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
     @JsonIgnore
-    public JsonNode getData() {
+    public ObjectNode getData() {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.putPOJO(ACTIVITY_PROPERTY, activity);
         return node;
     }
-    public void setData(JsonNode data) {
+    public void setData(ObjectNode data) {
         this.activity = JsonUtils.asEntity(data, ACTIVITY_PROPERTY, Activity.class);
     }
     
