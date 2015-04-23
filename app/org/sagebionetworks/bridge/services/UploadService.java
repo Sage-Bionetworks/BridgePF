@@ -137,7 +137,7 @@ public class UploadService {
 
         // We don't want to kick off upload validation on an upload that already has upload validation.
         if (!upload.canBeValidated()) {
-            logger.warn(String.format("uploadComplete called for upload %s, which is already complete", uploadId));
+            logger.info(String.format("uploadComplete called for upload %s, which is already complete", uploadId));
             return;
         }
 
