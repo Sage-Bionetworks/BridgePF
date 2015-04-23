@@ -44,8 +44,7 @@ import com.google.common.collect.Lists;
 public class DynamoTaskDaoMockTest {
 
     /*
-     * This is the event against which scheduling occurs. According to the schedules, calculated by hand, 
-     * we expect the following schedules to be returned:
+     * This is the event against which scheduling occurs.
      */
     private static final DateTime ENROLLMENT = DateTime.parse("2015-04-10T10:40:34.000-07:00");
     

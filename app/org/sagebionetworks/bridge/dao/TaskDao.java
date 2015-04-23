@@ -39,7 +39,8 @@ public interface TaskDao {
     
     /**
      * For internal deletion of a user, physical delete all the tasks associated with that user. This method should only
-     * be called as a user is being deleted. To do a logical delete, change the deleted flag on a task and update the task.
+     * be called as a user is being deleted. To do a logical delete, add a "finishedOn" timestamp to a task and update 
+     * it. 
      * 
      * @param healthCode
      */
