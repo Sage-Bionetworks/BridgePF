@@ -15,16 +15,15 @@ public interface TaskDao {
      * 
      * @param studyIdentifier
      * @param user
-     * @param startsOn
      * @param endsOn
      * @return
      */
-    public List<Task> getTasks(User user, DateTime startsOn, DateTime endsOn);
+    public List<Task> getTasks(User user, DateTime endsOn);
     
     /**
      * Update the startedOn, finishedOn timestamps or the deleted flag of the tasks in the 
      * collection. Tasks in this collection should also have a GUID, all other fields are 
-     * ignored. 
+     * ignored.
      * 
      * @param healthCode
      * @param tasks
@@ -36,7 +35,7 @@ public interface TaskDao {
      * run the scheduler to add future tasks. Used to test after deletion. 
      * @return
      */
-    public List<Task> getTasksWithoutScheduling(User user, DateTime startsOn, DateTime endsOn);
+    public List<Task> getTasksWithoutScheduling(User user);
     
     /**
      * For internal deletion of a user, physical delete all the tasks associated with that user. This method should only

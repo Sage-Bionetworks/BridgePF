@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.sagebionetworks.bridge.models.schedules.TaskStatus.HIDE_FROM_USER;
 
-import java.util.ArrayList;
-
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -25,7 +23,6 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SchedulerFactory;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
-import org.sagebionetworks.bridge.models.schedules.TaskStatus;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
@@ -36,12 +33,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
-import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -87,9 +79,9 @@ public class DynamoTaskDao implements TaskDao {
     }
 
     @Override
-    public List<Task> getTasks(User user, DateTime startsOn, DateTime endsOn) {
-        List<Task> dbTasks = queryForTasks(user.getHealthCode(), startsOn, endsOn);
-        List<Task> scheduledTasks = scheduleTasksForPlans(user, startsOn, endsOn);
+    public List<Task> getTasks(User user, DateTime endsOn) {
+        List<Task> dbTasks = queryForTasks(user.getHealthCode()/*, startsOn, endsOn*/);
+        List<Task> scheduledTasks = scheduleTasksForPlans(user, /*startsOn, */endsOn);
         Set<String> guids = new HashSet<>(Lists.transform(dbTasks, TASK_TO_GUID));
         
         // Reconcile saved and scheduler tasks, saving the unsaved tasks
@@ -116,8 +108,8 @@ public class DynamoTaskDao implements TaskDao {
     }
     
     @Override
-    public List<Task> getTasksWithoutScheduling(User user, DateTime startsOn, DateTime endsOn) {
-        List<Task> dbTasks = queryForTasks(user.getHealthCode(), startsOn, endsOn);
+    public List<Task> getTasksWithoutScheduling(User user) {
+        List<Task> dbTasks = queryForTasks(user.getHealthCode());
         for (Iterator<Task> i = dbTasks.iterator(); i.hasNext();) {
             if (HIDE_FROM_USER.contains(i.next())) {
                 i.remove();
@@ -131,7 +123,6 @@ public class DynamoTaskDao implements TaskDao {
     public void updateTasks(String healthCode, List<Task> tasks) {
         List<Task> tasksToSave = Lists.newArrayList();
         for (Task task : tasks) {
-            // NOTE: it has to have health code and guid. This should be enforced in some kind of validation
             task.setHealthCode(healthCode);
             Task dbTask = mapper.load(task);
             if (dbTask != null && (task.getStartedOn() != null || task.getFinishedOn() != null)) {
@@ -145,7 +136,6 @@ public class DynamoTaskDao implements TaskDao {
             }
         }
         if (!tasksToSave.isEmpty()) {
-            System.out.println("Updating: " + tasksToSave);
             List<FailedBatch> failures = mapper.batchSave(tasksToSave);
             BridgeUtils.ifFailuresThrowException(failures);
         }
@@ -166,19 +156,14 @@ public class DynamoTaskDao implements TaskDao {
         BridgeUtils.ifFailuresThrowException(failures);
     }
 
-    private List<Task> queryForTasks(String healthCode, DateTime startsOn, DateTime endsOn) {
+    private List<Task> queryForTasks(String healthCode) {
         DynamoTask hashKey = new DynamoTask();
         hashKey.setHealthCode(healthCode);
         
-        Condition rangeKeyCondition = new Condition()
-            .withComparisonOperator(ComparisonOperator.BETWEEN.toString())
-            .withAttributeValueList(new AttributeValue().withN(new Long(startsOn.getMillis()).toString()), 
-                                    new AttributeValue().withN(new Long(endsOn.getMillis()).toString()));
-    
+        // Why would you limit this? In terms of this query, get all the tasks.
         DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>()
             .withHashKeyValues(hashKey)
-            .withConsistentRead(false) 
-            .withRangeKeyCondition("scheduledOn", rangeKeyCondition);
+            .withConsistentRead(false); 
         
         PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
         
@@ -212,24 +197,21 @@ public class DynamoTaskDao implements TaskDao {
      * @param endsOn
      * @return
      */
-    private List<Task> scheduleTasksForPlans(User user, DateTime startsOn, DateTime endsOn) {
+    private List<Task> scheduleTasksForPlans(User user, DateTime endsOn) {
         Map<String, DateTime> events = createEventsMap(user);
         StudyIdentifier studyId = new StudyIdentifierImpl(user.getStudyKey());
         List<Task> tasks = Lists.newArrayList();
-        
+
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId);
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(studyId, plan, user);
             TaskScheduler scheduler = SchedulerFactory.getScheduler(plan.getGuid(), schedule);
-            
+
             for (Task task : scheduler.getTasks(events, endsOn)) {
-                if (startsOn.isEqual(task.getScheduledOn()) || startsOn.isBefore(task.getScheduledOn())) {
-                    ((DynamoTask)task).setHealthCode(user.getHealthCode());
-                    tasks.add(task);
-                }
+                task.setHealthCode(user.getHealthCode());
+                tasks.add(task);
             }
         }
         return tasks;
     }
-    
 }
