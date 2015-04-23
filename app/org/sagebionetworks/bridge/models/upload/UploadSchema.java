@@ -39,4 +39,7 @@ public interface UploadSchema extends BridgeEntity {
      * revisions.
      */
     String getSchemaId();
+
+    /** Schema type, for example survey vs data. */
+    UploadSchemaType getSchemaType();
 }
