@@ -3,11 +3,11 @@ package org.sagebionetworks.bridge;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Collection;
-
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -109,5 +109,9 @@ public class BridgeUtils {
         if (field != null) {
             throw new EntityAlreadyExistsException(entity, message);
         }
+    }
+    
+    public static String toString(Long datetime) {
+        return (datetime == null) ? null : new DateTime(datetime).toString();
     }
 }

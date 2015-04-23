@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
@@ -177,11 +178,9 @@ public final class DynamoTask implements Task {
     @Override
     public String toString() {
         return String.format("DynamoTask [status=%s, healthCode=%s, guid=%s, schedulePlanGuid=%s, scheduledOn=%s, expiresOn=%s, startedOn=%s, finishedOn=%s, activity=%s]",
-            getStatus().name(), healthCode, guid, schedulePlanGuid, dt(scheduledOn), dt(expiresOn), dt(startedOn), dt(finishedOn), activity);
-    }
-    
-    private String dt(Long dt) {
-        return (dt == null) ? null : new DateTime(dt).toString();
+                        getStatus().name(), healthCode, guid, schedulePlanGuid, BridgeUtils.toString(scheduledOn),
+                        BridgeUtils.toString(expiresOn), BridgeUtils.toString(startedOn),
+                        BridgeUtils.toString(finishedOn), activity);
     }
 
 }
