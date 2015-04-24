@@ -139,6 +139,8 @@ public class DynamoTaskDao implements TaskDao {
         DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>().withHashKeyValues(hashKey);
         
         PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
+        
+        // Confirmed that you have to transfer these tasks to a list or the batchDelete does not work. 
         List<DynamoTask> tasksToDelete = Lists.newArrayListWithCapacity(queryResults.size());
         tasksToDelete.addAll(queryResults);
         
@@ -153,7 +155,7 @@ public class DynamoTaskDao implements TaskDao {
      */
     private void finalizeTasks(List<Task> tasks) {
         for (Iterator<Task> i = tasks.iterator(); i.hasNext();) {
-            if (HIDE_FROM_USER.contains(i.next())) {
+            if (HIDE_FROM_USER.contains(i.next().getStatus())) {
                 i.remove();
             }
         }

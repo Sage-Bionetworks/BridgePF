@@ -52,7 +52,7 @@ public class DynamoTaskDaoMockTest {
     
     private static final String HEALTH_CODE = "AAA";
 
-    private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("mock-study");;
+    private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("mock-study");
     
     private User user;
     
@@ -171,15 +171,14 @@ public class DynamoTaskDaoMockTest {
         mockQuery(endsOn);
         
         List<Task> tasks = taskDao.getTasks(user, endsOn);
+        
         // These also show that stuff is getting sorted by label
-        assertTask("2015-04-11T13:00:00.000-07:00", "task:task1", tasks.get(0));
-        assertTask("2015-04-11T13:00:00.000-07:00", "task:task2", tasks.get(1));
-        assertTask("2015-04-11T13:00:00.000-07:00", "task:task3", tasks.get(2));
-        assertTask("2015-04-12T13:00:00.000-07:00", "task:task1", tasks.get(3));
-        assertTask("2015-04-13T13:00:00.000-07:00", "task:task1", tasks.get(4));
-        assertTask("2015-04-13T13:00:00.000-07:00", "task:task2", tasks.get(5));
-        assertTask("2015-04-14T13:00:00.000-07:00", "task:task1", tasks.get(6));
-        assertTask("2015-04-14T13:00:00.000-07:00", "task:task3", tasks.get(7));
+        /* Expired tasks are not returned, so this starts on the 12th */
+        assertTask("2015-04-12T13:00:00.000-07:00", "task:task1", tasks.get(0));
+        assertTask("2015-04-13T13:00:00.000-07:00", "task:task1", tasks.get(1));
+        assertTask("2015-04-13T13:00:00.000-07:00", "task:task2", tasks.get(2));
+        assertTask("2015-04-14T13:00:00.000-07:00", "task:task1", tasks.get(3));
+        assertTask("2015-04-14T13:00:00.000-07:00", "task:task3", tasks.get(4));
         
         verify(mapper).query(any(Class.class), any(DynamoDBQueryExpression.class));
         verify(mapper).batchSave(any(List.class));
@@ -236,11 +235,15 @@ public class DynamoTaskDaoMockTest {
         List<Task> tasks = taskDao.getTasks(user, endsOn);
         
         assertEquals(TaskStatus.STARTED, tasks.get(0).getStatus());
-        assertEquals(TaskStatus.EXPIRED, tasks.get(1).getStatus());
-        assertEquals(TaskStatus.FINISHED, tasks.get(2).getStatus());
+        assertEquals(TaskStatus.AVAILABLE, tasks.get(1).getStatus());
+        assertEquals(TaskStatus.SCHEDULED, tasks.get(2).getStatus());
         assertTask("2015-04-11T13:00:00.000-07:00", "task:task1", tasks.get(0));
-        assertTask("2015-04-11T13:00:00.000-07:00", "task:task2", tasks.get(1));
-        assertTask("2015-04-11T13:00:00.000-07:00", "task:task3", tasks.get(2));
+        assertTask("2015-04-12T13:00:00.000-07:00", "task:task1", tasks.get(1));
+        assertTask("2015-04-13T13:00:00.000-07:00", "task:task1", tasks.get(2));
+        assertTask("2015-04-13T13:00:00.000-07:00", "task:task2", tasks.get(3));
+        assertTask("2015-04-14T13:00:00.000-07:00", "task:task1", tasks.get(4));
+        assertTask("2015-04-14T13:00:00.000-07:00", "task:task3", tasks.get(5));
+        
         
         verify(mapper).query(any(Class.class), any(DynamoDBQueryExpression.class));
         verify(mapper).batchSave(any(List.class));
@@ -312,6 +315,7 @@ public class DynamoTaskDaoMockTest {
         task4.setHealthCode(HEALTH_CODE);
         task4.setActivity(new Activity("Activity 3", "task:task3"));
         task4.setScheduledOn(DateTime.parse("2015-04-11T13:00:00.000-07:00").getMillis());
+        task4.setStartedOn(DateTime.parse("2015-04-13T18:05:23.000-07:00").getMillis());
         task4.setFinishedOn(DateTime.parse("2015-04-13T18:20:23.000-07:00").getMillis());
         task4.setGuid(BridgeUtils.generateTaskGuid(task4));
         

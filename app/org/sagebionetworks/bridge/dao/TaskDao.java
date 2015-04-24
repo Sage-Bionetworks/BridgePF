@@ -21,9 +21,8 @@ public interface TaskDao {
     public List<Task> getTasks(User user, DateTime endsOn);
     
     /**
-     * Update the startedOn, finishedOn timestamps or the deleted flag of the tasks in the 
-     * collection. Tasks in this collection should also have a GUID, all other fields are 
-     * ignored.
+     * Update the startedOn or finishedOn timestamps of the tasks in the collection. Tasks in this 
+     * collection should also have a GUID. All other fields are ignored.
      * 
      * @param healthCode
      * @param tasks
@@ -38,9 +37,9 @@ public interface TaskDao {
     public List<Task> getTasksWithoutScheduling(User user);
     
     /**
-     * For internal deletion of a user, physical delete all the tasks associated with that user. This method should only
-     * be called as a user is being deleted. To do a logical delete, add a "finishedOn" timestamp to a task and update 
-     * it. 
+     * Physically delete all the task records for this user. This method should only be called as a 
+     * user is being deleted. To do a logical delete, add a "finishedOn" timestamp to a task and 
+     * update it. 
      * 
      * @param healthCode
      */
