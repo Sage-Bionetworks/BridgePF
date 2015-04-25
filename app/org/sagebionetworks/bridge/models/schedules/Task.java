@@ -27,5 +27,10 @@ public interface Task {
     
     public Long getFinishedOn();
     public void setFinishedOn(Long finishedOn);
-
+    
+    public String getRunKey();
+    public void setRunKey(String runKey);
+    
+    public Long getHidesOn();
+    public void setHidesOn(Long hidesOn);
 }

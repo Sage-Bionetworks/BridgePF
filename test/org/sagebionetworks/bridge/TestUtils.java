@@ -5,7 +5,9 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.commons.lang3.RandomStringUtils;
+
 import play.mvc.Http;
 
 public class TestUtils {

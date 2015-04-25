@@ -32,5 +32,6 @@ public enum TaskStatus {
      */
     DELETED;
     
-    public static final EnumSet<TaskStatus> HIDE_FROM_USER = EnumSet.of(FINISHED,EXPIRED,DELETED);
+    //public static final EnumSet<TaskStatus> HIDE_FROM_USER = EnumSet.of(FINISHED,EXPIRED,DELETED);
+    public static final EnumSet<TaskStatus> HIDE_FROM_USER = EnumSet.of(FINISHED,DELETED);
 }

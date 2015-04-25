@@ -189,8 +189,9 @@ public class DynamoInitializer {
                     // Local index, range only, there are none of these in our code base (except for tests)
                     String indexName = indexKey.localSecondaryIndexName();
                     if (isNotBlank(indexName)) {
-                        String hashAttrName = findIndexHashAttrName(clazz, indexName);
-                        LocalSecondaryIndexDescription descr = createLocalIndexDescr(indexName, hashAttrName, attrName);
+                        // For a local index, the hash key is always the same hash key, it's only the range key tha varies.
+                        // String hashAttrName = findIndexHashAttrName(clazz, indexName);
+                        LocalSecondaryIndexDescription descr = createLocalIndexDescr(indexName, hashKey.getAttributeName(), attrName);
                         localIndices.add(descr);
                     }
                     // If this is a range key but has no index, it hasn't been added yet, and needs to be added now.
@@ -211,7 +212,6 @@ public class DynamoInitializer {
                     attributes.put(attrName, attribute);
                 }
             }
-
             // Throughput
             long writeCapacity = DEFAULT_WRITE_CAPACITY;
             long readCapacity = DEFAULT_READ_CAPACITY;
@@ -274,9 +274,16 @@ public class DynamoInitializer {
 
     private static LocalSecondaryIndexDescription createLocalIndexDescr(String indexName, String hashAttrName,
                     String rangeAttrName) {
+        List<KeySchemaElement> keys = Lists.newArrayList();
+        if (hashAttrName != null) {
+            keys.add(new KeySchemaElement(hashAttrName, KeyType.HASH));
+        }
+        if (rangeAttrName != null) {
+            keys.add(new KeySchemaElement(rangeAttrName, KeyType.RANGE));
+        }
         LocalSecondaryIndexDescription localIndex = new LocalSecondaryIndexDescription()
             .withIndexName(indexName)
-            .withKeySchema(new KeySchemaElement(rangeAttrName, KeyType.RANGE))
+            .withKeySchema(keys)
             .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
         return localIndex;
     }

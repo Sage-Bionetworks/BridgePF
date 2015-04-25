@@ -220,7 +220,7 @@ public class DynamoTaskDaoMockTest {
         task1.setScheduledOn(DateTime.parse("2015-04-11T13:00:00.000-07:00").getMillis());
         task1.setExpiresOn(DateTime.parse("2015-04-12T23:00:00.000-07:00").getMillis());
         task1.setStartedOn(DateTime.parse("2015-04-12T18:30:23.334-07:00").getMillis());
-        task1.setGuid(BridgeUtils.generateTaskGuid(task1));
+        task1.setGuid(BridgeUtils.generateGuid());
         
         DynamoTask task2 = new DynamoTask();
         task2.setSchedulePlanGuid("DDD");
@@ -228,7 +228,7 @@ public class DynamoTaskDaoMockTest {
         task2.setScheduledOn(DateTime.parse("2015-04-11T13:00:00.000-07:00").getMillis());
         task2.setExpiresOn(DateTime.parse("2015-04-12T23:00:00.000-07:00").getMillis());
         task2.setFinishedOn(DateTime.parse("2015-04-12T18:34:01.113-07:00").getMillis());
-        task2.setGuid(BridgeUtils.generateTaskGuid(task2));
+        task2.setGuid(BridgeUtils.generateGuid());
         
         mockQuery(endsOn, task1, task2);
         
@@ -259,7 +259,7 @@ public class DynamoTaskDaoMockTest {
         task1.setScheduledOn(DateTime.parse("2015-04-11T13:00:00.000-07:00").getMillis());
         task1.setExpiresOn(DateTime.parse("2015-04-12T23:00:00.000-07:00").getMillis());
         task1.setStartedOn(DateTime.parse("2015-04-12T18:30:23.334-07:00").getMillis());
-        task1.setGuid(BridgeUtils.generateTaskGuid(task1));
+        task1.setGuid(BridgeUtils.generateGuid());
         
         DynamoTask task2 = new DynamoTask();
         task2.setSchedulePlanGuid("DDD");
@@ -267,7 +267,7 @@ public class DynamoTaskDaoMockTest {
         task2.setScheduledOn(DateTime.parse("2015-04-11T13:00:00.000-07:00").getMillis());
         task2.setExpiresOn(DateTime.parse("2015-04-12T23:00:00.000-07:00").getMillis());
         task2.setFinishedOn(DateTime.parse("2015-04-12T18:34:01.113-07:00").getMillis());
-        task2.setGuid(BridgeUtils.generateTaskGuid(task2));
+        task2.setGuid(BridgeUtils.generateGuid());
         
         mockQuery(NOW.plusDays(2), task1, task2);
         
@@ -285,12 +285,15 @@ public class DynamoTaskDaoMockTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void canUpdateTasks() {
+        String guid1 = BridgeUtils.generateGuid();
+        String guid2 = BridgeUtils.generateGuid();
+        
         DynamoTask task1 = new DynamoTask();
         task1.setHealthCode(HEALTH_CODE);
         task1.setSchedulePlanGuid("BBB");
         task1.setActivity(new Activity("Activity 1", "task:task1"));
         task1.setScheduledOn(DateTime.parse("2015-04-11T13:00:00.000-07:00").getMillis());
-        task1.setGuid(BridgeUtils.generateTaskGuid(task1));
+        task1.setGuid(guid1);
         DynamoTask task2 = new DynamoTask();
         
         task2.setSchedulePlanGuid("DDD");
@@ -298,7 +301,7 @@ public class DynamoTaskDaoMockTest {
         task2.setActivity(new Activity("Activity 3", "task:task3"));
         task2.setScheduledOn(DateTime.parse("2015-04-11T13:00:00.000-07:00").getMillis());
         task2.setStartedOn(DateTime.parse("2015-04-12T18:30:23.334-07:00").getMillis());
-        task2.setGuid(BridgeUtils.generateTaskGuid(task2));
+        task2.setGuid(guid2);
         
         mockQuery(NOW.plusDays(2), task1, task2);
         
@@ -308,7 +311,7 @@ public class DynamoTaskDaoMockTest {
         task3.setActivity(new Activity("Activity 1", "task:task1"));
         task3.setScheduledOn(DateTime.parse("2015-04-11T13:00:00.000-07:00").getMillis());
         task3.setStartedOn(DateTime.parse("2015-04-13T14:23:12.000-07:00").getMillis());
-        task3.setGuid(BridgeUtils.generateTaskGuid(task3));
+        task3.setGuid(guid1);
 
         Task task4 = new DynamoTask();
         task4.setSchedulePlanGuid("DDD");
@@ -317,7 +320,7 @@ public class DynamoTaskDaoMockTest {
         task4.setScheduledOn(DateTime.parse("2015-04-11T13:00:00.000-07:00").getMillis());
         task4.setStartedOn(DateTime.parse("2015-04-13T18:05:23.000-07:00").getMillis());
         task4.setFinishedOn(DateTime.parse("2015-04-13T18:20:23.000-07:00").getMillis());
-        task4.setGuid(BridgeUtils.generateTaskGuid(task4));
+        task4.setGuid(guid2);
         
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         List<Task> tasks = Lists.newArrayList(task3, task4);

@@ -12,12 +12,14 @@ import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 
 public abstract class TaskScheduler {
 
+    protected final DateTime now; 
     protected final String schedulePlanGuid;
     protected final Schedule schedule;
     
     TaskScheduler(String schedulePlanGuid, Schedule schedule) {
         this.schedulePlanGuid = schedulePlanGuid;
         this.schedule = schedule;
+        this.now = DateTime.now();
     }
     
     public abstract List<Task> getTasks(Map<String, DateTime> events, DateTime until);
@@ -53,18 +55,25 @@ public abstract class TaskScheduler {
     }
     
     private void addTaskForEachActivityAtTime(List<Task> tasks, DateTime scheduledTime) {
+        // If this time point is outside of the schedule's active window, skip it.
         if (isInWindow(schedule, scheduledTime)) {
-            for (Activity activity : schedule.getActivities()) {
-                DynamoTask task = new DynamoTask();
-                task.setSchedulePlanGuid(schedulePlanGuid);
-                task.setActivity(activity);
-                task.setScheduledOn(scheduledTime.getMillis());
-                DateTime expiresOn = getExpiresOn(scheduledTime, schedule);
-                if (expiresOn != null) {
-                    task.setExpiresOn(getExpiresOn(scheduledTime, schedule).getMillis());    
+            // As long at the tasks are not already expired, add them.
+            DateTime expiresOn = getExpiresOn(scheduledTime, schedule);
+            //if (expiresOn == null || expiresOn.isAfter(scheduledTime)) {
+            if (expiresOn == null || expiresOn.isAfter(now)) {
+                for (Activity activity : schedule.getActivities()) {
+                    DynamoTask task = new DynamoTask();
+                    task.setSchedulePlanGuid(schedulePlanGuid);
+                    task.setActivity(activity);
+                    task.setScheduledOn(scheduledTime.getMillis());
+                    task.setRunKey(BridgeUtils.generateTaskKey(task));
+                    task.setGuid(BridgeUtils.generateGuid());
+                    if (expiresOn != null) {
+                        task.setExpiresOn(expiresOn.getMillis());
+                        task.setHidesOn(expiresOn.getMillis());
+                    }
+                    tasks.add(task);
                 }
-                task.setGuid(BridgeUtils.generateTaskGuid(task));
-                tasks.add(task);
             }
         }
     }
