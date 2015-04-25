@@ -1,15 +1,11 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.sagebionetworks.bridge.models.schedules.TaskStatus.HIDE_FROM_USER;
+import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -34,10 +30,11 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.google.common.base.Function;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 @Component
 public class DynamoTaskDao implements TaskDao {
@@ -50,12 +47,6 @@ public class DynamoTaskDao implements TaskDao {
                 result = task1.getActivity().getLabel().compareTo(task2.getActivity().getLabel());
             }
             return result;
-        }
-    };
-
-    private static final Function<Task,String> TASK_TO_GUID = new Function<Task, String>() {
-        @Override public String apply(Task task) {
-            return task.getGuid();
         }
     };
     
@@ -83,27 +74,26 @@ public class DynamoTaskDao implements TaskDao {
     /** {@inheritDoc} */
     @Override
     public List<Task> getTasks(User user, DateTime endsOn) {
-        // Somewhat odd approach here is to reduce creating and iterating through collections.
-        List<Task> tasks = Lists.newArrayList();
+        List<Task> scheduledTasks = scheduleTasksForPlans(user, endsOn);
+        
         List<Task> tasksToSave = Lists.newArrayList();
-        Set<String> guids = Sets.newHashSet();
-        
-        queryForTasks(user.getHealthCode(), tasks, guids);
-        scheduleTasksForPlans(user, endsOn, tasks, tasksToSave, guids);
-        
-        List<FailedBatch> failures = mapper.batchSave(tasksToSave);
-        BridgeUtils.ifFailuresThrowException(failures);
-        
-        finalizeTasks(tasks);
-        return tasks;
+        for (Task task : scheduledTasks) {
+            if (taskRunDoesntExist(user.getHealthCode(), task)) {
+                tasksToSave.add(task);
+            }
+        }
+        if (!tasksToSave.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchSave(tasksToSave);
+            BridgeUtils.ifFailuresThrowException(failures);
+        }
+        return getTasksWithoutScheduling(user);
     }
     
     /** {@inheritDoc} */
     @Override
     public List<Task> getTasksWithoutScheduling(User user) {
-        List<Task> tasks = Lists.newArrayList();
-        queryForTasks(user.getHealthCode(), tasks, null);
-        finalizeTasks(tasks);
+        List<Task> tasks = queryForTasks(user.getHealthCode());
+        Collections.sort(tasks, TASK_COMPARATOR);
         return tasks;
     }
     
@@ -112,16 +102,23 @@ public class DynamoTaskDao implements TaskDao {
     public void updateTasks(String healthCode, List<Task> tasks) {
         List<Task> tasksToSave = Lists.newArrayList();
         for (Task task : tasks) {
-            task.setHealthCode(healthCode);
-            Task dbTask = mapper.load(task);
-            if (dbTask != null && (task.getStartedOn() != null || task.getFinishedOn() != null)) {
-                if (task.getStartedOn() != null) {
-                    dbTask.setStartedOn(task.getStartedOn());
+            if (task != null && (task.getStartedOn() != null || task.getFinishedOn() != null)) {
+                DynamoTask hashKey = new DynamoTask();
+                hashKey.setHealthCode(healthCode);
+                hashKey.setGuid(task.getGuid());
+
+                Task dbTask = mapper.load(hashKey);
+                if (dbTask != null) {
+                    if (task.getStartedOn() != null) {
+                        dbTask.setStartedOn(task.getStartedOn());
+                        dbTask.setHidesOn(new Long(Long.MAX_VALUE));
+                    }
+                    if (task.getFinishedOn() != null) {
+                        dbTask.setFinishedOn(task.getFinishedOn());
+                        dbTask.setHidesOn(task.getFinishedOn());
+                    }
+                    tasksToSave.add(dbTask);
                 }
-                if (task.getFinishedOn() != null) {
-                    dbTask.setFinishedOn(task.getFinishedOn());
-                }
-                tasksToSave.add(dbTask);
             }
         }
         if (!tasksToSave.isEmpty()) {
@@ -148,37 +145,47 @@ public class DynamoTaskDao implements TaskDao {
         BridgeUtils.ifFailuresThrowException(failures);
     }
 
-    /**
-     * Filter out expired, deleted or finished tasks. We cannot do this in the query,
-     * or the scheduler will just add the tasks back again. We need to see they exist.
-     * @param tasks
-     */
-    private void finalizeTasks(List<Task> tasks) {
-        for (Iterator<Task> i = tasks.iterator(); i.hasNext();) {
-            if (HIDE_FROM_USER.contains(i.next().getStatus())) {
-                i.remove();
-            }
-        }
-        Collections.sort(tasks, TASK_COMPARATOR);
-    }
-
-    private void queryForTasks(String healthCode, List<Task> tasks, Set<String> guids) {
+    private List<Task> queryForTasks(String healthCode) {
         DynamoTask hashKey = new DynamoTask();
         hashKey.setHealthCode(healthCode);
-        
-        // Why would you limit this? In terms of this query, get all the tasks.
-        DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>()
-            .withHashKeyValues(hashKey)
-            .withConsistentRead(false); 
-        
-        PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
 
+        // Exclude everything hidden before *now*
+        AttributeValue attribute = new AttributeValue().withN(Long.toString(DateTime.now().getMillis()));
+        Condition condition = new Condition()
+            .withComparisonOperator(ComparisonOperator.GT)
+            .withAttributeValueList(attribute);
+
+        DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>()
+            .withQueryFilterEntry("hidesOn", condition)
+            .withHashKeyValues(hashKey);
+
+        PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
+        List<Task> tasks = Lists.newArrayList();
+        tasks.addAll(queryResults);
+        /*
         for (DynamoTask task : queryResults) {
             tasks.add(task);
-            if (guids != null) {
-                guids.add(task.getGuid());    
-            }
         }
+        */
+        return tasks;
+    }
+    
+    /**
+     * TODO: Once you've found the run key once, you don't need to query again. All the 
+     * tasks will have been created.
+     * @param healthCode
+     * @param task
+     * @return
+     */
+    private boolean taskRunDoesntExist(String healthCode, Task task) {
+        DynamoTask hashKey = new DynamoTask();
+        hashKey.setHealthCode(healthCode);
+        hashKey.setRunKey(BridgeUtils.generateTaskKey(task));
+        
+        DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>()
+            .withHashKeyValues(hashKey);
+
+        return (mapper.count(DynamoTask.class, query) == 0);
     }
 
     /**
@@ -200,12 +207,10 @@ public class DynamoTaskDao implements TaskDao {
      * 
      * @param user
      * @param endsOn
-     * @param scheduledTasks
-     * @param tasks
-     * @param guids
-     * @param tasksToSave
+     * @return
      */
-    private void scheduleTasksForPlans(User user, DateTime endsOn, List<Task> tasks, List<Task> tasksToSave, Set<String> guids) {
+    private List<Task> scheduleTasksForPlans(User user, DateTime endsOn) {
+        List<Task> tasks = Lists.newArrayList();
         Map<String, DateTime> events = createEventsMap(user);
         StudyIdentifier studyId = new StudyIdentifierImpl(user.getStudyKey());
 
@@ -216,11 +221,28 @@ public class DynamoTaskDao implements TaskDao {
 
             for (Task task : scheduler.getTasks(events, endsOn)) {
                 task.setHealthCode(user.getHealthCode());
-                if (guids.add(task.getGuid())) {
-                    tasksToSave.add(task);
-                    tasks.add(task);
-                }
+                tasks.add(task);
             }
         }
+        return tasks;
     }
+    
+    
+    /**
+     * Generate a key that is based on the natural key of the task (schedule plan GUID, scheduled start time of the
+     * task, and the activity reference). The same key will be generated each time for the same task, and the key 
+     * should never collide with another key within the scope of an individual user's tasks.
+     * 
+     * @param task
+     * @return
+     */
+    public String generateTaskKey(Task task) {
+        checkNotNull(task.getSchedulePlanGuid());
+        checkNotNull(task.getScheduledOn());
+        checkNotNull(task.getActivity());
+        checkNotNull(task.getActivity().getRef());
+        
+        return String.format("%s%s%s", task.getSchedulePlanGuid(), task.getScheduledOn(), task.getActivity().getRef());
+    }
+
 }

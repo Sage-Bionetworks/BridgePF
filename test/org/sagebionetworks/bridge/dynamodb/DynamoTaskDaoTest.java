@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +30,8 @@ import org.sagebionetworks.bridge.models.schedules.TaskStatus;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -94,25 +97,25 @@ public class DynamoTaskDaoTest {
         
         List<Task> tasks = taskDao.getTasks(user, endsOn);
         int collectionSize = tasks.size();
+        assertFalse("tasks were created", tasks.isEmpty());
         
         // Should not increase the number of tasks
         tasks = taskDao.getTasks(user, endsOn);
-        assertEquals(collectionSize, tasks.size());
-        
+        assertEquals("tasks did not grow afer repeated getTask()", collectionSize, tasks.size());
+
         // Delete most information in tasks and delete one by finishing it
         cleanTasks(tasks);
         Task task = tasks.get(1);
         task.setFinishedOn(new DateTime().getMillis());
-        assertEquals(TaskStatus.DELETED, task.getStatus());
-        taskDao.updateTasks(user.getHealthCode(), tasks);
+        assertEquals("task deleted", TaskStatus.DELETED, task.getStatus());
+        taskDao.updateTasks(user.getHealthCode(), Lists.newArrayList(task));
         
         tasks = taskDao.getTasks(user, endsOn);
-        assertEquals(collectionSize-1, tasks.size());
-        
+        assertEquals("deleted task not returned from server", collectionSize-1, tasks.size());
         taskDao.deleteTasks(user.getHealthCode());
         
         tasks = taskDao.getTasksWithoutScheduling(user);
-        assertEquals(0, tasks.size());
+        assertEquals("all tasks deleted", 0, tasks.size());
     }
 
     private void cleanTasks(List<Task> tasks) {
@@ -120,6 +123,8 @@ public class DynamoTaskDaoTest {
             task.setHealthCode(null);
             task.setActivity(null);
             task.setSchedulePlanGuid(null);
+            task.setStartedOn(null);
+            task.setFinishedOn(null);
         }
     }
     

@@ -15,12 +15,10 @@ import org.sagebionetworks.bridge.models.schedules.TaskStatus;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
-import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -41,6 +39,12 @@ public final class DynamoTask implements Task {
     private Long startedOn;
     private Long finishedOn;
     private Activity activity;
+    private String runKey;
+    private Long hidesOn;
+    
+    public DynamoTask() {
+        setHidesOn(new Long(Long.MAX_VALUE));
+    }
     
     @DynamoDBIgnore
     public TaskStatus getStatus() {
@@ -58,9 +62,24 @@ public final class DynamoTask implements Task {
         return TaskStatus.AVAILABLE;
     }
     @JsonIgnore
+    @DynamoDBAttribute
+    public Long getHidesOn() {
+        return this.hidesOn;
+    }
+    public void setHidesOn(Long hidesOn) {
+        this.hidesOn = hidesOn;
+    }
+    @JsonIgnore
+    @DynamoDBAttribute
+    @DynamoDBIndexRangeKey(localSecondaryIndexName = "hashKey-runKey-index")
+    public String getRunKey() {
+        return this.runKey;
+    }
+    public void setRunKey(String runKey) {
+        this.runKey = runKey;
+    }
+    @JsonIgnore
     @DynamoDBHashKey
-    @DynamoDBIndexHashKey(attributeName = "healthCode", globalSecondaryIndexName = "healthCode-scheduledOn-index")
-    @DynamoDBProjection(projectionType=ProjectionType.ALL, globalSecondaryIndexName = "healthCode-scheduledOn-index")
     @Override
     public String getHealthCode() {
         return healthCode;
@@ -97,7 +116,6 @@ public final class DynamoTask implements Task {
         this.activity = activity;
     }
     @JsonSerialize(using = DateTimeJsonSerializer.class)
-    @DynamoDBIndexRangeKey(attributeName = "scheduledOn", globalSecondaryIndexName = "healthCode-scheduledOn-index")
     @Override
     public Long getScheduledOn() {
         return scheduledOn;
