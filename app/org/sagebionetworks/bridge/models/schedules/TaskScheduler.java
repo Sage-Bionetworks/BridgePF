@@ -66,7 +66,6 @@ public abstract class TaskScheduler {
                     task.setSchedulePlanGuid(schedulePlanGuid);
                     task.setActivity(activity);
                     task.setScheduledOn(scheduledTime.getMillis());
-                    task.setRunKey(BridgeUtils.generateTaskKey(task));
                     task.setGuid(BridgeUtils.generateGuid());
                     if (expiresOn != null) {
                         task.setExpiresOn(expiresOn.getMillis());

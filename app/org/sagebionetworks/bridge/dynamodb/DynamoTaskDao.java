@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -37,6 +38,8 @@ import com.google.common.collect.Maps;
 @Component
 public class DynamoTaskDao implements TaskDao {
     
+    private static int TIME_TO_CACHE_TASK_RUNS_IN_SECONDS = 60*60*24*4; // 4 days
+    
     private static final Comparator<Task> TASK_COMPARATOR = new Comparator<Task>() {
         @Override 
         public int compare(Task task1, Task task2) {
@@ -50,6 +53,8 @@ public class DynamoTaskDao implements TaskDao {
     
     private DynamoDBMapper mapper;
     
+    private JedisStringOps stringOps;
+    
     private SchedulePlanService schedulePlanService;
     
     private UserConsentDao userConsentDao;
@@ -57,6 +62,11 @@ public class DynamoTaskDao implements TaskDao {
     @Resource(name = "taskDdbMapper")
     public void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
+    }
+    
+    @Autowired
+    public void setStringOps(JedisStringOps stringOps) {
+        this.stringOps = stringOps;
     }
     
     @Autowired
@@ -76,13 +86,16 @@ public class DynamoTaskDao implements TaskDao {
         
         List<Task> tasksToSave = Lists.newArrayList();
         for (Task task : scheduledTasks) {
-            if (taskRunDoesntExist(user.getHealthCode(), task)) {
+            if (taskHashNotBeenSaved(user.getHealthCode(), task)) {
                 tasksToSave.add(task);
             }
         }
         if (!tasksToSave.isEmpty()) {
             List<FailedBatch> failures = mapper.batchSave(tasksToSave);
             BridgeUtils.ifFailuresThrowException(failures);
+            for (Task task : tasksToSave) {
+                stringOps.setex(task.getRunKey(), TIME_TO_CACHE_TASK_RUNS_IN_SECONDS, "set");    
+            }
         }
         return getTasksWithoutScheduling(user);
     }
@@ -160,25 +173,28 @@ public class DynamoTaskDao implements TaskDao {
         PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
         List<Task> tasks = Lists.newArrayList();
         tasks.addAll(queryResults);
-        /*
-        for (DynamoTask task : queryResults) {
-            tasks.add(task);
-        }
-        */
         return tasks;
     }
     
     /**
-     * TODO: Once you've found the run key once, you don't need to query again. All the 
-     * tasks will have been created.
+     * Determine if this task was part of a scheduling run that has already been saved to the database 
+     * (all the activities from one schedule plan will have the same taskRun key).
+     * 
+     * @param existingTaskRunKeys
      * @param healthCode
      * @param task
      * @return
      */
-    private boolean taskRunDoesntExist(String healthCode, Task task) {
+    private boolean taskHashNotBeenSaved(String healthCode, Task task) {
+        task.setHealthCode(healthCode);
+        String taskRunKey = BridgeUtils.generateTaskKey(task);
+
+        if (stringOps.get(taskRunKey) != null) {
+            return false;
+        }
         DynamoTask hashKey = new DynamoTask();
         hashKey.setHealthCode(healthCode);
-        hashKey.setRunKey(BridgeUtils.generateTaskKey(task));
+        hashKey.setRunKey(taskRunKey);
         
         DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>()
             .withHashKeyValues(hashKey);
@@ -187,8 +203,6 @@ public class DynamoTaskDao implements TaskDao {
     }
 
     /**
-     * TODO: Right now this has to come from the consent record... we want a separate even table for this.
-     * @param studyIdentifier
      * @param user
      * @return
      */
@@ -219,6 +233,7 @@ public class DynamoTaskDao implements TaskDao {
 
             for (Task task : scheduler.getTasks(events, endsOn)) {
                 task.setHealthCode(user.getHealthCode());
+                task.setRunKey(BridgeUtils.generateTaskKey(task));
                 tasks.add(task);
             }
         }

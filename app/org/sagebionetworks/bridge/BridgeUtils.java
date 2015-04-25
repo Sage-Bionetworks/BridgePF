@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.Collection;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -26,7 +29,10 @@ public class BridgeUtils {
     }
     
     public static String generateTaskKey(Task task) {
-        return String.format("%s:%s", task.getSchedulePlanGuid(), Long.toString(task.getScheduledOn()));
+        checkNotNull(task.getHealthCode());
+        checkNotNull(task.getSchedulePlanGuid());
+        checkNotNull(task.getScheduledOn());
+        return String.format("%s:%s:%s", task.getHealthCode(), task.getSchedulePlanGuid(), Long.toString(task.getScheduledOn()));
     }
     
     public static String getTypeName(Class<?> clazz) {

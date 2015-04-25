@@ -10,10 +10,8 @@ public interface TaskDao {
     
     /**
      * Get a user's tasks up to a target timestamp. This returns all tasks that are not expired, deleted 
-     * or finished (technically defined as either having an expiration timestamp in the past, or having 
-     * a finishedOn timestamp set).
+     * or finished, as well as future tasks that are scheduled but should not be started yet.
      * 
-     * @param studyIdentifier
      * @param user
      * @param endsOn
      * @return
@@ -32,6 +30,8 @@ public interface TaskDao {
     /**
      * Not exposed in the API, this method does exactly the same things as getTasks(), but does not 
      * run the scheduler to add future tasks. Used to test after deletion. 
+     * 
+     * @param user
      * @return
      */
     public List<Task> getTasksWithoutScheduling(User user);
