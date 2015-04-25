@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb.test;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoDBProjection;
+import org.sagebionetworks.bridge.dynamodb.DynamoThroughput;
 import org.sagebionetworks.bridge.dynamodb.JsonNodeMarshaller;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -19,6 +20,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @DynamoDBTable(tableName = "Task")
+@DynamoThroughput(writeCapacity=18L, readCapacity=20L)
 public class TaskTest {
 
     private static final String ACTIVITY_PROPERTY = "activity";
