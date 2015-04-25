@@ -74,10 +74,9 @@ public class DynamoInitializer {
     }
 
     /**
-     * Creates DynamoDB tables, if they do not exist yet, from the annotated types.
-     * in the package "org.sagebionetworks.bridge.dynamodb". Throws an error
-     * if the table exists but the schema (hash key, range key, and secondary indices)
-     * does not match.
+     * Creates DynamoDB tables, if they do not exist yet, from the annotated types. in the package
+     * "org.sagebionetworks.bridge.dynamodb". Throws an error if the table exists but the schema (hash key, range key,
+     * and secondary indices) does not match.
      */
     public static void init(String dynamoPackage) {
         beforeInit();
@@ -115,23 +114,32 @@ public class DynamoInitializer {
             DYNAMO.deleteTable(tableName);
             waitForDelete(tableDscr);
             logger.info("Table " + tableName + " deleted.");
-        } catch(ResourceNotFoundException e) {
+        } catch (ResourceNotFoundException e) {
             logger.warn("Table " + tableName + " does not exist.");
         }
     }
-    
+
     /**
      * Converts the annotated DynamoDBTable types to a list of TableDescription.
      */
     static List<TableDescription> getAnnotatedTables(final List<Class<?>> classes) {
         // Initializer tried to create SurveyElement twice, possibly because the table class has two sub-classes?
         // Resorting here to using a map to prevent duplicates.
-        final Map<String,TableDescription> tables = new HashMap<>();
+        final Map<String, TableDescription> tables = new HashMap<>();
         for (final Class<?> clazz : classes) {
             final List<KeySchemaElement> keySchema = new ArrayList<>();
-            final Map<String,AttributeDefinition> attributes = new HashMap<>();
+            final Map<String, AttributeDefinition> attributes = new HashMap<>();
             final List<GlobalSecondaryIndexDescription> globalIndices = new ArrayList<>();
             final List<LocalSecondaryIndexDescription> localIndices = new ArrayList<>();
+            // Throughput
+            long writeCapacity = DEFAULT_WRITE_CAPACITY;
+            long readCapacity = DEFAULT_READ_CAPACITY;
+            if (clazz.isAnnotationPresent(DynamoThroughput.class)) {
+                DynamoThroughput throughput = clazz.getAnnotation(DynamoThroughput.class);
+                writeCapacity = throughput.writeCapacity();
+                readCapacity = throughput.readCapacity();
+            }
+
             Method[] methods = clazz.getMethods();
             KeySchemaElement hashKey = null;
             for (Method method : methods) {
@@ -164,7 +172,7 @@ public class DynamoInitializer {
             if (hashKey == null) {
                 throw new RuntimeException("Missing hash key for DynamoDBTable " + clazz);
             }
-            // This supports local indices, and global indices with a hash only or a hash and range. 
+            // This supports local indices, and global indices with a hash only or a hash and range.
             for (Method method : methods) {
                 String attrName = null;
                 if (method.isAnnotationPresent(DynamoDBIndexHashKey.class)) {
@@ -177,7 +185,8 @@ public class DynamoInitializer {
                     }
                     String indexName = indexKey.globalSecondaryIndexName();
                     String rangeAttrName = findIndexRangeAttrName(clazz, true, indexName);
-                    GlobalSecondaryIndexDescription descr = createGlobalIndexDescr(indexName, attrName, rangeAttrName);
+                    GlobalSecondaryIndexDescription descr = createGlobalIndexDescr(indexName, attrName, rangeAttrName,
+                                    writeCapacity, readCapacity);
                     addProjectionIfAnnotated(method, indexName, descr);
                     globalIndices.add(descr);
                 } else if (method.isAnnotationPresent(DynamoDBIndexRangeKey.class)) {
@@ -189,9 +198,11 @@ public class DynamoInitializer {
                     // Local index, range only, there are none of these in our code base (except for tests)
                     String indexName = indexKey.localSecondaryIndexName();
                     if (isNotBlank(indexName)) {
-                        // For a local index, the hash key is always the same hash key, it's only the range key tha varies.
+                        // For a local index, the hash key is always the same hash key, it's only the range key tha
+                        // varies.
                         // String hashAttrName = findIndexHashAttrName(clazz, indexName);
-                        LocalSecondaryIndexDescription descr = createLocalIndexDescr(indexName, hashKey.getAttributeName(), attrName);
+                        LocalSecondaryIndexDescription descr = createLocalIndexDescr(indexName,
+                                        hashKey.getAttributeName(), attrName);
                         localIndices.add(descr);
                     }
                     // If this is a range key but has no index, it hasn't been added yet, and needs to be added now.
@@ -200,7 +211,8 @@ public class DynamoInitializer {
                     if (isNotBlank(indexName)) {
                         String hashAttrName = findIndexHashAttrName(clazz, indexName);
                         if (hashAttrName == null) {
-                            GlobalSecondaryIndexDescription descr = createGlobalIndexDescr(indexName, null, attrName);
+                            GlobalSecondaryIndexDescription descr = createGlobalIndexDescr(indexName, null, attrName,
+                                            writeCapacity, readCapacity);
                             addProjectionIfAnnotated(method, indexName, descr);
                             globalIndices.add(descr);
                         }
@@ -212,34 +224,28 @@ public class DynamoInitializer {
                     attributes.put(attrName, attribute);
                 }
             }
-            // Throughput
-            long writeCapacity = DEFAULT_WRITE_CAPACITY;
-            long readCapacity = DEFAULT_READ_CAPACITY;
-            if (clazz.isAnnotationPresent(DynamoThroughput.class)) {
-                DynamoThroughput throughput = clazz.getAnnotation(DynamoThroughput.class);
-                writeCapacity = throughput.writeCapacity();
-                readCapacity = throughput.readCapacity();
-            }
             final String tableName = TableNameOverrideFactory.getTableName(clazz);
             // Create the table description
             final TableDescription table = (new TableDescription())
-                    .withTableName(tableName)
-                    .withKeySchema(keySchema)
-                    .withAttributeDefinitions(attributes.values())
-                    .withGlobalSecondaryIndexes(globalIndices)
-                    .withLocalSecondaryIndexes(localIndices)
-                    .withProvisionedThroughput((new ProvisionedThroughputDescription())
-                    .withReadCapacityUnits(readCapacity)
-                    .withWriteCapacityUnits(writeCapacity));
+                .withTableName(tableName)
+                .withKeySchema(keySchema)
+                .withAttributeDefinitions(attributes.values())
+                .withGlobalSecondaryIndexes(globalIndices)
+                .withLocalSecondaryIndexes(localIndices)
+                .withProvisionedThroughput(
+                    new ProvisionedThroughputDescription()
+                        .withReadCapacityUnits(readCapacity)
+                        .withWriteCapacityUnits(writeCapacity));
             tables.put(tableName, table);
         }
         return new ArrayList<>(tables.values());
     }
 
     /**
-     * If the method is also annotated with a projection annotation, use the projection it
-     * indicates. For hash/range global indices, this annotation needs to be on the same method
-     * as @DynamoDBIndexHashKey. This is a Bridge-specific annotation, it's not in the AWS SDK. 
+     * If the method is also annotated with a projection annotation, use the projection it indicates. For hash/range
+     * global indices, this annotation needs to be on the same method as @DynamoDBIndexHashKey. This is a
+     * Bridge-specific annotation, it's not in the AWS SDK.
+     * 
      * @param method
      * @param indexName
      * @param descr
@@ -252,9 +258,9 @@ public class DynamoInitializer {
     }
 
     private static GlobalSecondaryIndexDescription createGlobalIndexDescr(String indexName, String hashAttrName,
-                    String rangeAttrName) {
+                    String rangeAttrName, long writeCapacity, long readCapacity) {
         Preconditions.checkArgument(isNotBlank(indexName));
-        
+
         List<KeySchemaElement> keys = Lists.newArrayList();
         if (hashAttrName != null) {
             keys.add(new KeySchemaElement(hashAttrName, KeyType.HASH));
@@ -266,9 +272,10 @@ public class DynamoInitializer {
             .withIndexName(indexName)
             .withKeySchema(keys)
             .withProjection(new Projection().withProjectionType(ProjectionType.KEYS_ONLY))
-            .withProvisionedThroughput(new ProvisionedThroughputDescription()
-            .withReadCapacityUnits(DEFAULT_READ_CAPACITY)
-            .withWriteCapacityUnits(DEFAULT_WRITE_CAPACITY));
+            .withProvisionedThroughput(
+                new ProvisionedThroughputDescription()
+                    .withWriteCapacityUnits(writeCapacity)
+                    .withReadCapacityUnits(readCapacity));
         return globalIndex;
     }
 
@@ -281,14 +288,12 @@ public class DynamoInitializer {
         if (rangeAttrName != null) {
             keys.add(new KeySchemaElement(rangeAttrName, KeyType.RANGE));
         }
-        LocalSecondaryIndexDescription localIndex = new LocalSecondaryIndexDescription()
-            .withIndexName(indexName)
-            .withKeySchema(keys)
-            .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
+        LocalSecondaryIndexDescription localIndex = new LocalSecondaryIndexDescription().withIndexName(indexName)
+                        .withKeySchema(keys).withProjection(new Projection().withProjectionType(ProjectionType.ALL));
         return localIndex;
     }
 
-    static String findAttrName(Class<?> clazz, Function<Method,String> func) {
+    static String findAttrName(Class<?> clazz, Function<Method, String> func) {
         Method[] methods = clazz.getMethods();
         for (Method method : methods) {
             String attrName = func.apply(method);
@@ -298,12 +303,12 @@ public class DynamoInitializer {
         }
         return null;
     }
-    
+
     static String findIndexHashAttrName(final Class<?> clazz, final String indexName) {
         if (isBlank(indexName)) {
             return null;
         }
-        return findAttrName(clazz, new Function<Method,String>() {
+        return findAttrName(clazz, new Function<Method, String>() {
             public String apply(Method method) {
                 if (method.isAnnotationPresent(DynamoDBIndexHashKey.class)) {
                     DynamoDBIndexHashKey indexKey = method.getAnnotation(DynamoDBIndexHashKey.class);
@@ -316,17 +321,17 @@ public class DynamoInitializer {
             }
         });
     }
-    
+
     static String findIndexRangeAttrName(final Class<?> clazz, final boolean isGlobal, final String indexName) {
         if (isBlank(indexName)) {
             return null;
         }
-        return findAttrName(clazz, new Function<Method,String>() {
+        return findAttrName(clazz, new Function<Method, String>() {
             public String apply(Method method) {
                 if (method.isAnnotationPresent(DynamoDBIndexRangeKey.class)) {
                     DynamoDBIndexRangeKey indexKey = method.getAnnotation(DynamoDBIndexRangeKey.class);
-                    String thisIndexName = (isGlobal) ? 
-                        indexKey.globalSecondaryIndexName() : indexKey.localSecondaryIndexName();
+                    String thisIndexName = (isGlobal) ? indexKey.globalSecondaryIndexName() : indexKey
+                                    .localSecondaryIndexName();
                     if (indexName.equals(thisIndexName)) {
                         return indexKey.attributeName();
                     }
@@ -335,7 +340,7 @@ public class DynamoInitializer {
             }
         });
     }
-    
+
     /**
      * Uses reflection to get all the annotated DynamoDBTable.
      */
@@ -447,14 +452,11 @@ public class DynamoInitializer {
     }
 
     static CreateTableRequest getCreateTableRequest(TableDescription table) {
-        CreateTableRequest request = new CreateTableRequest()
-                .withTableName(table.getTableName())
-                .withKeySchema(table.getKeySchema())
-                .withAttributeDefinitions(table.getAttributeDefinitions());
+        CreateTableRequest request = new CreateTableRequest().withTableName(table.getTableName())
+                        .withKeySchema(table.getKeySchema()).withAttributeDefinitions(table.getAttributeDefinitions());
         // ProvisionedThroughputDescription -> ProvisionedThroughput
-        ProvisionedThroughput throughput = new ProvisionedThroughput(
-                table.getProvisionedThroughput().getReadCapacityUnits(),
-                table.getProvisionedThroughput().getWriteCapacityUnits());
+        ProvisionedThroughput throughput = new ProvisionedThroughput(table.getProvisionedThroughput()
+                        .getReadCapacityUnits(), table.getProvisionedThroughput().getWriteCapacityUnits());
         request.setProvisionedThroughput(throughput);
 
         // GlobalSecondaryIndexDescription -> GlobalSecondaryIndex
@@ -462,12 +464,13 @@ public class DynamoInitializer {
         List<GlobalSecondaryIndexDescription> globalIndexDescs = table.getGlobalSecondaryIndexes();
         for (GlobalSecondaryIndexDescription globalIndexDesc : globalIndexDescs) {
             GlobalSecondaryIndex globalIndex = new GlobalSecondaryIndex()
-                    .withIndexName(globalIndexDesc.getIndexName())
-                    .withKeySchema(globalIndexDesc.getKeySchema())
-                    .withProjection(globalIndexDesc.getProjection())
-                    .withProvisionedThroughput(new ProvisionedThroughput(
-                            globalIndexDesc.getProvisionedThroughput().getReadCapacityUnits(),
-                            globalIndexDesc.getProvisionedThroughput().getWriteCapacityUnits()));
+                            .withIndexName(globalIndexDesc.getIndexName())
+                            .withKeySchema(globalIndexDesc.getKeySchema())
+                            .withProjection(globalIndexDesc.getProjection())
+                            .withProvisionedThroughput(
+                                            new ProvisionedThroughput(globalIndexDesc.getProvisionedThroughput()
+                                                            .getReadCapacityUnits(), globalIndexDesc
+                                                            .getProvisionedThroughput().getWriteCapacityUnits()));
             globalIndices.add(globalIndex);
         }
         if (globalIndices.size() > 0) {
@@ -478,10 +481,9 @@ public class DynamoInitializer {
         List<LocalSecondaryIndex> localIndices = new ArrayList<>();
         List<LocalSecondaryIndexDescription> localIndexDescs = table.getLocalSecondaryIndexes();
         for (LocalSecondaryIndexDescription localIndexDesc : localIndexDescs) {
-            LocalSecondaryIndex localIndex = new LocalSecondaryIndex()
-                .withIndexName(localIndexDesc.getIndexName())
-                .withKeySchema(localIndexDesc.getKeySchema())
-                .withProjection(localIndexDesc.getProjection());
+            LocalSecondaryIndex localIndex = new LocalSecondaryIndex().withIndexName(localIndexDesc.getIndexName())
+                            .withKeySchema(localIndexDesc.getKeySchema())
+                            .withProjection(localIndexDesc.getProjection());
             localIndices.add(localIndex);
         }
         if (localIndices.size() > 0) {
@@ -492,8 +494,7 @@ public class DynamoInitializer {
     }
 
     /**
-     * Compares hash key, range key of the two tables. Throws an exception
-     * if there is difference.
+     * Compares hash key, range key of the two tables. Throws an exception if there is difference.
      */
     static void compareSchema(TableDescription table1, TableDescription table2) {
         if (table1.getTableName().equals(table2.getTableName())) {
@@ -530,8 +531,7 @@ public class DynamoInitializer {
      * Wait for the table to become ACTIVE.
      */
     private static void waitForActive(TableDescription table) {
-        DescribeTableResult describeResult = DYNAMO.describeTable(
-                new DescribeTableRequest(table.getTableName()));
+        DescribeTableResult describeResult = DYNAMO.describeTable(new DescribeTableRequest(table.getTableName()));
         table = describeResult.getTable();
         while (!TableStatus.ACTIVE.name().equalsIgnoreCase(table.getTableStatus())) {
             try {
@@ -548,8 +548,7 @@ public class DynamoInitializer {
      * Wait for the table to be deleted.
      */
     private static void waitForDelete(TableDescription table) {
-        DescribeTableResult describeResult = DYNAMO.describeTable(
-                new DescribeTableRequest(table.getTableName()));
+        DescribeTableResult describeResult = DYNAMO.describeTable(new DescribeTableRequest(table.getTableName()));
         table = describeResult.getTable();
         while (true) {
             try {
