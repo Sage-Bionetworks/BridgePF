@@ -52,7 +52,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
     private static final String KEY_TASK_RUN = "taskRun";
     private static final String KEY_TASK_RUN_ID = "taskRunId";
     private static final String KEY_TIMESTAMP = "timestamp";
-    private static final String SCHEMA_IOS_SURVEY = "ios-survey";
+    public static final String SCHEMA_IOS_SURVEY = "ios-survey";
 
     // Note: some surveys have both questionType and questionTypeName. Some surveys only have questionType as a string.
     // To maximize compatibility, we only check for questionType.
@@ -539,11 +539,10 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
                         return false;
                     }
                 case FLOAT:
-                    // includes floats, doubles, and decimals
-                    return fieldValue.isFloatingPointNumber();
                 case INT:
-                    // includes ints, longs, and big ints
-                    return fieldValue.isIntegralNumber();
+                    // Research Kit doesn't distinguish between floats and ints, so neither should we. Just accept
+                    // any number type.
+                    return fieldValue.isNumber();
                 case STRING:
                     return fieldValue.isTextual();
                 case TIMESTAMP:

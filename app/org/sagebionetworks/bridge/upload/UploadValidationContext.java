@@ -39,10 +39,15 @@ public class UploadValidationContext {
         this.study = study;
     }
 
+    /**
+     * This is the user that submitted the upload. This is made available by the upload validation service and is
+     * initially set by the upload validation task factory.
+     */
     public User getUser() {
         return user;
     }
 
+    /** @see #getUser */
     public void setUser(User user) {
         this.user = user;
     }
@@ -89,7 +94,7 @@ public class UploadValidationContext {
         messageList.add(msg);
     }
 
-    /** Raw upload data as bytes. This is created by S3DownloadHandler abd read by the UnzipHandler. */
+    /** Raw upload data as bytes. This is created by S3DownloadHandler and read by the DecryptHandler. */
     public byte[] getData() {
         return data;
     }
@@ -112,6 +117,7 @@ public class UploadValidationContext {
     /**
      * Unzipped data as bytes, keyed by filename. This is initially created by the UnzipHandler. The ParseJsonHandler
      * will read this and remove entries that can be parsed into JSON. Non-JSON entries will still remain in this map.
+     * This is also read by the IosSchemaValidationHandler.
      */
     public Map<String, byte[]> getUnzippedDataMap() {
         return unzippedDataMap;
@@ -122,7 +128,10 @@ public class UploadValidationContext {
         this.unzippedDataMap = unzippedDataMap;
     }
 
-    /** Parsed JSON data, keyed by filename. This is initially created by the ParseJsonHandler. */
+    /**
+     * Parsed JSON data, keyed by filename. This is created by the ParseJsonHandler and read by the
+     * IosSchemaValidationHandler.
+     */
     public Map<String, JsonNode> getJsonDataMap() {
         return jsonDataMap;
     }
@@ -159,5 +168,40 @@ public class UploadValidationContext {
     /** @see #getAttachmentsByFieldName */
     public void setAttachmentsByFieldName(Map<String, byte[]> attachmentsByFieldName) {
         this.attachmentsByFieldName = attachmentsByFieldName;
+    }
+
+    /**
+     * <p>
+     * Makes a shallow copy of this object. The fields of the returned copy can be get and set without affecting the
+     * original. However, the field value themselves are shared between the original and the copy. Most notably,
+     * modifying the unzippedDataMap (which is what ParseJsonHandler does) or the healthDataRecordBuilder (which is
+     * what TranscribeConsentHandler does) in the copy will affect the original, and vice versa.
+     * </p>
+     * <p>
+     * The one notable exception is the message list, which will be deep copied. This is because the message list is
+     * always treated as mutable and any handler may write to it.
+     * </p>
+     * <p>
+     * This is most useful for testing new and old versions of handlers, provided that handlers either treat the field
+     * values as immutable or make deep copies of the fields they modify.
+     * </p>
+     */
+    public UploadValidationContext shallowCopy() {
+        UploadValidationContext copy = new UploadValidationContext();
+        copy.study = this.study;
+        copy.user = this.user;
+        copy.upload = this.upload;
+        copy.success = this.success;
+        copy.data = this.data;
+        copy.decryptedData = this.decryptedData;
+        copy.unzippedDataMap = this.unzippedDataMap;
+        copy.jsonDataMap = this.jsonDataMap;
+        copy.healthDataRecordBuilder = this.healthDataRecordBuilder;
+        copy.attachmentsByFieldName = this.attachmentsByFieldName;
+
+        // messageList is the only field that gets deep copied
+        copy.messageList = new ArrayList<>(this.messageList);
+
+        return copy;
     }
 }

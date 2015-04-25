@@ -130,6 +130,7 @@ public class DynamoUploadSchema implements UploadSchema {
     }
 
     /** {@inheritDoc} */
+    @DynamoDBMarshalling(marshallerClass = EnumMarshaller.class)
     @Override
     public UploadSchemaType getSchemaType() {
         return schemaType;
