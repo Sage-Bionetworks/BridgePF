@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -225,24 +223,6 @@ public class DynamoTaskDao implements TaskDao {
             }
         }
         return tasks;
-    }
-    
-    
-    /**
-     * Generate a key that is based on the natural key of the task (schedule plan GUID, scheduled start time of the
-     * task, and the activity reference). The same key will be generated each time for the same task, and the key 
-     * should never collide with another key within the scope of an individual user's tasks.
-     * 
-     * @param task
-     * @return
-     */
-    public String generateTaskKey(Task task) {
-        checkNotNull(task.getSchedulePlanGuid());
-        checkNotNull(task.getScheduledOn());
-        checkNotNull(task.getActivity());
-        checkNotNull(task.getActivity().getRef());
-        
-        return String.format("%s%s%s", task.getSchedulePlanGuid(), task.getScheduledOn(), task.getActivity().getRef());
     }
 
 }
