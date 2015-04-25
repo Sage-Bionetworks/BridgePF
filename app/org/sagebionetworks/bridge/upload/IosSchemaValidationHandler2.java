@@ -33,11 +33,24 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
-// TODO: Currently, all apps are iOS-based. However, when we start having non-iOS apps, we'll need to restructure this
-// so that it only runs in the iOS context.
-// Note that large swaths of this code are copied directly from the original IosSchemaValidatorHandler. The idea is to
-// create a copy of IosSchemaValidationHandler that we can modify at will without touching the original, so we can run
-// them side-by-side in production (using the TestingHandler) to validate our code changes.
+/**
+ * <p>
+ * Processes iOS data into health data records. This handler reads from
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getUnzippedDataMap} and
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getJsonDataMap} and writes to
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#setHealthDataRecordBuilder} and
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#setAttachmentsByFieldName}.
+ * </p>
+ * <p>
+ * Currently, all apps are iOS-based. However, when we start having non-iOS apps, we'll need to restructure this
+ * so that it only runs in the iOS context.
+ * </p>
+ * <p>
+ * Note that large swaths of this code are copied directly from the original IosSchemaValidatorHandler. The idea is to
+ * create a copy of IosSchemaValidationHandler that we can modify at will without touching the original, so we can run
+ * them side-by-side in production (using the TestingHandler) to validate our code changes.
+ * </p>
+ */
 @Component
 public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     private static final Set<UploadFieldType> ATTACHMENT_TYPE_SET = EnumSet.of(UploadFieldType.ATTACHMENT_BLOB,
@@ -70,19 +83,26 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     private HealthDataDao healthDataDao;
     private UploadSchemaService uploadSchemaService;
 
+    /** Health Data DAO, used solely to get the record builder. This is configured by Spring. */
     @Autowired
     public void setHealthDataDao(HealthDataDao healthDataDao) {
         this.healthDataDao = healthDataDao;
     }
 
+    /** Upload Schema Service, used to get the schema corresponding to the upload. This is configured by Spring. */
     @Autowired
     public void setUploadSchemaService(UploadSchemaService uploadSchemaService) {
         this.uploadSchemaService = uploadSchemaService;
     }
 
-    // iOS data comes from a third party, and we have no control over the data format. So our data validation needs to
-    // be as flexible as possible. Which means our error handling strategy is to write a validation message, and then
-    // attempt to recover. This will, however, cause cascading errors further down the validation chain.
+    /**
+     * Processes iOS data into health data records. iOS data comes from a third party, and we have no control over the
+     * data format. So our data validation needs to be as flexible as possible. Which means our error handling strategy
+     * is to write a validation message, and then attempt to recover. This may cause cascading errors further down the
+     * validation chain.
+     *
+     * @see org.sagebionetworks.bridge.upload.UploadValidationHandler#handle
+     */
     @Override
     public void handle(@Nonnull UploadValidationContext context)
             throws UploadValidationException {
