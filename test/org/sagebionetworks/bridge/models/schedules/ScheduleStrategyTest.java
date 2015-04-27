@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -56,7 +55,7 @@ public class ScheduleStrategyTest {
         plan.setStudyKey(study.getIdentifier());
         plan.setStrategy(strategy);
         
-        String output = JsonUtils.toJSON(plan);
+        String output = new BridgeObjectMapper().writeValueAsString(plan);
         JsonNode node = mapper.readTree(output);
         DynamoSchedulePlan newPlan = DynamoSchedulePlan.fromJson(node);
         
@@ -69,7 +68,7 @@ public class ScheduleStrategyTest {
     @Test
     public void canRountripABTestingPlan() throws Exception {
         DynamoSchedulePlan plan = createABSchedulePlan();
-        String output = JsonUtils.toJSON(plan);
+        String output = new BridgeObjectMapper().writeValueAsString(plan);
         
         JsonNode node = mapper.readTree(output);
         DynamoSchedulePlan newPlan = DynamoSchedulePlan.fromJson(node);

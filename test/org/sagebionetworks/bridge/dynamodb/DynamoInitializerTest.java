@@ -38,7 +38,7 @@ public class DynamoInitializerTest {
         List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         assertNotNull(tables);
-        assertEquals(1, tables.size());
+        assertEquals(2, tables.size());
         Map<String, TableDescription> tableMap = new HashMap<String, TableDescription>();
         for (TableDescription table : tables) {
             tableMap.put(table.getTableName(), table);
@@ -60,7 +60,7 @@ public class DynamoInitializerTest {
     public void testLoadDynamoTableClasses() {
         List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         assertNotNull(classes);
-        assertEquals(1, classes.size());
+        assertEquals(2, classes.size());
         Set<String> classSet = new HashSet<String>();
         for (Class<?> clazz : classes) {
             classSet.add(clazz.getName());
@@ -150,6 +150,41 @@ public class DynamoInitializerTest {
         DynamoInitializer.compareSchema(table1, table2);
     }
 
+    @Test
+    public void createsGlobalIndices() {
+        List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
+        List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
+        
+        // This is the TaskTest with two global index annotations on it.
+        TableDescription table = tables.get(1);
+        assertEquals(3, table.getGlobalSecondaryIndexes().size());
+        
+        GlobalSecondaryIndexDescription index = findIndex(table.getGlobalSecondaryIndexes(), "guid-index");
+        assertEquals("INCLUDE", index.getProjection().getProjectionType());
+        assertEquals("guid", index.getKeySchema().get(0).getAttributeName());
+        assertEquals(new Long(18), index.getProvisionedThroughput().getWriteCapacityUnits());
+        assertEquals(new Long(20), index.getProvisionedThroughput().getReadCapacityUnits());
+        
+        index = findIndex(table.getGlobalSecondaryIndexes(), "healthCode-scheduledOn-index");
+        assertEquals("ALL", index.getProjection().getProjectionType());
+        assertEquals("healthCode", index.getKeySchema().get(0).getAttributeName());
+        assertEquals("scheduledOn", index.getKeySchema().get(1).getAttributeName());
+        assertEquals(new Long(18), index.getProvisionedThroughput().getWriteCapacityUnits());
+        assertEquals(new Long(20), index.getProvisionedThroughput().getReadCapacityUnits());
+        
+        index = findIndex(table.getGlobalSecondaryIndexes(), "healthCode-expiresOn-index");
+        assertEquals("expiresOn", index.getKeySchema().get(0).getAttributeName());
+    }
+    
+    private GlobalSecondaryIndexDescription findIndex(List<GlobalSecondaryIndexDescription> list, String name) {
+        for (GlobalSecondaryIndexDescription index : list) {
+            if (index.getIndexName().equals(name)) {
+                return index;
+            }
+        }
+        return null;
+    }
+    
     // Copies the relevant attributes from a table (name, keys, global and local secondary indices)
     private static TableDescription copyTableDescription(TableDescription table1) {
         TableDescription table2 = new TableDescription();

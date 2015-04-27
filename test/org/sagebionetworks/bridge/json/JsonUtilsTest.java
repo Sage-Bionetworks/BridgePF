@@ -4,15 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
-import java.util.List;
 import java.util.Set;
 
 import org.joda.time.DateTime;
-import org.joda.time.Period;
 import org.junit.Test;
-import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
@@ -20,7 +16,6 @@ import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 /**
@@ -90,15 +85,6 @@ public class JsonUtilsTest {
     }
 
     @Test
-    public void asPeriod() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':'PT1H'}"));
-        
-        assertNull(JsonUtils.asPeriod(node, null));
-        assertNull(JsonUtils.asPeriod(node, "badProp"));
-        assertEquals(Period.parse("PT1H"), JsonUtils.asPeriod(node, "key"));
-    }
-    
-    @Test
     public void asMillisSinceEpoch() throws Exception {
         DateTime time = DateTime.parse("2015-03-23T10:00:00.000-07:00");
         
@@ -107,19 +93,6 @@ public class JsonUtilsTest {
         assertEquals(0L, JsonUtils.asMillisSinceEpoch(node, null));
         assertEquals(0L, JsonUtils.asMillisSinceEpoch(node, "badProp"));
         assertEquals(time.getMillis(), JsonUtils.asMillisSinceEpoch(node, "key"));
-    }
-    
-    @Test
-    public void asDateTime() throws Exception {
-        DateTime time = DateTime.parse("2015-03-23T10:00:00.000-07:00");
-        
-        JsonNode node = mapper.readTree(esc("{'key':'2015-03-23T10:00:00.000-07:00'}"));
-        
-        assertNull(JsonUtils.asDateTime(node, null));
-        assertNull(JsonUtils.asDateTime(node, "badProp"));
-        assertNull(JsonUtils.asDateTime(node, "{}"));
-        assertNull(JsonUtils.asDateTime(node, esc("{'key':'value'}")));
-        assertEquals(time, JsonUtils.asDateTime(node, "key"));
     }
 
     @Test
@@ -146,19 +119,6 @@ public class JsonUtilsTest {
     }
 
     @Test
-    public void asSchedule() throws Exception {
-        Schedule schedule = new Schedule();
-        schedule.addActivity(new Activity("label", "task:job"));
-        schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.setDelay("PT4H");
-        
-        JsonNode node = mapper.readTree(esc("{'key':"+mapper.writeValueAsString(schedule)+"}"));
-        assertNull(JsonUtils.asSchedule(node, null));
-        assertNull(JsonUtils.asSchedule(node, "badProp"));
-        assertEquals(schedule, JsonUtils.asSchedule(node, "key"));
-    }
-
-    @Test
     public void asObjectNode() throws Exception {
         JsonNode node = mapper.readTree(esc("{'key':{'subKey':'value'}}"));
         JsonNode subNode = mapper.readTree(esc("{'subKey':'value'}"));
@@ -166,16 +126,6 @@ public class JsonUtilsTest {
         assertNull(JsonUtils.asObjectNode(node, null));
         assertNull(JsonUtils.asObjectNode(node, "badProp"));
         assertEquals(subNode, JsonUtils.asObjectNode(node, "key"));
-    }
-
-    @Test
-    public void asArrayNode() throws Exception {
-        JsonNode node = mapper.readTree(esc("{'key':[1,2,3,4]}"));
-        JsonNode subNode = mapper.readTree(esc("[1,2,3,4]"));
-        
-        assertNull(JsonUtils.asArrayNode(node, null));
-        assertNull(JsonUtils.asArrayNode(node, "badProp"));
-        assertEquals(subNode, JsonUtils.asArrayNode(node, "key"));
     }
 
     @Test
@@ -191,27 +141,27 @@ public class JsonUtilsTest {
     public void asUIHint() throws Exception {
         JsonNode node = mapper.readTree(esc("{'key':'list'}"));
         
-        assertNull(JsonUtils.asUIHint(node, null));
-        assertNull(JsonUtils.asUIHint(node, "badProp"));
-        assertEquals(UIHint.LIST, JsonUtils.asUIHint(node, "key"));
+        assertNull(JsonUtils.asEntity(node, null, UIHint.class));
+        assertNull(JsonUtils.asEntity(node, "badProp", UIHint.class));
+        assertEquals(UIHint.LIST, JsonUtils.asEntity(node, "key", UIHint.class));
     }
     
     @Test
     public void asActivityType() throws Exception {
         JsonNode node = mapper.readTree(esc("{'key':'survey'}"));
         
-        assertNull(JsonUtils.asActivityType(node, null));
-        assertNull(JsonUtils.asActivityType(node, "badProp"));
-        assertEquals(ActivityType.SURVEY, JsonUtils.asActivityType(node, "key"));
+        assertNull(JsonUtils.asEntity(node, null, ActivityType.class));
+        assertNull(JsonUtils.asEntity(node, "badProp", ActivityType.class));
+        assertEquals(ActivityType.SURVEY, JsonUtils.asEntity(node, "key", ActivityType.class));
     }
 
     @Test
     public void asScheduleType() throws Exception {
         JsonNode node = mapper.readTree(esc("{'key':'once'}"));
         
-        assertNull(JsonUtils.asScheduleType(node, null));
-        assertNull(JsonUtils.asScheduleType(node, "badProp"));
-        assertEquals(ScheduleType.ONCE, JsonUtils.asScheduleType(node, "key"));
+        assertNull(JsonUtils.asEntity(node, null, ScheduleType.class));
+        assertNull(JsonUtils.asEntity(node, "badProp", ScheduleType.class));
+        assertEquals(ScheduleType.ONCE, JsonUtils.asEntity(node, "key", ScheduleType.class));
     }
     
     @Test
@@ -219,20 +169,19 @@ public class JsonUtilsTest {
         JsonNode node = mapper.readTree(esc("{'key':{'source':'sourceValue','width':50,'height':50}}"));
         Image image = new Image("sourceValue", 50, 50);
         
-        assertNull(JsonUtils.asImage(node, null));
-        assertNull(JsonUtils.asImage(node, "badProp"));
-        assertEquals(image, JsonUtils.asImage(node, "key"));
+        assertNull(JsonUtils.asEntity(node, null, Image.class));
+        assertNull(JsonUtils.asEntity(node, "badProp", Image.class));
+        assertEquals(image, JsonUtils.asEntity(node, "key", Image.class));
     }
-
+    
     @Test
-    public void asStringList() throws Exception {
-        List<String> list = Lists.newArrayList("A", "B", "C");
+    public void asArrayNode() throws Exception {
+        JsonNode node = mapper.readTree(esc("{'key':[1,2,3,4]}"));
+        JsonNode subNode = mapper.readTree(esc("[1,2,3,4]"));
         
-        JsonNode node = mapper.readTree(esc("{'key':['A','B','C']}"));
-        
-        assertEquals(Lists.newArrayList(), JsonUtils.asStringList(node, null));
-        assertEquals(Lists.newArrayList(), JsonUtils.asStringList(node, "badProp"));
-        assertEquals(list, JsonUtils.asStringList(node, "key"));
+        assertNull(JsonUtils.asArrayNode(node, null));
+        assertNull(JsonUtils.asArrayNode(node, "badProp"));
+        assertEquals(subNode, JsonUtils.asArrayNode(node, "key"));
     }
 
     @Test

@@ -6,16 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTime;
-import org.joda.time.Period;
-import org.sagebionetworks.bridge.models.schedules.ActivityType;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.schedules.ScheduleType;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DataType;
-import org.sagebionetworks.bridge.models.surveys.Image;
-import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
@@ -91,26 +84,12 @@ public class JsonUtils {
         }
         return 0L;
     }
-
-    public static Period asPeriod(JsonNode parent, String property) {
-        if (parent != null && parent.hasNonNull(property)) {
-            return Period.parse(parent.get(property).asText());
-        }
-        return null;
-    }
     
     public static long asMillisSinceEpoch(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
             return DateUtils.convertToMillisFromEpoch(parent.get(property).asText());
         }
         return 0L;
-    }
-    
-    public static DateTime asDateTime(JsonNode parent, String property) {
-        if (parent != null && parent.hasNonNull(property)) {
-            return DateTime.parse(parent.get(property).asText());
-        }
-        return null;
     }
 
     public static JsonNode asJsonNode(JsonNode parent, String property) {
@@ -136,14 +115,18 @@ public class JsonUtils {
         return null;
     }
 
-    public static Schedule asSchedule(JsonNode parent, String property) {
-        JsonNode schedule = JsonUtils.asJsonNode(parent, property);
-        if (schedule != null) {
-            return BridgeObjectMapper.get().convertValue(schedule, Schedule.class);
+    public static <T> T asEntity(JsonNode parent, String property, Class<T> clazz) {
+        JsonNode child = JsonUtils.asJsonNode(parent, property);
+        if (child != null) {
+            try {
+                return BridgeObjectMapper.get().treeToValue(child, clazz);    
+            } catch(JsonProcessingException e) {
+                throw new BridgeServiceException(e);
+            }
         }
         return null;
     }
-
+    
     public static <T> List<T> asEntityList(JsonNode parent, String property, Class<T> clazz) {
         JsonNode list = JsonUtils.asJsonNode(parent, property);
         return JsonUtils.asEntityList(list, clazz);
@@ -157,18 +140,6 @@ public class JsonUtils {
                     mapper.getTypeFactory().constructCollectionType(ArrayList.class, clazz));
         }
         return Lists.newLinkedList();
-    }
-    
-    public static <T> List<SurveyAnswer> asSurveyAnswers(JsonNode list) {
-        List<SurveyAnswer> answers = asEntityList(list, SurveyAnswer.class);
-        for (int i=0; i < answers.size(); i++) {
-            SurveyAnswer answer = answers.get(0);
-            JsonNode node = list.get(i);
-            if (node.has("answer") && answer.getAnswers().isEmpty()) {
-                answer.addAnswer(node.get("answer").asText());
-            }
-        }
-        return answers;
     }
     
     public static ObjectNode asObjectNode(JsonNode parent, String property) {
@@ -197,52 +168,6 @@ public class JsonUtils {
             return parent.get(property).asBoolean();
         }
         return false;
-    }
-
-    public static UIHint asUIHint(JsonNode parent, String property) {
-        if (parent != null && parent.hasNonNull(property)) {
-            String value = JsonUtils.asText(parent, property);
-            return UIHint.valueOf(value.toUpperCase());
-        }
-        return null;
-    }
-
-    public static ActivityType asActivityType(JsonNode parent, String property) {
-        if (parent != null && parent.hasNonNull(property)) {
-            String value = JsonUtils.asText(parent, property);
-            return ActivityType.valueOf(value.toUpperCase());
-        }
-        return null;
-    }
-
-    public static ScheduleType asScheduleType(JsonNode parent, String property) {
-        if (parent != null && parent.hasNonNull(property)) {
-            String value = JsonUtils.asText(parent, property);
-            return ScheduleType.valueOf(value.toUpperCase());
-        }
-        return null;
-    }
-    
-    public static Image asImage(JsonNode parent, String property) {
-        if (parent != null && parent.hasNonNull(property)) {
-            JsonNode node = parent.get(property);
-            String source = JsonUtils.asText(node, "source");
-            int width = JsonUtils.asInt(node, "width");
-            int height = JsonUtils.asInt(node, "height");
-            return new Image(source, width, height);
-        }
-        return null;
-    }
-
-    public static List<String> asStringList(JsonNode parent, String property) {
-        List<String> results = new ArrayList<>();
-        if (parent != null && parent.hasNonNull(property)) {
-            ArrayNode array = JsonUtils.asArrayNode(parent, property);
-            for (int i=0; i < array.size(); i++) {
-                results.add(array.get(i).asText());
-            }
-        }
-        return results;
     }
 
     public static Set<String> asStringSet(JsonNode parent, String property) {
@@ -274,32 +199,6 @@ public class JsonUtils {
             return elements;
         }
         return null;
-    }
-
-    public static void write(ObjectNode node, String propertyName, Enum<?> e) {
-        if (e != null) {
-            node.put(propertyName, e.name().toLowerCase());
-        }
-    }
-
-    public static void write(ObjectNode node, String propertyName, String string) {
-        if (StringUtils.isNotBlank(string)) {
-            node.put(propertyName, string);
-        }
-    }
-
-    public static void write(ObjectNode node, String propertyName, Long l) {
-        if (l != null) {
-            node.put(propertyName, l);
-        }
-    }
-
-    public static String toJSON(Object object) {
-        try {
-            return new BridgeObjectMapper().writeValueAsString(object);
-        } catch(JsonProcessingException e) {
-            return e.getMessage();
-        }
     }
 
 }

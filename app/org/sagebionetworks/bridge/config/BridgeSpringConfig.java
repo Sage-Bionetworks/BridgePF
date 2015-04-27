@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.config;
 
 import java.util.List;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -12,6 +13,7 @@ import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
+import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.TableNameOverrideFactory;
@@ -249,6 +251,12 @@ public class BridgeSpringConfig {
         return new DynamoDBMapper(client, mapperConfig);
     }
 
+    @Bean(name = "taskDdbMapper")
+    @Autowired
+    public DynamoDBMapper taskDdbMapper(AmazonDynamoDB client) {
+        return getMapperForClass(client, DynamoTask.class);
+    }
+    
     @Bean(name = "uploadSchemaStudyIdIndex")
     @Autowired
     public DynamoIndexHelper uploadSchemaStudyIdIndex(AmazonDynamoDB client) {

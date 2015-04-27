@@ -1,79 +1,36 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import java.util.Objects;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import org.joda.time.DateTime;
-
-public final class Task {
-
-    private final String guid;
-    private final String schedulePlanGuid;
-    private final Activity activity;
-    private final DateTime scheduledOn;
-    private final DateTime expiresOn;
+public interface Task {
     
-    Task(String guid, String schedulePlanGuid, Activity activity, DateTime scheduledOn, DateTime expiresOn) {
-        checkNotNull(guid);
-        checkNotNull(schedulePlanGuid);
-        checkNotNull(activity);
-        checkNotNull(scheduledOn);
-        // expiresOn can be null
-        this.guid = guid;
-        this.schedulePlanGuid = schedulePlanGuid;
-        this.activity = activity;
-        this.scheduledOn = scheduledOn;
-        this.expiresOn = expiresOn;
-    }
+    public TaskStatus getStatus();
     
-    public String getGuid() {
-        return guid;
-    }
+    public String getHealthCode();
+    public void setHealthCode(String healthCode);
     
-    public String getSchedulePlanGuid() {
-        return schedulePlanGuid;
-    }
+    public String getGuid();
+    public void setGuid(String guid);
     
-    public Activity getActivity() {
-        return activity;
-    }
+    public String getSchedulePlanGuid();
+    public void setSchedulePlanGuid(String schedulePlanGuid);
     
-    public DateTime getScheduledOn() {
-        return scheduledOn;
-    }
-
-    public DateTime getExpiresOn() {
-        return expiresOn;
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Objects.hashCode(activity);
-        result = prime * result + Objects.hashCode(guid);
-        result = prime * result + Objects.hashCode(schedulePlanGuid);
-        result = prime * result + Objects.hashCode(scheduledOn);
-        result = prime * result + Objects.hashCode(expiresOn);
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null || getClass() != obj.getClass())
-            return false;
-        Task other = (Task) obj;
-        return (Objects.equals(activity, other.activity) && Objects.equals(guid, other.guid)
-            && Objects.equals(schedulePlanGuid, other.schedulePlanGuid)
-            && Objects.equals(scheduledOn, other.scheduledOn) && Objects.equals(expiresOn, other.expiresOn));
-    }
+    public Activity getActivity();
+    public void setActivity(Activity activity);
     
-    @Override
-    public String toString() {
-        return String.format("Task [guid=%s, activity=%s, schedulePlanGuid=%s, scheduledOn=%s, expiresOn=%s]", 
-            guid, activity, schedulePlanGuid, scheduledOn, expiresOn);
-    }
+    public Long getScheduledOn();
+    public void setScheduledOn(Long scheduledOn);
+    
+    public Long getExpiresOn();
+    public void setExpiresOn(Long expiresOn);
+    
+    public Long getStartedOn();
+    public void setStartedOn(Long startedOn);
+    
+    public Long getFinishedOn();
+    public void setFinishedOn(Long finishedOn);
+    
+    public String getRunKey();
+    public void setRunKey(String runKey);
+    
+    public Long getHidesOn();
+    public void setHidesOn(Long hidesOn);
 }
