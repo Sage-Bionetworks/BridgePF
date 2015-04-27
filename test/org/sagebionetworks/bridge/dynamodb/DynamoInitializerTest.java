@@ -88,7 +88,7 @@ public class DynamoInitializerTest {
     public void testGetCreateTableRequest() {
         List<Class<?>> classes = DynamoInitializer.loadDynamoTableClasses(PACKAGE);
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
-        TableDescription table = tables.get(0);
+        TableDescription table = getTableByName(tables, "-HealthDataRecord");
         CreateTableRequest request = DynamoInitializer.getCreateTableRequest(table);
         assertNotNull(request);
 
@@ -156,7 +156,7 @@ public class DynamoInitializerTest {
         List<TableDescription> tables = DynamoInitializer.getAnnotatedTables(classes);
         
         // This is the TaskTest with two global index annotations on it.
-        TableDescription table = tables.get(1);
+        TableDescription table = getTableByName(tables, "-Task");
         assertEquals(3, table.getGlobalSecondaryIndexes().size());
         
         GlobalSecondaryIndexDescription index = findIndex(table.getGlobalSecondaryIndexes(), "guid-index");
@@ -174,6 +174,15 @@ public class DynamoInitializerTest {
         
         index = findIndex(table.getGlobalSecondaryIndexes(), "healthCode-expiresOn-index");
         assertEquals("expiresOn", index.getKeySchema().get(0).getAttributeName());
+    }
+    
+    private TableDescription getTableByName(List<TableDescription> tables, String partialTableName) {
+        for (TableDescription descr : tables) {
+            if (descr.getTableName().indexOf(partialTableName) > -1) {
+                return descr;
+            }
+        }
+        return null;
     }
     
     private GlobalSecondaryIndexDescription findIndex(List<GlobalSecondaryIndexDescription> list, String name) {
