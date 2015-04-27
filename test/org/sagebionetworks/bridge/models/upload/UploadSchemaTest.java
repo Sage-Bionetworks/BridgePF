@@ -306,13 +306,14 @@ public class UploadSchemaTest {
 
     @Test
     public void testSerialization() throws Exception {
-        // start with JSON. Some objects may already be serialized using upper-case enums
+        // start with JSON. Some field definitions may already be serialized using upper-case enums
         // so leave this test string as it is. We know from other tests that lower-case 
         // strings work.
         String jsonText = "{\n" +
                 "   \"name\":\"Test Schema\",\n" +
                 "   \"revision\":3,\n" +
                 "   \"schemaId\":\"test-schema\",\n" +
+                "   \"schemaType\":\"ios_survey\",\n" +
                 "   \"fieldDefinitions\":[\n" +
                 "       {\n" +
                 "           \"name\":\"foo\",\n" +
@@ -332,6 +333,7 @@ public class UploadSchemaTest {
         assertEquals("Test Schema", uploadSchema.getName());
         assertEquals(3, uploadSchema.getRevision());
         assertEquals("test-schema", uploadSchema.getSchemaId());
+        assertEquals(UploadSchemaType.IOS_SURVEY, uploadSchema.getSchemaType());
 
         UploadFieldDefinition fooFieldDef = uploadSchema.getFieldDefinitions().get(0);
         assertEquals("foo", fooFieldDef.getName());
@@ -351,10 +353,11 @@ public class UploadSchemaTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(5, jsonMap.size());
+        assertEquals(6, jsonMap.size());
         assertEquals("Test Schema", jsonMap.get("name"));
         assertEquals(3, jsonMap.get("revision"));
         assertEquals("test-schema", jsonMap.get("schemaId"));
+        assertEquals("ios_survey", jsonMap.get("schemaType"));
         assertEquals("UploadSchema", jsonMap.get("type"));
 
         List<Map<String, Object>> fieldDefJsonList = (List<Map<String, Object>>) jsonMap.get("fieldDefinitions");
