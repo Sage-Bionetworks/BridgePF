@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -29,8 +30,10 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
+import org.sagebionetworks.bridge.models.schedules.SchedulerFactory;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Task;
+import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
 import org.sagebionetworks.bridge.models.schedules.TaskStatus;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -40,6 +43,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 public class DynamoTaskDaoMockTest {
 
@@ -101,8 +105,7 @@ public class DynamoTaskDaoMockTest {
         List<SchedulePlan> plans = Lists.newArrayListWithCapacity(3);
         
         SchedulePlan plan = new DynamoSchedulePlan();
-        // plan.setGuid("DDD");
-        plan.setGuid(BridgeUtils.generateGuid());
+        plan.setGuid("DDD");
         plan.setStrategy(getStrategy("3", "P3D", "task3"));
         plan.setStudyKey(STUDY_IDENTIFIER.getIdentifier());
         plans.add(plan);
@@ -137,7 +140,7 @@ public class DynamoTaskDaoMockTest {
     }
     
     @SuppressWarnings("unchecked")
-    private void mockQuery(DateTime until, final DynamoTask... tasks) {
+    private void mockQuery(DateTime until, final List<DynamoTask> tasks) {
         List<DynamoTask> results = Lists.newArrayList();
         if (tasks != null) {
             for (final DynamoTask task : tasks) {
@@ -168,20 +171,22 @@ public class DynamoTaskDaoMockTest {
     public void testOfFirstPeriod() throws Exception {
         DateTime endsOn = NOW.plus(Period.parse("P2D"));
 
-        mockQuery(endsOn);
+        List<DynamoTask> tasks = runSchedulerForExpectedTasks(endsOn);
+        mockQuery(endsOn, tasks);
         
-        List<Task> tasks = taskDao.getTasks(user, endsOn);
+        List<Task> tasks2 = taskDao.getTasks(user, endsOn);
         
         // These also show that stuff is getting sorted by label
         /* Expired tasks are not returned, so this starts on the 12th */
-        assertTask("2015-04-12T13:00:00.000-07:00", "task:task1", tasks.get(0));
-        assertTask("2015-04-13T13:00:00.000-07:00", "task:task1", tasks.get(1));
-        assertTask("2015-04-13T13:00:00.000-07:00", "task:task2", tasks.get(2));
-        assertTask("2015-04-14T13:00:00.000-07:00", "task:task1", tasks.get(3));
-        assertTask("2015-04-14T13:00:00.000-07:00", "task:task3", tasks.get(4));
+        assertTask("2015-04-12T13:00:00.000-07:00", "task:task1", tasks2.get(0));
+        assertTask("2015-04-13T13:00:00.000-07:00", "task:task1", tasks2.get(1));
+        assertTask("2015-04-13T13:00:00.000-07:00", "task:task2", tasks2.get(2));
+        assertTask("2015-04-14T13:00:00.000-07:00", "task:task1", tasks2.get(3));
+        assertTask("2015-04-14T13:00:00.000-07:00", "task:task3", tasks2.get(4));
         
         verify(mapper).query(any(Class.class), any(DynamoDBQueryExpression.class));
         verify(mapper).batchSave(any(List.class));
+        verify(mapper, times(3)).count(any(Class.class), any(DynamoDBQueryExpression.class));
         verifyNoMoreInteractions(mapper);
     }
     
@@ -190,63 +195,24 @@ public class DynamoTaskDaoMockTest {
     public void testOfSecondPeriodWithDifferentStartTime() throws Exception {
         DateTime endsOn = NOW.plus(Period.parse("P4D"));
         
-        mockQuery(endsOn);
+        List<DynamoTask> tasks = runSchedulerForExpectedTasks(endsOn);
+        mockQuery(endsOn, tasks);
         
-        List<Task> tasks = taskDao.getTasks(user, endsOn);
+        List<Task> tasks2 = taskDao.getTasks(user, endsOn);
 
         // These also show that stuff is getting sorted by label
-        assertTask("2015-04-12T13:00:00.000-07:00", "task:task1", tasks.get(0));
-        assertTask("2015-04-13T13:00:00.000-07:00", "task:task1", tasks.get(1));
-        assertTask("2015-04-13T13:00:00.000-07:00", "task:task2", tasks.get(2));
-        assertTask("2015-04-14T13:00:00.000-07:00", "task:task1", tasks.get(3));
-        assertTask("2015-04-14T13:00:00.000-07:00", "task:task3", tasks.get(4));
-        assertTask("2015-04-15T13:00:00.000-07:00", "task:task1", tasks.get(5));
-        assertTask("2015-04-15T13:00:00.000-07:00", "task:task2", tasks.get(6));
-        assertTask("2015-04-16T13:00:00.000-07:00", "task:task1", tasks.get(7));
+        assertTask("2015-04-12T13:00:00.000-07:00", "task:task1", tasks2.get(0));
+        assertTask("2015-04-13T13:00:00.000-07:00", "task:task1", tasks2.get(1));
+        assertTask("2015-04-13T13:00:00.000-07:00", "task:task2", tasks2.get(2));
+        assertTask("2015-04-14T13:00:00.000-07:00", "task:task1", tasks2.get(3));
+        assertTask("2015-04-14T13:00:00.000-07:00", "task:task3", tasks2.get(4));
+        assertTask("2015-04-15T13:00:00.000-07:00", "task:task1", tasks2.get(5));
+        assertTask("2015-04-15T13:00:00.000-07:00", "task:task2", tasks2.get(6));
+        assertTask("2015-04-16T13:00:00.000-07:00", "task:task1", tasks2.get(7));
         
         verify(mapper).query(any(Class.class), any(DynamoDBQueryExpression.class));
         verify(mapper).batchSave(any(List.class));
-        verifyNoMoreInteractions(mapper);
-    }
-    
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testIntegrationOfQueryResults() {
-        DateTime endsOn = NOW.plus(Period.parse("P2D"));
-        
-        DynamoTask task1 = new DynamoTask();
-        task1.setSchedulePlanGuid("BBB");
-        task1.setActivity(new Activity("Activity 1", "task:task1"));
-        task1.setScheduledOn(DateTime.parse("2015-04-11T13:00:00.000-07:00").getMillis());
-        task1.setExpiresOn(DateTime.parse("2015-04-12T23:00:00.000-07:00").getMillis());
-        task1.setStartedOn(DateTime.parse("2015-04-12T18:30:23.334-07:00").getMillis());
-        task1.setGuid(BridgeUtils.generateGuid());
-        
-        DynamoTask task2 = new DynamoTask();
-        task2.setSchedulePlanGuid("DDD");
-        task2.setActivity(new Activity("Activity 3", "task:task3"));
-        task2.setScheduledOn(DateTime.parse("2015-04-11T13:00:00.000-07:00").getMillis());
-        task2.setExpiresOn(DateTime.parse("2015-04-12T23:00:00.000-07:00").getMillis());
-        task2.setFinishedOn(DateTime.parse("2015-04-12T18:34:01.113-07:00").getMillis());
-        task2.setGuid(BridgeUtils.generateGuid());
-        
-        mockQuery(endsOn, task1, task2);
-        
-        List<Task> tasks = taskDao.getTasks(user, endsOn);
-        
-        assertEquals(TaskStatus.STARTED, tasks.get(0).getStatus());
-        assertEquals(TaskStatus.AVAILABLE, tasks.get(1).getStatus());
-        assertEquals(TaskStatus.SCHEDULED, tasks.get(2).getStatus());
-        assertTask("2015-04-11T13:00:00.000-07:00", "task:task1", tasks.get(0));
-        assertTask("2015-04-12T13:00:00.000-07:00", "task:task1", tasks.get(1));
-        assertTask("2015-04-13T13:00:00.000-07:00", "task:task1", tasks.get(2));
-        assertTask("2015-04-13T13:00:00.000-07:00", "task:task2", tasks.get(3));
-        assertTask("2015-04-14T13:00:00.000-07:00", "task:task1", tasks.get(4));
-        assertTask("2015-04-14T13:00:00.000-07:00", "task:task3", tasks.get(5));
-        
-        
-        verify(mapper).query(any(Class.class), any(DynamoDBQueryExpression.class));
-        verify(mapper).batchSave(any(List.class));
+        verify(mapper, times(3)).count(any(Class.class), any(DynamoDBQueryExpression.class));
         verifyNoMoreInteractions(mapper);
     }
     
@@ -269,7 +235,7 @@ public class DynamoTaskDaoMockTest {
         task2.setFinishedOn(DateTime.parse("2015-04-12T18:34:01.113-07:00").getMillis());
         task2.setGuid(BridgeUtils.generateGuid());
         
-        mockQuery(NOW.plusDays(2), task1, task2);
+        mockQuery(NOW.plusDays(2), Lists.newArrayList(task1, task2));
         
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         taskDao.deleteTasks("AAA");
@@ -303,7 +269,7 @@ public class DynamoTaskDaoMockTest {
         task2.setStartedOn(DateTime.parse("2015-04-12T18:30:23.334-07:00").getMillis());
         task2.setGuid(guid2);
         
-        mockQuery(NOW.plusDays(2), task1, task2);
+        mockQuery(NOW.plusDays(2), Lists.newArrayList(task1, task2));
         
         Task task3 = new DynamoTask();
         task3.setSchedulePlanGuid("BBB");
@@ -337,7 +303,22 @@ public class DynamoTaskDaoMockTest {
         assertEquals(TaskStatus.STARTED, savedTask1.getStatus());
         assertEquals(TaskStatus.FINISHED, savedTask2.getStatus());
     }
-    
+
+    private List<DynamoTask> runSchedulerForExpectedTasks(DateTime endsOn) {
+        Map<String,DateTime> events = Maps.newHashMap();
+        events.put("enrollment", ENROLLMENT);
+        
+        List<DynamoTask> tasks = Lists.newArrayList();
+        List<SchedulePlan> plans = getSchedulePlans();
+        for (SchedulePlan plan : plans) {
+            TaskScheduler scheduler = SchedulerFactory.getScheduler("", plan.getStrategy().getScheduleForUser(STUDY_IDENTIFIER, plan, user));
+            for (Task dTask : scheduler.getTasks(events, endsOn)) {
+                tasks.add((DynamoTask)dTask);
+            }
+        }
+        return tasks;
+    }
+   
     private void assertTask(String dateString, String ref, Task task) {
         DateTime date = DateTime.parse(dateString);
         assertEquals(date.toString(), new DateTime(task.getScheduledOn()).toString());

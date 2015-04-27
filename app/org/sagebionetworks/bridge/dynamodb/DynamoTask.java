@@ -181,6 +181,8 @@ public final class DynamoTask implements Task {
         result = prime * result + Objects.hashCode(startedOn);
         result = prime * result + Objects.hashCode(finishedOn);
         result = prime * result + Objects.hashCode(healthCode);
+        result = prime * result + Objects.hashCode(runKey);
+        result = prime * result + Objects.hashCode(hidesOn);
         return result;
     }
     @Override
@@ -193,14 +195,15 @@ public final class DynamoTask implements Task {
         return (Objects.equals(activity, other.activity) && Objects.equals(expiresOn, other.expiresOn) && 
                 Objects.equals(guid, other.guid) && Objects.equals(schedulePlanGuid, other.schedulePlanGuid) &&
                 Objects.equals(startedOn, other.startedOn) && Objects.equals(finishedOn, other.finishedOn) && 
-                Objects.equals(scheduledOn, other.scheduledOn) && Objects.equals(healthCode, other.healthCode));
+                Objects.equals(scheduledOn, other.scheduledOn) && Objects.equals(healthCode, other.healthCode) && 
+                Objects.equals(hidesOn,  other.hidesOn) && Objects.equals(runKey, other.runKey));
     }
     @Override
     public String toString() {
         return String.format("DynamoTask [status=%s, healthCode=%s, guid=%s, schedulePlanGuid=%s, scheduledOn=%s, expiresOn=%s, startedOn=%s, finishedOn=%s, activity=%s]",
-                        getStatus().name(), healthCode, guid, schedulePlanGuid, BridgeUtils.toString(scheduledOn),
-                        BridgeUtils.toString(expiresOn), BridgeUtils.toString(startedOn),
-                        BridgeUtils.toString(finishedOn), activity);
+            getStatus().name(), healthCode, guid, schedulePlanGuid, BridgeUtils.toString(scheduledOn),
+            BridgeUtils.toString(expiresOn), BridgeUtils.toString(startedOn),
+            BridgeUtils.toString(finishedOn), activity);
     }
 
 }

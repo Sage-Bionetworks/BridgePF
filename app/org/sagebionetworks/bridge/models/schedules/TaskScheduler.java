@@ -59,7 +59,6 @@ public abstract class TaskScheduler {
         if (isInWindow(schedule, scheduledTime)) {
             // As long at the tasks are not already expired, add them.
             DateTime expiresOn = getExpiresOn(scheduledTime, schedule);
-            //if (expiresOn == null || expiresOn.isAfter(scheduledTime)) {
             if (expiresOn == null || expiresOn.isAfter(now)) {
                 for (Activity activity : schedule.getActivities()) {
                     DynamoTask task = new DynamoTask();
@@ -71,6 +70,7 @@ public abstract class TaskScheduler {
                         task.setExpiresOn(expiresOn.getMillis());
                         task.setHidesOn(expiresOn.getMillis());
                     }
+                    task.setRunKey(BridgeUtils.generateTaskRunKey(task));
                     tasks.add(task);
                 }
             }

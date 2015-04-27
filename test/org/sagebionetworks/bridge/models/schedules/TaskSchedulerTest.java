@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,9 +33,17 @@ public class TaskSchedulerTest {
     
     @Before
     public void before() {
+        // Day of tests is 2015-04-06T10:10:10.000-07:00 for purpose of calculating expiration
+        DateTimeUtils.setCurrentMillisFixed(1428340210000L);
+
         events = Maps.newHashMap();
         // Enrolled on March 23, 2015 @ 10am GST
         events.put("enrollment", ENROLLMENT);
+    }
+    
+    @After
+    public void after() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
     
     @Test
@@ -59,11 +69,11 @@ public class TaskSchedulerTest {
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setLabel("This is a label");
         schedule.addActivity(new Activity("activity label", "task:ref"));
-        schedule.setExpires("P3D");
+        schedule.setExpires("P3Y");
         
         tasks = SchedulerFactory.getScheduler("schedulePlanGuid", schedule).getTasks(events, NOW.plusWeeks(1));
         Task task = tasks.get(0);
-        
+
         assertEquals("schedulePlanGuid", task.getSchedulePlanGuid());
         assertNotNull(task.getGuid());
         assertEquals("activity label", task.getActivity().getLabel());
