@@ -321,7 +321,7 @@ public class DynamoTaskDaoMockTest {
    
     private void assertTask(String dateString, String ref, Task task) {
         DateTime date = DateTime.parse(dateString);
-        assertEquals(date.toString(), new DateTime(task.getScheduledOn()).toString());
+        assertEquals((long)date.getMillis(), (long)task.getScheduledOn());
         assertEquals(ref, task.getActivity().getRef());
     }
     
