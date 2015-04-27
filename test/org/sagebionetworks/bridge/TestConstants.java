@@ -1,11 +1,14 @@
 package org.sagebionetworks.bridge;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 public class TestConstants {
     public static final String DUMMY_IMAGE_DATA = "VGhpcyBpc24ndCBhIHJlYWwgaW1hZ2Uu";
 
     public static final String TEST_STUDY_IDENTIFIER = "api";
+    public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";
     public static final String API_URL = "/api/v1";

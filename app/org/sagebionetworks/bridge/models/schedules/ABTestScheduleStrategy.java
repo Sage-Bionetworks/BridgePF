@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.springframework.validation.Errors;
 
@@ -80,7 +80,7 @@ public class ABTestScheduleStrategy implements ScheduleStrategy {
     }
     
     @Override
-    public Schedule getScheduleForUser(Study study, SchedulePlan plan, User user) {
+    public Schedule getScheduleForUser(StudyIdentifier study, SchedulePlan plan, User user) {
         if (groups.isEmpty()) {
             return null;
         }

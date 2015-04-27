@@ -1,7 +1,8 @@
-    package org.sagebionetworks.bridge.models.schedules;
+package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.assertEquals;
-import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.dt;
+import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asLong;
+import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.RECURRING;
@@ -10,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -24,9 +27,16 @@ public class IntervalTaskSchedulerTest {
     
     @Before
     public void before() {
+        // Day of tests is 2015-04-06T10:10:10.000-07:00 for purpose of calculating expiration
+        DateTimeUtils.setCurrentMillisFixed(1428340210000L);
         events = Maps.newHashMap();
         // Enrolled on March 23, 2015 @ 10am GST
         events.put("enrollment", ENROLLMENT);
+    }
+    
+    @After
+    public void aftter() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
     
     @Test
@@ -38,6 +48,10 @@ public class IntervalTaskSchedulerTest {
         schedule.addTimes("08:00");
         schedule.setExpires("PT24H");
         
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
+        assertEquals(0, tasks.size());
+        
+        schedule.setExpires("P1M");
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
         assertDates(tasks, "2015-03-30 08:00");
     }
@@ -102,7 +116,7 @@ public class IntervalTaskSchedulerTest {
     public void onceDelayEndsOnScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setDelay("P2D");
-        schedule.setEndsOn(dt("2015-04-04 10:00"));
+        schedule.setEndsOn(asDT("2015-04-04 10:00"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusDays(3));
         assertDates(tasks, "2015-03-25 09:40");
@@ -116,15 +130,15 @@ public class IntervalTaskSchedulerTest {
     public void onceDelayStartEndsOnScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setDelay("P2M");
-        schedule.setStartsOn(dt("2015-03-20 00:00"));
-        schedule.setEndsOn(dt("2015-06-01 10:00"));
+        schedule.setStartsOn(asDT("2015-03-20 00:00"));
+        schedule.setEndsOn(asDT("2015-06-01 10:00"));
         
         // Schedules in the window without any issue
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(3));
         assertDates(tasks, "2015-05-23 09:40");
         
         schedule.setDelay("P6M");
-        schedule.setStartsOn(dt("2015-05-01 00:00"));
+        schedule.setStartsOn(asDT("2015-05-01 00:00"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(9));
         assertEquals(0, tasks.size());
     }
@@ -132,16 +146,26 @@ public class IntervalTaskSchedulerTest {
     public void onceDelayExpiresScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setExpires("P1W");
+        schedule.setDelay("P1M");
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(3));
-        assertEquals(dt("2015-03-23 09:40"), tasks.get(0).getScheduledOn());
-        assertEquals(dt("2015-03-30 09:40"), tasks.get(0).getExpiresOn());
+        assertEquals(asLong("2015-04-23 09:40"), tasks.get(0).getScheduledOn());
+        assertEquals(asLong("2015-04-30 09:40"), tasks.get(0).getExpiresOn());
+    }
+    @Test
+    public void onceExpiresScheduleWorks() {
+        Schedule schedule = createScheduleWith(ONCE);
+        schedule.setExpires("P1W");
+
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(3));
+        // No tasks. Created on 3/23, it expired by 3/30, today is 4/6
+        assertEquals(0, tasks.size());
     }
     @Test
     public void onceEventScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setEventId("survey:AAA:completedOn");
-        events.put("survey:AAA:completedOn", dt("2015-04-10 11:40"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-10 11:40"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
         assertDates(tasks, "2015-04-10 09:40");
@@ -154,8 +178,8 @@ public class IntervalTaskSchedulerTest {
     public void onceEventStartsOnScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setEventId("survey:AAA:completedOn");
-        schedule.setStartsOn(dt("2015-04-01 10:00"));
-        events.put("survey:AAA:completedOn", dt("2015-03-29 11:40"));
+        schedule.setStartsOn(asDT("2015-04-01 10:00"));
+        events.put("survey:AAA:completedOn", asDT("2015-03-29 11:40"));
 
         // Goes to the event window day and takes the afternoon slot, after 10am
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
@@ -165,8 +189,8 @@ public class IntervalTaskSchedulerTest {
     public void onceEventEndsOnScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setEventId("survey:AAA:completedOn");
-        schedule.setEndsOn(dt("2015-04-01 10:00"));
-        events.put("survey:AAA:completedOn", dt("2015-04-02 00:00"));
+        schedule.setEndsOn(asDT("2015-04-01 10:00"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-02 00:00"));
         
         // No task, the event happened after the end of the window
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
@@ -176,14 +200,14 @@ public class IntervalTaskSchedulerTest {
     public void onceEventStartEndsOnScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setEventId("survey:AAA:completedOn");
-        schedule.setStartsOn(dt("2015-04-01 10:00"));
-        schedule.setEndsOn(dt("2015-05-01 10:00"));
+        schedule.setStartsOn(asDT("2015-04-01 10:00"));
+        schedule.setEndsOn(asDT("2015-05-01 10:00"));
 
         // No event... select the startsOn window
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
         assertEquals(0, tasks.size());
         
-        events.put("survey:AAA:completedOn", dt("2015-04-10 00:00"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-10 00:00"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
         assertDates(tasks, "2015-04-10 09:40");
     }
@@ -192,7 +216,7 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setEventId("survey:AAA:completedOn");
         schedule.setDelay("P4D");
-        events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
         assertDates(tasks, "2015-04-06 09:40");
@@ -212,14 +236,14 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setEventId("survey:AAA:completedOn");
         schedule.setDelay("P4D");
-        schedule.setStartsOn(dt("2015-03-29 00:00"));
+        schedule.setStartsOn(asDT("2015-03-29 00:00"));
 
-        events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
         assertDates(tasks, "2015-04-06 09:40");
         
         // This should not return a task.
-        schedule.setStartsOn(dt("2015-04-15 00:00"));
+        schedule.setStartsOn(asDT("2015-04-15 00:00"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
         assertEquals(0, tasks.size());
     }
@@ -228,9 +252,9 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setEventId("survey:AAA:completedOn");
         schedule.setDelay("P4D");
-        schedule.setEndsOn(dt("2015-04-29 00:00"));
+        schedule.setEndsOn(asDT("2015-04-29 00:00"));
         
-        events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
         assertDates(tasks, "2015-04-06 09:40");
     }
@@ -239,11 +263,11 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setEventId("survey:AAA:completedOn");
         schedule.setDelay("PT3H");
-        schedule.setStartsOn(dt("2015-03-29 00:00"));
-        schedule.setEndsOn(dt("2015-04-29 00:00"));
+        schedule.setStartsOn(asDT("2015-03-29 00:00"));
+        schedule.setEndsOn(asDT("2015-04-29 00:00"));
         schedule.getTimes().clear();
         
-        events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(6));
         assertDates(tasks, "2015-04-02 12:22");
     }
@@ -252,15 +276,22 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setEventId("survey:AAA:completedOn");
         schedule.setDelay("PT3H");
-        schedule.setStartsOn(dt("2015-03-29 00:00"));
-        schedule.setEndsOn(dt("2015-04-29 00:00"));
+        schedule.setStartsOn(asDT("2015-03-29 00:00"));
+        schedule.setEndsOn(asDT("2015-04-29 00:00"));
         schedule.setExpires("P3D");
         schedule.getTimes().clear();
         
-        events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
+        
+        // Given even, it would be on 4/2 at 12:22, expiring 4/5, today is 4/6
+        // It's in the window but still doesn't appear
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(6));
-        assertEquals(dt("2015-04-02 12:22"), tasks.get(0).getScheduledOn());
-        assertEquals(dt("2015-04-05 12:22"), tasks.get(0).getExpiresOn());
+        assertEquals(0, tasks.size());
+        
+        events.put("survey:AAA:completedOn", asDT("2015-04-06 09:22"));
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(6));
+        assertEquals(asLong("2015-04-06 12:22"), tasks.get(0).getScheduledOn());
+        assertEquals(asLong("2015-04-09 12:22"), tasks.get(0).getExpiresOn());
     }
     @Test
     public void recurringScheduleWorks() {
@@ -324,7 +355,7 @@ public class IntervalTaskSchedulerTest {
     public void recurringDelayEndsOnScheduleWorks() {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setDelay("P2D");
-        schedule.setEndsOn(dt("2015-04-05 10:00"));
+        schedule.setEndsOn(asDT("2015-04-05 10:00"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusWeeks(1));
         assertDates(tasks, "2015-03-25 09:40", "2015-03-25 13:40", "2015-03-27 09:40", "2015-03-27 13:40",
@@ -339,8 +370,8 @@ public class IntervalTaskSchedulerTest {
     public void recurringDelayStartEndsOnScheduleWorks() {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setDelay("P1D");
-        schedule.setStartsOn(dt("2015-03-22 00:00"));
-        schedule.setEndsOn(dt("2015-03-30 10:00"));
+        schedule.setStartsOn(asDT("2015-03-22 00:00"));
+        schedule.setEndsOn(asDT("2015-03-30 10:00"));
         
         // Schedules in the window without any issue
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusDays(9));
@@ -349,7 +380,7 @@ public class IntervalTaskSchedulerTest {
         
         // Schedule before, rolls forward
         schedule.setDelay("P1M");
-        schedule.setStartsOn(dt("2015-03-30 09:00"));
+        schedule.setStartsOn(asDT("2015-03-30 09:00"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(3));
         assertEquals(0, tasks.size());
     }
@@ -357,7 +388,7 @@ public class IntervalTaskSchedulerTest {
     public void recurringEventScheduleWorks() {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setEventId("survey:AAA:completedOn");
-        events.put("survey:AAA:completedOn", dt("2015-04-10 11:40"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-10 11:40"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusWeeks(3));
         assertDates(tasks, "2015-04-10 09:40", "2015-04-10 13:40", "2015-04-12 09:40", "2015-04-12 13:40");
@@ -366,8 +397,8 @@ public class IntervalTaskSchedulerTest {
     public void recurringEventStartsOnScheduleWorks() {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setEventId("survey:AAA:completedOn");
-        schedule.setStartsOn(dt("2015-04-11 00:00"));
-        events.put("survey:AAA:completedOn", dt("2015-04-12 11:40"));
+        schedule.setStartsOn(asDT("2015-04-11 00:00"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-12 11:40"));
 
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusWeeks(3));
         assertDates(tasks, "2015-04-12 09:40", "2015-04-12 13:40");
@@ -376,8 +407,8 @@ public class IntervalTaskSchedulerTest {
     public void recurringEventEndsOnScheduleWorks() {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setEventId("survey:AAA:completedOn");
-        schedule.setEndsOn(dt("2015-04-01 10:00"));
-        events.put("survey:AAA:completedOn", dt("2015-04-02 00:00"));
+        schedule.setEndsOn(asDT("2015-04-01 10:00"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-02 00:00"));
         
         // No task, the event happened after the end of the window
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
@@ -387,9 +418,9 @@ public class IntervalTaskSchedulerTest {
     public void recurringEventStartEndsOnScheduleWorks() {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setEventId("survey:AAA:completedOn");
-        schedule.setStartsOn(dt("2015-03-30 10:00"));
-        schedule.setEndsOn(dt("2015-04-05 10:00"));
-        events.put("survey:AAA:completedOn", dt("2015-04-02 00:00"));
+        schedule.setStartsOn(asDT("2015-03-30 10:00"));
+        schedule.setEndsOn(asDT("2015-04-05 10:00"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-02 00:00"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
         
@@ -400,7 +431,7 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setEventId("survey:AAA:completedOn");
         schedule.setDelay("P4D");
-        events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusDays(16));
         assertDates(tasks, "2015-04-06 09:40", "2015-04-06 13:40", "2015-04-08 09:40", "2015-04-08 13:40");
@@ -410,10 +441,10 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setEventId("survey:AAA:completedOn");
         schedule.setDelay("P4D");
-        schedule.setStartsOn(dt("2015-04-02 00:00"));
+        schedule.setStartsOn(asDT("2015-04-02 00:00"));
 
         // The delay doesn't mean the schedule fires on this event
-        events.put("survey:AAA:completedOn", dt("2015-04-01 09:22"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-01 09:22"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusWeeks(2));
 
         assertEquals(0, tasks.size());
@@ -423,9 +454,9 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setEventId("survey:AAA:completedOn");
         schedule.setDelay("P4D");
-        schedule.setEndsOn(dt("2015-04-08 00:00"));
+        schedule.setEndsOn(asDT("2015-04-08 00:00"));
         
-        events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
         assertDates(tasks, "2015-04-06 09:40", "2015-04-06 13:40");
     }
@@ -434,11 +465,11 @@ public class IntervalTaskSchedulerTest {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setEventId("survey:AAA:completedOn");
         schedule.setDelay("P1D");
-        schedule.setStartsOn(dt("2015-04-07 00:00"));
-        schedule.setEndsOn(dt("2015-04-10 00:00"));
+        schedule.setStartsOn(asDT("2015-04-07 00:00"));
+        schedule.setEndsOn(asDT("2015-04-10 00:00"));
         
         // This is outside the window, so when this happens, even if it recurs, it shouldn't fire
-        events.put("survey:AAA:completedOn", dt("2015-04-02 09:22"));
+        events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusWeeks(3));
         assertEquals(0, tasks.size());
     }

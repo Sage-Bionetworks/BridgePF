@@ -42,8 +42,7 @@ public class DynamoSurveyTest {
         } catch(Throwable t) {
             fail(t.getMessage());
         }
-        
-        String string = JsonUtils.toJSON(newSurvey);
+        String string = new BridgeObjectMapper().writeValueAsString(newSurvey);
         
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(string);
@@ -111,7 +110,7 @@ public class DynamoSurveyTest {
         assertEquals("This is the prompt", JsonUtils.asText(sn, "prompt"));
         assertEquals("This is further explanation of the prompt.", JsonUtils.asText(sn, "promptDetail"));
         assertEquals("The title of the screen", JsonUtils.asText(sn, "title"));
-        assertEquals(image, JsonUtils.asImage(sn, "image"));
+        assertEquals(image, JsonUtils.asEntity(sn, "image", Image.class));
         Survey survey2 = DynamoSurvey.fromJson(node);
         survey2.setGuid(survey.getGuid());
         survey2.setStudyIdentifier(survey.getStudyIdentifier());
