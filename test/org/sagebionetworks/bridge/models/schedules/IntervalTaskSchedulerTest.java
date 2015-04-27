@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -25,9 +27,16 @@ public class IntervalTaskSchedulerTest {
     
     @Before
     public void before() {
+        // Day of tests is 2015-04-06T10:10:10.000-07:00 for purpose of calculating expiration
+        DateTimeUtils.setCurrentMillisFixed(1428340210000L);
         events = Maps.newHashMap();
         // Enrolled on March 23, 2015 @ 10am GST
         events.put("enrollment", ENROLLMENT);
+    }
+    
+    @After
+    public void aftter() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
     
     @Test
@@ -39,6 +48,10 @@ public class IntervalTaskSchedulerTest {
         schedule.addTimes("08:00");
         schedule.setExpires("PT24H");
         
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
+        assertEquals(0, tasks.size());
+        
+        schedule.setExpires("P1M");
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(1));
         assertDates(tasks, "2015-03-30 08:00");
     }
@@ -133,10 +146,20 @@ public class IntervalTaskSchedulerTest {
     public void onceDelayExpiresScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setExpires("P1W");
+        schedule.setDelay("P1M");
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(3));
-        assertEquals(asLong("2015-03-23 09:40"), tasks.get(0).getScheduledOn());
-        assertEquals(asLong("2015-03-30 09:40"), tasks.get(0).getExpiresOn());
+        assertEquals(asLong("2015-04-23 09:40"), tasks.get(0).getScheduledOn());
+        assertEquals(asLong("2015-04-30 09:40"), tasks.get(0).getExpiresOn());
+    }
+    @Test
+    public void onceExpiresScheduleWorks() {
+        Schedule schedule = createScheduleWith(ONCE);
+        schedule.setExpires("P1W");
+
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(3));
+        // No tasks. Created on 3/23, it expired by 3/30, today is 4/6
+        assertEquals(0, tasks.size());
     }
     @Test
     public void onceEventScheduleWorks() {
@@ -259,9 +282,16 @@ public class IntervalTaskSchedulerTest {
         schedule.getTimes().clear();
         
         events.put("survey:AAA:completedOn", asDT("2015-04-02 09:22"));
+        
+        // Given even, it would be on 4/2 at 12:22, expiring 4/5, today is 4/6
+        // It's in the window but still doesn't appear
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(6));
-        assertEquals(asLong("2015-04-02 12:22"), tasks.get(0).getScheduledOn());
-        assertEquals(asLong("2015-04-05 12:22"), tasks.get(0).getExpiresOn());
+        assertEquals(0, tasks.size());
+        
+        events.put("survey:AAA:completedOn", asDT("2015-04-06 09:22"));
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, ENROLLMENT.plusMonths(6));
+        assertEquals(asLong("2015-04-06 12:22"), tasks.get(0).getScheduledOn());
+        assertEquals(asLong("2015-04-09 12:22"), tasks.get(0).getExpiresOn());
     }
     @Test
     public void recurringScheduleWorks() {

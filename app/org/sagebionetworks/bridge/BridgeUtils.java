@@ -28,11 +28,10 @@ public class BridgeUtils {
         return UUID.randomUUID().toString();
     }
     
-    public static String generateTaskKey(Task task) {
-        checkNotNull(task.getHealthCode());
+    public static String generateTaskRunKey(Task task) {
         checkNotNull(task.getSchedulePlanGuid());
         checkNotNull(task.getScheduledOn());
-        return String.format("%s:%s:%s", task.getHealthCode(), task.getSchedulePlanGuid(), Long.toString(task.getScheduledOn()));
+        return String.format("%s:%s", task.getSchedulePlanGuid(), Long.toString(task.getScheduledOn()));
     }
     
     public static String getTypeName(Class<?> clazz) {
