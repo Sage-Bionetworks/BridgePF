@@ -36,7 +36,7 @@ POST   /api/v1/surveys/:surveyGuid/:createdOn/:identifier  @controllers.SurveyRe
 GET    /api/v1/schedules   @controllers.ScheduleController.getSchedules
 
 # API - Tasks
-GET    /api/v1/tasks       @controllers.TaskController.getTasks(endsOn: String)
+GET    /api/v1/tasks       @controllers.TaskController.getTasks(until: java.lang.String ?= null)
 POST   /api/v1/tasks       @controllers.TaskController.updateTasks()
 
 # API - Consent
