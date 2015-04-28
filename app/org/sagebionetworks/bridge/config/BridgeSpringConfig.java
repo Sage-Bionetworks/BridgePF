@@ -19,9 +19,12 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.TableNameOverrideFactory;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
+import org.sagebionetworks.bridge.upload.IosSchemaContextValidator;
 import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler;
+import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler2;
 import org.sagebionetworks.bridge.upload.ParseJsonHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
+import org.sagebionetworks.bridge.upload.TestingHandler;
 import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
 import org.sagebionetworks.bridge.upload.UnzipHandler;
 import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
@@ -236,10 +239,18 @@ public class BridgeSpringConfig {
     @Autowired
     public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,
             DecryptHandler decryptHandler, UnzipHandler unzipHandler, ParseJsonHandler parseJsonHandler,
-            IosSchemaValidationHandler iosSchemaValidationHandler, TranscribeConsentHandler transcribeConsentHandler,
+            IosSchemaValidationHandler iosSchemaValidationHandler,
+            IosSchemaValidationHandler2 iosSchemaValidationHandler2, TranscribeConsentHandler transcribeConsentHandler,
             UploadArtifactsHandler uploadArtifactsHandler) {
+
+        // iOS schema v1 vs v2 test
+        TestingHandler iosSchemaTestingHandler = new TestingHandler();
+        iosSchemaTestingHandler.setContextValidator(IosSchemaContextValidator.INSTANCE);
+        iosSchemaTestingHandler.setProductionHandler(iosSchemaValidationHandler);
+        iosSchemaTestingHandler.setTestHandler(iosSchemaValidationHandler2);
+
         return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler, parseJsonHandler,
-                iosSchemaValidationHandler, transcribeConsentHandler, uploadArtifactsHandler);
+                iosSchemaTestingHandler, transcribeConsentHandler, uploadArtifactsHandler);
     }
 
     @Bean(name = "uploadSchemaDdbMapper")
