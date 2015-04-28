@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
 import org.sagebionetworks.bridge.models.schedules.TaskStatus;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.services.ActivityService;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -90,10 +91,13 @@ public class DynamoTaskDaoMockTest {
         mapper = mock(DynamoDBMapper.class);
         when(mapper.query(eq(DynamoTask.class), any(DynamoDBQueryExpression.class))).thenReturn(null);
         
+        ActivityService activityService = mock(ActivityService.class);
+        
         taskDao = new DynamoTaskDao();
         taskDao.setSchedulePlanService(schedulePlanService);
         taskDao.setUserConsentDao(userConsentDao);
         taskDao.setDdbMapper(mapper);
+        taskDao.setActivityService(activityService);
     }
     
     @After

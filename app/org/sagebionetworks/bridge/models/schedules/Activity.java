@@ -1,12 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.Objects;
-
-
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -19,12 +13,13 @@ public class Activity {
     
     @JsonCreator
     public Activity(@JsonProperty("label") String label, @JsonProperty("ref") String ref) {
-        checkArgument(isNotBlank(label));
-        checkNotNull(ref);
-        
         this.label = label;
         this.ref = ref;
-        this.activityType = SurveyReference.isSurveyRef(ref) ? ActivityType.SURVEY : ActivityType.TASK;
+        if (ref == null) {
+            this.activityType = null;
+        } else {
+            this.activityType = SurveyReference.isSurveyRef(ref) ? ActivityType.SURVEY : ActivityType.TASK;    
+        }
     }
     
     public String getLabel() {
