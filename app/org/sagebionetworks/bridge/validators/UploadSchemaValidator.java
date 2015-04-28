@@ -69,6 +69,9 @@ public class UploadSchemaValidator implements Validator {
             if (Strings.isNullOrEmpty(uploadSchema.getSchemaId())) {
                 errors.rejectValue("schemaId", Validate.CANNOT_BE_BLANK);
             }
+
+            // TODO: add validation for schemaType once all the schemas have been updated and the integration tests
+            // start using it
         }
     }
 }
