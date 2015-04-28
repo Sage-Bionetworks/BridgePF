@@ -98,6 +98,10 @@
         <property name="targetName" value="emailController"/>
     </bean>
     
+    <bean id="TaskControllerProxied" parent="proxiedController">
+        <property name="targetName" value="taskController"/>
+    </bean>
+    
     <bean id="LunchControllerProxied" parent="proxiedController">
         <property name="targetName" value="lunchController"/>
     </bean>

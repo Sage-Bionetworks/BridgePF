@@ -10,11 +10,13 @@ import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.services.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import play.mvc.Result;
 
+@Controller("taskController")
 public class TaskController extends BaseController {
 
     private static final TypeReference<ArrayList<DynamoTask>> taskTypeRef = new TypeReference<ArrayList<DynamoTask>>() {};
@@ -28,12 +30,12 @@ public class TaskController extends BaseController {
         this.taskService = taskService;
     }
     
-    public Result getTasks(String endsOnString) throws Exception {
+    public Result getTasks(String untilString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        DateTime endsOn = (endsOnString == null) ? 
+        DateTime endsOn = (untilString == null) ? 
             DateTime.now().plusDays(TaskService.DEFAULT_EXPIRES_ON_DAYS) :
-            DateTime.parse(endsOnString);
+            DateTime.parse(untilString);
         
         List<Task> tasks = taskService.getTasks(session.getUser(), endsOn);
         return okResult(tasks);
