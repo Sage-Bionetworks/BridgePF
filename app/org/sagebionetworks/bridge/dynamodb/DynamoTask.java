@@ -98,6 +98,7 @@ public final class DynamoTask implements Task, BridgeEntity {
     public void setGuid(String guid) {
         this.guid = guid;
     }
+    @JsonIgnore
     @DynamoDBAttribute
     @Override
     public String getSchedulePlanGuid() {

@@ -148,7 +148,8 @@ public final class Schedule implements BridgeEntity {
     }
     public boolean isScheduleFor(GuidCreatedOnVersionHolder keys) {
         for (Activity activity : activities) {
-            if (keys.keysEqual(activity.getGuidCreatedOnVersionHolder())) {
+            SurveyReference ref = activity.getSurvey();
+            if (ref != null && keys.equals(ref.getGuidCreatedOnVersionHolder())) {
                 return true;
             }
         }

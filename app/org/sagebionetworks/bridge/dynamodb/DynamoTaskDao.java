@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.dao.TaskDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserConsent;
+import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SchedulerFactory;
@@ -20,6 +21,7 @@ import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.services.ActivityService;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -53,6 +55,8 @@ public class DynamoTaskDao implements TaskDao {
     private SchedulePlanService schedulePlanService;
     
     private UserConsentDao userConsentDao;
+    
+    private ActivityService activityService;
 
     @Resource(name = "taskDdbMapper")
     public void setDdbMapper(DynamoDBMapper mapper) {
@@ -68,15 +72,27 @@ public class DynamoTaskDao implements TaskDao {
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
     }
+    
+    @Autowired
+    public void setActivityService(ActivityService activityService) {
+        this.activityService = activityService;
+    }
 
     /** {@inheritDoc} */
     @Override
     public List<Task> getTasks(User user, DateTime endsOn) {
+        StudyIdentifier studyId = new StudyIdentifierImpl(user.getStudyKey());
+        
         Map<String,List<Task>> scheduledTasks = scheduleTasksForPlans(user, endsOn);
         List<Task> tasksToSave = Lists.newArrayList();
         for (String runKey : scheduledTasks.keySet()) {
             if (taskHasNotBeenSaved(user.getHealthCode(), runKey)) {
-                tasksToSave.addAll(scheduledTasks.get(runKey));
+                for (Task task : scheduledTasks.get(runKey)) {
+                    Activity activity = activityService.createResponseActivityIfNeeded(
+                        studyId, user.getHealthCode(), task.getActivity());
+                    task.setActivity(activity);
+                    tasksToSave.add(task);
+                }
             }
         }
         if (!tasksToSave.isEmpty()) {

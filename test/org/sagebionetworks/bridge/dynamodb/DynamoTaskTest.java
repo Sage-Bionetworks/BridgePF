@@ -30,12 +30,13 @@ public class DynamoTaskTest {
         task.setHealthCode("FFF-GGG-HHH");
         
         String output = BridgeObjectMapper.get().writeValueAsString(task);
-        assertEquals("{\"guid\":\"AAA-BBB-CCC\",\"schedulePlanGuid\":\"DDD-EEE-FFF\",\"scheduledOn\":\"2015-05-04T09:10:00.000Z\",\"expiresOn\":\"2015-05-12T09:10:00.000Z\",\"activity\":{\"label\":\"Label\",\"ref\":\"task:foo\",\"activityType\":\"task\",\"type\":\"Activity\"},\"status\":\"scheduled\",\"type\":\"Task\"}", output);
+        assertEquals("{\"guid\":\"AAA-BBB-CCC\",\"scheduledOn\":\"2015-05-04T09:10:00.000Z\",\"expiresOn\":\"2015-05-12T09:10:00.000Z\",\"activity\":{\"label\":\"Label\",\"ref\":\"task:foo\",\"activityType\":\"task\",\"type\":\"Activity\"},\"status\":\"scheduled\",\"type\":\"Task\"}", output);
         
         // zero out the health code field, because that will not be serialized
         task.setHealthCode(null);
 
         DynamoTask newTask = BridgeObjectMapper.get().readValue(output, DynamoTask.class);
+        newTask.setSchedulePlanGuid(task.getSchedulePlanGuid());
         assertEquals(task, newTask);
     }
     
