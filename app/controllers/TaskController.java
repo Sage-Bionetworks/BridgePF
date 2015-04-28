@@ -17,9 +17,9 @@ import play.mvc.Result;
 
 public class TaskController extends BaseController {
 
-    private final TypeReference<ArrayList<DynamoTask>> taskTypeRef = new TypeReference<ArrayList<DynamoTask>>() {};
+    private static final TypeReference<ArrayList<DynamoTask>> taskTypeRef = new TypeReference<ArrayList<DynamoTask>>() {};
     
-    private final BridgeObjectMapper mapper = BridgeObjectMapper.get();
+    private static final BridgeObjectMapper mapper = BridgeObjectMapper.get();
     
     private TaskService taskService;
     
