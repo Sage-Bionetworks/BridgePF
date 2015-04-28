@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.models.schedules.SurveyReference.SURVEY
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;

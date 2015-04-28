@@ -4,7 +4,6 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
-import org.sagebionetworks.bridge.models.surveys.Survey;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -26,11 +25,6 @@ public class SurveyReference {
     
     private final String guid;
     private final String createdOn;
-    
-    public SurveyReference(Survey survey) {
-        this.guid = survey.getGuid();
-        this.createdOn = new DateTime(survey.getCreatedOn()).toString();
-    }
     
     public SurveyReference(String ref) {
         String[] parts = ref.split(SURVEY_PATH_FRAGMENT)[1].split("/");
@@ -57,9 +51,5 @@ public class SurveyReference {
             return null;
         }
         return new GuidCreatedOnVersionHolderImpl(guid, getCreatedOnTimestamp().getMillis());
-    }
-    
-    public boolean isPublishedReference() {
-        return (createdOn == null);
     }
 }
