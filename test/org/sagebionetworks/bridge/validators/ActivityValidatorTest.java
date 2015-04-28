@@ -30,6 +30,7 @@ public class ActivityValidatorTest {
         Activity activity = new Activity("label", null);
 
         validator.validate(activity, errors);
+        System.out.println(errors);
         assertEquals(2, errors.getErrorCount());
         assertEquals("cannot be null", errors.getFieldError("activityType").getCode());
         assertEquals("cannot be missing, null, or blank", errors.getFieldError("ref").getCode());
