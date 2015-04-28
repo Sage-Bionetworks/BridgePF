@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.schedules.TaskStatus;
@@ -27,7 +28,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @BridgeTypeName("Task")
 @DynamoDBTable(tableName = "Task")
-public final class DynamoTask implements Task {
+public final class DynamoTask implements Task, BridgeEntity {
 
     private static final String ACTIVITY_PROPERTY = "activity";
     
