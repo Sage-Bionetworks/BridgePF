@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.dao.TaskDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.SignIn;
@@ -37,6 +38,7 @@ public class UserAdminServiceImpl implements UserAdminService {
     private HealthDataService healthDataService;
     private HealthIdDao healthIdDao;
     private StudyService studyService;
+    private TaskDao taskDao;
     private DistributedLockDao lockDao;
 
     @Autowired
@@ -66,6 +68,10 @@ public class UserAdminServiceImpl implements UserAdminService {
     @Autowired
     public void setHealthIdDao(HealthIdDao healthIdDao) {
         this.healthIdDao = healthIdDao;
+    }
+    @Autowired
+    public void setTaskDao(TaskDao taskDao) {
+        this.taskDao = taskDao;
     }
 
     @Override
@@ -182,6 +188,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                 // some defensive coding to keep our services robust.
                 if (!StringUtils.isBlank(healthCode)) {
                     healthDataService.deleteRecordsForHealthCode(healthCode);
+                    taskDao.deleteTasks(healthCode);
                 }
             }
             return true;
