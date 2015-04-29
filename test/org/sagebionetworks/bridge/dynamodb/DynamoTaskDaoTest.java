@@ -17,7 +17,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -36,7 +36,7 @@ import com.google.common.collect.Lists;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoTaskDaoTest {
-
+    
     @Resource
     DynamoTaskDao taskDao;
 
@@ -51,7 +51,7 @@ public class DynamoTaskDaoTest {
     public void before() {
         DynamoInitializer.init(DynamoTask.class);
         DynamoTestUtil.clearTable(DynamoTask.class);
-
+        
         Schedule schedule = new Schedule();
         schedule.setLabel("This is a schedule");
         schedule.setScheduleType(ScheduleType.RECURRING);
@@ -69,17 +69,12 @@ public class DynamoTaskDaoTest {
         plan.setStrategy(strategy);
         
         plan = schedulePlanService.createSchedulePlan(plan);
-        
+
         String healthCode = BridgeUtils.generateGuid();
         
         // Mock user consent, we don't care about that, we're just getting an enrollment date from that.
         UserConsent consent = mock(DynamoUserConsent2.class);
         when(consent.getSignedOn()).thenReturn(new DateTime().minusDays(2).getMillis()); 
-        
-        UserConsentDao userConsentDao = mock(UserConsentDao.class);
-        when(userConsentDao.getUserConsent(healthCode, TestConstants.TEST_STUDY)).thenReturn(consent);
-        
-        taskDao.setUserConsentDao(userConsentDao);
         
         user = new User();
         user.setHealthCode(healthCode);
@@ -95,12 +90,16 @@ public class DynamoTaskDaoTest {
     public void createUpdateDeleteTasks() throws Exception {
         DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
         
-        List<Task> tasks = taskDao.getTasks(user, endsOn);
+        List<Task> tasksToSchedule = TestUtils.runSchedulerForTasks(user, endsOn);
+        
+        taskDao.saveTasks(user.getHealthCode(), tasksToSchedule);
+        
+        List<Task> tasks = taskDao.getTasks(user.getHealthCode(), endsOn);
         int collectionSize = tasks.size();
         assertFalse("tasks were created", tasks.isEmpty());
         
         // Should not increase the number of tasks
-        tasks = taskDao.getTasks(user, endsOn);
+        tasks = taskDao.getTasks(user.getHealthCode(), endsOn);
         assertEquals("tasks did not grow afer repeated getTask()", collectionSize, tasks.size());
 
         // Delete most information in tasks and delete one by finishing it
@@ -110,11 +109,11 @@ public class DynamoTaskDaoTest {
         assertEquals("task deleted", TaskStatus.DELETED, task.getStatus());
         taskDao.updateTasks(user.getHealthCode(), Lists.newArrayList(task));
         
-        tasks = taskDao.getTasks(user, endsOn);
+        tasks = taskDao.getTasks(user.getHealthCode(), endsOn);
         assertEquals("deleted task not returned from server", collectionSize-1, tasks.size());
         taskDao.deleteTasks(user.getHealthCode());
         
-        tasks = taskDao.getTasksWithoutScheduling(user);
+        tasks = taskDao.getTasks(user.getHealthCode(), endsOn);
         assertEquals("all tasks deleted", 0, tasks.size());
     }
 
