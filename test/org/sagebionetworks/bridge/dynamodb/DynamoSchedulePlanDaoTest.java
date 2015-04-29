@@ -112,7 +112,7 @@ public class DynamoSchedulePlanDaoTest {
         Survey survey = new TestSurvey(true);
         survey = surveyDao.createSurvey(survey);
         
-        String url = String.format("https://%s/api/v1/surveys/%s/%s",
+        String url = String.format("https://%s/api/v1/surveys/%s/revisions/%s",
                 config.getStudyHostname(TestConstants.TEST_STUDY_IDENTIFIER), survey.getGuid(),
                 DateUtils.convertToISODateTime(survey.getCreatedOn()));
         

@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 
 /**
@@ -10,6 +13,7 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 @BridgeTypeName("GuidCreatedOnVersionHolder")
 public class SurveyReference {
 
+    private static final Pattern p = Pattern.compile("/surveys/(.*)/revisions/(.*)");
     private static final String SURVEY_PATH_FRAGMENT = "/surveys/";
     private static final String PUBLISHED_FRAGMENT = "published";
     
@@ -21,9 +25,10 @@ public class SurveyReference {
     private final String createdOn;
     
     public SurveyReference(String ref) {
-        String[] parts = ref.split(SURVEY_PATH_FRAGMENT)[1].split("/");
-        this.guid = parts[0];
-        this.createdOn = PUBLISHED_FRAGMENT.equals(parts[1]) ? null : parts[1];
+        Matcher m = p.matcher(ref);
+        m.find();
+        this.guid = m.group(1);
+        this.createdOn = (PUBLISHED_FRAGMENT.equals(m.group(2))) ? null : m.group(2);
     }
 
     public String getGuid() {
