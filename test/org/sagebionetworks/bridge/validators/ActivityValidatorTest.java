@@ -46,7 +46,7 @@ public class ActivityValidatorTest {
     
     @Test
     public void rejectsSurveysWithNonAbsoluteHrefs() {
-        Activity activity = new Activity("Label", "/api/v1/surveys/AAA/" + DateTime.now().toString());
+        Activity activity = new Activity("Label", "/api/v1/surveys/AAA/revisions/" + DateTime.now().toString());
 
         validator.validate(activity, errors);
         assertEquals(1, errors.getErrorCount());
@@ -55,12 +55,12 @@ public class ActivityValidatorTest {
     
     @Test
     public void acceptsSurveysWithAbsoluteHrefs() {
-        Activity activity = new Activity("Label", "https://foooserver.com/api/v1/surveys/AAA/" + DateTime.now().toString());
+        Activity activity = new Activity("Label", "https://foooserver.com/api/v1/surveys/AAA/revisions/" + DateTime.now().toString());
 
         validator.validate(activity, errors);
         assertEquals(0, errors.getErrorCount());
         
-        activity = new Activity("Label", "http://foooserver.com/api/v1/surveys/AAA/" + DateTime.now().toString());
+        activity = new Activity("Label", "http://foooserver.com/api/v1/surveys/AAA/revisions/" + DateTime.now().toString());
         validator.validate(activity, errors);
         assertEquals(0, errors.getErrorCount());
     }
@@ -70,8 +70,8 @@ public class ActivityValidatorTest {
         Activity activity = mock(Activity.class);
         when(activity.getActivityType()).thenReturn(ActivityType.SURVEY);
         when(activity.getLabel()).thenReturn("Label");
-        when(activity.getRef()).thenReturn("http://webservices.sagebridge.org/api/v1/surveys/AAA/" + DateTime.now().toString());
-        when(activity.getSurvey()).thenReturn(new SurveyReference("http://webservices.sagebridge.org/api/v1/surveys/CCC/" + DateTime.now().minusHours(1).toString()));
+        when(activity.getRef()).thenReturn("http://webservices.sagebridge.org/api/v1/surveys/AAA/revisions/" + DateTime.now().toString());
+        when(activity.getSurvey()).thenReturn(new SurveyReference("http://webservices.sagebridge.org/api/v1/surveys/CCC/revisions/" + DateTime.now().minusHours(1).toString()));
         
         validator.validate(activity, errors);
         assertEquals("does not match the URL for this activity", errors.getFieldError("survey.guid").getCode());
