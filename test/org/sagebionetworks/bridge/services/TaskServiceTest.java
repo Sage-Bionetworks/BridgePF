@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -11,20 +13,38 @@ import java.util.List;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.mockito.ArgumentCaptor;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.TaskDao;
+import org.sagebionetworks.bridge.dao.UserConsentDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.schedules.Task;
-
-import com.google.common.collect.Lists;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 
 public class TaskServiceTest {
 
-    // Mostly testing validation here as this just passes through to the DAO.
+    private static final DateTime ENROLLMENT = DateTime.parse("2015-04-10T10:40:34.000-07:00");
+    
+    private static final StudyIdentifier STUDY_IDENTIFIER = new StudyIdentifierImpl("foo");
+    
+    private static final String HEALTH_CODE = "BBB";
+    
     private TaskService service;
+    
+    private SchedulePlanService schedulePlanService;
+    
+    private UserConsentDao userConsentDao;
     
     private User user;
     
@@ -32,21 +52,49 @@ public class TaskServiceTest {
     
     private DateTime endsOn;
     
+    @SuppressWarnings("unchecked")
     @Before
     public void before() {
         endsOn = DateTime.now().plusDays(2);
+        user = new User();
+        user.setStudyKey(STUDY_IDENTIFIER.getIdentifier());
+        user.setHealthCode(HEALTH_CODE);
         
         service = new TaskService();
-        user = mock(User.class);
         
-        List<Task> tasks = Lists.newArrayList(getTask(), getTask());
+        schedulePlanService = mock(SchedulePlanService.class);
+        when(schedulePlanService.getSchedulePlans(STUDY_IDENTIFIER)).thenReturn(TestUtils.getSchedulePlans());
         
+        UserConsent consent = mock(DynamoUserConsent2.class);
+        when(consent.getSignedOn()).thenReturn(ENROLLMENT.getMillis()); 
+        
+        userConsentDao = mock(UserConsentDao.class);
+        when(userConsentDao.getUserConsent(HEALTH_CODE, STUDY_IDENTIFIER)).thenReturn(consent);
+        
+        List<Task> tasks = TestUtils.runSchedulerForTasks(user, endsOn);
+
         taskDao = mock(DynamoTaskDao.class);
-        when(taskDao.getTasks(user, endsOn)).thenReturn(tasks);
+        when(taskDao.getTasks(HEALTH_CODE, endsOn)).thenReturn(tasks);
+        when(taskDao.taskRunHasNotOccurred(anyString(), anyString())).thenReturn(true);
+
+        Survey survey = new DynamoSurvey();
+        survey.setGuid("guid");
+        survey.setCreatedOn(20000L);
+        SurveyService surveyService = mock(SurveyService.class);
+        when(surveyService.getSurveyMostRecentlyPublishedVersion(any(StudyIdentifier.class), anyString())).thenReturn(survey);
         
+        SurveyResponse surveyResponse = new DynamoSurveyResponse("healthCode", "identifier");
+        SurveyResponseService surveyResponseService = mock(SurveyResponseService.class);
+        when(surveyResponseService.createSurveyResponse(
+            any(GuidCreatedOnVersionHolder.class), anyString(), any(List.class))).thenReturn(surveyResponse);
+        
+        service.setSchedulePlanService(schedulePlanService);
+        service.setUserConsentDao(userConsentDao);
+        service.setSurveyService(surveyService);
+        service.setSurveyResponseService(surveyResponseService);
         service.setTaskDao(taskDao);
     }
-    
+   
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
         service.getTasks(user, DateTime.now().minusSeconds(1));
@@ -59,31 +107,23 @@ public class TaskServiceTest {
 
     @Test(expected = BadRequestException.class)
     public void rejectsListOfTasksWithNullElement() {
-        List<Task> tasks = Lists.newArrayList(getTask(), null, getTask());
+        List<Task> tasks = TestUtils.runSchedulerForTasks(user, endsOn);
+        tasks.set(0, (DynamoTask)null);
         
         service.updateTasks("AAA", tasks);
     }
     
     @Test(expected = BadRequestException.class)
     public void rejectsListOfTasksWithTaskThatLacksGUID() {
-        Task task = getTask();
-        task.setGuid(null);
-        List<Task> tasks = Lists.newArrayList(task);
+        List<Task> tasks = TestUtils.runSchedulerForTasks(user, endsOn);
+        tasks.get(0).setGuid(null);
         
         service.updateTasks("AAA", tasks);
-    }
-    @Test
-    public void gettingTasksWorks() {
-        List<Task> tasks = service.getTasks(user, endsOn);
-        
-        assertEquals(2, tasks.size());
-        verify(taskDao).getTasks(user, endsOn);
-        verifyNoMoreInteractions(taskDao);
     }
     
     @Test
     public void updateTasksWorks() {
-        List<Task> tasks = Lists.newArrayList(getTask());
+        List<Task> tasks = TestUtils.runSchedulerForTasks(user, endsOn);
         
         service.updateTasks("BBB", tasks);
         verify(taskDao).updateTasks("BBB", tasks);
@@ -97,11 +137,26 @@ public class TaskServiceTest {
         verify(taskDao).deleteTasks("BBB");
         verifyNoMoreInteractions(taskDao);
     }
-    
-    private Task getTask() {
-        DynamoTask task = new DynamoTask();
-        task.setGuid(BridgeUtils.generateGuid());
-        return task;
+
+    @SuppressWarnings({"unchecked","rawtypes"})
+    @Test
+    public void changePublishedAndAbsoluteSurveyActivity() {
+        service.getTasks(user, endsOn);
+        
+        ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
+        verify(taskDao).saveTasks(anyString(), argument.capture());
+
+        boolean foundTask3 = false;
+        for (Task task : (List<Task>)argument.getValue()) {
+            // ignoring task3
+            String ref = task.getActivity().getRef();
+            if (!"task:task3".equals(ref)) {
+                assertTrue(ref.contains("/surveys/response/healthCode:identifier"));        
+            } else {
+                foundTask3 = true;
+            }
+        }
+        assertTrue(foundTask3);
     }
     
 }
