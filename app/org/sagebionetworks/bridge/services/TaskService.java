@@ -147,9 +147,6 @@ public class TaskService {
 
             List<Task> tasks = scheduler.getTasks(events, endsOn);
             if (!tasks.isEmpty()) {
-                for (Task task : tasks) {
-                    task.setHealthCode(user.getHealthCode());
-                }
                 map.put(tasks.get(0).getRunKey(), tasks);
             }
         }
