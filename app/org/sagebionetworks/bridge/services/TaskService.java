@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.models.schedules.SurveyReference.SURVEY_PATH_FRAGMENT;
+import static org.sagebionetworks.bridge.models.schedules.SurveyReference.SURVEY_RESPONSE_PATH_FRAGMENT;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -155,7 +157,7 @@ public class TaskService {
         if ((activity.getActivityType() != ActivityType.SURVEY)) {
             return activity;
         }
-        String baseUrl = activity.getRef().split("/surveys/")[0];
+        String baseUrl = activity.getRef().split(SURVEY_PATH_FRAGMENT)[0];
         SurveyResponse response = null;
         
         SurveyReference ref = activity.getSurvey();
@@ -164,7 +166,7 @@ public class TaskService {
             keys = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, ref.getGuid());
         }   
         response = surveyResponseService.createSurveyResponse(keys, healthCode, EMPTY_ANSWERS);
-        String url = baseUrl + "/surveyresponses/" + response.getGuid();
+        String url = baseUrl + SURVEY_RESPONSE_PATH_FRAGMENT + response.getGuid();
         return new Activity(activity.getLabel(), url);
     }
     

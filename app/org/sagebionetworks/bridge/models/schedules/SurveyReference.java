@@ -21,7 +21,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @BridgeTypeName("GuidCreatedOnVersionHolder")
 public final class SurveyReference {
 
-    private static final String PUBLISHED_FRAGMENT = "published";
+    public static final String SURVEY_RESPONSE_PATH_FRAGMENT = "/surveyresponses/";
+    public static final String SURVEY_PATH_FRAGMENT = "/surveys/";    private static final String PUBLISHED_FRAGMENT = "published";
     private static final String REGEXP = "http[s]?\\://.*/surveys/([^/]*)/revisions/([^/]*)";
     private static final Pattern patttern = Pattern.compile(REGEXP);
     
