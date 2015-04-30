@@ -27,11 +27,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
-import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -138,20 +134,14 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     @Override
-    public boolean surveyHasResponses(GuidCreatedOnVersionHolder keys) {
-        DynamoDBScanExpression scan = new DynamoDBScanExpression();
-
-        Condition condition = new Condition();
-        condition.withComparisonOperator(ComparisonOperator.EQ);
-        condition.withAttributeValueList(new AttributeValue().withS(keys.getGuid()));
-        scan.addFilterCondition("surveyGuid", condition);
-
-        Condition condition2 = new Condition();
-        condition2.withComparisonOperator(ComparisonOperator.EQ);
-        condition2.withAttributeValueList(new AttributeValue().withN(Long.toString(keys.getCreatedOn())));
-        scan.addFilterCondition("surveyCreatedOn", condition2);
+    public boolean surveyHasResponses(String healthCode, GuidCreatedOnVersionHolder keys) {
+        DynamoSurveyResponse hashKey = new DynamoSurveyResponse();
+        hashKey.setHealthCode(healthCode);
         
-        return mapper.count(DynamoSurveyResponse.class, scan) > 0;
+        DynamoDBQueryExpression<DynamoSurveyResponse> query = new DynamoDBQueryExpression<DynamoSurveyResponse>();
+        query.setHashKeyValues(hashKey);
+        
+        return mapper.count(DynamoSurveyResponse.class, query) > 0;
     }
     
     private SurveyResponse createSurveyResponseInternal(GuidCreatedOnVersionHolder keys, String healthCode,

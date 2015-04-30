@@ -278,13 +278,13 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+    public void deleteSurvey(String healthCode, StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
         Survey existing = getSurvey(keys);
         if (existing.isPublished()) {
             throw new PublishedSurveyException(existing);
         }
         // If there are responses to this survey, it can't be deleted.
-        if (responseDao.surveyHasResponses(keys)) {
+        if (responseDao.surveyHasResponses(healthCode, keys)) {
             throw new IllegalStateException("Survey has been answered by participants; it cannot be deleted.");
         }
         // If there are schedule plans for this survey, it can't be deleted. Would need to delete them all first. 
