@@ -24,9 +24,9 @@ POST   /api/v1/profile/unsubscribe       @controllers.EmailController.unsubscrib
 GET    /api/v1/profile/unsubscribe       @controllers.EmailController.unsubscribeFromEmail
 
 # API - Survey Responses
-GET    /api/v1/surveys/response/:guid                               @controllers.SurveyResponseController.getSurveyResponse(guid: String)
-POST   /api/v1/surveys/response/:guid                               @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
-DELETE /api/v1/surveys/response/:guid                               @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
+GET    /api/v1/surveyresponses/:guid                                @controllers.SurveyResponseController.getSurveyResponse(guid: String)
+POST   /api/v1/surveyresponses/:guid                                @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
+DELETE /api/v1/surveyresponses/:guid                                @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
 GET    /api/v1/surveys/:surveyGuid/revisions/published              @controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
 GET    /api/v1/surveys/:surveyGuid/revisions/:createdOn             @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
 POST   /api/v1/surveys/:surveyGuid/revisions/:createdOn             @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)

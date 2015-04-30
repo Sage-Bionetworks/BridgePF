@@ -151,7 +151,7 @@ public class TaskServiceTest {
             // ignoring task3
             String ref = task.getActivity().getRef();
             if (!"task:task3".equals(ref)) {
-                assertTrue("Found task with survey response ref", ref.contains("/surveys/response/healthCode:identifier"));        
+                assertTrue("Found task with survey response ref", ref.contains("/surveyresponses/healthCode:identifier"));        
             } else {
                 foundTask3 = true;
             }

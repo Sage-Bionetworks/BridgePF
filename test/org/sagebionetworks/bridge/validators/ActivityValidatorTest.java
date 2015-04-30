@@ -45,15 +45,6 @@ public class ActivityValidatorTest {
     }
     
     @Test
-    public void rejectsSurveysWithNonAbsoluteHrefs() {
-        Activity activity = new Activity("Label", "/api/v1/surveys/AAA/revisions/" + DateTime.now().toString());
-
-        validator.validate(activity, errors);
-        assertEquals(1, errors.getErrorCount());
-        assertEquals("must be an absolute URL to retrieve a survey response", errors.getFieldError("ref").getCode());
-    }
-    
-    @Test
     public void acceptsSurveysWithAbsoluteHrefs() {
         Activity activity = new Activity("Label", "https://foooserver.com/api/v1/surveys/AAA/revisions/" + DateTime.now().toString());
 
@@ -75,7 +66,8 @@ public class ActivityValidatorTest {
         
         validator.validate(activity, errors);
         assertEquals("does not match the URL for this activity", errors.getFieldError("survey.guid").getCode());
-        assertEquals("does not match the URL for this activity", errors.getFieldError("survey.createdOn").getCode());
+        // Can no longer happen because the reference is always created from the ref string.
+        // assertEquals("does not match the URL for this activity", errors.getFieldError("survey.createdOn").getCode());
         
         errors =  new MapBindingResult(Maps.newHashMap(), "Activity");
         when(activity.getSurvey()).thenReturn(null);

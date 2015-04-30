@@ -164,7 +164,7 @@ public class TaskService {
             keys = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, ref.getGuid());
         }   
         response = surveyResponseService.createSurveyResponse(keys, healthCode, EMPTY_ANSWERS);
-        String url = baseUrl + "/surveys/response/" + response.getGuid();
+        String url = baseUrl + "/surveyresponses/" + response.getGuid();
         return new Activity(activity.getLabel(), url);
     }
     

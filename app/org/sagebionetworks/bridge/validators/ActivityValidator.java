@@ -43,6 +43,8 @@ public class ActivityValidator implements Validator {
             if (activity.getSurvey() == null) {
                 errors.rejectValue(SURVEY_PROPERTY, CANNOT_BE_NULL);
             } else {
+                // It's not clear how much the survey reference object can vary from the ref string, since 
+                // it's created on demand from that string...
                 errors.pushNestedPath(SURVEY_PROPERTY);    
                 SurveyReference keys = activity.getSurvey();
                 if (isBlank(keys.getGuid())) {
