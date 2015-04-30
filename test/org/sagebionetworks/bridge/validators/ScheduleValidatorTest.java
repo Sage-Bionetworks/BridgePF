@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
@@ -73,25 +74,20 @@ public class ScheduleValidatorTest {
     }
     
     @Test
-    public void surveyRelativePathIsInvalid() {
-        schedule.addActivity(new Activity("Label", "/api/v1/surveys/AAA/published"));
+    public void surveyRelativePathIsTreatedAsTaskId() {
+        schedule.addActivity(new Activity("Label", "/api/v1/surveys/AAA/revisions/published"));
         schedule.setScheduleType(ScheduleType.ONCE);
         
         DateTime now = DateUtils.getCurrentDateTime();
         schedule.setStartsOn(now);
         schedule.setEndsOn(now.plusHours(1));
-
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("Schedule is invalid: activities[0].ref must be an absolute URL to retrieve a survey response", e.getMessage());
-        }
+        
+        assertEquals(ActivityType.TASK, schedule.getActivities().get(0).getActivityType());
     }
     
     @Test
     public void activityCorrectlyParsesPublishedSurveyPath() {
-        Activity activity = new Activity("Label", "https://server/api/v1/surveys/AAA/published");
+        Activity activity = new Activity("Label", "https://server/api/v1/surveys/AAA/revisions/published");
         
         SurveyReference ref = activity.getSurvey();
         assertEquals("AAA", ref.getGuid());
@@ -100,10 +96,10 @@ public class ScheduleValidatorTest {
         activity = new Activity("Label", "task:AAA");
         assertNull(activity.getSurvey());
         
-        activity = new Activity("Label", "https://server/api/v1/surveys/AAA/2015-01-27T17:46:31.237Z");
+        activity = new Activity("Label", "https://server/api/v1/surveys/AAA/revisions/2015-01-27T17:46:31.237Z");
         ref = activity.getSurvey();
         assertEquals("AAA", ref.getGuid());
-        assertEquals("2015-01-27T17:46:31.237Z", ref.getCreatedOn());
+        assertEquals(DateTime.parse("2015-01-27T17:46:31.237Z"), ref.getCreatedOn());
     }
 
     @Test
