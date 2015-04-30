@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -30,19 +29,22 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 @Component
 public class DynamoSurveyResponseDao implements SurveyResponseDao {
 
-    private DynamoDBMapper responseMapper;
-    private DynamoSurveyDao surveyDao;
-    private Function<DynamoSurveyResponse,SurveyResponse> TRANSFORMER = new Function<DynamoSurveyResponse,SurveyResponse>() {
+    private static final List<SurveyAnswer> EMPTY_ANSWERS = ImmutableList.of();
+    private static final Function<DynamoSurveyResponse,SurveyResponse> TRANSFORMER = new Function<DynamoSurveyResponse,SurveyResponse>() {
         @Override
         public SurveyResponse apply(DynamoSurveyResponse res) {
             return res;
         }
     };
+    
+    private DynamoDBMapper responseMapper;
+    private DynamoSurveyDao surveyDao;
 
     @Autowired
     public void setDynamoDbClient(AmazonDynamoDB client) {
@@ -129,7 +131,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
             List<SurveyAnswer> answers, String identifier) {
         
         Survey survey = surveyDao.getSurvey(keys);
-        List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, Collections.<SurveyAnswer>emptyList(), answers);
+        List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, EMPTY_ANSWERS, answers);
         
         SurveyResponse response = new DynamoSurveyResponse();
         response.setIdentifier(identifier);

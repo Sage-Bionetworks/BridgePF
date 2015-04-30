@@ -106,7 +106,7 @@ public class DynamoSchedulePlanDaoTest {
     }
     
     @Test
-    public void canDetectWhenSurveyIsInUseByAPlan() {
+    public void canDetectWhenSurveyIsInUseByAPlan() throws Exception {
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
         Survey survey = new TestSurvey(true);
@@ -149,6 +149,7 @@ public class DynamoSchedulePlanDaoTest {
 
     private SchedulePlan createASchedulePlan(String url) {
         Schedule schedule = new Schedule();
+        schedule.setLabel("Take this test survey");
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.addActivity(new Activity("Take this test survey", url));
         

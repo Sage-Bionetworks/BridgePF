@@ -5,11 +5,16 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import org.joda.time.DateTime;
 import org.junit.Test;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 
 public class SurveyReferenceTest {
 
     private static final String CREATED_ON_STRING = "2015-04-29T23:41:56.231Z";
+    
+    private static final DateTime CREATED_ON = DateTime.parse(CREATED_ON_STRING);
     
     @Test
     public void correctlyParsesSurveyURL() {
@@ -17,6 +22,10 @@ public class SurveyReferenceTest {
         
         assertEquals("AAA-BBB-CCC", ref.getGuid());
         assertEquals(CREATED_ON_STRING, ref.getCreatedOn());
+        assertEquals(CREATED_ON, ref.getCreatedOnTimestamp());
+        
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("AAA-BBB-CCC", CREATED_ON.getMillis());
+        assertEquals(keys, ref.getGuidCreatedOnVersionHolder());
     }
     
     @Test
@@ -25,6 +34,8 @@ public class SurveyReferenceTest {
         
         assertEquals("AAA-BBB-CCC", ref.getGuid());
         assertNull(ref.getCreatedOn());
+        assertNull(ref.getCreatedOnTimestamp());
+        assertNull(ref.getGuidCreatedOnVersionHolder());
     }
 
     @Test(expected = IllegalStateException.class)

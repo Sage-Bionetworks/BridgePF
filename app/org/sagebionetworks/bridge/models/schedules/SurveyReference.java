@@ -3,7 +3,12 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import com.google.common.base.Preconditions;
 
@@ -33,7 +38,7 @@ public class SurveyReference {
         this.createdOn = (PUBLISHED_FRAGMENT.equals(matcher.group(2))) ? null : matcher.group(2);
         Preconditions.checkNotNull(guid);
     }
-
+    
     public String getGuid() {
         return guid;
     }
@@ -42,4 +47,16 @@ public class SurveyReference {
         return createdOn;
     }
     
+    @JsonIgnore
+    public DateTime getCreatedOnTimestamp() {
+        return (createdOn == null) ? null : DateTime.parse(createdOn);
+    }
+    
+    @JsonIgnore
+    public GuidCreatedOnVersionHolder getGuidCreatedOnVersionHolder() {
+        if (createdOn == null) {
+            return null;
+        }
+        return new GuidCreatedOnVersionHolderImpl(guid, getCreatedOnTimestamp().getMillis());
+    }
 }

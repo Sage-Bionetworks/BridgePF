@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import java.util.EnumSet;
-
 public enum TaskStatus {
     /**
      * Task has a scheduled start time in the future and has not been started. It can be 
@@ -31,7 +29,4 @@ public enum TaskStatus {
      * without being started.
      */
     DELETED;
-    
-    //public static final EnumSet<TaskStatus> HIDE_FROM_USER = EnumSet.of(FINISHED,EXPIRED,DELETED);
-    public static final EnumSet<TaskStatus> HIDE_FROM_USER = EnumSet.of(FINISHED,DELETED);
 }
