@@ -54,7 +54,7 @@ public class UploadSchemaController extends BaseController {
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
 
         uploadSchemaService.deleteUploadSchemaByIdAndRev(studyIdentifier, schemaId, rev);
-        return okResult("Deleted schema");
+        return okResult("Schema has been deleted.");
     }
 
     /**
@@ -71,7 +71,7 @@ public class UploadSchemaController extends BaseController {
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
 
         uploadSchemaService.deleteUploadSchemaById(studyIdentifier, schemaId);
-        return okResult("Deleted schemas");
+        return okResult("Schemas have been deleted.");
     }
 
     /**
