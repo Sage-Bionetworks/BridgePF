@@ -141,7 +141,7 @@ public class TaskServiceTest {
     @SuppressWarnings({"unchecked","rawtypes"})
     @Test
     public void changePublishedAndAbsoluteSurveyActivity() {
-        service.getTasks(user, endsOn);
+        service.getTasks(user, endsOn.plusDays(2));
         
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         verify(taskDao).saveTasks(anyString(), argument.capture());
@@ -151,12 +151,12 @@ public class TaskServiceTest {
             // ignoring task3
             String ref = task.getActivity().getRef();
             if (!"task:task3".equals(ref)) {
-                assertTrue(ref.contains("/surveys/response/healthCode:identifier"));        
+                assertTrue("Found task with survey response ref", ref.contains("/surveys/response/healthCode:identifier"));        
             } else {
                 foundTask3 = true;
             }
         }
-        assertTrue(foundTask3);
+        assertTrue("Found task with task:task3 ref", foundTask3);
     }
     
 }
