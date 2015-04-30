@@ -51,7 +51,7 @@ public class ActivityValidator implements Validator {
                 if (!activity.getRef().contains(keys.getGuid())) {
                     errors.rejectValue(GUID_PROPERTY, "does not match the URL for this activity");
                 }
-                if (keys.getCreatedOn() != null && !activity.getRef().contains(keys.getCreatedOn())) {
+                if (keys.getCreatedOn() != null && !keys.getCreatedOn().equals(activity.getSurvey().getCreatedOn())) {
                     errors.rejectValue(CREATED_ON_PROPERTY, "does not match the URL for this activity");
                 }
                 errors.popNestedPath();    
