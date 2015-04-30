@@ -124,15 +124,15 @@ public class DynamoSchedulePlanDaoTest {
         assertEquals("There should be one plan returned", 1, plans.size());
         
         try {
-            // Should not be able to delete a survey at this opint
-            surveyDao.deleteSurvey(studyIdentifier, survey);
+            // Should not be able to delete a survey at this point
+            surveyDao.deleteSurvey("", studyIdentifier, survey);
             fail("Was able to delete without a problem");
         } catch(IllegalStateException e) {
         }
         
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, plan.getGuid());
         // Now you can delete the survey
-        surveyDao.deleteSurvey(studyIdentifier, survey);
+        surveyDao.deleteSurvey("", studyIdentifier, survey);
         
         // Verify both have been deleted.
         try {

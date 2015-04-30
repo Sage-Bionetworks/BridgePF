@@ -23,10 +23,11 @@ public interface SurveyDao {
      * first be deleted, and the survey closed (unpublished), before the survey 
      * can be deleted.
      *  
+     * @param healthCode
      * @param studyIdentifier
      * @param keys
      */
-    public void deleteSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys);
+    public void deleteSurvey(String healthCode, StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys);
     
     /**
      * Unpublish the survey, closing out any active records that are still 

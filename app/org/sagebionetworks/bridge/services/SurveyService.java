@@ -93,10 +93,11 @@ public interface SurveyService {
      * the survey is not referenced in any schedule plans. NOTE that the survey may still be referenced by 
      * schedules that have been issued to clients (due to caching), so this action should still be done with 
      * care. 
+     * @param healthCode
      * @param studyIdentifier
      * @param keys
      */
-    public void deleteSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys);
+    public void deleteSurvey(String healthCode, StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys);
     
     /**
      * Un-publish a survey. Survey will still be accessible to any users who have schedules that point to the 

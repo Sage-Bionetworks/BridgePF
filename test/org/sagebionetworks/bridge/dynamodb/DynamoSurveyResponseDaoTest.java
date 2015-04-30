@@ -67,7 +67,6 @@ public class DynamoSurveyResponseDaoTest {
         // delete these without deleting a user, and that isn't going to happen in production.
         DynamoInitializer.init(DynamoSurveyResponse.class);
         DynamoTestUtil.clearTable(DynamoSurveyResponse.class);
-        surveyDao.deleteSurvey(null, survey);
         survey = null;
     }
 
@@ -169,7 +168,7 @@ public class DynamoSurveyResponseDaoTest {
     }
     
     private boolean noResponses(Survey survey) {
-        return !surveyResponseDao.surveyHasResponses(survey);
+        return !surveyResponseDao.surveyHasResponses(HEALTH_DATA_CODE, survey);
     }
 
 }
