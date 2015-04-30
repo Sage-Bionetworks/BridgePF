@@ -70,11 +70,11 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     }
     
     @Override
-    public SurveyResponse getSurveyResponse(String healthCode, String identifier) {
+    public SurveyResponse getSurveyResponse(String healthCode, String guid) {
         checkNotNull(healthCode, CANNOT_BE_NULL, "health code");
-        checkNotNull(identifier, CANNOT_BE_NULL, "identifier");
+        checkNotNull(guid, CANNOT_BE_NULL, "guid");
         
-        return surveyResponseDao.getSurveyResponse(healthCode, identifier);
+        return surveyResponseDao.getSurveyResponse(healthCode, guid);
     }
 
     @Override
@@ -85,12 +85,12 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
         validate(answers, response.getSurvey());
         return surveyResponseDao.appendSurveyAnswers(response, answers);
     }
-
+    
     @Override
-    public void deleteSurveyResponse(SurveyResponse response) {
-        checkNotNull(response, CANNOT_BE_NULL, "survey response");
+    public void deleteSurveyResponses(String healthCode) {
+        checkNotNull(healthCode, CANNOT_BE_NULL, "healthCode");
         
-        surveyResponseDao.deleteSurveyResponse(response);
+        surveyResponseDao.deleteSurveyResponses(healthCode);
     }
 
     private void validate(List<SurveyAnswer> answers, Survey survey) {

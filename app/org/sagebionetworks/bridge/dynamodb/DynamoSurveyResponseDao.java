@@ -19,11 +19,13 @@ import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
@@ -36,14 +38,8 @@ import com.google.common.collect.Lists;
 public class DynamoSurveyResponseDao implements SurveyResponseDao {
 
     private static final List<SurveyAnswer> EMPTY_ANSWERS = ImmutableList.of();
-    private static final Function<DynamoSurveyResponse,SurveyResponse> TRANSFORMER = new Function<DynamoSurveyResponse,SurveyResponse>() {
-        @Override
-        public SurveyResponse apply(DynamoSurveyResponse res) {
-            return res;
-        }
-    };
     
-    private DynamoDBMapper responseMapper;
+    private DynamoDBMapper mapper;
     private DynamoSurveyDao surveyDao;
 
     @Autowired
@@ -51,7 +47,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
                 .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoSurveyResponse.class)).build();
-        responseMapper = new DynamoDBMapper(client, mapperConfig);
+        mapper = new DynamoDBMapper(client, mapperConfig);
     }
     
     @Autowired
@@ -82,8 +78,8 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     @Override
-    public SurveyResponse getSurveyResponse(String healthCode, String identifier) {
-        DynamoSurveyResponse response = getSurveyResponseInternal(healthCode, identifier);
+    public SurveyResponse getSurveyResponse(String healthCode, String guid) {
+        DynamoSurveyResponse response = getSurveyResponseInternal(healthCode, guid);
         if (response == null) {
             throw new EntityNotFoundException(SurveyResponse.class);
         }
@@ -97,7 +93,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         updateTimestamps(response);
 
         try {
-            responseMapper.save(response);
+            mapper.save(response);
         } catch(ConditionalCheckFailedException e) {
             throw new ConcurrentModificationException(response);
         }
@@ -105,26 +101,38 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     @Override
-    public void deleteSurveyResponse(SurveyResponse response) {
-        responseMapper.delete(response);
+    public void deleteSurveyResponses(String healthCode) {
+        DynamoSurveyResponse hashKey = new DynamoSurveyResponse();
+        hashKey.setHealthCode(healthCode);
+        
+        DynamoDBQueryExpression<DynamoSurveyResponse> query = new DynamoDBQueryExpression<DynamoSurveyResponse>();
+        query.setHashKeyValues(hashKey);
+        PaginatedQueryList<DynamoSurveyResponse> results = mapper.query(DynamoSurveyResponse.class, query);
+        
+        List<DynamoSurveyResponse> responsesToDelete = Lists.newArrayList();
+        responsesToDelete.addAll(results);
+        
+        if (!responsesToDelete.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchDelete(responsesToDelete);
+            BridgeUtils.ifFailuresThrowException(failures);
+        }
     }
     
     @Override
-    public List<SurveyResponse> getResponsesForSurvey(GuidCreatedOnVersionHolder keys) {
+    public boolean surveyHasResponses(GuidCreatedOnVersionHolder keys) {
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
 
         Condition condition = new Condition();
         condition.withComparisonOperator(ComparisonOperator.EQ);
         condition.withAttributeValueList(new AttributeValue().withS(keys.getGuid()));
         scan.addFilterCondition("surveyGuid", condition);
-        
+
         Condition condition2 = new Condition();
         condition2.withComparisonOperator(ComparisonOperator.EQ);
         condition2.withAttributeValueList(new AttributeValue().withN(Long.toString(keys.getCreatedOn())));
         scan.addFilterCondition("surveyCreatedOn", condition2);
-
-        List<DynamoSurveyResponse> mappings = responseMapper.scan(DynamoSurveyResponse.class, scan);
-        return Lists.transform(mappings, TRANSFORMER);
+        
+        return mapper.count(DynamoSurveyResponse.class, scan) > 0;
     }
     
     private SurveyResponse createSurveyResponseInternal(GuidCreatedOnVersionHolder keys, String healthCode,
@@ -134,25 +142,29 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, EMPTY_ANSWERS, answers);
         
         SurveyResponse response = new DynamoSurveyResponse();
-        response.setIdentifier(identifier);
+        response.setGuid(identifier);
         response.setSurvey(survey);
         response.setAnswers(unionOfAnswers);
         response.setHealthCode(healthCode);
         updateTimestamps(response);
         
         try {
-            responseMapper.save(response);
+            mapper.save(response);
         } catch(ConditionalCheckFailedException e) {
             throw new ConcurrentModificationException(response);
         }
         return response;
     }
     
-    private DynamoSurveyResponse getSurveyResponseInternal(String healthCode, String identifier) {
+    private DynamoSurveyResponse getSurveyResponseInternal(String healthCode, String guid) {
+        DynamoSurveyResponse hashKey = new DynamoSurveyResponse();
+        hashKey.setHealthCode(healthCode);
+        hashKey.setGuid(guid);
+        
         DynamoDBQueryExpression<DynamoSurveyResponse> query = new DynamoDBQueryExpression<DynamoSurveyResponse>();
         query.withScanIndexForward(false);
-        query.withHashKeyValues(new DynamoSurveyResponse(healthCode, identifier));
-        List<DynamoSurveyResponse> results = responseMapper.queryPage(DynamoSurveyResponse.class, query).getResults();
+        query.withHashKeyValues(hashKey);
+        List<DynamoSurveyResponse> results = mapper.queryPage(DynamoSurveyResponse.class, query).getResults();
         if (results == null || results.isEmpty()) {
             return null;
         }

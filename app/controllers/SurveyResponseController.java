@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
-import org.sagebionetworks.bridge.models.IdentifierHolder;
+import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
@@ -38,7 +38,7 @@ public class SurveyResponseController extends BaseController {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, version);
         SurveyResponse response = responseService
                 .createSurveyResponse(keys, session.getUser().getHealthCode(), answers);
-        return createdResult(new IdentifierHolder(response.getIdentifier()));
+        return createdResult(new GuidHolder(response.getGuid()));
     }
     
     public Result createSurveyResponseWithIdentifier(String surveyGuid, String versionString, String identifier)
@@ -51,7 +51,7 @@ public class SurveyResponseController extends BaseController {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, version);
         SurveyResponse response = responseService.createSurveyResponse(keys, session.getUser().getHealthCode(),
                 answers, identifier);
-        return createdResult(new IdentifierHolder(response.getIdentifier()));
+        return createdResult(new GuidHolder(response.getGuid()));
     }
 
     public Result getSurveyResponse(String guid) throws Exception {
@@ -66,23 +66,16 @@ public class SurveyResponseController extends BaseController {
         responseService.appendSurveyAnswers(response, answers);
         return okResult("Survey response updated.");
     }
-    
-    public Result deleteSurveyResponse(String identifier) {
-        SurveyResponse response = getSurveyResponseIfAuthorized(identifier);
-        
-        responseService.deleteSurveyResponse(response);
-        return okResult("Survey response deleted.");
-    }
 
     private List<SurveyAnswer> deserializeSurveyAnswers() throws JsonProcessingException, IOException {
         JsonNode node = requestToJSON(request());
         return JsonUtils.asEntityList(node, SurveyAnswer.class);
     }
 
-    private SurveyResponse getSurveyResponseIfAuthorized(String identifier) {
+    private SurveyResponse getSurveyResponseIfAuthorized(String guid) {
         UserSession session = getAuthenticatedAndConsentedSession();
         String healthCode = session.getUser().getHealthCode(); 
-        return responseService.getSurveyResponse(healthCode, identifier);
+        return responseService.getSurveyResponse(healthCode, guid);
     }
     
 }

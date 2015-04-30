@@ -13,12 +13,12 @@ public interface SurveyResponseDao {
     public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder survey, String healthCode,
             List<SurveyAnswer> answers, String identifier);
     
-    public SurveyResponse getSurveyResponse(String healthCode, String identifier);
+    public SurveyResponse getSurveyResponse(String healthCode, String guid);
     
     public SurveyResponse appendSurveyAnswers(SurveyResponse response, List<SurveyAnswer> answers);
     
-    public void deleteSurveyResponse(SurveyResponse response);
+    public void deleteSurveyResponses(String healthCode);
     
-    public List<SurveyResponse> getResponsesForSurvey(GuidCreatedOnVersionHolder keys);
+    public boolean surveyHasResponses(GuidCreatedOnVersionHolder keys);
     
 }

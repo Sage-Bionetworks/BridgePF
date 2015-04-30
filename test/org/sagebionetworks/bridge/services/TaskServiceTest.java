@@ -83,7 +83,9 @@ public class TaskServiceTest {
         SurveyService surveyService = mock(SurveyService.class);
         when(surveyService.getSurveyMostRecentlyPublishedVersion(any(StudyIdentifier.class), anyString())).thenReturn(survey);
         
-        SurveyResponse surveyResponse = new DynamoSurveyResponse("healthCode", "identifier");
+        SurveyResponse surveyResponse = new DynamoSurveyResponse();
+        surveyResponse.setHealthCode("healthCode");
+        surveyResponse.setGuid("identifier");
         SurveyResponseService surveyResponseService = mock(SurveyResponseService.class);
         when(surveyResponseService.createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), anyString(), any(List.class))).thenReturn(surveyResponse);
@@ -150,8 +152,9 @@ public class TaskServiceTest {
         for (Task task : (List<Task>)argument.getValue()) {
             // ignoring task3
             String ref = task.getActivity().getRef();
+            System.out.println(ref);
             if (!"task:task3".equals(ref)) {
-                assertTrue("Found task with survey response ref", ref.contains("/surveys/response/healthCode:identifier"));        
+                assertTrue("Found task with survey response ref", ref.contains("/surveys/response/identifier"));        
             } else {
                 foundTask3 = true;
             }
