@@ -14,28 +14,25 @@ public interface SurveyResponse extends BridgeEntity {
         FINISHED;
     }
 
-    public String getGuid();
-    public void setGuid(String guid);
-    
     public Survey getSurvey();
     public void setSurvey(Survey survey);
     
     public Long getVersion();
     public void setVersion(Long version);
     
-    public String getIdentifier();
-    public void setIdentifier(String identifier);
+    public String getGuid();
+    public void setGuid(String guid);
     
     public String getHealthCode();
     public void setHealthCode(String healthCode);
     
     public Status getStatus();
     
-    public long getStartedOn();
-    public void setStartedOn(long startedOn);
+    public Long getStartedOn();
+    public void setStartedOn(Long startedOn);
     
-    public long getCompletedOn();
-    public void setCompletedOn(long completedOn);
+    public Long getCompletedOn();
+    public void setCompletedOn(Long completedOn);
     
     public List<SurveyAnswer> getAnswers();
     public void setAnswers(List<SurveyAnswer> answers);

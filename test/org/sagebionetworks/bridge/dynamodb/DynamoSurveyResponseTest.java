@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.util.List;
 import java.util.UUID;
@@ -11,7 +12,6 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse.Status;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
@@ -33,7 +33,7 @@ public class DynamoSurveyResponseTest {
     public void canRountripSerializeSurveyResponse() throws Exception {
         DynamoSurveyResponse response = new DynamoSurveyResponse();
         response.setStartedOn(DateUtils.getCurrentMillisFromEpoch());
-        response.setIdentifier(UUID.randomUUID().toString());
+        response.setGuid(UUID.randomUUID().toString());
         response.setSurveyGuid(UUID.randomUUID().toString());
         response.setSurveyCreatedOn(DateUtils.getCurrentMillisFromEpoch());
         response.setHealthCode(UUID.randomUUID().toString());
@@ -44,19 +44,21 @@ public class DynamoSurveyResponseTest {
         addFifteenQuestions(answers);
         response.setAnswers(answers);
         
-        String string = new BridgeObjectMapper().writeValueAsString(response);
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.readTree(string);
-        DynamoSurveyResponse newResponse = DynamoSurveyResponse.fromJson(node);
+        ObjectMapper mapper = BridgeObjectMapper.get();
+        String string = mapper.writeValueAsString(response);
+        DynamoSurveyResponse newResponse = mapper.readValue(string, DynamoSurveyResponse.class);
+        
+        assertNull(newResponse.getSurveyGuid());
+        assertEquals(0, newResponse.getSurveyCreatedOn());
+        assertNull(newResponse.getVersion());
+        assertNull(newResponse.getHealthCode());
         
         // These are not copied over
-        newResponse.setIdentifier(response.getIdentifier());        
         newResponse.setSurveyGuid(response.getSurveyGuid());
         newResponse.setSurveyCreatedOn(response.getSurveyCreatedOn());
         newResponse.setVersion(response.getVersion());
         newResponse.setHealthCode(response.getHealthCode());
 
-        // TODO: These should be hashCode equal, but they are not
         assertEquals("Survey response serialized/deserialized correctly", response.toString(), newResponse.toString());
     }
     
