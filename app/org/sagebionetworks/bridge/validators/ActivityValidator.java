@@ -43,6 +43,8 @@ public class ActivityValidator implements Validator {
             if (activity.getSurvey() == null) {
                 errors.rejectValue(SURVEY_PROPERTY, CANNOT_BE_NULL);
             } else {
+                // It's not clear how much the survey reference object can vary from the ref string, since 
+                // it's created on demand from that string...
                 errors.pushNestedPath(SURVEY_PROPERTY);    
                 SurveyReference keys = activity.getSurvey();
                 if (isBlank(keys.getGuid())) {
@@ -51,7 +53,7 @@ public class ActivityValidator implements Validator {
                 if (!activity.getRef().contains(keys.getGuid())) {
                     errors.rejectValue(GUID_PROPERTY, "does not match the URL for this activity");
                 }
-                if (keys.getCreatedOn() != null && !activity.getRef().contains(keys.getCreatedOn())) {
+                if (keys.getCreatedOn() != null && !keys.getCreatedOn().equals(activity.getSurvey().getCreatedOn())) {
                     errors.rejectValue(CREATED_ON_PROPERTY, "does not match the URL for this activity");
                 }
                 errors.popNestedPath();    

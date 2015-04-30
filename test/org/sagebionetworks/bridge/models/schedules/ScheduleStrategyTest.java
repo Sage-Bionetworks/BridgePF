@@ -24,7 +24,7 @@ import com.google.common.collect.Maps;
 
 public class ScheduleStrategyTest {
 
-    private static final String SURVEY_URL = "http://sagebridge.org/surveys/ABC/2015-01-27T00:38:32.486Z";
+    private static final String SURVEY_URL = "http://sagebridge.org/surveys/ABC/revisions/2015-01-27T00:38:32.486Z";
     
     private BridgeObjectMapper mapper = BridgeObjectMapper.get();
     private ArrayList<User> users;
