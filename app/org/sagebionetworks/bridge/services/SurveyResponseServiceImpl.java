@@ -70,11 +70,11 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     }
     
     @Override
-    public SurveyResponse getSurveyResponse(String healthCode, String guid) {
+    public SurveyResponse getSurveyResponse(String healthCode, String identifier) {
         checkNotNull(healthCode, CANNOT_BE_NULL, "health code");
-        checkNotNull(guid, CANNOT_BE_NULL, "guid");
+        checkNotNull(identifier, CANNOT_BE_NULL, "guid");
         
-        return surveyResponseDao.getSurveyResponse(healthCode, guid);
+        return surveyResponseDao.getSurveyResponse(healthCode, identifier);
     }
 
     @Override

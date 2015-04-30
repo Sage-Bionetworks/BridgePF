@@ -85,7 +85,7 @@ public class TaskServiceTest {
         
         SurveyResponse surveyResponse = new DynamoSurveyResponse();
         surveyResponse.setHealthCode("healthCode");
-        surveyResponse.setGuid("identifier");
+        surveyResponse.setIdentifier("identifier");
         SurveyResponseService surveyResponseService = mock(SurveyResponseService.class);
         when(surveyResponseService.createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), anyString(), any(List.class))).thenReturn(surveyResponse);

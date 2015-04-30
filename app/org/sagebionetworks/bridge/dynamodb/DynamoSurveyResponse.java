@@ -21,7 +21,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -34,7 +33,7 @@ public class DynamoSurveyResponse implements SurveyResponse {
     private static final String ANSWERS_PROPERTY = "answers";
     
     private String healthCode;
-    private String guid;
+    private String identifier;
     
     private String surveyKey; // stored in dynamo, local index range key
     private String surveyGuid; // stored in dynamo
@@ -60,12 +59,12 @@ public class DynamoSurveyResponse implements SurveyResponse {
     // Main range key: identifier
     @Override
     @DynamoDBRangeKey
-    public String getGuid() {
-        return guid;
+    public String getIdentifier() {
+        return identifier;
     }
     @Override
-    public void setGuid(String guid) {
-        this.guid = guid;
+    public void setIdentifier(String identifier) {
+        this.identifier = identifier;
     }
     
     // Local index: surveyKey
@@ -186,7 +185,7 @@ public class DynamoSurveyResponse implements SurveyResponse {
         final int prime = 31;
         int result = 1;
         result = prime * result + Objects.hashCode(healthCode);
-        result = prime * result + Objects.hashCode(guid);
+        result = prime * result + Objects.hashCode(identifier);
         result = prime * result + Objects.hashCode(surveyKey);
         result = prime * result + Objects.hashCode(surveyGuid);
         result = prime * result + Objects.hashCode(surveyCreatedOn);
@@ -204,7 +203,7 @@ public class DynamoSurveyResponse implements SurveyResponse {
         if (obj == null || getClass() != obj.getClass())
             return false;
         DynamoSurveyResponse other = (DynamoSurveyResponse) obj;
-        return (Objects.equals(healthCode, other.healthCode) && Objects.equals(guid, other.guid) && 
+        return (Objects.equals(healthCode, other.healthCode) && Objects.equals(identifier, other.identifier) && 
             Objects.equals(surveyKey, other.surveyKey) && Objects.equals(surveyGuid, other.surveyGuid) && 
             Objects.equals(surveyCreatedOn, other.surveyCreatedOn) && Objects.equals(survey, other.survey) && 
             Objects.equals(startedOn, other.startedOn) && Objects.equals(completedOn, other.completedOn) && 
@@ -213,7 +212,7 @@ public class DynamoSurveyResponse implements SurveyResponse {
 
     @Override
     public String toString() {
-        return String.format("DynamoSurveyResponse [guid=%s, surveyGuid=%s, surveyCreatedOn=%s, startedOn=%s, completedOn=%s, version=%s, answers=%s]", 
-                guid, surveyGuid, surveyCreatedOn, startedOn, completedOn, version, answers);
+        return String.format("DynamoSurveyResponse [identifier=%s, surveyGuid=%s, surveyCreatedOn=%s, startedOn=%s, completedOn=%s, version=%s, answers=%s]", 
+                identifier, surveyGuid, surveyCreatedOn, startedOn, completedOn, version, answers);
     }
 }
