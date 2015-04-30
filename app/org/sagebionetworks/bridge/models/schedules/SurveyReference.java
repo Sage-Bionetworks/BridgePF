@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -9,8 +11,7 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import com.google.common.base.Preconditions;
+import com.sun.org.apache.xerces.internal.utils.Objects;
 
 /**
  * This is a "soft" reference to a survey that does not need to include a createdOn timestamp. 
@@ -18,7 +19,7 @@ import com.google.common.base.Preconditions;
  * to a specific version.
  */
 @BridgeTypeName("GuidCreatedOnVersionHolder")
-public class SurveyReference {
+public final class SurveyReference {
 
     private static final String PUBLISHED_FRAGMENT = "published";
     private static final String REGEXP = "http[s]?\\://.*/surveys/([^/]*)/revisions/([^/]*)";
@@ -29,27 +30,24 @@ public class SurveyReference {
     }
     
     private final String guid;
-    private final String createdOn;
+    private final DateTime createdOn;
     
     public SurveyReference(String ref) {
+        checkNotNull(ref);
         Matcher matcher = patttern.matcher(ref);
         matcher.find();
         this.guid = matcher.group(1);
-        this.createdOn = (PUBLISHED_FRAGMENT.equals(matcher.group(2))) ? null : matcher.group(2);
-        Preconditions.checkNotNull(guid);
+        String createdOnString = (PUBLISHED_FRAGMENT.equals(matcher.group(2))) ? null : matcher.group(2);
+        this.createdOn = (createdOnString != null) ? DateTime.parse(createdOnString) : null;    
+        checkNotNull(guid);
     }
     
     public String getGuid() {
         return guid;
     }
 
-    public String getCreatedOn() {
+    public DateTime getCreatedOn() {
         return createdOn;
-    }
-    
-    @JsonIgnore
-    public DateTime getCreatedOnTimestamp() {
-        return (createdOn == null) ? null : DateTime.parse(createdOn);
     }
     
     @JsonIgnore
@@ -57,6 +55,31 @@ public class SurveyReference {
         if (createdOn == null) {
             return null;
         }
-        return new GuidCreatedOnVersionHolderImpl(guid, getCreatedOnTimestamp().getMillis());
+        return new GuidCreatedOnVersionHolderImpl(guid, createdOn.getMillis());
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Objects.hashCode(guid);
+        result = prime * result + Objects.hashCode(createdOn);
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        SurveyReference other = (SurveyReference) obj;
+        return Objects.equals(guid, other.guid) && Objects.equals(createdOn, other.createdOn);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("SurveyReference [guid=%s, createdOn=%s]", guid, createdOn);
+    }
+    
 }
