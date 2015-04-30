@@ -97,8 +97,8 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     @Override
-    public SurveyResponse getSurveyResponse(String healthCode, String guid) {
-        DynamoSurveyResponse response = getSurveyResponseInternal(healthCode, guid);
+    public SurveyResponse getSurveyResponse(String healthCode, String identifier) {
+        DynamoSurveyResponse response = getSurveyResponseInternal(healthCode, identifier);
         if (response == null) {
             throw new EntityNotFoundException(SurveyResponse.class);
         }
@@ -161,7 +161,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, EMPTY_ANSWERS, answers);
 
         SurveyResponse response = new DynamoSurveyResponse();
-        response.setGuid(identifier);
+        response.setIdentifier(identifier);
         response.setSurvey(survey);
         response.setAnswers(unionOfAnswers);
         response.setHealthCode(healthCode);
@@ -175,10 +175,10 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         return response;
     }
     
-    private DynamoSurveyResponse getSurveyResponseInternal(String healthCode, String guid) {
+    private DynamoSurveyResponse getSurveyResponseInternal(String healthCode, String identifier) {
         DynamoSurveyResponse hashKey = new DynamoSurveyResponse();
         hashKey.setHealthCode(healthCode);
-        hashKey.setGuid(guid);
+        hashKey.setIdentifier(identifier);
         
         DynamoDBQueryExpression<DynamoSurveyResponse> query = new DynamoDBQueryExpression<DynamoSurveyResponse>();
         query.withScanIndexForward(false);

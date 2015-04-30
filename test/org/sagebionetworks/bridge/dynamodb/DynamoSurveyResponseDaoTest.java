@@ -76,7 +76,7 @@ public class DynamoSurveyResponseDaoTest {
         ObjectNode data = JsonNodeFactory.instance.objectNode();
         data.put("test", "value");
         DynamoSurveyResponse response = new DynamoSurveyResponse();
-        response.setGuid("foo");
+        response.setIdentifier("foo");
         response.setHealthCode("AAA");
         response.setSurveyGuid("BBB");
         response.setSurveyCreatedOn(new Date().getTime());
@@ -85,7 +85,7 @@ public class DynamoSurveyResponseDaoTest {
         response.setData(data);
         
         String string = new BridgeObjectMapper().writeValueAsString(response);
-        assertEquals("{\"guid\":\"foo\",\"startedOn\":\"2014-10-10T10:02:21.123Z\",\"answers\":[],\"status\":\"in_progress\",\"type\":\"SurveyResponse\"}", string);
+        assertEquals("{\"identifier\":\"foo\",\"startedOn\":\"2014-10-10T10:02:21.123Z\",\"answers\":[],\"status\":\"in_progress\",\"type\":\"SurveyResponse\"}", string);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(string);
 
@@ -102,9 +102,7 @@ public class DynamoSurveyResponseDaoTest {
         List<SurveyAnswer> answers = Lists.newArrayList();
 
         SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers, identifier);
-        assertEquals("Has been assigned the supplied identifier", identifier, response.getGuid());
-        assertNotNull("Has a GUID", response.getGuid());
-        assertTrue("GUID contains identifier", response.getGuid().contains(identifier));
+        assertEquals("Has been assigned the supplied identifier", identifier, response.getIdentifier());
 
         // Do it again, it should fail.
         try {
@@ -122,15 +120,15 @@ public class DynamoSurveyResponseDaoTest {
         List<SurveyAnswer> answers = Lists.newArrayList();
 
         SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers);
-        assertTrue("Has been assigned a GUID", response.getGuid() != null);
+        assertNotNull("Has been assigned a GUID", response.getIdentifier());
         assertFalse("Survey is now in use", noResponses(survey));
         
-        SurveyResponse newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getGuid());
+        SurveyResponse newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
 
-        assertEquals("Has right guid", response.getGuid(), newResponse.getGuid());
+        assertEquals("Has right identifier", response.getIdentifier(), newResponse.getIdentifier());
         // These are zero until some answers are submitted
-        assertTrue("startedOn is null", newResponse.getStartedOn() == null);
-        assertTrue("completedOn is null", newResponse.getCompletedOn() == null);
+        assertNull("startedOn is null", newResponse.getStartedOn());
+        assertNull("completedOn is null", newResponse.getCompletedOn());
 
         // Now push some answers through the answer API
         SurveyAnswer answer = new SurveyAnswer();
@@ -149,7 +147,7 @@ public class DynamoSurveyResponseDaoTest {
 
         surveyResponseDao.appendSurveyAnswers(newResponse, answers);
 
-        newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getGuid());
+        newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
         assertEquals("Now the response has two answers", 2, newResponse.getAnswers().size());
         assertNotNull("startedOn isn't null", newResponse.getStartedOn());
         assertNull("completedOn is null", newResponse.getCompletedOn());
@@ -157,16 +155,16 @@ public class DynamoSurveyResponseDaoTest {
         assertFalse("Survey is still in use", noResponses(survey));
         // You can't append answers to questions that have already been answered.
         surveyResponseDao.appendSurveyAnswers(newResponse, answers);
-        newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getGuid());
+        newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
         assertEquals("The response continues to have two answers", 2, newResponse.getAnswers().size());
 
         // But if you update a timestamp, it looks new and it will be updated.
         answers.get(0).setAnsweredOn(DateUtils.getCurrentMillisFromEpoch());
         answers.get(0).getAnswers().set(0, "true"); // eek
         surveyResponseDao.appendSurveyAnswers(newResponse, answers);
-        newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getGuid());
+        newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
 
-        newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getGuid());
+        newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
         assertEquals("Answer was updated due to more recent timestamp", "true", answers.get(0).getAnswers().get(0));
     }
     
