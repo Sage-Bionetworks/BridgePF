@@ -23,6 +23,8 @@ public interface RedisKey {
     /** User sessions. */
     RedisKey SESSION = new SimpleKey("session");
     
+    RedisKey SURVEY_RESPONSE = new SimpleKey("surveyresponse");
+    
     /** Study */
     RedisKey STUDY = new SimpleKey("study");
 
@@ -37,6 +39,8 @@ public interface RedisKey {
     
     /** Lock on user account. */
     RedisKey USER_LOCK = new CompoundKey((SimpleKey)USER, (SimpleKey)LOCK);
+    
+    RedisKey SURVEY_RESPONSE_LOCK = new CompoundKey((SimpleKey)USER, (SimpleKey)SURVEY_RESPONSE);
 
     /** Number of participants in a study */
     RedisKey NUM_OF_PARTICIPANTS = new SimpleKey("num-of-participants");
