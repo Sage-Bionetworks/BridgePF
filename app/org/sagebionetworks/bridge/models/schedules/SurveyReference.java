@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -11,7 +12,6 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.sun.org.apache.xerces.internal.utils.Objects;
 
 /**
  * This is a "soft" reference to a survey that does not need to include a createdOn timestamp. 
