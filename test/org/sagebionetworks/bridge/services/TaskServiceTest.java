@@ -152,7 +152,6 @@ public class TaskServiceTest {
         for (Task task : (List<Task>)argument.getValue()) {
             // ignoring task3
             String ref = task.getActivity().getRef();
-            System.out.println(ref);
             if (!"task:task3".equals(ref)) {
                 assertTrue("Found task with survey response ref", ref.contains("/surveys/response/identifier"));        
             } else {

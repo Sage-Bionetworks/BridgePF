@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -14,6 +15,7 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
+import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +43,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     
     private DynamoDBMapper mapper;
     private DynamoSurveyDao surveyDao;
+    private DistributedLockDao lockDao;
 
     @Autowired
     public void setDynamoDbClient(AmazonDynamoDB client) {
@@ -55,6 +58,11 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         this.surveyDao = surveyDao;
     }
     
+    @Autowired
+    public void setDistributedLockDao(DistributedLockDao lockDao) {
+        this.lockDao = lockDao;
+    }
+    
     @Override
     public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
             List<SurveyAnswer> answers) {
@@ -64,16 +72,25 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     @Override
     public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
             List<SurveyAnswer> answers, String identifier) {
+        
+        String key = RedisKey.SURVEY_RESPONSE_LOCK.getRedisKey(identifier);
+        String lock = null;
         try {
+            lock = lockDao.acquireLock(SurveyResponse.class, key);
             SurveyResponse response = getSurveyResponseInternal(healthCode, identifier);
             if (response == null) {
-                // This is the response we want. This is good, carry on.
                 return createSurveyResponseInternal(keys, healthCode, answers, identifier);
             }
             throw new EntityAlreadyExistsException(response);
         } catch(ConcurrentModificationException e) {
             // This can happen due to the version not being correct, as we're only checking the identifier;
             throw new EntityAlreadyExistsException(e.getEntity());
+        } finally {
+            // This used to silently fail, not there is a precondition check that
+            // throws an exception. If there has been an exception, lock == null
+            if (lock != null) {
+                lockDao.releaseLock(SurveyResponse.class, key, lock);
+            }
         }
     }
     
@@ -137,10 +154,10 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     
     private SurveyResponse createSurveyResponseInternal(GuidCreatedOnVersionHolder keys, String healthCode,
             List<SurveyAnswer> answers, String identifier) {
-        
+
         Survey survey = surveyDao.getSurvey(keys);
         List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, EMPTY_ANSWERS, answers);
-        
+
         SurveyResponse response = new DynamoSurveyResponse();
         response.setGuid(identifier);
         response.setSurvey(survey);
