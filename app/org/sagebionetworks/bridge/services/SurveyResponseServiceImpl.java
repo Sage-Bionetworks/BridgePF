@@ -45,14 +45,7 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     @Override
     public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder survey, String healthCode,
             List<SurveyAnswer> answers) {
-        checkArgument(isNotBlank(survey.getGuid()), CANNOT_BE_BLANK, "survey guid");
-        checkArgument(isNotBlank(healthCode), CANNOT_BE_BLANK, "health code");
-        checkArgument(survey.getCreatedOn() != 0L, "Survey createdOn cannot be 0");
-        checkNotNull(answers, CANNOT_BE_NULL, "survey answers");
-        
-        Survey existing = surveyDao.getSurvey(survey);
-        validate(answers, existing);
-        return surveyResponseDao.createSurveyResponse(existing, healthCode, answers);
+        return createSurveyResponse(survey, healthCode, answers, BridgeUtils.generateGuid());
     }
 
     @Override

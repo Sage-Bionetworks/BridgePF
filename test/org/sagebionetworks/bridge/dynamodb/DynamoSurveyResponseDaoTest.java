@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -118,7 +119,7 @@ public class DynamoSurveyResponseDaoTest {
         
         List<SurveyAnswer> answers = Lists.newArrayList();
 
-        SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers);
+        SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers, BridgeUtils.generateGuid());
         assertNotNull("Has been assigned a GUID", response.getIdentifier());
         assertFalse("Survey is now in use", noResponses(survey));
         
