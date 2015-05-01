@@ -17,7 +17,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Email;
@@ -48,9 +47,6 @@ public class StormpathAccountDaoTest {
     
     @Resource
     private StudyServiceImpl studyService;
-    
-    @Resource
-    private TestUserAdminHelper helper;
     
     private Study study;
     
@@ -234,19 +230,14 @@ public class StormpathAccountDaoTest {
     @Test
     public void resetPassword() {
         StormpathAccountDao dao = new StormpathAccountDao();
-        
-        com.stormpath.sdk.account.Account account = mock(com.stormpath.sdk.account.Account.class);
-        
         PasswordReset passwordReset = new PasswordReset("password", "sptoken");
         
         Application application = mock(Application.class);
-        when(application.verifyPasswordResetToken(passwordReset.getSptoken())).thenReturn(account);
         dao.setStormpathApplication(application);
         
         dao.resetPassword(passwordReset);
-        verify(account).setPassword(passwordReset.getPassword());
-        verify(account).save();
-        verifyNoMoreInteractions(account);
+        verify(application).resetPassword(passwordReset.getSptoken(), passwordReset.getPassword());
+        verifyNoMoreInteractions(application);
     }
     
     @Test
