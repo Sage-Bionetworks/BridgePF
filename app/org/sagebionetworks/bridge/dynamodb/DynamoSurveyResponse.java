@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 
-@DynamoDBTable(tableName = "SurveyResponse")
+@DynamoDBTable(tableName = "SurveyResponse2")
 public class DynamoSurveyResponse implements SurveyResponse {
 
     private static final String ANSWERS_PROPERTY = "answers";
@@ -35,10 +35,13 @@ public class DynamoSurveyResponse implements SurveyResponse {
     private String healthCode;
     private String identifier;
     
-    private String surveyKey; // stored in dynamo, local index range key
-    private String surveyGuid; // stored in dynamo
-    private long surveyCreatedOn; // stored in dynamo
-    private Survey survey; // constructed and returned to the consumer
+    // These three are stored in Dynamo.
+    private String surveyKey;
+    private String surveyGuid;
+    private long surveyCreatedOn;
+    
+    // This retrieved and returned as part of the JSON to the consumer
+    private Survey survey;
     
     private Long startedOn;
     private Long completedOn;
@@ -67,7 +70,6 @@ public class DynamoSurveyResponse implements SurveyResponse {
         this.identifier = identifier;
     }
     
-    // Local index: surveyKey
     @JsonIgnore
     @DynamoDBAttribute
     @DynamoDBIndexRangeKey(localSecondaryIndexName = "healthCode-surveyKey-index")
