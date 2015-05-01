@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.stormpath;
+Kpackage org.sagebionetworks.bridge.stormpath;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -322,6 +322,7 @@ public class StormpathAccountDao implements AccountDao {
         case 2008:
             throw new BadRequestException(e.getDeveloperMessage());
         case 404:
+        case 7100: // Password is bad. Just return not found in this case.
         case 7102: // Login attempt failed because the Account is not verified. 
         case 7104: // Account not found in the directory
         case 2016: // Property value does not match a known resource. Somehow this equals not found.
