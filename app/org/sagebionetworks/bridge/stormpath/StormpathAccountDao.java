@@ -202,9 +202,7 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(passwordReset);
         
         try {
-            com.stormpath.sdk.account.Account account = application.verifyPasswordResetToken(passwordReset.getSptoken());
-            account.setPassword(passwordReset.getPassword());
-            account.save();
+            application.resetPassword(passwordReset.getSptoken(), passwordReset.getPassword());
         } catch (ResourceException e) {
             rethrowResourceException(e, null);
         }
