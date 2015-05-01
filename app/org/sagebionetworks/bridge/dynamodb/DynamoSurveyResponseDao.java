@@ -4,6 +4,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
@@ -19,13 +21,8 @@ import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
@@ -42,12 +39,9 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     private DynamoSurveyDao surveyDao;
     private DistributedLockDao lockDao;
 
-    @Autowired
-    public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
-                .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoSurveyResponse.class)).build();
-        mapper = new DynamoDBMapper(client, mapperConfig);
+    @Resource(name = "surveyResponseDdbMapper")
+    public void setDdbMapper(DynamoDBMapper mapper) {
+        this.mapper = mapper;
     }
     
     @Autowired
@@ -60,12 +54,6 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         this.lockDao = lockDao;
     }
     
-    @Override
-    public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
-            List<SurveyAnswer> answers) {
-        return createSurveyResponseInternal(keys, healthCode, answers, BridgeUtils.generateGuid());
-    }
-
     @Override
     public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
             List<SurveyAnswer> answers, String identifier) {
