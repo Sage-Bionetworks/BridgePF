@@ -28,6 +28,8 @@ GET    /api/v1/surveyresponses/:guid                                @controllers
 POST   /api/v1/surveyresponses/:guid                                @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
 DELETE /api/v1/surveyresponses/:guid                                @controllers.SurveyResponseController.deleteSurveyResponse(guid: String)
 GET    /api/v1/surveys/:surveyGuid/revisions/published              @controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
+# This is a temporary fix for staging until the SDK can be updated and absorbed by YML
+GET    /api/v1/surveys/:surveyGuid/published                        @controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
 GET    /api/v1/surveys/:surveyGuid/revisions/:createdOn             @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
 POST   /api/v1/surveys/:surveyGuid/revisions/:createdOn             @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
 POST   /api/v1/surveys/:surveyGuid/revisions/:createdOn/:identifier @controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
