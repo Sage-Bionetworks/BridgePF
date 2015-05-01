@@ -1,4 +1,4 @@
-Kpackage org.sagebionetworks.bridge.stormpath;
+package org.sagebionetworks.bridge.stormpath;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
