@@ -283,9 +283,12 @@ public class DynamoSurveyDao implements SurveyDao {
         if (existing.isPublished()) {
             throw new PublishedSurveyException(existing);
         }
-        // If there are responses to this survey, it can't be deleted.
-        if (responseDao.surveyHasResponses(healthCode, keys)) {
-            throw new IllegalStateException("Survey has been answered by participants; it cannot be deleted.");
+        // If there are responses to this survey, it can't be deleted. Some tests aren't creating responses
+        // and don't have a user with a healthCode, these are skipped
+        if (healthCode != null) {
+            if (responseDao.surveyHasResponses(healthCode, keys)) {
+                throw new IllegalStateException("Survey has been answered by participants; it cannot be deleted.");
+            }
         }
         // If there are schedule plans for this survey, it can't be deleted. Would need to delete them all first. 
         if (studyIdentifier != null) {

@@ -34,7 +34,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 @Component
-@DynamoDBTable(tableName = "SurveyResponse2")
 public class DynamoSurveyResponseDao implements SurveyResponseDao {
 
     private static final List<SurveyAnswer> EMPTY_ANSWERS = ImmutableList.of();
@@ -137,6 +136,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     public boolean surveyHasResponses(String healthCode, GuidCreatedOnVersionHolder keys) {
         DynamoSurveyResponse hashKey = new DynamoSurveyResponse();
         hashKey.setHealthCode(healthCode);
+        hashKey.setSurveyKey(keys);
         
         DynamoDBQueryExpression<DynamoSurveyResponse> query = new DynamoDBQueryExpression<DynamoSurveyResponse>();
         query.setHashKeyValues(hashKey);
