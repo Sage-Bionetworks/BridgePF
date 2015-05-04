@@ -32,7 +32,7 @@ GET    /api/v2/surveys/:surveyGuid/revisions/:createdOn             @controllers
 POST   /api/v2/surveys/:surveyGuid/revisions/:createdOn             @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
 POST   /api/v2/surveys/:surveyGuid/revisions/:createdOn/:identifier @controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
 
-# API - Surveys v1 (in use in production)
+# API - Surveys v1 (NOT used in production, but being added now)
 GET    /api/v1/surveys/:surveyGuid/published              @controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
 GET    /api/v1/surveys/:surveyGuid/:createdOn             @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
 POST   /api/v1/surveys/:surveyGuid/:createdOn             @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
