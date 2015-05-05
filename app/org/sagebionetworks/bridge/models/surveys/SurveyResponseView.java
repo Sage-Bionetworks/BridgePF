@@ -8,12 +8,18 @@ import org.sagebionetworks.bridge.models.surveys.SurveyResponse.Status;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class SurveyResponseWithSurvey {
+/**
+ * A version of the survey response object that includes the complete survey 
+ * and serves to hide other values that should not be in the JSON returned from 
+ * the API.
+ *
+ */
+public class SurveyResponseView {
 
     private final SurveyResponse response;
     private final Survey survey;
     
-    public SurveyResponseWithSurvey(SurveyResponse response, Survey survey) {
+    public SurveyResponseView(SurveyResponse response, Survey survey) {
         checkNotNull(response);
         checkNotNull(survey);
         this.response = response;

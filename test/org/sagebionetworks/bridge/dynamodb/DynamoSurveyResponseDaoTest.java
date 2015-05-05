@@ -21,8 +21,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
@@ -40,6 +43,10 @@ import com.google.common.collect.Lists;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoSurveyResponseDaoTest {
 
+    private static final String SURVEY_GUID = "surveyGuid";
+
+    private static final String SURVEY_RESPONSE_IDENTIFIER = "surveyResponseIdentifier";
+
     private static final String HEALTH_DATA_CODE = "AAA";
 
     @Resource
@@ -52,7 +59,8 @@ public class DynamoSurveyResponseDaoTest {
 
     @BeforeClass
     public static void initialSetUp() {
-        DynamoInitializer.init(DynamoSurveyResponse.class);
+        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyResponse.class);
+        DynamoTestUtil.clearTable(DynamoSurvey.class);
         DynamoTestUtil.clearTable(DynamoSurveyResponse.class);
     }
 
@@ -66,7 +74,8 @@ public class DynamoSurveyResponseDaoTest {
     public void after() {
         // These have to be deleted or the survey won't delete. In practice you can't
         // delete these without deleting a user, and that isn't going to happen in production.
-        DynamoInitializer.init(DynamoSurveyResponse.class);
+        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyResponse.class);
+        DynamoTestUtil.clearTable(DynamoSurvey.class);
         DynamoTestUtil.clearTable(DynamoSurveyResponse.class);
         survey = null;
     }
@@ -91,7 +100,7 @@ public class DynamoSurveyResponseDaoTest {
         assertFalse("No version in JSON", node.has("version"));
         assertFalse("No data in JSON", node.has("data"));
         assertFalse("No healthCode in JSON", node.has("healthCode"));
-        assertFalse("No surveyGuid in JSON", node.has("surveyGuid"));
+        assertFalse("No surveyGuid in JSON", node.has(SURVEY_GUID));
         assertFalse("No surveyCreatedOn in JSON", node.has("surveyCreatedOn"));
     }
     
@@ -165,6 +174,30 @@ public class DynamoSurveyResponseDaoTest {
 
         newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
         assertEquals("Answer was updated due to more recent timestamp", "true", answers.get(0).getAnswers().get(0));
+    }
+    
+    @Test
+    public void canTellWhenSurveyHasResponses() {
+        assertFalse(surveyResponseDao.surveyHasResponses(survey));
+        
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), SURVEY_RESPONSE_IDENTIFIER);
+        assertTrue(surveyResponseDao.surveyHasResponses(survey));
+    }
+    
+    @Test
+    public void canDeleteSurveyResponseByHealthCode() {
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), SURVEY_RESPONSE_IDENTIFIER);
+        
+        SurveyResponse response = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, SURVEY_RESPONSE_IDENTIFIER);
+        assertNotNull(response);
+        
+        surveyResponseDao.deleteSurveyResponses(HEALTH_DATA_CODE);
+        try {
+            surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, SURVEY_RESPONSE_IDENTIFIER);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            
+        }
     }
     
     private boolean noResponses(Survey survey) {

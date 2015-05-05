@@ -18,7 +18,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
-import org.sagebionetworks.bridge.models.surveys.SurveyResponseWithSurvey;
+import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import org.sagebionetworks.bridge.validators.SurveyAnswerValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,13 +45,13 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     }
 
     @Override
-    public SurveyResponseWithSurvey createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
+    public SurveyResponseView createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
             List<SurveyAnswer> answers) {
         return createSurveyResponse(keys, healthCode, answers, BridgeUtils.generateGuid());
     }
 
     @Override
-    public SurveyResponseWithSurvey createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
+    public SurveyResponseView createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
             List<SurveyAnswer> answers, String identifier) {
         checkNotNull(keys, CANNOT_BE_NULL, "keys");
         checkNotNull(answers, CANNOT_BE_NULL, "survey answers");
@@ -63,28 +63,28 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
         Survey survey = surveyDao.getSurvey(keys);
         validate(answers, survey);
         SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, healthCode, answers, identifier);
-        return new SurveyResponseWithSurvey(response, survey);
+        return new SurveyResponseView(response, survey);
     }
     
     @Override
-    public SurveyResponseWithSurvey getSurveyResponse(String healthCode, String identifier) {
+    public SurveyResponseView getSurveyResponse(String healthCode, String identifier) {
         checkNotNull(healthCode, CANNOT_BE_NULL, "health code");
         checkNotNull(identifier, CANNOT_BE_NULL, "guid");
         
         SurveyResponse response = surveyResponseDao.getSurveyResponse(healthCode, identifier);
         Survey survey = getSurveyForResponse(response);
-        return new SurveyResponseWithSurvey(response, survey);
+        return new SurveyResponseView(response, survey);
     }
 
     @Override
-    public SurveyResponseWithSurvey appendSurveyAnswers(SurveyResponse response, List<SurveyAnswer> answers) {
+    public SurveyResponseView appendSurveyAnswers(SurveyResponse response, List<SurveyAnswer> answers) {
         checkNotNull(response, CANNOT_BE_NULL, "survey response");
         checkNotNull(answers, CANNOT_BE_NULL, "survey answers");
         
         Survey survey = getSurveyForResponse(response);
         validate(answers, survey);
         SurveyResponse savedResponse = surveyResponseDao.appendSurveyAnswers(response, answers);
-        return new SurveyResponseWithSurvey(savedResponse, survey);
+        return new SurveyResponseView(savedResponse, survey);
     }
     
     @Override
