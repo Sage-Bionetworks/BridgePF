@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
@@ -62,8 +63,9 @@ public class DynamoSurveyResponseDaoTest {
 
     @After
     public void after() {
-        surveyDao.deleteSurvey(null, survey);
-        survey = null;
+        if (surveyDao != null) {
+            surveyDao.deleteSurvey(new StudyIdentifierImpl(survey.getStudyIdentifier()), survey);    
+        }
     }
 
     @Test
