@@ -202,9 +202,7 @@ public class StormpathAccountDao implements AccountDao {
         checkNotNull(passwordReset);
         
         try {
-            com.stormpath.sdk.account.Account account = application.verifyPasswordResetToken(passwordReset.getSptoken());
-            account.setPassword(passwordReset.getPassword());
-            account.save();
+            application.resetPassword(passwordReset.getSptoken(), passwordReset.getPassword());
         } catch (ResourceException e) {
             rethrowResourceException(e, null);
         }
@@ -322,6 +320,7 @@ public class StormpathAccountDao implements AccountDao {
         case 2008:
             throw new BadRequestException(e.getDeveloperMessage());
         case 404:
+        case 7100: // Password is bad. Just return not found in this case.
         case 7102: // Login attempt failed because the Account is not verified. 
         case 7104: // Account not found in the directory
         case 2016: // Property value does not match a known resource. Somehow this equals not found.

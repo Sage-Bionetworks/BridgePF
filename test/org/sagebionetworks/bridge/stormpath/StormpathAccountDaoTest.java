@@ -17,7 +17,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Email;
@@ -48,9 +47,6 @@ public class StormpathAccountDaoTest {
     
     @Resource
     private StudyServiceImpl studyService;
-    
-    @Resource
-    private TestUserAdminHelper helper;
     
     private Study study;
     
@@ -92,6 +88,24 @@ public class StormpathAccountDaoTest {
             account = accountDao.authenticate(study, new SignIn(email, "P4ssword"));
             assertEquals("tester", account.getUsername());
             assertEquals(1, account.getRoles().size());
+        } finally {
+            accountDao.deleteAccount(study, email);
+        }
+    }
+    
+    @Test
+    public void badPasswordReportedAs404() {
+        String email = "bridge-testing+"+RandomStringUtils.randomAlphabetic(5)+"@sagebridge.org";
+        try {
+            SignUp signUp = new SignUp("tester", email, "P4ssword", Sets.newHashSet("test_users"));
+            accountDao.signUp(study, signUp, false);
+            
+            try {
+                accountDao.authenticate(study, new SignIn(email, "BadPassword"));
+                fail("Should have thrown an exception");
+            } catch(EntityNotFoundException e) {
+                assertEquals("Account not found.", e.getMessage());
+            }
         } finally {
             accountDao.deleteAccount(study, email);
         }
@@ -234,19 +248,14 @@ public class StormpathAccountDaoTest {
     @Test
     public void resetPassword() {
         StormpathAccountDao dao = new StormpathAccountDao();
-        
-        com.stormpath.sdk.account.Account account = mock(com.stormpath.sdk.account.Account.class);
-        
         PasswordReset passwordReset = new PasswordReset("password", "sptoken");
         
         Application application = mock(Application.class);
-        when(application.verifyPasswordResetToken(passwordReset.getSptoken())).thenReturn(account);
         dao.setStormpathApplication(application);
         
         dao.resetPassword(passwordReset);
-        verify(account).setPassword(passwordReset.getPassword());
-        verify(account).save();
-        verifyNoMoreInteractions(account);
+        verify(application).resetPassword(passwordReset.getSptoken(), passwordReset.getPassword());
+        verifyNoMoreInteractions(application);
     }
     
     @Test
