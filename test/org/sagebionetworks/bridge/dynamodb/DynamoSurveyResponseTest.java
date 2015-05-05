@@ -48,16 +48,6 @@ public class DynamoSurveyResponseTest {
     }
     
     @Test
-    public void surveyKeysQuietlyFail() {
-        DynamoSurveyResponse response = new DynamoSurveyResponse();
-        response.setSurveyKey("this is a bad key:" + DateTime.now().toString());
-        
-        assertNull(response.getSurveyGuid());
-        assertEquals(0L, response.getSurveyCreatedOn());
-        
-    }
-    
-    @Test
     public void correctlyDeterminesStatus() {
         DynamoSurveyResponse response = new DynamoSurveyResponse();
         assertEquals("Survey has not been started", Status.UNSTARTED, response.getStatus());

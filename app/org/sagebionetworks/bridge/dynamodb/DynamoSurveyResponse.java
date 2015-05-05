@@ -82,7 +82,7 @@ public final class DynamoSurveyResponse implements SurveyResponse {
     @Override
     public String getSurveyGuid() {
         try {
-            if (StringUtils.countMatches(surveyKey, ":") == 1 && surveyKey != null) {
+            if (surveyKey != null) {
                 return surveyKey.split(":")[0];
             }
         } catch(Exception e) { /* noop */ }
@@ -93,7 +93,7 @@ public final class DynamoSurveyResponse implements SurveyResponse {
     @Override
     public long getSurveyCreatedOn() {
         try {
-            if (StringUtils.countMatches(surveyKey, ":") == 1 && surveyKey != null) {
+            if (surveyKey != null) {
                 return Long.parseLong(surveyKey.split(":")[1]);
             }
         } catch(Exception e) { /* noop */ }
