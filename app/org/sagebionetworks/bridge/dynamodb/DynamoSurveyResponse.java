@@ -75,7 +75,7 @@ public final class DynamoSurveyResponse implements SurveyResponse {
         this.surveyKey = surveyKey;
     }
     public void setSurveyKey(GuidCreatedOnVersionHolder keys) {
-        this.surveyKey = String.format("%s:%s", keys.getGuid(), DateUtils.convertToISODateTime(keys.getCreatedOn()));
+        this.surveyKey = String.format("%s:%s", keys.getGuid(), Long.toString(keys.getCreatedOn()));
     }
     @DynamoDBIgnore
     @JsonIgnore
