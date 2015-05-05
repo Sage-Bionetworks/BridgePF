@@ -3,10 +3,10 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
@@ -75,27 +75,29 @@ public final class DynamoSurveyResponse implements SurveyResponse {
         this.surveyKey = surveyKey;
     }
     public void setSurveyKey(GuidCreatedOnVersionHolder keys) {
-        this.surveyKey = String.format("%s:%s", keys.getGuid(), Long.toString(keys.getCreatedOn()));
+        this.surveyKey = String.format("%s:%d", keys.getGuid(), keys.getCreatedOn());
     }
     @DynamoDBIgnore
     @JsonIgnore
     @Override
     public String getSurveyGuid() {
         try {
-            return (surveyKey != null) ? surveyKey.split(":")[0] : null;    
-        } catch(Exception e) {
-            return null;
-        }
+            if (StringUtils.countMatches(surveyKey, ":") == 1 && surveyKey != null) {
+                return surveyKey.split(":")[0];
+            }
+        } catch(Exception e) { /* noop */ }
+        return null;
     }
     @DynamoDBIgnore
     @JsonIgnore
     @Override
     public long getSurveyCreatedOn() {
         try {
-            return (surveyKey != null) ? Long.parseLong(surveyKey.split(":")[1]) : null;    
-        } catch(Exception e) {
-            return 0L;
-        }
+            if (StringUtils.countMatches(surveyKey, ":") == 1 && surveyKey != null) {
+                return Long.parseLong(surveyKey.split(":")[1]);
+            }
+        } catch(Exception e) { /* noop */ }
+        return 0L;
     }
     @Override
     @DynamoDBVersionAttribute

@@ -9,10 +9,13 @@ import java.util.UUID;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
+import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse.Status;
 
@@ -26,6 +29,34 @@ public class DynamoSurveyResponseTest {
         EqualsVerifier.forClass(DynamoSurveyResponse.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
     }
 
+    @Test
+    public void correctlyConvertsSurveyToFromKey() {
+        long createdOn = DateTime.now().getMillis();
+        
+        Survey survey = new DynamoSurvey();
+        survey.setGuid(BridgeUtils.generateGuid());
+        survey.setCreatedOn(createdOn);
+        
+        DynamoSurveyResponse response = new DynamoSurveyResponse();
+        response.setSurveyKey(survey);
+        
+        String key = String.format("%s:%d", survey.getGuid(), survey.getCreatedOn());
+        assertEquals(1, StringUtils.countMatches(key, ":"));
+        assertEquals(key, response.getSurveyKey());
+        assertEquals(survey.getGuid(), response.getSurveyGuid());
+        assertEquals(survey.getCreatedOn(), response.getSurveyCreatedOn());
+    }
+    
+    @Test
+    public void surveyKeysQuietlyFail() {
+        DynamoSurveyResponse response = new DynamoSurveyResponse();
+        response.setSurveyKey("this is a bad key:" + DateTime.now().toString());
+        
+        assertNull(response.getSurveyGuid());
+        assertEquals(0L, response.getSurveyCreatedOn());
+        
+    }
+    
     @Test
     public void correctlyDeterminesStatus() {
         DynamoSurveyResponse response = new DynamoSurveyResponse();
