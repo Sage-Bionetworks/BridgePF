@@ -23,13 +23,19 @@ POST   /api/v1/profile/external-id       @controllers.UserProfileController.crea
 POST   /api/v1/profile/unsubscribe       @controllers.EmailController.unsubscribeFromEmail
 GET    /api/v1/profile/unsubscribe       @controllers.EmailController.unsubscribeFromEmail
 
-# API - Survey Responses
-GET    /api/v1/surveyresponses/:identifier                          @controllers.SurveyResponseController.getSurveyResponse(identifier: String)
-POST   /api/v1/surveyresponses/:identifier                          @controllers.SurveyResponseController.appendSurveyAnswers(identifier: String)
-GET    /api/v1/surveys/:surveyGuid/revisions/published              @controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
-GET    /api/v1/surveys/:surveyGuid/revisions/:createdOn             @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
-POST   /api/v1/surveys/:surveyGuid/revisions/:createdOn             @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
-POST   /api/v1/surveys/:surveyGuid/revisions/:createdOn/:identifier @controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
+# API - Surveys & Survey Response v2 (more consistent with REST API pattern)
+GET    /api/v2/surveyresponses/:guid                                @controllers.SurveyResponseController.getSurveyResponse(guid: String)
+POST   /api/v2/surveyresponses/:guid                                @controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
+GET    /api/v2/surveys/:surveyGuid/revisions/published              @controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
+GET    /api/v2/surveys/:surveyGuid/revisions/:createdOn             @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
+POST   /api/v2/surveys/:surveyGuid/revisions/:createdOn             @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
+POST   /api/v2/surveys/:surveyGuid/revisions/:createdOn/:identifier @controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
+
+# API - Surveys v1 (not used in production, to be phased out after next release of iOS SDK)
+GET    /api/v1/surveys/:surveyGuid/published              @controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
+GET    /api/v1/surveys/:surveyGuid/:createdOn             @controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
+POST   /api/v1/surveys/:surveyGuid/:createdOn             @controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
+POST   /api/v1/surveys/:surveyGuid/:createdOn/:identifier @controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
 
 # API - Schedules
 GET    /api/v1/schedules   @controllers.ScheduleController.getSchedules

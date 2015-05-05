@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
+import org.sagebionetworks.bridge.models.surveys.SurveyResponseWithSurvey;
 
 public class TaskServiceTest {
 
@@ -83,9 +84,11 @@ public class TaskServiceTest {
         SurveyService surveyService = mock(SurveyService.class);
         when(surveyService.getSurveyMostRecentlyPublishedVersion(any(StudyIdentifier.class), anyString())).thenReturn(survey);
         
-        SurveyResponse surveyResponse = new DynamoSurveyResponse();
-        surveyResponse.setHealthCode("healthCode");
-        surveyResponse.setIdentifier("identifier");
+        SurveyResponse response = new DynamoSurveyResponse();
+        response.setHealthCode("healthCode");
+        response.setIdentifier("identifier");
+        
+        SurveyResponseWithSurvey surveyResponse = new SurveyResponseWithSurvey(response, survey);
         SurveyResponseService surveyResponseService = mock(SurveyResponseService.class);
         when(surveyResponseService.createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), anyString(), any(List.class))).thenReturn(surveyResponse);

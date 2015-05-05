@@ -27,7 +27,7 @@ public interface SurveyDao {
      * @param studyIdentifier
      * @param keys
      */
-    public void deleteSurvey(String healthCode, StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys);
+    public void deleteSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys);
     
     /**
      * Unpublish the survey, closing out any active records that are still 

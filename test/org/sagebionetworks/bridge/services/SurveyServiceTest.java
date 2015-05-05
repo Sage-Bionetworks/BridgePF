@@ -113,7 +113,7 @@ public class SurveyServiceTest {
         survey = surveyService.getSurvey(survey);
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
         assertEquals("Be honest: do you have high blood pressue?", question.getPromptDetail());
-        surveyService.deleteSurvey("BBB", studyIdentifier, survey);
+        surveyService.deleteSurvey(studyIdentifier, survey);
 
         try {
             survey = surveyService.getSurvey(survey);
@@ -362,7 +362,7 @@ public class SurveyServiceTest {
         Survey survey = surveyService.createSurvey(testSurvey);
         surveyService.publishSurvey(survey);
 
-        surveyService.deleteSurvey("BBB", studyIdentifier, survey);
+        surveyService.deleteSurvey(studyIdentifier, survey);
     }
     
     @Test

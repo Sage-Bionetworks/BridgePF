@@ -5,6 +5,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -21,16 +22,19 @@ public class DynamoTaskTest {
 
     @Test
     public void canRoundtripSerialize() throws Exception {
+        DateTime scheduledOn = DateTime.now().plusWeeks(1).withZone(DateTimeZone.UTC);
+        DateTime expiresOn = DateTime.now().plusWeeks(1).plusDays(4).withZone(DateTimeZone.UTC);
+        
         DynamoTask task = new DynamoTask();
         task.setActivity(new Activity("Label", "task:foo"));
-        task.setScheduledOn(DateTime.parse("2015-05-04T02:10:00.000-07:00").getMillis());
-        task.setExpiresOn(DateTime.parse("2015-05-12T02:10:00.000-07:00").getMillis());
+        task.setScheduledOn(scheduledOn.getMillis());
+        task.setExpiresOn(expiresOn.getMillis());
         task.setGuid("AAA-BBB-CCC");
         task.setSchedulePlanGuid("DDD-EEE-FFF");
         task.setHealthCode("FFF-GGG-HHH");
         
         String output = BridgeObjectMapper.get().writeValueAsString(task);
-        assertEquals("{\"guid\":\"AAA-BBB-CCC\",\"scheduledOn\":\"2015-05-04T09:10:00.000Z\",\"expiresOn\":\"2015-05-12T09:10:00.000Z\",\"activity\":{\"label\":\"Label\",\"ref\":\"task:foo\",\"activityType\":\"task\",\"type\":\"Activity\"},\"status\":\"scheduled\",\"type\":\"Task\"}", output);
+        assertEquals("{\"guid\":\"AAA-BBB-CCC\",\"scheduledOn\":\""+scheduledOn.toString()+"\",\"expiresOn\":\""+expiresOn.toString()+"\",\"activity\":{\"label\":\"Label\",\"ref\":\"task:foo\",\"activityType\":\"task\",\"type\":\"Activity\"},\"status\":\"scheduled\",\"type\":\"Task\"}", output);
         
         // zero out the health code field, because that will not be serialized
         task.setHealthCode(null);

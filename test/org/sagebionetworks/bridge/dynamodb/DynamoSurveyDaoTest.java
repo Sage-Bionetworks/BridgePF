@@ -80,7 +80,7 @@ public class DynamoSurveyDaoTest {
         survey = surveyDao.getSurvey(survey);
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
 
-        surveyDao.deleteSurvey(null, studyIdentifier, survey);
+        surveyDao.deleteSurvey(studyIdentifier, survey);
 
         try {
             survey = surveyDao.getSurvey(survey);
@@ -443,7 +443,7 @@ public class DynamoSurveyDaoTest {
         Survey survey = surveyDao.createSurvey(testSurvey);
         surveyDao.publishSurvey(survey);
 
-        surveyDao.deleteSurvey(null, studyIdentifier, survey);
+        surveyDao.deleteSurvey(studyIdentifier, survey);
     }
 
 }

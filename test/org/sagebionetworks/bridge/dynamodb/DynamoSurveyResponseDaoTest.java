@@ -78,8 +78,7 @@ public class DynamoSurveyResponseDaoTest {
         DynamoSurveyResponse response = new DynamoSurveyResponse();
         response.setIdentifier("foo");
         response.setHealthCode("AAA");
-        response.setSurveyGuid("BBB");
-        response.setSurveyCreatedOn(new Date().getTime());
+        response.setSurveyKey("BBB:"+new Date().getTime());
         response.setStartedOn(DateTime.parse("2014-10-10T10:02:21.123Z").getMillis());
         response.setVersion(1L);
         response.setData(data);
@@ -169,7 +168,7 @@ public class DynamoSurveyResponseDaoTest {
     }
     
     private boolean noResponses(Survey survey) {
-        return !surveyResponseDao.surveyHasResponses(HEALTH_DATA_CODE, survey);
+        return !surveyResponseDao.surveyHasResponses(survey);
     }
 
 }

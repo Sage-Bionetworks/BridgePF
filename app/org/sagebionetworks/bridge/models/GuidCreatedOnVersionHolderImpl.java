@@ -7,7 +7,9 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -27,6 +29,20 @@ public class GuidCreatedOnVersionHolderImpl implements GuidCreatedOnVersionHolde
         this.guid = survey.getGuid();
         this.createdOn = survey.getCreatedOn();
         this.version = survey.getVersion();
+    }
+    
+    public GuidCreatedOnVersionHolderImpl(SurveyResponse response) {
+        checkNotNull(response);
+        this.guid = response.getSurveyGuid();
+        this.createdOn = response.getSurveyCreatedOn();
+        this.version = null;
+    }
+   
+    public GuidCreatedOnVersionHolderImpl(SurveyReference reference) {
+        checkNotNull(reference);
+        this.guid = reference.getGuid();
+        this.createdOn = (reference.getCreatedOn() == null) ? 0L : reference.getCreatedOn().getMillis();
+        this.version = null;
     }
     
     @JsonCreator

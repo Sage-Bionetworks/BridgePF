@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.dao.TaskDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.User;
 import org.sagebionetworks.bridge.models.UserConsent;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -27,7 +28,7 @@ import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
-import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
+import org.sagebionetworks.bridge.models.surveys.SurveyResponseWithSurvey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -158,11 +159,11 @@ public class TaskService {
             return activity;
         }
         String baseUrl = activity.getRef().split(SURVEY_PATH_FRAGMENT)[0];
-        SurveyResponse response = null;
+        SurveyResponseWithSurvey response = null;
         
         SurveyReference ref = activity.getSurvey();
-        GuidCreatedOnVersionHolder keys = ref.getGuidCreatedOnVersionHolder();
-        if (keys == null) {
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
+        if (keys.getCreatedOn() == 0L) {
             keys = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, ref.getGuid());
         }   
         response = surveyResponseService.createSurveyResponse(keys, healthCode, EMPTY_ANSWERS);
