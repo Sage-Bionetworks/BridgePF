@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse.Status;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -14,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * the API.
  *
  */
+@BridgeTypeName("SurveyResponse")
 public class SurveyResponseView {
 
     private final SurveyResponse response;
@@ -28,10 +30,6 @@ public class SurveyResponseView {
     
     public Survey getSurvey(){
         return survey;
-    }
-    @JsonIgnore
-    public SurveyResponse getResponse() {
-        return response;
     }
     public Long getVersion() {
         return response.getVersion();
