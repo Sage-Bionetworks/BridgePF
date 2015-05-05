@@ -7,7 +7,6 @@ import java.util.Map;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -17,7 +16,6 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
-import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,7 +35,6 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     
     private DynamoDBMapper mapper;
     private DynamoSurveyDao surveyDao;
-    private DistributedLockDao lockDao;
 
     @Resource(name = "surveyResponseDdbMapper")
     public void setDdbMapper(DynamoDBMapper mapper) {
@@ -49,33 +46,15 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         this.surveyDao = surveyDao;
     }
     
-    @Autowired
-    public void setDistributedLockDao(DistributedLockDao lockDao) {
-        this.lockDao = lockDao;
-    }
-    
     @Override
     public SurveyResponse createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
             List<SurveyAnswer> answers, String identifier) {
         
-        String key = RedisKey.SURVEY_RESPONSE_LOCK.getRedisKey(identifier);
-        String lock = null;
         try {
-            lock = lockDao.acquireLock(SurveyResponse.class, key);
-            SurveyResponse response = getSurveyResponseInternal(healthCode, identifier);
-            if (response == null) {
-                return createSurveyResponseInternal(keys, healthCode, answers, identifier);
-            }
-            throw new EntityAlreadyExistsException(response);
+            return createSurveyResponseInternal(keys, healthCode, answers, identifier);
         } catch(ConcurrentModificationException e) {
             // This can happen due to the version not being correct, as we're only checking the identifier;
             throw new EntityAlreadyExistsException(e.getEntity());
-        } finally {
-            // This used to silently fail, not there is a precondition check that
-            // throws an exception. If there has been an exception, lock == null
-            if (lock != null) {
-                lockDao.releaseLock(SurveyResponse.class, key, lock);
-            }
         }
     }
     
@@ -90,7 +69,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     
     @Override
     public SurveyResponse appendSurveyAnswers(SurveyResponse response, List<SurveyAnswer> answers) {
-        List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(response.getSurvey(), response.getAnswers(), answers);
+        List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(response.getAnswers(), answers);
         response.setAnswers(unionOfAnswers);
         updateTimestamps(response);
 
@@ -121,12 +100,13 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     }
     
     @Override
-    public boolean surveyHasResponses(String healthCode, GuidCreatedOnVersionHolder keys) {
+    public boolean surveyHasResponses(GuidCreatedOnVersionHolder keys) {
         DynamoSurveyResponse hashKey = new DynamoSurveyResponse();
-        hashKey.setHealthCode(healthCode);
-        hashKey.setSurveyKey(keys);
+        hashKey.setSurveyKey(String.format("%s:%s", keys.getGuid(), Long.toString(keys.getCreatedOn())));
         
         DynamoDBQueryExpression<DynamoSurveyResponse> query = new DynamoDBQueryExpression<DynamoSurveyResponse>();
+        // Error w/o this; "Consistent reads are not supported on global secondary indexes"
+        query.setConsistentRead(false); 
         query.setHashKeyValues(hashKey);
         
         return mapper.count(DynamoSurveyResponse.class, query) > 0;
@@ -135,14 +115,13 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     private SurveyResponse createSurveyResponseInternal(GuidCreatedOnVersionHolder keys, String healthCode,
             List<SurveyAnswer> answers, String identifier) {
 
-        Survey survey = surveyDao.getSurvey(keys);
-        List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(survey, EMPTY_ANSWERS, answers);
+        List<SurveyAnswer> unionOfAnswers = getUnionOfValidMostRecentAnswers(EMPTY_ANSWERS, answers);
 
-        SurveyResponse response = new DynamoSurveyResponse();
+        DynamoSurveyResponse response = new DynamoSurveyResponse();
         response.setIdentifier(identifier);
-        response.setSurvey(survey);
         response.setAnswers(unionOfAnswers);
         response.setHealthCode(healthCode);
+        response.setSurveyKey(String.format("%s:%s", keys.getGuid(), Long.toString(keys.getCreatedOn())));
         updateTimestamps(response);
         
         try {
@@ -167,8 +146,6 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         }
         // Now add survey
         DynamoSurveyResponse response = results.get(0);
-        Survey survey = surveyDao.getSurvey(new GuidCreatedOnVersionHolderImpl(response.getSurveyGuid(), response.getSurveyCreatedOn()));
-        response.setSurvey(survey);
         return response;
     }
 
@@ -180,7 +157,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         });
     }
     
-    private List<SurveyAnswer> getUnionOfValidMostRecentAnswers(Survey survey, List<SurveyAnswer> existingAnswers,
+    private List<SurveyAnswer> getUnionOfValidMostRecentAnswers(List<SurveyAnswer> existingAnswers,
             List<SurveyAnswer> answers) {
         // Verify these answers are unique or more recent than existing answers, and only include them if they are.
         Map<String,SurveyAnswer> answersMap = getAnswerMap(existingAnswers);
@@ -208,10 +185,12 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
                     latestDate = answer.getAnsweredOn();
                 }
             }
+            GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(response);
+            Survey survey = surveyDao.getSurvey(keys);
             if (!answers.isEmpty()) {
                 response.setStartedOn(earliestDate);    
             }
-            if (response.getAnswers().size() == response.getSurvey().getUnmodifiableQuestionList().size()) {
+            if (response.getAnswers().size() == survey.getUnmodifiableQuestionList().size()) {
                 response.setCompletedOn(latestDate);
             }
         }

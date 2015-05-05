@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -28,6 +29,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
+import org.sagebionetworks.bridge.models.surveys.SurveyResponseWithSurvey;
 
 import com.google.common.collect.Lists;
 
@@ -41,6 +43,7 @@ public class SurveyResponseServiceImplTest {
     
     private Survey survey;
 
+    @SuppressWarnings("unchecked")
     @Before
     public void before() {
         survey = getSurvey();
@@ -50,8 +53,14 @@ public class SurveyResponseServiceImplTest {
         surveyDao = mock(DynamoSurveyDao.class);
         when(surveyDao.getSurvey(any(GuidCreatedOnVersionHolder.class))).thenReturn(survey);
         service.setSurveyDao(surveyDao);
+
+        DynamoSurveyResponse response = new DynamoSurveyResponse();
+        response.setSurveyKey(survey.getGuid() + ":" + Long.toString(survey.getCreatedOn()));
         
         surveyResponseDao = mock(DynamoSurveyResponseDao.class);
+        when(surveyResponseDao.appendSurveyAnswers(any(SurveyResponse.class), any(List.class))).thenReturn(response);
+        when(surveyResponseDao.getSurveyResponse(anyString(), anyString())).thenReturn(response);
+        
         service.setSurveyResponseDao(surveyResponseDao);
     }
     
@@ -132,13 +141,13 @@ public class SurveyResponseServiceImplTest {
         when(surveyResponseDao.createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), any(String.class), any(List.class), any(String.class))).thenReturn(getSurveyResponse());
         
-        SurveyResponse response = service.createSurveyResponse(survey, "healthCode", getAnswers());
+        SurveyResponseWithSurvey response = service.createSurveyResponse(survey, "healthCode", getAnswers());
         
         assertNotNull(response);
         assertNotNull(response.getSurvey());
         assertNotNull(response.getIdentifier());
         assertNotNull(response.getAnswers());
-        assertEquals("healthCode", response.getHealthCode());
+        assertEquals("healthCode", response.getResponse().getHealthCode());
         assertEquals((Long)2L, (Long)response.getVersion());
         
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
@@ -154,14 +163,14 @@ public class SurveyResponseServiceImplTest {
         when(surveyResponseDao.createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), any(String.class), any(List.class), any(String.class))).thenReturn(getSurveyResponse());
         
-        SurveyResponse response = service.createSurveyResponse(survey, "healthCode", getAnswers(), "belgium");
+        SurveyResponseWithSurvey response = service.createSurveyResponse(survey, "healthCode", getAnswers(), "belgium");
         
         assertNotNull(response);
         assertNotNull(response.getSurvey());
         assertNotNull(response.getIdentifier());
         assertNotNull(response.getAnswers());
-        assertEquals("healthCode", response.getHealthCode());
-        assertEquals("belgium", response.getHealthCode());
+        assertEquals("healthCode", response.getResponse().getHealthCode());
+        assertEquals("belgium", response.getIdentifier());
         assertEquals((Long)2L, (Long)response.getVersion());
         
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
@@ -198,6 +207,7 @@ public class SurveyResponseServiceImplTest {
         service.getSurveyResponse("healthCode", "identifier");
         
         verify(surveyResponseDao).getSurveyResponse("healthCode", "identifier");
+        verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
         verifyNoMoreInteractions(surveyDao);
         verifyNoMoreInteractions(surveyResponseDao);
     }
@@ -232,6 +242,7 @@ public class SurveyResponseServiceImplTest {
             fail("Should have thrown an exception");
         } catch(InvalidEntityException e) {
             assertTrue(e.getMessage().contains("Belgium is not a valid integer"));
+            verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
         }        
@@ -242,7 +253,9 @@ public class SurveyResponseServiceImplTest {
         SurveyResponse response = getSurveyResponse();
         
         service.appendSurveyAnswers(response, answers);
+        
         verify(surveyResponseDao).appendSurveyAnswers(response, answers);
+        verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
         verifyNoMoreInteractions(surveyDao);
         verifyNoMoreInteractions(surveyResponseDao);
     }
@@ -271,9 +284,9 @@ public class SurveyResponseServiceImplTest {
     private DynamoSurveyResponse getSurveyResponse() {
         DynamoSurveyResponse response = new DynamoSurveyResponse();
         response.setHealthCode("healthCode");
-        response.setIdentifier(BridgeUtils.generateGuid());
+        response.setIdentifier("belgium");
         response.setStartedOn(DateTime.now().getMillis());
-        response.setSurvey(survey);
+        response.setSurveyKey("BBB:"+DateTime.now().getMillis());
         response.setAnswers(getAnswers());
         response.setVersion(2L);
         return response;

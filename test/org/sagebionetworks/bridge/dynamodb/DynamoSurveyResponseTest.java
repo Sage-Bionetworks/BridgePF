@@ -6,7 +6,11 @@ import static org.junit.Assert.assertNull;
 import java.util.List;
 import java.util.UUID;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+
 import org.junit.Test;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
@@ -16,6 +20,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
 public class DynamoSurveyResponseTest {
+    
+    @Test
+    public void equalsHashCode() {
+        EqualsVerifier.forClass(DynamoSurveyResponse.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+    }
 
     @Test
     public void correctlyDeterminesStatus() {
@@ -34,8 +43,7 @@ public class DynamoSurveyResponseTest {
         DynamoSurveyResponse response = new DynamoSurveyResponse();
         response.setStartedOn(DateUtils.getCurrentMillisFromEpoch());
         response.setIdentifier(UUID.randomUUID().toString());
-        response.setSurveyGuid(UUID.randomUUID().toString());
-        response.setSurveyCreatedOn(DateUtils.getCurrentMillisFromEpoch());
+        response.setSurveyKey(BridgeUtils.generateGuid()+":"+DateUtils.getCurrentMillisFromEpoch());
         response.setHealthCode(UUID.randomUUID().toString());
         response.setVersion(2L);
         response.setCompletedOn(DateUtils.getCurrentMillisFromEpoch());
@@ -46,7 +54,9 @@ public class DynamoSurveyResponseTest {
         
         ObjectMapper mapper = BridgeObjectMapper.get();
         String string = mapper.writeValueAsString(response);
+        
         DynamoSurveyResponse newResponse = mapper.readValue(string, DynamoSurveyResponse.class);
+        response.setSurveyKey(newResponse.getSurveyKey());
         
         assertNull(newResponse.getSurveyGuid());
         assertEquals(0, newResponse.getSurveyCreatedOn());
@@ -54,8 +64,6 @@ public class DynamoSurveyResponseTest {
         assertNull(newResponse.getHealthCode());
         
         // These are not copied over
-        newResponse.setSurveyGuid(response.getSurveyGuid());
-        newResponse.setSurveyCreatedOn(response.getSurveyCreatedOn());
         newResponse.setVersion(response.getVersion());
         newResponse.setHealthCode(response.getHealthCode());
 

@@ -171,7 +171,7 @@ public class SurveyController extends BaseController {
         Survey survey = surveyService.getSurvey(keys);
         verifySurveyIsInStudy(session, studyId, survey);
         
-        surveyService.deleteSurvey(session.getUser().getHealthCode(), studyId, survey);
+        surveyService.deleteSurvey(studyId, survey);
         expireCache(surveyGuid, createdOnString);
         
         return okResult("Survey deleted.");

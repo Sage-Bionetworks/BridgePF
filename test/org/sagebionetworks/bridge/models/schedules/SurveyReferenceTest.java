@@ -31,7 +31,7 @@ public class SurveyReferenceTest {
         assertEquals(CREATED_ON, ref.getCreatedOn());
         
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("AAA-BBB-CCC", CREATED_ON.getMillis());
-        assertEquals(keys, ref.getGuidCreatedOnVersionHolder());
+        assertEquals(keys, new GuidCreatedOnVersionHolderImpl(ref));
     }
     
     @Test
@@ -40,7 +40,6 @@ public class SurveyReferenceTest {
         
         assertEquals("AAA-BBB-CCC", ref.getGuid());
         assertNull(ref.getCreatedOn());
-        assertNull(ref.getGuidCreatedOnVersionHolder());
     }
 
     @Test(expected = IllegalStateException.class)
