@@ -23,7 +23,6 @@ public interface SurveyDao {
      * first be deleted, and the survey closed (unpublished), before the survey 
      * can be deleted.
      *  
-     * @param healthCode
      * @param studyIdentifier
      * @param keys
      */
@@ -32,8 +31,7 @@ public interface SurveyDao {
     /**
      * Unpublish the survey, closing out any active records that are still 
      * pointing to this survey. 
-     * @param surveyGuid
-     * @param createdOn
+     * @param keys
      * @return
      */
     public Survey closeSurvey(GuidCreatedOnVersionHolder keys);

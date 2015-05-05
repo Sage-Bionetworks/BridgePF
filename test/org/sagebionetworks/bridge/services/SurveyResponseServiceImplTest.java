@@ -55,7 +55,7 @@ public class SurveyResponseServiceImplTest {
         service.setSurveyDao(surveyDao);
 
         DynamoSurveyResponse response = new DynamoSurveyResponse();
-        response.setSurveyKey(survey.getGuid() + ":" + Long.toString(survey.getCreatedOn()));
+        response.setSurveyKey(survey);
         
         surveyResponseDao = mock(DynamoSurveyResponseDao.class);
         when(surveyResponseDao.appendSurveyAnswers(any(SurveyResponse.class), any(List.class))).thenReturn(response);
