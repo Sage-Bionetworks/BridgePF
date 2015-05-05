@@ -31,6 +31,10 @@ public class SurveyResponseView {
     public Survey getSurvey(){
         return survey;
     }
+    @JsonIgnore
+    public SurveyResponse getResponse() {
+        return response;
+    }
     public Long getVersion() {
         return response.getVersion();
     }
