@@ -31,8 +31,7 @@ public interface SurveyDao {
     /**
      * Unpublish the survey, closing out any active records that are still 
      * pointing to this survey. 
-     * @param surveyGuid
-     * @param createdOn
+     * @param keys
      * @return
      */
     public Survey closeSurvey(GuidCreatedOnVersionHolder keys);

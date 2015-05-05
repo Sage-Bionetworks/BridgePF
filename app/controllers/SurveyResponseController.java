@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.IdentifierHolder;
 import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
-import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
+import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import org.sagebionetworks.bridge.services.SurveyResponseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -36,7 +36,7 @@ public class SurveyResponseController extends BaseController {
         Long version = DateUtils.convertToMillisFromEpoch(versionString);
         
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, version);
-        SurveyResponse response = responseService
+        SurveyResponseView response = responseService
                 .createSurveyResponse(keys, session.getUser().getHealthCode(), answers);
         return createdResult(new IdentifierHolder(response.getIdentifier()));
     }
@@ -49,29 +49,22 @@ public class SurveyResponseController extends BaseController {
         Long version = DateUtils.convertToMillisFromEpoch(versionString);
 
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, version);
-        SurveyResponse response = responseService.createSurveyResponse(keys, session.getUser().getHealthCode(),
-                answers, identifier);
+        SurveyResponseView response = responseService.createSurveyResponse(keys, 
+                session.getUser().getHealthCode(), answers, identifier);
         return createdResult(new IdentifierHolder(response.getIdentifier()));
     }
 
-    public Result getSurveyResponse(String guid) throws Exception {
-        SurveyResponse response = getSurveyResponseIfAuthorized(guid);
+    public Result getSurveyResponse(String identifier) throws Exception {
+        SurveyResponseView response = getSurveyResponseIfAuthorized(identifier);
         return okResult(response);
     }
     
-    public Result appendSurveyAnswers(String guid) throws Exception {
-        SurveyResponse response = getSurveyResponseIfAuthorized(guid);
+    public Result appendSurveyAnswers(String identifier) throws Exception {
+        SurveyResponseView response = getSurveyResponseIfAuthorized(identifier);
         
         List<SurveyAnswer> answers = deserializeSurveyAnswers();
-        responseService.appendSurveyAnswers(response, answers);
+        responseService.appendSurveyAnswers(response.getResponse(), answers);
         return okResult("Survey response updated.");
-    }
-    
-    public Result deleteSurveyResponse(String identifier) {
-        SurveyResponse response = getSurveyResponseIfAuthorized(identifier);
-        
-        responseService.deleteSurveyResponse(response);
-        return okResult("Survey response deleted.");
     }
 
     private List<SurveyAnswer> deserializeSurveyAnswers() throws JsonProcessingException, IOException {
@@ -79,7 +72,7 @@ public class SurveyResponseController extends BaseController {
         return JsonUtils.asEntityList(node, SurveyAnswer.class);
     }
 
-    private SurveyResponse getSurveyResponseIfAuthorized(String identifier) {
+    private SurveyResponseView getSurveyResponseIfAuthorized(String identifier) {
         UserSession session = getAuthenticatedAndConsentedSession();
         String healthCode = session.getUser().getHealthCode(); 
         return responseService.getSurveyResponse(healthCode, identifier);

@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
+import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 
 public class TaskServiceTest {
 
@@ -83,7 +84,11 @@ public class TaskServiceTest {
         SurveyService surveyService = mock(SurveyService.class);
         when(surveyService.getSurveyMostRecentlyPublishedVersion(any(StudyIdentifier.class), anyString())).thenReturn(survey);
         
-        SurveyResponse surveyResponse = new DynamoSurveyResponse("healthCode", "identifier");
+        SurveyResponse response = new DynamoSurveyResponse();
+        response.setHealthCode("healthCode");
+        response.setIdentifier("identifier");
+        
+        SurveyResponseView surveyResponse = new SurveyResponseView(response, survey);
         SurveyResponseService surveyResponseService = mock(SurveyResponseService.class);
         when(surveyResponseService.createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), anyString(), any(List.class))).thenReturn(surveyResponse);
@@ -151,7 +156,7 @@ public class TaskServiceTest {
             // ignoring task3
             String ref = task.getActivity().getRef();
             if (!"task:task3".equals(ref)) {
-                assertTrue("Found task with survey response ref", ref.contains("/surveyresponses/healthCode:identifier"));        
+                assertTrue("Found task with survey response ref", ref.contains("/surveyresponses/identifier"));        
             } else {
                 foundTask3 = true;
             }

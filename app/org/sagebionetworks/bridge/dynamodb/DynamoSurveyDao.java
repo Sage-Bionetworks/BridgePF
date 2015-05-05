@@ -23,7 +23,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
-import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -284,9 +283,9 @@ public class DynamoSurveyDao implements SurveyDao {
         if (existing.isPublished()) {
             throw new PublishedSurveyException(existing);
         }
-        // If there are responses to this survey, it can't be deleted.
-        List<SurveyResponse> responses = responseDao.getResponsesForSurvey(keys);
-        if (!responses.isEmpty()) {
+        // If there are responses to this survey, it can't be deleted. Some tests aren't creating responses
+        // and don't have a user with a healthCode, these are skipped
+        if (responseDao.surveyHasResponses(keys)) {
             throw new IllegalStateException("Survey has been answered by participants; it cannot be deleted.");
         }
         // If there are schedule plans for this survey, it can't be deleted. Would need to delete them all first. 
