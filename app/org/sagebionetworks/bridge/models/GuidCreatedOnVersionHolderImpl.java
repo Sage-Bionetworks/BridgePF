@@ -37,7 +37,7 @@ public class GuidCreatedOnVersionHolderImpl implements GuidCreatedOnVersionHolde
         this.createdOn = response.getSurveyCreatedOn();
         this.version = null;
     }
-   
+
     public GuidCreatedOnVersionHolderImpl(SurveyReference reference) {
         checkNotNull(reference);
         this.guid = reference.getGuid();

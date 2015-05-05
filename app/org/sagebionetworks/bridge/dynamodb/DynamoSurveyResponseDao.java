@@ -102,7 +102,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     @Override
     public boolean surveyHasResponses(GuidCreatedOnVersionHolder keys) {
         DynamoSurveyResponse hashKey = new DynamoSurveyResponse();
-        hashKey.setSurveyKey(String.format("%s:%s", keys.getGuid(), Long.toString(keys.getCreatedOn())));
+        hashKey.setSurveyKey(keys);
         
         DynamoDBQueryExpression<DynamoSurveyResponse> query = new DynamoDBQueryExpression<DynamoSurveyResponse>();
         // Error w/o this; "Consistent reads are not supported on global secondary indexes"
@@ -121,7 +121,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         response.setIdentifier(identifier);
         response.setAnswers(unionOfAnswers);
         response.setHealthCode(healthCode);
-        response.setSurveyKey(String.format("%s:%s", keys.getGuid(), Long.toString(keys.getCreatedOn())));
+        response.setSurveyKey(keys);
         updateTimestamps(response);
         
         try {

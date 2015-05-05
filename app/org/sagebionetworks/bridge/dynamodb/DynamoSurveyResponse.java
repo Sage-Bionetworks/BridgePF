@@ -6,7 +6,9 @@ import java.util.Objects;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 
@@ -71,6 +73,9 @@ public final class DynamoSurveyResponse implements SurveyResponse {
     }
     public void setSurveyKey(String surveyKey) {
         this.surveyKey = surveyKey;
+    }
+    public void setSurveyKey(GuidCreatedOnVersionHolder keys) {
+        this.surveyKey = String.format("%s:%s", keys.getGuid(), DateUtils.convertToISODateTime(keys.getCreatedOn()));
     }
     @DynamoDBIgnore
     @JsonIgnore

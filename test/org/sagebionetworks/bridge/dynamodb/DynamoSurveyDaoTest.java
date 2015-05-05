@@ -453,15 +453,6 @@ public class DynamoSurveyDaoTest {
 
     // DELETE SURVEY
 
-    /*
-    @Test(expected = PublishedSurveyException.class)
-    public void cannotDeleteAPublishedSurvey() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
-        surveyDao.publishSurvey(survey);
-
-        surveyDao.deleteSurvey(studyIdentifier, survey);
-    }*/
-    
     @Test
     public void cannotDeletePublishedSurvey() {
         Survey survey = surveyDao.createSurvey(testSurvey);
