@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -12,11 +13,13 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -39,6 +42,10 @@ import com.google.common.collect.Lists;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoSurveyResponseDaoTest {
 
+    private static final String SURVEY_GUID = "surveyGuid";
+
+    private static final String SURVEY_RESPONSE_IDENTIFIER = "surveyResponseIdentifier";
+
     private static final String HEALTH_DATA_CODE = "AAA";
 
     @Resource
@@ -51,7 +58,8 @@ public class DynamoSurveyResponseDaoTest {
 
     @BeforeClass
     public static void initialSetUp() {
-        DynamoInitializer.init(DynamoSurveyResponse.class);
+        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyResponse.class);
+        DynamoTestUtil.clearTable(DynamoSurvey.class);
         DynamoTestUtil.clearTable(DynamoSurveyResponse.class);
     }
 
@@ -63,9 +71,11 @@ public class DynamoSurveyResponseDaoTest {
 
     @After
     public void after() {
-        if (surveyDao != null) {
-            surveyDao.deleteSurvey(new StudyIdentifierImpl(survey.getStudyIdentifier()), survey);    
-        }
+        // These have to be deleted or the survey won't delete. In practice you can't
+        // delete these without deleting a user, and that isn't going to happen in production.
+        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyResponse.class);
+        DynamoTestUtil.clearTable(DynamoSurvey.class);
+        DynamoTestUtil.clearTable(DynamoSurveyResponse.class);
     }
 
     @Test
@@ -73,23 +83,22 @@ public class DynamoSurveyResponseDaoTest {
         ObjectNode data = JsonNodeFactory.instance.objectNode();
         data.put("test", "value");
         DynamoSurveyResponse response = new DynamoSurveyResponse();
-        response.setGuid("foo");
+        response.setIdentifier("foo");
         response.setHealthCode("AAA");
-        response.setIdentifier("bar");
-        response.setSurveyGuid("BBB");
-        response.setSurveyCreatedOn(new Date().getTime());
+        response.setSurveyKey("BBB:"+new Date().getTime());
+        response.setStartedOn(DateTime.parse("2014-10-10T10:02:21.123Z").getMillis());
         response.setVersion(1L);
         response.setData(data);
         
         String string = new BridgeObjectMapper().writeValueAsString(response);
+        assertEquals("{\"identifier\":\"foo\",\"startedOn\":\"2014-10-10T10:02:21.123Z\",\"answers\":[],\"status\":\"in_progress\",\"type\":\"SurveyResponse\"}", string);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(string);
 
-        assertFalse("No guid in JSON", node.has("guid"));
         assertFalse("No version in JSON", node.has("version"));
         assertFalse("No data in JSON", node.has("data"));
         assertFalse("No healthCode in JSON", node.has("healthCode"));
-        assertFalse("No surveyGuid in JSON", node.has("surveyGuid"));
+        assertFalse("No surveyGuid in JSON", node.has(SURVEY_GUID));
         assertFalse("No surveyCreatedOn in JSON", node.has("surveyCreatedOn"));
     }
     
@@ -100,8 +109,6 @@ public class DynamoSurveyResponseDaoTest {
 
         SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers, identifier);
         assertEquals("Has been assigned the supplied identifier", identifier, response.getIdentifier());
-        assertNotNull("Has a GUID", response.getGuid());
-        assertTrue("GUID contains identifier", response.getGuid().contains(identifier));
 
         // Do it again, it should fail.
         try {
@@ -109,13 +116,6 @@ public class DynamoSurveyResponseDaoTest {
             fail("Should have thrown an exception");
         } catch(EntityAlreadyExistsException e) {
             
-        }
-        surveyResponseDao.deleteSurveyResponse(response);
-        try {
-            surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, identifier);
-            fail("Should have thrown an EntityNotFoundException");
-        } catch (EntityNotFoundException nfe) {
-
         }
     }
     
@@ -125,16 +125,16 @@ public class DynamoSurveyResponseDaoTest {
         
         List<SurveyAnswer> answers = Lists.newArrayList();
 
-        SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers);
-        assertTrue("Has been assigned a GUID", response.getGuid() != null);
+        SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, answers, BridgeUtils.generateGuid());
+        assertNotNull("Has been assigned a GUID", response.getIdentifier());
         assertFalse("Survey is now in use", noResponses(survey));
         
         SurveyResponse newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
 
-        assertEquals("Has right guid", response.getGuid(), newResponse.getGuid());
+        assertEquals("Has right identifier", response.getIdentifier(), newResponse.getIdentifier());
         // These are zero until some answers are submitted
-        assertTrue("startedOn is 0", newResponse.getStartedOn() == 0L);
-        assertTrue("completedOn is 0", newResponse.getCompletedOn() == 0L);
+        assertNull("startedOn is null", newResponse.getStartedOn());
+        assertNull("completedOn is null", newResponse.getCompletedOn());
 
         // Now push some answers through the answer API
         SurveyAnswer answer = new SurveyAnswer();
@@ -155,8 +155,8 @@ public class DynamoSurveyResponseDaoTest {
 
         newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
         assertEquals("Now the response has two answers", 2, newResponse.getAnswers().size());
-        assertTrue("startedOn isn't 0", newResponse.getStartedOn() > 0L);
-        assertTrue("completedOn is 0", newResponse.getCompletedOn() == 0L);
+        assertNotNull("startedOn isn't null", newResponse.getStartedOn());
+        assertNull("completedOn is null", newResponse.getCompletedOn());
 
         assertFalse("Survey is still in use", noResponses(survey));
         // You can't append answers to questions that have already been answered.
@@ -172,20 +172,34 @@ public class DynamoSurveyResponseDaoTest {
 
         newResponse = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
         assertEquals("Answer was updated due to more recent timestamp", "true", answers.get(0).getAnswers().get(0));
-
-        // delete it
-        surveyResponseDao.deleteSurveyResponse(newResponse);
+    }
+    
+    @Test
+    public void canTellWhenSurveyHasResponses() {
+        assertFalse(surveyResponseDao.surveyHasResponses(survey));
+        
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), SURVEY_RESPONSE_IDENTIFIER);
+        assertTrue(surveyResponseDao.surveyHasResponses(survey));
+    }
+    
+    @Test
+    public void canDeleteSurveyResponseByHealthCode() {
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), SURVEY_RESPONSE_IDENTIFIER);
+        
+        SurveyResponse response = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, SURVEY_RESPONSE_IDENTIFIER);
+        assertNotNull(response);
+        
+        surveyResponseDao.deleteSurveyResponses(HEALTH_DATA_CODE);
         try {
-            assertTrue("After deleting survey response, the survey returns to not being in use", noResponses(survey));
-            surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, response.getIdentifier());
-            fail("Should have thrown an EntityNotFoundException");
-        } catch (EntityNotFoundException nfe) {
-
+            surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, SURVEY_RESPONSE_IDENTIFIER);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            
         }
     }
     
     private boolean noResponses(Survey survey) {
-        return surveyResponseDao.getResponsesForSurvey(survey).isEmpty();
+        return !surveyResponseDao.surveyHasResponses(survey);
     }
 
 }

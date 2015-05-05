@@ -8,10 +8,6 @@ import java.util.regex.Pattern;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * This is a "soft" reference to a survey that does not need to include a createdOn timestamp. 
@@ -49,14 +45,6 @@ public final class SurveyReference {
 
     public DateTime getCreatedOn() {
         return createdOn;
-    }
-    
-    @JsonIgnore
-    public GuidCreatedOnVersionHolder getGuidCreatedOnVersionHolder() {
-        if (createdOn == null) {
-            return null;
-        }
-        return new GuidCreatedOnVersionHolderImpl(guid, createdOn.getMillis());
     }
 
     @Override

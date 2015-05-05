@@ -38,6 +38,7 @@ public class UserAdminServiceImpl implements UserAdminService {
     private HealthDataService healthDataService;
     private HealthIdDao healthIdDao;
     private StudyService studyService;
+    private SurveyResponseService surveyResponseService;
     private TaskDao taskDao;
     private DistributedLockDao lockDao;
 
@@ -73,7 +74,10 @@ public class UserAdminServiceImpl implements UserAdminService {
     public void setTaskDao(TaskDao taskDao) {
         this.taskDao = taskDao;
     }
-
+    @Autowired
+    public void setSurveyResponseService(SurveyResponseService surveyResponseService) {
+        this.surveyResponseService = surveyResponseService;
+    }
     @Override
     public UserSession createUser(SignUp signUp, Study study, boolean signUserIn, boolean consentUser) {
         checkNotNull(study, "Study cannot be null");
@@ -189,6 +193,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                 if (!StringUtils.isBlank(healthCode)) {
                     healthDataService.deleteRecordsForHealthCode(healthCode);
                     taskDao.deleteTasks(healthCode);
+                    surveyResponseService.deleteSurveyResponses(healthCode);
                 }
             }
             return true;
