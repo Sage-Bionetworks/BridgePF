@@ -7,36 +7,51 @@ import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
+import java.util.UUID;
 
 import javax.annotation.Resource;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.schedules.ScheduleType;
+import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.surveys.BooleanConstraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.google.common.collect.Lists;
+
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
-/**
- * TODO: All these tests are now repeated in SurveyServiceTest, this whole class can *probably*
- * just be deleted.
- */
 public class DynamoSurveyDaoTest {
 
     @Resource
     DynamoSurveyDao surveyDao;
+    
+    @Resource
+    DynamoSurveyResponseDao surveyResponseDao;
+    
+    @Resource
+    DynamoSchedulePlanDao schedulePlanDao;
 
     private TestSurvey testSurvey;
     
@@ -438,12 +453,92 @@ public class DynamoSurveyDaoTest {
 
     // DELETE SURVEY
 
+    /*
     @Test(expected = PublishedSurveyException.class)
     public void cannotDeleteAPublishedSurvey() {
         Survey survey = surveyDao.createSurvey(testSurvey);
         surveyDao.publishSurvey(survey);
 
         surveyDao.deleteSurvey(studyIdentifier, survey);
+    }*/
+    
+    @Test
+    public void cannotDeletePublishedSurvey() {
+        Survey survey = surveyDao.createSurvey(testSurvey);
+        survey = surveyDao.publishSurvey(survey);
+        try {
+            surveyDao.deleteSurvey(studyIdentifier, survey);
+            fail("Should have thrown an exception.");
+        } catch(PublishedSurveyException e) {
+            assertEquals("A published survey cannot be updated or deleted (only closed).", e.getMessage());
+            assertEquals(survey, e.getSurvey());
+        }
     }
-
+    
+    @Test
+    public void cannotDeleteSurveyWithResponses() {
+        try {
+            Survey survey = surveyDao.createSurvey(testSurvey);
+            survey = surveyDao.publishSurvey(survey);
+            
+            SurveyAnswer answer = new SurveyAnswer();
+            answer.setAnsweredOn(DateTime.now().getMillis());
+            answer.setClient("mobile");
+            answer.setQuestionGuid(survey.getElements().get(0).getGuid());
+            answer.setDeclined(false);
+            answer.setAnswers(Lists.newArrayList("true"));
+            
+            surveyResponseDao.createSurveyResponse(survey, "BBB", Lists.newArrayList(answer), BridgeUtils.generateGuid());
+            survey = surveyDao.closeSurvey(survey);
+            
+            surveyDao.deleteSurvey(studyIdentifier, survey);
+            fail("Should have thrown an exception.");
+            
+        } catch(IllegalStateException e) {
+            assertEquals("Survey has been answered by participants; it cannot be deleted.", e.getMessage());
+        } finally {
+            surveyResponseDao.deleteSurveyResponses("BBB");
+        }
+    }
+    
+    @Test
+    public void cannotDeleteSurveyThatHasBeenScheduled() {
+        SchedulePlan plan = null;
+        try {
+            Survey survey = surveyDao.createSurvey(testSurvey);
+            survey = surveyDao.publishSurvey(survey);
+            
+            String url = String.format("https://webservices-%s.sagebridge.org/api/v2/surveys/%s/revisions/%s",
+                BridgeConfigFactory.getConfig().getEnvironment().name().toLowerCase(), survey.getGuid(),
+                new DateTime(survey.getCreatedOn()).toString());
+            Activity activity = new Activity("Activty", url);
+            
+            Schedule schedule = new Schedule();
+            schedule.addActivity(activity);
+            schedule.setDelay("P1D");
+            schedule.setInterval("P2D");
+            schedule.setScheduleType(ScheduleType.RECURRING);
+            schedule.setLabel("Schedule");
+            
+            SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+            strategy.setSchedule(schedule);
+            
+            plan = new DynamoSchedulePlan();
+            plan.setStudyKey(studyIdentifier.getIdentifier());
+            plan.setLabel("SchedulePlan");
+            plan.setStrategy(strategy);
+            plan = schedulePlanDao.createSchedulePlan(plan);
+            
+            survey = surveyDao.closeSurvey(survey);
+            surveyDao.deleteSurvey(studyIdentifier, survey);
+            fail("Should have thrown an exception.");
+            
+        } catch(IllegalStateException e) {
+            assertEquals("Survey has been scheduled; it cannot be deleted.", e.getMessage());
+        } finally {
+            if (plan != null) {
+                schedulePlanDao.deleteSchedulePlan(studyIdentifier, plan.getGuid());    
+            }
+        }
+    }
 }

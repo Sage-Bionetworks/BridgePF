@@ -29,7 +29,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
-import org.sagebionetworks.bridge.models.surveys.SurveyResponseWithSurvey;
+import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 
 import com.google.common.collect.Lists;
 
@@ -141,7 +141,7 @@ public class SurveyResponseServiceImplTest {
         when(surveyResponseDao.createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), any(String.class), any(List.class), any(String.class))).thenReturn(getSurveyResponse());
         
-        SurveyResponseWithSurvey response = service.createSurveyResponse(survey, "healthCode", getAnswers());
+        SurveyResponseView response = service.createSurveyResponse(survey, "healthCode", getAnswers());
         
         assertNotNull(response);
         assertNotNull(response.getSurvey());
@@ -163,7 +163,7 @@ public class SurveyResponseServiceImplTest {
         when(surveyResponseDao.createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), any(String.class), any(List.class), any(String.class))).thenReturn(getSurveyResponse());
         
-        SurveyResponseWithSurvey response = service.createSurveyResponse(survey, "healthCode", getAnswers(), "belgium");
+        SurveyResponseView response = service.createSurveyResponse(survey, "healthCode", getAnswers(), "belgium");
         
         assertNotNull(response);
         assertNotNull(response.getSurvey());

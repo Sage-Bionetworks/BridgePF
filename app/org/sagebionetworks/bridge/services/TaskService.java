@@ -28,7 +28,7 @@ import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
-import org.sagebionetworks.bridge.models.surveys.SurveyResponseWithSurvey;
+import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -159,7 +159,7 @@ public class TaskService {
             return activity;
         }
         String baseUrl = activity.getRef().split(SURVEY_PATH_FRAGMENT)[0];
-        SurveyResponseWithSurvey response = null;
+        SurveyResponseView response = null;
         
         SurveyReference ref = activity.getSurvey();
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
