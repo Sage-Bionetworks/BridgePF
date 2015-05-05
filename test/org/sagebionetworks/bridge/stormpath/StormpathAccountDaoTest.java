@@ -97,6 +97,24 @@ public class StormpathAccountDaoTest {
         }
     }
     
+    @Test
+    public void badPasswordReportedAs404() {
+        String email = "bridge-testing+"+RandomStringUtils.randomAlphabetic(5)+"@sagebridge.org";
+        try {
+            SignUp signUp = new SignUp("tester", email, "P4ssword", Sets.newHashSet("test_users"));
+            accountDao.signUp(study, signUp, false);
+            
+            try {
+                accountDao.authenticate(study, new SignIn(email, "BadPassword"));
+                fail("Should have thrown an exception");
+            } catch(EntityNotFoundException e) {
+                assertEquals("Account not found.", e.getMessage());
+            }
+        } finally {
+            accountDao.deleteAccount(study, email);
+        }
+    }
+    
     @Test(expected = EntityNotFoundException.class)
     public void cannotAuthenticate() {
         accountDao.authenticate(study, new SignIn("bridge-testing+noone@sagebridge.org", "belgium"));
