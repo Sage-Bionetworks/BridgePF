@@ -151,6 +151,7 @@ public abstract class BaseController extends Controller {
         return session;
     }
 
+    /* No longer allowed. :-(
     UserSession getAuthenticatedResearcherOrAdminSession() throws NotAuthenticatedException, UnauthorizedException {
         UserSession session = getAuthenticatedSession();
         User user = session.getUser();
@@ -160,6 +161,7 @@ public abstract class BaseController extends Controller {
         }
         return session;
     }
+    */
 
     void setSessionToken(String sessionToken) {
         response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
