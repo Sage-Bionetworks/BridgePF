@@ -6,8 +6,8 @@ import java.util.UUID;
 
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
-import org.sagebionetworks.bridge.models.HealthId;
-import org.sagebionetworks.bridge.models.HealthIdImpl;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.HealthIdImpl;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

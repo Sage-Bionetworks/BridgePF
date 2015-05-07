@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.exceptions;
 
 import org.apache.commons.httpclient.HttpStatus;
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 
 @NoStackTraceException
 public class ConsentRequiredException extends BridgeServiceException {

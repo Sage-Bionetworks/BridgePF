@@ -3,7 +3,7 @@ package controllers;
 import java.util.List;
 
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;

@@ -8,9 +8,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.BackfillDao;
-import org.sagebionetworks.bridge.models.BackfillRecord;
-import org.sagebionetworks.bridge.models.BackfillStatus;
-import org.sagebionetworks.bridge.models.BackfillTask;
+import org.sagebionetworks.bridge.models.backfill.BackfillRecord;
+import org.sagebionetworks.bridge.models.backfill.BackfillStatus;
+import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
