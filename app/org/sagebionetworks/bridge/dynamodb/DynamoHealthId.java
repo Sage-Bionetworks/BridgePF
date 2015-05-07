@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.models.HealthId;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;

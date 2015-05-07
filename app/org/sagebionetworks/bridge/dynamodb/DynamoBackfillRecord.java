@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.sagebionetworks.bridge.models.BackfillRecord;
+import org.sagebionetworks.bridge.models.backfill.BackfillRecord;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;

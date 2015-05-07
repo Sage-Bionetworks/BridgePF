@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
-import org.sagebionetworks.bridge.models.UserConsent;
+import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 

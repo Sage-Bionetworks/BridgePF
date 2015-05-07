@@ -15,7 +15,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
-import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;

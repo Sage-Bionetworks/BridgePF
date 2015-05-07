@@ -4,7 +4,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
-import org.sagebionetworks.bridge.models.UserProfile;
+import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;

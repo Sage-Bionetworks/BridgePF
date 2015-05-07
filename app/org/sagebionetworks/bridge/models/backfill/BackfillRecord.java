@@ -1,6 +1,7 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.backfill;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.JsonNode;
 

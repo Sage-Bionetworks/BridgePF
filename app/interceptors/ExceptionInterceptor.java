@@ -10,7 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NoStackTraceException;
-import org.sagebionetworks.bridge.models.UserSessionInfo;
+import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

@@ -6,11 +6,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import org.junit.Test;
 
+import org.junit.Test;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
-import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 

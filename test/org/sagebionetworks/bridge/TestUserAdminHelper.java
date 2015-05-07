@@ -6,10 +6,10 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.models.SignIn;
-import org.sagebionetworks.bridge.models.SignUp;
-import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.SignIn;
+import org.sagebionetworks.bridge.models.accounts.SignUp;
+import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService;

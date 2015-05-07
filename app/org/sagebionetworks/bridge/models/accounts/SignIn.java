@@ -1,6 +1,7 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.accounts;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

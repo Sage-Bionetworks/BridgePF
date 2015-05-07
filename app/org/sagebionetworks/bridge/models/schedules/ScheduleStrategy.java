@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.springframework.validation.Errors;
 

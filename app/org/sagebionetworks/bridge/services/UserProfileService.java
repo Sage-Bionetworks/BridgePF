@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
-import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserProfile;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.UserProfile;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 public interface UserProfileService {
