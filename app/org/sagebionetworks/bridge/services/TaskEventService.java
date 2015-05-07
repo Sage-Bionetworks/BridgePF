@@ -7,6 +7,8 @@ import java.util.Map;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.TaskEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent;
+import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
+import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
@@ -27,7 +29,18 @@ public class TaskEventService {
         this.taskEventDao = taskEventDao;
     }
     
+    public void publishEvent(DynamoUserConsent2 consent) {
+        checkNotNull(consent);
+        
+        TaskEvent event = new DynamoTaskEvent.Builder()
+            .withHealthCode(consent.getHealthCode())
+            .withTimestamp(consent.getSignedOn())
+            .withType(TaskEventType.ENROLLMENT).build();
+        taskEventDao.publishEvent(event);    
+    }
+    
     public void publishEvent(String healthCode, SurveyAnswer answer) {
+        checkNotNull(healthCode);
         checkNotNull(answer);
         
         TaskEvent event = new DynamoTaskEvent.Builder()
