@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
+import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.TableNameOverrideFactory;
@@ -152,6 +153,12 @@ public class BridgeSpringConfig {
         return getMapperForClass(client, DynamoHealthDataRecord.class);
     }
 
+    @Bean(name = "taskEventDdbMapper")
+    @Autowired
+    public DynamoDBMapper taskEventDdbMapper(AmazonDynamoDB client) {
+        return getMapperForClass(client, DynamoTaskEvent.class);
+    }
+    
     @Bean(name = "healthDataHealthCodeIndex")
     @Autowired
     public DynamoIndexHelper healthDataHealthCodeIndex(AmazonDynamoDB client) {
