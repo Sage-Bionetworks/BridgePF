@@ -4,8 +4,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.sagebionetworks.bridge.models.BackfillStatus;
-import org.sagebionetworks.bridge.models.BackfillTask;
+import org.sagebionetworks.bridge.models.backfill.BackfillStatus;
+import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;

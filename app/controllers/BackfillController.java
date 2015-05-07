@@ -1,6 +1,6 @@
 package controllers;
 
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.backfill.BackfillService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

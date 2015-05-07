@@ -6,7 +6,7 @@ import java.util.List;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.services.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;

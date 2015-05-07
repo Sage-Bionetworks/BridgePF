@@ -2,13 +2,13 @@ package org.sagebionetworks.bridge.upload;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
+
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 

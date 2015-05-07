@@ -1,9 +1,10 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.UserProfile;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;

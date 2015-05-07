@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.accounts;
 
 public final class HealthIdImpl implements HealthId {
 

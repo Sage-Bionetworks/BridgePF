@@ -6,11 +6,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
-
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadDao;
-import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.accounts.User;
 
 public class UploadValidationTaskFactoryTest {
     @Test
