@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.accounts;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 

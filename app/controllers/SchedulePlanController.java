@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SchedulePlanService;

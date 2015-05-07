@@ -1,8 +1,9 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.Set;
 
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;

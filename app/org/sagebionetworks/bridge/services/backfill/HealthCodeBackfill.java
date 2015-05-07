@@ -3,9 +3,9 @@ package org.sagebionetworks.bridge.services.backfill;
 import java.util.Iterator;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.models.BackfillTask;
-import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.StudyService;

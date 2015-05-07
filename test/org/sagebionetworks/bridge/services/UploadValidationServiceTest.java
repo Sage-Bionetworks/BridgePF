@@ -7,10 +7,9 @@ import static org.mockito.Mockito.when;
 import java.util.concurrent.ExecutorService;
 
 import org.junit.Test;
-
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
-import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.upload.UploadValidationTask;

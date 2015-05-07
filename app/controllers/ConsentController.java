@@ -1,9 +1,9 @@
 package controllers;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.models.SharingOption;
-import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.SharingOption;
+import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ConsentService;

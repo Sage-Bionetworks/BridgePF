@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.User;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.springframework.validation.Errors;

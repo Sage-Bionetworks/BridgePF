@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.accounts.SharingOption;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;

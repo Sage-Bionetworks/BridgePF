@@ -24,8 +24,8 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.HealthId;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Maps;

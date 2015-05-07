@@ -5,7 +5,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
