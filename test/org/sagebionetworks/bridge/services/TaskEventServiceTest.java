@@ -13,11 +13,15 @@ import java.util.Map;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.dao.TaskEventDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent.Builder;
+import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
 import org.sagebionetworks.bridge.models.tasks.TaskEventType;
 
+import com.google.common.collect.Lists;
 import com.newrelic.agent.deps.com.google.common.collect.Maps;
 
 public class TaskEventServiceTest {
@@ -72,7 +76,7 @@ public class TaskEventServiceTest {
     @Test
     public void badPublicDoesntCallDao() {
         try {
-            service.publishEvent(null);    
+            service.publishEvent((TaskEvent)null);    
             fail("Exception should have been thrown");
         } catch(NullPointerException e) {}
         verifyNoMoreInteractions(taskEventDao);
@@ -95,5 +99,45 @@ public class TaskEventServiceTest {
         } catch(NullPointerException e) {}
         verifyNoMoreInteractions(taskEventDao);
     }
+
+    
+    @Test
+    public void canPublishSurveyAnswer() {
+        DateTime now = DateTime.now();
+        
+        SurveyAnswer answer = new SurveyAnswer();
+        answer.setAnsweredOn(now.getMillis());
+        answer.setQuestionGuid("BBB-CCC-DDD");
+        answer.setAnswers(Lists.newArrayList("belgium"));
+        
+        service.publishEvent("healthCode", answer);
+        
+        ArgumentCaptor<TaskEvent> argument = ArgumentCaptor.forClass(TaskEvent.class);
+        verify(taskEventDao).publishEvent(argument.capture());
+        
+        assertEquals("question:BBB-CCC-DDD:answered=belgium", argument.getValue().getEventId());
+        assertEquals(new Long(now.getMillis()), argument.getValue().getTimestamp());
+        assertEquals("healthCode", argument.getValue().getHealthCode());
+    }
+
+    @Test
+    public void canPublishSurveyResponse() {
+        DateTime now = DateTime.now();
+        
+        DynamoSurveyResponse response = new DynamoSurveyResponse();
+        response.setCompletedOn(now.getMillis());
+        response.setHealthCode("healthCode");
+        response.setSurveyKey("BBB-CCC-DDD:123123123");
+        
+        service.publishEvent(response);
+        
+        ArgumentCaptor<TaskEvent> argument = ArgumentCaptor.forClass(TaskEvent.class);
+        verify(taskEventDao).publishEvent(argument.capture());
+        
+        assertEquals("survey:BBB-CCC-DDD:finished", argument.getValue().getEventId());
+        assertEquals(new Long(now.getMillis()), argument.getValue().getTimestamp());
+        assertEquals("healthCode", argument.getValue().getHealthCode());
+    }
+    
     
 }

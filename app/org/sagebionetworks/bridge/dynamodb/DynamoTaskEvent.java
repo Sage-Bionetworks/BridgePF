@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
 import org.sagebionetworks.bridge.models.tasks.TaskEventAction;
 import org.sagebionetworks.bridge.models.tasks.TaskEventType;
@@ -12,7 +10,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
-import com.google.common.base.Joiner;
 
 @DynamoDBTable(tableName = "TaskEvent")
 public class DynamoTaskEvent implements TaskEvent {
@@ -50,7 +47,7 @@ public class DynamoTaskEvent implements TaskEvent {
     
     public static class Builder {
         private String healthCode;
-        private DateTime timestamp;
+        private Long timestamp;
         private TaskEventType type;
         private String id;
         private TaskEventAction action;
@@ -60,8 +57,12 @@ public class DynamoTaskEvent implements TaskEvent {
             this.healthCode = healthCode;
             return this;
         }
-        public Builder withTimestamp(DateTime timestamp) {
+        public Builder withTimestamp(Long timestamp) {
             this.timestamp = timestamp;
+            return this;
+        }
+        public Builder withTimestamp(DateTime timestamp) {
+            this.timestamp = (timestamp == null) ? null : timestamp.getMillis();
             return this;
         }
         public Builder withType(TaskEventType type) {
@@ -80,19 +81,10 @@ public class DynamoTaskEvent implements TaskEvent {
             this.value = value;
             return this;
         }
-        public Builder finishingSurvey(Survey survey) {
-            return withType(TaskEventType.SURVEY)
-                    .withAction(TaskEventAction.FINISHED)
-                    .withId(survey.getGuid());
-        }
-        public Builder answeringSurvey(SurveyAnswer answer) {
-            return withType(TaskEventType.QUESTION)
-                   .withTimestamp(new DateTime(answer.getAnsweredOn()))
-                   .withId(answer.getQuestionGuid())
-                   .withAction(TaskEventAction.ANSWERED)
-                   .withValue(Joiner.on(",").join(answer.getAnswers()));
-        }
         private String getEventId() {
+            if (type == null) {
+                return null;
+            }
             String typeName = type.name().toLowerCase();
             if (id != null && action != null && value != null) {
                 return String.format("%s:%s:%s=%s", typeName, id, action.name().toLowerCase(), value);
@@ -107,7 +99,7 @@ public class DynamoTaskEvent implements TaskEvent {
         public DynamoTaskEvent build() {
             DynamoTaskEvent event = new DynamoTaskEvent();
             event.setHealthCode(healthCode);
-            event.setTimestamp((timestamp == null) ? null : timestamp.getMillis());
+            event.setTimestamp((timestamp == null) ? null : timestamp);
             event.setEventId(getEventId());
             
             Validate.entityThrowingException(TaskEventValidator.INSTANCE, event);
