@@ -12,9 +12,9 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dao.BackfillDao;
-import org.sagebionetworks.bridge.models.BackfillRecord;
-import org.sagebionetworks.bridge.models.BackfillTask;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.backfill.BackfillRecord;
+import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.fasterxml.jackson.databind.JsonNode;

@@ -3,11 +3,11 @@ package controllers;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.models.StudyInfo;
-import org.sagebionetworks.bridge.models.UserSession;
 import org.sagebionetworks.bridge.models.VersionHolder;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyInfo;
 import org.sagebionetworks.bridge.services.UserProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;

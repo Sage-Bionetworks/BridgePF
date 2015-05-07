@@ -24,9 +24,9 @@ import org.mockito.stubbing.Answer;
 import org.sagebionetworks.bridge.dao.BackfillDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.models.BackfillRecord;
-import org.sagebionetworks.bridge.models.BackfillStatus;
-import org.sagebionetworks.bridge.models.BackfillTask;
+import org.sagebionetworks.bridge.models.backfill.BackfillRecord;
+import org.sagebionetworks.bridge.models.backfill.BackfillStatus;
+import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

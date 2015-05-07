@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.models.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;

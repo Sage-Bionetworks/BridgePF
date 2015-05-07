@@ -2,8 +2,8 @@ package controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.ASSETS_HOST;
 
-import org.sagebionetworks.bridge.models.UserSession;
-import org.sagebionetworks.bridge.models.UserSessionInfo;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.springframework.stereotype.Controller;
 
 import play.libs.Json;

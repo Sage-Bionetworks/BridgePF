@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthId;
 import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
-import org.sagebionetworks.bridge.models.HealthId;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;

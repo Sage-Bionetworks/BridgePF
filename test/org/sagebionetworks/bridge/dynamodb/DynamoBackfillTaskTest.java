@@ -8,7 +8,7 @@ import static org.junit.Assert.assertTrue;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
-import org.sagebionetworks.bridge.models.BackfillStatus;
+import org.sagebionetworks.bridge.models.backfill.BackfillStatus;
 
 public class DynamoBackfillTaskTest {
 

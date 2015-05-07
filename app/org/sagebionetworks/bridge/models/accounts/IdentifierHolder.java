@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.accounts;
 
 /**
  * Normally we would only return the version for an object that was identified

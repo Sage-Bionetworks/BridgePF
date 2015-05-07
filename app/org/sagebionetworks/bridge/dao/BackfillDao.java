@@ -3,9 +3,9 @@ package org.sagebionetworks.bridge.dao;
 import java.util.Iterator;
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.BackfillRecord;
-import org.sagebionetworks.bridge.models.BackfillStatus;
-import org.sagebionetworks.bridge.models.BackfillTask;
+import org.sagebionetworks.bridge.models.backfill.BackfillRecord;
+import org.sagebionetworks.bridge.models.backfill.BackfillStatus;
+import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 
 public interface BackfillDao {
 
