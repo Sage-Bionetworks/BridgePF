@@ -4,8 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.sagebionetworks.bridge.models.BackfillRecord;
-import org.sagebionetworks.bridge.models.BackfillTask;
+import org.sagebionetworks.bridge.models.backfill.BackfillRecord;
+import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.services.backfill.BackfillCallback;
 
 import com.fasterxml.jackson.core.JsonProcessingException;

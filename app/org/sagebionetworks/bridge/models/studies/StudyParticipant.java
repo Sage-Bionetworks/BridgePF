@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.models.studies;
 import java.util.HashMap;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.models.UserProfile;
+import org.sagebionetworks.bridge.models.accounts.UserProfile;
 
 @SuppressWarnings("serial")
 public final class StudyParticipant extends HashMap<String,String> {

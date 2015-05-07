@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services.backfill;
 
-import org.sagebionetworks.bridge.models.BackfillRecord;
-import org.sagebionetworks.bridge.models.BackfillTask;
+import org.sagebionetworks.bridge.models.backfill.BackfillRecord;
+import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 
 /**
  * Calls back about the backfill progress.

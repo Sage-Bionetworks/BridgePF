@@ -1,4 +1,6 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.accounts;
+
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 public interface UserConsent extends BridgeEntity {
     

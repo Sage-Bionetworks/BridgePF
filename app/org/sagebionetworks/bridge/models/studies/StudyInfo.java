@@ -1,9 +1,8 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.studies;
 
 import java.util.Set;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.studies.Study;
 
 /**
  * Study decorator for JSON production. The Stormpath hostname isn't visible.
