@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
 import org.sagebionetworks.bridge.models.tasks.TaskEventAction;
 import org.sagebionetworks.bridge.models.tasks.TaskEventType;
@@ -48,6 +50,7 @@ public class DynamoTaskEvent implements TaskEvent {
     public static class Builder {
         private String healthCode;
         private Long timestamp;
+        private String objectType;
         private TaskEventType type;
         private String id;
         private TaskEventAction action;

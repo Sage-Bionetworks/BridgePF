@@ -17,6 +17,7 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.dao.TaskEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent.Builder;
+import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
 import org.sagebionetworks.bridge.models.tasks.TaskEventType;
@@ -100,6 +101,25 @@ public class TaskEventServiceTest {
         verifyNoMoreInteractions(taskEventDao);
     }
 
+    @Test
+    public void canPublishConsent() {
+        DateTime now = DateTime.now();
+        
+        DynamoUserConsent2 consent = new DynamoUserConsent2();
+        consent.setConsentCreatedOn(now.minusDays(10).getMillis());
+        consent.setHealthCode("AAA-BBB-CCC");
+        consent.setSignedOn(now.getMillis());
+        
+        service.publishEvent(consent);
+        
+        ArgumentCaptor<TaskEvent> argument = ArgumentCaptor.forClass(TaskEvent.class);
+        verify(taskEventDao).publishEvent(argument.capture());
+        
+        assertEquals("enrollment", argument.getValue().getEventId());
+        assertEquals(new Long(now.getMillis()), argument.getValue().getTimestamp());
+        assertEquals("AAA-BBB-CCC", argument.getValue().getHealthCode());
+    }
+    
     
     @Test
     public void canPublishSurveyAnswer() {
