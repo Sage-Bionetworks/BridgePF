@@ -29,6 +29,8 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,13 +40,16 @@ import com.google.common.collect.Maps;
 
 @Component
 public class TaskService {
-    
+
     public static final int DEFAULT_EXPIRES_ON_DAYS = 2;
     public static final int MAX_EXPIRES_ON_DAYS = 4;
     
+    private static final Logger logger = LoggerFactory.getLogger(TaskService.class);
     private static final List<SurveyAnswer> EMPTY_ANSWERS = ImmutableList.of();
     
     private TaskDao taskDao;
+    
+    private TaskEventService taskEventService;
     
     private SchedulePlanService schedulePlanService;
     
@@ -57,6 +62,10 @@ public class TaskService {
     @Autowired
     public void setTaskDao(TaskDao taskDao) {
         this.taskDao = taskDao;
+    }
+    @Autowired
+    public void setTaskEventService(TaskEventService taskEventService) {
+        this.taskEventService = taskEventService;
     }
     @Autowired
     public void setSchedulePlanService(SchedulePlanService schedulePlanService) {
@@ -130,9 +139,12 @@ public class TaskService {
      * @return
      */
     private Map<String, DateTime> createEventsMap(User user) {
-        Map<String,DateTime> events = Maps.newHashMap();
-        UserConsent consent = userConsentDao.getUserConsent(user.getHealthCode(), new StudyIdentifierImpl(user.getStudyKey()));
-        events.put("enrollment", new DateTime(consent.getSignedOn()));
+        Map<String,DateTime> events = taskEventService.getTaskEventMap(user.getHealthCode());
+        if (!events.containsKey("enrollment")) {
+            UserConsent consent = userConsentDao.getUserConsent(user.getHealthCode(), new StudyIdentifierImpl(user.getStudyKey()));
+            events.put("enrollment", new DateTime(consent.getSignedOn()));
+            logger.info("Enrollment missing from task event table, pulling from consent record");
+        }
         return events;
     }
    

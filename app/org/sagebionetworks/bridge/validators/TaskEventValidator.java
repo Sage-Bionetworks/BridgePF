@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent;
-import org.sagebionetworks.bridge.models.tasks.TaskEvent;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
