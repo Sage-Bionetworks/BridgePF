@@ -300,7 +300,7 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
                     attachmentMap.put(fieldName, data);
                 } else {
                     JsonNode jsonData = jsonDataMap.get(fieldName);
-                    if (jsonData != null) {
+                    if (jsonData != null && !jsonData.isNull()) {
                         // Convert to raw bytes, then add to attachment map.
                         try {
                             attachmentMap.put(fieldName, BridgeObjectMapper.get().writeValueAsBytes(jsonData));
@@ -580,6 +580,10 @@ public class IosSchemaValidationHandler implements UploadValidationHandler {
         for (UploadFieldDefinition oneFieldDef : schema.getFieldDefinitions()) {
             String fieldName = oneFieldDef.getName();
             JsonNode fieldValue = dataFieldMap.get(fieldName);
+            if (fieldValue == null || fieldValue.isNull()) {
+                // Don't write null fields.
+                continue;
+            }
 
             if (ATTACHMENT_TYPE_SET.contains(oneFieldDef.getType())) {
                 try {

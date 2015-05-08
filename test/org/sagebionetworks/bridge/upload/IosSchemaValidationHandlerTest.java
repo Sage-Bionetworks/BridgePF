@@ -76,8 +76,13 @@ public class IosSchemaValidationHandlerTest {
                 new DynamoUploadFieldDefinition.Builder().withName("string.json.string")
                         .withType(UploadFieldType.STRING).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("blob.json.blob")
+                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
+                        .withType(UploadFieldType.STRING).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
+        // Non-JSON data doesn't support non-attachments.
         DynamoUploadSchema nonJsonDataSchema = new DynamoUploadSchema();
         nonJsonDataSchema.setStudyId("test-study");
         nonJsonDataSchema.setSchemaId("non-json-data");
@@ -87,6 +92,8 @@ public class IosSchemaValidationHandlerTest {
                 new DynamoUploadFieldDefinition.Builder().withName("nonJsonFile.txt")
                         .withType(UploadFieldType.ATTACHMENT_BLOB).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("jsonFile.json")
+                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
         // mock upload schema service
