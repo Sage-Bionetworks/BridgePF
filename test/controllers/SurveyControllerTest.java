@@ -29,8 +29,8 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
-import org.sagebionetworks.bridge.models.User;
-import org.sagebionetworks.bridge.models.UserSession;
+import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -122,7 +122,6 @@ public class SurveyControllerTest {
         user.setRoles(Sets.newHashSet("api_researcher"));
         session.setUser(user);
         session.setStudyIdentifier(new StudyIdentifierImpl(studyIdentifier));
-        doReturn(session).when(controller).getAuthenticatedResearcherOrAdminSession();
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
     }
     

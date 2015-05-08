@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshaller;
 import org.joda.time.LocalDate;
-
 import org.sagebionetworks.bridge.json.DateUtils;
+
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshaller;
 
 /**
  * DynamoDB marshaller for JodaTime LocalDate (because the built-in ones don't work very well). This simply marshalls
