@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -32,6 +33,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
+import com.google.common.collect.Maps;
 
 public class TaskServiceTest {
 
@@ -72,6 +74,10 @@ public class TaskServiceTest {
         userConsentDao = mock(UserConsentDao.class);
         when(userConsentDao.getUserConsent(HEALTH_CODE, STUDY_IDENTIFIER)).thenReturn(consent);
         
+        Map<String,DateTime> map = Maps.newHashMap();
+        TaskEventService taskEventService = mock(TaskEventService.class);
+        when(taskEventService.getTaskEventMap(anyString())).thenReturn(map);
+        
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, endsOn);
 
         taskDao = mock(DynamoTaskDao.class);
@@ -98,6 +104,7 @@ public class TaskServiceTest {
         service.setSurveyService(surveyService);
         service.setSurveyResponseService(surveyResponseService);
         service.setTaskDao(taskDao);
+        service.setTaskEventService(taskEventService);
     }
    
     @Test(expected = BadRequestException.class)
