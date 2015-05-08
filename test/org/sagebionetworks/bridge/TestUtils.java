@@ -6,11 +6,6 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -27,6 +22,11 @@ import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import play.mvc.Http;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 public class TestUtils {
 

@@ -11,8 +11,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
-import org.springframework.validation.MapBindingResult;
-
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -20,6 +18,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.validators.UploadSchemaValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.validation.MapBindingResult;
 
 @SuppressWarnings("unchecked")
 public class UploadSchemaTest {

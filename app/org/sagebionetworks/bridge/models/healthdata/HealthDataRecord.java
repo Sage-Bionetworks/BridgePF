@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
+import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -7,7 +8,6 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.joda.time.LocalDate;
 
 /** This class represents health data and associated metadata. */
 @BridgeTypeName("HealthData")

@@ -4,11 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.core.JsonParser;
 import org.joda.time.DateTime;
 import org.junit.Test;
-
 import org.sagebionetworks.bridge.BridgeConstants;
+
+import com.fasterxml.jackson.core.JsonParser;
 
 public class JodaDateTimeDeserializerTest {
     @Test

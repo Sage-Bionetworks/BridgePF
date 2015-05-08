@@ -19,9 +19,9 @@ import org.sagebionetworks.bridge.services.SurveyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import com.google.common.base.Supplier;
-
 import play.mvc.Result;
+
+import com.google.common.base.Supplier;
 
 @Controller("surveyController")
 public class SurveyController extends BaseController {

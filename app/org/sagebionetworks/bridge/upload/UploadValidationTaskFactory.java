@@ -1,16 +1,16 @@
 package org.sagebionetworks.bridge.upload;
 
+import java.util.List;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * This class creates UploadValidationTask objects. It exists primarily so that we can avoid using context.getBean(),
