@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.exceptions;
 
 import org.apache.commons.httpclient.HttpStatus;
 
+@SuppressWarnings("serial")
 public class BridgeServiceException extends RuntimeException {
-    private static final long serialVersionUID = -4425097573703184608L;
     
     private final int statusCode;
     

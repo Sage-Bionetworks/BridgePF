@@ -4,8 +4,8 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+@SuppressWarnings("serial")
 public class ConcurrentModificationException extends BridgeServiceException {
-    private static final long serialVersionUID = 282926281684175001L;
     
     private BridgeEntity entity;
     
