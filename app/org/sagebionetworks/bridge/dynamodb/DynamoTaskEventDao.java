@@ -35,7 +35,6 @@ public class DynamoTaskEventDao implements TaskEventDao {
     public void publishEvent(TaskEvent event) {
         checkNotNull(event);
         
-        // This is weird.
         DynamoTaskEvent hashKey = new DynamoTaskEvent();
         hashKey.setHealthCode(event.getHealthCode());
         hashKey.setEventId(event.getEventId());

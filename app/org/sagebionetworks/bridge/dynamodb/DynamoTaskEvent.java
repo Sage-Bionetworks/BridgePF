@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.models.tasks.EventType;
-import org.sagebionetworks.bridge.models.tasks.ObjectType;
+import org.sagebionetworks.bridge.models.tasks.TaskEventType;
+import org.sagebionetworks.bridge.models.tasks.TaskEventObjectType;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
 import org.sagebionetworks.bridge.validators.TaskEventValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -48,9 +48,9 @@ public class DynamoTaskEvent implements TaskEvent {
     public static class Builder {
         private String healthCode;
         private Long timestamp;
-        private ObjectType type;
+        private TaskEventObjectType type;
         private String objectId;
-        private EventType eventType;
+        private TaskEventType eventType;
         private String value;
         
         public Builder withHealthCode(String healthCode) {
@@ -65,7 +65,7 @@ public class DynamoTaskEvent implements TaskEvent {
             this.timestamp = (timestamp == null) ? null : timestamp.getMillis();
             return this;
         }
-        public Builder withObjectType(ObjectType type) {
+        public Builder withObjectType(TaskEventObjectType type) {
             this.type = type;
             return this;
         }
@@ -73,7 +73,7 @@ public class DynamoTaskEvent implements TaskEvent {
             this.objectId = objectId;
             return this;
         }
-        public Builder withEventType(EventType type) {
+        public Builder withEventType(TaskEventType type) {
             this.eventType = type;
             return this;
         }
