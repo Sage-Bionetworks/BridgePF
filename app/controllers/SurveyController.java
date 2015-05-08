@@ -43,7 +43,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result getAllSurveysMostRecentVersion() throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyId);
@@ -52,7 +52,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result getAllSurveysMostRecentVersion2() throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyId);
@@ -61,7 +61,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result getAllSurveysMostRecentlyPublishedVersion() throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyId);
@@ -104,7 +104,7 @@ public class SurveyController extends BaseController {
     
     // Otherwise you don't need consent but you must be a researcher or an administrator
     public Result getSurvey(final String surveyGuid, final String createdOnString) throws Exception {
-        final UserSession session = getAuthenticatedResearcherOrAdminSession();
+        final UserSession session = getAuthenticatedResearcherSession();
         final StudyIdentifier studyId = session.getStudyIdentifier();
         
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString); 
@@ -121,7 +121,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result getSurveyMostRecentVersion(final String surveyGuid) throws Exception {
-        final UserSession session = getAuthenticatedResearcherOrAdminSession();
+        final UserSession session = getAuthenticatedResearcherSession();
         final StudyIdentifier studyId = session.getStudyIdentifier();
         
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, MOSTRECENT_KEY);
@@ -136,7 +136,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result getSurveyMostRecentlyPublishedVersion(final String surveyGuid) throws Exception {
-        final UserSession session = getAuthenticatedResearcherOrAdminSession();
+        final UserSession session = getAuthenticatedResearcherSession();
         final StudyIdentifier studyId = session.getStudyIdentifier();
         
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY);
@@ -151,7 +151,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result getMostRecentPublishedSurveyVersionByIdentifier(String identifier) throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         // Do not cache this. It's only used by researchers and without the GUID, you cannot
@@ -162,7 +162,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result deleteSurvey(String surveyGuid, String createdOnString) throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
@@ -178,7 +178,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result getSurveyAllVersions(String surveyGuid) throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         List<Survey> surveys = surveyService.getSurveyAllVersions(studyId, surveyGuid);
@@ -187,7 +187,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result createSurvey() throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         Survey survey = DynamoSurvey.fromJson(requestToJSON(request()));
@@ -198,7 +198,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result versionSurvey(String surveyGuid, String createdOnString) throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
@@ -214,7 +214,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result updateSurvey(String surveyGuid, String createdOnString) throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
@@ -237,7 +237,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result publishSurvey(String surveyGuid, String createdOnString) throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
          
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
@@ -253,7 +253,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result closeSurvey(String surveyGuid, String createdOnString) throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);

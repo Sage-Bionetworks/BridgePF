@@ -24,21 +24,21 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result getAllConsents() throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         List<StudyConsent> consents = studyConsentService.getAllConsents(studyId);
         return okResult(consents);
     }
 
     public Result getActiveConsent() throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         StudyConsent consent = studyConsentService.getActiveConsent(studyId);
         return okResult(consent);
     }
 
     public Result getConsent(String createdOn) throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
         StudyConsent consent = studyConsentService.getConsent(studyId, timestamp);
@@ -46,7 +46,7 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result addConsent() throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         StudyConsentForm form = parseJson(request(), StudyConsentForm.class);
         StudyConsent studyConsent = studyConsentService.addConsent(studyId, form);
@@ -54,7 +54,7 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result setActiveConsent(String createdOn) throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
         studyConsentService.activateConsent(studyId, timestamp);

@@ -60,7 +60,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedResearcherOrAdminSession();
+        doReturn(mockSession).when(controller).getAuthenticatedResearcherSession();
 
         // execute and validate
         Result result = controller.createOrUpdateUploadSchema();
@@ -89,7 +89,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedResearcherOrAdminSession();
+        doReturn(mockSession).when(controller).getAuthenticatedResearcherSession();
 
         // execute and validate
         Result result = controller.deleteUploadSchemaByIdAndRev("delete-schema", 1);
@@ -110,7 +110,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedResearcherOrAdminSession();
+        doReturn(mockSession).when(controller).getAuthenticatedResearcherSession();
 
         // execute and validate
         Result result = controller.deleteUploadSchemaById("delete-schema");
@@ -132,7 +132,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedResearcherOrAdminSession();
+        doReturn(mockSession).when(controller).getAuthenticatedResearcherSession();
 
         // execute and validate
         Result result = controller.getUploadSchema(TEST_SCHEMA_ID);
@@ -158,7 +158,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedResearcherOrAdminSession();
+        doReturn(mockSession).when(controller).getAuthenticatedResearcherSession();
 
         // execute and validate
         Result result = controller.getUploadSchemasForStudy();
