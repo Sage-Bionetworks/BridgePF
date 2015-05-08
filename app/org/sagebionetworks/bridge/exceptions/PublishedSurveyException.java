@@ -2,9 +2,8 @@ package org.sagebionetworks.bridge.exceptions;
 
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
+@SuppressWarnings("serial")
 public class PublishedSurveyException extends BridgeServiceException {
-
-    private static final long serialVersionUID = 6286676048771804971L;
     
     private final Survey survey;
     
