@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
@@ -16,8 +17,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.joda.deser.LocalDateDeserializer;
-
-import org.joda.time.LocalDate;
 
 /** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataRecord}. */
 @DynamoThroughput(readCapacity=50, writeCapacity=50)

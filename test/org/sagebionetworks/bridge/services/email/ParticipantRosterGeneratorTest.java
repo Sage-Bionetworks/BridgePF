@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services.email;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.anyString;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,7 +26,6 @@ import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ParticipantRosterGenerator;
 import org.sagebionetworks.bridge.services.SendMailService;
-import org.sagebionetworks.bridge.services.email.ParticipantRosterProvider;
 
 import com.google.common.collect.Lists;
 
