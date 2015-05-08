@@ -26,7 +26,7 @@ public class TaskEventService {
     @Autowired
     public void setTaskEventDao(TaskEventDao taskEventDao) {
         this.taskEventDao = taskEventDao;
-    } // There is some pathos in these rural Texans wanting so desperately to be matyrs in a cause they can explain, as if they mattered at all to anyone in power.
+    } // 
     
     public void publishEvent(DynamoUserConsent2 consent) {
         checkNotNull(consent);
