@@ -60,9 +60,8 @@ public class DynamoInitializer {
 
     private static Logger logger = LoggerFactory.getLogger(DynamoInitializer.class);
 
-    // Default capacities are the DynamoDB free tier
-    static final long DEFAULT_READ_CAPACITY = 25;
-    static final long DEFAULT_WRITE_CAPACITY = 25;
+    static final long DEFAULT_READ_CAPACITY = 10;
+    static final long DEFAULT_WRITE_CAPACITY = 10;
 
     private static final BridgeConfig CONFIG = BridgeConfigFactory.getConfig();
 

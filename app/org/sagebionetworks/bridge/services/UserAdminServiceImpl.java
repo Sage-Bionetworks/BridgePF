@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dao.TaskDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -39,7 +38,8 @@ public class UserAdminServiceImpl implements UserAdminService {
     private HealthIdDao healthIdDao;
     private StudyService studyService;
     private SurveyResponseService surveyResponseService;
-    private TaskDao taskDao;
+    private TaskService taskService;
+    private TaskEventService taskEventService;
     private DistributedLockDao lockDao;
 
     @Autowired
@@ -71,8 +71,12 @@ public class UserAdminServiceImpl implements UserAdminService {
         this.healthIdDao = healthIdDao;
     }
     @Autowired
-    public void setTaskDao(TaskDao taskDao) {
-        this.taskDao = taskDao;
+    public void setTaskService(TaskService taskService) {
+        this.taskService = taskService;
+    }
+    @Autowired
+    public void setTaskEventService(TaskEventService taskEventService) {
+        this.taskEventService = taskEventService;
     }
     @Autowired
     public void setSurveyResponseService(SurveyResponseService surveyResponseService) {
@@ -192,7 +196,8 @@ public class UserAdminServiceImpl implements UserAdminService {
                 // some defensive coding to keep our services robust.
                 if (!StringUtils.isBlank(healthCode)) {
                     healthDataService.deleteRecordsForHealthCode(healthCode);
-                    taskDao.deleteTasks(healthCode);
+                    taskService.deleteTasks(healthCode);
+                    taskEventService.deleteTaskEvents(healthCode);
                     surveyResponseService.deleteSurveyResponses(healthCode);
                 }
             }
