@@ -19,8 +19,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent.Builder;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
+import org.sagebionetworks.bridge.models.tasks.ObjectType;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
-import org.sagebionetworks.bridge.models.tasks.TaskEventType;
 
 import com.google.common.collect.Lists;
 import com.newrelic.agent.deps.com.google.common.collect.Maps;
@@ -42,7 +42,7 @@ public class TaskEventServiceTest {
     @Test
     public void canPublishEvent() {
         TaskEvent event = new Builder().withHealthCode("BBB")
-            .withType(TaskEventType.ENROLLMENT).withTimestamp(DateTime.now()).build();
+            .withObjectType(ObjectType.ENROLLMENT).withTimestamp(DateTime.now()).build();
         
         service.publishEvent(event);
         
