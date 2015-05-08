@@ -1,9 +1,16 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import javax.annotation.Nonnull;
+
+import org.joda.time.LocalDate;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.models.upload.UploadRequest;
+import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
@@ -12,12 +19,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.google.common.collect.ImmutableList;
-import org.joda.time.LocalDate;
-
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.upload.Upload;
-import org.sagebionetworks.bridge.models.upload.UploadRequest;
-import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 /**
  * This DynamoDB table stores metadata for Bridge uploads. This class also defines global secondary indices, which can

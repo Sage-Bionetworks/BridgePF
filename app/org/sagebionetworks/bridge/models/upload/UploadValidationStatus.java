@@ -1,16 +1,17 @@
 package org.sagebionetworks.bridge.models.upload;
 
-import javax.annotation.Nonnull;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
+import javax.annotation.Nonnull;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.validators.UploadValidationStatusValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 
 /**
  * This class represents upload validation status and messages. It's created from an

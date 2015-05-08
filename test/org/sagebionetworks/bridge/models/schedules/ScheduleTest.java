@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertEquals;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 

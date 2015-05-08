@@ -7,10 +7,10 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.nio.file.Files;
 
-import com.google.common.base.Charsets;
 import org.junit.Test;
-
 import org.sagebionetworks.bridge.s3.S3Helper;
+
+import com.google.common.base.Charsets;
 
 public class CmsEncryptorCacheLoaderTest {
     @Test
