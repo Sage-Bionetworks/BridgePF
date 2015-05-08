@@ -123,6 +123,8 @@ public class SurveyControllerTest {
         session.setUser(user);
         session.setStudyIdentifier(new StudyIdentifierImpl(studyIdentifier));
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        doReturn(session).when(controller).getAuthenticatedSession();
+        doReturn(session).when(controller).getAuthenticatedResearcherSession();
     }
     
     @Test
