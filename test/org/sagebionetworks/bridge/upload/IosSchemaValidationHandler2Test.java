@@ -70,7 +70,9 @@ public class IosSchemaValidationHandler2Test {
                 new DynamoUploadFieldDefinition.Builder().withName("baz")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
-                        .withType(UploadFieldType.STRING).build()));
+                        .withType(UploadFieldType.STRING).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
+                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
         DynamoUploadSchema jsonDataSchema = new DynamoUploadSchema();
         jsonDataSchema.setStudyId(TEST_STUDY_ID);
@@ -84,7 +86,9 @@ public class IosSchemaValidationHandler2Test {
                 new DynamoUploadFieldDefinition.Builder().withName("blob.json.blob")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
-                        .withType(UploadFieldType.STRING).build()));
+                        .withType(UploadFieldType.STRING).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
+                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
         DynamoUploadSchema nonJsonDataSchema = new DynamoUploadSchema();
         nonJsonDataSchema.setStudyId(TEST_STUDY_ID);
@@ -98,7 +102,9 @@ public class IosSchemaValidationHandler2Test {
                 new DynamoUploadFieldDefinition.Builder().withName("jsonFile.json")
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
-                        .withType(UploadFieldType.STRING).build()));
+                        .withType(UploadFieldType.STRING).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
+                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
         DynamoUploadSchema mixedSchema = new DynamoUploadSchema();
         mixedSchema.setStudyId(TEST_STUDY_ID);
@@ -118,7 +124,9 @@ public class IosSchemaValidationHandler2Test {
                 new DynamoUploadFieldDefinition.Builder().withName("field.json.string")
                         .withType(UploadFieldType.STRING).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("optional").withRequired(false)
-                        .withType(UploadFieldType.STRING).build()));
+                        .withType(UploadFieldType.STRING).build(),
+                new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
+                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
         // mock upload schema service
         UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
@@ -203,11 +211,10 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(1, recordBuilder.getSchemaRevision());
 
         JsonNode dataNode = recordBuilder.getData();
-        assertEquals(4, dataNode.size());
+        assertEquals(3, dataNode.size());
         assertEquals("foo answer", dataNode.get("foo").textValue());
         assertEquals(42, dataNode.get("bar").intValue());
         assertEquals("lb", dataNode.get("bar_unit").textValue());
-        assertTrue(dataNode.get("optional").isNull());
 
         Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
         assertEquals(1, attachmentMap.size());
@@ -263,9 +270,8 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(1, recordBuilder.getSchemaRevision());
 
         JsonNode dataNode = recordBuilder.getData();
-        assertEquals(2, dataNode.size());
+        assertEquals(1, dataNode.size());
         assertEquals("This is a string", dataNode.get("string.json.string").textValue());
-        assertTrue(dataNode.get("optional").isNull());
 
         Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
         assertEquals(1, attachmentMap.size());
@@ -318,8 +324,7 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(1, recordBuilder.getSchemaRevision());
 
         JsonNode dataNode = recordBuilder.getData();
-        assertEquals(1, dataNode.size());
-        assertTrue(dataNode.get("optional").isNull());
+        assertEquals(0, dataNode.size());
 
         Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
         assertEquals(2, attachmentMap.size());
@@ -391,9 +396,8 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(1, recordBuilder.getSchemaRevision());
 
         JsonNode dataNode = recordBuilder.getData();
-        assertEquals(3, dataNode.size());
+        assertEquals(2, dataNode.size());
         assertEquals("This is a string", dataNode.get("field.json.string").textValue());
-        assertTrue(dataNode.get("optional").isNull());
 
         JsonNode outputInlineJsonNode = dataNode.get("inline.json");
         assertEquals(1, outputInlineJsonNode.size());
