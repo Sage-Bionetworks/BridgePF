@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.tasks;
 
-public enum EventType {
+public enum TaskEventType {
     ANSWERED,
     FINISHED,
     SCHEDULED;

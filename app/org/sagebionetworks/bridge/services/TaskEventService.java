@@ -10,8 +10,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
-import org.sagebionetworks.bridge.models.tasks.EventType;
-import org.sagebionetworks.bridge.models.tasks.ObjectType;
+import org.sagebionetworks.bridge.models.tasks.TaskEventType;
+import org.sagebionetworks.bridge.models.tasks.TaskEventObjectType;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -34,7 +34,7 @@ public class TaskEventService {
         TaskEvent event = new DynamoTaskEvent.Builder()
             .withHealthCode(consent.getHealthCode())
             .withTimestamp(consent.getSignedOn())
-            .withObjectType(ObjectType.ENROLLMENT).build();
+            .withObjectType(TaskEventObjectType.ENROLLMENT).build();
         taskEventDao.publishEvent(event);    
     }
     
@@ -45,9 +45,9 @@ public class TaskEventService {
         TaskEvent event = new DynamoTaskEvent.Builder()
             .withHealthCode(healthCode)
             .withTimestamp(answer.getAnsweredOn())
-            .withObjectType(ObjectType.QUESTION)
+            .withObjectType(TaskEventObjectType.QUESTION)
             .withObjectId(answer.getQuestionGuid())
-            .withEventType(EventType.ANSWERED)
+            .withEventType(TaskEventType.ANSWERED)
             .withValue(Joiner.on(",").join(answer.getAnswers())).build();
         taskEventDao.publishEvent(event);
     }
@@ -58,9 +58,9 @@ public class TaskEventService {
         TaskEvent event = new DynamoTaskEvent.Builder()
             .withHealthCode(response.getHealthCode())
             .withTimestamp(response.getCompletedOn())
-            .withObjectType(ObjectType.SURVEY)
+            .withObjectType(TaskEventObjectType.SURVEY)
             .withObjectId(response.getSurveyGuid())
-            .withEventType(EventType.FINISHED)
+            .withEventType(TaskEventType.FINISHED)
             .build();
         taskEventDao.publishEvent(event);
     }

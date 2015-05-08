@@ -11,8 +11,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.dao.TaskEventDao;
-import org.sagebionetworks.bridge.models.tasks.EventType;
-import org.sagebionetworks.bridge.models.tasks.ObjectType;
+import org.sagebionetworks.bridge.models.tasks.TaskEventType;
+import org.sagebionetworks.bridge.models.tasks.TaskEventObjectType;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -36,12 +36,12 @@ public class DynamoTaskEventDaoTest {
         DateTime time2 = time1.plusDays(1);
         DateTime time3 = time2.plusDays(1);
         
-        TaskEvent event = new DynamoTaskEvent.Builder().withHealthCode("BBB").withObjectType(ObjectType.ENROLLMENT).withTimestamp(time1).build();
+        TaskEvent event = new DynamoTaskEvent.Builder().withHealthCode("BBB").withObjectType(TaskEventObjectType.ENROLLMENT).withTimestamp(time1).build();
         taskEventDao.publishEvent(event);
 
         // Just create another task to verify records aren't colliding
-        event = new DynamoTaskEvent.Builder().withHealthCode("BBB").withObjectType(ObjectType.SURVEY)
-                        .withEventType(EventType.FINISHED).withTimestamp(time3).withObjectId("AAA-BBB-CCC").build();
+        event = new DynamoTaskEvent.Builder().withHealthCode("BBB").withObjectType(TaskEventObjectType.SURVEY)
+                        .withEventType(TaskEventType.FINISHED).withTimestamp(time3).withObjectId("AAA-BBB-CCC").build();
         taskEventDao.publishEvent(event);
         
         Map<String,DateTime> map = taskEventDao.getTaskEventMap("BBB");
@@ -49,7 +49,7 @@ public class DynamoTaskEventDaoTest {
         assertEquals(time1, map.get("enrollment"));
         assertEquals(time3, map.get("survey:AAA-BBB-CCC:finished"));
         
-        event = new DynamoTaskEvent.Builder().withHealthCode("BBB").withObjectType(ObjectType.ENROLLMENT).withTimestamp(time2).build();
+        event = new DynamoTaskEvent.Builder().withHealthCode("BBB").withObjectType(TaskEventObjectType.ENROLLMENT).withTimestamp(time2).build();
         taskEventDao.publishEvent(event);
         
         map = taskEventDao.getTaskEventMap("BBB");
