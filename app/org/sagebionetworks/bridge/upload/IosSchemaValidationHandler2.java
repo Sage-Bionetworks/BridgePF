@@ -381,9 +381,14 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             } else if (jsonFieldnameSet.contains(fieldName)) {
                 copyJsonField(context, uploadId, flattenedJsonDataMap.get(fieldName), oneFieldDef, dataMap,
                         attachmentMap);
-            } else if (oneFieldDef.isRequired()) {
-                // log a message only if the field is required (but missing)
-                context.addMessage(String.format("Upload ID %s is missing required field %s", uploadId, fieldName));
+            } else {
+                // if the field is not present, write a null to maintain compatibility with v1
+                dataMap.putNull(fieldName);
+
+                if (oneFieldDef.isRequired()) {
+                    // log a message only if the field is required (but missing)
+                    context.addMessage(String.format("Upload ID %s is missing required field %s", uploadId, fieldName));
+                }
             }
         }
     }
