@@ -28,7 +28,7 @@ public class StudyController extends BaseController {
     }
 
     public Result getStudyForResearcher() throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         return okResult(new StudyInfo(study));
     }
@@ -43,7 +43,7 @@ public class StudyController extends BaseController {
     }
 
     public Result updateStudyForResearcher() throws Exception {
-        UserSession session = getAuthenticatedResearcherOrAdminSession();
+        UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         Study studyUpdate = DynamoStudy.fromJson(requestToJSON(request()));

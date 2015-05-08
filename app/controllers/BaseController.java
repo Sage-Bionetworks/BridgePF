@@ -151,16 +151,6 @@ public abstract class BaseController extends Controller {
         return session;
     }
 
-    UserSession getAuthenticatedResearcherOrAdminSession() throws NotAuthenticatedException, UnauthorizedException {
-        UserSession session = getAuthenticatedSession();
-        User user = session.getUser();
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        if (!user.isInRole(ADMIN_GROUP) && !user.isInRole(studyId.getResearcherRole())) {
-            throw new UnauthorizedException();
-        }
-        return session;
-    }
-
     void setSessionToken(String sessionToken) {
         response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
