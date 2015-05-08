@@ -67,6 +67,19 @@ public class TestUtils {
         return context;
     }
 
+    public static Http.Context mockPlayContext() throws Exception {
+        Http.RequestBody body = mock(Http.RequestBody.class);
+        when(body.asJson()).thenReturn(null);
+
+        Http.Request request = mock(Http.Request.class);
+        when(request.body()).thenReturn(body);
+
+        Http.Context context = mock(Http.Context.class);
+        when(context.request()).thenReturn(request);
+
+        return context;
+    }
+    
     public static String randomName() {
         return "test-" + RandomStringUtils.randomAlphabetic(5).toLowerCase();
     }
