@@ -8,12 +8,11 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.TaskEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
-import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
+import org.sagebionetworks.bridge.models.tasks.EventType;
+import org.sagebionetworks.bridge.models.tasks.ObjectType;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
-import org.sagebionetworks.bridge.models.tasks.TaskEventAction;
-import org.sagebionetworks.bridge.models.tasks.TaskEventType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +26,7 @@ public class TaskEventService {
     @Autowired
     public void setTaskEventDao(TaskEventDao taskEventDao) {
         this.taskEventDao = taskEventDao;
-    }
+    } // There is some pathos in these rural Texans wanting so desperately to be matyrs in a cause they can explain, as if they mattered at all to anyone in power.
     
     public void publishEvent(DynamoUserConsent2 consent) {
         checkNotNull(consent);
@@ -35,7 +34,7 @@ public class TaskEventService {
         TaskEvent event = new DynamoTaskEvent.Builder()
             .withHealthCode(consent.getHealthCode())
             .withTimestamp(consent.getSignedOn())
-            .withType(TaskEventType.ENROLLMENT).build();
+            .withObjectType(ObjectType.ENROLLMENT).build();
         taskEventDao.publishEvent(event);    
     }
     
@@ -46,9 +45,9 @@ public class TaskEventService {
         TaskEvent event = new DynamoTaskEvent.Builder()
             .withHealthCode(healthCode)
             .withTimestamp(answer.getAnsweredOn())
-            .withType(TaskEventType.QUESTION)
-            .withId(answer.getQuestionGuid())
-            .withAction(TaskEventAction.ANSWERED)
+            .withObjectType(ObjectType.QUESTION)
+            .withObjectId(answer.getQuestionGuid())
+            .withEventType(EventType.ANSWERED)
             .withValue(Joiner.on(",").join(answer.getAnswers())).build();
         taskEventDao.publishEvent(event);
     }
@@ -59,9 +58,9 @@ public class TaskEventService {
         TaskEvent event = new DynamoTaskEvent.Builder()
             .withHealthCode(response.getHealthCode())
             .withTimestamp(response.getCompletedOn())
-            .withType(TaskEventType.SURVEY)
-            .withId(response.getSurveyGuid())
-            .withAction(TaskEventAction.FINISHED)
+            .withObjectType(ObjectType.SURVEY)
+            .withObjectId(response.getSurveyGuid())
+            .withEventType(EventType.FINISHED)
             .build();
         taskEventDao.publishEvent(event);
     }

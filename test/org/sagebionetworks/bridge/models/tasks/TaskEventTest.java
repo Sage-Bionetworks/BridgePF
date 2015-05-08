@@ -27,7 +27,7 @@ public class TaskEventTest {
             assertEquals("timestamp cannot be null", e.getErrors().get("timestamp").get(0));
         }
         try {
-            new DynamoTaskEvent.Builder().withType(TaskEventType.QUESTION).build();
+            new DynamoTaskEvent.Builder().withObjectType(ObjectType.QUESTION).build();
             fail("Should have thrown an exception");
         } catch(InvalidEntityException e) {
             assertEquals("timestamp cannot be null", e.getErrors().get("timestamp").get(0));
@@ -52,7 +52,7 @@ public class TaskEventTest {
     public void canConstructSimpleEventId() {
         DateTime now = DateTime.now();
         Builder builder = new DynamoTaskEvent.Builder();
-        TaskEvent event = builder.withType(TaskEventType.ENROLLMENT).withHealthCode("BBB").withTimestamp(now).build();
+        TaskEvent event = builder.withObjectType(ObjectType.ENROLLMENT).withHealthCode("BBB").withTimestamp(now).build();
         
         assertEquals("BBB", event.getHealthCode());
         assertEquals(now, new DateTime(event.getTimestamp()));
@@ -63,7 +63,7 @@ public class TaskEventTest {
     public void canConstructEventNoAction() {
         DateTime now = DateTime.now();
         Builder builder = new DynamoTaskEvent.Builder();
-        TaskEvent event = builder.withType(TaskEventType.ENROLLMENT).withHealthCode("BBB").withTimestamp(now).build();
+        TaskEvent event = builder.withObjectType(ObjectType.ENROLLMENT).withHealthCode("BBB").withTimestamp(now).build();
         
         assertEquals("BBB", event.getHealthCode());
         assertEquals(now, new DateTime(event.getTimestamp()));
@@ -72,7 +72,7 @@ public class TaskEventTest {
     
     @Test
     public void simpleTaskEventIdIsCorrect() {
-        TaskEvent event = new DynamoTaskEvent.Builder().withHealthCode("BBB").withType(TaskEventType.ENROLLMENT)
+        TaskEvent event = new DynamoTaskEvent.Builder().withHealthCode("BBB").withObjectType(ObjectType.ENROLLMENT)
                         .withTimestamp(DateTime.now()).build();
         
         assertEquals("enrollment", event.getEventId());

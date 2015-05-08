@@ -1,11 +1,9 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.tasks.EventType;
+import org.sagebionetworks.bridge.models.tasks.ObjectType;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
-import org.sagebionetworks.bridge.models.tasks.TaskEventAction;
-import org.sagebionetworks.bridge.models.tasks.TaskEventType;
 import org.sagebionetworks.bridge.validators.TaskEventValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -50,10 +48,9 @@ public class DynamoTaskEvent implements TaskEvent {
     public static class Builder {
         private String healthCode;
         private Long timestamp;
-        private String objectType;
-        private TaskEventType type;
-        private String id;
-        private TaskEventAction action;
+        private ObjectType type;
+        private String objectId;
+        private EventType eventType;
         private String value;
         
         public Builder withHealthCode(String healthCode) {
@@ -68,16 +65,16 @@ public class DynamoTaskEvent implements TaskEvent {
             this.timestamp = (timestamp == null) ? null : timestamp.getMillis();
             return this;
         }
-        public Builder withType(TaskEventType type) {
+        public Builder withObjectType(ObjectType type) {
             this.type = type;
             return this;
         }
-        public Builder withId(String id) {
-            this.id = id;
+        public Builder withObjectId(String objectId) {
+            this.objectId = objectId;
             return this;
         }
-        public Builder withAction(TaskEventAction action) {
-            this.action = action;
+        public Builder withEventType(EventType type) {
+            this.eventType = type;
             return this;
         }
         public Builder withValue(String value) {
@@ -89,12 +86,12 @@ public class DynamoTaskEvent implements TaskEvent {
                 return null;
             }
             String typeName = type.name().toLowerCase();
-            if (id != null && action != null && value != null) {
-                return String.format("%s:%s:%s=%s", typeName, id, action.name().toLowerCase(), value);
-            } else if (id != null && action != null) {
-                return String.format("%s:%s:%s", typeName, id, action.name().toLowerCase());
-            } else if (id != null) {
-                return String.format("%s:%s", typeName, id);
+            if (objectId != null && eventType != null && value != null) {
+                return String.format("%s:%s:%s=%s", typeName, objectId, eventType.name().toLowerCase(), value);
+            } else if (objectId != null && eventType != null) {
+                return String.format("%s:%s:%s", typeName, objectId, eventType.name().toLowerCase());
+            } else if (objectId != null) {
+                return String.format("%s:%s", typeName, objectId);
             }
             return typeName;
         }
