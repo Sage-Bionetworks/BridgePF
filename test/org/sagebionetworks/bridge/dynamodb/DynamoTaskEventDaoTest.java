@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.dao.TaskEventDao;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
+import org.sagebionetworks.bridge.models.tasks.TaskEventAction;
 import org.sagebionetworks.bridge.models.tasks.TaskEventType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -33,13 +34,20 @@ public class DynamoTaskEventDaoTest {
     public void canCrudEvent() {
         DateTime time1 = DateTime.now();
         DateTime time2 = time1.plusDays(1);
+        DateTime time3 = time2.plusDays(1);
         
         TaskEvent event = new DynamoTaskEvent.Builder().withHealthCode("BBB").withType(TaskEventType.ENROLLMENT).withTimestamp(time1).build();
         taskEventDao.publishEvent(event);
+
+        // Just create another task to verify records aren't colliding
+        event = new DynamoTaskEvent.Builder().withHealthCode("BBB").withType(TaskEventType.SURVEY)
+                        .withAction(TaskEventAction.FINISHED).withTimestamp(time3).withId("AAA-BBB-CCC").build();
+        taskEventDao.publishEvent(event);
         
         Map<String,DateTime> map = taskEventDao.getTaskEventMap("BBB");
-        assertEquals(1, map.size());
+        assertEquals(2, map.size());
         assertEquals(time1, map.get("enrollment"));
+        assertEquals(time3, map.get("survey:AAA-BBB-CCC:finished"));
         
         event = new DynamoTaskEvent.Builder().withHealthCode("BBB").withType(TaskEventType.ENROLLMENT).withTimestamp(time2).build();
         taskEventDao.publishEvent(event);
