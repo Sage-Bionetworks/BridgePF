@@ -221,6 +221,11 @@ public class TaskSchedulerTest {
         events.remove("survey:event");
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
         assertEquals(new Long(ENROLLMENT.getMillis()), tasks.get(0).getScheduledOn());
+        
+        // BUT this produces nothing because the system doesn't fallback to enrollment if an event has been set
+        schedule.setEventId("survey:event");
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
+        assertEquals(0, tasks.size());
     }
     
 }
