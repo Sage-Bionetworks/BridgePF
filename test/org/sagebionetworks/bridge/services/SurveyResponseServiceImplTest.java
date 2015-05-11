@@ -270,8 +270,8 @@ public class SurveyResponseServiceImplTest {
     }
     @Test
     public void appendSurveyAnswersWorks() {
-        List<SurveyAnswer> answers = getAnswers();
         SurveyResponse response = getSurveyResponse();
+        List<SurveyAnswer> answers = response.getAnswers();
         
         service.appendSurveyAnswers(response, answers);
         
@@ -302,23 +302,6 @@ public class SurveyResponseServiceImplTest {
         }
         verifyNoMoreInteractions(surveyDao);
         verifyNoMoreInteractions(surveyResponseDao);
-        verifyNoMoreInteractions(taskEventService);
-    }
-    
-    @SuppressWarnings("unchecked")
-    @Test
-    public void doNotFireEventWhenAnswerIsStale() {
-        // Response has an answer after the one that is being submitted
-        SurveyAnswer answer = getAnswers().get(0);
-        answer.setAnsweredOn(DateTime.now().plusDays(1).getMillis());
-        
-        DynamoSurveyResponse response = new DynamoSurveyResponse();
-        response.getAnswers().add(answer);
-        response.setSurveyKey(survey);
-        
-        when(surveyResponseDao.appendSurveyAnswers(any(SurveyResponse.class), any(List.class))).thenReturn(response);
-        
-        service.appendSurveyAnswers(response, getAnswers());
         verifyNoMoreInteractions(taskEventService);
     }
     

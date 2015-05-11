@@ -121,16 +121,12 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     
     private void fireEvents(Survey survey, SurveyResponse response, List<SurveyAnswer> answers) {
         Map<String, SurveyQuestion> questions = getQuestionsMap(survey.getUnmodifiableQuestionList());
-        Map<String, SurveyAnswer> allAnswers = getAnswersMap(response.getAnswers());
-        
+        // It's safe to fire an event with the same timestamp more than once. The taskEventDao already 
+        // prevents "backtracking" if the timestamp is earlier than the timestamp that's stored.
         for (SurveyAnswer answer : answers) {
             SurveyQuestion question = questions.get(answer.getQuestionGuid());
             if (question != null && question.getFireEvent()) {
-                SurveyAnswer savedAnswer = allAnswers.get(answer.getQuestionGuid());
-                if (savedAnswer == null || savedAnswer.getAnsweredOn() == answer.getAnsweredOn()) {
-                    System.out.println(savedAnswer);
-                    taskEventService.publishEvent(response.getHealthCode(), answer);
-                }
+                taskEventService.publishEvent(response.getHealthCode(), answer);
             }
         }
     }
@@ -139,14 +135,6 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
         return BridgeUtils.asMap(questions, new Function<SurveyQuestion, String>() {
             public String apply(SurveyQuestion element) {
                 return element.getGuid();
-            }
-        });
-    }
-    
-    private Map<String, SurveyAnswer> getAnswersMap(List<SurveyAnswer> answers) {
-        return BridgeUtils.asMap(answers, new Function<SurveyAnswer, String>() {
-            public String apply(SurveyAnswer answer) {
-                return answer.getQuestionGuid();
             }
         });
     }
