@@ -10,8 +10,10 @@ public interface UserConsentDao {
      * Gives consent to the specified study.
      * @param healthCode
      * @param consent
+     * @return
+     *      the consent record
      */
-    void giveConsent(String healthCode, StudyConsent consent);
+    UserConsent giveConsent(String healthCode, StudyConsent consent);
 
     /**
      * Withdraws consent to the specified study.
