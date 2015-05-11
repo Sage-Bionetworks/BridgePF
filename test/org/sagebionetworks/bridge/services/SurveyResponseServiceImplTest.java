@@ -308,13 +308,14 @@ public class SurveyResponseServiceImplTest {
     @SuppressWarnings("unchecked")
     @Test
     public void doNotFireEventWhenAnswerIsStale() {
+        // Response has an answer after the one that is being submitted
         SurveyAnswer answer = getAnswers().get(0);
         answer.setAnsweredOn(DateTime.now().plusDays(1).getMillis());
-        // Response has an answer after the one that is being submitted
+        
         DynamoSurveyResponse response = new DynamoSurveyResponse();
         response.getAnswers().add(answer);
-        
         response.setSurveyKey(survey);
+        
         when(surveyResponseDao.appendSurveyAnswers(any(SurveyResponse.class), any(List.class))).thenReturn(response);
         
         service.appendSurveyAnswers(response, getAnswers());
