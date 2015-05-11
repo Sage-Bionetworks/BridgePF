@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.dao.TaskEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent.Builder;
 import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
+import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.tasks.TaskEventObjectType;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
@@ -110,7 +111,7 @@ public class TaskEventServiceTest {
         consent.setHealthCode("AAA-BBB-CCC");
         consent.setSignedOn(now.getMillis());
         
-        service.publishEvent(consent);
+        service.publishEvent(consent.getHealthCode(), (UserConsent)consent);
         
         ArgumentCaptor<TaskEvent> argument = ArgumentCaptor.forClass(TaskEvent.class);
         verify(taskEventDao).publishEvent(argument.capture());
