@@ -129,6 +129,9 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
                 taskEventService.publishEvent(response.getHealthCode(), answer);
             }
         }
+        if (response.getStatus() == SurveyResponse.Status.FINISHED) {
+            taskEventService.publishEvent(response);
+        }
     }
 
     private Map<String, SurveyQuestion> getQuestionsMap(List<SurveyQuestion> questions) {
