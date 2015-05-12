@@ -44,7 +44,7 @@ public class BcCmsSignedDataProcessor implements CmsSignedDataProcessor {
         for (Certificate cert : certChain) {
             certs.add(cert);
         }
-        Store certStore = new JcaCertStore(certs);
+        Store<?> certStore = new JcaCertStore(certs);
         generator.addCertificates(certStore);
     }
 
