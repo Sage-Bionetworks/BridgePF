@@ -20,7 +20,7 @@ apt-get -q -y install vim bzip2 curl zip git
 apt-get -q -y install nfs-common
 
 # Java
-apt-get -q -y install openjdk-7-jdk
+apt-get -q -y install openjdk-8-jdk
 
 # Play
 su - vagrant -c "wget http://downloads.typesafe.com/typesafe-activator/1.3.2/typesafe-activator-1.3.2.zip"
