@@ -43,7 +43,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     }
 
     @Override
-    public void giveConsent(String healthCode, StudyConsent studyConsent) {
+    public UserConsent giveConsent(String healthCode, StudyConsent studyConsent) {
         checkArgument(isNotBlank(healthCode), "Health code is blank or null");
         checkNotNull(studyConsent);
         DynamoUserConsent2 consent = null;
@@ -57,6 +57,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
         } catch (ConditionalCheckFailedException e) {
             throw new EntityAlreadyExistsException(consent);
         }
+        return consent;
     }
 
     @Override
