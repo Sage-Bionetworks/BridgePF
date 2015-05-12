@@ -38,6 +38,7 @@ public class ConsentServiceImpl implements ConsentService {
     private SendMailService sendMailService;
     private StudyConsentDao studyConsentDao;
     private UserConsentDao userConsentDao;
+    private TaskEventService taskEventService;
 
     @Autowired
     public void setStringOps(JedisStringOps stringOps) {
@@ -62,6 +63,10 @@ public class ConsentServiceImpl implements ConsentService {
     @Autowired
     public void setUserConsentDao(UserConsentDao userConsentDao) {
         this.userConsentDao = userConsentDao;
+    }
+    @Autowired
+    public void setTaskEventService(TaskEventService taskEventService) {
+        this.taskEventService = taskEventService;
     }
     
     @Override
@@ -101,7 +106,10 @@ public class ConsentServiceImpl implements ConsentService {
 
         incrementStudyEnrollment(study);
         try {
-            userConsentDao.giveConsent(user.getHealthCode(), studyConsent);
+            UserConsent userConsent = userConsentDao.giveConsent(user.getHealthCode(), studyConsent);
+            if (userConsent != null){
+                taskEventService.publishEvent(user.getHealthCode(), userConsent);
+            }
         } catch (Throwable e) {
             decrementStudyEnrollment(study);
             throw e;
