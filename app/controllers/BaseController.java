@@ -225,7 +225,7 @@ public abstract class BaseController extends Controller {
     }
 
     Result okResult(Object obj) {
-        return ok(mapper.valueToTree(obj));
+        return ok((JsonNode)mapper.valueToTree(obj));
     }
 
     Result okResult(Collection<?> items) throws Exception {
@@ -243,7 +243,7 @@ public abstract class BaseController extends Controller {
     }
 
     Result createdResult(Object obj) throws Exception {
-        return created(mapper.valueToTree(obj));
+        return created((JsonNode)mapper.valueToTree(obj));
     }
 
     // This is needed or tests fail. It appears to be a bug in Play Framework,
