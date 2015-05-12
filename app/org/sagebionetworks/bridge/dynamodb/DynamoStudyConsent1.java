@@ -6,6 +6,7 @@ import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
@@ -20,7 +21,8 @@ public class DynamoStudyConsent1 implements StudyConsent {
     private long createdOn;
     private boolean active;
     private String path;
-    private int minAge;
+    private String storagePath;
+    private String documentContent;
     private Long version;
 
     @Override
@@ -64,11 +66,20 @@ public class DynamoStudyConsent1 implements StudyConsent {
 
     @Override
     @DynamoDBAttribute
-    public int getMinAge() {
-        return minAge;
+    public String getStoragePath() {
+        return storagePath;
     }
-    public void setMinAge(int minAge) {
-        this.minAge = minAge;
+    public void setStoragePath(String storagePath) {
+        this.storagePath = storagePath;
+    }
+    
+    @Override
+    @DynamoDBIgnore
+    public String getDocumentContent() {
+        return documentContent;
+    }
+    public void setDocumentContent(String documentContent) {
+        this.documentContent = documentContent;
     }
 
     @DynamoDBVersionAttribute

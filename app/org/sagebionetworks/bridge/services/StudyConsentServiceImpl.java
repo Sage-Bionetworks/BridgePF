@@ -22,6 +22,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
 
     private Validator validator;
     private StudyConsentDao studyConsentDao;
+    
 
     @Autowired
     public void setValidator(StudyConsentValidator validator) {
@@ -39,6 +40,9 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         checkNotNull(form, "Study consent is null");
         
         Validate.entityThrowingException(validator, form);
+        
+        // remove the content, add a path.
+        
         return studyConsentDao.addConsent(studyIdentifier, form.getPath(), form.getMinAge());
     }
 
@@ -50,6 +54,9 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
+        
+        // use the path to restore the document content
+        
         return consent;
     }
 
@@ -61,6 +68,9 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         if (consents == null || consents.isEmpty()) {
             throw new BadRequestException("There are no consent records.");
         }
+        
+        // Use the paths to restore all the document contents
+        
         return consents;
     }
 
@@ -73,6 +83,9 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
+        
+        // Use the path to restore the document content
+        
         return consent;
     }
 
@@ -93,9 +106,14 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         checkNotNull(studyIdentifier, "StudyIdentifier is null");
         checkArgument(timestamp > 0, "Timestamp is 0");
         
+        // grab the path...
+        
         if (studyConsentDao.getConsent(studyIdentifier, timestamp).getActive()) {
             throw new BadRequestException("Cannot delete active consent document.");
         }
+        
+        // delete the S3 item
+        
         studyConsentDao.deleteConsent(studyIdentifier, timestamp);
     }
 }
