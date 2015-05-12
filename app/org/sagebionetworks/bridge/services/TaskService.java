@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.models.schedules.SurveyReference.SURVEY
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -142,8 +143,11 @@ public class TaskService {
         Map<String,DateTime> events = taskEventService.getTaskEventMap(user.getHealthCode());
         if (!events.containsKey("enrollment")) {
             UserConsent consent = userConsentDao.getUserConsent(user.getHealthCode(), new StudyIdentifierImpl(user.getStudyKey()));
-            events.put("enrollment", new DateTime(consent.getSignedOn()));
+            Map<String,DateTime> newEvents = Maps.newHashMap();
+            newEvents.putAll(events);
+            newEvents.put("enrollment", new DateTime(consent.getSignedOn()));
             logger.info("Enrollment missing from task event table, pulling from consent record");
+            return newEvents;
         }
         return events;
     }
