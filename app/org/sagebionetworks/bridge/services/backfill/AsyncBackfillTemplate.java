@@ -109,7 +109,8 @@ abstract class AsyncBackfillTemplate implements BackfillService {
     }
 
     /**
-     * How long (in seconds) should the lock expire.
+     * How long (in seconds) should the lock expire. This value should be long enough to cover
+     * the duration of the entire backfill.
      */
     abstract int getLockExpireInSeconds();
 
