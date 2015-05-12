@@ -73,11 +73,11 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
                 }
             }
             if (mapping == null && consent == null) {
-                backfillFactory.createOnly(task, "Health code and consent record not found");
+                callback.newRecords(backfillFactory.createOnly(task, "Health code and consent record not found"));
             } else if (mapping == null) {
-                backfillFactory.createOnly(task, "Health code not found");    
+                callback.newRecords(backfillFactory.createOnly(task, "Health code not found"));    
             } else if (consent == null) {
-                backfillFactory.createOnly(task, "Consent record not found");
+                callback.newRecords(backfillFactory.createOnly(task, "Consent record not found"));
             }
         }
     }
