@@ -61,13 +61,15 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
             Account account = i.next();
             Study study = studyService.getStudy(account.getStudyIdentifier());
             HealthId mapping = healthCodeService.getMapping(account.getHealthId());
-            String healthCode = mapping.getCode();
-            
-            UserConsent consent = userConsentDao.getUserConsent(healthCode, study.getStudyIdentifier());
-            if (consent != null) {
-                taskEventService.publishEvent(healthCode, consent);
-                callback.newRecords(
-                    backfillFactory.createAndSave(task, study, account, "enrollment event created"));
+            if (mapping != null) {
+                String healthCode = mapping.getCode();
+                
+                UserConsent consent = userConsentDao.getUserConsent(healthCode, study.getStudyIdentifier());
+                if (consent != null) {
+                    taskEventService.publishEvent(healthCode, consent);
+                    callback.newRecords(
+                        backfillFactory.createAndSave(task, study, account, "enrollment event created"));
+                }
             }
         }        
     }
