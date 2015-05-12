@@ -1,10 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -25,7 +20,6 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.dynamodb.DynamoUserConsent2;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
@@ -64,8 +58,6 @@ public class ConsentServiceImplTest {
 
     @Resource
     private TestUserAdminHelper helper;
-    
-    private TaskEventService taskEventService;
 
     private Study study;
     
@@ -78,9 +70,6 @@ public class ConsentServiceImplTest {
         
         studyConsent = studyConsentDao.addConsent(study.getStudyIdentifier(), "/path/to", study.getMinAgeOfConsent());
         studyConsentDao.setActive(studyConsent, true);
-        
-        taskEventService = mock(TaskEventService.class);
-        consentService.setTaskEventService(taskEventService);
         
         // Ensure that user gives no consent.
         assertFalse(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
@@ -108,8 +97,6 @@ public class ConsentServiceImplTest {
         consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), researchConsent, 
                 SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
         
-        verify(taskEventService).publishEvent(any(String.class), any(DynamoUserConsent2.class));
-        
         assertTrue(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
         ConsentSignature returnedSig = consentService.getConsentSignature(testUser.getStudy(), testUser.getUser());
         assertEquals("John Smith", returnedSig.getName());
@@ -136,8 +123,6 @@ public class ConsentServiceImplTest {
                 TestConstants.DUMMY_IMAGE_DATA, "image/fake");
         consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), signature, SharingScope.NO_SHARING, false);
         assertTrue(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
-        
-        verify(taskEventService).publishEvent(any(String.class), any(DynamoUserConsent2.class));
         
         ConsentSignature returnedSig = consentService.getConsentSignature(testUser.getStudy(), testUser.getUser());
         
@@ -176,7 +161,6 @@ public class ConsentServiceImplTest {
         consentService.withdrawConsent(study, testUser.getUser());
 
         // But this is not, one day to go
-        reset(taskEventService);
         try {
             sig = ConsentSignature.create("Test User", DateUtils.getCalendarDateString(tomorrow18YearsAgo), null, null);
             consentService.consentToResearch(study, testUser.getUser(), sig, sharingScope, false);
@@ -184,7 +168,6 @@ public class ConsentServiceImplTest {
         } catch (InvalidEntityException e) {
             consentService.withdrawConsent(study, testUser.getUser());
             assertTrue(e.getMessage().contains("years of age or older"));
-            verifyNoMoreInteractions(taskEventService);
         }
     }
     
