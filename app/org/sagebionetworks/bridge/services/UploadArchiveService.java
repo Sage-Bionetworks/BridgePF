@@ -1,31 +1,27 @@
 package org.sagebionetworks.bridge.services;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.cert.CertificateEncodingException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 import javax.annotation.Nonnull;
+
+import org.bouncycastle.cms.CMSException;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.crypto.CmsEncryptor;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.util.DuplicateZipEntryException;
+import org.sagebionetworks.bridge.util.ZipOverflowException;
+import org.sagebionetworks.bridge.util.Zipper;
+import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import org.apache.commons.io.IOUtils;
-import org.bouncycastle.cms.CMSException;
-
-import org.sagebionetworks.bridge.crypto.CmsEncryptor;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.validators.Validate;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 /**
  * Archives messages and then encrypts the archive using CMS.
@@ -33,6 +29,11 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class UploadArchiveService {
+
+    private final static Zipper ZIPPER = new Zipper(
+            BridgeConfigFactory.getConfig().getPropertyAsInt("max.zip.entry.size"),
+            BridgeConfigFactory.getConfig().getPropertyAsInt("max.num.zip.entries"));
+
     private LoadingCache<String, CmsEncryptor> cmsEncryptorCache;
 
     /** Loading cache for CMS encryptor, keyed by study ID. This is configured by Spring. */
@@ -140,17 +141,8 @@ public class UploadArchiveService {
         if (dataMap == null) {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "dataMap"));
         }
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ZipOutputStream zos = new ZipOutputStream(baos)) {
-            for (Map.Entry<String, byte[]> oneData : dataMap.entrySet()) {
-                ZipEntry zipEntry = new ZipEntry(oneData.getKey());
-                zos.putNextEntry(zipEntry);
-                zos.write(oneData.getValue());
-                zos.closeEntry();
-            }
-            zos.flush();
-            return baos.toByteArray();
+        try {
+            return ZIPPER.zip(dataMap);
         } catch (IOException ex) {
             throw new BridgeServiceException(ex);
         }
@@ -175,24 +167,14 @@ public class UploadArchiveService {
         if (bytes == null) {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "bytes"));
         }
-
-        Map<String, byte[]> dataMap = new HashMap<>();
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                ZipInputStream zis = new ZipInputStream(bais)) {
-            ZipEntry zipEntry = zis.getNextEntry();
-            while (zipEntry != null) {
-                String entryName = zipEntry.getName();
-                if (dataMap.containsKey(entryName)) {
-                    throw new BadRequestException(String.format("Duplicate filename %s", entryName));
-                }
-
-                byte[] content = IOUtils.toByteArray(zis);
-                dataMap.put(entryName, content);
-                zipEntry = zis.getNextEntry();
-            }
-            return dataMap;
+        try {
+            return ZIPPER.unzip(bytes);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
+        } catch (ZipOverflowException e) {
+            throw new BadRequestException(e);
+        } catch (DuplicateZipEntryException e) {
+            throw new BadRequestException(e);
         }
     }
 }
