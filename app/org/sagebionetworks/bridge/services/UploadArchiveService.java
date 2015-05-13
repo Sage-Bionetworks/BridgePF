@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.util.DuplicateZipEntryException;
 import org.sagebionetworks.bridge.util.ZipOverflowException;
 import org.sagebionetworks.bridge.util.Zipper;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -172,6 +173,8 @@ public class UploadArchiveService {
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         } catch (ZipOverflowException e) {
+            throw new BridgeServiceException(e);
+        } catch (DuplicateZipEntryException e) {
             throw new BridgeServiceException(e);
         }
     }
