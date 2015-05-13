@@ -8,7 +8,6 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.Encryptor;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
@@ -37,7 +36,6 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
     
     private BackfillRecordFactory backfillFactory;
     private TaskEventService taskEventService;
-    private AccountDao accountDao;
     private StudyService studyService;
     private UserConsentDao userConsentDao;
     private HealthCodeService healthCodeService;
@@ -50,10 +48,6 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
     @Autowired
     public void setTaskEventService(TaskEventService taskEventService) {
         this.taskEventService = taskEventService;
-    }
-    @Autowired
-    public void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
     }
     @Autowired
     public void setStudyService(StudyService studyService) {
@@ -101,14 +95,41 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
             
             Iterator<Account> studyIterator = new StormpathAccountIterator(study, encryptors, directory.getAccounts().iterator());
+            
+            while(studyIterator.hasNext()) {
+                Account account = studyIterator.next();
+                callback.newRecords(backfillFactory.createOnly(task, "Examining account: " + account.getEmail()));
+                HealthId mapping = healthCodeService.getMapping(account.getHealthId());
+                UserConsent consent = null;
+                if (mapping != null) {
+                    String healthCode = mapping.getCode();
+
+                    consent = userConsentDao.getUserConsent(healthCode, study.getStudyIdentifier());
+                    if (consent != null) {
+                        taskEventService.publishEvent(healthCode, consent);
+                        callback.newRecords(
+                            backfillFactory.createAndSave(task, study, account, "enrollment event created"));
+                    }
+                }
+                if (mapping == null && consent == null) {
+                    callback.newRecords(backfillFactory.createOnly(task, "Health code and consent record not found"));
+                } else if (mapping == null) {
+                    callback.newRecords(backfillFactory.createOnly(task, "Health code not found"));    
+                } else if (consent == null) {
+                    callback.newRecords(backfillFactory.createOnly(task, "Consent record not found"));
+                }
+            }
+            
+            /*
             if (combinedIterator ==  null) {
                 combinedIterator = studyIterator;
             } else {
-                combinedIterator = Iterators.concat(combinedIterator, studyIterator);    
+                combinedIterator = Iterators.concat(combinedIterator, studyIterator);
             }
             callback.newRecords(backfillFactory.createOnly(task, "Finished getting accounts for study " + study.getName()));
+            */
         }
-
+/*
         while(combinedIterator.hasNext()) {
             Account account = combinedIterator.next();
             callback.newRecords(backfillFactory.createOnly(task, "Examining account: " + account.getEmail()));
@@ -133,5 +154,6 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
                 callback.newRecords(backfillFactory.createOnly(task, "Consent record not found"));
             }
         }
+        */
     }
 }
