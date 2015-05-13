@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -26,11 +27,12 @@ public abstract class TaskScheduler {
     
     protected DateTime getScheduledTimeBasedOnEvent(Schedule schedule, Map<String, DateTime> events) {
         // If no event is specified, it's enrollment by default.
-        String eventId = schedule.getEventId();
-        if (eventId == null) {
-            eventId = "enrollment";
+        String eventIdsString = schedule.getEventId();
+        if (eventIdsString == null) {
+            eventIdsString = "enrollment";
         }
-        DateTime eventTime = (events == null) ? null : events.get(eventId);
+        DateTime eventTime = getFirstEventDateTime(eventIdsString, events);
+        
         // An event was specified, but it hasn't happened yet. So no tasks are generated.
         // OR, an event fires, but outside of the window for the schedule, so again, no tasks.
         if (eventTime == null || !isInWindow(schedule, eventTime)) {
@@ -40,6 +42,21 @@ public abstract class TaskScheduler {
             eventTime = eventTime.plus(schedule.getDelay());
         }
         return eventTime;
+    }
+    
+    protected DateTime getFirstEventDateTime(String eventIdsString, Map<String, DateTime> events) {
+        if (events == null) {
+            return null;
+        } else if (!eventIdsString.contains(",")) {
+            return events.get(eventIdsString);
+        }
+        List<String> eventIds = Arrays.asList(eventIdsString.split("\\s*,\\s*"));
+        for (String thisEventId : eventIds) {
+            if (events.get(thisEventId) != null) {
+                return events.get(thisEventId);
+            }
+        }
+        return null;
     }
     
     protected void addTaskForEachTime(List<Task> tasks, DateTime scheduledTime) {

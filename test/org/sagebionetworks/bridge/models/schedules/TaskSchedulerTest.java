@@ -39,6 +39,7 @@ public class TaskSchedulerTest {
         events = Maps.newHashMap();
         // Enrolled on March 23, 2015 @ 10am GST
         events.put("enrollment", ENROLLMENT);
+        events.put("survey:event", ENROLLMENT.plusDays(2));
     }
     
     @After
@@ -205,6 +206,26 @@ public class TaskSchedulerTest {
         events.put("scheduledOn:task:foo", NOW.plusHours(8));
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
         assertEquals(new Long(NOW.plusHours(8).getMillis()), tasks.get(0).getScheduledOn());
+    }
+    
+    @Test
+    public void willSelectFirstEventIdWithARecord() throws Exception {
+        Schedule schedule = new Schedule();
+        schedule.setEventId("survey:event, enrollment");
+        schedule.addActivity(new Activity("Label", "task:foo"));
+        schedule.setScheduleType(ONCE);
+        
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
+        assertEquals(new Long(ENROLLMENT.plusDays(2).getMillis()), tasks.get(0).getScheduledOn());
+        
+        events.remove("survey:event");
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
+        assertEquals(new Long(ENROLLMENT.getMillis()), tasks.get(0).getScheduledOn());
+        
+        // BUT this produces nothing because the system doesn't fallback to enrollment if an event has been set
+        schedule.setEventId("survey:event");
+        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
+        assertEquals(0, tasks.size());
     }
     
 }
