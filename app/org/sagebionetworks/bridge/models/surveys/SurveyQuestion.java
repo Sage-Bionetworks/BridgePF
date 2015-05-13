@@ -15,6 +15,9 @@ public interface SurveyQuestion extends SurveyElement {
     public String getPromptDetail();
     public void setPromptDetail(String promptDetail);
     
+    public boolean getFireEvent();
+    public void setFireEvent(boolean fireEvent);
+    
     public UIHint getUiHint();
     public void setUiHint(UIHint hint);
 
