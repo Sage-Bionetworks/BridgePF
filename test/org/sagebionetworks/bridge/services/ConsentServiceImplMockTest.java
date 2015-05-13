@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -22,6 +21,7 @@ import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 
 public class ConsentServiceImplMockTest {
@@ -32,7 +32,7 @@ public class ConsentServiceImplMockTest {
     private JedisStringOps stringOps;
     private ParticipantOptionsService optionsService;
     private SendMailService sendMailService;
-    private StudyConsentDao studyConsentDao;
+    private StudyConsentService studyConsentService;
     private UserConsentDao userConsentDao;
     private TaskEventService taskEventService;
 
@@ -46,18 +46,18 @@ public class ConsentServiceImplMockTest {
         stringOps = mock(JedisStringOps.class);
         optionsService = mock(ParticipantOptionsService.class);
         sendMailService = mock(SendMailService.class);
-        studyConsentDao = mock(StudyConsentDao.class);
         userConsentDao = mock(UserConsentDao.class);
         taskEventService = mock(TaskEventService.class);
+        studyConsentService = mock(StudyConsentService.class);
 
         consentService = new ConsentServiceImpl();
         consentService.setAccountDao(accountDao);
         consentService.setStringOps(stringOps);
         consentService.setOptionsService(optionsService);
         consentService.setSendMailService(sendMailService);
-        consentService.setStudyConsentDao(studyConsentDao);
         consentService.setUserConsentDao(userConsentDao);
         consentService.setTaskEventService(taskEventService);
+        consentService.setStudyConsentService(studyConsentService);
         
         study = new DynamoStudy();
         user = new User();
@@ -72,6 +72,9 @@ public class ConsentServiceImplMockTest {
     public void taskEventFiredOnConsent() {
         UserConsent consent = mock(UserConsent.class);
         when(userConsentDao.giveConsent(any(String.class), any(StudyConsent.class))).thenReturn(consent);
+        
+        StudyConsentView view = mock(StudyConsentView.class);
+        when(studyConsentService.getActiveConsent(any(Study.class))).thenReturn(view);
         
         consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
         

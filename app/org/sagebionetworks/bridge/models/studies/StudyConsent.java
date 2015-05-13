@@ -9,26 +9,27 @@ public interface StudyConsent extends BridgeEntity {
     /**
      * The study associated with this consent.
      */
-    String getStudyKey();
+    public String getStudyKey();
 
     /**
      * Timestamp when this consent is created.
      */
-    long getCreatedOn();
+    public long getCreatedOn();
 
     /**
      * Whether the consent is active.
      */
-    boolean getActive();
+    public boolean getActive();
 
     /**
      * Where to find the consent document.
      */
-    String getPath();
+    public String getPath();
 
     /**
-     * Minimum age required to sign this consent.
+     * Get the path to the storage of the consent document (probably in S3).
+     * @return
      */
-    int getMinAge();
+    public String getStoragePath();
 
 }

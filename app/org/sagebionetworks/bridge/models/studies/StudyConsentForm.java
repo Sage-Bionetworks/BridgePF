@@ -8,19 +8,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @BridgeTypeName("StudyConsent")
 public class StudyConsentForm implements BridgeEntity {
 
-    private final String path;
-    private final int minAge;
+    private final String documentContent;
 
-    public StudyConsentForm(@JsonProperty("path") String path, @JsonProperty("minAge") int minAge) {
-        this.path = path;
-        this.minAge = minAge;
+    public StudyConsentForm(@JsonProperty("documentContent") String documentContent) {
+        this.documentContent = documentContent;
     }
 
-    public String getPath() {
-        return path;
-    }
-
-    public int getMinAge() {
-        return minAge;
+    public String getDocumentContent() {
+        return documentContent;
     }
 }

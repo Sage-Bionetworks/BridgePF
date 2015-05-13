@@ -20,6 +20,8 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyConsentView;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 
 import com.amazonaws.regions.Region;
@@ -38,6 +40,7 @@ public class SendMailViaAmazonServiceConsentTest {
     private AmazonSimpleEmailServiceClient emailClient;
     private StudyService studyService;
     private StudyConsent studyConsent;
+    private StudyConsentService studyConsentService;
     private ArgumentCaptor<SendRawEmailRequest> argument;
     private Study study;
     private static final String FROM_STUDY_AS_FORMATTED = "Test Study (Sage) <study-support-email@study.com>";
@@ -80,10 +83,14 @@ public class SendMailViaAmazonServiceConsentTest {
                 return "conf/email-templates/api-consent.html";
             }
             @Override
-            public int getMinAge() {
-                return 17;
+            public String getStoragePath() {
+                return null;
             }
         };
+        StudyConsentView view = new StudyConsentView(studyConsent, "<document>Had this been a real study: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
+        
+        studyConsentService = mock(StudyConsentService.class);
+        when(studyConsentService.getActiveConsent(any(StudyIdentifier.class))).thenReturn(view);
     }
     
     @Test
@@ -94,7 +101,7 @@ public class SendMailViaAmazonServiceConsentTest {
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent, studyConsent, SharingScope.NO_SHARING);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent, SharingScope.NO_SHARING, studyConsentService);
         service.sendEmail(provider);
 
         verify(emailClient).sendRawEmail(argument.capture());
@@ -108,7 +115,7 @@ public class SendMailViaAmazonServiceConsentTest {
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent, studyConsent, SharingScope.SPONSORS_AND_PARTNERS);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService);
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));
@@ -139,7 +146,7 @@ public class SendMailViaAmazonServiceConsentTest {
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent, studyConsent, SharingScope.SPONSORS_AND_PARTNERS);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService);
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));
