@@ -34,7 +34,7 @@ class BackfillChunksAdapter implements BackfillCallback {
         chunksOut.write("<h4>" + task.getName()
                 + " started by " + task.getUser()
                 + " on " + new DateTime(task.getTimestamp(), DateTimeZone.UTC).toString("YYYY-MM-dd HH:mm:ss")
-                + "</h4>");
+                + "</h4>\n");
     }
 
     @Override
@@ -44,7 +44,7 @@ class BackfillChunksAdapter implements BackfillCallback {
             try {
                 JsonNode node = record.toJsonNode();
                 String prettyPrinted = MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(node);
-                chunksOut.write("<pre>" + prettyPrinted + "</pre>");
+                chunksOut.write("<pre>" + prettyPrinted + "</pre>\n");
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -53,7 +53,7 @@ class BackfillChunksAdapter implements BackfillCallback {
 
     @Override
     public void done() {
-        chunksOut.write("<h4>Done!<h4>");
+        chunksOut.write("<h4>Done!<h4>\n");
         chunksOut.close();
     }
 }

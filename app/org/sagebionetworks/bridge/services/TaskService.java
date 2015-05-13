@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.models.schedules.SurveyReference.SURVEY
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
