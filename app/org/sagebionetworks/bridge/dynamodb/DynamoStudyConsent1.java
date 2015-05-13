@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.Objects;
+
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
@@ -14,13 +16,13 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @DynamoDBTable(tableName = "StudyConsent1")
-public class DynamoStudyConsent1 implements StudyConsent {
+public final class DynamoStudyConsent1 implements StudyConsent {
 
     private String studyKey;
     private long createdOn;
     private boolean active;
     private String path;
-    private int minAge;
+    private String storagePath;
     private Long version;
 
     @Override
@@ -64,11 +66,11 @@ public class DynamoStudyConsent1 implements StudyConsent {
 
     @Override
     @DynamoDBAttribute
-    public int getMinAge() {
-        return minAge;
+    public String getStoragePath() {
+        return storagePath;
     }
-    public void setMinAge(int minAge) {
-        this.minAge = minAge;
+    public void setStoragePath(String storagePath) {
+        this.storagePath = storagePath;
     }
 
     @DynamoDBVersionAttribute
@@ -77,5 +79,35 @@ public class DynamoStudyConsent1 implements StudyConsent {
     }
     public void setVersion(Long version) {
         this.version = version;
+    }
+    
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Objects.hash(active);
+        result = prime * result + Objects.hash(createdOn);
+        result = prime * result + Objects.hash(path);
+        result = prime * result + Objects.hash(storagePath);
+        result = prime * result + Objects.hash(studyKey);
+        result = prime * result + Objects.hash(version);
+        return result;
+    }
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        DynamoStudyConsent1 other = (DynamoStudyConsent1) obj;
+        return (Objects.equals(active, other.active) && Objects.equals(createdOn, other.createdOn) && 
+                Objects.equals(path, other.path) && Objects.equals(storagePath, other.storagePath) &&
+                Objects.equals(studyKey, other.studyKey) && Objects.equals(version, other.version));
+    }
+    
+    @Override
+    public String toString() {
+        return String.format("DynamoStudyConsent1 [studyKey=%s, createdOn=%s, active=%s, path=%s, storagePath=%s, version=%s]",
+            studyKey, createdOn, active, path, storagePath, version);
     }
 }

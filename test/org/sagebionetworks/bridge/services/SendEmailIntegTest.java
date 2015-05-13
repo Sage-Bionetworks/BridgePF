@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -31,37 +30,20 @@ public class SendEmailIntegTest {
     private StudyService studyService;
 
     @Resource
+    private StudyConsentService studyConsentService;
+    
+    @Resource
     private SendMailViaAmazonService sendEmailService;
 
     @Test
     public void test() {
         final ConsentSignature signature = ConsentSignature.create("Eggplant McTester", "1970-05-01", IMG, "image/png");
         final User user = new User();
-        final Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
         user.setEmail("bridge-testing@sagebase.org");
-        StudyConsent studyConsent = new StudyConsent() {
-            @Override
-            public String getStudyKey() {
-                return TestConstants.TEST_STUDY_IDENTIFIER;
-            }
-            @Override
-            public long getCreatedOn() {
-                return 0;
-            }
-            @Override
-            public boolean getActive() {
-                return true;
-            }
-            @Override
-            public String getPath() {
-                return "conf/email-templates/asthma-consent.html";
-            }
-            @Override
-            public int getMinAge() {
-                return 17;
-            }
-        };
+        final Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
+        
         sendEmailService.sendEmail(new ConsentEmailProvider(
-                study, user, signature, studyConsent, SharingScope.SPONSORS_AND_PARTNERS));
+                study, user, signature, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService));
     }
+    
 }

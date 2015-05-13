@@ -27,8 +27,8 @@ public interface StudyConsent extends BridgeEntity {
     String getPath();
 
     /**
-     * Minimum age required to sign this consent.
+     * Get the path to the storage of the consent document (probably in S3).
      */
-    int getMinAge();
+    String getStoragePath();
 
 }

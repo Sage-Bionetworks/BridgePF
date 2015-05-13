@@ -233,6 +233,26 @@ public class BridgeSpringConfig {
         return s3Helper;
     }
 
+    @Bean(name = "s3ConsentsCredentials")
+    @Resource(name = "bridgeConfig")
+    public BasicAWSCredentials s3ConsentsCredentials(BridgeConfig bridgeConfig) {
+        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.consents"), bridgeConfig.getProperty("aws.secret.key.consents"));
+    }
+    
+    @Bean(name = "s3ConsentsClient")
+    @Resource(name = "s3ConsentsCredentials")
+    public AmazonS3Client s3ConsentsClient(BasicAWSCredentials awsCredentials) {
+        return new AmazonS3Client(awsCredentials);
+    }
+
+    @Bean(name = "s3ConsentsHelper")
+    @Resource(name = "s3ConsentsClient")
+    public S3Helper s3ConsentsHelper(AmazonS3Client s3Client) {
+        S3Helper s3Helper = new S3Helper();
+        s3Helper.setS3Client(s3Client);
+        return s3Helper;
+    }    
+    
     @Bean(name = "uploadDdbMapper")
     @Autowired
     public DynamoDBMapper uploadDdbMapper(AmazonDynamoDB client) {

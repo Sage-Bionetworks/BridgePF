@@ -21,7 +21,6 @@ import org.sagebionetworks.bridge.stormpath.StormpathAccountIterator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.stormpath.sdk.api.ApiKey;
 import com.stormpath.sdk.api.ApiKeys;
@@ -88,7 +87,7 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
         
         callback.newRecords(backfillFactory.createOnly(task, "Created client"));
         
-        Iterator<Account> combinedIterator = null;
+        //Iterator<Account> combinedIterator = null;
         for (Study study : studyService.getStudies()) {
             callback.newRecords(backfillFactory.createOnly(task, "Getting accounts for study " + study.getName()));
             

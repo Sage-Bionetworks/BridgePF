@@ -5,6 +5,7 @@ import java.util.List;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
+import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface StudyConsentService {
@@ -18,10 +19,10 @@ public interface StudyConsentService {
      * @param form
      *            form filled out by researcher including the path to the
      *            consent document and the minimum age required to consent.
-     * @return the added consent document of type StudyConsent.
+     * @return the added consent document of type StudyConsent along with its document content
      * @throws BridgeServiceException
      */
-    public StudyConsent addConsent(StudyIdentifier studyIdentifier, StudyConsentForm form)
+    public StudyConsentView addConsent(StudyIdentifier studyIdentifier, StudyConsentForm form)
             throws BridgeServiceException;
 
     /**
@@ -29,17 +30,17 @@ public interface StudyConsentService {
      *
      * @param studyIdentifier
      *            key associated with the study.
-     * @return the currently active StudyConsent.
+     * @return the currently active StudyConsent along with its document content
      * @throws BridgeServiceException
      */
-    public StudyConsent getActiveConsent(StudyIdentifier studyIdentifier) throws BridgeServiceException;
+    public StudyConsentView getActiveConsent(StudyIdentifier studyIdentifier) throws BridgeServiceException;
 
     /**
      * Get all added consent documents for the study.
      *
      * @param studyIdentifier
      *            key associated with the study.
-     * @return list of all consent documents associated with study.
+     * @return list of all consent documents associated with study along with its document content
      * @throws BridgeServiceException
      */
     public List<StudyConsent> getAllConsents(StudyIdentifier studyIdentifier) throws BridgeServiceException;
@@ -52,10 +53,10 @@ public interface StudyConsentService {
      *            key associated with the study.
      * @param timestamp
      *            time the consent document was added to the database.
-     * @return the specified consent document.
+     * @return the specified consent document along with its document content
      * @throws BridgeServiceException
      */
-    public StudyConsent getConsent(StudyIdentifier studyIdentifier, long timestamp) throws BridgeServiceException;
+    public StudyConsentView getConsent(StudyIdentifier studyIdentifier, long timestamp) throws BridgeServiceException;
 
     /**
      * Set the specified consent document as active, and set the currently
@@ -65,10 +66,10 @@ public interface StudyConsentService {
      *            key associated with the study.
      * @param timestamp
      *            time the consent document was added to the database.
-     * @return the activated consent document.
+     * @return the activated consent document along with its document content
      * @throws BridgeServiceException
      */
-    public StudyConsent activateConsent(StudyIdentifier studyIdentifier, long timestamp) throws BridgeServiceException;
+    public StudyConsentView activateConsent(StudyIdentifier studyIdentifier, long timestamp) throws BridgeServiceException;
 
     /**
      * Deletes the specified consent document from the study. If this consent

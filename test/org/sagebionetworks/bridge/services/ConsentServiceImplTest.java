@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestUtils.STUDY_CONSENT_PATH;
 
 import javax.annotation.Resource;
 
@@ -68,7 +69,7 @@ public class ConsentServiceImplTest {
         study = studyService.getStudy("api");
         testUser = helper.createUser(ConsentServiceImplTest.class, true, false, null);
         
-        studyConsent = studyConsentDao.addConsent(study.getStudyIdentifier(), "/path/to", study.getMinAgeOfConsent());
+        studyConsent = studyConsentDao.addConsent(study.getStudyIdentifier(), STUDY_CONSENT_PATH, null, DateUtils.getCurrentDateTime());
         studyConsentDao.setActive(studyConsent, true);
         
         // Ensure that user gives no consent.
@@ -218,8 +219,7 @@ public class ConsentServiceImplTest {
                     consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
 
             // Create new study consent, but do not activate it. User is consented and has still signed most recent consent.
-            newStudyConsent = studyConsentDao.addConsent(testUser.getStudyIdentifier(), "/path/to2",
-                    testUser.getStudy().getMinAgeOfConsent());
+            newStudyConsent = studyConsentDao.addConsent(testUser.getStudyIdentifier(), STUDY_CONSENT_PATH, null, DateUtils.getCurrentDateTime());
 
             assertTrue("Should be consented.",
                     consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));

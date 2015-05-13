@@ -6,7 +6,6 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -17,6 +16,7 @@ import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.redis.JedisStringOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
@@ -36,7 +36,7 @@ public class ConsentServiceImpl implements ConsentService {
     private JedisStringOps stringOps;
     private ParticipantOptionsService optionsService;
     private SendMailService sendMailService;
-    private StudyConsentDao studyConsentDao;
+    private StudyConsentService studyConsentService;
     private UserConsentDao userConsentDao;
     private TaskEventService taskEventService;
 
@@ -57,8 +57,8 @@ public class ConsentServiceImpl implements ConsentService {
         this.sendMailService = sendMailService;
     }
     @Autowired
-    public void setStudyConsentDao(StudyConsentDao studyConsentDao) {
-        this.studyConsentDao = studyConsentDao;
+    public void setStudyConsentService(StudyConsentService studyConsentService) {
+        this.studyConsentService = studyConsentService;
     }
     @Autowired
     public void setUserConsentDao(UserConsentDao userConsentDao) {
@@ -102,11 +102,11 @@ public class ConsentServiceImpl implements ConsentService {
         account.setConsentSignature(consentSignature);
         accountDao.updateAccount(study, account);
         
-        final StudyConsent studyConsent = studyConsentDao.getConsent(study);
+        final StudyConsentView studyConsent = studyConsentService.getActiveConsent(study);
 
         incrementStudyEnrollment(study);
         try {
-            UserConsent userConsent = userConsentDao.giveConsent(user.getHealthCode(), studyConsent);
+            UserConsent userConsent = userConsentDao.giveConsent(user.getHealthCode(), studyConsent.getStudyConsent());
             if (userConsent != null){
                 taskEventService.publishEvent(user.getHealthCode(), userConsent);
             }
@@ -118,7 +118,8 @@ public class ConsentServiceImpl implements ConsentService {
         optionsService.setOption(study, user.getHealthCode(), sharingScope);
 
         if (sendEmail) {
-            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, user, consentSignature, studyConsent, sharingScope);
+            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(
+                study, user, consentSignature, sharingScope, studyConsentService);
             sendMailService.sendEmail(consentEmail);
         }
 
@@ -140,7 +141,7 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "studyIdentifier");
 
         UserConsent userConsent = userConsentDao.getUserConsent(user.getHealthCode(), studyIdentifier);
-        StudyConsent mostRecentConsent = studyConsentDao.getConsent(studyIdentifier);
+        StudyConsentView mostRecentConsent = studyConsentService.getActiveConsent(studyIdentifier);
 
         if (mostRecentConsent != null && userConsent != null) {
             // If the user signed the StudyConsent after the time the most recent StudyConsent was created, then the
@@ -170,7 +171,7 @@ public class ConsentServiceImpl implements ConsentService {
         checkNotNull(user, Validate.CANNOT_BE_NULL, "user");
         checkNotNull(study, Validate.CANNOT_BE_NULL, "studyIdentifier");
 
-        final StudyConsent consent = studyConsentDao.getConsent(study);
+        final StudyConsentView consent = studyConsentService.getActiveConsent(study);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
@@ -181,7 +182,8 @@ public class ConsentServiceImpl implements ConsentService {
         }
 
         final SharingScope sharingScope = optionsService.getSharingScope(user.getHealthCode());
-        MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, user, consentSignature, consent, sharingScope); 
+        MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(
+            study, user, consentSignature, sharingScope, studyConsentService);        
         sendMailService.sendEmail(consentEmail);
     }
 
