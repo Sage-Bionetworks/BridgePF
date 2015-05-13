@@ -44,7 +44,7 @@ class BackfillChunksAdapter implements BackfillCallback {
             try {
                 JsonNode node = record.toJsonNode();
                 String prettyPrinted = MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(node);
-                chunksOut.write("<pre>" + prettyPrinted + "</pre>");
+                chunksOut.write("\n<pre>" + prettyPrinted + "</pre>");
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }

@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,12 +36,12 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
 
     @Override
-    public StudyConsent addConsent(StudyIdentifier studyIdentifier, String path, int minAge) {
+    public StudyConsent addConsent(StudyIdentifier studyIdentifier, String path, String storagePath, DateTime createdOn) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyIdentifier.getIdentifier());
-        consent.setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
+        consent.setCreatedOn(createdOn.getMillis());
         consent.setPath(path);
-        consent.setMinAge(minAge);
+        consent.setStoragePath(storagePath);
         mapper.save(consent);
         return consent;
     }

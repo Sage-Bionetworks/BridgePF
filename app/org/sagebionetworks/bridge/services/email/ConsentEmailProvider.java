@@ -2,9 +2,6 @@ package org.sagebionetworks.bridge.services.email;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Set;
@@ -24,12 +21,11 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
-import org.springframework.core.io.FileSystemResource;
+import org.sagebionetworks.bridge.models.studies.StudyConsentView;
+import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.fasterxml.jackson.core.util.ByteArrayBuilder;
-import com.google.common.io.CharStreams;
 import com.lowagie.text.DocumentException;
 
 public class ConsentEmailProvider implements MimeTypeEmailProvider {
@@ -46,16 +42,16 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     private User user;
     private Study study;
     private ConsentSignature consentSignature;
-    private StudyConsent studyConsent;
     private SharingScope sharingScope;
+    private StudyConsentService studyConsentService;
 
-    public ConsentEmailProvider(Study study, User user, ConsentSignature consentSignature, StudyConsent studyConsent,
-            SharingScope sharingScope) {
+    public ConsentEmailProvider(Study study, User user, ConsentSignature consentSignature, SharingScope sharingScope,
+        StudyConsentService studyConsentService) {
         this.study = study;
         this.user = user;
         this.consentSignature = consentSignature;
-        this.studyConsent = studyConsent;
         this.sharingScope = sharingScope;
+        this.studyConsentService = studyConsentService;
     }
 
     @Override
@@ -112,23 +108,16 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     }
 
     private String createSignedDocument() {
-        final String filePath = studyConsent.getPath();
-        final FileSystemResource resource = new FileSystemResource(filePath);
+        StudyConsentView consent = studyConsentService.getActiveConsent(study.getStudyIdentifier());
+        String consentAgreementHTML = consent.getDocumentContent();
         
-        try (InputStream is = resource.getInputStream();
-             InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);) {
-            
-            String consentAgreementHTML = CharStreams.toString(isr);
-            String signingDate = FORMATTER.print(DateUtils.getCurrentMillisFromEpoch());
-            String html = consentAgreementHTML.replace("@@name@@", consentSignature.getName());
-            html = html.replace("@@signing.date@@", signingDate);
-            html = html.replace("@@email@@", user.getEmail());
-            String sharingLabel = (sharingScope == null) ? "" : sharingScope.getLabel();
-            html = html.replace("@@sharing@@", sharingLabel);
-            return html;
-        } catch (IOException e) {
-            throw new BridgeServiceException(e);
-        }
+        String signingDate = FORMATTER.print(DateUtils.getCurrentMillisFromEpoch());
+        String html = consentAgreementHTML.replace("@@name@@", consentSignature.getName());
+        html = html.replace("@@signing.date@@", signingDate);
+        html = html.replace("@@email@@", user.getEmail());
+        String sharingLabel = (sharingScope == null) ? "" : sharingScope.getLabel();
+        html = html.replace("@@sharing@@", sharingLabel);
+        return html;
     }
 
     private byte[] createPdf(final String consentDoc) {

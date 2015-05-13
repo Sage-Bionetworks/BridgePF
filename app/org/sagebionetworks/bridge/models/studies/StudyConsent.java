@@ -31,11 +31,5 @@ public interface StudyConsent extends BridgeEntity {
      * @return
      */
     public String getStoragePath();
-    
-    /**
-     * The full content of the consent document. 
-     * @return
-     */
-    public String getDocumentContent();
 
 }

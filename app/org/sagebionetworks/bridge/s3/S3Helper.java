@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.s3;
 
 import javax.annotation.Nonnull;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,5 +64,14 @@ public class S3Helper {
         try (InputStream dataInputStream = new ByteArrayInputStream(data)) {
             s3Client.putObject(bucket, key, dataInputStream, null);
         }
+    }
+    
+    /**
+     * Delete S3 file.
+     * @param bucket
+     * @param key
+     */
+    public void deleteS3File(@Nonnull String bucket, @Nonnull String key) {
+        s3Client.deleteObject(bucket, key);    
     }
 }

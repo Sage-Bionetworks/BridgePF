@@ -6,7 +6,6 @@ import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
@@ -22,7 +21,6 @@ public class DynamoStudyConsent1 implements StudyConsent {
     private boolean active;
     private String path;
     private String storagePath;
-    private String documentContent;
     private Long version;
 
     @Override
@@ -73,20 +71,17 @@ public class DynamoStudyConsent1 implements StudyConsent {
         this.storagePath = storagePath;
     }
     
-    @Override
-    @DynamoDBIgnore
-    public String getDocumentContent() {
-        return documentContent;
-    }
-    public void setDocumentContent(String documentContent) {
-        this.documentContent = documentContent;
-    }
-
     @DynamoDBVersionAttribute
     public Long getVersion() {
         return version;
     }
     public void setVersion(Long version) {
         this.version = version;
+    }
+    
+    @Override
+    public String toString() {
+        return String.format("DynamoStudyConsent1 [studyKey=%s, createdOn=%s, active=%s, path=%s, storagePath=%s, version=%s]",
+            studyKey, createdOn, active, path, storagePath, version);
     }
 }
