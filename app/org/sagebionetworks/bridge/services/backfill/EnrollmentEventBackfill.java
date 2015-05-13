@@ -57,8 +57,10 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
 
     @Override
     void doBackfill(BackfillTask task, BackfillCallback callback) {
+        callback.newRecords(backfillFactory.createOnly(task, "Starting to examine accounts"));
         for (Iterator<Account> i = accountDao.getAllAccounts(); i.hasNext();) {
             Account account = i.next();
+            callback.newRecords(backfillFactory.createOnly(task, "Examining account: " + account.getEmail()));
             Study study = studyService.getStudy(account.getStudyIdentifier());
             HealthId mapping = healthCodeService.getMapping(account.getHealthId());
             UserConsent consent = null;
