@@ -14,9 +14,11 @@ import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.stereotype.Component;
 
 import com.google.common.io.CharStreams;
 
+@Component("studyStorageBackfill")
 public class StudyStoragePathBackfill extends AsyncBackfillTemplate {
 
     private BackfillRecordFactory backfillFactory;
@@ -58,6 +60,8 @@ public class StudyStoragePathBackfill extends AsyncBackfillTemplate {
                     studyConsentService.activateConsent(study, view.getStudyConsent().getCreatedOn());
                     
                     callback.newRecords(backfillFactory.createOnly(task, "Study '"+study.getIdentifier()+"' updated."));
+                } else {
+                    callback.newRecords(backfillFactory.createOnly(task, "Study '"+study.getIdentifier()+"' skipped (has S3 content)."));
                 }
             } catch(Throwable t) {
                 callback.newRecords(backfillFactory.createOnly(task, "Study '"+study.getIdentifier()+"' could not be updated: " + t.getMessage()));
