@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -9,6 +10,8 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
+import org.sagebionetworks.bridge.models.tasks.TaskEventObjectType;
+import org.sagebionetworks.bridge.models.tasks.TaskEventType;
 
 public abstract class TaskScheduler {
 
@@ -25,12 +28,16 @@ public abstract class TaskScheduler {
     public abstract List<Task> getTasks(Map<String, DateTime> events, DateTime until);
     
     protected DateTime getScheduledTimeBasedOnEvent(Schedule schedule, Map<String, DateTime> events) {
-        // If no event is specified, it's enrollment by default.
-        String eventId = schedule.getEventId();
-        if (eventId == null) {
-            eventId = "enrollment";
+        if (events == null) {
+            return null;
         }
-        DateTime eventTime = (events == null) ? null : events.get(eventId);
+        // If no event is specified, it's enrollment by default.
+        String eventIdString = schedule.getEventId();
+        DateTime eventTime = getFirstEventDateTime(eventIdString, events);
+        if (eventTime == null) {
+            eventTime = events.get(TaskEventObjectType.ENROLLMENT.name().toLowerCase());
+        }
+        
         // An event was specified, but it hasn't happened yet. So no tasks are generated.
         // OR, an event fires, but outside of the window for the schedule, so again, no tasks.
         if (eventTime == null || !isInWindow(schedule, eventTime)) {
@@ -98,4 +105,18 @@ public abstract class TaskScheduler {
         return scheduledTime.plus(schedule.getExpires());
     }
 
+    protected DateTime getFirstEventDateTime(String eventIdsString, Map<String, DateTime> events) {
+        if (eventIdsString == null) {
+            return null;
+        } else if (!eventIdsString.contains(",")) {
+            return events.get(eventIdsString);
+        }
+        List<String> eventIds = Arrays.asList(eventIdsString.split("\\s*,\\s*"));
+        for (String thisEventId : eventIds) {
+            if (events.get(thisEventId) != null) {
+                return events.get(thisEventId);
+            }
+        }
+        return null;
+    }    
 }
