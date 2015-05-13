@@ -30,8 +30,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 @Component
 public class UploadArchiveService {
 
-    /** Max number of uncompressed bytes per zip entry. */
-    private final Zipper zipper = new Zipper(
+    private final static Zipper ZIPPER = new Zipper(
             BridgeConfigFactory.getConfig().getPropertyAsInt("max.zip.entry.size"),
             BridgeConfigFactory.getConfig().getPropertyAsInt("max.num.zip.entries"));
 
@@ -143,7 +142,7 @@ public class UploadArchiveService {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "dataMap"));
         }
         try {
-            return zipper.zip(dataMap);
+            return ZIPPER.zip(dataMap);
         } catch (IOException ex) {
             throw new BridgeServiceException(ex);
         }
@@ -169,13 +168,13 @@ public class UploadArchiveService {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "bytes"));
         }
         try {
-            return zipper.unzip(bytes);
+            return ZIPPER.unzip(bytes);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         } catch (ZipOverflowException e) {
-            throw new BridgeServiceException(e);
+            throw new BadRequestException(e);
         } catch (DuplicateZipEntryException e) {
-            throw new BridgeServiceException(e);
+            throw new BadRequestException(e);
         }
     }
 }

@@ -52,8 +52,11 @@ public class Zipper {
      * unzipped data entries as a byte array.
      * @param bytes
      * @return
+     * @throws ZipOverflowException 
+     * @throws DuplicateZipEntryException 
      */
-    public Map<String, byte[]> unzip(@Nonnull byte[] bytes) throws IOException {
+    public Map<String, byte[]> unzip(@Nonnull byte[] bytes)
+            throws IOException, ZipOverflowException, DuplicateZipEntryException {
         final Map<String, byte[]> dataMap = new HashMap<>();
         try (final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
                 final ZipInputStream zis = new ZipInputStream(bais)) {
@@ -79,7 +82,8 @@ public class Zipper {
         }
     }
 
-    private byte[] toByteArray(final String entryName, final InputStream inputStream) throws IOException {
+    private byte[] toByteArray(final String entryName, final InputStream inputStream)
+            throws IOException, ZipOverflowException {
         int offset = 0;
         int length = 1024;
         byte[] bytes = new byte[length];

@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,19 +11,19 @@ import org.junit.Test;
 public class ZipperTest {
 
     @Test
-    public void testZipUnzip() throws IOException {
+    public void testZipUnzip() throws Exception {
         Zipper zipper = new Zipper(10, 20);
         zipUnzip(zipper, 20);
     }
 
     @Test(expected=ZipOverflowException.class)
-    public void testTooManyZipEntries() throws IOException {
+    public void testTooManyZipEntries() throws Exception {
         Zipper zipper = new Zipper(10, 20);
         zipUnzip(zipper, 21);
     }
 
     @Test(expected=ZipOverflowException.class)
-    public void testZipEntryTooBig() throws IOException {
+    public void testZipEntryTooBig() throws Exception {
         Zipper zipper = new Zipper(2, 20);
         Map<String, byte[]> dataMap = new HashMap<>();
         dataMap.put("testZipEntryTooBig", "aaa".getBytes());
@@ -32,7 +31,7 @@ public class ZipperTest {
         zipper.unzip(zipped);
     }
 
-    private void zipUnzip(final Zipper zipper, final int numEntries) throws IOException {
+    private void zipUnzip(final Zipper zipper, final int numEntries) throws Exception {
         Map<String, byte[]> dataMap = new HashMap<>();
         for (int i = 0; i < numEntries; i++) {
             dataMap.put(Integer.toString(i), Integer.toString(i).getBytes());
