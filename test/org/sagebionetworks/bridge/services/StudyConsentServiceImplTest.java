@@ -11,6 +11,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,7 +64,7 @@ public class StudyConsentServiceImplTest {
     }
 
     @Test
-    public void test() {
+    public void crudStudyConsent() {
         StudyIdentifier studyId = new StudyIdentifierImpl("study-key");
         String documentContent = "<document/>";
         StudyConsentForm form = new StudyConsentForm(documentContent);
@@ -103,5 +104,26 @@ public class StudyConsentServiceImplTest {
         StudyConsentView consent = studyConsentService.getActiveConsent(new StudyIdentifierImpl("api"));
         assertNotNull(consent.getPath());
         assertNotNull(consent.getDocumentContent());
+    }
+    
+    @Test
+    public void studyConsentWithFileAndS3ContentTakesS3Content() throws Exception {
+        StudyIdentifier studyId = new StudyIdentifierImpl("api");
+        DateTime createdOn = DateTime.now();
+        String key = "api." + createdOn.getMillis();
+        try {
+            s3Helper.writeBytesToS3(BUCKET, key, "<document/>".getBytes());
+            
+            StudyConsent consent = studyConsentDao.addConsent(studyId, "/junk/path", key, createdOn);
+            studyConsentDao.setActive(consent, true);
+            
+            // The junk path should not prevent the service from getting the S3 content.
+            // We actually wouldn't get here if it tried to load from disk with the path we've provided.
+            StudyConsentView view = studyConsentService.getConsent(studyId, createdOn.getMillis());
+            assertEquals("<document/>", view.getDocumentContent());
+        } finally {
+            s3Helper.deleteS3File(BUCKET, key);
+            studyConsentService.deleteConsent(studyId, createdOn.getMillis());
+        }
     }
 }
