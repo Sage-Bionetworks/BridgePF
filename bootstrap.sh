@@ -34,5 +34,5 @@ apt-get -q -y install redis-server
 # .bash_profile
 su - vagrant -c "echo 'source ~/.profile' > .bash_profile"
 su - vagrant -c "echo 'export PATH=$PATH:~/activator-1.3.2' >> ~/.bash_profile"
-su - vagrant -c "echo 'export SBT_OPTS=\"-Xmx2000M -Xss2M -XX:PermSize=128M -XX:MaxPermSize=256M -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled\"' >> ~/.bash_profile"
+su - vagrant -c "echo 'export SBT_OPTS=\"-Xmx2000M -Xss2M -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled\"' >> ~/.bash_profile"
 su - vagrant -c "source ~/.bash_profile"
