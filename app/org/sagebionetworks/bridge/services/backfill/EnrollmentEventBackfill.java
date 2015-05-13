@@ -1,7 +1,13 @@
 package org.sagebionetworks.bridge.services.backfill;
 
 import java.util.Iterator;
+import java.util.List;
+import java.util.SortedMap;
 
+import javax.annotation.Resource;
+
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -12,8 +18,19 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.TaskEventService;
+import org.sagebionetworks.bridge.stormpath.StormpathAccountIterator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Maps;
+import com.stormpath.sdk.api.ApiKey;
+import com.stormpath.sdk.api.ApiKeys;
+import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.client.ClientBuilder;
+import com.stormpath.sdk.client.Clients;
+import com.stormpath.sdk.directory.Directory;
+import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 
 @Component("enrollmentEventBackfill")
 public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
@@ -24,6 +41,7 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
     private StudyService studyService;
     private UserConsentDao userConsentDao;
     private HealthCodeService healthCodeService;
+    private SortedMap<Integer,Encryptor> encryptors = Maps.newTreeMap();
     
     @Autowired
     public void setBackfillFactory(BackfillRecordFactory backfillFactory) {
@@ -49,7 +67,13 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
     public void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
-    
+    @Resource(name="encryptorList")
+    public void setEncryptors(List<Encryptor> list) {
+        for (Encryptor encryptor : list) {
+            encryptors.put(encryptor.getVersion(), encryptor);
+        }
+    }
+
     @Override
     int getLockExpireInSeconds() {
         return 30 * 60;
@@ -58,8 +82,35 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
     @Override
     void doBackfill(BackfillTask task, BackfillCallback callback) {
         callback.newRecords(backfillFactory.createOnly(task, "Starting to examine accounts"));
-        for (Iterator<Account> i = accountDao.getAllAccounts(); i.hasNext();) {
-            Account account = i.next();
+        
+        ApiKey apiKey = ApiKeys.builder()
+            .setId(BridgeConfigFactory.getConfig().getStormpathId())
+            .setSecret(BridgeConfigFactory.getConfig().getStormpathSecret()).build();
+        
+        ClientBuilder clientBuilder = Clients.builder().setApiKey(apiKey);
+        ((DefaultClientBuilder)clientBuilder).setBaseUrl("https://enterprise.stormpath.io/v1");
+        
+        Client client = clientBuilder.build();
+        
+        callback.newRecords(backfillFactory.createOnly(task, "Created client"));
+        
+        Iterator<Account> combinedIterator = null;
+        for (Study study : studyService.getStudies()) {
+            callback.newRecords(backfillFactory.createOnly(task, "Getting accounts for study " + study.getName()));
+            
+            Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
+            
+            Iterator<Account> studyIterator = new StormpathAccountIterator(study, encryptors, directory.getAccounts().iterator());
+            if (combinedIterator ==  null) {
+                combinedIterator = studyIterator;
+            } else {
+                combinedIterator = Iterators.concat(combinedIterator, studyIterator);    
+            }
+            callback.newRecords(backfillFactory.createOnly(task, "Finished getting accounts for study " + study.getName()));
+        }
+
+        while(combinedIterator.hasNext()) {
+            Account account = combinedIterator.next();
             callback.newRecords(backfillFactory.createOnly(task, "Examining account: " + account.getEmail()));
             Study study = studyService.getStudy(account.getStudyIdentifier());
             HealthId mapping = healthCodeService.getMapping(account.getHealthId());
