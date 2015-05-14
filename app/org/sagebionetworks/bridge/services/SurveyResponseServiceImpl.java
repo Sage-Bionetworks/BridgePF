@@ -33,6 +33,7 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
 
     private SurveyResponseDao surveyResponseDao;
     private DynamoSurveyDao surveyDao;
+    private TaskEventService taskEventService;
 
     @Autowired
     public void setSurveyResponseDao(SurveyResponseDao surveyResponseDao) {
@@ -44,9 +45,13 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
         this.surveyDao = surveyDao;
     }
 
+    @Autowired
+    public void setTaskEventService(TaskEventService taskEventService) {
+        this.taskEventService = taskEventService;
+    }
+    
     @Override
-    public SurveyResponseView createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
-            List<SurveyAnswer> answers) {
+    public SurveyResponseView createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode, List<SurveyAnswer> answers) {
         return createSurveyResponse(keys, healthCode, answers, BridgeUtils.generateGuid());
     }
 
@@ -63,6 +68,7 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
         Survey survey = surveyDao.getSurvey(keys);
         validate(answers, survey);
         SurveyResponse response = surveyResponseDao.createSurveyResponse(survey, healthCode, answers, identifier);
+        fireEvents(survey, response, answers);
         return new SurveyResponseView(response, survey);
     }
     
@@ -84,6 +90,7 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
         Survey survey = getSurveyForResponse(response);
         validate(answers, survey);
         SurveyResponse savedResponse = surveyResponseDao.appendSurveyAnswers(response, answers);
+        fireEvents(survey, savedResponse, answers);
         return new SurveyResponseView(savedResponse, survey);
     }
     
@@ -110,6 +117,21 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
             Validate.entity(validator, errors, answer);
         }
         Validate.throwException(errors, survey);
+    }
+    
+    private void fireEvents(Survey survey, SurveyResponse response, List<SurveyAnswer> answers) {
+        Map<String, SurveyQuestion> questions = getQuestionsMap(survey.getUnmodifiableQuestionList());
+        // It's safe to fire an event with the same timestamp more than once. The taskEventDao already 
+        // prevents "backtracking" if the timestamp is earlier than the timestamp that's stored.
+        for (SurveyAnswer answer : answers) {
+            SurveyQuestion question = questions.get(answer.getQuestionGuid());
+            if (question != null && question.getFireEvent()) {
+                taskEventService.publishEvent(response.getHealthCode(), answer);
+            }
+        }
+        if (response.getStatus() == SurveyResponse.Status.FINISHED) {
+            taskEventService.publishEvent(response);
+        }
     }
 
     private Map<String, SurveyQuestion> getQuestionsMap(List<SurveyQuestion> questions) {

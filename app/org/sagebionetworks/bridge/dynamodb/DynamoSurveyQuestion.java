@@ -23,6 +23,7 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
     private static final String UI_HINTS_PROPERTY = "uiHint";
     private static final String PROMPT_PROPERTY = "prompt";
     private static final String PROMPT_DETAIL_PROPERTY = "promptDetail";
+    private static final String FIRE_EVENT_PROPERTY = "fireEvent";
     private static final String IDENTIFIER_PROPERTY = "identifier";
     private static final String GUID_PROPERTY = "guid";
     private static final String TYPE_PROPERTY = "type";
@@ -34,6 +35,7 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
         question.setGuid( JsonUtils.asText(node, GUID_PROPERTY) );
         question.setPrompt(JsonUtils.asText(node, PROMPT_PROPERTY));
         question.setPromptDetail(JsonUtils.asText(node, PROMPT_DETAIL_PROPERTY));
+        question.setFireEvent(JsonUtils.asBoolean(node, FIRE_EVENT_PROPERTY));
         question.setUiHint(JsonUtils.asEntity(node, UI_HINTS_PROPERTY, UIHint.class));
         question.setConstraints(JsonUtils.asConstraints(node, CONSTRAINTS_PROPERTY));
         return question;
@@ -41,6 +43,7 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
 
     private String prompt;
     private String promptDetail;
+    private boolean fireEvent;
     private UIHint hint;
     private Constraints constraints;
 
@@ -79,6 +82,17 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
 
     @Override
     @DynamoDBIgnore
+    public boolean getFireEvent() {
+        return fireEvent;
+    }
+    
+    @Override
+    public void setFireEvent(boolean fireEvent) {
+        this.fireEvent = fireEvent;
+    }
+    
+    @Override
+    @DynamoDBIgnore
     public UIHint getUiHint() {
         return hint;
     }
@@ -107,6 +121,7 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
         ObjectNode data = JsonNodeFactory.instance.objectNode();
         data.put(PROMPT_PROPERTY, prompt);
         data.put(PROMPT_DETAIL_PROPERTY, promptDetail);
+        data.put(FIRE_EVENT_PROPERTY, Boolean.toString(fireEvent));
         data.put(UI_HINTS_PROPERTY, hint.name().toLowerCase());    
         data.set(CONSTRAINTS_PROPERTY, BridgeObjectMapper.get().valueToTree(constraints));
         return data;
@@ -116,6 +131,7 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
     public void setData(JsonNode data) {
         this.prompt = JsonUtils.asText(data, PROMPT_PROPERTY);
         this.promptDetail = JsonUtils.asText(data, PROMPT_DETAIL_PROPERTY);
+        this.fireEvent = JsonUtils.asBoolean(data, FIRE_EVENT_PROPERTY);
         this.hint = JsonUtils.asEntity(data, UI_HINTS_PROPERTY, UIHint.class);
         this.constraints = JsonUtils.asConstraints(data, CONSTRAINTS_PROPERTY);
     }
@@ -128,6 +144,7 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
         result = prime * result + Objects.hashCode(hint);
         result = prime * result + Objects.hashCode(prompt);
         result = prime * result + Objects.hashCode(promptDetail);
+        result = prime * result + Objects.hashCode(fireEvent);
         return result;
     }
     
@@ -140,14 +157,14 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
         }
         final DynamoSurveyQuestion that = (DynamoSurveyQuestion) obj;
         return Objects.equals(constraints, that.constraints) && Objects.equals(hint, that.hint)
-            && Objects.equals(prompt, that.prompt)
+            && Objects.equals(prompt, that.prompt) && Objects.equals(fireEvent, that.fireEvent)
             && Objects.equals(promptDetail, that.promptDetail);
     }
 
     @Override
     public String toString() {
-        return String.format("DynamoSurveyQuestion [hint=%s, prompt=%s, promptDetail=%s, constraints=%s]", 
-            hint, prompt, promptDetail, constraints);
+        return String.format("DynamoSurveyQuestion [hint=%s, prompt=%s, promptDetail=%s, fireEvent=%s, constraints=%s]", 
+            hint, prompt, promptDetail, fireEvent, constraints);
     }
 
 }
