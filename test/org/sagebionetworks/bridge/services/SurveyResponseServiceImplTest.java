@@ -34,12 +34,16 @@ import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import com.google.common.collect.Lists;
 
 public class SurveyResponseServiceImplTest {
+    
+    private static final long timeOfSurveyAnswer = DateTime.now().getMillis();
 
     private SurveyResponseServiceImpl service;
     
     private DynamoSurveyResponseDao surveyResponseDao;
     
     private DynamoSurveyDao surveyDao;
+    
+    private TaskEventService taskEventService;
     
     private Survey survey;
 
@@ -54,6 +58,9 @@ public class SurveyResponseServiceImplTest {
         when(surveyDao.getSurvey(any(GuidCreatedOnVersionHolder.class))).thenReturn(survey);
         service.setSurveyDao(surveyDao);
 
+        taskEventService = mock(TaskEventService.class);
+        service.setTaskEventService(taskEventService);
+        
         DynamoSurveyResponse response = new DynamoSurveyResponse();
         response.setSurveyKey(survey);
         
@@ -73,6 +80,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
+            verifyNoMoreInteractions(taskEventService);
         }
     }
     
@@ -85,6 +93,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
+            verifyNoMoreInteractions(taskEventService);
         }
     }
     
@@ -96,6 +105,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
+            verifyNoMoreInteractions(taskEventService);
         }
     }
     
@@ -107,6 +117,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
+            verifyNoMoreInteractions(taskEventService);
         }
     }
     
@@ -118,6 +129,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
+            verifyNoMoreInteractions(taskEventService);
         }
     }
     
@@ -131,6 +143,7 @@ public class SurveyResponseServiceImplTest {
             fail("Should have thrown exception");
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyResponseDao);
+            verifyNoMoreInteractions(taskEventService);
         }
     }
     
@@ -150,6 +163,8 @@ public class SurveyResponseServiceImplTest {
         assertEquals("healthCode", response.getResponse().getHealthCode());
         assertEquals((Long)2L, (Long)response.getVersion());
         
+        verify(taskEventService).publishEvent(any(String.class), any(SurveyAnswer.class));
+        verifyNoMoreInteractions(taskEventService);
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
         verify(surveyResponseDao).createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), any(String.class), any(List.class), any(String.class));
@@ -172,7 +187,9 @@ public class SurveyResponseServiceImplTest {
         assertEquals("healthCode", response.getResponse().getHealthCode());
         assertEquals("belgium", response.getIdentifier());
         assertEquals((Long)2L, (Long)response.getVersion());
-        
+
+        verify(taskEventService).publishEvent(any(String.class), any(SurveyAnswer.class));
+        verifyNoMoreInteractions(taskEventService);
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
         verify(surveyResponseDao).createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), any(String.class), any(List.class), any(String.class));
@@ -188,6 +205,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
+            verifyNoMoreInteractions(taskEventService);
         }
     }
     
@@ -199,6 +217,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
+            verifyNoMoreInteractions(taskEventService);
         }
     }
     
@@ -210,6 +229,7 @@ public class SurveyResponseServiceImplTest {
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
         verifyNoMoreInteractions(surveyDao);
         verifyNoMoreInteractions(surveyResponseDao);
+        verifyNoMoreInteractions(taskEventService);
     }
     
     @Test
@@ -220,6 +240,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable throwable) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
+            verifyNoMoreInteractions(taskEventService);
         }
     }
     @Test
@@ -230,6 +251,7 @@ public class SurveyResponseServiceImplTest {
         } catch(Throwable throwable) {
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
+            verifyNoMoreInteractions(taskEventService);
         }
     }
     @Test
@@ -245,17 +267,20 @@ public class SurveyResponseServiceImplTest {
             verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
             verifyNoMoreInteractions(surveyDao);
             verifyNoMoreInteractions(surveyResponseDao);
+            verifyNoMoreInteractions(taskEventService);
         }        
     }
     @Test
     public void appendSurveyAnswersWorks() {
-        List<SurveyAnswer> answers = getAnswers();
         SurveyResponse response = getSurveyResponse();
+        List<SurveyAnswer> answers = response.getAnswers();
         
         service.appendSurveyAnswers(response, answers);
         
         verify(surveyResponseDao).appendSurveyAnswers(response, answers);
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
+        verify(taskEventService).publishEvent(any(String.class), any(SurveyAnswer.class));
+        verifyNoMoreInteractions(taskEventService);
         verifyNoMoreInteractions(surveyDao);
         verifyNoMoreInteractions(surveyResponseDao);
     }
@@ -267,6 +292,7 @@ public class SurveyResponseServiceImplTest {
         verify(surveyResponseDao).deleteSurveyResponses("healthCode");
         verifyNoMoreInteractions(surveyDao);
         verifyNoMoreInteractions(surveyResponseDao);
+        verifyNoMoreInteractions(taskEventService);
     }
     
     @Test
@@ -279,6 +305,22 @@ public class SurveyResponseServiceImplTest {
         }
         verifyNoMoreInteractions(surveyDao);
         verifyNoMoreInteractions(surveyResponseDao);
+        verifyNoMoreInteractions(taskEventService);
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Test
+    public void submittingAllAnswersTriggersSurveyCompletedEvent() {
+        DynamoSurveyResponse response = new DynamoSurveyResponse();
+        response.setSurveyKey(survey);
+        response.setCompletedOn(DateTime.now().getMillis());
+        when(surveyResponseDao.appendSurveyAnswers(any(SurveyResponse.class), any(List.class))).thenReturn(response);
+        
+        List<SurveyAnswer> answers = response.getAnswers();
+        
+        service.appendSurveyAnswers(response, answers);
+        verify(taskEventService).publishEvent(any(SurveyResponse.class));
+        verifyNoMoreInteractions(taskEventService);
     }
     
     private DynamoSurveyResponse getSurveyResponse() {
@@ -310,6 +352,7 @@ public class SurveyResponseServiceImplTest {
         element.setPrompt("What's your age?");
         element.setSurveyKeyComponents(survey.getGuid(), survey.getCreatedOn());
         element.setType("SurveyQuestion");
+        element.setFireEvent(true);
         elements.add(element);
         survey.setElements(elements);
         return survey;
@@ -320,7 +363,7 @@ public class SurveyResponseServiceImplTest {
         
         SurveyAnswer answer = new SurveyAnswer();
         answer.setQuestionGuid(survey.getElements().get(0).getGuid());
-        answer.setAnsweredOn(DateTime.now().getMillis());
+        answer.setAnsweredOn(timeOfSurveyAnswer);
         answer.setAnswers(Lists.newArrayList("24"));
         answer.setClient("mobile");
         answer.setDeclined(false);
