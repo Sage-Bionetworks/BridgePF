@@ -1,7 +1,11 @@
 package controllers;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -15,10 +19,14 @@ import org.springframework.stereotype.Controller;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
+import play.libs.Json;
 import play.mvc.Result;
 
 @Controller("studyController")
 public class StudyController extends BaseController {
+
+    private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
+            BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
     private UserProfileService userProfileService;
 
@@ -89,9 +97,10 @@ public class StudyController extends BaseController {
 
     public Result deleteStudy(String identifier) throws Exception {
         getAuthenticatedAdminSession();
-
+        if (studyWhitelist.contains(identifier)) {
+            return forbidden(Json.toJson(identifier + " is protected by whitelist."));
+        }
         studyService.deleteStudy(identifier);
         return okResult("Study deleted.");
     }
-
 }

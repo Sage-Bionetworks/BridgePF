@@ -7,11 +7,14 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
 
 public class BridgeConfig {
 
@@ -157,6 +160,11 @@ public class BridgeConfig {
 
     public int getPropertyAsInt(String name) {
         return Integer.parseInt(properties.getProperty(name));
+    }
+
+    public List<String> getPropertyAsList(String name) {
+        final String prop = properties.getProperty(name);
+        return Lists.newArrayList(prop.split(";"));
     }
 
     public String getStormpathId() {

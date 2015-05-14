@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import java.io.File;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
@@ -50,5 +52,20 @@ public class BridgeConfigTest {
     public void testNumber() {
         BridgeConfig config = new BridgeConfig(CONF_FILE);
         assertEquals(2000, config.getPropertyAsInt("example.timeout"));
+    }
+
+    @Test
+    public void testList() {
+        BridgeConfig config = new BridgeConfig(CONF_FILE);
+        List<String> list = config.getPropertyAsList("example.property");
+        assertNotNull(list);
+        assertEquals(1, list.size());
+        assertEquals("example.value", list.get(0));
+        list = config.getPropertyAsList("example.list");
+        assertNotNull(list);
+        assertEquals(3, list.size());
+        assertEquals("a", list.get(0));
+        assertEquals("bc", list.get(1));
+        assertEquals("d", list.get(2));
     }
 }
