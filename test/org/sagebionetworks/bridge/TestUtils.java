@@ -36,9 +36,11 @@ public class TestUtils {
     
     public static final String ACTIVITY_3 = "http://webservices.sagebridge.org/api/v1/surveys/AAA/revisions/published";
     
-    private static final DateTime ENROLLMENT = DateTime.parse("2015-04-10T10:40:34.000-07:00");
+    public static final DateTime ENROLLMENT = DateTime.parse("2015-04-10T10:40:34.000-07:00");
     
-    private static final String STUDY_IDENTIFIER = "api";
+    public static final String STUDY_IDENTIFIER = "api";
+    
+    public static final String STUDY_CONSENT_PATH = "conf/email-templates/api-consent.html";
     
     public abstract static class FailableRunnable implements Runnable {
         public abstract void testCode() throws Exception;

@@ -24,6 +24,8 @@ public class BridgeConfig {
     private static final String ENTERPRISE_STORMPATH_SECRET =  "enterprise.stormpath.secret";
     private static final String ENTERPRISE_STORMPATH_APPLICATION_HREF =  "enterprise.stormpath.application.href";
     
+    private static final String CONSENTS_BUCKET =  "consents.bucket";
+    
     private static final String CONFIG_FILE = "bridge.conf";
     private static final String DEFAULT_CONFIG_FILE = "conf/" + CONFIG_FILE;
     private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
@@ -181,6 +183,10 @@ public class BridgeConfig {
         return getProperty(HEALTHCODE_KEY);
     }
 
+    public String getConsentsBucket() {
+        return getProperty(CONSENTS_BUCKET);
+    }
+    
     public String getStudyHostnamePostfix() {
         return getProperty(STUDY_HOSTNAME);
     }

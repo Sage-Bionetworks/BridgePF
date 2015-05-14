@@ -6,6 +6,7 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
+import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,7 @@ public class StudyConsentController extends BaseController {
     public Result getActiveConsent() throws Exception {
         UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
-        StudyConsent consent = studyConsentService.getActiveConsent(studyId);
+        StudyConsentView consent = studyConsentService.getActiveConsent(studyId);
         return okResult(consent);
     }
 
@@ -41,7 +42,7 @@ public class StudyConsentController extends BaseController {
         UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
-        StudyConsent consent = studyConsentService.getConsent(studyId, timestamp);
+        StudyConsentView consent = studyConsentService.getConsent(studyId, timestamp);
         return okResult(consent);
     }
 
@@ -49,7 +50,7 @@ public class StudyConsentController extends BaseController {
         UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         StudyConsentForm form = parseJson(request(), StudyConsentForm.class);
-        StudyConsent studyConsent = studyConsentService.addConsent(studyId, form);
+        StudyConsentView studyConsent = studyConsentService.addConsent(studyId, form);
         return createdResult(studyConsent);
     }
 

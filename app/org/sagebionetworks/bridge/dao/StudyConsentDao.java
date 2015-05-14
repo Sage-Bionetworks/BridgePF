@@ -2,16 +2,18 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface StudyConsentDao {
 
     /**
-     * Adds a consent to the study. Note the consent is added as
+     * Adds a consent to the study. Must provide either a path to a filesystem resource (deprecated), or the 
+     * name of an S3 bucket as the storagePath for the document content. Note the consent is added as
      * inactive. Must explicitly set it active.
      */
-    StudyConsent addConsent(StudyIdentifier studyIdentifier, String path, int minAge);
+    StudyConsent addConsent(StudyIdentifier studyIdentifier, String path, String storagePath, DateTime createdOn);
 
     /**
      * Sets the consent active or inactive, depending on the boolean flag.

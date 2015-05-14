@@ -2,12 +2,13 @@ package org.sagebionetworks.bridge;
 
 import java.util.Set;
 
-import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
+import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,7 @@ public class StudyConsentBootstrapper {
     private static Logger logger = LoggerFactory.getLogger(StudyConsentBootstrapper.class);
     
     @Autowired
-    public StudyConsentBootstrapper(StudyService studyService, StudyConsentDao studyConsentDao) {
+    public StudyConsentBootstrapper(StudyService studyService, StudyConsentService studyConsentService) {
         try {
             Study study = studyService.getStudy("api");
             try {
@@ -49,13 +50,12 @@ public class StudyConsentBootstrapper {
         }
         for (Study study : studyService.getStudies()) {
             StudyIdentifier studyIdentifier = study.getStudyIdentifier();
-            String path = String.format("conf/email-templates/%s-consent.html", study.getIdentifier());
-            int minAge = 18;
-            StudyConsent consent = studyConsentDao.getConsent(studyIdentifier);
+            StudyConsentView consent = studyConsentService.getActiveConsent(studyIdentifier);
             if (consent == null) {
-                consent = studyConsentDao.addConsent(studyIdentifier, path, minAge);
-                studyConsentDao.setActive(consent, true);
-            }
+                StudyConsentForm form = new StudyConsentForm("<!DOCTYPE html><html><head><title></title></head><body><h1>Test Study Consent</h1></body></html>");
+                consent = studyConsentService.addConsent(studyIdentifier, form);
+                studyConsentService.activateConsent(studyIdentifier, consent.getCreatedOn());
+              }
         }
     }
 
