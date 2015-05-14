@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
 
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.client.Client;
@@ -42,6 +43,24 @@ public class StormpathAccountIteratorTest {
         assertEquals(10, count(accounts));
     }
 
+    @Test
+    public void getAllAccountsIteratorConcatenation() {
+        Iterator<String> combined = null;
+        for (int i=0; i < 3; i++) {
+            List<String> list = Lists.newArrayList("a","b");
+            if (combined == null) {
+                combined = list.iterator();
+            } else {
+                combined = Iterators.concat(combined, list.iterator());
+            }
+        }
+        List<String> allLetters = Lists.newArrayList();
+        while(combined.hasNext()) {
+            allLetters.add(combined.next());
+        }
+        assertEquals(Lists.newArrayList("a","b","a","b","a","b"), allLetters);
+    }
+    
     @SuppressWarnings("unchecked")
     private StormpathAccountDao getMockAccountDao() {
         StormpathAccountDao accountDao = new StormpathAccountDao();

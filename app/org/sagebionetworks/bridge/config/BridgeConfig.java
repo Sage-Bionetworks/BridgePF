@@ -7,11 +7,14 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
+import java.util.List;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
 
 public class BridgeConfig {
 
@@ -43,6 +46,10 @@ public class BridgeConfig {
 
     private static final String STUDY_HOSTNAME = "study.hostname";
 
+    // Comma surrounded by optional whitespace
+    private static final String DEFAULT_DELIMITER = "\\s*,\\s*";
+
+    private final Pattern delimiter;
     private final String user;
     private final Environment environment;
     private final Properties properties;
@@ -76,12 +83,16 @@ public class BridgeConfig {
             }
         }
     };
-    
+
     BridgeConfig() {
-        this(new File(DEFAULT_CONFIG_FILE));
+        this(new File(DEFAULT_CONFIG_FILE), DEFAULT_DELIMITER);
     }
 
     BridgeConfig(File defaultConfig) {
+        this(defaultConfig, DEFAULT_DELIMITER);
+    }
+
+    BridgeConfig(File defaultConfig, String delimiterRegex) {
 
         // Load default config
         final Properties properties = new Properties();
@@ -111,18 +122,8 @@ public class BridgeConfig {
         // Collapse the properties for the current environment
         Properties collapsed = collapse(properties, environment.name().toLowerCase());
         this.properties = new Properties(collapsed);
-    }
-    
-    // Creating configuration for tests
-    public BridgeConfig(Environment environment, String user, Map<String,String> map) {
-        this.environment = environment;
-        this.user = user;
-        this.properties = new Properties();
-        if (map != null) {
-            for (Map.Entry<String,String> entry : map.entrySet()) {
-                properties.put(entry.getKey(), entry.getValue());
-            }
-        }
+
+        this.delimiter = Pattern.compile(delimiterRegex);
     }
 
     public String getUser() {
@@ -159,6 +160,11 @@ public class BridgeConfig {
 
     public int getPropertyAsInt(String name) {
         return Integer.parseInt(properties.getProperty(name));
+    }
+
+    public List<String> getPropertyAsList(String name) {
+        final String prop = properties.getProperty(name);
+        return Lists.newArrayList(delimiter.split(prop));
     }
 
     public String getStormpathId() {
