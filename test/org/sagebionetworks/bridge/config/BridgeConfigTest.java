@@ -63,9 +63,10 @@ public class BridgeConfigTest {
         assertEquals("example.value", list.get(0));
         list = config.getPropertyAsList("example.list");
         assertNotNull(list);
-        assertEquals(3, list.size());
+        assertEquals(4, list.size());
         assertEquals("a", list.get(0));
         assertEquals("bc", list.get(1));
         assertEquals("d", list.get(2));
+        assertEquals("e", list.get(3));
     }
 }
