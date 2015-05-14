@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.models.studies;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
@@ -9,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * stored on S3. As long as you retrieve a study consent through the StudyConsentService, 
  * it should function as if the document content was persisted with the consent record.
  */
+@BridgeTypeName("StudyConsent")
 public class StudyConsentView {
 
     private final StudyConsent consent;
