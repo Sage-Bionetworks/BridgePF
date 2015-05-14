@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 
 public class UploadSchemaServiceTest {
     @Test(expected = InvalidEntityException.class)
@@ -43,6 +44,7 @@ public class UploadSchemaServiceTest {
         DynamoUploadSchema schema = new DynamoUploadSchema();
         schema.setName("happy schema");
         schema.setSchemaId("happy-schema");
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
 
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();

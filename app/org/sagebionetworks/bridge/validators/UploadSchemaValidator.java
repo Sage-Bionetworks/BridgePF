@@ -31,6 +31,7 @@ public class UploadSchemaValidator implements Validator {
      *     <li>name is null or empty</li>
      *     <li>revision is negative</li>
      *     <li>schemaId is null or empty</li>
+     *     <li>schemaType is null</li>
      *   </ul>
      * </p>
      *
@@ -70,8 +71,10 @@ public class UploadSchemaValidator implements Validator {
                 errors.rejectValue("schemaId", Validate.CANNOT_BE_BLANK);
             }
 
-            // TODO: add validation for schemaType once all the schemas have been updated and the integration tests
-            // start using it
+            // schema type
+            if (uploadSchema.getSchemaType() == null) {
+                errors.rejectValue("schemaType", Validate.CANNOT_BE_NULL);
+            }
         }
     }
 }

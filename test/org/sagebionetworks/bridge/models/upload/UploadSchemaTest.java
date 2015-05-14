@@ -157,6 +157,7 @@ public class UploadSchemaTest {
         schema.setName("happy schema");
         schema.setSchemaId("happy-schema");
         schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
 
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -176,6 +177,7 @@ public class UploadSchemaTest {
         schema.setRevision(1);
         schema.setSchemaId("happy-schema-2");
         schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
 
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -196,6 +198,7 @@ public class UploadSchemaTest {
         schema.setName("test schema");
         schema.setSchemaId("test-schema");
         schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
 
         // validate
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
@@ -209,6 +212,7 @@ public class UploadSchemaTest {
         schema.setSchemaId("test-schema");
         schema.setStudyId("test-study");
         schema.setFieldDefinitions(Collections.<UploadFieldDefinition>emptyList());
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
 
         // validate
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
@@ -220,6 +224,7 @@ public class UploadSchemaTest {
         DynamoUploadSchema schema = new DynamoUploadSchema();
         schema.setSchemaId("test-schema");
         schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
 
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -238,6 +243,7 @@ public class UploadSchemaTest {
         schema.setName("");
         schema.setSchemaId("test-schema");
         schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
 
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -257,6 +263,7 @@ public class UploadSchemaTest {
         schema.setRevision(-1);
         schema.setSchemaId("test-schema");
         schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
 
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -274,6 +281,7 @@ public class UploadSchemaTest {
         DynamoUploadSchema schema = new DynamoUploadSchema();
         schema.setName("test schema");
         schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
 
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -292,10 +300,29 @@ public class UploadSchemaTest {
         schema.setName("test schema");
         schema.setSchemaId("");
         schema.setStudyId("test-study");
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
 
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
         fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("good-field")
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
+        schema.setFieldDefinitions(fieldDefList);
+
+        // validate
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void validateNullSchemaType() {
+        // set up schema to validate
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        schema.setName("test schema");
+        schema.setSchemaId("test-schema");
+        schema.setStudyId("test-study");
+
+        // test field def list
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new DynamoUploadFieldDefinition.Builder().withName("test-field")
                 .withType(UploadFieldType.ATTACHMENT_BLOB).build());
         schema.setFieldDefinitions(fieldDefList);
 
