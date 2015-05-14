@@ -57,6 +57,7 @@ public final class DynamoStudyConsent1 implements StudyConsent {
 
     @Override
     @DynamoDBAttribute
+    @JsonIgnore
     public String getPath() {
         return path;
     }
@@ -66,6 +67,7 @@ public final class DynamoStudyConsent1 implements StudyConsent {
 
     @Override
     @DynamoDBAttribute
+    @JsonIgnore
     public String getStoragePath() {
         return storagePath;
     }
@@ -74,6 +76,7 @@ public final class DynamoStudyConsent1 implements StudyConsent {
     }
 
     @DynamoDBVersionAttribute
+    @JsonIgnore
     public Long getVersion() {
         return version;
     }
