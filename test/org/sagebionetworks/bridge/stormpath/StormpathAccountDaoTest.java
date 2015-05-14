@@ -79,14 +79,15 @@ public class StormpathAccountDaoTest {
     
     @Test
     public void canAuthenticate() {
-        String email = "bridge-testing+"+RandomStringUtils.randomAlphabetic(5)+"@sagebridge.org";
+        String random = RandomStringUtils.randomAlphabetic(5);
+        String email = "bridge-testing+"+random+"@sagebridge.org";
         Account account = null;
         try {
-            SignUp signUp = new SignUp("tester", email, "P4ssword", Sets.newHashSet("test_users"));
+            SignUp signUp = new SignUp(random, email, "P4ssword", Sets.newHashSet("test_users"));
             accountDao.signUp(study, signUp, false);
             
             account = accountDao.authenticate(study, new SignIn(email, "P4ssword"));
-            assertEquals("tester", account.getUsername());
+            assertEquals(random, account.getUsername());
             assertEquals(1, account.getRoles().size());
         } finally {
             accountDao.deleteAccount(study, email);
@@ -95,9 +96,10 @@ public class StormpathAccountDaoTest {
     
     @Test
     public void badPasswordReportedAs404() {
-        String email = "bridge-testing+"+RandomStringUtils.randomAlphabetic(5)+"@sagebridge.org";
+        String random = RandomStringUtils.randomAlphabetic(5);
+        String email = "bridge-testing+"+random+"@sagebridge.org";
         try {
-            SignUp signUp = new SignUp("tester", email, "P4ssword", Sets.newHashSet("test_users"));
+            SignUp signUp = new SignUp(random, email, "P4ssword", Sets.newHashSet("test_users"));
             accountDao.signUp(study, signUp, false);
             
             try {
@@ -118,12 +120,13 @@ public class StormpathAccountDaoTest {
     
     @Test
     public void crudAccount() {
-        String email = "bridge-testing+tester@sagebridge.org";
+        String random = RandomStringUtils.randomAlphabetic(5);
+        String email = "bridge-testing+"+random+"@sagebridge.org";
         Account account = null;
         try {
             ConsentSignature sig = ConsentSignature.create("Test Test", "1970-01-01", null, null);
             
-            SignUp signUp = new SignUp("tester", email, "P4ssword", Sets.newHashSet("test_users"));
+            SignUp signUp = new SignUp(random, email, "P4ssword", Sets.newHashSet("test_users"));
             
             accountDao.signUp(study, signUp, false);
             account = accountDao.getAccount(study, signUp.getEmail());
@@ -132,7 +135,7 @@ public class StormpathAccountDaoTest {
             account.setEmail(email);
             account.setPhone("123-456-7890");
             account.setHealthId("abc");
-            account.setUsername("tester");
+            account.setUsername(random);
             account.setConsentSignature(sig);
             account.setAttribute("attribute_one", "value of attribute one");
             
@@ -270,7 +273,9 @@ public class StormpathAccountDaoTest {
         when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
         dao.setStormpathClient(client);
         
-        SignUp signUp = new SignUp("tester", "bridge-testing+tester@sagebridge.org", "P4ssword", null);
+        String random = RandomStringUtils.randomAlphabetic(5);
+        String email = "bridge-testing+"+random+"@sagebridge.org";
+        SignUp signUp = new SignUp(random, email, "P4ssword", null);
         dao.signUp(study, signUp, false);
 
         ArgumentCaptor<com.stormpath.sdk.account.Account> argument = ArgumentCaptor.forClass(com.stormpath.sdk.account.Account.class);
@@ -279,8 +284,8 @@ public class StormpathAccountDaoTest {
         com.stormpath.sdk.account.Account acct = argument.getValue();
         verify(acct).setSurname("<EMPTY>");
         verify(acct).setGivenName("<EMPTY>");
-        verify(acct).setEmail("bridge-testing+tester@sagebridge.org");
-        verify(acct).setUsername("tester");
+        verify(acct).setUsername(random);
+        verify(acct).setEmail(email);
         verify(acct).setPassword("P4ssword");
     }
 
