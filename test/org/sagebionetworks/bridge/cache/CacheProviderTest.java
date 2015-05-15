@@ -15,8 +15,10 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.redis.JedisStringOps;
+import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
+
+import redis.clients.jedis.JedisPool;
 
 import com.google.common.collect.Maps;
 
@@ -74,10 +76,9 @@ public class CacheProviderTest {
         cachedString = cacheProvider.getString(cacheKey);
         assertNull(cachedString);
     }
-    
-    
-    private JedisStringOps getSimpleStringOps() {
-        return new JedisStringOps() {
+
+    private JedisOps getSimpleStringOps() {
+        return new JedisOps(new JedisPool()) {
             private Map<String,String> map = Maps.newHashMap();
             public Long expire(final String key, final int seconds) {
                 return 1L;
@@ -93,7 +94,7 @@ public class CacheProviderTest {
             public String get(final String key) {
                 return map.get(key);
             }
-            public Long delete(final String key) {
+            public Long del(final String key) {
                 map.remove(key);
                 return 1L;
             }

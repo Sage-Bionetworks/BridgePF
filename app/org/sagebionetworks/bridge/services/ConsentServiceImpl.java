@@ -18,7 +18,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.redis.JedisStringOps;
+import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
@@ -33,7 +33,7 @@ public class ConsentServiceImpl implements ConsentService {
     private static final int TWENTY_FOUR_HOURS = (24 * 60 * 60);
 
     private AccountDao accountDao;
-    private JedisStringOps stringOps;
+    private JedisOps jedisOps;
     private ParticipantOptionsService optionsService;
     private SendMailService sendMailService;
     private StudyConsentService studyConsentService;
@@ -41,8 +41,8 @@ public class ConsentServiceImpl implements ConsentService {
     private TaskEventService taskEventService;
 
     @Autowired
-    public void setStringOps(JedisStringOps stringOps) {
-        this.stringOps = stringOps;
+    public void setStringOps(JedisOps jedisOps) {
+        this.jedisOps = jedisOps;
     }
     @Resource(name="stormpathAccountDao")
     public void setAccountDao(AccountDao accountDao) {
@@ -195,11 +195,11 @@ public class ConsentServiceImpl implements ConsentService {
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
 
         long count = Long.MAX_VALUE;
-        String countString = stringOps.get(key);
+        String countString = jedisOps.get(key);
         if (countString == null) {
             // This is expensive but don't lock, it's better to do it twice slowly, than to throw an exception here.
             count = userConsentDao.getNumberOfParticipants(study.getStudyIdentifier());
-            stringOps.setex(key, TWENTY_FOUR_HOURS, Long.toString(count));
+            jedisOps.setex(key, TWENTY_FOUR_HOURS, Long.toString(count));
         } else {
             count = Long.parseLong(countString);
         }
@@ -215,7 +215,7 @@ public class ConsentServiceImpl implements ConsentService {
             throw new StudyLimitExceededException(study);
         }
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        stringOps.increment(key);
+        jedisOps.incr(key);
     }
 
     @Override
@@ -224,9 +224,9 @@ public class ConsentServiceImpl implements ConsentService {
             return;
         }
         String key = RedisKey.NUM_OF_PARTICIPANTS.getRedisKey(study.getIdentifier());
-        String count = stringOps.get(key);
+        String count = jedisOps.get(key);
         if (count != null && Long.parseLong(count) > 0) {
-            stringOps.decrement(key);
+            jedisOps.decr(key);
         }
     }
 }

@@ -35,7 +35,7 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.redis.JedisStringOps;
+import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.services.SchedulePlanServiceImpl;
 import org.sagebionetworks.bridge.services.StudyServiceImpl;
 import org.springframework.test.context.ContextConfiguration;
@@ -54,7 +54,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class AuthenticationControllerTest {
 
     @Resource
-    private JedisStringOps stringOps;
+    private JedisOps jedisOps;
     
     @Resource
     private TestUserAdminHelper helper;
@@ -107,7 +107,7 @@ public class AuthenticationControllerTest {
                 cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
                 assertEquals("Cookie has been set to empty string", "", cookie.getValue());
 
-                String output = stringOps.get(sessionToken);
+                String output = jedisOps.get(sessionToken);
                 assertNull("Should no longer be session data", output);
             }
         });

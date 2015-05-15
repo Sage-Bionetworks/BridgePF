@@ -21,11 +21,11 @@ public class RedisCache implements Cache {
     private static final String KEY_PATTERN = "%s:%s";
     private static final String LIST_KEY_PATTERN = "List:%s:%s";
 
-    private JedisStringOps stringOps;
+    private JedisOps jedisOps;
 
     @Autowired
-    public void setStringOps(JedisStringOps stringOps) {
-        this.stringOps = stringOps;
+    public void setStringOps(JedisOps jedisOps) {
+        this.jedisOps = jedisOps;
     }
 
     @Override
@@ -33,7 +33,7 @@ public class RedisCache implements Cache {
         String redisKey = String.format(KEY_PATTERN, clazz.getName(), key);
 
         try {
-            String json = stringOps.get(redisKey);
+            String json = jedisOps.get(redisKey);
             if (json != null) {
                 return BridgeObjectMapper.get().readValue(json, clazz);
             } else {
@@ -50,7 +50,7 @@ public class RedisCache implements Cache {
         String redisKey = String.format(LIST_KEY_PATTERN, clazz.getName(), key);
 
         try {
-            String json = stringOps.get(redisKey);
+            String json = jedisOps.get(redisKey);
             if (json == null) {
                 return null;
             }
@@ -89,7 +89,7 @@ public class RedisCache implements Cache {
     private <T> void putInternal(String internalKey, T value, int ttlSeconds) {
         try {
             String json = BridgeObjectMapper.get().writeValueAsString(value);
-            String result = stringOps.setex(internalKey, ttlSeconds, json);
+            String result = jedisOps.setex(internalKey, ttlSeconds, json);
             if (!"OK".equals(result)) {
                 logger.error(String.format("Error putting redis object for key %s, result code %s", internalKey, result));
             }
@@ -112,7 +112,7 @@ public class RedisCache implements Cache {
 
     private void removeInternal(String internalKey) {
         try {
-            stringOps.delete(internalKey);
+            jedisOps.del(internalKey);
         } catch(RuntimeException ex) {
             logger.error(String.format("Error deleting redis object for key %s", internalKey), ex);
         }

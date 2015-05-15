@@ -14,11 +14,11 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 public class RedisDistributedLockDao implements DistributedLockDao {
 
     private static final int EXPIRATION_IN_SECONDS = 3 * 60;
-    private JedisStringOps stringOps;
+    private JedisOps jedisOps;
 
     @Autowired
-    public void setStringOps(JedisStringOps stringOps) {
-        this.stringOps = stringOps;
+    public void setStringOps(JedisOps jedisOps) {
+        this.jedisOps = jedisOps;
     }
 
     @Override
@@ -33,9 +33,9 @@ public class RedisDistributedLockDao implements DistributedLockDao {
         checkArgument(expireInSeconds > 0);
         final String redisKey = createRedisKey(clazz, identifier);
         final String lock = BridgeUtils.generateGuid();
-        final Long result = stringOps.setnx(redisKey, lock);
+        final Long result = jedisOps.setnx(redisKey, lock);
         if (result != 1L) {
-            Long expire = stringOps.ttl(redisKey);
+            Long expire = jedisOps.ttl(redisKey);
             if (expire < 0L) {
                 expire(redisKey, expireInSeconds);
             }
@@ -51,11 +51,11 @@ public class RedisDistributedLockDao implements DistributedLockDao {
         checkNotNull(identifier);
         checkNotNull(lock);
         final String redisKey = createRedisKey(clazz, identifier);
-        final String redisLockId = stringOps.get(redisKey);
+        final String redisLockId = jedisOps.get(redisKey);
         if (!lock.equals(redisLockId)) {
             return false;
         }
-        Long result = stringOps.delete(redisKey);
+        Long result = jedisOps.del(redisKey);
         if (result != 1L) {
             throw new BridgeServiceException("Lock not released.");
         }
@@ -68,10 +68,10 @@ public class RedisDistributedLockDao implements DistributedLockDao {
     }
 
     private void expire(final String redisKey, final int expireInSeconds) {
-        Long result = stringOps.expire(redisKey, expireInSeconds);
+        Long result = jedisOps.expire(redisKey, expireInSeconds);
         if (result != 1L) {
             // Try to recover by deleting the key
-            stringOps.delete(redisKey);
+            jedisOps.del(redisKey);
             throw new BridgeServiceException("Lock expiration not set.");
         }
     }

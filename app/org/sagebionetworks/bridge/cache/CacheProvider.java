@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.redis.JedisStringOps;
+import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -19,18 +19,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class CacheProvider {
     
-    private JedisStringOps stringOps;
+    private JedisOps jedisOps;
 
     @Autowired
-    public void setStringOps(JedisStringOps stringOps) {
-        this.stringOps = stringOps;
+    public void setStringOps(JedisOps jedisOps) {
+        this.jedisOps = jedisOps;
     }
 
     public void setUserSession(String key, UserSession session) {
         try {
             String ser = BridgeObjectMapper.get().writeValueAsString(session);
             String redisKey = RedisKey.SESSION.getRedisKey(key);
-            String result = stringOps.setex(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
+            String result = jedisOps.setex(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
             if (!"OK".equals(result)) {
                 throw new BridgeServiceException("Session storage error");
             }
@@ -43,9 +43,9 @@ public class CacheProvider {
     public UserSession getUserSession(String key) {
         try {
             String redisKey = RedisKey.SESSION.getRedisKey(key);
-            String ser = stringOps.get(redisKey);
+            String ser = jedisOps.get(redisKey);
             if (ser != null) {
-                stringOps.expire(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+                jedisOps.expire(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
                 return BridgeObjectMapper.get().readValue(ser, UserSession.class);
             }
         } catch (Throwable e) {
@@ -58,7 +58,7 @@ public class CacheProvider {
     public void removeSession(String key) {
         try {
             String redisKey = RedisKey.SESSION.getRedisKey(key);
-            stringOps.delete(redisKey);
+            jedisOps.del(redisKey);
         } catch(Throwable e) {
             promptToStartRedisIfLocalEnv(e);
             throw new BridgeServiceException(e);
@@ -69,7 +69,7 @@ public class CacheProvider {
         try {
             String ser = BridgeObjectMapper.get().writeValueAsString(study);
             String redisKey = RedisKey.STUDY.getRedisKey(study.getIdentifier());
-            String result = stringOps.setex(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
+            String result = jedisOps.setex(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
             if (!"OK".equals(result)) {
                 throw new BridgeServiceException("Study storage error");
             }
@@ -82,9 +82,9 @@ public class CacheProvider {
     public Study getStudy(String identifier) {
         try {
             String redisKey = RedisKey.STUDY.getRedisKey(identifier);
-            String ser = stringOps.get(redisKey);
+            String ser = jedisOps.get(redisKey);
             if (ser != null) {
-                stringOps.expire(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+                jedisOps.expire(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
                 return DynamoStudy.fromCacheJson(BridgeObjectMapper.get().readTree(ser));
             }
         } catch (Throwable e) {
@@ -97,7 +97,7 @@ public class CacheProvider {
     public void removeStudy(String identifier) {
         try {
             String redisKey = RedisKey.STUDY.getRedisKey(identifier);
-            stringOps.delete(redisKey);
+            jedisOps.del(redisKey);
         } catch(Throwable e) {
             promptToStartRedisIfLocalEnv(e);
             throw new BridgeServiceException(e);
@@ -106,7 +106,7 @@ public class CacheProvider {
     
     public String getString(String cacheKey) {
         try {
-            return stringOps.get(cacheKey);
+            return jedisOps.get(cacheKey);
         } catch (Throwable e) {
             promptToStartRedisIfLocalEnv(e);
             throw new BridgeServiceException(e);
@@ -115,7 +115,7 @@ public class CacheProvider {
 
     public void setString(String cacheKey, String value) {
         try {
-            String result = stringOps.setex(cacheKey, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, value);
+            String result = jedisOps.setex(cacheKey, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, value);
             if (!"OK".equals(result)) {
                 throw new BridgeServiceException("View storage error");
             }
@@ -127,7 +127,7 @@ public class CacheProvider {
 
     public void removeString(String cacheKey) {
         try {
-            stringOps.delete(cacheKey);
+            jedisOps.del(cacheKey);
         } catch(Throwable e) {
             promptToStartRedisIfLocalEnv(e);
             throw new BridgeServiceException(e);
