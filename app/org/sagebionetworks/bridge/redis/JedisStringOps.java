@@ -7,13 +7,15 @@ import org.springframework.stereotype.Component;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.exceptions.JedisConnectionException;
 
+/**
+ * Commands for Redis Strings (aka Keys).
+ */
 @Component
 public class JedisStringOps {
 
     private JedisPool jedisPool;
-    
+
     @Autowired
     public void setJedisPool(JedisPool jedisPool) {
         this.jedisPool = jedisPool;
@@ -30,7 +32,7 @@ public class JedisStringOps {
      *          1 if successful, 0 if key doesn't exist or timeout could not be set
      */
     public Long expire(final String key, final int seconds) {
-        return new AbstractJedisTemplate<Long>() {
+        return new AbstractJedisTemplate<Long>(jedisPool) {
             @Override
             Long execute(Jedis jedis) {
                 return jedis.expire(key, seconds);
@@ -50,7 +52,7 @@ public class JedisStringOps {
      *            value of the key-value pair.
      */
     public String setex(final String key, final int seconds, final String value) {
-        return new AbstractJedisTemplate<String>() {
+        return new AbstractJedisTemplate<String>(jedisPool) {
             @Override
             String execute(Jedis jedis) {
                 return jedis.setex(key, seconds, value);
@@ -70,7 +72,7 @@ public class JedisStringOps {
      *          1 if the key was set, 0 if not
      */
     public Long setnx(final String key, final String value) {
-        return new AbstractJedisTemplate<Long>() {
+        return new AbstractJedisTemplate<Long>(jedisPool) {
             @Override
             Long execute(Jedis jedis) {
                 return jedis.setnx(key, value);
@@ -83,7 +85,7 @@ public class JedisStringOps {
      * returned.
      */
     public String get(final String key) {
-        return new AbstractJedisTemplate<String>() {
+        return new AbstractJedisTemplate<String>(jedisPool) {
             @Override
             String execute(Jedis jedis) {
                 return jedis.get(key);
@@ -100,7 +102,7 @@ public class JedisStringOps {
      *          the number of keys deleted
      */
     public Long delete(final String key) {
-        return new AbstractJedisTemplate<Long>() {
+        return new AbstractJedisTemplate<Long>(jedisPool) {
             @Override
             Long execute(Jedis jedis) {
                 return jedis.del(key);
@@ -117,7 +119,7 @@ public class JedisStringOps {
      *      positive value if ttl is set, zero if not, negative if there was an error
      */
     public Long ttl(final String key) {
-        return new AbstractJedisTemplate<Long>() {
+        return new AbstractJedisTemplate<Long>(jedisPool) {
             @Override
             Long execute(Jedis jedis) {
                 return jedis.ttl(key);
@@ -126,7 +128,7 @@ public class JedisStringOps {
     }
 
     public Long clearRedis(final String keyPattern) {
-        return new AbstractJedisTemplate<Long>() {
+        return new AbstractJedisTemplate<Long>(jedisPool) {
             @Override
             Long execute(Jedis jedis) {
                 Set<String> keys = jedis.keys(keyPattern);
@@ -144,7 +146,7 @@ public class JedisStringOps {
      * @return the new value of the key (after incrementing).
      */
     public Long increment(final String key) {
-        return new AbstractJedisTemplate<Long>() {
+        return new AbstractJedisTemplate<Long>(jedisPool) {
             @Override
             Long execute(Jedis jedis) {
                 return jedis.incr(key);
@@ -158,32 +160,11 @@ public class JedisStringOps {
      * @return the new value of the key (after decrementing).
      */
     public Long decrement(final String key) {
-        return new AbstractJedisTemplate<Long>() {
+        return new AbstractJedisTemplate<Long>(jedisPool) {
             @Override
             Long execute(Jedis jedis) {
                 return jedis.decr(key);
             }
         }.execute();
-    }
-
-    private abstract class AbstractJedisTemplate<T> {
-        public T execute() {
-            Jedis jedis = jedisPool.getResource();
-            try {
-                return execute(jedis);
-            } catch (JedisConnectionException e) {
-                if (jedis != null) {
-                    jedisPool.returnBrokenResource(jedis);
-                    jedis = null;
-                }
-                return null;
-            } finally {
-                if (jedis != null) {
-                    jedisPool.returnResource(jedis);
-                }
-            }
-        }
-
-        abstract T execute(Jedis jedis);
     }
 }
