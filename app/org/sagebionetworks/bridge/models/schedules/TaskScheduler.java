@@ -33,11 +33,15 @@ public abstract class TaskScheduler {
         }
         // If no event is specified, it's enrollment by default.
         String eventIdString = schedule.getEventId();
+        if (eventIdString == null) {
+            eventIdString = "enrollment";
+        }
         DateTime eventTime = getFirstEventDateTime(eventIdString, events);
+        /* NO. Don't do this... it's very confusing. If the event doesn't match, don't schedule something.
         if (eventTime == null) {
             eventTime = events.get(TaskEventObjectType.ENROLLMENT.name().toLowerCase());
         }
-        
+        */
         // An event was specified, but it hasn't happened yet. So no tasks are generated.
         // OR, an event fires, but outside of the window for the schedule, so again, no tasks.
         if (eventTime == null || !isInWindow(schedule, eventTime)) {
