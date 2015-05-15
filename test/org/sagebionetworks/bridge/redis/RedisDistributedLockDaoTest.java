@@ -38,7 +38,7 @@ public class RedisDistributedLockDaoTest {
     @After
     public void after() {
         if (jedisOps != null) {
-            jedisOps.clearRedis(id + "*");
+            jedisOps.del(getRedisKey(id));
         }
     }
 
@@ -47,8 +47,7 @@ public class RedisDistributedLockDaoTest {
         // Acquire lock
         String lockId = lockDao.acquireLock(getClass(), id, 60);
         assertNotNull(lockId);
-        String redisKey = RedisKey.LOCK.getRedisKey(
-                id + RedisKey.SEPARATOR + getClass().getCanonicalName());
+        String redisKey = getRedisKey(id);
         String redisLockId = jedisOps.get(redisKey);
         assertNotNull(redisLockId);
         assertEquals(redisLockId, lockId);
@@ -69,5 +68,10 @@ public class RedisDistributedLockDaoTest {
         // Once released, can be re-acquired
         lockId = lockDao.acquireLock(getClass(), id, 1);
         lockDao.releaseLock(getClass(), id, lockId);
+    }
+
+    private String getRedisKey(String uuid) {
+        return RedisKey.LOCK.getRedisKey(
+                id + RedisKey.SEPARATOR + getClass().getCanonicalName());
     }
 }

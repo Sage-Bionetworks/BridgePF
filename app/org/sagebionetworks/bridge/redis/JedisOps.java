@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.redis;
 
-import java.util.Set;
-
 import javax.annotation.Nonnull;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,18 +94,17 @@ public class JedisOps {
     }
 
     /**
-     * Deletes the value of the specified key.
+     * Deletes the specified list of keys.
      *
-     * @param key
-     *            key of the key-value pair
-     * @return numKeysDeleted
-     *          the number of keys deleted
+     * @param keys
+     *            the list of keys to be deleted.
+     * @return number of keys deleted
      */
-    public Long del(final String key) {
+    public Long del(final String... keys) {
         return new AbstractJedisTemplate<Long>() {
             @Override
             Long execute(Jedis jedis) {
-                return jedis.del(key);
+                return jedis.del(keys);
             }
         }.execute();
     }
@@ -125,19 +122,6 @@ public class JedisOps {
             @Override
             Long execute(Jedis jedis) {
                 return jedis.ttl(key);
-            }
-        }.execute();
-    }
-
-    public Long clearRedis(final String keyPattern) {
-        return new AbstractJedisTemplate<Long>() {
-            @Override
-            Long execute(Jedis jedis) {
-                Set<String> keys = jedis.keys(keyPattern);
-                for (String key : keys) {
-                    jedis.del(key);
-                }
-                return new Long(keys.size());
             }
         }.execute();
     }

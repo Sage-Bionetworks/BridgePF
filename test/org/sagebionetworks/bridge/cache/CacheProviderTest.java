@@ -94,10 +94,6 @@ public class CacheProviderTest {
             public String get(final String key) {
                 return map.get(key);
             }
-            public Long del(final String key) {
-                map.remove(key);
-                return 1L;
-            }
         };   
     }    
 }
