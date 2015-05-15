@@ -69,12 +69,12 @@ public class UploadValidationTask implements Runnable {
                 oneHandler.handle(context);
             } catch (RuntimeException | UploadValidationException ex) {
                 context.setSuccess(false);
-                context.addMessage(String.format("Exception thrown from upload validation handler %s: %s", handlerName,
-                        ex.getMessage()));
-                logger.info(String.format(
-                        "Exception thrown from upload validation handler %s for study %s, upload %s, filename %s",
-                        handlerName, context.getStudy().getIdentifier(), context.getUpload().getUploadId(),
-                        context.getUpload().getFilename()), ex);
+                context.addMessage(String.format("Exception thrown from upload validation handler %s: %s: %s",
+                        handlerName, ex.getClass().getName(), ex.getMessage()));
+                logger.info(String.format("Exception thrown from upload validation handler %s for study %s, " +
+                                "upload %s, filename %s: %s: %s", handlerName, context.getStudy().getIdentifier(),
+                        context.getUpload().getUploadId(), context.getUpload().getFilename(), ex.getClass().getName(),
+                        ex.getMessage()), ex);
                 break;
             } finally {
                 long elapsedMillis = stopwatch.elapsed(TimeUnit.MILLISECONDS);
