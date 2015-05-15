@@ -80,19 +80,30 @@ public class CacheProviderTest {
     private JedisOps getSimpleStringOps() {
         return new JedisOps(new JedisPool()) {
             private Map<String,String> map = Maps.newHashMap();
+            @Override
             public Long expire(final String key, final int seconds) {
                 return 1L;
             }
+            @Override
             public String setex(final String key, final int seconds, final String value) {
                 map.put(key, value);
                 return "OK";
             }
+            @Override
             public Long setnx(final String key, final String value) {
                 map.put(key, value);
                 return 1L;
             }
+            @Override
             public String get(final String key) {
                 return map.get(key);
+            }
+            @Override
+            public Long del(final String... keys) {
+                for (String key : keys) {
+                    map.remove(key);
+                }
+                return (long)keys.length;
             }
         };   
     }    
