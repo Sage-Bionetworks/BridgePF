@@ -12,8 +12,7 @@ package org.sagebionetworks.bridge.redis;
  *    {email}:email:user
  * </code>
  * <p>
- * where keys are put into different "user" domains such as keys across domains are
- * allowed to have duplicates whereas within each domain they are unique.
+ * Note that keys are separated into different domains to avoid conflicts.
  */
 public interface RedisKey {
 
@@ -22,7 +21,7 @@ public interface RedisKey {
 
     /** User sessions. */
     RedisKey SESSION = new SimpleKey("session");
-    
+
     /** Study */
     RedisKey STUDY = new SimpleKey("study");
 
@@ -31,19 +30,19 @@ public interface RedisKey {
 
     /** User (email). */
     RedisKey USER = new SimpleKey("user");
-    
+
     /** Health code lock. */
     RedisKey HEALTH_CODE_LOCK = new CompoundKey((SimpleKey)HEALTH_CODE, (SimpleKey)LOCK);
-    
+
     /** Lock on user account. */
     RedisKey USER_LOCK = new CompoundKey((SimpleKey)USER, (SimpleKey)LOCK);
 
     /** Number of participants in a study */
     RedisKey NUM_OF_PARTICIPANTS = new SimpleKey("num-of-participants");
-    
+
     /** A cached JSON response. */
     RedisKey VIEW = new SimpleKey("view");
-    
+
     String SEPARATOR = ":";
 
     /**
