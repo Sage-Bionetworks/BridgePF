@@ -87,7 +87,7 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
                     callback.newRecords(
                         backfillFactory.createAndSave(task, study, account, "enrollment event created"));
                 }
-            }
+            } 
             if (mapping == null && consent == null) {
                 callback.newRecords(backfillFactory.createOnly(task, "Health code and consent record not found"));
             } else if (mapping == null) {
