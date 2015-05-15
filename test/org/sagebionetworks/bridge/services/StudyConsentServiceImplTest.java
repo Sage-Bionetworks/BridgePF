@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -19,6 +18,9 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
+import org.sagebionetworks.bridge.dynamodb.DynamoTestUtil;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
@@ -46,20 +48,16 @@ public class StudyConsentServiceImplTest {
 
     @Resource
     private StudyConsentService studyConsentService;
-    
-    private List<StudyConsent> toDelete;
 
     @Before
     public void before() {
-        toDelete = new ArrayList<StudyConsent>();
+        DynamoInitializer.init(DynamoStudyConsent1.class);
+        DynamoTestUtil.clearTable(DynamoStudyConsent1.class);
     }
 
     @After
     public void after() {
-        for (StudyConsent sc : toDelete) {
-            studyConsentDao.deleteConsent(new StudyIdentifierImpl(sc.getStudyKey()), sc.getCreatedOn());
-        }
-        toDelete.clear();
+        DynamoTestUtil.clearTable(DynamoStudyConsent1.class);
     }
 
     @Test
@@ -71,7 +69,6 @@ public class StudyConsentServiceImplTest {
         // addConsent should return a non-null consent object.
         StudyConsentView addedConsent1 = studyConsentService.addConsent(studyId, form);
         assertNotNull(addedConsent1);
-        toDelete.add(addedConsent1.getStudyConsent());
 
         try {
             studyConsentService.getActiveConsent(studyId);
@@ -99,29 +96,18 @@ public class StudyConsentServiceImplTest {
     }
     
     @Test
-    public void testThatOlderConsentsStillLoadCorrectly() {
-        StudyConsentView consent = studyConsentService.getActiveConsent(new StudyIdentifierImpl("api"));
-        assertNotNull(consent.getStudyConsent().getPath());
-        assertNotNull(consent.getDocumentContent());
-    }
-    
-    @Test
     public void studyConsentWithFileAndS3ContentTakesS3Content() throws Exception {
         StudyIdentifier studyId = new StudyIdentifierImpl("api");
         DateTime createdOn = DateTime.now();
         String key = "api." + createdOn.getMillis();
-        try {
-            s3Helper.writeBytesToS3(BUCKET, key, "<document/>".getBytes());
-            
-            StudyConsent consent = studyConsentDao.addConsent(studyId, "/junk/path", key, createdOn);
-            studyConsentDao.setActive(consent, true);
-            
-            // The junk path should not prevent the service from getting the S3 content.
-            // We actually wouldn't get here if it tried to load from disk with the path we've provided.
-            StudyConsentView view = studyConsentService.getConsent(studyId, createdOn.getMillis());
-            assertEquals("<document/>", view.getDocumentContent());
-        } finally {
-            studyConsentService.deleteConsent(studyId, createdOn.getMillis());
-        }
+        s3Helper.writeBytesToS3(BUCKET, key, "<document/>".getBytes());
+        
+        StudyConsent consent = studyConsentDao.addConsent(studyId, "/junk/path", key, createdOn);
+        studyConsentDao.setActive(consent, true);
+        
+        // The junk path should not prevent the service from getting the S3 content.
+        // We actually wouldn't get here if it tried to load from disk with the path we've provided.
+        StudyConsentView view = studyConsentService.getConsent(studyId, createdOn.getMillis());
+        assertEquals("<document/>", view.getDocumentContent());
     }
 }

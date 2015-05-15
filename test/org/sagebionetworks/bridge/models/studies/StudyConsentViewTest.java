@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.studies;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
@@ -22,7 +23,11 @@ public class StudyConsentViewTest {
         StudyConsentView view = new StudyConsentView(consent, "<document/>");
         
         String json = BridgeObjectMapper.get().writeValueAsString(view);
-        assertEquals("{\"documentContent\":\"<document/>\",\"createdOn\":200,\"active\":true,\"type\":\"StudyConsent\"}", json);
+        // {"documentContent":"<document/>","active":true,"createdOn":200,"type":"StudyConsent"}
+        assertTrue(json.contains("\"documentContent\":\"<document/>\""));
+        assertTrue(json.contains("\"active\":true"));
+        assertTrue(json.contains("\"createdOn\":200"));
+        assertTrue(json.contains("\"type\":\"StudyConsent\""));
         
         StudyConsentForm form = BridgeObjectMapper.get().readValue(json, StudyConsentForm.class);
         assertEquals("<document/>", form.getDocumentContent());
