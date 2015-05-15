@@ -15,7 +15,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import org.joda.time.format.ISODateTimeFormat;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
@@ -62,7 +62,9 @@ public class BulkDownloadUtil {
                 Joiner.on(", ").join(s3KeyArr)));
 
         // spring beans
-        ApplicationContext springCtx = new ClassPathXmlApplicationContext("application-context.xml");
+        AbstractApplicationContext springCtx = new ClassPathXmlApplicationContext("application-context.xml");
+        springCtx.registerShutdownHook();
+
         AmazonDynamoDBClient ddbClient = springCtx.getBean(AmazonDynamoDBClient.class);
         S3DownloadHandler s3DownloadHandler = springCtx.getBean(S3DownloadHandler.class);
         DecryptHandler decryptHandler = springCtx.getBean(DecryptHandler.class);
