@@ -18,11 +18,11 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class CacheProvider {
-    
+
     private JedisOps jedisOps;
 
     @Autowired
-    public void setStringOps(JedisOps jedisOps) {
+    public void setJedisOps(JedisOps jedisOps) {
         this.jedisOps = jedisOps;
     }
 
@@ -39,7 +39,7 @@ public class CacheProvider {
             throw new BridgeServiceException(e);
         }
     }
-    
+
     public UserSession getUserSession(String key) {
         try {
             String redisKey = RedisKey.SESSION.getRedisKey(key);
@@ -54,7 +54,7 @@ public class CacheProvider {
         }
         return null;
     }
-    
+
     public void removeSession(String key) {
         try {
             String redisKey = RedisKey.SESSION.getRedisKey(key);
@@ -64,7 +64,7 @@ public class CacheProvider {
             throw new BridgeServiceException(e);
         }
     }
-    
+
     public void setStudy(Study study) {
         try {
             String ser = BridgeObjectMapper.get().writeValueAsString(study);
@@ -78,7 +78,7 @@ public class CacheProvider {
             throw new BridgeServiceException(e);
         }
     }
-    
+
     public Study getStudy(String identifier) {
         try {
             String redisKey = RedisKey.STUDY.getRedisKey(identifier);
@@ -93,7 +93,7 @@ public class CacheProvider {
         }
         return null;
     }
-    
+
     public void removeStudy(String identifier) {
         try {
             String redisKey = RedisKey.STUDY.getRedisKey(identifier);
@@ -103,7 +103,7 @@ public class CacheProvider {
             throw new BridgeServiceException(e);
         }
     }
-    
+
     public String getString(String cacheKey) {
         try {
             return jedisOps.get(cacheKey);
@@ -133,11 +133,10 @@ public class CacheProvider {
             throw new BridgeServiceException(e);
         }
     }
-    
+
     private void promptToStartRedisIfLocalEnv(Throwable e) {
         if (BridgeConfigFactory.getConfig().isLocal()) {
             throw new BridgeServiceException("Cannot find cache service, have you started a Redis server? (original message: "+e.getMessage()+")");
         }
     }
-
 }
