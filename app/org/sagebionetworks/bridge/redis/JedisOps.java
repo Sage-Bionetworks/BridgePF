@@ -1,21 +1,23 @@
 package org.sagebionetworks.bridge.redis;
 
-import java.util.Set;
+import javax.annotation.Nonnull;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.exceptions.JedisConnectionException;
 
+/**
+ * Redis commands via Jedis.
+ */
 @Component
-public class JedisStringOps {
+public class JedisOps {
 
-    private JedisPool jedisPool;
-    
+    private final JedisPool jedisPool;
+
     @Autowired
-    public void setJedisPool(JedisPool jedisPool) {
+    public JedisOps(@Nonnull JedisPool jedisPool) {
         this.jedisPool = jedisPool;
     }
 
@@ -92,18 +94,17 @@ public class JedisStringOps {
     }
 
     /**
-     * Deletes the value of the specified key.
+     * Deletes the specified list of keys.
      *
-     * @param key
-     *            key of the key-value pair
-     * @return numKeysDeleted
-     *          the number of keys deleted
+     * @param keys
+     *            the list of keys to be deleted.
+     * @return number of keys deleted
      */
-    public Long delete(final String key) {
+    public Long del(final String... keys) {
         return new AbstractJedisTemplate<Long>() {
             @Override
             Long execute(Jedis jedis) {
-                return jedis.del(key);
+                return jedis.del(keys);
             }
         }.execute();
     }
@@ -125,25 +126,12 @@ public class JedisStringOps {
         }.execute();
     }
 
-    public Long clearRedis(final String keyPattern) {
-        return new AbstractJedisTemplate<Long>() {
-            @Override
-            Long execute(Jedis jedis) {
-                Set<String> keys = jedis.keys(keyPattern);
-                for (String key : keys) {
-                    jedis.del(key);
-                }
-                return new Long(keys.size());
-            }
-        }.execute();
-    }
-
     /**
      * Increment the value by one
      * @param key
      * @return the new value of the key (after incrementing).
      */
-    public Long increment(final String key) {
+    public Long incr(final String key) {
         return new AbstractJedisTemplate<Long>() {
             @Override
             Long execute(Jedis jedis) {
@@ -157,7 +145,7 @@ public class JedisStringOps {
      * @param key
      * @return the new value of the key (after decrementing).
      */
-    public Long decrement(final String key) {
+    public Long decr(final String key) {
         return new AbstractJedisTemplate<Long>() {
             @Override
             Long execute(Jedis jedis) {
@@ -166,24 +154,17 @@ public class JedisStringOps {
         }.execute();
     }
 
+    /**
+     * Responsible for providing template code such as closing resources.
+     */
     private abstract class AbstractJedisTemplate<T> {
-        public T execute() {
-            Jedis jedis = jedisPool.getResource();
-            try {
+
+        T execute() {
+            try (Jedis jedis = jedisPool.getResource()) {
                 return execute(jedis);
-            } catch (JedisConnectionException e) {
-                if (jedis != null) {
-                    jedisPool.returnBrokenResource(jedis);
-                    jedis = null;
-                }
-                return null;
-            } finally {
-                if (jedis != null) {
-                    jedisPool.returnResource(jedis);
-                }
             }
         }
 
-        abstract T execute(Jedis jedis);
+        abstract T execute(final Jedis jedis);
     }
 }

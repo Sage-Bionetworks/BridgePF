@@ -25,7 +25,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class RedisDistributedLockDaoTest {
 
     @Resource
-    private JedisStringOps stringOps;
+    private JedisOps jedisOps;
     @Resource
     private DistributedLockDao lockDao;
     private String id;
@@ -37,8 +37,8 @@ public class RedisDistributedLockDaoTest {
 
     @After
     public void after() {
-        if (stringOps != null) {
-            stringOps.clearRedis(id + "*");
+        if (jedisOps != null) {
+            jedisOps.del(getRedisKey(id));
         }
     }
 
@@ -47,12 +47,11 @@ public class RedisDistributedLockDaoTest {
         // Acquire lock
         String lockId = lockDao.acquireLock(getClass(), id, 60);
         assertNotNull(lockId);
-        String redisKey = RedisKey.LOCK.getRedisKey(
-                id + RedisKey.SEPARATOR + getClass().getCanonicalName());
-        String redisLockId = stringOps.get(redisKey);
+        String redisKey = getRedisKey(id);
+        String redisLockId = jedisOps.get(redisKey);
         assertNotNull(redisLockId);
         assertEquals(redisLockId, lockId);
-        assertTrue(stringOps.ttl(redisKey) > 0);
+        assertTrue(jedisOps.ttl(redisKey) > 0);
         // Acquire again should get back an exception
         try {
             assertNull(lockDao.acquireLock(getClass(), id));
@@ -69,5 +68,10 @@ public class RedisDistributedLockDaoTest {
         // Once released, can be re-acquired
         lockId = lockDao.acquireLock(getClass(), id, 1);
         lockDao.releaseLock(getClass(), id, lockId);
+    }
+
+    private String getRedisKey(String uuid) {
+        return RedisKey.LOCK.getRedisKey(
+                id + RedisKey.SEPARATOR + getClass().getCanonicalName());
     }
 }

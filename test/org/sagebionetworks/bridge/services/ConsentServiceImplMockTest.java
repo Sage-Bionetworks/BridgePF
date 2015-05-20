@@ -22,14 +22,14 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
-import org.sagebionetworks.bridge.redis.JedisStringOps;
+import org.sagebionetworks.bridge.redis.JedisOps;
 
 public class ConsentServiceImplMockTest {
 
     private ConsentServiceImpl consentService;
 
     private AccountDao accountDao;
-    private JedisStringOps stringOps;
+    private JedisOps jedisOps;
     private ParticipantOptionsService optionsService;
     private SendMailService sendMailService;
     private StudyConsentService studyConsentService;
@@ -43,7 +43,7 @@ public class ConsentServiceImplMockTest {
     @Before
     public void before() {
         accountDao = mock(AccountDao.class);
-        stringOps = mock(JedisStringOps.class);
+        jedisOps = mock(JedisOps.class);
         optionsService = mock(ParticipantOptionsService.class);
         sendMailService = mock(SendMailService.class);
         userConsentDao = mock(UserConsentDao.class);
@@ -52,7 +52,7 @@ public class ConsentServiceImplMockTest {
 
         consentService = new ConsentServiceImpl();
         consentService.setAccountDao(accountDao);
-        consentService.setStringOps(stringOps);
+        consentService.setStringOps(jedisOps);
         consentService.setOptionsService(optionsService);
         consentService.setSendMailService(sendMailService);
         consentService.setUserConsentDao(userConsentDao);

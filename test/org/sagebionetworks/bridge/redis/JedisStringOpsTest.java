@@ -15,13 +15,13 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class JedisStringOpsTest {
     
     @Resource
-    private JedisStringOps stringOps;
+    private JedisOps jedisOps;
     
     @Test
     public void setsAndReadsValueFromRedis() throws Exception {
-        assertEquals("OK", stringOps.setex("testKey", 2, "testValue"));
-        assertEquals("testValue", stringOps.get("testKey"));
+        assertEquals("OK", jedisOps.setex("testKey", 2, "testValue"));
+        assertEquals("testValue", jedisOps.get("testKey"));
         Thread.sleep(3000);
-        assertNull(stringOps.get("testKey"));
+        assertNull(jedisOps.get("testKey"));
     }
 }
