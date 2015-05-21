@@ -29,6 +29,16 @@ public final class JedisTransaction implements AutoCloseable {
         return this;
     }
 
+    public JedisTransaction expire(final String key, final int seconds) {
+        transaction.expire(key, seconds);
+        return this;
+    }
+
+    public JedisTransaction del(final String key) {
+        transaction.del(key);
+        return this;
+    }
+
     public List<Object> exec() {
         try (Jedis jedis = this.jedis) {
             return transaction.exec();

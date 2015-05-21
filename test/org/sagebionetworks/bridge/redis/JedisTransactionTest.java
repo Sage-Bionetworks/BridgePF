@@ -3,6 +3,10 @@ package org.sagebionetworks.bridge.redis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 
@@ -13,6 +17,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Transaction;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -78,6 +85,21 @@ public class JedisTransactionTest {
         try (JedisTransaction transaction = jedisOps.getTransaction()) {
             transaction.setex(key1, 10, val1).discard();
             transaction.finalize();
+        }
+    }
+
+    @Test
+    public void testTransaction() throws Exception {
+        Jedis jedis = mock(Jedis.class);
+        Transaction transaction = mock(Transaction.class);
+        when(jedis.multi()).thenReturn(transaction);
+        try (JedisTransaction jt = new JedisTransaction(jedis)) {
+            jt.setex(key1, 10, val1);
+            verify(transaction, times(1)).setex(key1, 10, val1);
+            jt.expire(key1, 15);
+            verify(transaction, times(1)).expire(key1, 15);
+            jt.del(key2);
+            verify(transaction, times(1)).del(key2);
         }
     }
 }
