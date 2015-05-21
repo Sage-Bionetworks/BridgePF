@@ -59,6 +59,9 @@ public abstract class BaseController extends Controller {
     public void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.bridgeConfig = bridgeConfig;
     }
+    BridgeConfig getBridgeConfig() {
+        return bridgeConfig;
+    }
 
     @Autowired
     public void setCacheProvider(CacheProvider cacheProvider) {

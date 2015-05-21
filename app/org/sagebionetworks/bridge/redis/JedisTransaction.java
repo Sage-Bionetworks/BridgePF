@@ -12,7 +12,7 @@ import redis.clients.jedis.exceptions.JedisException;
 /**
  * Provides abstraction over Jedis's transactions.
  */
-final class JedisTransaction {
+public final class JedisTransaction implements AutoCloseable {
 
     private final Logger logger = LoggerFactory.getLogger(JedisTransaction.class);
 
@@ -43,9 +43,16 @@ final class JedisTransaction {
 
     @Override
     public void finalize() {
+        close();
+    }
+
+    @Override
+    public void close() {
         try {
             jedis.close();
         } catch (JedisException e) {
+            // Jedis throws an exception here on closed connections
+            // See https://github.com/xetorthio/jedis/issues/992
             logger.debug(e.getMessage(), e);
         }
     }

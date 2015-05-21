@@ -2,7 +2,6 @@ package controllers;
 
 import java.util.Map;
 
-import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -20,15 +19,9 @@ import play.mvc.Result;
 @Controller("emailController")
 public class EmailController extends BaseController {
 
-    private BridgeConfig bridgeConfig;
     private AccountDao accountDao;
     private ParticipantOptionsService optionsService;
     private HealthCodeService healthCodeService;
-
-    @Autowired
-    public void setBridgeConfig(BridgeConfig bridgeConfig) {
-        this.bridgeConfig = bridgeConfig;
-    }
 
     @Autowired
     public void setAccountDao(AccountDao accountDao) {
@@ -57,7 +50,7 @@ public class EmailController extends BaseController {
     public Result unsubscribeFromEmail() throws Exception {
         try {
             String token = getParameter("token");
-            if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
+            if (token == null || !token.equals(getBridgeConfig().getEmailUnsubscribeToken())) {
                 throw new RuntimeException("Not authorized.");
             }
             // Study has to be provided as an URL parameter:

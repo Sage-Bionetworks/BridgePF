@@ -47,14 +47,15 @@ public class JedisTransactionTest {
 
     @Test
     public void testWatch() throws Exception {
-        JedisTransaction transaction = jedisOps.getTransaction(key1)
-                .setex(key1, 10, val1)
-                .setex(key2, 10, val2);
-        jedisOps.setex(key1, 10, val2);
-        List<Object> results = transaction.exec();
-        assertNull("Transaction should have been aborted.", results);
-        assertEquals(val2, jedisOps.get(key1));
-        assertNull("Transaction should have been aborted.", jedisOps.get(key2));
+        try(JedisTransaction transaction = jedisOps.getTransaction(key1)) {
+            transaction.setex(key1, 10, val1);
+            transaction.setex(key2, 10, val2);
+            jedisOps.setex(key1, 10, val2);
+            List<Object> results = transaction.exec();
+            assertNull("Transaction should have been aborted.", results);
+            assertEquals(val2, jedisOps.get(key1));
+            assertNull("Transaction should have been aborted.", jedisOps.get(key2));
+        }
     }
 
     @Test
@@ -70,11 +71,13 @@ public class JedisTransactionTest {
 
     @Test
     public void testFinalize() throws Exception {
-        JedisTransaction transaction = jedisOps.getTransaction();
-        transaction.exec();
-        transaction.finalize();
-        transaction = jedisOps.getTransaction();
-        transaction.setex(key1, 10, val1).discard();
-        transaction.finalize();
+        try (JedisTransaction transaction = jedisOps.getTransaction()) {
+            transaction.exec();
+            transaction.finalize();
+        }
+        try (JedisTransaction transaction = jedisOps.getTransaction()) {
+            transaction.setex(key1, 10, val1).discard();
+            transaction.finalize();
+        }
     }
 }
