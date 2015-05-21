@@ -20,9 +20,7 @@ import play.mvc.Result;
 public class EmailController extends BaseController {
 
     private AccountDao accountDao;
-
     private ParticipantOptionsService optionsService;
-
     private HealthCodeService healthCodeService;
 
     @Autowired
@@ -52,7 +50,7 @@ public class EmailController extends BaseController {
     public Result unsubscribeFromEmail() throws Exception {
         try {
             String token = getParameter("token");
-            if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
+            if (token == null || !token.equals(getBridgeConfig().getEmailUnsubscribeToken())) {
                 throw new RuntimeException("Not authorized.");
             }
             // Study has to be provided as an URL parameter:
