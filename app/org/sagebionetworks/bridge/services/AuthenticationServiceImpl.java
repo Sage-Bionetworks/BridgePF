@@ -119,7 +119,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         Account account = accountDao.authenticate(study, signIn);
         UserSession session = getSessionFromAccount(study, account);
-        cacheProvider.setUserSession(session.getSessionToken(), session);
+        cacheProvider.setUserSession(session);
 
         if (!session.getUser().doesConsent()) {
             throw new ConsentRequiredException(session);
@@ -129,9 +129,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void signOut(String sessionToken) {
-        if (sessionToken != null) {
-            cacheProvider.removeSession(sessionToken);
+    public void signOut(final UserSession session) {
+        if (session != null) {
+            cacheProvider.removeSession(session);
         }
     }
 
@@ -163,7 +163,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         Account account = accountDao.verifyEmail(study, verification);
         UserSession session = getSessionFromAccount(study, account);
-        cacheProvider.setUserSession(session.getSessionToken(), session);
+        cacheProvider.setUserSession(session);
 
         if (!session.getUser().doesConsent()) {
             throw new ConsentRequiredException(session);

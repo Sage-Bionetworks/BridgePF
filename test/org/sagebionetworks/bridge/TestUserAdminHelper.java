@@ -137,7 +137,7 @@ public class TestUserAdminHelper {
 
         if (testUser.getSession() != null) {
             // Delete using session if it exists
-            authService.signOut(testUser.getSessionToken());
+            authService.signOut(testUser.getSession());
             userAdminService.deleteUser(testUser.getStudy(), testUser.getUser().getEmail());
         } else {
             // Otherwise delete using the user's email

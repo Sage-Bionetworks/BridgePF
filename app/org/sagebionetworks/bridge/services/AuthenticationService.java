@@ -17,7 +17,7 @@ public interface AuthenticationService {
 
     public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException;
 
-    public void signOut(String sessionToken);
+    public void signOut(UserSession session);
 
     public void signUp(Study study, SignUp signUp, boolean sendEmail);
 

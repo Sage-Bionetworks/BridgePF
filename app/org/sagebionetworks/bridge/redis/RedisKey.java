@@ -31,6 +31,9 @@ public interface RedisKey {
     /** User (email). */
     RedisKey USER = new SimpleKey("user");
 
+    /** User ID to session token. */
+    RedisKey USER_SESSION = new CompoundKey((SimpleKey)USER, (SimpleKey)SESSION);
+
     /** Health code lock. */
     RedisKey HEALTH_CODE_LOCK = new CompoundKey((SimpleKey)HEALTH_CODE, (SimpleKey)LOCK);
 

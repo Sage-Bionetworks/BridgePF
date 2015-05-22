@@ -1,11 +1,18 @@
 package org.sagebionetworks.bridge.cache;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.junit.Before;
@@ -16,6 +23,7 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
+import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.sagebionetworks.bridge.redis.RedisKey;
 
 import redis.clients.jedis.JedisPool;
@@ -24,12 +32,16 @@ import com.google.common.collect.Maps;
 
 public class CacheProviderTest {
 
+    private JedisTransaction transaction;
     private CacheProvider cacheProvider;
 
     @Before
     public void before() {
+        transaction = mock(JedisTransaction.class);
+        when(transaction.setex(any(String.class), anyInt(), any(String.class))).thenReturn(transaction);
+        when(transaction.exec()).thenReturn(Arrays.asList((Object)"OK", "OK"));
         cacheProvider = new CacheProvider();
-        cacheProvider.setJedisOps(getSimpleStringOps());
+        cacheProvider.setJedisOps(getJedisOps(transaction));
     }
 
     @Test
@@ -41,15 +53,14 @@ public class CacheProviderTest {
         user.setHealthCode(healthCode);
         UserSession session = new UserSession();
         session.setUser(user);
-        String key = getClass().getName() + "userSession";
-        cacheProvider.setUserSession(key, session);
-        String cached = cacheProvider.getString(RedisKey.SESSION.getRedisKey(key));
-        assertNotNull(cached);
-        assertFalse("Health code should be encrypted", cached.contains(healthCode));
-        session = cacheProvider.getUserSession(key);
-        assertNotNull(session);
-        assertNotNull(session.getUser());
-        assertEquals(healthCode, session.getUser().getHealthCode());
+        session.setSessionToken("sessionToken");
+        cacheProvider.setUserSession(session);
+        String sessionKey = RedisKey.SESSION.getRedisKey("sessionToken");
+        String userKey = RedisKey.USER_SESSION.getRedisKey("id");
+        verify(transaction, times(1)).setex(eq(sessionKey), anyInt(), anyString());
+        verify(transaction, times(1)).setex(eq(sessionKey), anyInt(), anyString());
+        verify(transaction, times(1)).setex(eq(userKey), anyInt(), eq("sessionToken"));
+        verify(transaction, times(1)).exec();
     }
 
     @Test
@@ -77,7 +88,7 @@ public class CacheProviderTest {
         assertNull(cachedString);
     }
 
-    private JedisOps getSimpleStringOps() {
+    private JedisOps getJedisOps(final JedisTransaction transaction) {
         return new JedisOps(new JedisPool()) {
             private Map<String,String> map = Maps.newHashMap();
             @Override
@@ -105,6 +116,10 @@ public class CacheProviderTest {
                 }
                 return (long)keys.length;
             }
-        };   
-    }    
+            @Override
+            public JedisTransaction getTransaction(String... keys) {
+                return transaction;
+            }
+        };
+    }
 }
