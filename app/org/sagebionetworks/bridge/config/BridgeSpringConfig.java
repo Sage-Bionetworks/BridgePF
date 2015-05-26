@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.TableNameOverrideFactory;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
 import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler2;
@@ -60,7 +61,17 @@ import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 @ComponentScan({"controllers","filters","interceptors","models","org.sagebionetworks.bridge"})
 @Configuration
 public class BridgeSpringConfig {
-    
+
+    @Bean(name = "bridgeObjectMapper")
+    public BridgeObjectMapper bridgeObjectMapper() {
+        return BridgeObjectMapper.get();
+    }
+
+    @Bean(name = "bridgeConfig")
+    public BridgeConfig bridgeConfig() {
+        return BridgeConfigFactory.getConfig();
+    }
+
     @Bean(name = "healthCodeEncryptor")
     @Resource(name = "bridgeConfig")
     public AesGcmEncryptor healthCodeEncryptor(BridgeConfig bridgeConfig) {
@@ -113,11 +124,6 @@ public class BridgeSpringConfig {
     @Resource(name = "s3UploadCredentials")
     public AWSSecurityTokenServiceClient uploadTokenServiceClient(BasicAWSCredentials s3UploadCredentials) {
         return new AWSSecurityTokenServiceClient(s3UploadCredentials);
-    }
-
-    @Bean(name = "bridgeConfig")
-    public BridgeConfig bridgeConfig() {
-        return BridgeConfigFactory.getConfig();
     }
 
     @Bean(name = "asyncExecutorService")
