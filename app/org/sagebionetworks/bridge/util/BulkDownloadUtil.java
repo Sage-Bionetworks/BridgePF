@@ -14,10 +14,10 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
+
 import org.joda.time.format.ISODateTimeFormat;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
@@ -41,6 +41,7 @@ import org.sagebionetworks.bridge.upload.UploadValidationContext;
  * </p>
  */
 public class BulkDownloadUtil {
+    @SuppressWarnings("resource")
     public static void main(String[] args) {
         if (args.length == 0) {
             System.out.println(

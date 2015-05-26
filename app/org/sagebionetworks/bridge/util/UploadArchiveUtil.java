@@ -3,14 +3,15 @@ package org.sagebionetworks.bridge.util;
 import java.io.File;
 
 import com.google.common.io.Files;
+
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
 import org.sagebionetworks.bridge.services.UploadArchiveService;
 
 // Usage: play "run-main org.sagebionetworks.bridge.util.UploadArchiveUtil [encrypt/decrypt] [study ID] [input file]
 // [output file]"
 public class UploadArchiveUtil {
+    @SuppressWarnings("resource")
     public static void main(String[] args) throws Exception {
         // args / usage
         if (args.length != 4) {

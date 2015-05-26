@@ -72,7 +72,7 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
         while (i.hasNext()) {
             Account account = i.next();
             
-            callback.newRecords(backfillFactory.createOnly(task, "Examining account: " + account.getEmail()));
+            callback.newRecords(backfillFactory.createOnly(task, "Examining account: " + account.getId()));
             HealthId mapping = healthCodeService.getMapping(account.getHealthId());
             UserConsent consent = null;
             if (mapping != null) {
