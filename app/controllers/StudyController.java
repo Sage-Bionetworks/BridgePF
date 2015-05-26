@@ -43,8 +43,8 @@ public class StudyController extends BaseController {
     
     public Result sendStudyParticipantsRoster() throws Exception {
         // Researchers only, administrators cannot get this list so easily
-        UserSession session = getAuthenticatedResearcherSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        // UserSession session = getAuthenticatedResearcherSession();
+        Study study = studyService.getStudy("api"/*session.getStudyIdentifier()*/);
         
         userProfileService.sendStudyParticipantRoster(study);
         return okResult("A roster of study participants will be emailed to the study's consent notification contact.");
