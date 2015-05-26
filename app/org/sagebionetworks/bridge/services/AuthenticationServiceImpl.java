@@ -201,13 +201,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     private UserSession getSessionFromAccount(Study study, Account account) {
-        final UserSession session = new UserSession();
-        session.setAuthenticated(true);
-        session.setEnvironment(config.getEnvironment().name().toLowerCase());
-        session.setSessionToken(BridgeUtils.generateGuid());
-	// Internal session token to identify sessions internally (e.g. in metrics)
-        session.setInternalSessionToken(BridgeUtils.generateGuid());
-        session.setStudyIdentifier(study.getStudyIdentifier());
+        final UserSession session = cacheProvider.getUserSessionByUserId(account.getId());
+        if (session != null) {
+            return session;
+        }
+        final UserSession newSession = new UserSession();
+        newSession.setAuthenticated(true);
+        newSession.setEnvironment(config.getEnvironment().name().toLowerCase());
+        newSession.setSessionToken(BridgeUtils.generateGuid());
+        // Internal session token to identify sessions internally (e.g. in metrics)
+        newSession.setInternalSessionToken(BridgeUtils.generateGuid());
+        newSession.setStudyIdentifier(study.getStudyIdentifier());
 
         final User user = new User(account);
         user.setStudyKey(study.getIdentifier());
@@ -232,8 +236,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             user.setConsent(true);
         }
 
-        session.setUser(user);
-        return session;
+        newSession.setUser(user);
+        return newSession;
     }
 
     /**
