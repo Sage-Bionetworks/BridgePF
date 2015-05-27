@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -36,6 +37,9 @@ import com.google.common.collect.Sets;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class AuthenticationServiceImplTest {
+
+    @Resource
+    private CacheProvider cacheProvider;
 
     @Resource
     private AuthenticationServiceImpl authService;
@@ -198,5 +202,23 @@ public class AuthenticationServiceImplTest {
             helper.deleteUser(user);
         }
     }
-    
+
+    @Test
+    public void testSignOut() {
+        final String sessionToken = testUser.getSessionToken();
+        final String userId = testUser.getUser().getId();
+        authService.signOut(testUser.getSession());
+        assertNull(cacheProvider.getUserSession(sessionToken));
+        assertNull(cacheProvider.getUserSessionByUserId(userId));
+    }
+
+    @Test
+    public void testSignOutWhenSignedOut() {
+        final String sessionToken = testUser.getSessionToken();
+        final String userId = testUser.getUser().getId();
+        authService.signOut(testUser.getSession());
+        authService.signOut(testUser.getSession());
+        assertNull(cacheProvider.getUserSession(sessionToken));
+        assertNull(cacheProvider.getUserSessionByUserId(userId));
+    }
 }
