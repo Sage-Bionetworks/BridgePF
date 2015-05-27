@@ -73,12 +73,13 @@ public class CacheProvider {
     }
 
     public UserSession getUserSession(final String sessionToken) {
-        final String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
-        final String ser = jedisOps.get(sessionKey);
-        if (ser == null) {
-            return null;
-        }
+        checkNotNull(sessionToken);
         try {
+            final String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
+            final String ser = jedisOps.get(sessionKey);
+            if (ser == null) {
+                return null;
+            }
             final UserSession session = bridgeObjectMapper.readValue(ser, UserSession.class);
             final String userKey = RedisKey.USER_SESSION.getRedisKey(session.getUser().getId());
             jedisOps.getTransaction(sessionKey)
@@ -93,8 +94,15 @@ public class CacheProvider {
     }
 
     public UserSession getUserSessionByUserId(final String userId) {
-        final String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
-        final String sessionToken = jedisOps.get(userKey);
+        checkNotNull(userId);
+        String sessionToken = null;
+        try {
+            final String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
+            sessionToken = jedisOps.get(userKey);
+        } catch(Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }
         if (sessionToken == null) {
             return null;
         }
