@@ -2,10 +2,8 @@ package org.sagebionetworks.bridge.stormpath;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.httpclient.auth.AuthScope.ANY;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -13,14 +11,6 @@ import java.util.SortedMap;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.SimpleHttpConnectionManager;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
-import org.apache.commons.httpclient.auth.AuthPolicy;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -28,7 +18,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
@@ -38,16 +27,21 @@ import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
+import com.stormpath.sdk.account.VerificationEmailRequest;
+import com.stormpath.sdk.account.VerificationEmailRequestBuilder;
 import com.stormpath.sdk.application.Application;
+import com.stormpath.sdk.application.Applications;
 import com.stormpath.sdk.authc.AuthenticationResult;
 import com.stormpath.sdk.authc.UsernamePasswordRequest;
 import com.stormpath.sdk.client.Client;
@@ -56,11 +50,6 @@ import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupMembership;
 import com.stormpath.sdk.impl.resource.AbstractResource;
 import com.stormpath.sdk.resource.ResourceException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 @Component("stormpathAccountDao")
 public class StormpathAccountDao implements AccountDao {
@@ -130,63 +119,16 @@ public class StormpathAccountDao implements AccountDao {
         }
         return null;
     }
-    
+
     @Override
     public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
         checkNotNull(email);
-        
-        // This is painful, it's not in the Java SDK. I hope we can come back to this when it's in their SDK
-        // and move it over.
-        SimpleHttpConnectionManager manager = new SimpleHttpConnectionManager();
-        int status = 202; // The Stormpath resend method returns 202 "Accepted" when successful
-        byte[] responseBody = new byte[0];
-        try {
-            BridgeConfig config = BridgeConfigFactory.getConfig();
-            
-            String bodyJson = "{\"login\":\""+email.getEmail()+"\"}";
-            
-            HttpClient client = new HttpClient(manager);
-            
-            PostMethod post = new PostMethod(this.application.getHref() + "/verificationEmails");
-            post.setRequestHeader("Accept", "application/json");
-            post.setRequestHeader("Content-Type", "application/json");
-            post.setRequestHeader("Bridge-Study", studyIdentifier.getIdentifier());
-            post.setRequestEntity(new StringRequestEntity(bodyJson, "application/json", "UTF-8"));
-
-            UsernamePasswordCredentials creds = new UsernamePasswordCredentials(
-                    config.getStormpathId().trim(), config.getStormpathSecret().trim());
-            
-            client.getState().setCredentials(ANY, creds);
-            client.getParams().setParameter(AuthPolicy.AUTH_SCHEME_PRIORITY, Lists.newArrayList(AuthPolicy.DIGEST));
-            client.getParams().setAuthenticationPreemptive(true);
-            
-            status = client.executeMethod(post);
-            responseBody = post.getResponseBody();
-
-        } catch(ResourceException e) {
-            rethrowResourceException(e, null);
-        } catch(Throwable throwable) {
-            throw new BridgeServiceException(throwable);
-        } finally {
-            manager.shutdown();
-        }
-        // If it *wasn't* a 202, then there should be a JSON message included with the response...
-        if (status != 202) {
-
-            // One common response, that the email no longer exists, we have mapped to a 404, so do that 
-            // here as well. Otherwise we treat it on the API side as a 503 error, a service unavailable problem.
-            JsonNode node = null;
-            try {
-                node = BridgeObjectMapper.get().readTree(responseBody);    
-            } catch(IOException e) {
-                throw new BridgeServiceException(e);
-            }
-            String message = node.get("message").asText();
-            if (message.contains("does not match a known resource")) {
-                throw new EntityNotFoundException(Account.class);
-            }
-            throw new ServiceUnavailableException(message);
-        }
+        VerificationEmailRequestBuilder requestBuilder = Applications.verificationEmailBuilder();
+        VerificationEmailRequest request = requestBuilder
+                .setAccountStore(application.getDefaultAccountStore())
+                .setLogin(email.getEmail())
+                .build();
+        application.sendVerificationEmail(request);
     }
 
     @Override

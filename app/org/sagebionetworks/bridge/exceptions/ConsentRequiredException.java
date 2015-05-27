@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.exceptions;
 
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 
 @SuppressWarnings("serial")

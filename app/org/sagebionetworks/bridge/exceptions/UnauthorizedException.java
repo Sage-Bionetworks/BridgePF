@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.exceptions;
 
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 
 @SuppressWarnings("serial")
 @NoStackTraceException
