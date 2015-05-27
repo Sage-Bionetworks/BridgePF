@@ -167,6 +167,7 @@ public class TestSurvey extends DynamoSurvey {
         setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
         setVersion(2L);
         setPublished(true);
+        setSchemaRevision(42);
         setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         List<SurveyElement> elements = getElements();
         elements.add(booleanQuestion);

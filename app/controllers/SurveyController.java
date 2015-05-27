@@ -190,7 +190,7 @@ public class SurveyController extends BaseController {
         UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         
-        Survey survey = DynamoSurvey.fromJson(requestToJSON(request()));
+        Survey survey = parseJson(request(), Survey.class);
         survey.setStudyIdentifier(studyId.getIdentifier());
         
         survey = surveyService.createSurvey(survey);
@@ -225,7 +225,7 @@ public class SurveyController extends BaseController {
         
         // The parameters in the URL take precedence over anything declared in 
         // the object itself.
-        survey = DynamoSurvey.fromJson(requestToJSON(request()));
+        survey = parseJson(request(), Survey.class);
         survey.setGuid(surveyGuid);
         survey.setCreatedOn(createdOn);
         survey.setStudyIdentifier(studyId.getIdentifier());

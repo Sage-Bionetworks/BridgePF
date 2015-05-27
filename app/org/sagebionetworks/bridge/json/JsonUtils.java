@@ -9,16 +9,12 @@ import java.util.Set;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DataType;
-import org.sagebionetworks.bridge.models.surveys.SurveyElement;
-import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
-import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 
@@ -52,7 +48,7 @@ public class JsonUtils {
 
     public static Long asLong(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
-            return new Long(parent.get(property).asLong());
+            return parent.get(property).asLong();
         }
         return null;
     }
@@ -66,7 +62,7 @@ public class JsonUtils {
 
     public static Integer asInt(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
-            return new Integer(parent.get(property).asInt());
+            return parent.get(property).asInt();
         }
         return null;
     }
@@ -180,25 +176,4 @@ public class JsonUtils {
         }
         return results;
     }
-
-    public static ArrayNode asArrayNode(List<UIHint> list) {
-        ArrayNode array = JsonNodeFactory.instance.arrayNode();
-        for (UIHint element : list) {
-            array.add(element.name().toLowerCase());
-        }
-        return array;
-    }
-    
-    public static List<SurveyElement> asSurveyElementsArray(JsonNode node, String propertyName) {
-        ArrayNode elementsNode = JsonUtils.asArrayNode(node, propertyName);
-        if (elementsNode != null) {
-            List<SurveyElement> elements = Lists.newArrayListWithCapacity(elementsNode.size());
-            for (JsonNode elementNode : elementsNode) {
-                elements.add(SurveyElementFactory.fromJson(elementNode));
-            }
-            return elements;
-        }
-        return null;
-    }
-
 }
