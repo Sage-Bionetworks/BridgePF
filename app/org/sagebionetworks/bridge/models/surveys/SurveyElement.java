@@ -1,7 +1,11 @@
 package org.sagebionetworks.bridge.models.surveys;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import org.sagebionetworks.bridge.json.JsonNodeToSurveyElementConverter;
+
+@JsonDeserialize(converter = JsonNodeToSurveyElementConverter.class)
 public interface SurveyElement {
 
     public String getSurveyCompoundKey();

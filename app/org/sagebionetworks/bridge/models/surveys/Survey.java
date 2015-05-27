@@ -30,13 +30,22 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
     
     public String getName();
     public void setName(String name);
-    
+
     public String getIdentifier();
     public void setIdentifier(String identifier);
 
     public boolean isPublished();
     public void setPublished(boolean published);
-    
+
+    /**
+     * Gets the upload schema revision that corresponds to this survey. See
+     * {@link org.sagebionetworks.bridge.models.upload.UploadSchema#getRevision} for more details.
+     */
+    public Integer getSchemaRevision();
+
+    /** @see #getSchemaRevision */
+    public void setSchemaRevision(Integer schemaRevision);
+
     public List<SurveyElement> getElements();
     public void setElements(List<SurveyElement> elements);
     
