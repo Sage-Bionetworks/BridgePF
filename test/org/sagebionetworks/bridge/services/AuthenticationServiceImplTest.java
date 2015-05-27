@@ -76,18 +76,20 @@ public class AuthenticationServiceImplTest {
     @Test
     public void signInCorrectCredentials() throws Exception {
         UserSession newSession = authService.getSession(testUser.getSessionToken());
-
         assertEquals("Username is for test2 user", newSession.getUser().getUsername(), testUser.getUsername());
         assertTrue("Session token has been assigned", StringUtils.isNotBlank(testUser.getSessionToken()));
     }
 
     @Test
     public void signInWhenSignedIn() throws Exception {
+        String sessionToken = testUser.getSessionToken();
         UserSession newSession = authService.signIn(testUser.getStudy(), testUser.getSignIn());
         assertEquals("Username is for test2 user", testUser.getUsername(), newSession.getUser().getUsername());
+        assertEquals("Should update the existing session instead of creating a new one.",
+                sessionToken, newSession.getSessionToken());
     }
-    
-    @Test 
+
+    @Test
     public void signInSetsSharingScope() { 
         UserSession newSession = authService.signIn(testUser.getStudy(), testUser.getSignIn());
         assertEquals(SharingScope.NO_SHARING, newSession.getUser().getSharingScope()); // this is the default.

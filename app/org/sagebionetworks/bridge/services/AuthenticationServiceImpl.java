@@ -200,31 +200,24 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         accountDao.resetPassword(passwordReset);
     }
 
-    private UserSession getSessionFromAccount(Study study, Account account) {
-        final UserSession session = cacheProvider.getUserSessionByUserId(account.getId());
-        if (session != null) {
-            return session;
-        }
-        final UserSession newSession = new UserSession();
-        newSession.setAuthenticated(true);
-        newSession.setEnvironment(config.getEnvironment().name().toLowerCase());
-        newSession.setSessionToken(BridgeUtils.generateGuid());
-        // Internal session token to identify sessions internally (e.g. in metrics)
-        newSession.setInternalSessionToken(BridgeUtils.generateGuid());
-        newSession.setStudyIdentifier(study.getStudyIdentifier());
+    private UserSession getSessionFromAccount(final Study study, final Account account) {
+
+        final UserSession session = getSession(account);
+        session.setAuthenticated(true);
+        session.setEnvironment(config.getEnvironment().name().toLowerCase());
+        session.setStudyIdentifier(study.getStudyIdentifier());
 
         final User user = new User(account);
         user.setStudyKey(study.getIdentifier());
 
         final String healthCode = getHealthCode(study, account);
         user.setHealthCode(healthCode);
-        
+
         user.setSharingScope(optionsService.getSharingScope(healthCode));
         user.setSignedMostRecentConsent(consentService.hasUserSignedMostRecentConsent(study, user));
         user.setConsent(consentService.hasUserConsentedToResearch(study, user));
-        
-        // And now for some exceptions...
 
+        // And now for some exceptions...
         // All administrators and all researchers are assumed to consent when using any API.
         // This is needed so they can sign in without facing a 412 exception.
         if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
@@ -236,7 +229,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             user.setConsent(true);
         }
 
-        newSession.setUser(user);
+        session.setUser(user);
+        return session;
+    }
+
+    private UserSession getSession(final Account account) {
+        final UserSession session = cacheProvider.getUserSessionByUserId(account.getId());
+        if (session != null) {
+            return session;
+        }
+        final UserSession newSession = new UserSession();
+        newSession.setSessionToken(BridgeUtils.generateGuid());
+        // Internal session token to identify sessions internally (e.g. in metrics)
+        newSession.setInternalSessionToken(BridgeUtils.generateGuid());
         return newSession;
     }
 
