@@ -134,7 +134,7 @@ public class StormPathUserAdminServiceTest {
     }
 
     @Test
-    public void testDeletingUserWhenSignedOut() {
+    public void testDeleteUserWhenSignedOut() {
         UserSession session = userAdminService.createUser(signUp, study, true, true);
         authService.signOut(session);
         // Shouldn't crash
