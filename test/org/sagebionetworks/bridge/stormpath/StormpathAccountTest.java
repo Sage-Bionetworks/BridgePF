@@ -105,15 +105,15 @@ public class StormpathAccountTest {
     
     @Test
     public void newSensitiveValueIsEncryptedWithLastEncryptor() {
-        acct.setPhone("111-222-3333");
+        acct.setAttribute("phone", "111-222-3333");
         
         assertEquals("111-222-3333-encryptor2encrypted", data.get("phone"));
-        assertEquals("111-222-3333", acct.getPhone());
+        assertEquals("111-222-3333", acct.getAttribute("phone"));
     }
     
     @Test
     public void noValueSupported() {
-        assertNull(acct.getPhone());
+        assertNull(acct.getAttribute("phone"));
     }
     
     @Test
@@ -121,12 +121,12 @@ public class StormpathAccountTest {
         data.put("phone", "111-222-3333-encryptor1encrypted");
         data.put("phone_version", 1);
 
-        assertEquals("111-222-3333", acct.getPhone());
+        assertEquals("111-222-3333", acct.getAttribute("phone"));
         
-        acct.setPhone(acct.getPhone());
+        acct.setAttribute("phone", acct.getAttribute("phone"));
         
         assertEquals("111-222-3333-encryptor2encrypted", data.get("phone"));
-        assertEquals("111-222-3333", acct.getPhone());
+        assertEquals("111-222-3333", acct.getAttribute("phone"));
     }
     
     @Test
@@ -144,10 +144,10 @@ public class StormpathAccountTest {
     
     @Test
     public void canClearKeyValue() {
-        acct.setPhone("111-222-3333");
-        acct.setPhone(null);
+        acct.setAttribute("phone", "111-222-3333");
+        acct.setAttribute("phone", null);
         
-        assertNull(acct.getPhone());
+        assertNull(acct.getAttribute("phone"));
     }
     
     @Test
@@ -197,7 +197,7 @@ public class StormpathAccountTest {
         data.put("phone", "555-555-5555-encryptor2encrypted");
         
         // This must use version 2, there's no version listed.
-        String phone = acct.getPhone();
+        String phone = acct.getAttribute("phone");
         assertEquals("555-555-5555", phone);
     }
     
@@ -207,7 +207,7 @@ public class StormpathAccountTest {
         data.put("phone_version", 2);
         
         // This must use version 2, there's no version listed.
-        String phone = acct.getPhone();
+        String phone = acct.getAttribute("phone");
         assertEquals("555-555-5555", phone);
     }
     
@@ -216,12 +216,12 @@ public class StormpathAccountTest {
         data.put("phone", "encryptedphonenumber");
         data.put("phone_version", 3);
         
-        acct.getPhone();
+        acct.getAttribute("phone");
     }
     
     @Test
     public void retrievingNullEncryptedFieldReturnsNull() {
-        String phone = acct.getPhone();
+        String phone = acct.getAttribute("phone");
         assertNull(phone);
     }
     
