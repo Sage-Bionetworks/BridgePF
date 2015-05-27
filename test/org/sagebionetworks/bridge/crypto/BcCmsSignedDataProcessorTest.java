@@ -19,6 +19,7 @@ import org.junit.Test;
 
 public class BcCmsSignedDataProcessorTest {
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void test() throws Exception {
 

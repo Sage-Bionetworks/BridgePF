@@ -36,7 +36,7 @@ public class BackfillRecordFactory {
         checkNotNull(study);
         checkNotNull(account);
         checkNotNull(operation);
-        return backfillDao.createRecord(task.getId(), study.getIdentifier(), account.getEmail(), operation);
+        return backfillDao.createRecord(task.getId(), study.getIdentifier(), account.getId(), operation);
     }
 
     /**
@@ -50,7 +50,7 @@ public class BackfillRecordFactory {
         checkNotNull(message);
         final String taskId = task.getId();
         final String studyId = study.getIdentifier();
-        final String accountId = account.getEmail();
+        final String accountId = account.getId();
         return new BackfillRecord() {
             @Override
             public String getTaskId() {

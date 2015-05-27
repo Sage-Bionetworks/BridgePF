@@ -44,6 +44,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.application.Application;
@@ -108,8 +109,12 @@ public class StormpathAccountDao implements AccountDao {
     public Iterator<Account> getStudyAccounts(Study study) {
         checkNotNull(study);
 
+        // Otherwise default pagination is 25 records per request (100 is the limit, or we'd go higher).
+        // Also eagerly fetch custom data, which we typically examine every time for every user.
+        AccountCriteria criteria = Accounts.criteria().limitTo(100).withCustomData().withGroupMemberships();
+        
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-        return new StormpathAccountIterator(study, encryptors, directory.getAccounts().iterator());
+        return new StormpathAccountIterator(study, encryptors, directory.getAccounts(criteria).iterator());
     }
 
     @Override

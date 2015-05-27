@@ -32,8 +32,8 @@ public class BackfillRecordFactoryTest {
         Study study = mock(Study.class);
         final String studyId = "Study ID";
         Account account = mock(Account.class);
-        final String accountId = "email@email.com";
-        when(account.getEmail()).thenReturn(accountId);
+        final String accountId = "12345";
+        when(account.getId()).thenReturn(accountId);
         when(study.getIdentifier()).thenReturn(studyId);
         final String operation = "Some operation";
         recordFactory.createAndSave(task, study, account, operation);
@@ -66,7 +66,7 @@ public class BackfillRecordFactoryTest {
         when(study.getIdentifier()).thenReturn(studyId);
         Account account = mock(Account.class);
         final String accountId = "Account ID";
-        when(account.getEmail()).thenReturn(accountId);
+        when(account.getId()).thenReturn(accountId);
         final String message = "message";
         BackfillRecord record = recordFactory.createOnly(task, study, account, message);
         assertEquals(taskId, record.getTaskId());
