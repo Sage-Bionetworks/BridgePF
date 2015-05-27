@@ -29,7 +29,7 @@ public class CacheProviderTest {
     @Before
     public void before() {
         cacheProvider = new CacheProvider();
-        cacheProvider.setStringOps(getSimpleStringOps());
+        cacheProvider.setJedisOps(getSimpleStringOps());
     }
 
     @Test

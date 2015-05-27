@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
@@ -102,7 +103,7 @@ public class StormpathAccountIteratorTest {
         
         Directory dir = mock(Directory.class);
         when(dir.getHref()).thenReturn(study.getStormpathHref());
-        when(dir.getAccounts()).thenReturn(list);
+        when(dir.getAccounts(any(AccountCriteria.class))).thenReturn(list);
         return dir;
     }
     

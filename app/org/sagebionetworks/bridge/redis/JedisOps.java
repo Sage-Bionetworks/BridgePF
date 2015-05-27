@@ -127,9 +127,9 @@ public class JedisOps {
     }
 
     /**
-     * Increment the value by one
-     * @param key
-     * @return the new value of the key (after incrementing).
+     * Increments the value by one.
+     *
+     * @return the new value of the key after incrementing.
      */
     public Long incr(final String key) {
         return new AbstractJedisTemplate<Long>() {
@@ -141,9 +141,9 @@ public class JedisOps {
     }
 
     /**
-     * Decrement the value by one.
-     * @param key
-     * @return the new value of the key (after decrementing).
+     * Decrements the value by one.
+     *
+     * @return the new value of the key after decrementing.
      */
     public Long decr(final String key) {
         return new AbstractJedisTemplate<Long>() {
@@ -152,6 +152,21 @@ public class JedisOps {
                 return jedis.decr(key);
             }
         }.execute();
+    }
+
+    /**
+     * Starts a transaction with the optional list of keys to watch.
+     *
+     * @param keys
+     *            The optional list of keys to watch.
+     * @return The transaction object.
+     */
+    public JedisTransaction getTransaction(final String... keys) {
+        final Jedis jedis = jedisPool.getResource();
+        if (keys != null && keys.length > 0) {
+            jedis.watch(keys);
+        }
+        return new JedisTransaction(jedis);
     }
 
     /**

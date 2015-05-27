@@ -49,10 +49,24 @@ public abstract class BaseController extends Controller {
 
     private static ObjectMapper mapper = BridgeObjectMapper.get();
 
-    protected AuthenticationService authenticationService;
-    protected StudyService studyService;
-    protected CacheProvider cacheProvider;
-    protected BridgeConfig bridgeConfig;
+    private BridgeConfig bridgeConfig;
+    private CacheProvider cacheProvider;
+
+    StudyService studyService;
+    AuthenticationService authenticationService;
+
+    @Autowired
+    public void setBridgeConfig(BridgeConfig bridgeConfig) {
+        this.bridgeConfig = bridgeConfig;
+    }
+    BridgeConfig getBridgeConfig() {
+        return bridgeConfig;
+    }
+
+    @Autowired
+    public void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
+    }
 
     @Autowired
     public void setStudyService(StudyService studyService) {
@@ -62,16 +76,6 @@ public abstract class BaseController extends Controller {
     @Autowired
     public void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
-    }
-
-    @Autowired
-    public void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
-    }
-
-    @Autowired
-    public void setBridgeConfig(BridgeConfig bridgeConfig) {
-        this.bridgeConfig = bridgeConfig;
     }
 
     /**
