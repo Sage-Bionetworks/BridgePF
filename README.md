@@ -7,8 +7,8 @@ Development
 ------------------
 ##### Prerequisites
 
-1. Install VirtualBox and Vagrant.
-2. Create the local configuration file `~/.sbt/bridge.conf`. Make sure the file is accessible only by you. In this file, you will need to specify the resource locations and their corresponding credentials.
+1. Install [VirtualBox](https://www.virtualbox.org/) and [Vagrant](https://www.vagrantup.com/).
+2. Create the local configuration file `~/.sbt/bridge.conf`. Make sure the file is accessible only by you. In this file, you will need to specify the resource locations and their corresponding credentials. See the template, `conf/bridge.conf`, in source code.
 
 ##### How to test locally
 
