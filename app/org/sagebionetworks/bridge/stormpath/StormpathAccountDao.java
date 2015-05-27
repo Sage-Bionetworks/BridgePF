@@ -109,7 +109,8 @@ public class StormpathAccountDao implements AccountDao {
     public Iterator<Account> getStudyAccounts(Study study) {
         checkNotNull(study);
 
-        // Otherwise default pagination is 25 records per request (100 is the limit, or we'd go higher.
+        // Otherwise default pagination is 25 records per request (100 is the limit, or we'd go higher).
+        // Also eagerly fetch custom data, which we typically examine every time for every user.
         AccountCriteria criteria = Accounts.criteria().limitTo(100).withCustomData().withGroupMemberships();
         
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
