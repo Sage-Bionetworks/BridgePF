@@ -50,7 +50,7 @@ public class ParticipantRosterGenerator implements Runnable {
 
     @Override
     public void run() {
-        logger.info("Running participant roster generator");
+        logger.debug("Running participant roster generator...");
         try {
             OptionLookup sharingLookup = optionsService.getOptionForAllStudyParticipants(
                 study, ParticipantOption.SHARING_SCOPE);
@@ -80,18 +80,17 @@ public class ParticipantRosterGenerator implements Runnable {
                         participant.put(attribute, value);
                     }
                     participants.add(participant);
-                    logger.info("  processing account #" + (count++));
+                    logger.debug("processing account #" + (count++));
                 } else {
-                    logger.info("  skipping account #" + (count++));
+                    logger.debug("skipping account #" + (count++));
                 }
             }
-            logger.info("  sorting");
             Collections.sort(participants, STUDY_PARTICIPANT_COMPARATOR);
 
             MimeTypeEmailProvider roster = new ParticipantRosterProvider(study, participants);
-            logger.info("  sending roster to the sendMailService");
+            logger.debug("sending roster to the sendMailService");
             sendMailService.sendEmail(roster);
-            logger.info("  roster sent");
+            logger.debug("roster sent.");
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
