@@ -27,7 +27,6 @@ libraryDependencies ++= Seq(
   "org.quartz-scheduler" % "quartz" % "2.2.1",
   "javax.mail" % "mail" % "1.4.7",
   "joda-time" % "joda-time" % "2.7",
-  "org.apache.httpcomponents" % "httpcore" % "4.4.1",
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC4.2",
   "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC4.2",
   "redis.clients" % "jedis" % "2.7.2",
