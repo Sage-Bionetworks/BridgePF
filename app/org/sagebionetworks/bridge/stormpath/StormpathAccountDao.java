@@ -122,10 +122,13 @@ public class StormpathAccountDao implements AccountDao {
 
     @Override
     public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
+        checkNotNull(studyIdentifier);
         checkNotNull(email);
+        final Study study = studyService.getStudy(studyIdentifier);
+        final Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
         VerificationEmailRequestBuilder requestBuilder = Applications.verificationEmailBuilder();
         VerificationEmailRequest request = requestBuilder
-                .setAccountStore(application.getDefaultAccountStore())
+                .setAccountStore(directory)
                 .setLogin(email.getEmail())
                 .build();
         application.sendVerificationEmail(request);
