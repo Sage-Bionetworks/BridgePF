@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -66,7 +65,7 @@ public class CacheProvider {
                     throw new BridgeServiceException("Session storage error.");
                 }
             }
-        } catch (JsonProcessingException e) {
+        } catch (Throwable e) {
             promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);
         }
