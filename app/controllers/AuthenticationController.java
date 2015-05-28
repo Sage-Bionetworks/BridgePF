@@ -48,9 +48,9 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result signOut() throws Exception {
-        UserSession session = getSessionIfItExists();
+        final UserSession session = getSessionIfItExists();
         if (session != null) {
-            authenticationService.signOut(session.getSessionToken());
+            authenticationService.signOut(session);
         }
         response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         return okResult("Signed out.");

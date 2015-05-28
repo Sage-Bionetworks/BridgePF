@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Iterator;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.HealthIdDao;
@@ -41,6 +42,7 @@ public class UserAdminServiceImpl implements UserAdminService {
     private TaskService taskService;
     private TaskEventService taskEventService;
     private DistributedLockDao lockDao;
+    private CacheProvider cacheProvider;
 
     @Autowired
     public void setAuthenticationService(AuthenticationServiceImpl authenticationService) {
@@ -82,6 +84,10 @@ public class UserAdminServiceImpl implements UserAdminService {
     public void setSurveyResponseService(SurveyResponseService surveyResponseService) {
         this.surveyResponseService = surveyResponseService;
     }
+    @Autowired
+    public void setCacheProvider(CacheProvider cache) {
+        this.cacheProvider = cache;
+    }
     @Override
     public UserSession createUser(SignUp signUp, Study study, boolean signUserIn, boolean consentUser) {
         checkNotNull(study, "Study cannot be null");
@@ -104,7 +110,7 @@ public class UserAdminServiceImpl implements UserAdminService {
             }
         }
         if (!signUserIn) {
-            authenticationService.signOut(newUserSession.getSessionToken());
+            authenticationService.signOut(newUserSession);
             newUserSession = null;
         }
         return newUserSession;
@@ -113,17 +119,15 @@ public class UserAdminServiceImpl implements UserAdminService {
     @Override
     public void deleteUser(Study study, String email) {
         checkNotNull(study);
-        Preconditions.checkArgument(StringUtils.isNotBlank(email));         
-        
+        Preconditions.checkArgument(StringUtils.isNotBlank(email));
         Account account = accountDao.getAccount(study, email);
         if (account != null) {
-            deleteUser(account);    
+            deleteUser(account);
         }
     }
-    
+
     void deleteUser(Account account) {
         checkNotNull(account);
-
         int retryCount = 0;
         boolean shouldRetry = true;
         while (shouldRetry) {
@@ -164,6 +168,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                 accountDao.deleteAccount(study, account.getEmail());
                 // Check if the delete succeeded
                 success = accountDao.getAccount(study, account.getEmail()) == null ? true : false;
+                cacheProvider.removeSessionByUserId(account.getId());
             }
         } catch(Throwable t) {
             success = false;
@@ -189,7 +194,7 @@ public class UserAdminServiceImpl implements UserAdminService {
                 String healthCode = healthIdDao.getCode(account.getHealthId());
                 User user = new User(account);
                 user.setHealthCode(healthCode);
-                
+
                 consentService.withdrawConsent(study, user);
 
                 // AuthenticationServiceImpl.getHealthCode() ensures that health code will be defined. However, this is

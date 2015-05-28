@@ -131,6 +131,25 @@ public class StormPathUserAdminServiceTest {
         } catch(EntityAlreadyExistsException e) { 
             assertEquals("Account already exists.", e.getMessage());
         }
-        
+    }
+
+    @Test
+    public void testDeleteUserWhenSignedOut() {
+        UserSession session = userAdminService.createUser(signUp, study, true, true);
+        authService.signOut(session);
+        assertNull(authService.getSession(session.getSessionToken()));
+        // Shouldn't crash
+        userAdminService.deleteUser(study, session.getUser().getEmail());
+        assertNull(authService.getSession(session.getSessionToken()));
+    }
+
+    @Test
+    public void testDeleteUserThatHasBeenDeleted() {
+        UserSession session = userAdminService.createUser(signUp, study, true, true);
+        userAdminService.deleteUser(study, session.getUser().getEmail());
+        assertNull(authService.getSession(session.getSessionToken()));
+        // Delete again shouldn't crash
+        userAdminService.deleteUser(study, session.getUser().getEmail());
+        assertNull(authService.getSession(session.getSessionToken()));
     }
 }

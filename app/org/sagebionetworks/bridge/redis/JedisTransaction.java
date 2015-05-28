@@ -12,7 +12,7 @@ import redis.clients.jedis.exceptions.JedisException;
 /**
  * Provides abstraction over Jedis's transactions.
  */
-public final class JedisTransaction implements AutoCloseable {
+public class JedisTransaction implements AutoCloseable {
 
     private final Logger logger = LoggerFactory.getLogger(JedisTransaction.class);
 
@@ -26,6 +26,16 @@ public final class JedisTransaction implements AutoCloseable {
 
     public JedisTransaction setex(final String key, final int seconds, final String value) {
         transaction.setex(key, seconds, value);
+        return this;
+    }
+
+    public JedisTransaction expire(final String key, final int seconds) {
+        transaction.expire(key, seconds);
+        return this;
+    }
+
+    public JedisTransaction del(final String key) {
+        transaction.del(key);
         return this;
     }
 
