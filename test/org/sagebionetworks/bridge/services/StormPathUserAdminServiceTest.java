@@ -142,4 +142,14 @@ public class StormPathUserAdminServiceTest {
         userAdminService.deleteUser(study, session.getUser().getEmail());
         assertNull(authService.getSession(session.getSessionToken()));
     }
+
+    @Test
+    public void testDeleteUserThatHasBeenDeleted() {
+        UserSession session = userAdminService.createUser(signUp, study, true, true);
+        userAdminService.deleteUser(study, session.getUser().getEmail());
+        assertNull(authService.getSession(session.getSessionToken()));
+        // Delete again shouldn't crash
+        userAdminService.deleteUser(study, session.getUser().getEmail());
+        assertNull(authService.getSession(session.getSessionToken()));
+    }
 }
