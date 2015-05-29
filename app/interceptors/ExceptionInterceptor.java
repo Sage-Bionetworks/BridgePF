@@ -5,7 +5,6 @@ import models.RequestUtils;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -72,7 +71,7 @@ public class ExceptionInterceptor implements MethodInterceptor {
     private String getMessage(final Throwable throwable, final int status) {
         String message = throwable.getMessage();
         if (StringUtils.isBlank(message)) {
-            message = HttpStatus.getStatusText(status);
+            message = Integer.toString(status);
         }
         return message;
     }
