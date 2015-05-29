@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+export PATH=$HOME/.heroku/with_jmap/bin:$PATH
+
+unset JAVA_HOME
+
+eval "$@"
