@@ -133,7 +133,7 @@ public class StormpathAccountDaoTest {
             assertNull(account.getFirstName()); // defaults are not visible
             assertNull(account.getLastName());
             account.setEmail(email);
-            account.setPhone("123-456-7890");
+            account.setAttribute("phone", "123-456-7890");
             account.setHealthId("abc");
             account.setUsername(random);
             account.setConsentSignature(sig);
@@ -146,7 +146,7 @@ public class StormpathAccountDaoTest {
             assertNull(newAccount.getFirstName()); // defaults still not visible
             assertNull(newAccount.getLastName());
             assertEquals(account.getEmail(), newAccount.getEmail());
-            assertEquals(account.getPhone(), newAccount.getPhone());
+            assertEquals(account.getAttribute("phone"), newAccount.getAttribute("phone"));
             assertEquals(account.getHealthId(), newAccount.getHealthId());
             assertEquals(account.getUsername(), newAccount.getUsername());
             assertEquals(account.getConsentSignature(), newAccount.getConsentSignature());

@@ -23,11 +23,11 @@ import com.stormpath.sdk.group.Group;
  * Account values are decrypted with the appropriate Encryptor implementation based on the version 
  * stored with the encrypted value; values are always encrypted with the most recent Encryptor 
  * implementation. To migrate to the latest encryption implementation, you can simply call (using 
- * the example of the phone number) <code>account.setPhone(account.getPhone())</code>, and then 
- * save the account via the AccountDao.
+ * the example of the phone number) <code>account.setAttribute(account.getAttribute("phone"))</code>, 
+ * and then save the account via the AccountDao.
  * 
  * There are historical exceptions including the "<studyId>version" key for the health ID and 
- * no version for the phone value; these are handled in the current implementation. Again on 
+ * no version for the phone value; these are handled in the current implementation. Again, on 
  * updating these values, the version keys will be updated.
  */
 @BridgeTypeName("Account")
@@ -113,14 +113,6 @@ class StormpathAccount implements Account {
         } else {
             acct.setSurname(lastName);    
         }
-    }
-    @Override
-    public String getPhone() {
-        return decryptFrom(PHONE_ATTRIBUTE);
-    }
-    @Override
-    public void setPhone(String phone) {
-        encryptTo(PHONE_ATTRIBUTE, phone);
     }
     @Override
     public String getAttribute(String name) {
