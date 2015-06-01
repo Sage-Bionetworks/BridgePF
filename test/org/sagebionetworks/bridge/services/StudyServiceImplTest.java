@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -15,6 +16,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -22,6 +24,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -31,6 +34,9 @@ public class StudyServiceImplTest {
 
     @Resource
     StudyServiceImpl studyService;
+    
+    @Resource
+    StudyConsentServiceImpl studyConsentService;
     
     private CacheProvider cache;
     
@@ -105,6 +111,11 @@ public class StudyServiceImplTest {
         verify(cache).setStudy(study);
         verifyNoMoreInteractions(cache);
         reset(cache);
+        
+        // A default, active consent should be created for the study.
+        StudyConsentView view = studyConsentService.getActiveConsent(study.getStudyIdentifier());
+        assertTrue(view.getDocumentContent().contains(BridgeConstants.BRIDGE_DEFAULT_CONSENT_DOCUMENT));
+        assertTrue(view.getActive());
         
         study = studyService.getStudy(identifier);
         assertEquals(identifier, study.getIdentifier());
