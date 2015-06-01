@@ -4,6 +4,8 @@ import org.joda.time.DateTimeZone;
 
 public class BridgeConstants {
 
+    public static final String BRIDGE_DEFAULT_CONSENT_DOCUMENT = "<html><head><title>Consent Agreement</title></head><body><p>This is a placeholder for your consent document.</p></body></html>";
+    
     public static final String BRIDGE_API_STATUS_HEADER = "Bridge-Api-Status";
 
     public static final String BRIDGE_DEPRECATED_STATUS = "deprecated";

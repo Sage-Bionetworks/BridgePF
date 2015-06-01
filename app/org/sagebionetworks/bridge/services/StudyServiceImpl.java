@@ -9,6 +9,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
@@ -16,6 +17,8 @@ import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
+import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -35,6 +38,7 @@ public class StudyServiceImpl implements StudyService {
     private DistributedLockDao lockDao;
     private StudyValidator validator;
     private CacheProvider cacheProvider;
+    private StudyConsentService studyConsentService;
     
     @Resource(name="uploadCertificateService")
     public void setUploadCertificateService(UploadCertificateService uploadCertService) {
@@ -59,6 +63,10 @@ public class StudyServiceImpl implements StudyService {
     @Autowired
     public void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
+    }
+    @Autowired
+    public void setStudyConsentService(StudyConsentService studyConsentService) {
+        this.studyConsentService = studyConsentService;
     }
     
     @Override
@@ -97,14 +105,21 @@ public class StudyServiceImpl implements StudyService {
             if (studyDao.doesIdentifierExist(study.getIdentifier())) {
                 throw new EntityAlreadyExistsException(study);
             }
+            
+            // The system is broken if the study does not have a consent. Create a default consent so the study is usable,
+            // do it first so if it throws an exception, a study isn't created.
+            StudyConsentForm consent = new StudyConsentForm(BridgeConstants.BRIDGE_DEFAULT_CONSENT_DOCUMENT);
+            StudyConsentView view = studyConsentService.addConsent(study.getStudyIdentifier(), consent);
+            studyConsentService.activateConsent(study.getStudyIdentifier(), view.getCreatedOn());
+            
             study.setResearcherRole(study.getIdentifier() + "_researcher");
 
             String directory = directoryDao.createDirectoryForStudy(study.getIdentifier());
             study.setStormpathHref(directory);
             uploadCertService.createCmsKeyPair(study.getIdentifier());
             study = studyDao.createStudy(study);
+            
             cacheProvider.setStudy(study);
-
         } finally {
             lockDao.releaseLock(Study.class, id, lockId);
         }
