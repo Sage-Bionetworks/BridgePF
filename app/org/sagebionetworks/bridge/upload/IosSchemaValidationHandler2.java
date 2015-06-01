@@ -77,7 +77,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             .put("SingleChoice", "choiceAnswers")
             .put("Text", "textAnswer")
             .put("TimeInterval", "intervalAnswer")
-            .put("TimeOfDay", "dateComponentAnswer")
+            .put("TimeOfDay", "dateComponentsAnswer")
             .build();
 
     private HealthDataDao healthDataDao;
