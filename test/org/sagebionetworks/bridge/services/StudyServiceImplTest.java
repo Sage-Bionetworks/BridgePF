@@ -114,7 +114,6 @@ public class StudyServiceImplTest {
         
         // A default, active consent should be created for the study.
         StudyConsentView view = studyConsentService.getActiveConsent(study.getStudyIdentifier());
-        assertNotNull(view);
         assertTrue(view.getDocumentContent().contains(BridgeConstants.BRIDGE_DEFAULT_CONSENT_DOCUMENT));
         assertTrue(view.getActive());
         
