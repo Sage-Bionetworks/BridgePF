@@ -48,16 +48,6 @@ public class StudyConsentBootstrapper {
             study.getUserProfileAttributes().add("can_be_recontacted");
             studyService.createStudy(study);
         }
-        for (Study study : studyService.getStudies()) {
-            StudyIdentifier studyIdentifier = study.getStudyIdentifier();
-            try {
-                studyConsentService.getActiveConsent(studyIdentifier);    
-            } catch(EntityNotFoundException e) {
-                StudyConsentForm form = new StudyConsentForm("<!DOCTYPE html><html><head><title></title></head><body><h1>Test Study Consent</h1></body></html>");
-                StudyConsentView consent = studyConsentService.addConsent(studyIdentifier, form);
-                studyConsentService.activateConsent(studyIdentifier, consent.getCreatedOn());
-            }
-        }
     }
 
 }
