@@ -1,11 +1,13 @@
 package org.sagebionetworks.bridge.dao;
 
+import org.sagebionetworks.bridge.models.studies.Study;
+
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.group.Group;
 
 public interface DirectoryDao {
 
-    public String createDirectoryForStudy(String identifier);
+    public String createDirectoryForStudy(Study study);
 
     public Directory getDirectoryForStudy(String identifier);
 

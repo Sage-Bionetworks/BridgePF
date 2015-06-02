@@ -9,9 +9,11 @@ import javax.annotation.Resource;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -19,7 +21,12 @@ import com.stormpath.sdk.application.AccountStoreMapping;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.directory.Directory;
+import com.stormpath.sdk.directory.PasswordPolicy;
+import com.stormpath.sdk.directory.PasswordStrength;
 import com.stormpath.sdk.group.Group;
+import com.stormpath.sdk.mail.EmailStatus;
+import com.stormpath.sdk.mail.MimeType;
+import com.stormpath.sdk.mail.ModeledEmailTemplate;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -43,7 +50,13 @@ public class StormpathDirectoryDaoTest {
     @Test
     public void crudDirectory() {
         identifier = TestUtils.randomName();
-        String stormpathHref = directoryDao.createDirectoryForStudy(identifier);
+        
+        DynamoStudy study = new DynamoStudy();
+        study.setIdentifier(identifier);
+        study.setName("Test Study");
+        study.setSupportEmail("support@test.com");
+        
+        String stormpathHref = directoryDao.createDirectoryForStudy(study);
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
         // Verify the directory and mapping were created
@@ -55,6 +68,31 @@ public class StormpathDirectoryDaoTest {
         
         Directory newDirectory = directoryDao.getDirectoryForStudy(identifier);
         assertEquals(directory.getHref(), newDirectory.getHref());
+        
+        PasswordPolicy passwordPolicy = newDirectory.getPasswordPolicy();
+        assertEquals(EmailStatus.ENABLED, passwordPolicy.getResetEmailStatus());
+        assertEquals(EmailStatus.DISABLED, passwordPolicy.getResetSuccessEmailStatus());
+        assertEquals(1, passwordPolicy.getResetEmailTemplates().getSize());
+        ModeledEmailTemplate template = passwordPolicy.getResetEmailTemplates().iterator().next();
+        
+        assertEquals("Test Study", template.getFromName());
+        assertEquals("support@test.com", template.getFromEmailAddress());
+        assertEquals("Test Study Password Reset", template.getSubject());
+        assertEquals(MimeType.PLAIN_TEXT, template.getMimeType());
+        String bodyText = String.format(BridgeConstants.BRIDGE_DEFAULT_PASSWORD_RESET_EMAIL, study.getName(), study.getSupportEmail());
+        assertEquals(bodyText, template.getTextBody());
+        String url = String.format("%s/mobile/resetPassword.html?study=%s", BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier());
+        assertEquals(url, template.getLinkBaseUrl());
+        
+        PasswordStrength strength = passwordPolicy.getStrength();
+        assertEquals(100, strength.getMaxLength());
+        assertEquals(2, strength.getMinLength());
+        assertEquals(0, strength.getMinLowerCase());
+        assertEquals(0, strength.getMinNumeric());
+        assertEquals(0, strength.getMinSymbol());
+        assertEquals(0, strength.getMinUpperCase());
+        assertEquals(0, strength.getMinDiacritic());
+        assertEquals(2, strength.getMinLength());
         
         directoryDao.deleteDirectoryForStudy(identifier);
         

@@ -84,6 +84,7 @@ public class StudyServiceImplTest {
         study = new DynamoStudy();
         study.setIdentifier(identifier);
         study.setName("Belgium Waffles [Test]");
+        study.setSupportEmail("bridge-testing@sagebase.org");
         study = studyService.createStudy(study);
         try {
             study = studyService.createStudy(study);
@@ -149,6 +150,7 @@ public class StudyServiceImplTest {
         study.setMinAgeOfConsent(18);
         study.setResearcherRole(identifier+"_researcher");
         study.setStormpathHref("http://dev-test-junk");
+        study.setSupportEmail("bridge-testing@sagebase.org");
         return study;
     }
 

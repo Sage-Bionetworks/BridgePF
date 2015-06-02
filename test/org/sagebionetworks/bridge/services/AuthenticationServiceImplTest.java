@@ -188,6 +188,7 @@ public class AuthenticationServiceImplTest {
         Study tempStudy = new DynamoStudy();
         tempStudy.setIdentifier("temp");
         tempStudy.setName("Temporary Study");
+        tempStudy.setSupportEmail("bridge-testing@sagebase.org");
         tempStudy = studyService.createStudy(tempStudy);
 
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);

@@ -6,6 +6,8 @@ public class BridgeConstants {
 
     public static final String BRIDGE_DEFAULT_CONSENT_DOCUMENT = "<html><head><title>Consent Agreement</title></head><body><p>This is a placeholder for your consent document.</p></body></html>";
     
+    public static final String BRIDGE_DEFAULT_PASSWORD_RESET_EMAIL = "Forgot your password?\n\nWe've received a request to reset the password for this email address.\n\nTo reset your password please click on this link or cut and paste this URL into your browser (link expires in ${expirationWindow} hours):\n${url}\n\nThis link takes you to a secure page where you can change your password.\n\nIf you don't want to reset your password, please ignore this message. Your password will not be reset.\n\n-------------------------------------------\nIf you have any questions, please feel free to contact %s at %s";
+    
     public static final String BRIDGE_API_STATUS_HEADER = "Bridge-Api-Status";
 
     public static final String BRIDGE_DEPRECATED_STATUS = "deprecated";

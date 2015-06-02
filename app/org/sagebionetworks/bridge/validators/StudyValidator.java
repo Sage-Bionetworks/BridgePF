@@ -35,6 +35,9 @@ public class StudyValidator implements Validator {
         if (StringUtils.isBlank(study.getName())) {
             errors.rejectValue("name", "is null or blank");
         }
+        if (StringUtils.isBlank(study.getSupportEmail())) {
+            errors.rejectValue("supportEmail", "is null or blank");
+        }
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
             if (UserProfile.FIXED_PROPERTIES.contains(userProfileAttribute)) {
                 String msg = String.format("'%s' conflicts with existing user profile property", userProfileAttribute);

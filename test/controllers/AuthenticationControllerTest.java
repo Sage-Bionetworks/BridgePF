@@ -152,6 +152,7 @@ public class AuthenticationControllerTest {
         secondStudy = new DynamoStudy();
         secondStudy.setIdentifier(id);
         secondStudy.setName("Second Test Study");
+        secondStudy.setSupportEmail("bridge-testing@sagebase.org");
         studyService.createStudy(secondStudy);
         
         Schedule schedule = new Schedule();

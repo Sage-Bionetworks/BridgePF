@@ -114,7 +114,7 @@ public class StudyServiceImpl implements StudyService {
             
             study.setResearcherRole(study.getIdentifier() + "_researcher");
 
-            String directory = directoryDao.createDirectoryForStudy(study.getIdentifier());
+            String directory = directoryDao.createDirectoryForStudy(study);
             study.setStormpathHref(directory);
             uploadCertService.createCmsKeyPair(study.getIdentifier());
             study = studyDao.createStudy(study);
