@@ -64,8 +64,10 @@ public class SendMailViaAmazonServiceConsentTest {
         service = new SendMailViaAmazonService();
         service.setSupportEmail(FROM_DEFAULT_AS_FORMATTED);
         service.setEmailClient(emailClient);
+        
+        studyConsent = mock(StudyConsent.class);
 
-       StudyConsentView view = new StudyConsentView(studyConsent, "<document>Had this been a real study: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
+        StudyConsentView view = new StudyConsentView(studyConsent, "<document>Had this been a real study: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
         
         studyConsentService = mock(StudyConsentService.class);
         when(studyConsentService.getActiveConsent(any(StudyIdentifier.class))).thenReturn(view);

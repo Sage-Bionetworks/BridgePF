@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
@@ -107,4 +108,12 @@ public class StudyConsentServiceImplTest {
         assertEquals("<document/>", view.getDocumentContent());
         toDelete.add(view);
     }
+    
+    
+    @Test(expected = InvalidEntityException.class)
+    public void invalidXmlStudyConsentThrowsException() {
+        StudyConsentForm form = new StudyConsentForm("<cml><p>This is not valid XML.</cml>");
+        studyConsentService.addConsent(new StudyIdentifierImpl("api"), form);
+    }
+    
 }
