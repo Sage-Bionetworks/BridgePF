@@ -86,7 +86,7 @@ public class Zipper {
     private byte[] toByteArray(final String entryName, final InputStream inputStream)
             throws IOException, ZipOverflowException {
         int offset = 0;
-        int length = 1024;
+        int length = 10000;
         byte[] bytes = new byte[length];
         int read = inputStream.read(bytes, offset, length - offset);
         while (read >= 0) {
@@ -95,7 +95,7 @@ public class Zipper {
                 throw new ZipOverflowException("Zip entry size is over the max allowed size. The entry " + entryName +
                         " has size more than " + offset + ". The max allowed size is" + maxZipEntrySize + ".");
             }
-            length = length * 2;
+            length = length * 3 / 2 + 1;
             byte[] newBytes = new byte[length];
             System.arraycopy(bytes, 0, newBytes, 0, offset);
             bytes = newBytes;
