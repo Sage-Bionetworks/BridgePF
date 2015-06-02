@@ -65,29 +65,7 @@ public class SendMailViaAmazonServiceConsentTest {
         service.setSupportEmail(FROM_DEFAULT_AS_FORMATTED);
         service.setEmailClient(emailClient);
 
-        studyConsent = new StudyConsent() {
-            @Override
-            public String getStudyKey() {
-                return TestConstants.TEST_STUDY_IDENTIFIER;
-            }
-            @Override
-            public long getCreatedOn() {
-                return 0;
-            }
-            @Override
-            public boolean getActive() {
-                return true;
-            }
-            @Override
-            public String getPath() {
-                return "conf/email-templates/api-consent.html";
-            }
-            @Override
-            public String getStoragePath() {
-                return null;
-            }
-        };
-        StudyConsentView view = new StudyConsentView(studyConsent, "<document>Had this been a real study: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
+       StudyConsentView view = new StudyConsentView(studyConsent, "<document>Had this been a real study: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
         
         studyConsentService = mock(StudyConsentService.class);
         when(studyConsentService.getActiveConsent(any(StudyIdentifier.class))).thenReturn(view);
