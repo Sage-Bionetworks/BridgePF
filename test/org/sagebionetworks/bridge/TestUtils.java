@@ -40,8 +40,6 @@ public class TestUtils {
     
     public static final String STUDY_IDENTIFIER = "api";
     
-    public static final String STUDY_CONSENT_PATH = "conf/email-templates/api-consent.html";
-    
     public abstract static class FailableRunnable implements Runnable {
         public abstract void testCode() throws Exception;
         @Override

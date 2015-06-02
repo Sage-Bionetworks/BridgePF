@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.sagebionetworks.bridge.TestUtils.STUDY_CONSENT_PATH;
 
 import javax.annotation.Resource;
 
@@ -14,6 +13,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
@@ -28,6 +28,8 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
+import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
+import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.test.context.ContextConfiguration;
@@ -44,9 +46,13 @@ public class ConsentServiceImplTest {
     
     @Resource
     private ConsentServiceImpl consentService;
-
+    
+    // We need the DAO here because you can't delete the active consent document...
     @Resource
     private StudyConsentDao studyConsentDao;
+
+    @Resource
+    private StudyConsentService studyConsentService;
 
     @Resource
     private UserConsentDao userConsentDao;
@@ -69,8 +75,9 @@ public class ConsentServiceImplTest {
         study = studyService.getStudy("api");
         testUser = helper.createUser(ConsentServiceImplTest.class, true, false, null);
         
-        studyConsent = studyConsentDao.addConsent(study.getStudyIdentifier(), STUDY_CONSENT_PATH, null, DateUtils.getCurrentDateTime());
-        studyConsentDao.setActive(studyConsent, true);
+        StudyConsentView view = studyConsentService.addConsent(study.getStudyIdentifier(), new StudyConsentForm(BridgeConstants.BRIDGE_DEFAULT_CONSENT_DOCUMENT));
+        studyConsent = view.getStudyConsent();
+        studyConsentService.activateConsent(study.getStudyIdentifier(), view.getCreatedOn());
         
         // Ensure that user gives no consent.
         assertFalse(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
@@ -219,7 +226,8 @@ public class ConsentServiceImplTest {
                     consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
 
             // Create new study consent, but do not activate it. User is consented and has still signed most recent consent.
-            newStudyConsent = studyConsentDao.addConsent(testUser.getStudyIdentifier(), STUDY_CONSENT_PATH, null, DateUtils.getCurrentDateTime());
+            newStudyConsent = studyConsentService.addConsent(testUser.getStudyIdentifier(),
+                            new StudyConsentForm(BridgeConstants.BRIDGE_DEFAULT_CONSENT_DOCUMENT)).getStudyConsent();
 
             assertTrue("Should be consented.",
                     consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
@@ -227,7 +235,8 @@ public class ConsentServiceImplTest {
                     consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
 
             // Activate new study consent. User is consented and but has not signed most recent consent.
-            newStudyConsent = studyConsentDao.setActive(newStudyConsent, true);
+            newStudyConsent = studyConsentService.activateConsent(testUser.getStudyIdentifier(),
+                            newStudyConsent.getCreatedOn()).getStudyConsent();
 
             assertTrue("Should still be consented.",
                     consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
