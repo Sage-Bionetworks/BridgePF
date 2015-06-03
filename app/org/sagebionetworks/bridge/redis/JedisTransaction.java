@@ -2,19 +2,16 @@ package org.sagebionetworks.bridge.redis;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisException;
+import redis.clients.util.Pool;
 
 /**
  * Provides abstraction over Jedis's transactions.
  */
 public class JedisTransaction implements AutoCloseable {
-
-    private final Logger logger = LoggerFactory.getLogger(JedisTransaction.class);
 
     private final Jedis jedis;
     private final Transaction transaction;
@@ -63,7 +60,21 @@ public class JedisTransaction implements AutoCloseable {
         } catch (JedisException e) {
             // Jedis throws an exception here on closed connections
             // See https://github.com/xetorthio/jedis/issues/992
-            logger.debug(e.getMessage(), e);
+            // We skip this particular exception
+            final String message = e.getMessage();
+            if (message != null && message.equals(
+                    "Could not return the resource to the pool")) {
+                StackTraceElement[] stackTrace = e.getStackTrace();
+                if (stackTrace != null && stackTrace.length > 0) {
+                    final StackTraceElement topFrame = stackTrace[0];
+                    final String className = topFrame.getClassName();
+                    if (className.equals(Pool.class.getName()) ||
+                            className.equals(JedisPool.class.getName())) {
+                        return;
+                    }
+                }
+            }
+            throw e;
         }
     }
 }
