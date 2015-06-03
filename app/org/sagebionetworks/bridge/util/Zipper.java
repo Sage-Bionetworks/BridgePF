@@ -86,7 +86,7 @@ public class Zipper {
     private byte[] toByteArray(final String entryName, final InputStream inputStream)
             throws IOException, ZipOverflowException {
         int offset = 0;
-        int length = 10000;
+        int length = 1000;
         byte[] bytes = new byte[length];
         int read = inputStream.read(bytes, offset, length - offset);
         while (read >= 0) {
