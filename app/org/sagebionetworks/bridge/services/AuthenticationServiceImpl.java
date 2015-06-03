@@ -116,16 +116,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(signIn, "Sign in cannot be null");
 
         Validate.entityThrowingException(signInValidator, signIn);
+        String lockId = null;
+        try {
+            lockId = lockDao.acquireLock(SignIn.class, signIn.getUsername());
+            Account account = accountDao.authenticate(study, signIn);
+            UserSession session = getSessionFromAccount(study, account);
+            cacheProvider.setUserSession(session);
 
-        Account account = accountDao.authenticate(study, signIn);
-        UserSession session = getSessionFromAccount(study, account);
-        cacheProvider.setUserSession(session);
+            if (!session.getUser().doesConsent()) {
+                throw new ConsentRequiredException(session);
+            }
 
-        if (!session.getUser().doesConsent()) {
-            throw new ConsentRequiredException(session);
+            return session;
+        } finally {
+            lockDao.releaseLock(SignIn.class, signIn.getUsername(), lockId);
         }
 
-        return session;
     }
 
     @Override
