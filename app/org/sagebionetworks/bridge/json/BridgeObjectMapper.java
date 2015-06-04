@@ -16,8 +16,10 @@ import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.BeanSerializer;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
-import com.fasterxml.jackson.databind.ser.impl.ObjectIdWriter;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 
@@ -38,64 +40,72 @@ public class BridgeObjectMapper extends ObjectMapper {
     }
 
     public BridgeObjectMapper() {
+        super();
+        FilterProvider filter = new SimpleFilterProvider().setFailOnUnknownId(false);
         this.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        this.setFilters(filter);
         this.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        this.registerModule(new SimpleModule() {
-            public void setupModule(SetupContext context) {
-                super.setupModule(context);
-                BeanSerializerModifier bsm = new BeanSerializerModifier() {
-                    public JsonSerializer<?> modifySerializer(SerializationConfig config, BeanDescription beanDesc,
-                            JsonSerializer<?> serializer) {
-                        if (serializer instanceof BeanSerializerBase) {
-                            return new ExtraFieldSerializer((BeanSerializerBase) serializer);
-                        }
-                        return serializer;
-                    }                   
-                };
-                context.addBeanSerializerModifier(bsm);
-            }
-        });
+        this.registerModule(new TypeModule());
         this.registerModule(new JodaModule());
         this.registerModule(new LowercaseEnumModule());
-        this.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
     }
     
-    private class ExtraFieldSerializer extends BeanSerializerBase {
-        ExtraFieldSerializer(BeanSerializerBase source) {
-            super(source);
+    /**
+     * Extend this mapper to use the TypeBeanSerializer. 
+     */
+    private class TypeModule extends SimpleModule {
+        public void setupModule(SetupContext context) {
+            super.setupModule(context);
+            BeanSerializerModifier bsm = new BeanSerializerModifier() {
+                public JsonSerializer<?> modifySerializer(SerializationConfig config, BeanDescription beanDesc,
+                                JsonSerializer<?> serializer) {
+                    if (serializer instanceof BeanSerializerBase) {
+                        return new TypeBeanSerializer((BeanSerializerBase) serializer);
+                    }
+                    return serializer;
+                }
+            };
+            context.addBeanSerializerModifier(bsm);
         }
-        ExtraFieldSerializer(ExtraFieldSerializer source, ObjectIdWriter objectIdWriter) {
-            super(source, objectIdWriter);
+
+    }
+
+    /**
+     * A serializer that adds a "type" attribute to the JSON produced by this mapper. It will use the 
+     * simple class name, or the value of the @BridgeTypeName annotation if it is present on the class
+     * being serialized.
+     *
+     */
+    public class TypeBeanSerializer extends BeanSerializer {
+        public TypeBeanSerializer(BeanSerializerBase src) {
+            super(src);
         }
-        ExtraFieldSerializer(ExtraFieldSerializer source, String[] toIgnore) {
-            super(source, toIgnore);
-        }
-        public BeanSerializerBase withObjectIdWriter(ObjectIdWriter objectIdWriter) {
-            return new ExtraFieldSerializer(this, objectIdWriter);
-        }
-        protected BeanSerializerBase withIgnorals(String[] toIgnore) {
-            return new ExtraFieldSerializer(this, toIgnore);
-        }
-        public BeanSerializerBase withFilterId(Object object) {
-            return null;
-        }
-        public void serialize(Object bean, JsonGenerator jgen, SerializerProvider provider) throws IOException,
-                JsonGenerationException {
-            jgen.writeStartObject();
-            serializeFields(bean, jgen, provider);
-            // We only want to do this if there is not a getType() method
+
+        @Override
+        protected void serializeFields(Object bean, JsonGenerator jgen, SerializerProvider provider)
+                        throws IOException, JsonGenerationException {
+            super.serializeFields(bean, jgen, provider);
             if (noTypeProperty(bean)) {
                 String typeName = BridgeUtils.getTypeName(bean.getClass());
                 if (typeName != null) {
-                    jgen.writeStringField("type", typeName);    
+                    jgen.writeStringField("type", typeName);
                 }
             }
-            jgen.writeEndObject();
         }
+
         @Override
-        protected BeanSerializerBase asArraySerializer() {
-            return this;
+        protected void serializeFieldsFiltered(Object bean, JsonGenerator jgen, SerializerProvider provider)
+                        throws IOException, JsonGenerationException {
+            super.serializeFieldsFiltered(bean, jgen, provider);
+            if (noTypeProperty(bean)) {
+                String typeName = BridgeUtils.getTypeName(bean.getClass());
+                if (typeName != null) {
+                    jgen.writeStringField("type", typeName);
+                }
+            }
         }
+
         private boolean noTypeProperty(Object bean) {
             for (Method method : bean.getClass().getMethods()) {
                 if ("getType".equals(method.getName())) {
@@ -103,6 +113,6 @@ public class BridgeObjectMapper extends ObjectMapper {
                 }
             }
             return true;
-         }
+        }
     }
 }

@@ -48,7 +48,7 @@ public class ViewCacheTest {
             }
         });
         
-        Study foundStudy = DynamoStudy.fromJson(mapper.readTree(json));
+        Study foundStudy = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
         assertEquals("Test Study 2", foundStudy.getName());
     }
     
@@ -92,7 +92,7 @@ public class ViewCacheTest {
             }
         });
         
-        Study foundStudy = DynamoStudy.fromJson(mapper.readTree(json));
+        Study foundStudy = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
         assertEquals("Test Study", foundStudy.getName());
     }
     
@@ -113,7 +113,7 @@ public class ViewCacheTest {
                 return study;
             }
         });
-        Study foundStudy = DynamoStudy.fromJson(mapper.readTree(json));
+        Study foundStudy = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
         assertEquals("Test Study 2", foundStudy.getName());
     }
     
