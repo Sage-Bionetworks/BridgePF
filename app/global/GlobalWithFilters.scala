@@ -46,15 +46,8 @@ object GlobalWithFilters extends WithFilters (
     val context = AppContext
   }
 
-  override def getControllerInstance[T](controllerClass: Class[T]): T = {
-    if (AppContext == null) {
-      throw new IllegalStateException("application-context.xml is not initialized")
-    }
-    return AppContext.getBean(controllerClass)
-  }
-
   override def onBadRequest(request: RequestHeader, error: String): Future[Result] = {
-    val page = views.html.defaultpages.badRequest(request, Json.toJson(new StatusMessage(error)).toString())
+    val page = views.html.defaultpages.badRequest(request.method, request.uri, Json.toJson(new StatusMessage(error)).toString())
     val results = BadRequest(page)
     Future.successful(results)
   }

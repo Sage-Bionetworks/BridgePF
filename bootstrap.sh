@@ -20,7 +20,7 @@ apt-get -q -y install nfs-common
 # Java
 apt-get -q -y install openjdk-8-jdk
 
-export ACTIVATOR_VERSION=1.3.2
+export ACTIVATOR_VERSION=1.3.4
 
 # Play
 su - vagrant -c "wget http://downloads.typesafe.com/typesafe-activator/${ACTIVATOR_VERSION}/typesafe-activator-${ACTIVATOR_VERSION}.zip"

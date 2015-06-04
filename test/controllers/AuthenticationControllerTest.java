@@ -44,7 +44,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import play.libs.ws.WS;
 import play.libs.ws.WSCookie;
 import play.libs.ws.WSResponse;
-import play.libs.ws.WSRequestHolder;
+import play.libs.ws.WSRequest;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -90,8 +90,8 @@ public class AuthenticationControllerTest {
                 node.put(USERNAME, testUser.getUsername());
                 node.put(PASSWORD, testUser.getPassword());
                 
-                WSRequestHolder holder = WS.url(TEST_BASE_URL + SIGN_IN_URL);
-                WSResponse response = holder.post(node).get(TIMEOUT);
+                WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
+                WSResponse response = request.post(node).get(TIMEOUT);
 
                 WSCookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 
@@ -125,14 +125,14 @@ public class AuthenticationControllerTest {
                     node.put(USERNAME, testUser.getUsername());
                     node.put(PASSWORD, testUser.getPassword());
                     
-                    WSRequestHolder holder = WS.url(TEST_BASE_URL + SIGN_IN_URL);
-                    WSResponse response = holder.post(node).get(TIMEOUT);
+                    WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
+                    WSResponse response = request.post(node).get(TIMEOUT);
                     WSCookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
 
                     // Now, try and access schedules in the wrong study (one with a plan), you do not get it.
-                    holder = WS.url(TEST_BASE_URL + SCHEDULES_API);
-                    holder.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue());
-                    response = holder.get().get(TIMEOUT);
+                    request = WS.url(TEST_BASE_URL + SCHEDULES_API);
+                    request.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue());
+                    response = request.get().get(TIMEOUT);
                     assertEquals("{\"items\":[],\"total\":0,\"type\":\"ResourceList\"}", response.getBody());
                     
                 } finally {

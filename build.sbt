@@ -4,6 +4,9 @@ version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.11.2"
 
+// For scalaz-stream needed by specs2
+resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
+
 // The Typesafe repository
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
@@ -21,7 +24,7 @@ libraryDependencies ++= Seq(
   // New Relic
   "com.newrelic.agent.java" % "newrelic-agent" % "3.16.1",
   // Spring
-  "org.springframework" % "spring-context" % "4.0.7.RELEASE",
+  "org.springframework" % "spring-context" % "4.1.6.RELEASE",
   // Apache Commons
   "org.apache.commons" % "commons-lang3" % "3.4",
   "commons-validator" % "commons-validator" % "1.4.1",
@@ -52,9 +55,10 @@ libraryDependencies ++= Seq(
   "org.xhtmlrenderer" % "flying-saucer-pdf" % "9.0.7",
   // Test
   javaWs % Test,
+  specs2 % Test,
   "junit" % "junit" % "4.12" % Test,
   "org.mockito" % "mockito-core" % "1.10.19" % Test,
-  "org.springframework" % "spring-test" % "4.0.7.RELEASE" % Test,
+  "org.springframework" % "spring-test" % "4.1.6.RELEASE" % Test,
   "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.1" % Test
 )
 
