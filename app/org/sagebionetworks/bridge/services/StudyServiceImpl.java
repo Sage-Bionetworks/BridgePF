@@ -9,13 +9,16 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.sagebionetworks.bridge.BridgeConstants;
+import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
@@ -23,7 +26,11 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 @Component("studyService")
 public class StudyServiceImpl implements StudyService {
@@ -39,26 +46,38 @@ public class StudyServiceImpl implements StudyService {
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     private StudyConsentService studyConsentService;
-    /*
-    private Resource defaultConsentDocument;
-    private Resource defaultEmailVerificationTemplate;
-    private Resource defaultPasswordResetTemplate;
+
+    private StudyConsentForm defaultConsentDocument;
+    private String defaultEmailVerificationTemplate;
+    private String defaultEmailVerificationTemplateSubject;
+    private String defaultResetPasswordTemplate;
+    private String defaultResetPasswordTemplateSubject;
     
-    @Resource(name="file:conf/study-defaults/consent.xhtml")
-    public void setDefaultConsentDocument(Resource resource) {
-        this.defaultConsentDocument = resource;
+    @Value("classpath:study-defaults/consent.xhtml")
+    public void setDefaultConsentDocument(org.springframework.core.io.Resource resource) {
+        this.defaultConsentDocument = new StudyConsentForm(BridgeUtils.toStringQuietly(resource));
     }
     
-    @Resource(name="file:conf/study-defaults/email-verification.txt")
-    public void setDefaultEmailVerificationTemplate(Resource resource) {
-        this.defaultEmailVerificationTemplate = resource;
+    @Value("classpath:study-defaults/email-verification.txt")
+    public void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) {
+        this.defaultEmailVerificationTemplate = BridgeUtils.toStringQuietly(resource);
     }
     
-    @Resource(name="file:conf/study-defaults/password-reset.txt")
-    public void setDefaultPasswordTemplate(Resource resource) {
-        this.defaultPasswordResetTemplate = resource;
+    @Value("classpath:study-defaults/email-verification-subject.txt")
+    public void setDefaultEmailVerificationTemplateSubject(org.springframework.core.io.Resource resource) {
+        this.defaultEmailVerificationTemplateSubject = BridgeUtils.toStringQuietly(resource);
     }
-    */
+    
+    @Value("classpath:study-defaults/reset-password.txt")
+    public void setDefaultPasswordTemplate(org.springframework.core.io.Resource resource) {
+        this.defaultResetPasswordTemplate = BridgeUtils.toStringQuietly(resource);
+    }
+
+    @Value("classpath:study-defaults/reset-password-subject.txt")
+    public void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) {
+        this.defaultResetPasswordTemplateSubject = BridgeUtils.toStringQuietly(resource);
+    }
+
     @Resource(name="uploadCertificateService")
     public void setUploadCertificateService(UploadCertificateService uploadCertService) {
         this.uploadCertService = uploadCertService;
@@ -95,6 +114,7 @@ public class StudyServiceImpl implements StudyService {
         Study study = cacheProvider.getStudy(identifier);
         if (study == null) {
             study = studyDao.getStudy(identifier);
+            setLegacyFieldsIfAbsent(study);
             cacheProvider.setStudy(study);
         }
         return study;
@@ -107,13 +127,20 @@ public class StudyServiceImpl implements StudyService {
     }
     @Override
     public List<Study> getStudies() {
-        return studyDao.getStudies();
+        return Lists.transform(studyDao.getStudies(), new Function<Study,Study>() {
+            @Override public Study apply(Study study) {
+                setLegacyFieldsIfAbsent(study);
+                return study;
+            }
+            
+        });
     }
     @Override
     public Study createStudy(Study study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNewEntity(study, study.getVersion(), "Study has a version value; it may already exist");
 
+        setDefaultsIfAbsent(study);
         Validate.entityThrowingException(validator, study);
 
         String id = study.getIdentifier();
@@ -125,10 +152,8 @@ public class StudyServiceImpl implements StudyService {
                 throw new EntityAlreadyExistsException(study);
             }
             
-            // The system is broken if the study does not have a consent. Create a default consent so the study is usable,
-            // do it first so if it throws an exception, a study isn't created.
-            StudyConsentForm consent = new StudyConsentForm(BridgeConstants.BRIDGE_DEFAULT_CONSENT_DOCUMENT);
-            StudyConsentView view = studyConsentService.addConsent(study.getStudyIdentifier(), consent);
+            // The system is broken if the study does not have a consent. Create a default consent so the study is usable.
+            StudyConsentView view = studyConsentService.addConsent(study.getStudyIdentifier(), defaultConsentDocument);
             studyConsentService.activateConsent(study.getStudyIdentifier(), view.getCreatedOn());
             
             study.setResearcherRole(study.getIdentifier() + "_researcher");
@@ -147,6 +172,8 @@ public class StudyServiceImpl implements StudyService {
     @Override
     public Study updateStudy(Study study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        
+        setDefaultsIfAbsent(study);
         Validate.entityThrowingException(validator, study);
 
         // These cannot be set through the API and will be null here, so they are set on update
@@ -176,5 +203,44 @@ public class StudyServiceImpl implements StudyService {
         } finally {
             lockDao.releaseLock(Study.class, identifier, lockId);
         }
+    }
+    /**
+     * When certain aspects of as study are excluded on a save, they revert to defaults.
+     * @param study
+     */
+    private void setDefaultsIfAbsent(Study study) {
+        if (study.getPasswordPolicy() == null) {
+            study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        }
+        study.setVerifyEmailTemplate(fillOutTemplate(study.getVerifyEmailTemplate(),
+                        defaultEmailVerificationTemplateSubject, defaultEmailVerificationTemplate));
+            
+        study.setResetPasswordTemplate(fillOutTemplate(study.getResetPasswordTemplate(),
+                        defaultResetPasswordTemplateSubject, defaultResetPasswordTemplate));
+    }
+    
+    /**
+     * TODO: For existing studies we're going to want to retrieve the templates that now only 
+     * live in Stormpath.  
+     * @param study
+     */
+    private static Study setLegacyFieldsIfAbsent(Study study) {
+        if (study.getPasswordPolicy() == null) {
+            study.setPasswordPolicy(PasswordPolicy.LEGACY_PASSWORD_POLICY);
+        }
+        return study;
+    }
+    
+    private EmailTemplate fillOutTemplate(EmailTemplate template, String defaultSubject, String defaultBody) {
+        if (template == null) {
+            template = new EmailTemplate(defaultSubject, defaultBody);
+        }
+        if (StringUtils.isBlank(template.getSubject())) {
+            template = new EmailTemplate(defaultSubject, template.getBody());
+        }
+        if (StringUtils.isBlank(template.getBody())) {
+            template = new EmailTemplate(template.getSubject(), defaultBody);
+        }
+        return template;
     }
 }

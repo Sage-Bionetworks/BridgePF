@@ -1,10 +1,11 @@
-package org.sagebionetworks.bridge.validators;
+oipackage org.sagebionetworks.bridge.validators;
 
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
@@ -44,6 +45,13 @@ public class StudyValidator implements Validator {
         // These *should* be set if they are null, with defaults
         if (study.getPasswordPolicy() == null) {
             errors.rejectValue("passwordPolicy", "is null");
+        } else {
+            errors.pushNestedPath("passwordPolicy");
+            PasswordPolicy policy = study.getPasswordPolicy();
+            if (!isInRange(policy.getMinLength(), 2)) {
+                errors.rejectValue("minLength", "must be at least 2 and no more than 100");
+            }
+            errors.popNestedPath();
         }
         if (study.getVerifyEmailTemplate() == null) {
             errors.rejectValue("verifyEmailTemplate", "is null");
@@ -54,6 +62,10 @@ public class StudyValidator implements Validator {
             }
             if (StringUtils.isBlank(study.getVerifyEmailTemplate().getBody())) {
                 errors.rejectValue("body", "is null or blank");
+            } else {
+                if (!study.getVerifyEmailTemplate().getBody().contains("${url}")) {
+                    errors.rejectValue("body", "must contain the ${url} template variable");
+                }
             }
             errors.popNestedPath();
         }
@@ -66,6 +78,10 @@ public class StudyValidator implements Validator {
             }
             if (StringUtils.isBlank(study.getResetPasswordTemplate().getBody())) {
                 errors.rejectValue("body", "is null or blank");
+            } else {
+                if (!study.getResetPasswordTemplate().getBody().contains("${url}")) {
+                    errors.rejectValue("body", "must contain the ${url} template variable");
+                }
             }
             errors.popNestedPath();
         }
@@ -78,6 +94,10 @@ public class StudyValidator implements Validator {
         }
         validateEmails(errors, study.getSupportEmail(), "supportEmail");
         validateEmails(errors, study.getConsentNotificationEmail(), "consentNotificationEmail");
+    }
+    
+    private boolean isInRange(int value, int min) {
+        return (value >= min && value <= 100);
     }
     
     private void validateEmails(Errors errors, String value, String fieldName) {

@@ -98,7 +98,7 @@ public class StudyServiceImplTest {
         
         // A default, active consent should be created for the study.
         StudyConsentView view = studyConsentService.getActiveConsent(study.getStudyIdentifier());
-        assertTrue(view.getDocumentContent().contains(BridgeConstants.BRIDGE_DEFAULT_CONSENT_DOCUMENT));
+        assertTrue(view.getDocumentContent().contains("This is a placeholder for your consent document."));
         assertTrue(view.getActive());
         
         study = studyService.getStudy(identifier);
@@ -125,11 +125,36 @@ public class StudyServiceImplTest {
         identifier = null;
     }
     
+    @Test
+    public void defaultsAreUsedWhenNotProvided() {
+        identifier = TestUtils.randomName();
+        study = createStudy();
+        study.setPasswordPolicy(null);
+        study.setVerifyEmailTemplate(null);
+        study.setResetPasswordTemplate(null);
+        
+        study = studyService.createStudy(study);
+        
+        assertEquals(PasswordPolicy.DEFAULT_PASSWORD_POLICY, study.getPasswordPolicy());
+        assertNotNull(study.getVerifyEmailTemplate());
+        assertNotNull(study.getResetPasswordTemplate());
+
+        // Even if partial values are submitted in the JSON, we don't get exceptions, we get defaults
+        study.setVerifyEmailTemplate(new EmailTemplate(null, "body"));
+        study.setResetPasswordTemplate(new EmailTemplate("subject", null));
+
+        study = studyService.updateStudy(study);
+        
+        assertEquals("Verify your account", study.getVerifyEmailTemplate().getSubject());
+        assertNotNull(study.getResetPasswordTemplate().getBody());
+        assertTrue(study.getResetPasswordTemplate().getBody().contains("To reset your password please click on this link"));
+    }
+    
     private Study createStudy() {
         study = new DynamoStudy();
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        study.setVerifyEmailTemplate(new EmailTemplate("subject", "body"));
-        study.setResetPasswordTemplate(new EmailTemplate("subject", "body"));
+        study.setVerifyEmailTemplate(new EmailTemplate("subject", "body with ${url}"));
+        study.setResetPasswordTemplate(new EmailTemplate("subject", "body with ${url}"));
         study.setIdentifier(identifier);
         study.setName("Test of study creation");
         study.setMaxNumOfParticipants(100);

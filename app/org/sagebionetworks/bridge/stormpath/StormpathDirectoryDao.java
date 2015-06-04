@@ -70,6 +70,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
         }
         
         adjustPasswordPolicies(study, directory);
+        //adjustVerifyEmailPolicies(study, directory);
         
         AccountStoreMapping mapping = getApplicationMapping(directory.getHref(), app);
         if (mapping == null) {
@@ -181,23 +182,33 @@ public class StormpathDirectoryDao implements DirectoryDao {
         for (ModeledEmailTemplate template : resetEmailTemplates) {
             template.setFromName(study.getName());
             template.setFromEmailAddress(study.getSupportEmail());
-            template.setSubject(study.getName() + " Password Reset");
-
             template.setMimeType(MimeType.PLAIN_TEXT);
-            template.setTextBody(String.format(BridgeConstants.BRIDGE_DEFAULT_PASSWORD_RESET_EMAIL, study.getName(), study.getSupportEmail()));
+            
+            String subject = partiallyResolveTemplate(study.getResetPasswordTemplate().getSubject(), study);
+            template.setSubject(subject);
+
+            String body = partiallyResolveTemplate(study.getResetPasswordTemplate().getBody(), study);
+            template.setTextBody(body);
             template.setLinkBaseUrl(String.format("%s/mobile/resetPassword.html?study=%s", BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier()));
             template.save();
         }
         
         PasswordStrength strength = passwordPolicy.getStrength();
         strength.setMaxLength(100);
-        strength.setMinLength(2);
         strength.setMinLowerCase(0);
-        strength.setMinNumeric(0);
-        strength.setMinSymbol(0);
-        strength.setMinUpperCase(0);
         strength.setMinDiacritic(0);
+        strength.setMinLength(study.getPasswordPolicy().getMinLength());
+        strength.setMinNumeric(study.getPasswordPolicy().isRequireNumeric() ? 1 : 0);
+        strength.setMinSymbol(study.getPasswordPolicy().isRequireSymbol() ? 1 : 0);
+        strength.setMinUpperCase(study.getPasswordPolicy().isRequireUpperCase() ? 1 : 0);
         strength.save();
         passwordPolicy.save();
+    }
+    
+    private String partiallyResolveTemplate(String template, Study study) {
+        template = template.replaceAll("\\$\\{studyName\\}", study.getName());
+        template = template.replaceAll("\\$\\{supportEmail\\}", study.getSupportEmail());
+        // template = template.replaceAll("\\$\\{sponsorName\\}", study.getSponsorName());
+        return template;
     }
 }

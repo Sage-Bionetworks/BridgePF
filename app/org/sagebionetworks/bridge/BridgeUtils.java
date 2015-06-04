@@ -2,11 +2,13 @@ package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -14,6 +16,7 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.core.io.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.base.Function;
@@ -22,6 +25,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class BridgeUtils {
+
+    public static String toStringQuietly(Resource resource) {
+        try {
+            return IOUtils.toString(resource.getInputStream());
+        } catch(IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
     
     public static String generateGuid() {
         return UUID.randomUUID().toString();

@@ -9,11 +9,13 @@ import javax.annotation.Resource;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -55,6 +57,9 @@ public class StormpathDirectoryDaoTest {
         study.setIdentifier(identifier);
         study.setName("Test Study");
         study.setSupportEmail("support@test.com");
+        study.setVerifyEmailTemplate(new EmailTemplate("subject", "body with ${url}"));
+        study.setResetPasswordTemplate(new EmailTemplate("Test Study Password Reset", "body with ${url}"));
+        study.setPasswordPolicy(org.sagebionetworks.bridge.models.studies.PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
         String stormpathHref = directoryDao.createDirectoryForStudy(study);
         BridgeConfig config = BridgeConfigFactory.getConfig();
@@ -74,25 +79,23 @@ public class StormpathDirectoryDaoTest {
         assertEquals(EmailStatus.DISABLED, passwordPolicy.getResetSuccessEmailStatus());
         assertEquals(1, passwordPolicy.getResetEmailTemplates().getSize());
         ModeledEmailTemplate template = passwordPolicy.getResetEmailTemplates().iterator().next();
-        
+
         assertEquals("Test Study", template.getFromName());
         assertEquals("support@test.com", template.getFromEmailAddress());
         assertEquals("Test Study Password Reset", template.getSubject());
         assertEquals(MimeType.PLAIN_TEXT, template.getMimeType());
-        String bodyText = String.format(BridgeConstants.BRIDGE_DEFAULT_PASSWORD_RESET_EMAIL, study.getName(), study.getSupportEmail());
-        assertEquals(bodyText, template.getTextBody());
+        assertEquals("body with ${url}", template.getTextBody());
         String url = String.format("%s/mobile/resetPassword.html?study=%s", BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier());
         assertEquals(url, template.getLinkBaseUrl());
-        
+
         PasswordStrength strength = passwordPolicy.getStrength();
         assertEquals(100, strength.getMaxLength());
-        assertEquals(2, strength.getMinLength());
         assertEquals(0, strength.getMinLowerCase());
-        assertEquals(0, strength.getMinNumeric());
-        assertEquals(0, strength.getMinSymbol());
-        assertEquals(0, strength.getMinUpperCase());
+        assertEquals(1, strength.getMinNumeric());
+        assertEquals(1, strength.getMinSymbol());
+        assertEquals(1, strength.getMinUpperCase());
         assertEquals(0, strength.getMinDiacritic());
-        assertEquals(2, strength.getMinLength());
+        assertEquals(8, strength.getMinLength());
         
         directoryDao.deleteDirectoryForStudy(identifier);
         

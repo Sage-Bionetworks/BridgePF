@@ -15,19 +15,39 @@ public class StudyValidatorTest {
     public void createValidStudy() {
         study = new DynamoStudy();
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        study.setVerifyEmailTemplate(new EmailTemplate("subject", "body"));
-        study.setResetPasswordTemplate(new EmailTemplate("subject", "body"));
+        study.setVerifyEmailTemplate(new EmailTemplate("subject", "body with ${url}"));
+        study.setResetPasswordTemplate(new EmailTemplate("subject", "body with ${url}"));
         study.setIdentifier("test");
         study.setName("Belgium Waffles [Test]");
         study.setSupportEmail("support@support.com");
         study.setConsentNotificationEmail("support@support.com");
     }
-
+    
     @Test
     public void acceptsValidStudy() {
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
     
+    // While 2 is not a good length, we must allow it for legacy reasons.
+    @Test(expected = InvalidEntityException.class)
+    public void minLengthCannotBeLessThan2() {
+        study.setPasswordPolicy(new PasswordPolicy(1, false, false, false));
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void minLengthCannotBeLessThan100() {
+        study.setPasswordPolicy(new PasswordPolicy(101, false, false, false));
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void templatesMustHaveUrlVariable() {
+        study.setVerifyEmailTemplate(new EmailTemplate("subject", "no url variable"));
+        study.setResetPasswordTemplate(new EmailTemplate("subject", "no url variable"));
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+
     @Test(expected = InvalidEntityException.class)
     public void cannotCreateIdentifierWithUppercase() {
         study.setIdentifier("Test");

@@ -1,0 +1,16 @@
+Hi,
+
+Thank you for registering for ${studyName}.
+
+This research study is powered by Bridge, a secure data storage service operated by Sage Bionetworks. In order to proceed, you must first confirm your email address by clicking the link below, or copying and pasting it into the address bar of your browser:
+
+${url}
+
+Once you confirm your email, you will be able to finish setting up your profile for the study. 
+
+Regards,
+
+${sponsorName}
+
+---------------------
+For general inquiries or to request support with your account, please email ${supportEmail}
