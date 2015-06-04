@@ -2,7 +2,7 @@ language: scala
 scala:
 - 2.11
 jdk:
-- openjdk8
+- openjdk7
 env:
   global:
   - BRIDGE_USER=travis
