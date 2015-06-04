@@ -60,6 +60,8 @@ public class DynamoStudyTest {
         study = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
         assertNull(study.getResearcherRole());
         assertNull(study.getStormpathHref());
+        // But importantly, other aspects of the BridgeObjectMapper are working
+        assertEquals("Study", node.get("type").asText());
     }
     
 }

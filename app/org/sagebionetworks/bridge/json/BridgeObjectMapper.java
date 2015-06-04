@@ -24,11 +24,27 @@ import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 
 /**
- * Use this version of the ObjectMapper in preference to its parent class. This version
+ * <p>Use this version of the ObjectMapper in preference to its parent class. This version
  * ignores unknown properties and it adds a "type" property to all objects it serializes, 
  * which is part of our API contract. Also, ObjectMapper is threadsafe, so we are able 
- * to create a singleton available via <code>BridgeObjectMapper.get()</code>.
- *
+ * to create a singleton available via <code>BridgeObjectMapper.get()</code>.</p>
+ * 
+ * <p>Attributes with @JsonIgnore are never serialized to JSON, to selectively remove some 
+ * properties from some serializations of an object, first define a filter:</p>
+ * 
+ *     <blockquote>
+ *     // Filter must be named "filter"
+ *     FilterProvider filter = new SimpleFilterProvider()
+ *         .addFilter("filter", SimpleBeanPropertyFilter.serializeAllExcept("propName"))
+ *     </blockquote>
+ * 
+ * <p>And then create a new BridgeObjectMapper instance to retrieve a writer that will filter those 
+ * properties:</p>
+ * 
+ *     <blockquote>
+ *     ObjectWriter writer = new BridgeObjectMapper().writer(filter);
+ *     writer.writeValueAsString(object); // will not include "propName"
+ *     </blockquote>
  */
 @SuppressWarnings("serial")
 public class BridgeObjectMapper extends ObjectMapper {
@@ -41,9 +57,11 @@ public class BridgeObjectMapper extends ObjectMapper {
 
     public BridgeObjectMapper() {
         super();
-        FilterProvider filter = new SimpleFilterProvider().setFailOnUnknownId(false);
         this.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        // This suppresses a failure if a class is found with a "filter" filter declared on it,
+        // when you are trying to serialize without the filter. It's a Jackson oddity they may fix.
+        FilterProvider filter = new SimpleFilterProvider().setFailOnUnknownId(false);
         this.setFilters(filter);
         this.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         this.registerModule(new TypeModule());
@@ -74,7 +92,8 @@ public class BridgeObjectMapper extends ObjectMapper {
     /**
      * A serializer that adds a "type" attribute to the JSON produced by this mapper. It will use the 
      * simple class name, or the value of the @BridgeTypeName annotation if it is present on the class
-     * being serialized.
+     * being serialized. It will search interfaces and parent classes of the class being serialized 
+     * for this annotation.
      *
      */
     public class TypeBeanSerializer extends BeanSerializer {
@@ -84,20 +103,19 @@ public class BridgeObjectMapper extends ObjectMapper {
 
         @Override
         protected void serializeFields(Object bean, JsonGenerator jgen, SerializerProvider provider)
-                        throws IOException, JsonGenerationException {
+                throws IOException, JsonGenerationException {
             super.serializeFields(bean, jgen, provider);
-            if (noTypeProperty(bean)) {
-                String typeName = BridgeUtils.getTypeName(bean.getClass());
-                if (typeName != null) {
-                    jgen.writeStringField("type", typeName);
-                }
-            }
+            addTypeProperty(bean, jgen);
         }
 
         @Override
         protected void serializeFieldsFiltered(Object bean, JsonGenerator jgen, SerializerProvider provider)
                         throws IOException, JsonGenerationException {
             super.serializeFieldsFiltered(bean, jgen, provider);
+            addTypeProperty(bean, jgen);
+        }
+
+        private void addTypeProperty(Object bean, JsonGenerator jgen) throws IOException {
             if (noTypeProperty(bean)) {
                 String typeName = BridgeUtils.getTypeName(bean.getClass());
                 if (typeName != null) {

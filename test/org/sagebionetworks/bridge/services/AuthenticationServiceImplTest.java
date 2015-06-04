@@ -28,6 +28,8 @@ import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -189,6 +191,10 @@ public class AuthenticationServiceImplTest {
         tempStudy.setIdentifier("temp");
         tempStudy.setName("Temporary Study");
         tempStudy.setSupportEmail("bridge-testing@sagebase.org");
+        tempStudy.setConsentNotificationEmail("bridge-testing@sagebase.org");
+        tempStudy.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        tempStudy.setVerifyEmailTemplate(new EmailTemplate("subject", "body"));
+        tempStudy.setResetPasswordTemplate(new EmailTemplate("subject", "body"));
         tempStudy = studyService.createStudy(tempStudy);
 
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);

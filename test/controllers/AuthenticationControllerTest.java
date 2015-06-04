@@ -34,6 +34,8 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.services.SchedulePlanServiceImpl;
@@ -153,6 +155,10 @@ public class AuthenticationControllerTest {
         secondStudy.setIdentifier(id);
         secondStudy.setName("Second Test Study");
         secondStudy.setSupportEmail("bridge-testing@sagebase.org");
+        secondStudy.setConsentNotificationEmail("bridge-testing@sagebase.org");
+        secondStudy.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        secondStudy.setVerifyEmailTemplate(new EmailTemplate("subject", "body"));
+        secondStudy.setResetPasswordTemplate(new EmailTemplate("subject", "body"));
         studyService.createStudy(secondStudy);
         
         Schedule schedule = new Schedule();

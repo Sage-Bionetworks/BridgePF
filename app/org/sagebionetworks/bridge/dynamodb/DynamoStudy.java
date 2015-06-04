@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshalling;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
@@ -165,6 +166,7 @@ public class DynamoStudy implements Study {
     public void setConsentNotificationEmail(String consentNotificationEmail) {
         this.consentNotificationEmail = consentNotificationEmail;
     }
+    @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
     @Override
     public Set<String> getUserProfileAttributes() {
         return profileAttributes;
@@ -173,6 +175,7 @@ public class DynamoStudy implements Study {
     public void setUserProfileAttributes(Set<String> profileAttributes) {
         this.profileAttributes = profileAttributes;
     }
+    @DynamoDBMarshalling(marshallerClass = PasswordPolicyMarshaller.class)
     @Override
     public PasswordPolicy getPasswordPolicy() {
         return passwordPolicy;
@@ -181,6 +184,7 @@ public class DynamoStudy implements Study {
     public void setPasswordPolicy(PasswordPolicy passwordPolicy) {
         this.passwordPolicy = passwordPolicy;
     }
+    @DynamoDBMarshalling(marshallerClass = EmailTemplateMarshaller.class)
     @Override
     public EmailTemplate getVerifyEmailTemplate() {
         return verifyEmailTemplate;
@@ -189,6 +193,7 @@ public class DynamoStudy implements Study {
     public void setVerifyEmailTemplate(EmailTemplate template) {
         this.verifyEmailTemplate = template;
     }
+    @DynamoDBMarshalling(marshallerClass = EmailTemplateMarshaller.class)
     @Override
     public EmailTemplate getResetPasswordTemplate() {
         return resetPasswordTemplate;
@@ -268,4 +273,5 @@ public class DynamoStudy implements Study {
             supportEmail, consentNotificationEmail, version, profileAttributes, passwordPolicy,
             verifyEmailTemplate, resetPasswordTemplate);        
     }
+    
 }

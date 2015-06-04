@@ -23,6 +23,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.springframework.test.context.ContextConfiguration;
@@ -58,33 +60,16 @@ public class StudyServiceImplTest {
     }
     
     @Test(expected=InvalidEntityException.class)
-    public void invalidIdentifier() {
+    public void studyIsValidated() {
         study = new DynamoStudy();
         study.setName("Belgian Waffles [Test]");
-        study = studyService.createStudy(study);
-    }
-    
-    @Test(expected=InvalidEntityException.class)
-    public void invalidName() {
-        study = new DynamoStudy();
-        study.setIdentifier("belgium");
-        study = studyService.createStudy(study);
-    }
-    
-    @Test(expected=InvalidEntityException.class)
-    public void invalidIdentifierOfOnlyOneLetter() {
-        study = new DynamoStudy();
-        study.setIdentifier("a");
         study = studyService.createStudy(study);
     }
     
     @Test
     public void cannotCreateAnExistingStudyWithAVersion() {
         identifier = TestUtils.randomName();
-        study = new DynamoStudy();
-        study.setIdentifier(identifier);
-        study.setName("Belgium Waffles [Test]");
-        study.setSupportEmail("bridge-testing@sagebase.org");
+        study = createStudy();
         study = studyService.createStudy(study);
         try {
             study = studyService.createStudy(study);
@@ -95,9 +80,7 @@ public class StudyServiceImplTest {
     
     @Test(expected=EntityAlreadyExistsException.class)
     public void cannotCreateAStudyWithAVersion() {
-        study = new DynamoStudy();
-        study.setIdentifier("sage-test");
-        study.setName("Test of study creation");
+        study = createStudy();
         study.setVersion(1L);
         study = studyService.createStudy(study);
     }
@@ -144,6 +127,9 @@ public class StudyServiceImplTest {
     
     private Study createStudy() {
         study = new DynamoStudy();
+        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        study.setVerifyEmailTemplate(new EmailTemplate("subject", "body"));
+        study.setResetPasswordTemplate(new EmailTemplate("subject", "body"));
         study.setIdentifier(identifier);
         study.setName("Test of study creation");
         study.setMaxNumOfParticipants(100);
@@ -151,6 +137,7 @@ public class StudyServiceImplTest {
         study.setResearcherRole(identifier+"_researcher");
         study.setStormpathHref("http://dev-test-junk");
         study.setSupportEmail("bridge-testing@sagebase.org");
+        study.setConsentNotificationEmail("bridge-testing@sagebase.org");
         return study;
     }
 

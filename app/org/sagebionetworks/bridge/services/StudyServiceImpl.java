@@ -39,7 +39,26 @@ public class StudyServiceImpl implements StudyService {
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     private StudyConsentService studyConsentService;
+    /*
+    private Resource defaultConsentDocument;
+    private Resource defaultEmailVerificationTemplate;
+    private Resource defaultPasswordResetTemplate;
     
+    @Resource(name="file:conf/study-defaults/consent.xhtml")
+    public void setDefaultConsentDocument(Resource resource) {
+        this.defaultConsentDocument = resource;
+    }
+    
+    @Resource(name="file:conf/study-defaults/email-verification.txt")
+    public void setDefaultEmailVerificationTemplate(Resource resource) {
+        this.defaultEmailVerificationTemplate = resource;
+    }
+    
+    @Resource(name="file:conf/study-defaults/password-reset.txt")
+    public void setDefaultPasswordTemplate(Resource resource) {
+        this.defaultPasswordResetTemplate = resource;
+    }
+    */
     @Resource(name="uploadCertificateService")
     public void setUploadCertificateService(UploadCertificateService uploadCertService) {
         this.uploadCertService = uploadCertService;

@@ -38,6 +38,38 @@ public class StudyValidator implements Validator {
         if (StringUtils.isBlank(study.getSupportEmail())) {
             errors.rejectValue("supportEmail", "is null or blank");
         }
+        if (StringUtils.isBlank(study.getConsentNotificationEmail())) {
+            errors.rejectValue("consentNotificationEmail", "is null or blank");
+        }
+        // These *should* be set if they are null, with defaults
+        if (study.getPasswordPolicy() == null) {
+            errors.rejectValue("passwordPolicy", "is null");
+        }
+        if (study.getVerifyEmailTemplate() == null) {
+            errors.rejectValue("verifyEmailTemplate", "is null");
+        } else {
+            errors.pushNestedPath("verifyEmailTemplate");
+            if (StringUtils.isBlank(study.getVerifyEmailTemplate().getSubject())) {
+                errors.rejectValue("subject", "is null or blank");
+            }
+            if (StringUtils.isBlank(study.getVerifyEmailTemplate().getBody())) {
+                errors.rejectValue("body", "is null or blank");
+            }
+            errors.popNestedPath();
+        }
+        if (study.getResetPasswordTemplate() == null) {
+            errors.rejectValue("resetPasswordTemplate", "is null");
+        } else {
+            errors.pushNestedPath("resetPasswordTemplate");
+            if (StringUtils.isBlank(study.getResetPasswordTemplate().getSubject())) {
+                errors.rejectValue("subject", "is null or blank");
+            }
+            if (StringUtils.isBlank(study.getResetPasswordTemplate().getBody())) {
+                errors.rejectValue("body", "is null or blank");
+            }
+            errors.popNestedPath();
+        }
+        
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
             if (UserProfile.FIXED_PROPERTIES.contains(userProfileAttribute)) {
                 String msg = String.format("'%s' conflicts with existing user profile property", userProfileAttribute);
