@@ -8,7 +8,7 @@ scalaVersion := "2.11.2"
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 // Make sure the Heroku repository is at the very beginning
-resolvers += "heroku-maven" at "http://s3pository.heroku.com/maven-central/"
+resolvers += "Heroku Maven repository" at "http://s3pository.heroku.com/maven-central/"
 
 libraryDependencies ++= Seq(
   cache,
