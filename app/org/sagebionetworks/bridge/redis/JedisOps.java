@@ -175,8 +175,11 @@ public class JedisOps {
     private abstract class AbstractJedisTemplate<T> {
 
         T execute() {
-            try (Jedis jedis = jedisPool.getResource()) {
+            Jedis jedis = jedisPool.getResource();
+            try {
                 return execute(jedis);
+            } finally {
+                JedisUtil.closeJedisConnection(jedis);
             }
         }
 

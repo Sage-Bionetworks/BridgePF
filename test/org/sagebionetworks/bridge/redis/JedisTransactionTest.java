@@ -77,7 +77,7 @@ public class JedisTransactionTest {
     }
 
     @Test
-    public void testFinalize() throws Exception {
+    public void testFinalize() throws Throwable {
         try (JedisTransaction transaction = jedisOps.getTransaction()) {
             transaction.exec();
             transaction.finalize();

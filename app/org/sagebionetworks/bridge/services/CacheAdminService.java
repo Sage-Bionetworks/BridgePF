@@ -6,6 +6,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.redis.JedisUtil;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -32,9 +33,13 @@ public class CacheAdminService {
      */
     public Set<String> listItems() {
         Jedis jedis = jedisPool.getResource();
-        
-        Set<String> allKeys = jedis.keys("*");
-        
+        Set<String> allKeys;
+        try {
+            allKeys = jedis.keys("*");
+        } finally {
+            JedisUtil.closeJedisConnection(jedis);
+        }
+
         Set<String> set = Sets.newHashSet();
         for (String key : allKeys) {
             if (!key.endsWith(SUFFIX)) {
@@ -53,11 +58,15 @@ public class CacheAdminService {
         Long removed = null;
         if (!cacheKey.endsWith(SUFFIX)) {
             Jedis jedis = jedisPool.getResource();
-            removed = jedis.del(cacheKey);
+            try {
+                removed = jedis.del(cacheKey);
+            } finally {
+                JedisUtil.closeJedisConnection(jedis);
+            }
         }
         if (removed == null || removed == 0) {
             throw new BridgeServiceException("Item could not be removed from cache: does key '"+cacheKey+"' exist?"); 
-        };
+        }
     }
 
 }
