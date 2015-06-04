@@ -157,8 +157,8 @@ public class AuthenticationControllerTest {
         secondStudy.setSupportEmail("bridge-testing@sagebase.org");
         secondStudy.setConsentNotificationEmail("bridge-testing@sagebase.org");
         secondStudy.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        secondStudy.setVerifyEmailTemplate(new EmailTemplate("subject", "body"));
-        secondStudy.setResetPasswordTemplate(new EmailTemplate("subject", "body"));
+        secondStudy.setVerifyEmailTemplate(new EmailTemplate("subject", "body ${url}"));
+        secondStudy.setResetPasswordTemplate(new EmailTemplate("subject", "body ${url}"));
         studyService.createStudy(secondStudy);
         
         Schedule schedule = new Schedule();

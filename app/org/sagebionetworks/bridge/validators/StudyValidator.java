@@ -1,4 +1,4 @@
-oipackage org.sagebionetworks.bridge.validators;
+package org.sagebionetworks.bridge.validators;
 
 import java.util.Set;
 

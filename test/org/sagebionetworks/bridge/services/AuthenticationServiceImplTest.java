@@ -193,8 +193,8 @@ public class AuthenticationServiceImplTest {
         tempStudy.setSupportEmail("bridge-testing@sagebase.org");
         tempStudy.setConsentNotificationEmail("bridge-testing@sagebase.org");
         tempStudy.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        tempStudy.setVerifyEmailTemplate(new EmailTemplate("subject", "body"));
-        tempStudy.setResetPasswordTemplate(new EmailTemplate("subject", "body"));
+        tempStudy.setVerifyEmailTemplate(new EmailTemplate("subject", "body ${url}"));
+        tempStudy.setResetPasswordTemplate(new EmailTemplate("subject", "body ${url}"));
         tempStudy = studyService.createStudy(tempStudy);
 
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);

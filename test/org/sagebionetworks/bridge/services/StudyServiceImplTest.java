@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -16,7 +17,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -140,7 +140,7 @@ public class StudyServiceImplTest {
         assertNotNull(study.getResetPasswordTemplate());
 
         // Even if partial values are submitted in the JSON, we don't get exceptions, we get defaults
-        study.setVerifyEmailTemplate(new EmailTemplate(null, "body"));
+        study.setVerifyEmailTemplate(new EmailTemplate(null, "body ${url}"));
         study.setResetPasswordTemplate(new EmailTemplate("subject", null));
 
         study = studyService.updateStudy(study);
