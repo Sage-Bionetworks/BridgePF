@@ -34,32 +34,15 @@ public class JedisTransaction implements AutoCloseable {
     }
 
     public List<Object> exec() {
-        try {
-            return transaction.exec();
-        } finally {
-            close();
-        }
+        return transaction.exec();
     }
 
     public String discard() {
-        try {
-            return transaction.discard();
-        } finally {
-            close();
-        }
-    }
-
-    @Override
-    public void finalize() throws Throwable {
-        try {
-            close();
-        } finally {
-            super.finalize();
-        }
+        return transaction.discard();
     }
 
     @Override
     public void close() {
-        JedisUtil.closeJedisConnection(jedis);
+        jedis.close();
     }
 }

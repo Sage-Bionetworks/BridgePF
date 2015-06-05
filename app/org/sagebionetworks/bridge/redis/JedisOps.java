@@ -173,16 +173,11 @@ public class JedisOps {
      * Responsible for providing template code such as closing resources.
      */
     private abstract class AbstractJedisTemplate<T> {
-
         T execute() {
-            Jedis jedis = jedisPool.getResource();
-            try {
+            try (Jedis jedis = jedisPool.getResource()) {
                 return execute(jedis);
-            } finally {
-                JedisUtil.closeJedisConnection(jedis);
             }
         }
-
         abstract T execute(final Jedis jedis);
     }
 }
