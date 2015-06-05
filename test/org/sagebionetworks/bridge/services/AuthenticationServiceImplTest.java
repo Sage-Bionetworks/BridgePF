@@ -16,9 +16,9 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -28,8 +28,6 @@ import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -186,15 +184,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void cannotCreateTheSameEmailAccountTwice() {
-        // To really test this, you need to create another study, and then try and add the user to *that*.
-        Study tempStudy = new DynamoStudy();
-        tempStudy.setIdentifier("temp");
-        tempStudy.setName("Temporary Study");
-        tempStudy.setSupportEmail("bridge-testing@sagebase.org");
-        tempStudy.setConsentNotificationEmail("bridge-testing@sagebase.org");
-        tempStudy.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        tempStudy.setVerifyEmailTemplate(new EmailTemplate("subject", "body ${url}"));
-        tempStudy.setResetPasswordTemplate(new EmailTemplate("subject", "body ${url}"));
+        Study tempStudy = TestUtils.getValidStudy();
         tempStudy = studyService.createStudy(tempStudy);
 
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);

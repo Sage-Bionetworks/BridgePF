@@ -28,14 +28,11 @@ import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.services.SchedulePlanServiceImpl;
@@ -151,14 +148,8 @@ public class AuthenticationControllerTest {
     
     private void saveSecondStudyWithSchedulePlan() {
         String id = RandomStringUtils.randomAlphabetic(7).toLowerCase();
-        secondStudy = new DynamoStudy();
+        secondStudy = TestUtils.getValidStudy();
         secondStudy.setIdentifier(id);
-        secondStudy.setName("Second Test Study");
-        secondStudy.setSupportEmail("bridge-testing@sagebase.org");
-        secondStudy.setConsentNotificationEmail("bridge-testing@sagebase.org");
-        secondStudy.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        secondStudy.setVerifyEmailTemplate(new EmailTemplate("subject", "body ${url}"));
-        secondStudy.setResetPasswordTemplate(new EmailTemplate("subject", "body ${url}"));
         studyService.createStudy(secondStudy);
         
         Schedule schedule = new Schedule();

@@ -12,8 +12,8 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyParticipant;
 import org.sagebionetworks.bridge.services.email.ParticipantRosterProvider;
@@ -24,6 +24,7 @@ import com.amazonaws.services.simpleemail.model.SendRawEmailResult;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class SendMailViaAmazonServiceParticipantRosterTest {
     
@@ -34,11 +35,8 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
 
     @Before
     public void setUp() throws Exception {
-        study = new DynamoStudy();
-        study.setName("Test Study");
-        study.setConsentNotificationEmail("consent-notification@test.com");
-        study.getUserProfileAttributes().add("phone");
-        study.getUserProfileAttributes().add("recontact");
+        study = TestUtils.getValidStudy();
+        study.setUserProfileAttributes(Sets.newHashSet("phone","recontact"));
 
         emailClient = mock(AmazonSimpleEmailServiceClient.class);
         when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenReturn(
@@ -46,7 +44,8 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         argument = ArgumentCaptor.forClass(SendRawEmailRequest.class);
 
         service = new SendMailViaAmazonService();
-        service.setSupportEmail("test-sender@sagebase.org");
+        // Note that this is the Bridge aministrative support email
+        service.setSupportEmail("bridge-testing+emailadmin@sagebase.org");
         service.setEmailClient(emailClient);
     }
     
@@ -69,12 +68,12 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         verify(emailClient).sendRawEmail(argument.capture());
         
         SendRawEmailRequest req = argument.getValue();
-        assertEquals("Correct sender", "test-sender@sagebase.org", req.getSource());
+        assertEquals("Correct sender", "bridge-testing+emailadmin@sagebase.org", req.getSource());
 
         // validate to
         List<String> toList = req.getDestinations();
         assertEquals("Correct number of recipients", 1, toList.size());
-        assertEquals("Correct recipient", "consent-notification@test.com", toList.get(0));
+        assertEquals("Correct recipient", "consent@acme.com", toList.get(0));
 
         // Validate message content. MIME message must be ASCII
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.UTF_8);

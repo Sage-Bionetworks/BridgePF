@@ -14,6 +14,9 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     public String getName();
     public void setName(String name);
+
+    public String getSponsorName();
+    public void setSponsorName(String sponsorName);
     
     public String getIdentifier();
     public void setIdentifier(String identifier);
@@ -35,6 +38,9 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     public String getSupportEmail();
     public void setSupportEmail(String email);
     
+    public String getTechnicalEmail();
+    public void setTechnicalEmail(String email);
+    
     public String getConsentNotificationEmail();
     public void setConsentNotificationEmail(String email);
     
@@ -52,4 +58,7 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     
     public EmailTemplate getResetPasswordTemplate();
     public void setResetPasswordTemplate(EmailTemplate template);
+    
+    public boolean isActive();
+    public void setActive(boolean active);
 }

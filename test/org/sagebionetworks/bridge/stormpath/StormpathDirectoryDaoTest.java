@@ -13,7 +13,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -51,13 +50,8 @@ public class StormpathDirectoryDaoTest {
     public void crudDirectory() {
         identifier = TestUtils.randomName();
         
-        DynamoStudy study = new DynamoStudy();
+        DynamoStudy study = TestUtils.getValidStudy();
         study.setIdentifier(identifier);
-        study.setName("Test Study");
-        study.setSupportEmail("support@test.com");
-        study.setVerifyEmailTemplate(new EmailTemplate("subject", "body with ${url}"));
-        study.setResetPasswordTemplate(new EmailTemplate("Test Study Password Reset", "body with ${url}"));
-        study.setPasswordPolicy(org.sagebionetworks.bridge.models.studies.PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
         String stormpathHref = directoryDao.createDirectoryForStudy(study);
         BridgeConfig config = BridgeConfigFactory.getConfig();
@@ -78,11 +72,11 @@ public class StormpathDirectoryDaoTest {
         assertEquals(1, passwordPolicy.getResetEmailTemplates().getSize());
         ModeledEmailTemplate template = passwordPolicy.getResetEmailTemplates().iterator().next();
 
-        assertEquals("Test Study", template.getFromName());
-        assertEquals("support@test.com", template.getFromEmailAddress());
-        assertEquals("Test Study Password Reset", template.getSubject());
+        assertEquals(study.getSponsorName(), template.getFromName());
+        assertEquals(study.getSupportEmail(), template.getFromEmailAddress());
+        assertEquals("subject", template.getSubject());
         assertEquals(MimeType.PLAIN_TEXT, template.getMimeType());
-        assertEquals("body with ${url}", template.getTextBody());
+        assertEquals(study.getResetPasswordTemplate().getBody(), template.getTextBody());
         String url = String.format("%s/mobile/resetPassword.html?study=%s", BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier());
         assertEquals(url, template.getLinkBaseUrl());
 

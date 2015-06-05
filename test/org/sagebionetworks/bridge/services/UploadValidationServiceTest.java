@@ -7,7 +7,7 @@ import static org.mockito.Mockito.when;
 import java.util.concurrent.ExecutorService;
 
 import org.junit.Test;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -22,7 +22,7 @@ public class UploadValidationServiceTest {
         // test strategy is to verify that execution flows through to these dependencies.
 
         // inputs
-        Study study = new DynamoStudy();
+        Study study = TestUtils.getValidStudy();
         Upload upload = new DynamoUpload2();
         User user = new User();
 

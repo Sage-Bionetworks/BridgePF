@@ -17,10 +17,10 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
@@ -193,9 +193,7 @@ public class ConsentServiceImplTest {
         try {
             jedisOps.del(key);
             
-            Study study = new DynamoStudy();
-            study.setIdentifier("test");
-            study.setName("Test Study");
+            Study study = TestUtils.getValidStudy();
             study.setMaxNumOfParticipants(2);
 
             // Set the cache so we avoid going to DynamoDB. We're testing the caching layer

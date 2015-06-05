@@ -4,10 +4,14 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.Map;
+
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
@@ -15,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.Maps;
 import com.stormpath.sdk.application.AccountStoreMapping;
 import com.stormpath.sdk.application.AccountStoreMappingCriteria;
 import com.stormpath.sdk.application.AccountStoreMappings;
@@ -100,6 +105,18 @@ public class StormpathDirectoryDao implements DirectoryDao {
 
         return directory.getHref();
     }
+    
+    @Override
+    public void updateDirectoryForStudy(Study study) {
+        checkNotNull(study);
+        
+        // The only thing you can really do here is update the templates, password policy, etc.
+        // Assme this call isn't made unless it's determined that some aspect of the study has changed
+        // relative to what is in DDB.
+        Directory directory = getDirectoryForStudy(study.getIdentifier());
+        adjustPasswordPolicies(study, directory);
+        //adjustVerifyEmailPolicies(study, directory);
+    };
 
     @Override
     public Directory getDirectoryForStudy(String identifier) {
@@ -180,16 +197,20 @@ public class StormpathDirectoryDao implements DirectoryDao {
         
         ModeledEmailTemplateList resetEmailTemplates = passwordPolicy.getResetEmailTemplates();
         for (ModeledEmailTemplate template : resetEmailTemplates) {
-            template.setFromName(study.getName());
+            template.setFromName(study.getSponsorName());
             template.setFromEmailAddress(study.getSupportEmail());
-            template.setMimeType(MimeType.PLAIN_TEXT);
+            
+            MimeType stormpathMimeType = getStormpathMimeType(study);
+            template.setMimeType(stormpathMimeType);
             
             String subject = partiallyResolveTemplate(study.getResetPasswordTemplate().getSubject(), study);
             template.setSubject(subject);
 
             String body = partiallyResolveTemplate(study.getResetPasswordTemplate().getBody(), study);
             template.setTextBody(body);
-            template.setLinkBaseUrl(String.format("%s/mobile/resetPassword.html?study=%s", BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier()));
+            String link = String.format("%s/mobile/resetPassword.html?study=%s", 
+                BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier());
+            template.setLinkBaseUrl(link);
             template.save();
         }
         
@@ -205,10 +226,17 @@ public class StormpathDirectoryDao implements DirectoryDao {
         passwordPolicy.save();
     }
     
+    private MimeType getStormpathMimeType(Study study) {
+        return (study.getResetPasswordTemplate().getMimeType() == EmailTemplate.MimeType.TEXT) ? 
+            MimeType.PLAIN_TEXT : MimeType.HTML;
+    }
+    
     private String partiallyResolveTemplate(String template, Study study) {
-        template = template.replaceAll("\\$\\{studyName\\}", study.getName());
-        template = template.replaceAll("\\$\\{supportEmail\\}", study.getSupportEmail());
-        // template = template.replaceAll("\\$\\{sponsorName\\}", study.getSponsorName());
-        return template;
+        Map<String,String> map = Maps.newHashMap();
+        map.put("studyName", study.getName());
+        map.put("supportEmail", study.getSupportEmail());
+        map.put("technicalEmail", study.getTechnicalEmail());
+        map.put("sponsorName", study.getSponsorName());
+        return BridgeUtils.resolveTemplate(template, map);
     }
 }

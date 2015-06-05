@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
@@ -185,7 +186,13 @@ public class StudyServiceImpl implements StudyService {
         // is not updated in the cache. At least we can delete the study before this, so the next 
         // time it should succeed. Have not figured out why they get out of sync.
         cacheProvider.removeStudy(study.getIdentifier());
+        
+        // Only update the directory if a relevant aspect of the study has changed.
+        if (studyDirectoryHasChanged(originalStudy, study)) {
+            directoryDao.updateDirectoryForStudy(study);
+        }
         Study updatedStudy = studyDao.updateStudy(study);
+        
         cacheProvider.setStudy(updatedStudy);
         
         return updatedStudy;
@@ -204,6 +211,19 @@ public class StudyServiceImpl implements StudyService {
             lockDao.releaseLock(Study.class, identifier, lockId);
         }
     }
+    
+    /**
+     * Has an aspect of the study changed that must be mirrored to the Stormpath directory?
+     * @param originalStudy
+     * @param study
+     * @return true if the password policy or email templates have changed
+     */
+    private boolean studyDirectoryHasChanged(Study originalStudy, Study study) {
+        return (!study.getPasswordPolicy().equals(originalStudy.getPasswordPolicy()) || 
+                !study.getVerifyEmailTemplate().equals(originalStudy.getVerifyEmailTemplate()) || 
+                !study.getResetPasswordTemplate().equals(originalStudy.getResetPasswordTemplate()));
+    }
+    
     /**
      * When certain aspects of as study are excluded on a save, they revert to defaults.
      * @param study
@@ -231,15 +251,24 @@ public class StudyServiceImpl implements StudyService {
         return study;
     }
     
+    /**
+     * Partially resolve variables in the templates before saving on Stormpath. If templates are not provided, 
+     * then the default templates are used, and we assume these are text only, otherwise this method needs to 
+     * change the mime type it sets.
+     * @param template
+     * @param defaultSubject
+     * @param defaultBody
+     * @return
+     */
     private EmailTemplate fillOutTemplate(EmailTemplate template, String defaultSubject, String defaultBody) {
         if (template == null) {
-            template = new EmailTemplate(defaultSubject, defaultBody);
+            template = new EmailTemplate(defaultSubject, defaultBody, MimeType.TEXT);
         }
         if (StringUtils.isBlank(template.getSubject())) {
-            template = new EmailTemplate(defaultSubject, template.getBody());
+            template = new EmailTemplate(defaultSubject, template.getBody(), template.getMimeType());
         }
         if (StringUtils.isBlank(template.getBody())) {
-            template = new EmailTemplate(template.getSubject(), defaultBody);
+            template = new EmailTemplate(template.getSubject(), defaultBody, template.getMimeType());
         }
         return template;
     }

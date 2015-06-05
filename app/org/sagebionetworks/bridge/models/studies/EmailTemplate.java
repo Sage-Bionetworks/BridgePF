@@ -6,13 +6,29 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class EmailTemplate {
+    
+    public enum MimeType {
+        TEXT("text/plain"),
+        HTML("text/html");
+        
+        private MimeType(String type){
+            this.type = type;
+        }
+        private final String type;
+        @Override public String toString() {
+            return type;
+        }
+    }
 
     private final String subject;
+    private final MimeType mimeType;
     private final String body;
     
     @JsonCreator
-    public EmailTemplate(@JsonProperty("subject") String subject, @JsonProperty("body") String body) {
+    public EmailTemplate(@JsonProperty("subject") String subject, @JsonProperty("body") String body,
+                    @JsonProperty("mimeType") MimeType mimeType) {
         this.subject = subject;
+        this.mimeType = mimeType;
         this.body = body;
     }
     
@@ -22,6 +38,10 @@ public final class EmailTemplate {
     public String getBody() {
         return body;
     }
+    
+    public MimeType getMimeType() {
+        return mimeType;
+    }
 
     @Override
     public int hashCode() {
@@ -29,6 +49,7 @@ public final class EmailTemplate {
         int result = 1;
         result = prime * result + Objects.hashCode(body);
         result = prime * result + Objects.hashCode(subject);
+        result = prime * result + Objects.hashCode(mimeType);
         return result;
     }
 
@@ -39,12 +60,13 @@ public final class EmailTemplate {
         if (obj == null || getClass() != obj.getClass())
             return false;
         EmailTemplate other = (EmailTemplate) obj;
-        return (Objects.equals(body,  other.body) && Objects.equals(subject, other.subject));
+        return (Objects.equals(body, other.body) && Objects.equals(subject, other.subject) && 
+                Objects.equals(mimeType, other.mimeType));
     }
 
     @Override
     public String toString() {
-        return String.format("EmailTemplate [subject=%s, body=%s]", subject, body);
+        return String.format("EmailTemplate [subject=%s, body=%s, mimeType=%s]", subject, body, mimeType);
     }
     
 }

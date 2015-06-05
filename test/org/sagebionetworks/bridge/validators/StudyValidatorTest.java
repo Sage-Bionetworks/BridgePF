@@ -2,9 +2,11 @@ package org.sagebionetworks.bridge.validators;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 
 public class StudyValidatorTest {
@@ -13,14 +15,7 @@ public class StudyValidatorTest {
     
     @Before
     public void createValidStudy() {
-        study = new DynamoStudy();
-        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        study.setVerifyEmailTemplate(new EmailTemplate("subject", "body with ${url}"));
-        study.setResetPasswordTemplate(new EmailTemplate("subject", "body with ${url}"));
-        study.setIdentifier("test");
-        study.setName("Belgium Waffles [Test]");
-        study.setSupportEmail("support@support.com");
-        study.setConsentNotificationEmail("support@support.com");
+        study = TestUtils.getValidStudy();
     }
     
     @Test
@@ -43,8 +38,8 @@ public class StudyValidatorTest {
     
     @Test(expected = InvalidEntityException.class)
     public void templatesMustHaveUrlVariable() {
-        study.setVerifyEmailTemplate(new EmailTemplate("subject", "no url variable"));
-        study.setResetPasswordTemplate(new EmailTemplate("subject", "no url variable"));
+        study.setVerifyEmailTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
+        study.setResetPasswordTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
 
@@ -75,6 +70,12 @@ public class StudyValidatorTest {
     @Test(expected = InvalidEntityException.class)
     public void rejectsInvalidSupportEmailAddresses() {
         study.setSupportEmail("test@test.com,asdf,test2@test.com");
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void rejectsInvalidTechnicalEmailAddresses() {
+        study.setTechnicalEmail(null);
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
     
@@ -134,13 +135,13 @@ public class StudyValidatorTest {
 
     @Test(expected = InvalidEntityException.class)
     public void requiresVerifyEmailTemplateWithSubject() {
-        study.setVerifyEmailTemplate(new EmailTemplate("  ", "body"));
+        study.setVerifyEmailTemplate(new EmailTemplate("  ", "body", MimeType.HTML));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void requiresVerifyEmailTemplateWithBody() {
-        study.setVerifyEmailTemplate(new EmailTemplate("subject", null));
+        study.setVerifyEmailTemplate(new EmailTemplate("subject", null, MimeType.HTML));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
 
@@ -152,13 +153,13 @@ public class StudyValidatorTest {
 
     @Test(expected = InvalidEntityException.class)
     public void requiresResetPasswordTemplateWithSubject() {
-        study.setResetPasswordTemplate(new EmailTemplate("  ", "body"));
+        study.setResetPasswordTemplate(new EmailTemplate("  ", "body", MimeType.TEXT));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void requiresResetPasswordTemplateWithBody() {
-        study.setResetPasswordTemplate(new EmailTemplate("subject", null));
+        study.setResetPasswordTemplate(new EmailTemplate("subject", null, MimeType.TEXT));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
 }

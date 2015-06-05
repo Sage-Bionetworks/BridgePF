@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -24,6 +23,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
@@ -68,8 +68,9 @@ public class StudyServiceImplTest {
     
     @Test
     public void cannotCreateAnExistingStudyWithAVersion() {
+        study = TestUtils.getValidStudy();
         identifier = TestUtils.randomName();
-        study = createStudy();
+        study.setIdentifier(identifier);
         study = studyService.createStudy(study);
         try {
             study = studyService.createStudy(study);
@@ -80,16 +81,16 @@ public class StudyServiceImplTest {
     
     @Test(expected=EntityAlreadyExistsException.class)
     public void cannotCreateAStudyWithAVersion() {
-        study = createStudy();
+        study = TestUtils.getValidStudy();
         study.setVersion(1L);
         study = studyService.createStudy(study);
     }
     
     @Test
     public void crudStudy() {
-        identifier = TestUtils.randomName();
-        study = createStudy();
-
+        study = TestUtils.getValidStudy();
+        identifier = study.getIdentifier();
+        
         study = studyService.createStudy(study);
         assertNotNull("Version has been set", study.getVersion());
         verify(cache).setStudy(study);
@@ -103,8 +104,8 @@ public class StudyServiceImplTest {
         
         study = studyService.getStudy(identifier);
         assertEquals(identifier, study.getIdentifier());
-        assertEquals("Test of study creation", study.getName());
-        assertEquals(100, study.getMaxNumOfParticipants());
+        assertEquals("Test Study [not API]", study.getName());
+        assertEquals(200, study.getMaxNumOfParticipants());
         assertEquals(18, study.getMinAgeOfConsent());
         // these should have been changed
         assertEquals(identifier+"_researcher", study.getResearcherRole());
@@ -127,11 +128,11 @@ public class StudyServiceImplTest {
     
     @Test
     public void defaultsAreUsedWhenNotProvided() {
-        identifier = TestUtils.randomName();
-        study = createStudy();
+        study = TestUtils.getValidStudy();
         study.setPasswordPolicy(null);
         study.setVerifyEmailTemplate(null);
         study.setResetPasswordTemplate(null);
+        identifier = study.getIdentifier();
         
         study = studyService.createStudy(study);
         
@@ -140,30 +141,14 @@ public class StudyServiceImplTest {
         assertNotNull(study.getResetPasswordTemplate());
 
         // Even if partial values are submitted in the JSON, we don't get exceptions, we get defaults
-        study.setVerifyEmailTemplate(new EmailTemplate(null, "body ${url}"));
-        study.setResetPasswordTemplate(new EmailTemplate("subject", null));
+        study.setVerifyEmailTemplate(new EmailTemplate(null, "body ${url}", MimeType.TEXT));
+        study.setResetPasswordTemplate(new EmailTemplate("subject", null, MimeType.TEXT));
 
         study = studyService.updateStudy(study);
         
         assertEquals("Verify your account", study.getVerifyEmailTemplate().getSubject());
         assertNotNull(study.getResetPasswordTemplate().getBody());
         assertTrue(study.getResetPasswordTemplate().getBody().contains("To reset your password please click on this link"));
-    }
-    
-    private Study createStudy() {
-        study = new DynamoStudy();
-        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        study.setVerifyEmailTemplate(new EmailTemplate("subject", "body with ${url}"));
-        study.setResetPasswordTemplate(new EmailTemplate("subject", "body with ${url}"));
-        study.setIdentifier(identifier);
-        study.setName("Test of study creation");
-        study.setMaxNumOfParticipants(100);
-        study.setMinAgeOfConsent(18);
-        study.setResearcherRole(identifier+"_researcher");
-        study.setStormpathHref("http://dev-test-junk");
-        study.setSupportEmail("bridge-testing@sagebase.org");
-        study.setConsentNotificationEmail("bridge-testing@sagebase.org");
-        return study;
     }
 
 }

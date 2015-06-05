@@ -13,9 +13,9 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.OptionLookup;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.services.ParticipantRosterGenerator;
 import org.sagebionetworks.bridge.services.SendMailService;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class ParticipantRosterGeneratorTest {
 
@@ -45,10 +46,8 @@ public class ParticipantRosterGeneratorTest {
     
     @Before
     public void before() {
-        study = new DynamoStudy();
-        study.setIdentifier("test");
-        study.getUserProfileAttributes().add("phone");
-        study.getUserProfileAttributes().add("can_recontact");
+        study = TestUtils.getValidStudy();
+        study.setUserProfileAttributes(Sets.newHashSet("phone", "can_recontact"));
         
         @SuppressWarnings("unchecked")
         Class<ParticipantRosterProvider> providerClass = (Class<ParticipantRosterProvider>)(Class<?>)List.class;

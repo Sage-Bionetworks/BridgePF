@@ -14,8 +14,9 @@ import java.util.List;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import org.junit.Test;
 
+import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
@@ -78,8 +79,7 @@ public class UploadValidationTaskTest {
     private static UploadValidationContext testHelper(List<UploadValidationHandler> handlerList,
             UploadStatus expectedStatus) {
         // input
-        DynamoStudy study = new DynamoStudy();
-        study.setIdentifier("test-study");
+        DynamoStudy study = TestUtils.getValidStudy();
 
         DynamoUpload2 upload2 = new DynamoUpload2();
         upload2.setUploadId("test-upload");

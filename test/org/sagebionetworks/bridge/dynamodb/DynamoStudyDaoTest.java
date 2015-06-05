@@ -45,7 +45,8 @@ public class DynamoStudyDaoTest {
     
     @Test
     public void crudOneStudy() {
-        Study study = createStudy();
+        Study study = TestUtils.getValidStudy();
+        study.setUserProfileAttributes(EXTRA_USER_PROFILE_ATTRIBUTES);
         
         study = studyDao.createStudy(study);
         assertNotNull("Study was assigned a version", study.getVersion());
@@ -58,8 +59,8 @@ public class DynamoStudyDaoTest {
         assertEquals("Name was set", "This is a test name", study.getName());
         assertEquals("Max participants was set", 10, study.getMaxNumOfParticipants());
         assertNotNull("Study deployment was set", study.getStormpathHref());
-        assertEquals("support@test.com", study.getSupportEmail());
-        assertEquals("consent-notification@test.com", study.getConsentNotificationEmail());
+        assertEquals("support@acme.com", study.getSupportEmail());
+        assertEquals("consent@acme.com", study.getConsentNotificationEmail());
         assertEquals(EXTRA_USER_PROFILE_ATTRIBUTES, study.getUserProfileAttributes());
 
         String identifier = study.getIdentifier();
@@ -75,11 +76,11 @@ public class DynamoStudyDaoTest {
     public void canRetrieveAllStudies() {
         List<String> identifiers = Lists.newArrayList();
         try {
-            identifiers.add(studyDao.createStudy(createStudy()).getIdentifier());
-            identifiers.add(studyDao.createStudy(createStudy()).getIdentifier());
-            identifiers.add(studyDao.createStudy(createStudy()).getIdentifier());
-            identifiers.add(studyDao.createStudy(createStudy()).getIdentifier());
-            identifiers.add(studyDao.createStudy(createStudy()).getIdentifier());
+            identifiers.add(studyDao.createStudy(TestUtils.getValidStudy()).getIdentifier());
+            identifiers.add(studyDao.createStudy(TestUtils.getValidStudy()).getIdentifier());
+            identifiers.add(studyDao.createStudy(TestUtils.getValidStudy()).getIdentifier());
+            identifiers.add(studyDao.createStudy(TestUtils.getValidStudy()).getIdentifier());
+            identifiers.add(studyDao.createStudy(TestUtils.getValidStudy()).getIdentifier());
             
             List<Study> studies = studyDao.getStudies();
             // The five studies, plus the API study we refuse to delete...
@@ -99,7 +100,7 @@ public class DynamoStudyDaoTest {
     public void willNotSaveTwoStudiesWithSameIdentifier() {
         Study study = null;
         try {
-            study = createStudy();
+            study = TestUtils.getValidStudy();
             study = studyDao.createStudy(study);
             study.setVersion(null);
             studyDao.createStudy(study);
@@ -113,25 +114,11 @@ public class DynamoStudyDaoTest {
     
     @Test(expected=EntityAlreadyExistsException.class)
     public void identifierUniquenessEnforcedByVersionChecks() throws Exception {
-        Study study = createStudy();
+        Study study = TestUtils.getValidStudy();
         studyDao.createStudy(study);
         
         study.setVersion(null); // This is now a "new study"
         studyDao.createStudy(study);
-    }
-    
-    private Study createStudy() {
-        Study study = new DynamoStudy();
-        study.setIdentifier(TestUtils.randomName());
-        study.setMaxNumOfParticipants(100);
-        study.setMinAgeOfConsent(18);
-        study.setName(TestUtils.randomName());
-        study.setResearcherRole(study.getIdentifier()+"_researcher");
-        study.setStormpathHref("http://test/local/");
-        study.setSupportEmail("support@test.com");
-        study.setConsentNotificationEmail("consent-notification@test.com");
-        study.setUserProfileAttributes(EXTRA_USER_PROFILE_ATTRIBUTES);
-        return study;
     }
     
 }

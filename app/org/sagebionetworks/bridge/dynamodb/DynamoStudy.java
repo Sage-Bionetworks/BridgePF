@@ -56,14 +56,17 @@ public class DynamoStudy implements Study {
         DynamoStudy.RESEARCHER_VIEW_FILTER);
 
     private String name;
+    private String sponsorName;
     private String identifier;
     private String researcherRole;
     private String stormpathHref;
     private String supportEmail;
+    private String technicalEmail;
     private String consentNotificationEmail;
     private int minAgeOfConsent;
     private int maxNumOfParticipants;
     private Long version;
+    private boolean active;
     private StudyIdentifier studyIdentifier;
     private Set<String> profileAttributes;
     private PasswordPolicy passwordPolicy;
@@ -76,6 +79,16 @@ public class DynamoStudy implements Study {
     
     @Override
     @DynamoDBAttribute
+    public String getSponsorName() {
+        return sponsorName;
+    }
+    @Override
+    public void setSponsorName(String sponsorName) {
+        this.sponsorName = sponsorName;
+    }
+    
+    @Override
+    @DynamoDBAttribute
     public String getName() {
         return name;
     }
@@ -83,6 +96,7 @@ public class DynamoStudy implements Study {
     public void setName(String name) {
         this.name = name;
     }
+    
     @Override
     @DynamoDBHashKey
     public String getIdentifier() {
@@ -153,6 +167,20 @@ public class DynamoStudy implements Study {
     public void setSupportEmail(String supportEmail) {
         this.supportEmail = supportEmail;
     }
+    
+    /**
+     * A technical contact email that should be a contact who can contact both the developers of any client application
+     * for this study, and the study administrators (the technical team that is receiving and managing data for the
+     * study).
+     */
+    @Override
+    public String getTechnicalEmail() {
+        return technicalEmail;
+    }
+    @Override
+    public void setTechnicalEmail(String technicalEmail) {
+        this.technicalEmail = technicalEmail;
+    }
     /**
      * A comma-separated list of email addresses that should be sent consent records 
      * when a user agrees to participate in research (optional, but should be provided 
@@ -202,6 +230,14 @@ public class DynamoStudy implements Study {
     public void setResetPasswordTemplate(EmailTemplate template) {
         this.resetPasswordTemplate = template;
     }
+    @Override
+    public boolean isActive() {
+        return active;
+    }
+    @Override
+    public void setActive(boolean active) {
+        this.active = active;
+    }
     /**
      * Left for legacy support of earlier versions of studies. Can be removed after migration.
      * @return
@@ -236,8 +272,10 @@ public class DynamoStudy implements Study {
         result = prime * result + Objects.hashCode(maxNumOfParticipants);
         result = prime * result + Objects.hashCode(minAgeOfConsent);
         result = prime * result + Objects.hashCode(name);
+        result = prime * result + Objects.hashCode(sponsorName);
         result = prime * result + Objects.hashCode(researcherRole);
         result = prime * result + Objects.hashCode(supportEmail);
+        result = prime * result + Objects.hashCode(technicalEmail);
         result = prime * result + Objects.hashCode(consentNotificationEmail);
         result = prime * result + Objects.hashCode(stormpathHref);
         result = prime * result + Objects.hashCode(version);
@@ -245,6 +283,7 @@ public class DynamoStudy implements Study {
         result = prime * result + Objects.hashCode(passwordPolicy);
         result = prime * result + Objects.hashCode(verifyEmailTemplate);
         result = prime * result + Objects.hashCode(resetPasswordTemplate);
+        result = prime * result + Objects.hashCode(active);
         return result;
     }
 
@@ -256,21 +295,23 @@ public class DynamoStudy implements Study {
             return false;
         DynamoStudy other = (DynamoStudy) obj;
         
-        return (Objects.equals(identifier, other.identifier) && Objects.equals(maxNumOfParticipants, other.maxNumOfParticipants) && 
+        return (Objects.equals(identifier, other.identifier) && Objects.equals(supportEmail, other.supportEmail) &&
+            Objects.equals(maxNumOfParticipants, other.maxNumOfParticipants) && 
             Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name) && 
             Objects.equals(researcherRole, other.researcherRole) && Objects.equals(stormpathHref, other.stormpathHref) && 
-            Objects.equals(supportEmail, other.supportEmail) && Objects.equals(consentNotificationEmail, other.consentNotificationEmail) && 
-            Objects.equals(version, other.version) && Objects.equals(profileAttributes, other.profileAttributes));
-        
+            Objects.equals(consentNotificationEmail, other.consentNotificationEmail) && 
+            Objects.equals(version, other.version) && Objects.equals(profileAttributes, other.profileAttributes) && 
+            Objects.equals(sponsorName, other.sponsorName) && Objects.equals(technicalEmail, other.technicalEmail) && 
+            Objects.equals(active, other.active));
     }
 
     @Override
     public String toString() {
-        return String.format("DynamoStudy [name=%s, identifier=%s, researcherRole=%s, stormpathHref=%s, "
-            + "minAgeOfConsent=%s, maxNumOfParticipants=%s, supportEmail=%s, consentNotificationEmail=%s, "
+        return String.format("DynamoStudy [name=%s, active=%s, sponsorName=%, identifier=%s, researcherRole=%s, stormpathHref=%s, "
+            + "minAgeOfConsent=%s, maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
             + "version=%s, userProfileAttributes=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s]",
-            name, identifier, researcherRole, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
-            supportEmail, consentNotificationEmail, version, profileAttributes, passwordPolicy,
+            name, active, sponsorName, identifier, researcherRole, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
+            supportEmail, technicalEmail, consentNotificationEmail, version, profileAttributes, passwordPolicy,
             verifyEmailTemplate, resetPasswordTemplate);        
     }
     

@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -27,9 +28,7 @@ public class ViewCacheTest {
     public void before() {
         mapper = BridgeObjectMapper.get();
         
-        study = new DynamoStudy();
-        study.setIdentifier("testStudy");
-        study.setName("Test Study");
+        study = TestUtils.getValidStudy();
     }
     
     @Test
@@ -42,7 +41,7 @@ public class ViewCacheTest {
         
         String json = cache.getView(cacheKey, new Supplier<Study>() {
             @Override public Study get() {
-                Study study = new DynamoStudy();
+                Study study = TestUtils.getValidStudy();
                 study.setName("Test Study 2");
                 return study;
             }
@@ -108,7 +107,7 @@ public class ViewCacheTest {
         
         String json = cache.getView(cacheKey, new Supplier<Study>() {
             @Override public Study get() {
-                Study study = new DynamoStudy();
+                Study study = TestUtils.getValidStudy();
                 study.setName("Test Study 2");
                 return study;
             }

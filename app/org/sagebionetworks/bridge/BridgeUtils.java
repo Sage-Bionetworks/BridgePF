@@ -26,6 +26,20 @@ import com.google.common.collect.Maps;
 
 public class BridgeUtils {
 
+    public static String resolveTemplate(String template, Map<String,String> values) {
+        checkNotNull(template);
+        checkNotNull(values);
+        
+        for (String key : values.keySet()) {
+            String value = values.get(key);
+            if (value != null) {
+                String regex = "\\$\\{"+key+"\\}";
+                template = template.replaceAll(regex, values.get(key));
+            }
+        }
+        return template;
+    }
+    
     public static String toStringQuietly(Resource resource) {
         try {
             return IOUtils.toString(resource.getInputStream());

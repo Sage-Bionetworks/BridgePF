@@ -3,13 +3,13 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Sets;
 
 /**
  * Main functionality we want to verify in this test is that study can be serialized with all values, 
@@ -20,37 +20,25 @@ public class DynamoStudyTest {
 
     @Test
     public void studyFullySerializesForCaching() throws Exception {
-        DynamoStudy study = new DynamoStudy();
-        study.setConsentNotificationEmail("email1@test.com");
-        study.setSupportEmail("email2@test.com");
-        study.setName("Test Study Name");
-        study.setIdentifier("teststudy");
-        study.setMinAgeOfConsent(18);
-        study.setMaxNumOfParticipants(200);
-        study.setStormpathHref("http://test.com/");
-        study.setResearcherRole("test_researcher");
-        study.setPasswordPolicy(new PasswordPolicy(8, true, true, true));
-        study.setVerifyEmailTemplate(new EmailTemplate("Subject1", "Body1"));
-        study.setResetPasswordTemplate(new EmailTemplate("Subject2", "Body2"));
-        study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
+        DynamoStudy study = TestUtils.getValidStudy();
         study.setVersion(2L);
         
         String json = BridgeObjectMapper.get().writeValueAsString(study);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
-        assertEquals("email1@test.com", node.get("consentNotificationEmail").asText());
-        assertEquals("email2@test.com", node.get("supportEmail").asText());
-        assertEquals("Test Study Name", node.get("name").asText());
-        assertEquals("teststudy", node.get("identifier").asText());
-        assertEquals(18, node.get("minAgeOfConsent").asInt());
-        assertEquals(200, node.get("maxNumOfParticipants").asInt());
-        assertEquals("http://test.com/", node.get("stormpathHref").asText());
-        assertEquals("test_researcher", node.get("researcherRole").asText());
-        assertEquals(new PasswordPolicy(8, true, true, true), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
-        assertEquals(new EmailTemplate("Subject1", "Body1"), JsonUtils.asEntity(node, "verifyEmailTemplate", EmailTemplate.class));
-        assertEquals(new EmailTemplate("Subject2", "Body2"), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
-        assertEquals(Sets.newHashSet("a", "b"), JsonUtils.asStringSet(node, "userProfileAttributes"));
-        assertEquals(2L, node.get("version").asLong());
+        assertEquals(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
+        assertEquals(study.getSupportEmail(), node.get("supportEmail").asText());
+        assertEquals(study.getName(), node.get("name").asText());
+        assertEquals(study.getIdentifier(), node.get("identifier").asText());
+        assertEquals(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
+        assertEquals(study.getMaxNumOfParticipants(), node.get("maxNumOfParticipants").asInt());
+        assertEquals(study.getStormpathHref(), node.get("stormpathHref").asText());
+        assertEquals(study.getResearcherRole(), node.get("researcherRole").asText());
+        assertEquals(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
+        assertEquals(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate", EmailTemplate.class));
+        assertEquals(study.getResetPasswordTemplate(), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
+        assertEquals(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
+        assertEquals((Long)study.getVersion(), (Long)node.get("version").asLong());
         assertEquals("Study", node.get("type").asText());
         
         // Using the filtered view of a study, this should not include a couple of fields we don't expose to researchers.

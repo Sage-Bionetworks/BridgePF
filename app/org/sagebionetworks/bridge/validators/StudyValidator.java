@@ -39,6 +39,9 @@ public class StudyValidator implements Validator {
         if (StringUtils.isBlank(study.getSupportEmail())) {
             errors.rejectValue("supportEmail", "is null or blank");
         }
+        if (StringUtils.isBlank(study.getTechnicalEmail())) {
+            errors.rejectValue("technicalEmail", "is null or blank");
+        }
         if (StringUtils.isBlank(study.getConsentNotificationEmail())) {
             errors.rejectValue("consentNotificationEmail", "is null or blank");
         }

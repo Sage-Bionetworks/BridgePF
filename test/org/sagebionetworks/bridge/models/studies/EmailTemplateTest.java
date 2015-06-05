@@ -6,6 +6,7 @@ import nl.jqno.equalsverifier.Warning;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -18,7 +19,7 @@ public class EmailTemplateTest {
     
     @Test
     public void canSerialize() throws Exception {
-        EmailTemplate template = new EmailTemplate("Subject", "Body");
+        EmailTemplate template = new EmailTemplate("Subject", "Body", MimeType.TEXT);
         
         String json = BridgeObjectMapper.get().writeValueAsString(template);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
