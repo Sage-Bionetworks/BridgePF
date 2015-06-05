@@ -77,18 +77,6 @@ public class JedisTransactionTest {
     }
 
     @Test
-    public void testFinalize() throws Throwable {
-        try (JedisTransaction transaction = jedisOps.getTransaction()) {
-            transaction.exec();
-            transaction.finalize();
-        }
-        try (JedisTransaction transaction = jedisOps.getTransaction()) {
-            transaction.setex(key1, 10, val1).discard();
-            transaction.finalize();
-        }
-    }
-
-    @Test
     public void testTransaction() throws Exception {
         Jedis jedis = mock(Jedis.class);
         Transaction transaction = mock(Transaction.class);

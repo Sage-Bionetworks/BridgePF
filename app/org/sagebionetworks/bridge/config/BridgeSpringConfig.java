@@ -199,8 +199,6 @@ public class BridgeSpringConfig {
         // configure Jedis pool
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
-        poolConfig.setTestOnBorrow(true);
-        poolConfig.setTestOnReturn(true);
 
         String host = config.getProperty("redis.host");
         int port = config.getPropertyAsInt("redis.port");
