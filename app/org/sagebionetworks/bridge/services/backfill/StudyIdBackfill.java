@@ -25,16 +25,10 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StudyIdBackfill.class);
 
-    private BackfillRecordFactory backfillRecordFactory;
     private StudyService studyService;
     private AccountDao accountDao;
     private HealthCodeDao healthCodeDao;
     private HealthCodeService healthCodeService;
-
-    @Autowired
-    public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
-        this.backfillRecordFactory = backfillRecordFactory;
-    }
 
     @Autowired
     public void setStudyService(StudyService studyService) {
@@ -77,16 +71,16 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
                         final String studyId = healthCodeDao.getStudyIdentifier(healthCode);
                         if (isBlank(studyId)) {
                             String msg = "Backfill needed as study ID is blank.";
-                            callback.newRecords(backfillRecordFactory.createOnly(task, study, account, msg));
+                            callback.newRecords(getBackfillRecordFactory().createOnly(task, study, account, msg));
                         } else {
                             String msg = "Study ID already exists.";
-                            callback.newRecords(backfillRecordFactory.createOnly(task, study, account, msg));
+                            callback.newRecords(getBackfillRecordFactory().createOnly(task, study, account, msg));
                         }
                     }
                 } catch (final RuntimeException e) {
                     LOGGER.error(e.getMessage(), e);
                     String msg = e.getClass().getName() + " " + e.getMessage();
-                    callback.newRecords(backfillRecordFactory.createOnly(task, study, account, msg));
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, study, account, msg));
                 }
             }
         }

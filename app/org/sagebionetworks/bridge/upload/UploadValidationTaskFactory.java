@@ -6,8 +6,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.models.accounts.User;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -39,17 +38,14 @@ public class UploadValidationTaskFactory {
      *
      * @param study
      *         study this upload lives in
-     * @param user
-     *         user uploading
      * @param upload
      *         upload metadata object for the upload
      * @return upload validation task, which will validate the upload
      */
-    public UploadValidationTask newTask(@Nonnull Study study, @Nonnull User user, @Nonnull Upload upload) {
+    public UploadValidationTask newTask(@Nonnull StudyIdentifier study, @Nonnull Upload upload) {
         // context
         UploadValidationContext context = new UploadValidationContext();
         context.setStudy(study);
-        context.setUser(user);
         context.setUpload(upload);
 
         // task

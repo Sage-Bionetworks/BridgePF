@@ -30,15 +30,20 @@ abstract class AsyncBackfillTemplate implements BackfillService {
     private BackfillRecordFactory backfillRecordFactory;
 
     @Autowired
-    public void setDistributedLockDao(DistributedLockDao lockDao) {
+    public final void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
     @Autowired
-    public void setBackfillDao(BackfillDao backfillDao) {
+    public final void setBackfillDao(BackfillDao backfillDao) {
         this.backfillDao = backfillDao;
     }
+
+    public BackfillRecordFactory getBackfillRecordFactory() {
+        return backfillRecordFactory;
+    }
+
     @Autowired
-    public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
+    public final void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
         this.backfillRecordFactory = backfillRecordFactory;
     }
 
@@ -106,6 +111,14 @@ abstract class AsyncBackfillTemplate implements BackfillService {
         } finally {
             callback.done();
         }
+    }
+
+    /**
+     * Records the specified message. This is a convenience method that wraps calling the BackfillRecordFactory to
+     * create a message on a task and calls the callback with the BackfillRecord.
+     */
+    protected void recordMessage(BackfillTask task, BackfillCallback callback, String message) {
+        callback.newRecords(backfillRecordFactory.createOnly(task, message));
     }
 
     /**

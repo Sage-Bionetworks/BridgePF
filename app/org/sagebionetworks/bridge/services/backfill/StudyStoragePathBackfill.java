@@ -21,15 +21,10 @@ import com.google.common.io.CharStreams;
 @Component("studyStorageBackfill")
 public class StudyStoragePathBackfill extends AsyncBackfillTemplate {
 
-    private BackfillRecordFactory backfillFactory;
     private StudyService studyService;
     private StudyConsentDao studyConsentDao;
     private StudyConsentService studyConsentService;
-    
-    @Autowired
-    public void setBackfillFactory(BackfillRecordFactory backfillFactory) {
-        this.backfillFactory = backfillFactory;
-    }
+
     @Autowired
     public void setStudyConsentDao(StudyConsentDao studyConsentDao) {
         this.studyConsentDao = studyConsentDao;
@@ -59,12 +54,12 @@ public class StudyStoragePathBackfill extends AsyncBackfillTemplate {
                     StudyConsentView view = studyConsentService.addConsent(study, form);
                     studyConsentService.activateConsent(study, view.getStudyConsent().getCreatedOn());
                     
-                    callback.newRecords(backfillFactory.createOnly(task, "Study '"+study.getIdentifier()+"' updated."));
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "Study '"+study.getIdentifier()+"' updated."));
                 } else {
-                    callback.newRecords(backfillFactory.createOnly(task, "Study '"+study.getIdentifier()+"' skipped (has S3 content)."));
+                    callback.newRecords(getBackfillRecordFactory().createOnly(task, "Study '"+study.getIdentifier()+"' skipped (has S3 content)."));
                 }
             } catch(Throwable t) {
-                callback.newRecords(backfillFactory.createOnly(task, "Study '"+study.getIdentifier()+"' could not be updated: " + t.getMessage()));
+                callback.newRecords(getBackfillRecordFactory().createOnly(task, "Study '"+study.getIdentifier()+"' could not be updated: " + t.getMessage()));
             }
         }
     }
