@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutorService;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.upload.UploadValidationTask;
@@ -24,14 +23,13 @@ public class UploadValidationServiceTest {
         // inputs
         Study study = new DynamoStudy();
         Upload upload = new DynamoUpload2();
-        User user = new User();
 
         // mock task
         UploadValidationTask mockTask = mock(UploadValidationTask.class);
 
         // mock task factory
         UploadValidationTaskFactory mockTaskFactory = mock(UploadValidationTaskFactory.class);
-        when(mockTaskFactory.newTask(study, user, upload)).thenReturn(mockTask);
+        when(mockTaskFactory.newTask(study, upload)).thenReturn(mockTask);
 
         // mock async thread pool
         ExecutorService mockExecutor = mock(ExecutorService.class);
@@ -42,7 +40,7 @@ public class UploadValidationServiceTest {
         svc.setTaskFactory(mockTaskFactory);
 
         // execute
-        svc.validateUpload(study, user, upload);
+        svc.validateUpload(study, upload);
 
         // validate
         verify(mockExecutor).execute(mockTask);
