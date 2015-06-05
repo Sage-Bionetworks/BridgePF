@@ -18,7 +18,7 @@ object CorsFilter extends Filter {
     nextFilter(requestHeader) map {result => result.withHeaders(
         ACCESS_CONTROL_ALLOW_ORIGIN -> "*",
         ACCESS_CONTROL_ALLOW_METHODS -> "HEAD, GET, OPTIONS, POST, PUT, DELETE",
-        ACCESS_CONTROL_ALLOW_HEADERS -> "Content-Type, User-Agent")
+        ACCESS_CONTROL_ALLOW_HEADERS -> "Content-Type, User-Agent, Bridge-Session")
     }
   }
 }
