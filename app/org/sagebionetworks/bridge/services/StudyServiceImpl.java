@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -30,15 +29,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
-
 @Component("studyService")
 public class StudyServiceImpl implements StudyService {
-
-    public Study load(String identifier) throws EntityNotFoundException {
-        return studyDao.getStudy(identifier);
-    }
 
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
@@ -55,56 +47,51 @@ public class StudyServiceImpl implements StudyService {
     private String defaultResetPasswordTemplateSubject;
     
     @Value("classpath:study-defaults/consent.xhtml")
-    public void setDefaultConsentDocument(org.springframework.core.io.Resource resource) {
+    void setDefaultConsentDocument(org.springframework.core.io.Resource resource) {
         this.defaultConsentDocument = new StudyConsentForm(BridgeUtils.toStringQuietly(resource));
     }
-    
     @Value("classpath:study-defaults/email-verification.txt")
-    public void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) {
+    void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) {
         this.defaultEmailVerificationTemplate = BridgeUtils.toStringQuietly(resource);
     }
-    
     @Value("classpath:study-defaults/email-verification-subject.txt")
-    public void setDefaultEmailVerificationTemplateSubject(org.springframework.core.io.Resource resource) {
+    void setDefaultEmailVerificationTemplateSubject(org.springframework.core.io.Resource resource) {
         this.defaultEmailVerificationTemplateSubject = BridgeUtils.toStringQuietly(resource);
     }
-    
     @Value("classpath:study-defaults/reset-password.txt")
-    public void setDefaultPasswordTemplate(org.springframework.core.io.Resource resource) {
+    void setDefaultPasswordTemplate(org.springframework.core.io.Resource resource) {
         this.defaultResetPasswordTemplate = BridgeUtils.toStringQuietly(resource);
     }
-
     @Value("classpath:study-defaults/reset-password-subject.txt")
-    public void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) {
+    void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) {
         this.defaultResetPasswordTemplateSubject = BridgeUtils.toStringQuietly(resource);
     }
-
     @Resource(name="uploadCertificateService")
-    public void setUploadCertificateService(UploadCertificateService uploadCertService) {
+    void setUploadCertificateService(UploadCertificateService uploadCertService) {
         this.uploadCertService = uploadCertService;
     }
     @Autowired
-    public void setDistributedLockDao(DistributedLockDao lockDao) {
+    void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
     @Autowired
-    public void setValidator(StudyValidator validator) {
+    void setValidator(StudyValidator validator) {
         this.validator = validator;
     }
     @Autowired
-    public void setStudyDao(StudyDao studyDao) {
+    void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
     }
     @Autowired
-    public void setDirectoryDao(DirectoryDao directoryDao) {
+    void setDirectoryDao(DirectoryDao directoryDao) {
         this.directoryDao = directoryDao;
     }
     @Autowired
-    public void setCacheProvider(CacheProvider cacheProvider) {
+    void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
     @Autowired
-    public void setStudyConsentService(StudyConsentService studyConsentService) {
+    void setStudyConsentService(StudyConsentService studyConsentService) {
         this.studyConsentService = studyConsentService;
     }
     
@@ -115,7 +102,6 @@ public class StudyServiceImpl implements StudyService {
         Study study = cacheProvider.getStudy(identifier);
         if (study == null) {
             study = studyDao.getStudy(identifier);
-            setLegacyFieldsIfAbsent(study);
             cacheProvider.setStudy(study);
         }
         return study;
@@ -128,13 +114,7 @@ public class StudyServiceImpl implements StudyService {
     }
     @Override
     public List<Study> getStudies() {
-        return Lists.transform(studyDao.getStudies(), new Function<Study,Study>() {
-            @Override public Study apply(Study study) {
-                setLegacyFieldsIfAbsent(study);
-                return study;
-            }
-            
-        });
+        return studyDao.getStudies();
     }
     @Override
     public Study createStudy(Study study) {
@@ -157,6 +137,8 @@ public class StudyServiceImpl implements StudyService {
             StudyConsentView view = studyConsentService.addConsent(study.getStudyIdentifier(), defaultConsentDocument);
             studyConsentService.activateConsent(study.getStudyIdentifier(), view.getCreatedOn());
             
+            // Cannot currently de-activate a study
+            study.setActive(true);
             study.setResearcherRole(study.getIdentifier() + "_researcher");
 
             String directory = directoryDao.createDirectoryForStudy(study);
@@ -181,6 +163,7 @@ public class StudyServiceImpl implements StudyService {
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
         study.setStormpathHref(originalStudy.getStormpathHref());
         study.setResearcherRole(originalStudy.getResearcherRole());
+        study.setActive(originalStudy.isActive());
 
         // When the version is out of sync in the cache, then an exception is thrown and the study 
         // is not updated in the cache. At least we can delete the study before this, so the next 
@@ -225,7 +208,7 @@ public class StudyServiceImpl implements StudyService {
     }
     
     /**
-     * When certain aspects of as study are excluded on a save, they revert to defaults.
+     * When certain aspects of as study are excluded on a save, they revert to defaults. 
      * @param study
      */
     private void setDefaultsIfAbsent(Study study) {
@@ -233,22 +216,9 @@ public class StudyServiceImpl implements StudyService {
             study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
         study.setVerifyEmailTemplate(fillOutTemplate(study.getVerifyEmailTemplate(),
-                        defaultEmailVerificationTemplateSubject, defaultEmailVerificationTemplate));
-            
+            defaultEmailVerificationTemplateSubject, defaultEmailVerificationTemplate));
         study.setResetPasswordTemplate(fillOutTemplate(study.getResetPasswordTemplate(),
-                        defaultResetPasswordTemplateSubject, defaultResetPasswordTemplate));
-    }
-    
-    /**
-     * TODO: For existing studies we're going to want to retrieve the templates that now only 
-     * live in Stormpath.  
-     * @param study
-     */
-    private static Study setLegacyFieldsIfAbsent(Study study) {
-        if (study.getPasswordPolicy() == null) {
-            study.setPasswordPolicy(PasswordPolicy.LEGACY_PASSWORD_POLICY);
-        }
-        return study;
+            defaultResetPasswordTemplateSubject, defaultResetPasswordTemplate));
     }
     
     /**
