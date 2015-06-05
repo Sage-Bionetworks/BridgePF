@@ -46,6 +46,7 @@ libraryDependencies ++= Seq(
   // Stormpath
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC4.2",
   "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC4.2",
+  "org.apache.httpcomponents" % "httpclient" % "4.4.1",
   // Redis
   "redis.clients" % "jedis" % "2.7.2",
   // PDF
