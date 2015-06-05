@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
+import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -51,9 +52,9 @@ public class CacheProvider {
 
         final String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
         final String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
-        try {
+        try (JedisTransaction transaction = jedisOps.getTransaction()) {
             final String ser = bridgeObjectMapper.writeValueAsString(session);
-            final List<Object> results = jedisOps.getTransaction()
+            final List<Object> results = transaction
                     .setex(userKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, sessionToken)
                     .setex(sessionKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser)
                     .exec();
@@ -81,10 +82,12 @@ public class CacheProvider {
             }
             final UserSession session = bridgeObjectMapper.readValue(ser, UserSession.class);
             final String userKey = RedisKey.USER_SESSION.getRedisKey(session.getUser().getId());
-            jedisOps.getTransaction(sessionKey)
-                    .expire(userKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS)
-                    .expire(sessionKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS)
-                    .exec();
+            try (JedisTransaction transaction = jedisOps.getTransaction(sessionKey)) {
+                transaction
+                        .expire(userKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS)
+                        .expire(sessionKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS)
+                        .exec();
+            }
             return session;
         } catch (Throwable e) {
             promptToStartRedisIfLocal(e);
@@ -112,7 +115,9 @@ public class CacheProvider {
         try {
             final String sessionKey = RedisKey.SESSION.getRedisKey(session.getSessionToken());
             final String userKey = RedisKey.USER_SESSION.getRedisKey(session.getUser().getId());
-            jedisOps.getTransaction().del(sessionKey).del(userKey).exec();
+            try (JedisTransaction transaction = jedisOps.getTransaction()) {
+                transaction.del(sessionKey).del(userKey).exec();
+            }
         } catch(Throwable e) {
             promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);
@@ -125,7 +130,9 @@ public class CacheProvider {
             final String sessionToken = jedisOps.get(userKey);
             if (sessionToken != null) {
                 final String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
-                jedisOps.getTransaction().del(sessionKey).del(userKey).exec();
+                try (JedisTransaction transaction = jedisOps.getTransaction()) {
+                    transaction.del(sessionKey).del(userKey).exec();
+                }
             }
         } catch(Throwable e) {
             promptToStartRedisIfLocal(e);
