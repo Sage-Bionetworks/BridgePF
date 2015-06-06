@@ -73,7 +73,7 @@ object GlobalWithFiltersSpec extends PlaySpecification {
       val result = route(request).get
       headers(result).get(ACCESS_CONTROL_ALLOW_ORIGIN) must beSome("*")
       headers(result).get(ACCESS_CONTROL_ALLOW_METHODS) must beSome("HEAD, GET, OPTIONS, POST, PUT, DELETE")
-      headers(result).get(ACCESS_CONTROL_ALLOW_HEADERS) must beSome("Content-Type, User-Agent")
+      headers(result).get(ACCESS_CONTROL_ALLOW_HEADERS) must beSome("Content-Type, User-Agent, Bridge-Session")
     }
   }
 }
