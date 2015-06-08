@@ -4,9 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,8 +13,7 @@ import com.google.common.collect.ImmutableList;
 
 /** This class encapsulates data read and generated during the process of upload validation. */
 public class UploadValidationContext {
-    private Study study;
-    private User user;
+    private StudyIdentifier study;
     private Upload upload;
     private boolean success = true;
     private List<String> messageList = new ArrayList<>();
@@ -30,26 +28,13 @@ public class UploadValidationContext {
      * This is the study that the upload lives in and is validated against. This is made available by the upload
      * validation service and is initially set by the upload validation task factory.
      */
-    public Study getStudy() {
+    public StudyIdentifier getStudy() {
         return study;
     }
 
     /** @see #getStudy */
-    public void setStudy(Study study) {
+    public void setStudy(StudyIdentifier study) {
         this.study = study;
-    }
-
-    /**
-     * This is the user that submitted the upload. This is made available by the upload validation service and is
-     * initially set by the upload validation task factory.
-     */
-    public User getUser() {
-        return user;
-    }
-
-    /** @see #getUser */
-    public void setUser(User user) {
-        this.user = user;
     }
 
     /**
@@ -189,7 +174,6 @@ public class UploadValidationContext {
     public UploadValidationContext shallowCopy() {
         UploadValidationContext copy = new UploadValidationContext();
         copy.study = this.study;
-        copy.user = this.user;
         copy.upload = this.upload;
         copy.success = this.success;
         copy.data = this.data;

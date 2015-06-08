@@ -6,17 +6,12 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Map;
 
-import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -32,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Maps;
 import com.stormpath.sdk.application.AccountStoreMapping;
@@ -56,15 +50,9 @@ import com.stormpath.sdk.mail.ModeledEmailTemplateList;
 
 @Component
 public class StormpathDirectoryDao implements DirectoryDao {
-    /*
-    public static void main(String[] args) throws Exception {
-        Study study = TestUtils.getValidStudy();
-        new StormpathDirectoryDao().adjustVerifyEmailPolicies(study, null);
-    }
-   */
+
     private static final Logger logger = LoggerFactory.getLogger(StormpathDirectoryDao.class);
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final AccountStoreMappingCriteria asmCriteria = AccountStoreMappings.criteria().limitTo(100);
     private BridgeConfig config;
     private Client client;
@@ -126,13 +114,14 @@ public class StormpathDirectoryDao implements DirectoryDao {
         return directory.getHref();
     }
     
+    /**
+     * Once a study is created, the researcher can only change the password policies, and the email templates
+     * for the email verification and password reset workflows.
+     */
     @Override
     public void updateDirectoryForStudy(Study study) {
         checkNotNull(study);
         
-        // The only thing you can really do here is update the templates, password policy, etc.
-        // Assume this call isn't made unless it's determined that some aspect of the study has changed
-        // relative to what is in DDB.
         Directory directory = getDirectoryForStudy(study.getIdentifier());
         adjustPasswordPolicies(study, directory);
         adjustVerifyEmailPolicies(study, directory);
@@ -211,27 +200,30 @@ public class StormpathDirectoryDao implements DirectoryDao {
     }
     
     private void adjustPasswordPolicies(Study study, Directory directory) {
+        EmailTemplate rp = study.getResetPasswordTemplate();
+        
         PasswordPolicy passwordPolicy = directory.getPasswordPolicy();
         passwordPolicy.setResetEmailStatus(EmailStatus.ENABLED);
         passwordPolicy.setResetSuccessEmailStatus(EmailStatus.DISABLED);
         
         ModeledEmailTemplateList resetEmailTemplates = passwordPolicy.getResetEmailTemplates();
         
-        // According to the docs, there is only one...
+        // According to the documentation, there is only one...
         ModeledEmailTemplate template = resetEmailTemplates.iterator().next();
         template.setFromName(study.getSponsorName());
         template.setFromEmailAddress(study.getSupportEmail());
+
+        String subject = partiallyResolveTemplate(rp.getSubject(), study);
+        template.setSubject(subject);
         
         com.stormpath.sdk.mail.MimeType stormpathMimeType = getStormpathMimeType(study);
         template.setMimeType(stormpathMimeType);
         
-        String subject = partiallyResolveTemplate(study.getResetPasswordTemplate().getSubject(), study);
-        template.setSubject(subject);
-
-        String body = partiallyResolveTemplate(study.getResetPasswordTemplate().getBody(), study);
+        String body = partiallyResolveTemplate(rp.getBody(), study);
         template.setTextBody(body);
-        String link = String.format("%s/mobile/resetPassword.html?study=%s", 
-            BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier());
+        template.setHtmlBody(body);
+
+        String link = String.format("%s/mobile/resetPassword.html?study=%s", config.getBaseURL(), study.getIdentifier());
         template.setLinkBaseUrl(link);
         template.save();
         
@@ -248,79 +240,54 @@ public class StormpathDirectoryDao implements DirectoryDao {
     }
     
     /**
-     * There is a pull request pending to add this to the Stormpath Java SDK. So this code should be temporary.
+     * There is a pull request pending to add this to the Stormpath Java SDK. So this REST/HTTP code should be temporary.
      * 
      * @param study
      * @param directory
      */
     private void adjustVerifyEmailPolicies(Study study, Directory directory) {
-        logger.info("Adjusting email verification template and/or password policies");
         try {
             EmailTemplate ve = study.getVerifyEmailTemplate();
             BridgeConfig config = BridgeConfigFactory.getConfig();
             
+            // Create an HTTP client using Basic Auth with stormpath credentials (yes it's basic auth but it's over SSL and going away)
             CredentialsProvider provider = new BasicCredentialsProvider();
             UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(config.getStormpathId(), config.getStormpathSecret());
             provider.setCredentials(AuthScope.ANY, credentials);
-            HttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
+            CloseableHttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
             
-            ObjectNode directoryNode = getGet(client, directory.getHref());
-            
+            // Get directory as JSON
+            ObjectNode directoryNode = BridgeUtils.getJSON(client, directory.getHref());
             String accountCreationUrl = directoryNode.get("accountCreationPolicy").get("href").asText();
-            ObjectNode accountPolicyNode = getGet(client, accountCreationUrl);
             
+            // Get account policy as JSON, update to our standard configuration
+            ObjectNode accountPolicyNode = BridgeUtils.getJSON(client, accountCreationUrl);
             String verificationEmailTemplatesUrl = accountPolicyNode.get("verificationEmailTemplates").get("href").asText();
             accountPolicyNode.put("verificationEmailStatus", "ENABLED");
             accountPolicyNode.put("verificationSuccessEmailStatus", "DISABLED");
             accountPolicyNode.put("welcomeEmailStatus", "DISABLED");
-            
-            getPost(client, accountCreationUrl, accountPolicyNode);
+            // save the account policy
+            BridgeUtils.postJSON(client, accountCreationUrl, accountPolicyNode);
             
             // Get the verify email template
-            ObjectNode templateNode = getGet(client, verificationEmailTemplatesUrl);
+            ObjectNode templateNode = BridgeUtils.getJSON(client, verificationEmailTemplatesUrl);
             String templateUrl = templateNode.get("items").get(0).get("href").asText();
-            
-            ObjectNode template = getGet(client, templateUrl);
+            // Update this template with study-specific information
+            ObjectNode template = BridgeUtils.getJSON(client, templateUrl);
             template.put("fromName", study.getSponsorName());
-            template.put("fromEmailAddress", String.format("%s <%s>", study.getSponsorName(), study.getSupportEmail()));
-            String subject = partiallyResolveTemplate(ve.getSubject(), study);
-            template.put("subject", subject);
+            template.put("fromEmailAddress", study.getSupportEmail());
+            template.put("subject", partiallyResolveTemplate(ve.getSubject(), study));
+            template.put("mimeType", ve.getMimeType() == MimeType.HTML ? "text/html" : "text/plain");
             String body = partiallyResolveTemplate(ve.getBody(), study);
             template.put("textBody", body);
-            template.remove("htmlBody");
-            template.put("mimeType", ve.getMimeType() == MimeType.HTML ? "text/html" : "text/plain");
-            String link = String.format("%s/mobile/verifyEmail.html?study=%s", 
-                    BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier());
+            template.put("htmlBody", body);
+            String link = String.format("%s/mobile/verifyEmail.html?study=%s", config.getBaseURL(), study.getIdentifier());
             ((ObjectNode)template.get("defaultModel")).put("linkBaseUrl", link);
-            
-            getPost(client, templateUrl, template);
+            // save the verify email template
+            BridgeUtils.postJSON(client, templateUrl, template);
         } catch(Throwable throwable) {
             throw new BridgeServiceException(throwable);
         }
-    }
-    
-    private ObjectNode getGet(HttpClient client, String url) throws Exception {
-        HttpGet get = new HttpGet(url);
-        get.setHeader("Accept", "application/json");
-        HttpResponse response = client.execute(get);
-        ObjectNode object = (ObjectNode)MAPPER.readTree(EntityUtils.toString(response.getEntity(), "UTF-8"));
-        if (logger.isDebugEnabled()) {
-            logger.debug("GET: " + url + "\n   request: <EMPTY>\n   response: "+ MAPPER.writeValueAsString(object));    
-        }
-        return object;
-    }
-    
-    private ObjectNode getPost(HttpClient client, String url, ObjectNode node) throws Exception {
-        HttpPost post = new HttpPost(url);
-        post.setHeader("Accept", "application/json");
-        post.setHeader("Content-Type", "application/json");
-        post.setEntity(new StringEntity(MAPPER.writeValueAsString(node), "UTF-8"));
-        HttpResponse response = client.execute(post);
-        ObjectNode object = (ObjectNode)MAPPER.readTree(EntityUtils.toString(response.getEntity(), "UTF-8"));
-        if (logger.isDebugEnabled()) {
-            logger.debug("POST: " + url + "\n   request: "+MAPPER.writeValueAsString(node)+"\n   response: " + MAPPER.writeValueAsString(object));    
-        }
-        return object;
     }
 
     private com.stormpath.sdk.mail.MimeType getStormpathMimeType(Study study) {

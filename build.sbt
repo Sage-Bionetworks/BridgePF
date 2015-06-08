@@ -13,6 +13,7 @@ resolvers += "Heroku Maven repository" at "http://s3pository.heroku.com/maven-ce
 libraryDependencies ++= Seq(
   cache,
   filters,
+  "org.jsoup" % "jsoup" % "1.8.2",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.9.38",
   "com.amazonaws" % "aws-java-sdk-sts" % "1.9.38",

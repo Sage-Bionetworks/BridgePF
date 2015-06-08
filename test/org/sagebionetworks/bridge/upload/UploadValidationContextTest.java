@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -25,7 +24,6 @@ public class UploadValidationContextTest {
     public void shallowCopy() {
         // dummy objects to test against
         Study study = TestUtils.getValidStudy();
-        User user = new User();
         Upload upload = new DynamoUpload2();
         byte[] data = "test-data".getBytes(Charsets.UTF_8);
         byte[] decryptedData = "test-decrypted-data".getBytes(Charsets.UTF_8);
@@ -38,7 +36,6 @@ public class UploadValidationContextTest {
         // create original
         UploadValidationContext original = new UploadValidationContext();
         original.setStudy(study);
-        original.setUser(user);
         original.setUpload(upload);
         original.setSuccess(false);
         original.addMessage("common message");
@@ -52,7 +49,6 @@ public class UploadValidationContextTest {
         // copy and validate
         UploadValidationContext copy = original.shallowCopy();
         assertSame(study, copy.getStudy());
-        assertSame(user, copy.getUser());
         assertSame(upload, copy.getUpload());
         assertFalse(copy.getSuccess());
         assertSame(data, copy.getData());
