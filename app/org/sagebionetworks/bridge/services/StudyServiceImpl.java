@@ -224,6 +224,28 @@ public class StudyServiceImpl implements StudyService {
         study.setResetPasswordTemplate(fillOutTemplate(study.getResetPasswordTemplate(),
             defaultResetPasswordTemplateSubject, defaultResetPasswordTemplate));
     }
+
+    /**
+     * Partially resolve variables in the templates before saving on Stormpath. If templates are not provided, 
+     * then the default templates are used, and we assume these are text only, otherwise this method needs to 
+     * change the mime type it sets.
+     * @param template
+     * @param defaultSubject
+     * @param defaultBody
+     * @return
+     */
+    private EmailTemplate fillOutTemplate(EmailTemplate template, String defaultSubject, String defaultBody) {
+        if (template == null) {
+            template = new EmailTemplate(defaultSubject, defaultBody, MimeType.TEXT);
+        }
+        if (StringUtils.isBlank(template.getSubject())) {
+            template = new EmailTemplate(defaultSubject, template.getBody(), template.getMimeType());
+        }
+        if (StringUtils.isBlank(template.getBody())) {
+            template = new EmailTemplate(template.getSubject(), defaultBody, template.getMimeType());
+        }
+        return template;
+    }
     
     /**
      * Email templates can contain HTML. Ensure the subjects have no markup and that the markup in 
@@ -248,27 +270,5 @@ public class StudyServiceImpl implements StudyService {
             body = Jsoup.clean(template.getBody(), Whitelist.basicWithImages());
         }
         return new EmailTemplate(subject, body, template.getMimeType());
-    }
-    
-    /**
-     * Partially resolve variables in the templates before saving on Stormpath. If templates are not provided, 
-     * then the default templates are used, and we assume these are text only, otherwise this method needs to 
-     * change the mime type it sets.
-     * @param template
-     * @param defaultSubject
-     * @param defaultBody
-     * @return
-     */
-    private EmailTemplate fillOutTemplate(EmailTemplate template, String defaultSubject, String defaultBody) {
-        if (template == null) {
-            template = new EmailTemplate(defaultSubject, defaultBody, MimeType.TEXT);
-        }
-        if (StringUtils.isBlank(template.getSubject())) {
-            template = new EmailTemplate(defaultSubject, template.getBody(), template.getMimeType());
-        }
-        if (StringUtils.isBlank(template.getBody())) {
-            template = new EmailTemplate(template.getSubject(), defaultBody, template.getMimeType());
-        }
-        return template;
     }
 }

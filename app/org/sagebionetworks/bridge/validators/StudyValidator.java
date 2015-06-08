@@ -5,6 +5,7 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.models.accounts.UserProfile;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.stereotype.Component;
@@ -56,38 +57,8 @@ public class StudyValidator implements Validator {
             }
             errors.popNestedPath();
         }
-        if (study.getVerifyEmailTemplate() == null) {
-            errors.rejectValue("verifyEmailTemplate", "is null");
-        } else {
-            errors.pushNestedPath("verifyEmailTemplate");
-            if (StringUtils.isBlank(study.getVerifyEmailTemplate().getSubject())) {
-                errors.rejectValue("subject", "is null or blank");
-            }
-            if (StringUtils.isBlank(study.getVerifyEmailTemplate().getBody())) {
-                errors.rejectValue("body", "is null or blank");
-            } else {
-                if (!study.getVerifyEmailTemplate().getBody().contains("${url}")) {
-                    errors.rejectValue("body", "must contain the ${url} template variable");
-                }
-            }
-            errors.popNestedPath();
-        }
-        if (study.getResetPasswordTemplate() == null) {
-            errors.rejectValue("resetPasswordTemplate", "is null");
-        } else {
-            errors.pushNestedPath("resetPasswordTemplate");
-            if (StringUtils.isBlank(study.getResetPasswordTemplate().getSubject())) {
-                errors.rejectValue("subject", "is null or blank");
-            }
-            if (StringUtils.isBlank(study.getResetPasswordTemplate().getBody())) {
-                errors.rejectValue("body", "is null or blank");
-            } else {
-                if (!study.getResetPasswordTemplate().getBody().contains("${url}")) {
-                    errors.rejectValue("body", "must contain the ${url} template variable");
-                }
-            }
-            errors.popNestedPath();
-        }
+        validateTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate");
+        validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate");
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
             if (UserProfile.FIXED_PROPERTIES.contains(userProfileAttribute)) {
@@ -96,6 +67,7 @@ public class StudyValidator implements Validator {
             }
         }
         validateEmails(errors, study.getSupportEmail(), "supportEmail");
+        validateEmails(errors, study.getTechnicalEmail(), "technicalEmail");
         validateEmails(errors, study.getConsentNotificationEmail(), "consentNotificationEmail");
     }
     
@@ -111,6 +83,25 @@ public class StudyValidator implements Validator {
                     errors.rejectValue(fieldName, "'%s' is not a valid email address", email);
                 }
             }
+        }
+    }
+    
+    private void validateTemplate(Errors errors, EmailTemplate template, String fieldName) {
+        if (template == null) {
+            errors.rejectValue(fieldName, "is null");
+        } else {
+            errors.pushNestedPath(fieldName);
+            if (StringUtils.isBlank(template.getSubject())) {
+                errors.rejectValue("subject", "is null or blank");
+            }
+            if (StringUtils.isBlank(template.getBody())) {
+                errors.rejectValue("body", "is null or blank");
+            } else {
+                if (!template.getBody().contains("${url}")) {
+                    errors.rejectValue("body", "must contain the ${url} template variable");
+                }
+            }
+            errors.popNestedPath();
         }
     }
 

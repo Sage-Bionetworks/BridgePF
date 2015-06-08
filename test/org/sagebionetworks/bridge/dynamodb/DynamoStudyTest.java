@@ -43,7 +43,8 @@ public class DynamoStudyTest {
         
         // Using the filtered view of a study, this should not include a couple of fields we don't expose to researchers.
         // Negates the need for a view wrapper object, is contextually adjustable, unlike @JsonIgnore.
-        // You do need to create a new instance of the mapper SFAICT.
+        // You do need to create a new instance of the writer from a new mapper, SFAICT. This is stored as 
+        // DynamoStudy.STUDY_WRITER.
         json = DynamoStudy.STUDY_WRITER.writeValueAsString(study);
         study = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
         assertNull(study.getResearcherRole());
