@@ -129,7 +129,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             return session;
         } finally {
-            lockDao.releaseLock(SignIn.class, signIn.getUsername(), lockId);
+            if (lockId != null) {
+                lockDao.releaseLock(SignIn.class, signIn.getUsername(), lockId);
+            }
         }
 
     }
