@@ -140,7 +140,6 @@ public class StudyServiceImpl implements StudyService {
             StudyConsentView view = studyConsentService.addConsent(study.getStudyIdentifier(), defaultConsentDocument);
             studyConsentService.activateConsent(study.getStudyIdentifier(), view.getCreatedOn());
             
-            // Cannot currently de-activate a study
             study.setActive(true);
             study.setResearcherRole(study.getIdentifier() + "_researcher");
 
