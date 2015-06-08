@@ -267,7 +267,7 @@ public class StudyServiceImpl implements StudyService {
         if (template.getMimeType() == MimeType.TEXT) {
             body = Jsoup.clean(template.getBody(), Whitelist.none());
         } else {
-            body = Jsoup.clean(template.getBody(), Whitelist.basicWithImages());
+            body = Jsoup.clean(template.getBody(), Whitelist.relaxed());
         }
         return new EmailTemplate(subject, body, template.getMimeType());
     }

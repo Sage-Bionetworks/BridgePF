@@ -124,7 +124,7 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     public void setPasswordPolicy(PasswordPolicy passwordPolicy);
 
     /**
-     * The template for emails delivered to users during sign, asking them to verify their email 
+     * The template for emails delivered to users during sign up, asking them to verify their email 
      * address. This template must at least include the "${url}" template variable, which will be 
      * used to place a link back to a page that completes the email verification for Bridge. 
      * @return
