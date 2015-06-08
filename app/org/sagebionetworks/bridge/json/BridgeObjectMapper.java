@@ -29,8 +29,8 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
  * which is part of our API contract. Also, ObjectMapper is threadsafe, so we are able 
  * to create a singleton available via <code>BridgeObjectMapper.get()</code>.</p>
  * 
- * <p>Attributes with @JsonIgnore are never serialized to JSON, to selectively remove some 
- * properties from some serializations of an object, first define a filter:</p>
+ * <p>Attributes with @JsonIgnore are never serialized to JSON. To selectively remove some 
+ * properties from specific object serializations, first define a filter:</p>
  * 
  *     <blockquote>
  *     // Filter must be named "filter"

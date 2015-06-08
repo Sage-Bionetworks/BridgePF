@@ -5,6 +5,12 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * The content describing an email template that will be user for workflow related to account 
+ * management (email verification, reset password emails). For a list of all the template 
+ * variables that can be used in these templates, see the API documentation (it combines both 
+ * Bridge and Stormpath variables).
+ */
 public final class EmailTemplate {
     
     public enum MimeType {

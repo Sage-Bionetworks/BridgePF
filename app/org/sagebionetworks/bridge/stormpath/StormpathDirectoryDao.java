@@ -229,12 +229,12 @@ public class StormpathDirectoryDao implements DirectoryDao {
         
         PasswordStrength strength = passwordPolicy.getStrength();
         strength.setMaxLength(100);
-        strength.setMinLowerCase(0);
+        strength.setMinLowerCase(1);
         strength.setMinDiacritic(0);
         strength.setMinLength(study.getPasswordPolicy().getMinLength());
-        strength.setMinNumeric(study.getPasswordPolicy().isRequireNumeric() ? 1 : 0);
-        strength.setMinSymbol(study.getPasswordPolicy().isRequireSymbol() ? 1 : 0);
-        strength.setMinUpperCase(study.getPasswordPolicy().isRequireUpperCase() ? 1 : 0);
+        strength.setMinNumeric(study.getPasswordPolicy().isNumericRequired() ? 1 : 0);
+        strength.setMinSymbol(study.getPasswordPolicy().isSymbolRequired() ? 1 : 0);
+        strength.setMinUpperCase(study.getPasswordPolicy().isUpperCaseRequired() ? 1 : 0);
         strength.save();
         passwordPolicy.save();
     }

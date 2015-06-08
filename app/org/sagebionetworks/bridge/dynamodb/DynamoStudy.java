@@ -77,6 +77,7 @@ public class DynamoStudy implements Study {
         profileAttributes = new HashSet<>();
     }
     
+    /** {@inheritDoc} */
     @Override
     @DynamoDBAttribute
     public String getSponsorName() {
@@ -86,7 +87,7 @@ public class DynamoStudy implements Study {
     public void setSponsorName(String sponsorName) {
         this.sponsorName = sponsorName;
     }
-    
+    /** {@inheritDoc} */
     @Override
     @DynamoDBAttribute
     public String getName() {
@@ -96,7 +97,7 @@ public class DynamoStudy implements Study {
     public void setName(String name) {
         this.name = name;
     }
-    
+    /** {@inheritDoc} */
     @Override
     @DynamoDBHashKey
     public String getIdentifier() {
@@ -109,12 +110,14 @@ public class DynamoStudy implements Study {
             this.studyIdentifier = new StudyIdentifierImpl(identifier);
         }
     }
+    /** {@inheritDoc} */
     @Override
     @JsonIgnore
     @DynamoDBIgnore
     public StudyIdentifier getStudyIdentifier() {
         return studyIdentifier;
     }
+    /** {@inheritDoc} */
     @Override
     @DynamoDBVersionAttribute
     public Long getVersion() {
@@ -123,6 +126,7 @@ public class DynamoStudy implements Study {
     public void setVersion(Long version) {
         this.version = version;
     }
+    /** {@inheritDoc} */
     @Override
     public String getResearcherRole() {
         return researcherRole;
@@ -131,6 +135,7 @@ public class DynamoStudy implements Study {
     public void setResearcherRole(String role) {
         this.researcherRole = role;
     }
+    /** {@inheritDoc} */
     @Override
     public int getMinAgeOfConsent() {
         return minAgeOfConsent;
@@ -139,6 +144,7 @@ public class DynamoStudy implements Study {
     public void setMinAgeOfConsent(int minAge) {
         this.minAgeOfConsent = minAge;
     }
+    /** {@inheritDoc} */
     @Override
     public int getMaxNumOfParticipants() {
         return maxNumOfParticipants;
@@ -147,6 +153,7 @@ public class DynamoStudy implements Study {
     public void setMaxNumOfParticipants(int maxParticipants) {
         this.maxNumOfParticipants = maxParticipants;
     }
+    /** {@inheritDoc} */
     @Override
     public String getStormpathHref() {
         return stormpathHref;
@@ -155,10 +162,7 @@ public class DynamoStudy implements Study {
     public void setStormpathHref(String stormpathHref) {
         this.stormpathHref = stormpathHref;
     }
-    /**
-     * A comma-separated list of email addresses that should be used to send technical 
-     * support email to the research team from the application (optional).
-     */
+    /** {@inheritDoc} */
     @Override
     public String getSupportEmail() {
         return supportEmail;
@@ -167,12 +171,7 @@ public class DynamoStudy implements Study {
     public void setSupportEmail(String supportEmail) {
         this.supportEmail = supportEmail;
     }
-    
-    /**
-     * A technical contact email that should be a contact who can contact both the developers of any client application
-     * for this study, and the study administrators (the technical team that is receiving and managing data for the
-     * study).
-     */
+    /** {@inheritDoc} */
     @Override
     public String getTechnicalEmail() {
         return technicalEmail;
@@ -181,11 +180,7 @@ public class DynamoStudy implements Study {
     public void setTechnicalEmail(String technicalEmail) {
         this.technicalEmail = technicalEmail;
     }
-    /**
-     * A comma-separated list of email addresses that should be sent consent records 
-     * when a user agrees to participate in research (optional, but should be provided 
-     * for active studies).
-     */
+    /** {@inheritDoc} */
     @Override
     public String getConsentNotificationEmail() {
         return consentNotificationEmail;
@@ -194,6 +189,7 @@ public class DynamoStudy implements Study {
     public void setConsentNotificationEmail(String consentNotificationEmail) {
         this.consentNotificationEmail = consentNotificationEmail;
     }
+    /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = StringSetMarshaller.class)
     @Override
     public Set<String> getUserProfileAttributes() {
@@ -203,6 +199,7 @@ public class DynamoStudy implements Study {
     public void setUserProfileAttributes(Set<String> profileAttributes) {
         this.profileAttributes = profileAttributes;
     }
+    /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = PasswordPolicyMarshaller.class)
     @Override
     public PasswordPolicy getPasswordPolicy() {
@@ -212,6 +209,7 @@ public class DynamoStudy implements Study {
     public void setPasswordPolicy(PasswordPolicy passwordPolicy) {
         this.passwordPolicy = passwordPolicy;
     }
+    /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = EmailTemplateMarshaller.class)
     @Override
     public EmailTemplate getVerifyEmailTemplate() {
@@ -221,6 +219,7 @@ public class DynamoStudy implements Study {
     public void setVerifyEmailTemplate(EmailTemplate template) {
         this.verifyEmailTemplate = template;
     }
+    /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = EmailTemplateMarshaller.class)
     @Override
     public EmailTemplate getResetPasswordTemplate() {
@@ -230,6 +229,7 @@ public class DynamoStudy implements Study {
     public void setResetPasswordTemplate(EmailTemplate template) {
         this.resetPasswordTemplate = template;
     }
+    /** {@inheritDoc} */
     @Override
     public boolean isActive() {
         return active;
@@ -238,10 +238,7 @@ public class DynamoStudy implements Study {
     public void setActive(boolean active) {
         this.active = active;
     }
-    /**
-     * Left for legacy support of earlier versions of studies. Can be removed after migration.
-     * @return
-     */
+    // Left for legacy support of earlier versions of studies. Will be removed after migration.
     @JsonIgnore
     public String getData() {
         return null;

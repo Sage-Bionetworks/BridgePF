@@ -113,9 +113,9 @@ public class StormpathDirectoryDaoTest {
         PasswordStrength strength = passwordPolicy.getStrength();
         assertEquals(100, strength.getMaxLength());
         assertEquals(0, strength.getMinLowerCase());
-        assertEquals(study.getPasswordPolicy().isRequireNumeric() ? 1 : 0, strength.getMinNumeric());
-        assertEquals(study.getPasswordPolicy().isRequireSymbol() ? 1 : 0, strength.getMinSymbol());
-        assertEquals(study.getPasswordPolicy().isRequireUpperCase() ? 1 : 0, strength.getMinUpperCase());
+        assertEquals(study.getPasswordPolicy().isNumericRequired() ? 1 : 0, strength.getMinNumeric());
+        assertEquals(study.getPasswordPolicy().isSymbolRequired() ? 1 : 0, strength.getMinSymbol());
+        assertEquals(study.getPasswordPolicy().isUpperCaseRequired() ? 1 : 0, strength.getMinUpperCase());
         assertEquals(0, strength.getMinDiacritic());
         assertEquals(study.getPasswordPolicy().getMinLength(), strength.getMinLength());
         

@@ -199,7 +199,7 @@ public class StudyServiceImpl implements StudyService {
     }
     
     /**
-     * Has an aspect of the study changed that must be mirrored to the Stormpath directory?
+     * Has an aspect of the study changed that must be saved as well in the Stormpath directory?
      * @param originalStudy
      * @param study
      * @return true if the password policy or email templates have changed
@@ -211,7 +211,8 @@ public class StudyServiceImpl implements StudyService {
     }
     
     /**
-     * When certain aspects of as study are excluded on a save, they revert to defaults. 
+     * When the password policy or templates are not included, they are set to some sensible default 
+     * values. 
      * @param study
      */
     private void setDefaultsIfAbsent(Study study) {
@@ -247,9 +248,9 @@ public class StudyServiceImpl implements StudyService {
     }
     
     /**
-     * Email templates can contain HTML. Ensure the subjects have no markup and that the markup in 
-     * the body portion is safe for display in web-based email clients and a researcher UI. We clean 
-     * this up before validation in case only unacceptable content was in the template. 
+     * Email templates can contain HTML. Ensure the subject text has no markup and the markup in the body 
+     * is safe for display in web-based email clients and a researcher UI. We clean this up before 
+     * validation in case only unacceptable content was in the template. 
      * @param study
      */
     private void sanitizeHTML(Study study) {

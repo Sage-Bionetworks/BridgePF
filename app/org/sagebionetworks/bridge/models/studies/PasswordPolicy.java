@@ -5,6 +5,12 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * The policies that govern password creation. New studies will be created with the default password 
+ * policy, which requires 8 characters, one numeric, one symbol and one upper- and lower-case 
+ * character. However, this policy can be adjusted for legacy studies which were created with much 
+ * more lax constraints.
+ */
 public final class PasswordPolicy {
     
     public static final int FIXED_MAX_LENGTH = 100;
@@ -15,11 +21,6 @@ public final class PasswordPolicy {
      * The password policy that is initially created for a study.
      */
     public static final PasswordPolicy DEFAULT_PASSWORD_POLICY = new PasswordPolicy(8, true, true, true);
-    /**
-     * This is the password policy of the first generation of Bridge studies. Moving forward, new studies
-     * will be created with the default password policy, which is stricter.
-     */
-    public static final PasswordPolicy LEGACY_PASSWORD_POLICY = new PasswordPolicy(2, false, false, false);
     
     private final int minLength;
     private final boolean requireNumeric;
@@ -40,13 +41,13 @@ public final class PasswordPolicy {
     public int getMinLength() {
         return minLength;
     }
-    public boolean isRequireNumeric() {
+    public boolean isNumericRequired() {
         return requireNumeric;
     }
-    public boolean isRequireSymbol() {
+    public boolean isSymbolRequired() {
         return requireSymbol;
     }
-    public boolean isRequireUpperCase() {
+    public boolean isUpperCaseRequired() {
         return requireUpperCase;
     }
 

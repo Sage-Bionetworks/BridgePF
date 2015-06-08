@@ -68,8 +68,14 @@ public class UploadValidationBackfill extends AsyncBackfillTemplate {
         // query and iterate over uploads
         List<? extends Upload> uploadList = uploadDao.getFailedUploadsForDates(startDate, endDate);
         for (Upload oneUpload : uploadList) {
-            String uploadId = oneUpload.getUploadId();
+            // rate limit so we down starve threads or brown out DDB
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException ex) {
+                logger.error("Interrupted while sleeping: " + ex.getMessage(), ex);
+            }
 
+            String uploadId = oneUpload.getUploadId();
             try {
                 // Call uploadComplete() to reset the upload status and uploadDate. This will make the upload
                 // eligible for validation again.

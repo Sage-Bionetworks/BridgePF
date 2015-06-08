@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class HealthCodeBackfill extends AsyncBackfillTemplate {
-
     private AccountDao accountDao;
     private StudyService studyService;
     private HealthCodeService healthCodeService;
