@@ -150,5 +150,25 @@ public class StudyServiceImplTest {
         assertNotNull(study.getResetPasswordTemplate().getBody());
         assertTrue(study.getResetPasswordTemplate().getBody().contains("To reset your password please click on this link"));
     }
+    
+    @Test
+    public void problematicHtmlIsRemovedFromTemplates() {
+        study = TestUtils.getValidStudy();
+        study.setVerifyEmailTemplate(new EmailTemplate("<b>This is not allowed [ve]</b>", "<p>Test [ve] ${url}</p><script></script>", MimeType.HTML));
+        study.setResetPasswordTemplate(new EmailTemplate("<b>This is not allowed [rp]</b>", "<p>Test [rp] ${url}</p>", MimeType.TEXT));
+        identifier = study.getIdentifier();
+        
+        study = studyService.createStudy(study);
+        
+        EmailTemplate template = study.getVerifyEmailTemplate();
+        assertEquals("This is not allowed [ve]", template.getSubject());
+        assertEquals("<p>Test [ve] ${url}</p>", template.getBody());
+        assertEquals(MimeType.HTML, template.getMimeType());
+        
+        template = study.getResetPasswordTemplate();
+        assertEquals("This is not allowed [rp]", template.getSubject());
+        assertEquals("Test [rp] ${url}", template.getBody());
+        assertEquals(MimeType.TEXT, template.getMimeType());
+    }
 
 }

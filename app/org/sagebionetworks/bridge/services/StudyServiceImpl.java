@@ -10,6 +10,8 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Whitelist;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
@@ -122,6 +124,7 @@ public class StudyServiceImpl implements StudyService {
         checkNewEntity(study, study.getVersion(), "Study has a version value; it may already exist");
 
         setDefaultsIfAbsent(study);
+        sanitizeHTML(study);
         Validate.entityThrowingException(validator, study);
 
         String id = study.getIdentifier();
@@ -157,6 +160,7 @@ public class StudyServiceImpl implements StudyService {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
         setDefaultsIfAbsent(study);
+        sanitizeHTML(study);
         Validate.entityThrowingException(validator, study);
 
         // These cannot be set through the API and will be null here, so they are set on update
@@ -219,6 +223,31 @@ public class StudyServiceImpl implements StudyService {
             defaultEmailVerificationTemplateSubject, defaultEmailVerificationTemplate));
         study.setResetPasswordTemplate(fillOutTemplate(study.getResetPasswordTemplate(),
             defaultResetPasswordTemplateSubject, defaultResetPasswordTemplate));
+    }
+    
+    /**
+     * Email templates can contain HTML. Ensure the subjects have no markup and that the markup in 
+     * the body portion is safe for display in web-based email clients and a researcher UI. We clean 
+     * this up before validation in case only unacceptable content was in the template. 
+     * @param study
+     */
+    private void sanitizeHTML(Study study) {
+        EmailTemplate template = study.getVerifyEmailTemplate();
+        study.setVerifyEmailTemplate(sanitizeEmailTemplate(template));
+        
+        template = study.getResetPasswordTemplate();
+        study.setResetPasswordTemplate(sanitizeEmailTemplate(template));
+    }
+    
+    private EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {
+        String subject = Jsoup.clean(template.getSubject(), Whitelist.none());
+        String body = null;
+        if (template.getMimeType() == MimeType.TEXT) {
+            body = Jsoup.clean(template.getBody(), Whitelist.none());
+        } else {
+            body = Jsoup.clean(template.getBody(), Whitelist.basicWithImages());
+        }
+        return new EmailTemplate(subject, body, template.getMimeType());
     }
     
     /**
