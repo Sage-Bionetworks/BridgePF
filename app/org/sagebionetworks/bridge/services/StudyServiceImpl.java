@@ -235,7 +235,7 @@ public class StudyServiceImpl implements StudyService {
      */
     private EmailTemplate fillOutTemplate(EmailTemplate template, String defaultSubject, String defaultBody) {
         if (template == null) {
-            template = new EmailTemplate(defaultSubject, defaultBody, MimeType.TEXT);
+            template = new EmailTemplate(defaultSubject, defaultBody, MimeType.HTML);
         }
         if (StringUtils.isBlank(template.getSubject())) {
             template = new EmailTemplate(defaultSubject, template.getBody(), template.getMimeType());

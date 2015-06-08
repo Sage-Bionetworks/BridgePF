@@ -92,7 +92,7 @@ public class ViewCacheTest {
         });
         
         Study foundStudy = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
-        assertEquals("Test Study", foundStudy.getName());
+        assertEquals("Test Study [not API]", foundStudy.getName());
     }
     
     @Test
