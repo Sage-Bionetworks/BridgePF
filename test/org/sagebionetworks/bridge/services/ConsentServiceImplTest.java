@@ -69,11 +69,16 @@ public class ConsentServiceImplTest {
     private Study study;
     
     private TestUser testUser;
+    
+    private StudyConsent originalStudyConsent;
 
     @Before
     public void before() {
         study = studyService.getStudy("api");
+        
         testUser = helper.createUser(ConsentServiceImplTest.class, true, false, null);
+        
+        originalStudyConsent = studyConsentService.getActiveConsent(study.getStudyIdentifier()).getStudyConsent();
         
         StudyConsentView view = studyConsentService.addConsent(study.getStudyIdentifier(), new StudyConsentForm(BridgeConstants.BRIDGE_DEFAULT_CONSENT_DOCUMENT));
         studyConsent = view.getStudyConsent();
@@ -93,7 +98,9 @@ public class ConsentServiceImplTest {
         if (consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser())) {
             consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
         }
-        studyConsentDao.deactivateConsent(studyConsent);
+        // Restore the originally active consent document. When you operate through the service, it prevents an active
+        // document from being deleted, so you can't get into the state of having no active consent.
+        studyConsentDao.activateConsent(originalStudyConsent);
         studyConsentDao.deleteConsent(testUser.getStudyIdentifier(), studyConsent.getCreatedOn());
         helper.deleteUser(testUser);
     }
