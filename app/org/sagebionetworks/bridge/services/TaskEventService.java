@@ -26,7 +26,7 @@ public class TaskEventService {
     @Autowired
     public void setTaskEventDao(TaskEventDao taskEventDao) {
         this.taskEventDao = taskEventDao;
-    } // 
+    }
     
     public void publishEvent(String healthCode, UserConsent consent) {
         checkNotNull(consent);
@@ -48,7 +48,7 @@ public class TaskEventService {
             .withObjectType(TaskEventObjectType.QUESTION)
             .withObjectId(answer.getQuestionGuid())
             .withEventType(TaskEventType.ANSWERED)
-            .withValue(Joiner.on(",").join(answer.getAnswers())).build();
+            .withAnswerValue(Joiner.on(",").join(answer.getAnswers())).build();
         taskEventDao.publishEvent(event);
     }
     
