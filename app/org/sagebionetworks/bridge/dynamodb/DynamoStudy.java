@@ -26,6 +26,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
@@ -48,6 +51,9 @@ public class DynamoStudy implements Study {
     private static final String PASSWORD_POLICY_PROPERTY = "passwordPolicy";
     private static final String VERIFY_EMAIL_TEMPLATE_PROPERTY = "verifyEmailTemplate";
     private static final String RESET_PASSWORD_TEMPLATE_PROPERTY = "resetPasswordTemplate";
+    private static final String ACTIVE_PROPERTY = "active";
+    private static final String TECHNICAL_EMAIL_PROPERTY = "technicalEmail";
+    private static final String SPONSOR_NAME_PROPERTY = "sponsorName";
 
     private static final FilterProvider RESEARCHER_VIEW_FILTER = new SimpleFilterProvider()
         .addFilter("filter", SimpleBeanPropertyFilter.serializeAllExcept(STORMPATH_HREF_PROPERTY, RESEARCHER_ROLE_PROPERTY));
@@ -241,7 +247,29 @@ public class DynamoStudy implements Study {
     // Left for legacy support of earlier versions of studies. Will be removed after migration.
     @JsonIgnore
     public String getData() {
-        return null;
+        ObjectMapper mapper = BridgeObjectMapper.get();
+        
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put(RESEARCHER_ROLE_PROPERTY, researcherRole);
+        node.put(MIN_AGE_OF_CONSENT_PROPERTY, minAgeOfConsent);
+        node.put(MAX_NUM_OF_PARTICIPANTS_PROPERTY, maxNumOfParticipants);
+        node.put(STORMPATH_HREF_PROPERTY, stormpathHref);
+        node.put(SUPPORT_EMAIL_PROPERTY, supportEmail);
+        node.put(CONSENT_NOTIFICATION_EMAIL_PROPERTY, consentNotificationEmail);
+        node.put(SPONSOR_NAME_PROPERTY, sponsorName);
+        node.put(TECHNICAL_EMAIL_PROPERTY, technicalEmail);
+        node.put(ACTIVE_PROPERTY, active);
+        node.putPOJO(PASSWORD_POLICY_PROPERTY, mapper.valueToTree(passwordPolicy));
+        node.putPOJO(VERIFY_EMAIL_TEMPLATE_PROPERTY, mapper.valueToTree(verifyEmailTemplate));
+        node.putPOJO(RESET_PASSWORD_TEMPLATE_PROPERTY, mapper.valueToTree(resetPasswordTemplate));
+        ArrayNode array = JsonNodeFactory.instance.arrayNode();
+        if (profileAttributes != null) {
+            for (String att : profileAttributes) {
+                array.add(att);
+            }
+        }
+        node.set(USER_PROFILE_ATTRIBUTES_PROPERTY, array);    
+        return node.toString();
     }
     public void setData(String data) {
         try {
@@ -253,6 +281,12 @@ public class DynamoStudy implements Study {
             this.consentNotificationEmail = JsonUtils.asText(node, CONSENT_NOTIFICATION_EMAIL_PROPERTY);
             this.stormpathHref = JsonUtils.asText(node, STORMPATH_HREF_PROPERTY);
             this.profileAttributes = JsonUtils.asStringSet(node, USER_PROFILE_ATTRIBUTES_PROPERTY);
+            this.passwordPolicy = JsonUtils.asEntity(node, PASSWORD_POLICY_PROPERTY, PasswordPolicy.class);
+            this.verifyEmailTemplate = JsonUtils.asEntity(node, VERIFY_EMAIL_TEMPLATE_PROPERTY, EmailTemplate.class);
+            this.resetPasswordTemplate = JsonUtils.asEntity(node, RESET_PASSWORD_TEMPLATE_PROPERTY, EmailTemplate.class);
+            this.sponsorName = JsonUtils.asText(node, SPONSOR_NAME_PROPERTY);
+            this.technicalEmail = JsonUtils.asText(node, TECHNICAL_EMAIL_PROPERTY);
+            this.active = JsonUtils.asBoolean(node, ACTIVE_PROPERTY);
             this.passwordPolicy = JsonUtils.asEntity(node, PASSWORD_POLICY_PROPERTY, PasswordPolicy.class);
             this.verifyEmailTemplate = JsonUtils.asEntity(node, VERIFY_EMAIL_TEMPLATE_PROPERTY, EmailTemplate.class);
             this.resetPasswordTemplate = JsonUtils.asEntity(node, RESET_PASSWORD_TEMPLATE_PROPERTY, EmailTemplate.class);
