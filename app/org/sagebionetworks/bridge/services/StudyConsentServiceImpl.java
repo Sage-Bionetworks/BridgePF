@@ -127,7 +127,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
-        consent = studyConsentDao.setActive(consent, true);
+        consent = studyConsentDao.activateConsent(consent);
         String documentContent = loadDocumentContent(consent);
         return new StudyConsentView(consent, documentContent);
     }

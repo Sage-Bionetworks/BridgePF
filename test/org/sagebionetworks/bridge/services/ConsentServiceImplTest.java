@@ -93,7 +93,7 @@ public class ConsentServiceImplTest {
         if (consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser())) {
             consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
         }
-        studyConsentDao.setActive(studyConsent, false);
+        studyConsentDao.deactivateConsent(studyConsent);
         studyConsentDao.deleteConsent(testUser.getStudyIdentifier(), studyConsent.getCreatedOn());
         helper.deleteUser(testUser);
     }

@@ -16,9 +16,23 @@ public interface StudyConsentDao {
     StudyConsent addConsent(StudyIdentifier studyIdentifier, String path, String storagePath, DateTime createdOn);
 
     /**
+     * Set this consent to be the one and only activate consent record.
+     * @param consent
+     * @return
+     */
+    StudyConsent activateConsent(StudyConsent studyConsent);
+    
+    /**
+     * Set this consent to be the one and only activate consent record.
+     * @param consent
+     * @return
+     */
+    StudyConsent deactivateConsent(StudyConsent studyConsent);
+    
+    /**
      * Sets the consent active or inactive, depending on the boolean flag.
      */
-    StudyConsent setActive(StudyConsent studyConsent, boolean active);
+    //StudyConsent setActive(StudyConsent studyConsent, boolean active);
 
     /**
      * Gets the latest, active consent.

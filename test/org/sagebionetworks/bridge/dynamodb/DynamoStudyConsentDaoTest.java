@@ -58,7 +58,7 @@ public class DynamoStudyConsentDaoTest {
         assertFalse(consent1.getActive());
         assertNull(studyConsentDao.getConsent(new StudyIdentifierImpl(consent1.getStudyKey())));
         // Make version1 active
-        studyConsentDao.setActive(consent1, true);
+        studyConsentDao.activateConsent(consent1);
         StudyConsent consent = studyConsentDao.getConsent(new StudyIdentifierImpl(consent1.getStudyKey()));
         assertTrue(consent.getActive());
         assertEquals(consent1.getStudyKey(), consent.getStudyKey());
@@ -68,8 +68,8 @@ public class DynamoStudyConsentDaoTest {
         final StudyConsent consent2 = studyConsentDao.addConsent(studyId, "fake-path2", null, DateUtils.getCurrentDateTime());
         assertNotNull(consent2);
         toDelete.add(consent2);
-        studyConsentDao.setActive(consent1, false);
-        studyConsentDao.setActive(consent2, true);
+        studyConsentDao.deactivateConsent(consent1);
+        studyConsentDao.activateConsent(consent2);
         // The latest should be version 2
         consent = studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey()));
         assertTrue(consent.getActive());
@@ -124,7 +124,7 @@ public class DynamoStudyConsentDaoTest {
             assertNull(studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey())));
             
             // Now activate the consent
-            consent = studyConsentDao.setActive(consent, true);
+            consent = studyConsentDao.activateConsent(consent);
             StudyConsent newConsent = studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey()));
             assertTrue(newConsent.getActive());
             assertEquals(consent.getStudyKey(), newConsent.getStudyKey());
@@ -141,6 +141,33 @@ public class DynamoStudyConsentDaoTest {
             
             List<StudyConsent> all = studyConsentDao.getConsents(studyId);
             assertTrue(all.isEmpty());
+        }
+    }
+    
+    @Test
+    public void activateConsentActivatesOnlyOneVersion() {
+        StudyIdentifier studyId = new StudyIdentifierImpl("fake-study");
+        try {
+            // Add a consent, activate it, add a consent, activate it, etc.
+            for (int i=0; i < 3; i++) {
+                DateTime createdOn = DateTime.now();
+                String key = "fake-study." + createdOn.getMillis();
+                
+                StudyConsent consent = studyConsentDao.addConsent(studyId, null, key, createdOn);
+                studyConsentDao.activateConsent(consent);
+            }
+            
+            // Only one should be active.
+            List<StudyConsent> allConsents = studyConsentDao.getConsents(studyId);
+            assertEquals(3, allConsents.size());
+            assertEquals(true, allConsents.get(0).getActive());
+            assertEquals(false, allConsents.get(1).getActive());
+            assertEquals(false, allConsents.get(2).getActive());
+        } finally {
+            List<StudyConsent> allConsents = studyConsentDao.getConsents(studyId);
+            for (StudyConsent consent : allConsents) {
+                studyConsentDao.deleteConsent(studyId, consent.getCreatedOn());
+            }
         }
     }
     

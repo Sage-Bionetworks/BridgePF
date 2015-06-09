@@ -3,8 +3,10 @@ package org.sagebionetworks.bridge.models.studies;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Combines the DynamoDB study consent record with the contents of the consent document, 
@@ -24,6 +26,7 @@ public class StudyConsentView {
         this.documentContent = documentContent;
     }
 
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getCreatedOn() {
         return consent.getCreatedOn();
     }
