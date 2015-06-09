@@ -36,9 +36,12 @@ public class StudyConsentBootstrapper {
             Study study = new DynamoStudy();
             study.setName("Test Study");
             study.setIdentifier("api");
+            study.setSponsorName("Sage Bionetworks");
             study.setMinAgeOfConsent(18);
             study.setResearcherRole("api_researcher");
             study.setConsentNotificationEmail("bridge-testing+consent@sagebridge.org");
+            study.setTechnicalEmail("bridge-testing+technical@sagebridge.org");
+            study.setSupportEmail("support@sagebridge.org");
             // This is stormpath api (dev) directory.
             study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM");
             study.getUserProfileAttributes().add("phone");
