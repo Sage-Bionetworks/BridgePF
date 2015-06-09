@@ -36,6 +36,8 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.5.3",
   // Guava
   "com.google.guava" % "guava" % "18.0",
+  // Guice
+  "com.google.inject" % "guice" % "4.0",
   // Security
   "org.apache.shiro" % "shiro-core" % "1.2.3",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.52",
@@ -63,3 +65,5 @@ libraryDependencies ++= Seq(
 )
 
 lazy val root = (project in file(".")).enablePlugins(PlayJava)
+
+routesGenerator := InjectedRoutesGenerator
