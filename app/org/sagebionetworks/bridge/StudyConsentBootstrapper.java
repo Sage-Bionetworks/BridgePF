@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -46,6 +47,7 @@ public class StudyConsentBootstrapper {
             study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM");
             study.getUserProfileAttributes().add("phone");
             study.getUserProfileAttributes().add("can_be_recontacted");
+            study.setPasswordPolicy(new PasswordPolicy(2, false, false, false));
             studyService.createStudy(study);
         }
     }
