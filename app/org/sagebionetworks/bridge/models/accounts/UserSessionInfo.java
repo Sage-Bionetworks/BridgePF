@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 
 /**
@@ -8,6 +12,14 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
  *
  */
 public class UserSessionInfo {
+    
+    private static final Map<Environment,String> ENVIRONMENTS = new HashMap<>();
+    static {
+        ENVIRONMENTS.put(Environment.LOCAL, "local");
+        ENVIRONMENTS.put(Environment.DEV, "develop");
+        ENVIRONMENTS.put(Environment.UAT, "staging");
+        ENVIRONMENTS.put(Environment.PROD, "production");
+    }
 
     private final boolean authenticated;
     private final boolean signedMostRecentConsent;
@@ -15,6 +27,7 @@ public class UserSessionInfo {
     private final SharingScope sharingScope;
     private final String sessionToken;
     private final String username;
+    private final String environment;
 
     public UserSessionInfo(UserSession session) {
         this.authenticated = session.isAuthenticated();
@@ -23,6 +36,7 @@ public class UserSessionInfo {
         this.consented = session.getUser().doesConsent();
         this.sharingScope = session.getUser().getSharingScope();
         this.username = session.getUser().getUsername();
+        this.environment = ENVIRONMENTS.get(session.getEnvironment());
     }
 
     public boolean isAuthenticated() {
@@ -45,5 +59,8 @@ public class UserSessionInfo {
     }
     public String getUsername() {
         return username;
+    }
+    public String getEnvironment() {
+        return environment;
     }
 }
