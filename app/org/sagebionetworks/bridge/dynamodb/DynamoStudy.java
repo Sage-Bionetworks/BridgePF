@@ -25,24 +25,20 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.ser.FilterProvider;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+
 
 @DynamoDBTable(tableName = "Study")
 @BridgeTypeName("Study")
 @JsonFilter("filter") 
-public class DynamoStudy implements Study {
+public final class DynamoStudy implements Study {
     
     private static ObjectMapper mapper = new ObjectMapper();
 
     private static final String RESEARCHER_ROLE_PROPERTY = "researcherRole";
     private static final String STORMPATH_HREF_PROPERTY = "stormpathHref";
-
     private static final String MAX_NUM_OF_PARTICIPANTS_PROPERTY = "maxNumOfParticipants";
     private static final String MIN_AGE_OF_CONSENT_PROPERTY = "minAgeOfConsent";
     private static final String SUPPORT_EMAIL_PROPERTY = "supportEmail";
@@ -54,12 +50,6 @@ public class DynamoStudy implements Study {
     private static final String ACTIVE_PROPERTY = "active";
     private static final String TECHNICAL_EMAIL_PROPERTY = "technicalEmail";
     private static final String SPONSOR_NAME_PROPERTY = "sponsorName";
-
-    private static final FilterProvider RESEARCHER_VIEW_FILTER = new SimpleFilterProvider()
-        .addFilter("filter", SimpleBeanPropertyFilter.serializeAllExcept(STORMPATH_HREF_PROPERTY, RESEARCHER_ROLE_PROPERTY));
-    
-    public static final ObjectWriter STUDY_WRITER = new BridgeObjectMapper().writer(
-        DynamoStudy.RESEARCHER_VIEW_FILTER);
 
     private String name;
     private String sponsorName;
@@ -287,9 +277,6 @@ public class DynamoStudy implements Study {
             this.sponsorName = JsonUtils.asText(node, SPONSOR_NAME_PROPERTY);
             this.technicalEmail = JsonUtils.asText(node, TECHNICAL_EMAIL_PROPERTY);
             this.active = JsonUtils.asBoolean(node, ACTIVE_PROPERTY);
-            this.passwordPolicy = JsonUtils.asEntity(node, PASSWORD_POLICY_PROPERTY, PasswordPolicy.class);
-            this.verifyEmailTemplate = JsonUtils.asEntity(node, VERIFY_EMAIL_TEMPLATE_PROPERTY, EmailTemplate.class);
-            this.resetPasswordTemplate = JsonUtils.asEntity(node, RESET_PASSWORD_TEMPLATE_PROPERTY, EmailTemplate.class);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         }
@@ -329,11 +316,13 @@ public class DynamoStudy implements Study {
         return (Objects.equals(identifier, other.identifier) && Objects.equals(supportEmail, other.supportEmail) &&
             Objects.equals(maxNumOfParticipants, other.maxNumOfParticipants) && 
             Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name) && 
-            Objects.equals(researcherRole, other.researcherRole) && Objects.equals(stormpathHref, other.stormpathHref) && 
+            Objects.equals(researcherRole, other.researcherRole) && Objects.equals(stormpathHref, other.stormpathHref) &&
+            Objects.equals(passwordPolicy, other.passwordPolicy) && Objects.equals(active, other.active)) && 
+            Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate) && 
             Objects.equals(consentNotificationEmail, other.consentNotificationEmail) && 
+            Objects.equals(resetPasswordTemplate, other.resetPasswordTemplate) &&
             Objects.equals(version, other.version) && Objects.equals(profileAttributes, other.profileAttributes) && 
-            Objects.equals(sponsorName, other.sponsorName) && Objects.equals(technicalEmail, other.technicalEmail) && 
-            Objects.equals(active, other.active));
+            Objects.equals(sponsorName, other.sponsorName) && Objects.equals(technicalEmail, other.technicalEmail);
     }
 
     @Override

@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.models.studies;
 
 import static org.junit.Assert.assertEquals;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -14,7 +13,7 @@ public class EmailTemplateTest {
 
     @Test
     public void equalsHashCode() {
-        EqualsVerifier.forClass(EmailTemplate.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+        EqualsVerifier.forClass(EmailTemplate.class).allFieldsShouldBeUsed().verify();
     }
     
     @Test

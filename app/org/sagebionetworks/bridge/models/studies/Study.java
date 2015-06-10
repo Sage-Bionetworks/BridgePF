@@ -3,9 +3,13 @@ package org.sagebionetworks.bridge.models.studies;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 /**
  * A Bridge study.
@@ -15,6 +19,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 // and attempts to use that to deserialize study (not what you want).
 @JsonDeserialize(as=DynamoStudy.class)
 public interface Study extends BridgeEntity, StudyIdentifier {
+
+    public static final ObjectWriter STUDY_WRITER = new BridgeObjectMapper().writer(
+        new SimpleFilterProvider().addFilter("filter", 
+        SimpleBeanPropertyFilter.serializeAllExcept("researcherRole", "stormpathHref")));
 
     /**
      * The display name of the study (will be seen by participants in email). This name makes the 

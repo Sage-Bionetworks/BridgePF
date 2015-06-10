@@ -5,15 +5,21 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Whitelist;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
@@ -34,6 +40,9 @@ import org.springframework.stereotype.Component;
 @Component("studyService")
 public class StudyServiceImpl implements StudyService {
 
+    private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
+            BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
+
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
@@ -49,51 +58,51 @@ public class StudyServiceImpl implements StudyService {
     private String defaultResetPasswordTemplateSubject;
     
     @Value("classpath:study-defaults/consent.xhtml")
-    void setDefaultConsentDocument(org.springframework.core.io.Resource resource) {
-        this.defaultConsentDocument = new StudyConsentForm(BridgeUtils.toStringQuietly(resource));
+    final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
     }
     @Value("classpath:study-defaults/email-verification.txt")
-    void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) {
-        this.defaultEmailVerificationTemplate = BridgeUtils.toStringQuietly(resource);
+    final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
     @Value("classpath:study-defaults/email-verification-subject.txt")
-    void setDefaultEmailVerificationTemplateSubject(org.springframework.core.io.Resource resource) {
-        this.defaultEmailVerificationTemplateSubject = BridgeUtils.toStringQuietly(resource);
+    final void setDefaultEmailVerificationTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultEmailVerificationTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
     @Value("classpath:study-defaults/reset-password.txt")
-    void setDefaultPasswordTemplate(org.springframework.core.io.Resource resource) {
-        this.defaultResetPasswordTemplate = BridgeUtils.toStringQuietly(resource);
+    final void setDefaultPasswordTemplate(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultResetPasswordTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
     @Value("classpath:study-defaults/reset-password-subject.txt")
-    void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) {
-        this.defaultResetPasswordTemplateSubject = BridgeUtils.toStringQuietly(resource);
+    final void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultResetPasswordTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
     @Resource(name="uploadCertificateService")
-    void setUploadCertificateService(UploadCertificateService uploadCertService) {
+    final void setUploadCertificateService(UploadCertificateService uploadCertService) {
         this.uploadCertService = uploadCertService;
     }
     @Autowired
-    void setDistributedLockDao(DistributedLockDao lockDao) {
+    final void setDistributedLockDao(DistributedLockDao lockDao) {
         this.lockDao = lockDao;
     }
     @Autowired
-    void setValidator(StudyValidator validator) {
+    final void setValidator(StudyValidator validator) {
         this.validator = validator;
     }
     @Autowired
-    void setStudyDao(StudyDao studyDao) {
+    final void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
     }
     @Autowired
-    void setDirectoryDao(DirectoryDao directoryDao) {
+    final void setDirectoryDao(DirectoryDao directoryDao) {
         this.directoryDao = directoryDao;
     }
     @Autowired
-    void setCacheProvider(CacheProvider cacheProvider) {
+    final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
     @Autowired
-    void setStudyConsentService(StudyConsentService studyConsentService) {
+    final void setStudyConsentService(StudyConsentService studyConsentService) {
         this.studyConsentService = studyConsentService;
     }
     
@@ -216,6 +225,11 @@ public class StudyServiceImpl implements StudyService {
      * @param study
      */
     private void setDefaultsIfAbsent(Study study) {
+        // do not set defaults for the existing studies that are in use. This is a safety 
+        // feature that will be removed after all the studies are migrated.
+        if (studyWhitelist.contains(study.getIdentifier())) {
+            return;
+        }
         if (study.getPasswordPolicy() == null) {
             study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }

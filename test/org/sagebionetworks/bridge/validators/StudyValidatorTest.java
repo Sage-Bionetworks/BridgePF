@@ -31,7 +31,7 @@ public class StudyValidatorTest {
     }
     
     @Test(expected = InvalidEntityException.class)
-    public void minLengthCannotBeLessThan100() {
+    public void minLengthCannotBeMoreThan100() {
         study.setPasswordPolicy(new PasswordPolicy(101, false, false, false));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
@@ -74,14 +74,38 @@ public class StudyValidatorTest {
     }
     
     @Test(expected = InvalidEntityException.class)
-    public void rejectsInvalidTechnicalEmailAddresses() {
-        study.setTechnicalEmail(null);
+    public void rejectsInvalidSupportEmailAddresses2() {
+        study.setSupportEmail("test@test.com,,,test2@test.com");
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
     
     @Test(expected = InvalidEntityException.class)
-    public void rejectsInvalidSupportEmailAddresses2() {
-        study.setSupportEmail("test@test.com,,,test2@test.com");
+    public void requiresMissingSupportEmail() {
+        study.setSupportEmail(null);
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test
+    public void acceptsMultipleValidTechnicalEmailAddresses() {
+        study.setTechnicalEmail("test@test.com,test2@test.com");
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void rejectsInvalidTechnicalEmailAddresses() {
+        study.setTechnicalEmail("test@test.com,asdf,test2@test.com");
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void rejectsInvalidTechnicalEmailAddresses2() {
+        study.setTechnicalEmail("test@test.com,,,test2@test.com");
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void requiresMissingTechnicalEmail() {
+        study.setTechnicalEmail(null);
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
     
@@ -94,12 +118,6 @@ public class StudyValidatorTest {
     @Test(expected = InvalidEntityException.class)
     public void cannotAddConflictingUserProfileAttribute() {
         study.getUserProfileAttributes().add("username");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
-    }
-    
-    @Test(expected = InvalidEntityException.class)
-    public void requiresMissingSupportEmail() {
-        study.setSupportEmail(null);
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
     

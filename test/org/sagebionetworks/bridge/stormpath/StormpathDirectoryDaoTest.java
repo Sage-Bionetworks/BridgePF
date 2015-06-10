@@ -15,7 +15,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -130,18 +129,18 @@ public class StormpathDirectoryDaoTest {
         CloseableHttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
         
         // Get directory as JSON
-        ObjectNode directoryNode = BridgeUtils.getJSON(client, directory.getHref());
+        ObjectNode directoryNode = StormpathUtils.getJSON(client, directory.getHref());
         String accountCreationUrl = directoryNode.get("accountCreationPolicy").get("href").asText();
         
         // Get account policy as JSON, update to our standard configuration
-        ObjectNode accountPolicyNode = BridgeUtils.getJSON(client, accountCreationUrl);
+        ObjectNode accountPolicyNode = StormpathUtils.getJSON(client, accountCreationUrl);
         String verificationEmailTemplatesUrl = accountPolicyNode.get("verificationEmailTemplates").get("href").asText();
         
         // Get the verify email template
-        ObjectNode templateNode = BridgeUtils.getJSON(client, verificationEmailTemplatesUrl);
+        ObjectNode templateNode = StormpathUtils.getJSON(client, verificationEmailTemplatesUrl);
         String templateUrl = templateNode.get("items").get(0).get("href").asText();
         // Update this template with study-specific information
-        ObjectNode templateJSON = BridgeUtils.getJSON(client, templateUrl);
+        ObjectNode templateJSON = StormpathUtils.getJSON(client, templateUrl);
         
         assertEquals(study.getSponsorName(), templateJSON.get("fromName").asText());
         assertEquals(study.getSupportEmail(), templateJSON.get("fromEmailAddress").asText());

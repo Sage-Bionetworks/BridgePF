@@ -6,14 +6,17 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 import javax.annotation.Resource;
 
+import org.apache.commons.io.IOUtils;
 import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
@@ -70,8 +73,8 @@ public class ConsentServiceImplTest {
     private StudyConsentForm defaultConsentDocument;
     
     @Value("classpath:study-defaults/consent.xhtml")
-    public void setDefaultConsentDocument(org.springframework.core.io.Resource resource) {
-        this.defaultConsentDocument = new StudyConsentForm(BridgeUtils.toStringQuietly(resource));
+    public void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
     }
     
     private Study study;

@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.models.studies;
 
 import static org.junit.Assert.*;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -13,7 +12,7 @@ public class PasswordPolicyTest {
 
     @Test
     public void equalsHashCode() {
-        EqualsVerifier.forClass(PasswordPolicy.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+        EqualsVerifier.forClass(PasswordPolicy.class).allFieldsShouldBeUsed().verify();
     }
     
     @Test

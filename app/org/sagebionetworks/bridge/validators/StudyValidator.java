@@ -53,7 +53,7 @@ public class StudyValidator implements Validator {
             errors.pushNestedPath("passwordPolicy");
             PasswordPolicy policy = study.getPasswordPolicy();
             if (!isInRange(policy.getMinLength(), 2)) {
-                errors.rejectValue("minLength", "must be at least 2 and no more than 100");
+                errors.rejectValue("minLength", "must be at least 2 and no more than " + PasswordPolicy.FIXED_MAX_LENGTH);
             }
             errors.popNestedPath();
         }
@@ -72,7 +72,7 @@ public class StudyValidator implements Validator {
     }
     
     private boolean isInRange(int value, int min) {
-        return (value >= min && value <= 100);
+        return (value >= min && value <= PasswordPolicy.FIXED_MAX_LENGTH);
     }
     
     private void validateEmails(Errors errors, String value, String fieldName) {

@@ -1,38 +1,20 @@
 package org.sagebionetworks.bridge;
 
-import java.util.Set;
-
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.StudyConsentService;
 import org.sagebionetworks.bridge.services.StudyService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.Sets;
-
-@Component("studyConsentBootstrapper")
-public class StudyConsentBootstrapper {
-    
-    private static Logger logger = LoggerFactory.getLogger(StudyConsentBootstrapper.class);
+@Component("defaultStudyBootstrapper")
+public class DefaultStudyBootstrapper {
     
     @Autowired
-    public StudyConsentBootstrapper(StudyService studyService, StudyConsentService studyConsentService) {
+    public DefaultStudyBootstrapper(StudyService studyService) {
         try {
-            Study study = studyService.getStudy("api");
-            try {
-                Set<String> atts = Sets.newHashSet("phone", "can_be_recontacted");
-                if (study.getUserProfileAttributes().size() != atts.size()) {
-                    study.setUserProfileAttributes(atts);
-                    studyService.updateStudy(study);
-                }
-            } catch(Exception e) {
-                logger.warn(e.getMessage(), e);
-            }
+            studyService.getStudy("api");
         } catch(EntityNotFoundException e) {
             Study study = new DynamoStudy();
             study.setName("Test Study");
@@ -42,7 +24,7 @@ public class StudyConsentBootstrapper {
             study.setResearcherRole("api_researcher");
             study.setConsentNotificationEmail("bridge-testing+consent@sagebridge.org");
             study.setTechnicalEmail("bridge-testing+technical@sagebridge.org");
-            study.setSupportEmail("support@sagebridge.org");
+            study.setSupportEmail("bridge-testing+support@sagebridge.org");
             // This is stormpath api (dev) directory.
             study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM");
             study.getUserProfileAttributes().add("phone");

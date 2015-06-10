@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -160,7 +159,7 @@ public class CacheProvider {
             String ser = jedisOps.get(redisKey);
             if (ser != null) {
                 jedisOps.expire(redisKey, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-                return BridgeObjectMapper.get().readValue(ser, DynamoStudy.class);
+                return BridgeObjectMapper.get().readValue(ser, Study.class);
             }
         } catch (Throwable e) {
             promptToStartRedisIfLocal(e);

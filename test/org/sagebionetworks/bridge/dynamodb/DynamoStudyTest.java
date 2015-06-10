@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.*;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
@@ -8,7 +10,9 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.Study;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -18,6 +22,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  */
 public class DynamoStudyTest {
+    
+    @Test
+    public void equalsHashCode() {
+        // studyIdentifier is derived from the identifier
+        EqualsVerifier.forClass(DynamoStudy.class).allFieldsShouldBeUsedExcept("studyIdentifier")
+            .suppress(Warning.NONFINAL_FIELDS)
+            .withPrefabValues(ObjectMapper.class, new ObjectMapper(), new ObjectMapper())
+            .withPrefabValues(JsonFactory.class, new JsonFactory(), new JsonFactory()).verify();
+    }
 
     @Test
     public void studyFullySerializesForCaching() throws Exception {
@@ -64,8 +77,8 @@ public class DynamoStudyTest {
         // Using the filtered view of a study, this should not include a couple of fields we don't expose to researchers.
         // Negates the need for a view wrapper object, is contextually adjustable, unlike @JsonIgnore.
         // You do need to create a new instance of the writer from a new mapper, SFAICT. This is stored as 
-        // DynamoStudy.STUDY_WRITER.
-        json = DynamoStudy.STUDY_WRITER.writeValueAsString(study);
+        // Study.STUDY_WRITER.
+        json = Study.STUDY_WRITER.writeValueAsString(study);
         study = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
         assertNull(study.getResearcherRole());
         assertNull(study.getStormpathHref());

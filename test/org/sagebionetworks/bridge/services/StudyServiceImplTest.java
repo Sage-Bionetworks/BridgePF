@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -93,6 +94,7 @@ public class StudyServiceImplTest {
         
         study = studyService.createStudy(study);
         assertNotNull("Version has been set", study.getVersion());
+        assertTrue(study.isActive());
         verify(cache).setStudy(study);
         verifyNoMoreInteractions(cache);
         reset(cache);
@@ -103,6 +105,7 @@ public class StudyServiceImplTest {
         assertTrue(view.getActive());
         
         study = studyService.getStudy(identifier);
+        assertTrue(study.isActive());
         assertEquals(identifier, study.getIdentifier());
         assertEquals("Test Study [not API]", study.getName());
         assertEquals(200, study.getMaxNumOfParticipants());
@@ -124,6 +127,56 @@ public class StudyServiceImplTest {
         } catch(EntityNotFoundException e) {
         }
         identifier = null;
+    }
+    
+    @Test
+    public void canUpdatePasswordPolicyAndEmailTemplates() {
+        study = TestUtils.getValidStudy();
+        study.setPasswordPolicy(null);
+        study.setVerifyEmailTemplate(null);
+        study.setResetPasswordTemplate(null);
+        identifier = study.getIdentifier();
+        
+        // First, verify that defaults are set...
+        study = studyService.createStudy(study);
+        PasswordPolicy policy = study.getPasswordPolicy();
+        assertNotNull(policy);
+        assertEquals(8, policy.getMinLength());
+        assertTrue(policy.isNumericRequired());
+        assertTrue(policy.isSymbolRequired());
+        assertTrue(policy.isUpperCaseRequired());
+
+        EmailTemplate veTemplate = study.getVerifyEmailTemplate();
+        assertNotNull(veTemplate);
+        assertNotNull(veTemplate.getSubject());
+        assertNotNull(veTemplate.getBody());
+        
+        EmailTemplate rpTemplate = study.getResetPasswordTemplate();
+        assertNotNull(rpTemplate);
+        assertNotNull(rpTemplate.getSubject());
+        assertNotNull(rpTemplate.getBody());
+        
+        // Now change them and verify they are changed.
+        study.setPasswordPolicy(new PasswordPolicy(6, true, false, true));
+        study.setVerifyEmailTemplate(new EmailTemplate("subject *", "body ${url} *", MimeType.TEXT));
+        study.setResetPasswordTemplate(new EmailTemplate("subject **", "body ${url} **", MimeType.TEXT));
+        
+        study = studyService.updateStudy(study);
+        policy = study.getPasswordPolicy();
+        assertEquals(6, policy.getMinLength());
+        assertTrue(policy.isNumericRequired());
+        assertFalse(policy.isSymbolRequired());
+        assertTrue(policy.isUpperCaseRequired());
+        
+        veTemplate = study.getVerifyEmailTemplate();
+        assertEquals("subject *", veTemplate.getSubject());
+        assertEquals("body ${url} *", veTemplate.getBody());
+        assertEquals(MimeType.TEXT, veTemplate.getMimeType());
+        
+        rpTemplate = study.getResetPasswordTemplate();
+        assertEquals("subject **", rpTemplate.getSubject());
+        assertEquals("body ${url} **", rpTemplate.getBody());
+        assertEquals(MimeType.TEXT, rpTemplate.getMimeType());
     }
     
     @Test

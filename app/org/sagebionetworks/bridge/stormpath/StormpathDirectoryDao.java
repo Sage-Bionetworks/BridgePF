@@ -13,7 +13,6 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
@@ -257,23 +256,23 @@ public class StormpathDirectoryDao implements DirectoryDao {
             CloseableHttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
             
             // Get directory as JSON
-            ObjectNode directoryNode = BridgeUtils.getJSON(client, directory.getHref());
+            ObjectNode directoryNode = StormpathUtils.getJSON(client, directory.getHref());
             String accountCreationUrl = directoryNode.get("accountCreationPolicy").get("href").asText();
             
             // Get account policy as JSON, update to our standard configuration
-            ObjectNode accountPolicyNode = BridgeUtils.getJSON(client, accountCreationUrl);
+            ObjectNode accountPolicyNode = StormpathUtils.getJSON(client, accountCreationUrl);
             String verificationEmailTemplatesUrl = accountPolicyNode.get("verificationEmailTemplates").get("href").asText();
             accountPolicyNode.put("verificationEmailStatus", "ENABLED");
             accountPolicyNode.put("verificationSuccessEmailStatus", "DISABLED");
             accountPolicyNode.put("welcomeEmailStatus", "DISABLED");
             // save the account policy
-            BridgeUtils.postJSON(client, accountCreationUrl, accountPolicyNode);
+            StormpathUtils.postJSON(client, accountCreationUrl, accountPolicyNode);
             
             // Get the verify email template
-            ObjectNode templateNode = BridgeUtils.getJSON(client, verificationEmailTemplatesUrl);
+            ObjectNode templateNode = StormpathUtils.getJSON(client, verificationEmailTemplatesUrl);
             String templateUrl = templateNode.get("items").get(0).get("href").asText();
             // Update this template with study-specific information
-            ObjectNode template = BridgeUtils.getJSON(client, templateUrl);
+            ObjectNode template = StormpathUtils.getJSON(client, templateUrl);
             template.put("fromName", study.getSponsorName());
             template.put("fromEmailAddress", study.getSupportEmail());
             template.put("subject", partiallyResolveTemplate(ve.getSubject(), study));
@@ -284,7 +283,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
             String link = String.format("%s/mobile/verifyEmail.html?study=%s", config.getBaseURL(), study.getIdentifier());
             ((ObjectNode)template.get("defaultModel")).put("linkBaseUrl", link);
             // save the verify email template
-            BridgeUtils.postJSON(client, templateUrl, template);
+            StormpathUtils.postJSON(client, templateUrl, template);
         } catch(Throwable throwable) {
             throw new BridgeServiceException(throwable);
         }
@@ -301,6 +300,6 @@ public class StormpathDirectoryDao implements DirectoryDao {
         map.put("supportEmail", study.getSupportEmail());
         map.put("technicalEmail", study.getTechnicalEmail());
         map.put("sponsorName", study.getSponsorName());
-        return BridgeUtils.resolveTemplate(template, map);
+        return StormpathUtils.resolveTemplate(template, map);
     }
 }
