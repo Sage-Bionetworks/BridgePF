@@ -58,7 +58,7 @@ public class DynamoStudyConsentDaoTest {
         assertFalse(consent1.getActive());
         assertNull(studyConsentDao.getConsent(new StudyIdentifierImpl(consent1.getStudyKey())));
         // Make version1 active
-        studyConsentDao.activateConsent(consent1);
+        studyConsentDao.activate(consent1);
         StudyConsent consent = studyConsentDao.getConsent(new StudyIdentifierImpl(consent1.getStudyKey()));
         assertTrue(consent.getActive());
         assertEquals(consent1.getStudyKey(), consent.getStudyKey());
@@ -68,8 +68,8 @@ public class DynamoStudyConsentDaoTest {
         final StudyConsent consent2 = studyConsentDao.addConsent(studyId, "fake-path2", null, DateUtils.getCurrentDateTime());
         assertNotNull(consent2);
         toDelete.add(consent2);
-        studyConsentDao.deactivateConsent(consent1);
-        studyConsentDao.activateConsent(consent2);
+        studyConsentDao.deactivate(consent1);
+        studyConsentDao.activate(consent2);
         // The latest should be version 2
         consent = studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey()));
         assertTrue(consent.getActive());
@@ -124,7 +124,7 @@ public class DynamoStudyConsentDaoTest {
             assertNull(studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey())));
             
             // Now activate the consent
-            consent = studyConsentDao.activateConsent(consent);
+            consent = studyConsentDao.activate(consent);
             StudyConsent newConsent = studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey()));
             assertTrue(newConsent.getActive());
             assertEquals(consent.getStudyKey(), newConsent.getStudyKey());
@@ -154,7 +154,7 @@ public class DynamoStudyConsentDaoTest {
                 String key = "fake-study." + createdOn.getMillis();
                 
                 StudyConsent consent = studyConsentDao.addConsent(studyId, null, key, createdOn);
-                studyConsentDao.activateConsent(consent);
+                studyConsentDao.activate(consent);
             }
             
             // Only one should be active.

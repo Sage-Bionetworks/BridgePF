@@ -100,7 +100,7 @@ public class StudyConsentServiceImplTest {
         s3Helper.writeBytesToS3(BUCKET, key, "<document/>".getBytes());
         
         StudyConsent consent = studyConsentDao.addConsent(STUDY_ID, "/junk/path", key, createdOn);
-        studyConsentDao.activateConsent(consent);
+        studyConsentDao.activate(consent);
         // The junk path should not prevent the service from getting the S3 content.
         // We actually wouldn't get here if it tried to load from disk with the path we've provided.
         StudyConsentView view = studyConsentService.getConsent(STUDY_ID, createdOn.getMillis());

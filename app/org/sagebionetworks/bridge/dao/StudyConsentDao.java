@@ -20,7 +20,7 @@ public interface StudyConsentDao {
      * @param consent
      * @return
      */
-    StudyConsent activateConsent(StudyConsent studyConsent);
+    StudyConsent activate(StudyConsent studyConsent);
     
     /**
      * Deactivate this consent record. NOTE that if this is the last active consent record, this 
@@ -29,7 +29,7 @@ public interface StudyConsentDao {
      * @param consent
      * @return
      */
-    StudyConsent deactivateConsent(StudyConsent studyConsent);
+    StudyConsent deactivate(StudyConsent studyConsent);
 
     /**
      * Gets the latest, active consent.

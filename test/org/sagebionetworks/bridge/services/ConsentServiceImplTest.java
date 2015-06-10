@@ -100,7 +100,7 @@ public class ConsentServiceImplTest {
         }
         // Restore the originally active consent document. When you operate through the service, it prevents an active
         // document from being deleted, so you can't get into the state of having no active consent.
-        studyConsentDao.activateConsent(originalStudyConsent);
+        studyConsentDao.activate(originalStudyConsent);
         studyConsentDao.deleteConsent(testUser.getStudyIdentifier(), studyConsent.getCreatedOn());
         helper.deleteUser(testUser);
     }

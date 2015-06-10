@@ -50,7 +50,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
 
     @Override
-    public StudyConsent activateConsent(StudyConsent studyConsent) {
+    public StudyConsent activate(StudyConsent studyConsent) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyConsent.getStudyKey());
         consent.setCreatedOn(studyConsent.getCreatedOn());
@@ -90,7 +90,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
      * @return
      */
     @Override
-    public StudyConsent deactivateConsent(StudyConsent studyConsent) {
+    public StudyConsent deactivate(StudyConsent studyConsent) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyConsent.getStudyKey());
         consent.setCreatedOn(studyConsent.getCreatedOn());
