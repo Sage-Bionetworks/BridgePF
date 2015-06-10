@@ -131,7 +131,12 @@ public class StormpathAccountDao implements AccountDao {
                 .setAccountStore(directory)
                 .setLogin(email.getEmail())
                 .build();
-        application.sendVerificationEmail(request);
+
+        try {
+            application.sendVerificationEmail(request);
+        } catch (ResourceException e) {
+            rethrowResourceException(e, null);
+        }
     }
 
     @Override

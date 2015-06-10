@@ -67,14 +67,26 @@ public class UploadValidationTask implements Runnable {
 
             try {
                 oneHandler.handle(context);
-            } catch (RuntimeException | UploadValidationException ex) {
+            } catch (Throwable ex) {
                 context.setSuccess(false);
                 context.addMessage(String.format("Exception thrown from upload validation handler %s: %s: %s",
                         handlerName, ex.getClass().getName(), ex.getMessage()));
-                logger.info(String.format("Exception thrown from upload validation handler %s for study %s, " +
-                                "upload %s, filename %s: %s: %s", handlerName, context.getStudy().getIdentifier(),
-                        context.getUpload().getUploadId(), context.getUpload().getFilename(), ex.getClass().getName(),
-                        ex.getMessage()), ex);
+
+                if (ex instanceof Error) {
+                    // Something really bad happened, like an OutOfMemoryError. Log this at the error level.
+                    logger.error(String.format("Critical error in upload validation handler %s for study %s, " +
+                            "upload %s, filename %s: %s: %s", handlerName, context.getStudy().getIdentifier(),
+                            context.getUpload().getUploadId(), context.getUpload().getFilename(),
+                            ex.getClass().getName(), ex.getMessage()), ex);
+                } else {
+                    // Upload validation failed. Since there are a lot of garbage uploads, log this at the info level
+                    // so it doesn't set off our alarms. Once the garbage uploads are cleaned up, we can bump this back
+                    // up to warning.
+                    logger.info(String.format("Exception thrown from upload validation handler %s for study %s, " +
+                            "upload %s, filename %s: %s: %s", handlerName, context.getStudy().getIdentifier(),
+                            context.getUpload().getUploadId(), context.getUpload().getFilename(),
+                            ex.getClass().getName(), ex.getMessage()), ex);
+                }
                 break;
             } finally {
                 long elapsedMillis = stopwatch.elapsed(TimeUnit.MILLISECONDS);

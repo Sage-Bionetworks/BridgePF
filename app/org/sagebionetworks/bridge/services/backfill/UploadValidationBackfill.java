@@ -2,14 +2,11 @@ package org.sagebionetworks.bridge.services.backfill;
 
 import java.util.List;
 
-import org.joda.time.LocalDate;
-import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
@@ -57,11 +54,10 @@ public class UploadValidationBackfill extends AsyncBackfillTemplate {
 
     @Override
     void doBackfill(BackfillTask task, BackfillCallback callback) {
-        // Backfill should go from 2015-04-21 (when we saw a drop in asthma activities) to yesterday (because today's
-        // data might include things being validated right now).
+        // Backfill should go from 2015-04-21 (when we saw a drop in asthma activities) to 2015-06-05 (when the
+        // memory fix hit prod).
         String startDate = "2015-04-21";
-        String endDate = LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE).minusDays(1)
-                .toString(ISODateTimeFormat.date());
+        String endDate = "2015-06-05";
 
         recordMessage(task, callback, "Starting upload validation backfill from " + startDate + " to " + endDate);
 
@@ -70,7 +66,7 @@ public class UploadValidationBackfill extends AsyncBackfillTemplate {
         for (Upload oneUpload : uploadList) {
             // rate limit so we down starve threads or brown out DDB
             try {
-                Thread.sleep(50);
+                Thread.sleep(100);
             } catch (InterruptedException ex) {
                 logger.error("Interrupted while sleeping: " + ex.getMessage(), ex);
             }

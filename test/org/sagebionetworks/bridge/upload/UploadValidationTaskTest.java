@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.upload;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.notNull;
@@ -32,6 +33,7 @@ public class UploadValidationTaskTest {
 
         // execute
         UploadValidationContext ctx = testHelper(handlerList, UploadStatus.SUCCEEDED);
+        assertTrue(ctx.getSuccess());
 
         // validate that the handlers ran by checking the messages they wrote
         List<String> messageList = ctx.getMessageList();
@@ -51,8 +53,13 @@ public class UploadValidationTaskTest {
         testExceptionHelper(RuntimeException.class);
     }
 
+    @Test
+    public void error() throws Exception {
+        testExceptionHelper(OutOfMemoryError.class);
+    }
+
     // helper test method for the exception tests
-    private static void testExceptionHelper(Class<? extends Exception> exClass) throws Exception {
+    private static void testExceptionHelper(Class<? extends Throwable> exClass) throws Exception {
         // test handlers
         UploadValidationHandler fooHandler = new MessageHandler("foo succeeded");
 
@@ -66,6 +73,7 @@ public class UploadValidationTaskTest {
 
         // execute
         UploadValidationContext ctx = testHelper(handlerList, UploadStatus.VALIDATION_FAILED);
+        assertFalse(ctx.getSuccess());
 
         // Validate validation messages. First message is foo handler. Second message is error message. Just check that
         // the second message exists.
