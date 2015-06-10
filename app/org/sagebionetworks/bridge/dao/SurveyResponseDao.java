@@ -17,6 +17,8 @@ public interface SurveyResponseDao {
     
     public void deleteSurveyResponses(String healthCode);
     
+    public void deleteSurveyResponses(GuidCreatedOnVersionHolder keys);
+    
     public boolean surveyHasResponses(GuidCreatedOnVersionHolder keys);
     
 }

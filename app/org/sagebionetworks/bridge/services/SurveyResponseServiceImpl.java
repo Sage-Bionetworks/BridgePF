@@ -101,6 +101,13 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
         surveyResponseDao.deleteSurveyResponses(healthCode);
     }
 
+    @Override
+    public void deleteSurveyResponses(GuidCreatedOnVersionHolder survey) {
+        checkNotNull(survey, CANNOT_BE_NULL, "survey");
+        
+        surveyResponseDao.deleteSurveyResponses(survey);
+    }
+    
     private Survey getSurveyForResponse(SurveyResponse response) {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(response);
         return surveyDao.getSurvey(keys);
