@@ -59,7 +59,6 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         
         List<DynamoStudyConsent1> consentsToSave = Lists.newArrayList(consent);
         
-        // Get all active consents. All of them except the current one, set to inactive and add to consentsToSave
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyConsent.getStudyKey());
         DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
@@ -70,6 +69,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
                         .withComparisonOperator(ComparisonOperator.EQ)
                         .withAttributeValueList(new AttributeValue().withN("1")));
         
+        // Set all of the active consents except the current one to inactive.
         QueryResultPage<DynamoStudyConsent1> page = mapper.queryPage(DynamoStudyConsent1.class, queryExpression);
         for (DynamoStudyConsent1 otherConsent : page.getResults()) {
             if (otherConsent.getCreatedOn() != consent.getCreatedOn()) {
@@ -99,19 +99,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         mapper.save(consent);
         return consent;
     }
-    
-    /*
-    @Override
-    public StudyConsent setActive(StudyConsent studyConsent, boolean active) {
-        DynamoStudyConsent1 consent = new DynamoStudyConsent1();
-        consent.setStudyKey(studyConsent.getStudyKey());
-        consent.setCreatedOn(studyConsent.getCreatedOn());
-        consent = mapper.load(consent);
-        consent.setActive(active);
-        mapper.save(consent);
-        return consent;
-    }
-*/
+
     @Override
     public StudyConsent getConsent(StudyIdentifier studyIdentifier) {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
