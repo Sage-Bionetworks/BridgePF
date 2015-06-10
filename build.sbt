@@ -2,7 +2,7 @@ name := "BridgePF"
 
 version := "0.1-SNAPSHOT"
 
-scalaVersion := "2.11.2"
+scalaVersion := "2.11.6"
 
 // For scalaz-stream needed by specs2
 resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
