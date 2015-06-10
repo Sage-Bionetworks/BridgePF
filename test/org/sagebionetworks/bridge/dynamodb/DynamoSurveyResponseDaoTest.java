@@ -197,6 +197,19 @@ public class DynamoSurveyResponseDaoTest {
         }
     }
     
+    @Test
+    public void canDeleteSurveyResponsesForSurveyRevision() {
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), SURVEY_RESPONSE_IDENTIFIER);
+        
+        surveyResponseDao.deleteSurveyResponses(survey);
+        try {
+            surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, SURVEY_RESPONSE_IDENTIFIER);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            
+        }
+    }
+    
     private boolean noResponses(Survey survey) {
         return !surveyResponseDao.surveyHasResponses(survey);
     }

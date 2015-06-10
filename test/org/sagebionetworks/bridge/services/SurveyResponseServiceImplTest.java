@@ -298,7 +298,20 @@ public class SurveyResponseServiceImplTest {
     @Test
     public void deleteSurveyResponseNoHealthCode() {
         try {
-            service.deleteSurveyResponses(null);
+            service.deleteSurveyResponses((String)null);
+            fail("Should have thrown exception");
+        } catch(Exception e) {
+            //
+        }
+        verifyNoMoreInteractions(surveyDao);
+        verifyNoMoreInteractions(surveyResponseDao);
+        verifyNoMoreInteractions(taskEventService);
+    }
+    
+    @Test
+    public void deleteSurveyResponseNoSurvey() {
+        try {
+            service.deleteSurveyResponses((GuidCreatedOnVersionHolder)null);
             fail("Should have thrown exception");
         } catch(Exception e) {
             //

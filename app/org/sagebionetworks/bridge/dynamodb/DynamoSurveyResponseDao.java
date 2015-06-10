@@ -98,9 +98,29 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
             BridgeUtils.ifFailuresThrowException(failures);
         }
     }
+  
+    @Override
+    public void deleteSurveyResponses(GuidCreatedOnVersionHolder keys) {
+        DynamoDBQueryExpression<DynamoSurveyResponse> query = queryForResponsesToSurveyRevision(keys);
+        PaginatedQueryList<DynamoSurveyResponse> results = mapper.query(DynamoSurveyResponse.class, query);
+        
+        List<DynamoSurveyResponse> responsesToDelete = Lists.newArrayList();
+        responsesToDelete.addAll(results);
+        
+        if (!responsesToDelete.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchDelete(responsesToDelete);
+            BridgeUtils.ifFailuresThrowException(failures);
+        }
+    }
     
     @Override
     public boolean surveyHasResponses(GuidCreatedOnVersionHolder keys) {
+        DynamoDBQueryExpression<DynamoSurveyResponse> query = queryForResponsesToSurveyRevision(keys);
+        
+        return mapper.count(DynamoSurveyResponse.class, query) > 0;
+    }
+    
+    private DynamoDBQueryExpression<DynamoSurveyResponse> queryForResponsesToSurveyRevision(GuidCreatedOnVersionHolder keys) {
         DynamoSurveyResponse hashKey = new DynamoSurveyResponse();
         hashKey.setSurveyKey(keys);
         
@@ -108,8 +128,7 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
         // Error w/o this; "Consistent reads are not supported on global secondary indexes"
         query.setConsistentRead(false); 
         query.setHashKeyValues(hashKey);
-        
-        return mapper.count(DynamoSurveyResponse.class, query) > 0;
+        return query;
     }
     
     private SurveyResponse createSurveyResponseInternal(GuidCreatedOnVersionHolder keys, String healthCode,

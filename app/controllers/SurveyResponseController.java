@@ -9,6 +9,8 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import org.sagebionetworks.bridge.services.SurveyResponseService;
@@ -67,6 +69,19 @@ public class SurveyResponseController extends BaseController {
         return okResult("Survey response updated.");
     }
 
+    /**
+     * Only an admin account can delete survey responses. This principally exists for clean-up after tests.
+     */
+    public Result deleteSurveyResponses(String surveyGuid, String createdOnString) {
+        getAuthenticatedAdminSession();
+        
+        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
+        
+        responseService.deleteSurveyResponses(keys);
+        return okResult("Survey responses deleted.");
+    }
+    
     private List<SurveyAnswer> deserializeSurveyAnswers() throws JsonProcessingException, IOException {
         JsonNode node = requestToJSON(request());
         return JsonUtils.asEntityList(node, SurveyAnswer.class);

@@ -21,4 +21,6 @@ public interface SurveyResponseService {
     
     public void deleteSurveyResponses(String healthCode);
 
+    public void deleteSurveyResponses(GuidCreatedOnVersionHolder survey);
+    
 }
