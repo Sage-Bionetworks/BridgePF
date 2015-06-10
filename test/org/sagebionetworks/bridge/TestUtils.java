@@ -156,9 +156,9 @@ public class TestUtils {
         study.setStormpathHref("http://enterprise.stormpath.io/directories/asdf");
         study.setResearcherRole(study.getIdentifier() + "_researcher");
         study.setSponsorName("The Council on Test Studies");
-        study.setSupportEmail("support@acme.com");
-        study.setTechnicalEmail("technical@acme.com");
-        study.setConsentNotificationEmail("consent@acme.com");
+        study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
+        study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
+        study.setSupportEmail("bridge-testing+support@sagebase.org");
         study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
         return study;
     }

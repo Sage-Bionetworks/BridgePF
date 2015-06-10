@@ -80,6 +80,4 @@ public final class PasswordPolicy {
         return String.format("PasswordPolicy [minLength=%s, numericRequired=%s, symbolRequired=%s, upperCaseRequired=%s]",
             minLength, numericRequired, symbolRequired, upperCaseRequired);
     }
-     
-    
 }

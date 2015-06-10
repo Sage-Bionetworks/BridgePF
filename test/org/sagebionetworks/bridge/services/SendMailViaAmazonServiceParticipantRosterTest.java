@@ -73,7 +73,7 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
         // validate to
         List<String> toList = req.getDestinations();
         assertEquals("Correct number of recipients", 1, toList.size());
-        assertEquals("Correct recipient", "consent@acme.com", toList.get(0));
+        assertEquals("Correct recipient", "bridge-testing+consent@sagebase.org", toList.get(0));
 
         // Validate message content. MIME message must be ASCII
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.UTF_8);
