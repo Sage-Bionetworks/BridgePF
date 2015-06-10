@@ -66,7 +66,7 @@ public class UploadValidationBackfill extends AsyncBackfillTemplate {
         for (Upload oneUpload : uploadList) {
             // rate limit so we down starve threads or brown out DDB
             try {
-                Thread.sleep(50);
+                Thread.sleep(100);
             } catch (InterruptedException ex) {
                 logger.error("Interrupted while sleeping: " + ex.getMessage(), ex);
             }
