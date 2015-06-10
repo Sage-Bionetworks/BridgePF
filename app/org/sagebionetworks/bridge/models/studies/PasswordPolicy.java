@@ -13,10 +13,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public final class PasswordPolicy {
     
-    /**
-     * Currently 100 is the maximum password length allowed by Stormpath.
-     */
-    public static final int FIXED_MAX_LENGTH = 100;
+    public static final int FIXED_MAX_LENGTH = 999;
     public static final int VALUE_OFF = 0;
     public static final int VALUE_ON = 1;
     
