@@ -129,7 +129,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             return session;
         } finally {
-            lockDao.releaseLock(SignIn.class, signIn.getUsername(), lockId);
+            if (lockId != null) {
+                lockDao.releaseLock(SignIn.class, signIn.getUsername(), lockId);
+            }
         }
 
     }
@@ -210,7 +212,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         final UserSession session = getSession(account);
         session.setAuthenticated(true);
-        session.setEnvironment(config.getEnvironment().name().toLowerCase());
+        session.setEnvironment(config.getEnvironment());
         session.setStudyIdentifier(study.getStudyIdentifier());
 
         final User user = new User(account);

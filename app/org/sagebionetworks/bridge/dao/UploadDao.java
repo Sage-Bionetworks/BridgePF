@@ -20,6 +20,28 @@ public interface UploadDao {
     Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull String healthCode);
 
     /**
+     * <p>
+     * Gets the failed uploads between the specified dates, inclusive, in YYYY-MM-DD format. A failed upload is any
+     * upload with status VALIDATION_FAILED or VALIDATION_IN_PROGRESS (validation crashing  during validation). This is
+     * generally useful for redriving uploads that have failed validation.
+     * </p>
+     * <p>
+     * Note that this method should not be called with an endDate on or after the current date, as this may incorrectly
+     * return uploads that are still validating.
+     * </p>
+     * <p>
+     * Also note that this method doesn't catch uploads that failed to upload to S3.
+     * </p>
+     *
+     * @param startDate
+     *         start date, inclusive, in YYYY-MM-DD format
+     * @param endDate
+     *         end date, inclusive, in YYYY-MM-DD format
+     * @return list of failed uploads
+     */
+    List<? extends Upload> getFailedUploadsForDates(@Nonnull String startDate, @Nonnull String endDate);
+
+    /**
      * Gets the upload metadata associated with this upload.
      *
      * @param uploadId

@@ -24,18 +24,12 @@ import com.google.common.collect.Maps;
 
 @Component("enrollmentEventBackfill")
 public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
-    
-    private BackfillRecordFactory backfillFactory;
     private AccountDao accountDao;
     private TaskEventService taskEventService;
     private UserConsentDao userConsentDao;
     private HealthCodeService healthCodeService;
     private SortedMap<Integer,Encryptor> encryptors = Maps.newTreeMap();
-    
-    @Autowired
-    public void setBackfillFactory(BackfillRecordFactory backfillFactory) {
-        this.backfillFactory = backfillFactory;
-    }
+
     @Autowired
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
@@ -66,13 +60,13 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
 
     @Override
     void doBackfill(BackfillTask task, BackfillCallback callback) {
-        callback.newRecords(backfillFactory.createOnly(task, "Starting to examine accounts"));
+        callback.newRecords(getBackfillRecordFactory().createOnly(task, "Starting to examine accounts"));
         
         Iterator<Account> i = accountDao.getAllAccounts();
         while (i.hasNext()) {
             Account account = i.next();
             
-            callback.newRecords(backfillFactory.createOnly(task, "Examining account: " + account.getId()));
+            callback.newRecords(getBackfillRecordFactory().createOnly(task, "Examining account: " + account.getId()));
             HealthId mapping = healthCodeService.getMapping(account.getHealthId());
             UserConsent consent = null;
             if (mapping != null) {
@@ -85,15 +79,15 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
                 if (consent != null) {
                     taskEventService.publishEvent(healthCode, consent);
                     callback.newRecords(
-                        backfillFactory.createAndSave(task, study, account, "enrollment event created"));
+                        getBackfillRecordFactory().createAndSave(task, study, account, "enrollment event created"));
                 }
             } 
             if (mapping == null && consent == null) {
-                callback.newRecords(backfillFactory.createOnly(task, "Health code and consent record not found"));
+                callback.newRecords(getBackfillRecordFactory().createOnly(task, "Health code and consent record not found"));
             } else if (mapping == null) {
-                callback.newRecords(backfillFactory.createOnly(task, "Health code not found"));    
+                callback.newRecords(getBackfillRecordFactory().createOnly(task, "Health code not found"));
             } else if (consent == null) {
-                callback.newRecords(backfillFactory.createOnly(task, "Consent record not found"));
+                callback.newRecords(getBackfillRecordFactory().createOnly(task, "Consent record not found"));
             }
         }
     }

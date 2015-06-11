@@ -3,7 +3,6 @@ package controllers;
 import models.Metrics;
 
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
@@ -70,8 +69,7 @@ public class UploadController extends BaseController {
         uploadService.uploadComplete(upload);
 
         // kick off upload validation
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-        uploadValidationService.validateUpload(study, session.getUser(), upload);
+        uploadValidationService.validateUpload(session.getStudyIdentifier(), upload);
 
         return ok("Upload " + uploadId + " complete!");
     }

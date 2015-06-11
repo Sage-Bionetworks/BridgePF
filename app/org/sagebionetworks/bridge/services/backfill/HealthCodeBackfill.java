@@ -17,17 +17,10 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class HealthCodeBackfill extends AsyncBackfillTemplate {
-
-    private BackfillRecordFactory backfillRecordFactory;
     private AccountDao accountDao;
     private StudyService studyService;
     private HealthCodeService healthCodeService;
 
-    @Autowired
-    public void setBackfillRecordFactory(BackfillRecordFactory backfillRecordFactory) {
-        this.backfillRecordFactory = backfillRecordFactory;
-    }
-    
     @Autowired
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
@@ -62,7 +55,7 @@ public class HealthCodeBackfill extends AsyncBackfillTemplate {
                 mapping = healthCodeService.createMapping(study);
                 account.setHealthId(mapping.getId());
                 accountDao.updateAccount(study, account);
-                callback.newRecords(backfillRecordFactory.createAndSave(
+                callback.newRecords(getBackfillRecordFactory().createAndSave(
                         task, study, account, "health code created"));
             } 
         }
