@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 
@@ -162,7 +162,7 @@ public class TestingHandlerTest {
         // Testing handler may call context.getStudy().getIdentifier(), context.getUpload().getUploadId(), and
         // context.getUpload().getFilename(), so get those ready
 
-        DynamoStudy study = new DynamoStudy();
+        DynamoStudy study = TestUtils.getValidStudy();
         study.setIdentifier(TEST_STUDY_ID);
 
         DynamoUpload2 upload = new DynamoUpload2();

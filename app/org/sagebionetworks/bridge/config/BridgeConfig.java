@@ -46,6 +46,8 @@ public class BridgeConfig {
 
     private static final String STUDY_HOSTNAME = "study.hostname";
 
+    private static final String STUDY_BASE_URL = "study.base.url";
+    
     // Comma surrounded by optional whitespace
     private static final String DEFAULT_DELIMITER = "\\s*,\\s*";
 
@@ -191,6 +193,10 @@ public class BridgeConfig {
         return getProperty(STUDY_HOSTNAME);
     }
 
+    public String getBaseURL() {
+        return getProperty(STUDY_BASE_URL);
+    }
+    
     public String getStudyHostname(String identifier) {
         checkNotNull(identifier);
         return identifier + getStudyHostnamePostfix();

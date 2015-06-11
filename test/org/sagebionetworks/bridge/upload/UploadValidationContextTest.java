@@ -11,8 +11,8 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
@@ -23,7 +23,7 @@ public class UploadValidationContextTest {
     @Test
     public void shallowCopy() {
         // dummy objects to test against
-        Study study = new DynamoStudy();
+        Study study = TestUtils.getValidStudy();
         Upload upload = new DynamoUpload2();
         byte[] data = "test-data".getBytes(Charsets.UTF_8);
         byte[] decryptedData = "test-decrypted-data".getBytes(Charsets.UTF_8);
