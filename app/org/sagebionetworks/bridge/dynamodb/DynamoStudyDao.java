@@ -90,10 +90,9 @@ public class DynamoStudyDao implements StudyDao {
     }
 
     @Override
-    public void deleteStudy(String identifier) {
-        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
+    public void deleteStudy(Study study) {
+        checkNotNull(study, Validate.CANNOT_BE_BLANK, "study");
 
-        Study study = getStudy(identifier);
         mapper.delete(study);
     }
 

@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -167,7 +168,21 @@ public class StudyServiceImpl implements StudyService {
     public Study updateStudy(Study study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
-        setDefaultsIfAbsent(study);
+        // do not set defaults for the existing studies that are in use. Throw an error if 
+        // these studies do not already include templates. Once they are migrated, this check 
+        // can be removed.
+        if (studyWhitelist.contains(study.getIdentifier())) {
+            checkNotNull(study.getVerifyEmailTemplate());
+            checkNotNull(study.getVerifyEmailTemplate().getSubject());
+            checkNotNull(study.getVerifyEmailTemplate().getMimeType());
+            checkNotNull(study.getVerifyEmailTemplate().getBody());
+            checkNotNull(study.getResetPasswordTemplate());
+            checkNotNull(study.getResetPasswordTemplate().getSubject());
+            checkNotNull(study.getResetPasswordTemplate().getMimeType());
+            checkNotNull(study.getResetPasswordTemplate().getBody());
+        } else {
+            setDefaultsIfAbsent(study);    
+        }
         sanitizeHTML(study);
         Validate.entityThrowingException(validator, study);
 
@@ -196,11 +211,16 @@ public class StudyServiceImpl implements StudyService {
     public void deleteStudy(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
 
+        // Verify the study exists before you do this.
+        Study existing = getStudy(identifier);
+        if (existing == null) {
+            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found");
+        }
         String lockId = null;
         try {
             lockId = lockDao.acquireLock(Study.class, identifier);
             directoryDao.deleteDirectoryForStudy(identifier);
-            studyDao.deleteStudy(identifier);
+            studyDao.deleteStudy(existing);
             cacheProvider.removeStudy(identifier);
         } finally {
             lockDao.releaseLock(Study.class, identifier, lockId);
@@ -225,11 +245,6 @@ public class StudyServiceImpl implements StudyService {
      * @param study
      */
     private void setDefaultsIfAbsent(Study study) {
-        // do not set defaults for the existing studies that are in use. This is a safety 
-        // feature that will be removed after all the studies are migrated.
-        if (studyWhitelist.contains(study.getIdentifier())) {
-            return;
-        }
         if (study.getPasswordPolicy() == null) {
             study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }

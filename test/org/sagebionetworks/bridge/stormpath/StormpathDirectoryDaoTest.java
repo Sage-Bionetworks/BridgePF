@@ -110,7 +110,7 @@ public class StormpathDirectoryDaoTest {
         assertEquals(url, template.getLinkBaseUrl());
         
         PasswordStrength strength = passwordPolicy.getStrength();
-        assertEquals(100, strength.getMaxLength());
+        assertEquals(PasswordPolicy.FIXED_MAX_LENGTH, strength.getMaxLength());
         assertEquals(1, strength.getMinLowerCase());
         assertEquals(study.getPasswordPolicy().isNumericRequired() ? 1 : 0, strength.getMinNumeric());
         assertEquals(study.getPasswordPolicy().isSymbolRequired() ? 1 : 0, strength.getMinSymbol());
@@ -142,6 +142,7 @@ public class StormpathDirectoryDaoTest {
         // Update this template with study-specific information
         ObjectNode templateJSON = StormpathUtils.getJSON(client, templateUrl);
         
+        // TODO: Test that the study name is used if no study name is provided.
         assertEquals(study.getSponsorName(), templateJSON.get("fromName").asText());
         assertEquals(study.getSupportEmail(), templateJSON.get("fromEmailAddress").asText());
         assertEquals(ve.getSubject(), templateJSON.get("subject").asText());

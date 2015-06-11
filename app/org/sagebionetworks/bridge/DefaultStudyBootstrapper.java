@@ -22,9 +22,9 @@ public class DefaultStudyBootstrapper {
             study.setSponsorName("Sage Bionetworks");
             study.setMinAgeOfConsent(18);
             study.setResearcherRole("api_researcher");
-            study.setConsentNotificationEmail("bridge-testing+consent@sagebridge.org");
-            study.setTechnicalEmail("bridge-testing+technical@sagebridge.org");
-            study.setSupportEmail("bridge-testing+support@sagebridge.org");
+            study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
+            study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
+            study.setSupportEmail("bridge-testing+support@sagebase.org");
             // This is stormpath api (dev) directory.
             study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM");
             study.getUserProfileAttributes().add("phone");

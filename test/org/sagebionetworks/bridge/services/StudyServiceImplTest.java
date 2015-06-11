@@ -119,8 +119,9 @@ public class StudyServiceImplTest {
         reset(cache);
 
         studyService.deleteStudy(identifier);
+        verify(cache).getStudy(study.getIdentifier());
+        verify(cache).setStudy(study);
         verify(cache).removeStudy(study.getIdentifier());
-        verifyNoMoreInteractions(cache);
         try {
             studyService.getStudy(study.getIdentifier());
             fail("Should have thrown an exception");

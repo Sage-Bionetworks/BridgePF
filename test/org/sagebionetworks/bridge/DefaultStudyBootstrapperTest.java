@@ -36,9 +36,9 @@ public class DefaultStudyBootstrapperTest {
         assertEquals("Sage Bionetworks", study.getSponsorName());
         assertEquals(18, study.getMinAgeOfConsent());
         assertEquals("api_researcher", study.getResearcherRole());
-        assertEquals("bridge-testing+consent@sagebridge.org", study.getConsentNotificationEmail());
-        assertEquals("bridge-testing+technical@sagebridge.org", study.getTechnicalEmail());
-        assertEquals("bridge-testing+support@sagebridge.org", study.getSupportEmail());
+        assertEquals("bridge-testing+consent@sagebase.org", study.getConsentNotificationEmail());
+        assertEquals("bridge-testing+technical@sagebase.org", study.getTechnicalEmail());
+        assertEquals("bridge-testing+support@sagebase.org", study.getSupportEmail());
         assertEquals("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM", study.getStormpathHref());
         assertEquals(Sets.newHashSet("phone", "can_be_recontacted"), study.getUserProfileAttributes());
         assertEquals(new PasswordPolicy(2, false, false, false), study.getPasswordPolicy());

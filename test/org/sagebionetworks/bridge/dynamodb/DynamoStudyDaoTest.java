@@ -38,7 +38,7 @@ public class DynamoStudyDaoTest {
         List<Study> studies = studyDao.getStudies();
         for (Study study : studies) {
             if (!"api".equals(study.getIdentifier())) {
-                studyDao.deleteStudy(study.getIdentifier());
+                studyDao.deleteStudy(study);
             }
         }
     }
@@ -64,7 +64,7 @@ public class DynamoStudyDaoTest {
         assertEquals(EXTRA_USER_PROFILE_ATTRIBUTES, study.getUserProfileAttributes());
 
         String identifier = study.getIdentifier();
-        studyDao.deleteStudy(study.getIdentifier());
+        studyDao.deleteStudy(study);
         try {
             study = studyDao.getStudy(identifier);
             fail("Should have thrown EntityNotFoundException");
@@ -74,41 +74,44 @@ public class DynamoStudyDaoTest {
     
     @Test
     public void canRetrieveAllStudies() {
-        List<String> identifiers = Lists.newArrayList();
+        List<Study> studies = Lists.newArrayList();
         try {
-            identifiers.add(studyDao.createStudy(TestUtils.getValidStudy()).getIdentifier());
-            identifiers.add(studyDao.createStudy(TestUtils.getValidStudy()).getIdentifier());
-            identifiers.add(studyDao.createStudy(TestUtils.getValidStudy()).getIdentifier());
-            identifiers.add(studyDao.createStudy(TestUtils.getValidStudy()).getIdentifier());
-            identifiers.add(studyDao.createStudy(TestUtils.getValidStudy()).getIdentifier());
+            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
+            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
+            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
+            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
+            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
             
-            List<Study> studies = studyDao.getStudies();
+            List<Study> savedStudies = studyDao.getStudies();
             // The five studies, plus the API study we refuse to delete...
-            assertEquals("There are six studies", 6, studies.size());
+            assertEquals("There are six studies", 6, savedStudies.size());
             
         } finally {
-            for (String identifier : identifiers) {
-                studyDao.deleteStudy(identifier);
+            for (Study study : studies) {
+                studyDao.deleteStudy(study);
             }
         }
-        List<Study> studies = studyDao.getStudies();
-        assertEquals("There should be only one study", 1, studies.size());
-        assertEquals("That should be the test study study", "api", studies.get(0).getIdentifier());
+        List<Study> savedStudies = studyDao.getStudies();
+        assertEquals("There should be only one study", 1, savedStudies.size());
+        assertEquals("That should be the test study study", "api", savedStudies.get(0).getIdentifier());
     }
     
     @Test
     public void willNotSaveTwoStudiesWithSameIdentifier() {
         Study study = null;
+        Long version = null;
         try {
             study = TestUtils.getValidStudy();
             study = studyDao.createStudy(study);
+            version = study.getVersion();
             study.setVersion(null);
             studyDao.createStudy(study);
             fail("Should have thrown entity exists exception");
         } catch(EntityAlreadyExistsException e) {
             
         } finally {
-            studyDao.deleteStudy(study.getIdentifier());
+            study.setVersion(version);
+            studyDao.deleteStudy(study);
         }
     }
     

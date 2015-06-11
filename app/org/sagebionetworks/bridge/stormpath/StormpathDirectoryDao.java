@@ -209,7 +209,11 @@ public class StormpathDirectoryDao implements DirectoryDao {
         
         // According to the documentation, there is only one...
         ModeledEmailTemplate template = resetEmailTemplates.iterator().next();
-        template.setFromName(study.getSponsorName());
+        if (study.getSponsorName() != null) {
+            template.setFromName(study.getSponsorName());    
+        } else {
+            template.setFromName(study.getName());
+        }
         template.setFromEmailAddress(study.getSupportEmail());
 
         String subject = partiallyResolveTemplate(rp.getSubject(), study);
@@ -227,7 +231,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
         template.save();
         
         PasswordStrength strength = passwordPolicy.getStrength();
-        strength.setMaxLength(100);
+        strength.setMaxLength(org.sagebionetworks.bridge.models.studies.PasswordPolicy.FIXED_MAX_LENGTH);
         strength.setMinLowerCase(1);
         strength.setMinDiacritic(0);
         strength.setMinLength(study.getPasswordPolicy().getMinLength());
@@ -273,7 +277,11 @@ public class StormpathDirectoryDao implements DirectoryDao {
             String templateUrl = templateNode.get("items").get(0).get("href").asText();
             // Update this template with study-specific information
             ObjectNode template = StormpathUtils.getJSON(client, templateUrl);
-            template.put("fromName", study.getSponsorName());
+            if (study.getSponsorName() != null) {
+                template.put("fromName", study.getSponsorName());    
+            } else {
+                template.put("fromName", study.getName());
+            }
             template.put("fromEmailAddress", study.getSupportEmail());
             template.put("subject", partiallyResolveTemplate(ve.getSubject(), study));
             template.put("mimeType", ve.getMimeType() == MimeType.HTML ? "text/html" : "text/plain");

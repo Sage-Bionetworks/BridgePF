@@ -16,6 +16,6 @@ public interface StudyDao {
     
     public Study updateStudy(Study study);
     
-    public void deleteStudy(String identifier);
+    public void deleteStudy(Study study);
     
 }
