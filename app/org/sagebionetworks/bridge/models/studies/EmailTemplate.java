@@ -44,7 +44,6 @@ public final class EmailTemplate {
     public String getBody() {
         return body;
     }
-    
     public MimeType getMimeType() {
         return mimeType;
     }
