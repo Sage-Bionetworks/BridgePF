@@ -34,7 +34,7 @@ public class ApplicationController extends BaseController {
         // Accept,  Accept-Language, Content-Language and Content-Type for normal HTML types are all allowed by default.
         // We add Content-Type to specify JSON. We can add other headers here when needed, but wildcards don't always 
         // seem to work, it's browser-dependent.
-        response().setHeader(ACCESS_CONTROL_ALLOW_HEADERS, "Content-Type, User-Agent", "Bridge-Session");
+        response().setHeader(ACCESS_CONTROL_ALLOW_HEADERS, "Content-Type, User-Agent, Bridge-Session");
         return ok();
     }
 }
