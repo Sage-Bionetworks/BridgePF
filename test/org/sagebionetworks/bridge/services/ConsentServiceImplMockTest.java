@@ -9,10 +9,10 @@ import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -59,7 +59,7 @@ public class ConsentServiceImplMockTest {
         consentService.setTaskEventService(taskEventService);
         consentService.setStudyConsentService(studyConsentService);
         
-        study = new DynamoStudy();
+        study = TestUtils.getValidStudy();
         user = new User();
         user.setHealthCode("BBB");
         consentSignature = ConsentSignature.create("Test User", "1990-01-01", null, null);

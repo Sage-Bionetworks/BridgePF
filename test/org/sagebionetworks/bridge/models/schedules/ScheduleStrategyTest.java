@@ -10,9 +10,8 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
@@ -38,10 +37,7 @@ public class ScheduleStrategyTest {
         	user.setHealthCode(BridgeUtils.generateGuid());
             users.add(user);
         }
-        study = new DynamoStudy();
-        study.setName("name");
-        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
-        study.setMinAgeOfConsent(18);
+        study = TestUtils.getValidStudy();
     }
     
     @Test

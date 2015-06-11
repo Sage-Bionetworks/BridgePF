@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadDao;
@@ -23,7 +24,7 @@ public class UploadValidationTaskFactoryTest {
         taskFactory.setUploadDao(dao);
 
         // inputs
-        DynamoStudy study = new DynamoStudy();
+        DynamoStudy study = TestUtils.getValidStudy();
         DynamoUpload2 upload2 = new DynamoUpload2();
 
         // execute and validate

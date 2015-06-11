@@ -13,6 +13,7 @@ resolvers += "Heroku Maven repository" at "http://s3pository.heroku.com/maven-ce
 libraryDependencies ++= Seq(
   cache,
   filters,
+  "org.jsoup" % "jsoup" % "1.8.2",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.9.38",
   "com.amazonaws" % "aws-java-sdk-sts" % "1.9.38",
@@ -46,6 +47,7 @@ libraryDependencies ++= Seq(
   // Stormpath
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC4.2",
   "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC4.2",
+  "org.apache.httpcomponents" % "httpclient" % "4.4.1",
   // Redis
   "redis.clients" % "jedis" % "2.7.2",
   // PDF
