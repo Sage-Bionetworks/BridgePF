@@ -158,7 +158,7 @@ public class StudyServiceImplTest {
         assertNotNull(rpTemplate.getBody());
         
         // Now change them and verify they are changed.
-        study.setPasswordPolicy(new PasswordPolicy(6, true, false, true));
+        study.setPasswordPolicy(new PasswordPolicy(6, true, false, false, true));
         study.setVerifyEmailTemplate(new EmailTemplate("subject *", "body ${url} *", MimeType.TEXT));
         study.setResetPasswordTemplate(new EmailTemplate("subject **", "body ${url} **", MimeType.TEXT));
         
@@ -167,6 +167,7 @@ public class StudyServiceImplTest {
         assertEquals(6, policy.getMinLength());
         assertTrue(policy.isNumericRequired());
         assertFalse(policy.isSymbolRequired());
+        assertFalse(policy.isLowerCaseRequired());
         assertTrue(policy.isUpperCaseRequired());
         
         veTemplate = study.getVerifyEmailTemplate();

@@ -41,7 +41,7 @@ public class DefaultStudyBootstrapperTest {
         assertEquals("support@sagebridge.org", study.getSupportEmail());
         assertEquals("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM", study.getStormpathHref());
         assertEquals(Sets.newHashSet("phone", "can_be_recontacted"), study.getUserProfileAttributes());
-        assertEquals(new PasswordPolicy(2, false, false, false), study.getPasswordPolicy());
+        assertEquals(new PasswordPolicy(2, false, false, false, false), study.getPasswordPolicy());
     }
     
 }

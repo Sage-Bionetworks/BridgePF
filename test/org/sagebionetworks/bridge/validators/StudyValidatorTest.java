@@ -26,13 +26,13 @@ public class StudyValidatorTest {
     // While 2 is not a good length, we must allow it for legacy reasons.
     @Test(expected = InvalidEntityException.class)
     public void minLengthCannotBeLessThan2() {
-        study.setPasswordPolicy(new PasswordPolicy(1, false, false, false));
+        study.setPasswordPolicy(new PasswordPolicy(1, false, false, false, false));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void minLengthCannotBeMoreThan999() {
-        study.setPasswordPolicy(new PasswordPolicy(1000, false, false, false));
+        study.setPasswordPolicy(new PasswordPolicy(1000, false, false, false, false));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
     

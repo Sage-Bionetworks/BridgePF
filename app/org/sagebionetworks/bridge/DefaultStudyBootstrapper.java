@@ -29,7 +29,7 @@ public class DefaultStudyBootstrapper {
             study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/7fxheMcEARjm7X2XPBufSM");
             study.getUserProfileAttributes().add("phone");
             study.getUserProfileAttributes().add("can_be_recontacted");
-            study.setPasswordPolicy(new PasswordPolicy(2, false, false, false));
+            study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             studyService.createStudy(study);
         }
     }

@@ -20,22 +20,25 @@ public final class PasswordPolicy {
     /**
      * The password policy that is initially created for a study.
      */
-    public static final PasswordPolicy DEFAULT_PASSWORD_POLICY = new PasswordPolicy(8, true, true, true);
+    public static final PasswordPolicy DEFAULT_PASSWORD_POLICY = new PasswordPolicy(8, true, true, true, true);
     
     private final int minLength;
     private final boolean numericRequired;
     private final boolean symbolRequired;
+    private final boolean lowerCaseRequired;
     private final boolean upperCaseRequired;
     
     @JsonCreator
     public PasswordPolicy(@JsonProperty("minLength") int minLength,
-                    @JsonProperty("numericRequired") boolean requireNumeric,
-                    @JsonProperty("symbolRequired") boolean requireSymbol,
-                    @JsonProperty("UpperCaseRequired") boolean requireUpperCase) {
+                    @JsonProperty("numericRequired") boolean numericRequired,
+                    @JsonProperty("symbolRequired") boolean symbolRequired,
+                    @JsonProperty("lowerCaseRequired") boolean lowerCaseRequired,
+                    @JsonProperty("upperCaseRequired") boolean upperCaseRequired) {
         this.minLength = minLength;
-        this.numericRequired = requireNumeric;
-        this.symbolRequired = requireSymbol;
-        this.upperCaseRequired = requireUpperCase;
+        this.numericRequired = numericRequired;
+        this.symbolRequired = symbolRequired;
+        this.lowerCaseRequired = lowerCaseRequired;
+        this.upperCaseRequired = upperCaseRequired;
     }
     
     public int getMinLength() {
@@ -46,6 +49,9 @@ public final class PasswordPolicy {
     }
     public boolean isSymbolRequired() {
         return symbolRequired;
+    }
+    public boolean isLowerCaseRequired() {
+        return lowerCaseRequired;
     }
     public boolean isUpperCaseRequired() {
         return upperCaseRequired;
@@ -58,6 +64,7 @@ public final class PasswordPolicy {
         result = prime * result + Objects.hashCode(minLength);
         result = prime * result + Objects.hashCode(numericRequired);
         result = prime * result + Objects.hashCode(symbolRequired);
+        result = prime * result + Objects.hashCode(lowerCaseRequired);
         result = prime * result + Objects.hashCode(upperCaseRequired);
         return result;
     }
@@ -72,12 +79,13 @@ public final class PasswordPolicy {
         return (Objects.equals(minLength, other.minLength) && 
                 Objects.equals(numericRequired, other.numericRequired) &&
                 Objects.equals(symbolRequired, other.symbolRequired) &&
+                Objects.equals(lowerCaseRequired, other.lowerCaseRequired) &&
                 Objects.equals(upperCaseRequired, other.upperCaseRequired));
     }
 
     @Override
     public String toString() {
-        return String.format("PasswordPolicy [minLength=%s, numericRequired=%s, symbolRequired=%s, upperCaseRequired=%s]",
-            minLength, numericRequired, symbolRequired, upperCaseRequired);
+        return String.format("PasswordPolicy [minLength=%s, numericRequired=%s, symbolRequired=%s, lowerCaseRequired=%s, upperCaseRequired=%s]",
+            minLength, numericRequired, symbolRequired, lowerCaseRequired, upperCaseRequired);
     }
 }

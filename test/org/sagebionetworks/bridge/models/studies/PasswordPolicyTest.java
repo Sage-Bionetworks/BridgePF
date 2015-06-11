@@ -17,14 +17,15 @@ public class PasswordPolicyTest {
     
     @Test
     public void canSerialize() throws Exception {
-        PasswordPolicy policy = new PasswordPolicy(8, true, false, true);
+        PasswordPolicy policy = new PasswordPolicy(8, true, true, true, true);
         
         String json = BridgeObjectMapper.get().writeValueAsString(policy);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals(8, node.get("minLength").asInt());
         assertEquals(true, node.get("numericRequired").asBoolean());
-        assertEquals(false, node.get("symbolRequired").asBoolean());
+        assertEquals(true, node.get("symbolRequired").asBoolean());
+        assertEquals(true, node.get("lowerCaseRequired").asBoolean());
         assertEquals(true, node.get("upperCaseRequired").asBoolean());
         assertEquals("PasswordPolicy", node.get("type").asText());
         

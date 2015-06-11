@@ -75,7 +75,7 @@ public class StormpathDirectoryDaoTest {
         assertDirectoriesAreEqual(study, "subject", "subject", directory, newDirectory);
         
         // Verify that we can update the directory.
-        study.setPasswordPolicy(new PasswordPolicy(3, false, false, false));
+        study.setPasswordPolicy(new PasswordPolicy(3, true, true, true, true));
         study.setResetPasswordTemplate(new EmailTemplate("new rp subject", "new rp body ${url}", MimeType.TEXT));
         study.setVerifyEmailTemplate(new EmailTemplate("new ve subject", "<p>new ve body ${url}</p>", MimeType.HTML));
         
@@ -111,9 +111,9 @@ public class StormpathDirectoryDaoTest {
         
         PasswordStrength strength = passwordPolicy.getStrength();
         assertEquals(PasswordPolicy.FIXED_MAX_LENGTH, strength.getMaxLength());
-        assertEquals(1, strength.getMinLowerCase());
         assertEquals(study.getPasswordPolicy().isNumericRequired() ? 1 : 0, strength.getMinNumeric());
         assertEquals(study.getPasswordPolicy().isSymbolRequired() ? 1 : 0, strength.getMinSymbol());
+        assertEquals(study.getPasswordPolicy().isLowerCaseRequired() ? 1 : 0, strength.getMinLowerCase());
         assertEquals(study.getPasswordPolicy().isUpperCaseRequired() ? 1 : 0, strength.getMinUpperCase());
         assertEquals(0, strength.getMinDiacritic());
         assertEquals(study.getPasswordPolicy().getMinLength(), strength.getMinLength());
