@@ -4,9 +4,6 @@ version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.11.6"
 
-// For scalaz-stream needed by specs2
-resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
-
 // The Typesafe repository
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
@@ -57,7 +54,6 @@ libraryDependencies ++= Seq(
   "org.xhtmlrenderer" % "flying-saucer-pdf" % "9.0.7",
   // Test
   javaWs % Test,
-  specs2 % Test,
   "junit" % "junit" % "4.12" % Test,
   "org.mockito" % "mockito-core" % "1.10.19" % Test,
   "org.springframework" % "spring-test" % "4.1.6.RELEASE" % Test,
