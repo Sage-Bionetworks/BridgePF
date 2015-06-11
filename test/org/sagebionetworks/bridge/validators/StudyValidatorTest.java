@@ -31,8 +31,8 @@ public class StudyValidatorTest {
     }
     
     @Test(expected = InvalidEntityException.class)
-    public void minLengthCannotBeMoreThan100() {
-        study.setPasswordPolicy(new PasswordPolicy(101, false, false, false));
+    public void minLengthCannotBeMoreThan999() {
+        study.setPasswordPolicy(new PasswordPolicy(1000, false, false, false));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
     
