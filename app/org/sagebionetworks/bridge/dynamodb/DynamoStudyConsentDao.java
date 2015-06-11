@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
@@ -21,6 +23,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.collect.Lists;
 
 @Component
 public class DynamoStudyConsentDao implements StudyConsentDao {
@@ -47,12 +50,52 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
 
     @Override
-    public StudyConsent setActive(StudyConsent studyConsent, boolean active) {
+    public StudyConsent activate(StudyConsent studyConsent) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyConsent.getStudyKey());
         consent.setCreatedOn(studyConsent.getCreatedOn());
         consent = mapper.load(consent);
-        consent.setActive(active);
+        consent.setActive(true);
+        
+        List<DynamoStudyConsent1> consentsToSave = Lists.newArrayList(consent);
+        
+        DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
+        hashKey.setStudyKey(studyConsent.getStudyKey());
+        DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
+                new DynamoDBQueryExpression<DynamoStudyConsent1>()
+                .withHashKeyValues(hashKey)
+                .withScanIndexForward(false)
+                .withQueryFilterEntry("active", new Condition()
+                        .withComparisonOperator(ComparisonOperator.EQ)
+                        .withAttributeValueList(new AttributeValue().withN("1")));
+        
+        // Set all of the active consents except the current one to inactive.
+        QueryResultPage<DynamoStudyConsent1> page = mapper.queryPage(DynamoStudyConsent1.class, queryExpression);
+        for (DynamoStudyConsent1 otherConsent : page.getResults()) {
+            if (otherConsent.getCreatedOn() != consent.getCreatedOn()) {
+                otherConsent.setActive(false);
+                consentsToSave.add(otherConsent);
+            }
+        }
+        List<FailedBatch> failures = mapper.batchSave(consentsToSave);
+        BridgeUtils.ifFailuresThrowException(failures);
+
+        return consent;
+    }
+    
+    /**
+     * Note that if there is no other active consent, the study will not be able to return a 
+     * consent and will be broken.
+     * @param studyConsent
+     * @return
+     */
+    @Override
+    public StudyConsent deactivate(StudyConsent studyConsent) {
+        DynamoStudyConsent1 consent = new DynamoStudyConsent1();
+        consent.setStudyKey(studyConsent.getStudyKey());
+        consent.setCreatedOn(studyConsent.getCreatedOn());
+        consent = mapper.load(consent);
+        consent.setActive(false);
         mapper.save(consent);
         return consent;
     }

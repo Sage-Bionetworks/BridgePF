@@ -59,8 +59,8 @@ public interface StudyConsentService {
     public StudyConsentView getConsent(StudyIdentifier studyIdentifier, long timestamp) throws BridgeServiceException;
 
     /**
-     * Set the specified consent document as active, and set the currently
-     * active document as inactive.
+     * Set the specified consent document as active, setting all other consent documents 
+     * as inactive.
      *
      * @param studyIdentifier
      *            key associated with the study.
@@ -72,8 +72,8 @@ public interface StudyConsentService {
     public StudyConsentView activateConsent(StudyIdentifier studyIdentifier, long timestamp) throws BridgeServiceException;
 
     /**
-     * Deletes the specified consent document from the study. If this consent
-     * document is currently active, it will throw an exception.
+     * Deletes the specified consent document from the study. If this consent document is currently active, 
+     * it will throw an exception.
      *
      * @param studyIdentifier
      *            key associated with the study.

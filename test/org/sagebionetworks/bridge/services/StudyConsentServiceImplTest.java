@@ -95,16 +95,15 @@ public class StudyConsentServiceImplTest {
     
     @Test
     public void studyConsentWithFileAndS3ContentTakesS3Content() throws Exception {
-        StudyIdentifier studyId = new StudyIdentifierImpl("api");
         DateTime createdOn = DateTime.now();
-        String key = "api." + createdOn.getMillis();
+        String key = STUDY_ID.getIdentifier() + "." + createdOn.getMillis();
         s3Helper.writeBytesToS3(BUCKET, key, "<document/>".getBytes());
         
-        StudyConsent consent = studyConsentDao.addConsent(studyId, "/junk/path", key, createdOn);
-        studyConsentDao.setActive(consent, true);
+        StudyConsent consent = studyConsentDao.addConsent(STUDY_ID, "/junk/path", key, createdOn);
+        studyConsentDao.activate(consent);
         // The junk path should not prevent the service from getting the S3 content.
         // We actually wouldn't get here if it tried to load from disk with the path we've provided.
-        StudyConsentView view = studyConsentService.getConsent(studyId, createdOn.getMillis());
+        StudyConsentView view = studyConsentService.getConsent(STUDY_ID, createdOn.getMillis());
         assertEquals("<document/>", view.getDocumentContent());
         toDelete.add(view);
     }
