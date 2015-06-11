@@ -9,6 +9,7 @@ import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -19,6 +20,9 @@ import org.sagebionetworks.bridge.models.schedules.SchedulerFactory;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import play.mvc.Http;
@@ -27,6 +31,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 public class TestUtils {
 
@@ -138,4 +143,23 @@ public class TestUtils {
         return strategy;
     }
     
+    public static DynamoStudy getValidStudy() {
+        // This study will save without further modification.
+        DynamoStudy study = new DynamoStudy();
+        study.setName("Test Study [not API]");
+        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        study.setVerifyEmailTemplate(new EmailTemplate("subject", "body with ${url}", MimeType.TEXT));
+        study.setResetPasswordTemplate(new EmailTemplate("subject", "body with ${url}", MimeType.TEXT));
+        study.setIdentifier(TestUtils.randomName());
+        study.setMinAgeOfConsent(18);
+        study.setMaxNumOfParticipants(200);
+        study.setStormpathHref("http://enterprise.stormpath.io/directories/asdf");
+        study.setResearcherRole(study.getIdentifier() + "_researcher");
+        study.setSponsorName("The Council on Test Studies");
+        study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
+        study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
+        study.setSupportEmail("bridge-testing+support@sagebase.org");
+        study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
+        return study;
+    }
  }

@@ -19,7 +19,7 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -195,7 +195,7 @@ public class CacheProviderTest {
         simpleCacheProvider.setJedisOps(getJedisOps());
         simpleCacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
 
-        final Study study = new DynamoStudy();
+        final Study study = TestUtils.getValidStudy();
         study.setIdentifier("test");
         study.setName("This is a test study");
         String json = BridgeObjectMapper.get().writeValueAsString(study);

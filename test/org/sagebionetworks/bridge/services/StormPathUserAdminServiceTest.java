@@ -67,7 +67,7 @@ public class StormPathUserAdminServiceTest {
     public void before() {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         String name = bridgeConfig.getUser() + "-admin-" + RandomStringUtils.randomAlphabetic(4);
-        signUp = new SignUp(name, name+"@sagebridge.org", "P4ssword", null);
+        signUp = new SignUp(name, name+"@sagebridge.org", "P4ssword!", null);
 
         SignIn signIn = new SignIn(bridgeConfig.getProperty("admin.email"), bridgeConfig.getProperty("admin.password"));
         authService.signIn(study, signIn).getUser();

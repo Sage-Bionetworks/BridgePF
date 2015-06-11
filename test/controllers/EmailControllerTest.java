@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static play.test.Helpers.contentAsString;
 
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
@@ -22,7 +23,6 @@ import play.mvc.Result;
 
 import java.util.Map;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
@@ -64,7 +64,7 @@ public class EmailControllerTest {
         Account account = mock(Account.class);
         when(account.getHealthId()).thenReturn("healthId");
         
-        study = new DynamoStudy();
+        study = TestUtils.getValidStudy();
         study.setIdentifier("api");
         
         accountDao = mock(AccountDao.class);

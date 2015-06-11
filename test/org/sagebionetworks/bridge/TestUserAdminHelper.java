@@ -29,7 +29,7 @@ import com.google.common.collect.Sets;
 @Component
 public class TestUserAdminHelper {
 
-    private static final String PASSWORD = "P4ssword";
+    private static final String PASSWORD = "P4ssword!";
 
     UserAdminService userAdminService;
     AuthenticationService authService;

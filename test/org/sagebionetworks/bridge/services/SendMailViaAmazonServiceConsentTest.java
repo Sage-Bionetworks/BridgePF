@@ -39,7 +39,6 @@ public class SendMailViaAmazonServiceConsentTest {
     private SendMailViaAmazonService service;
     private AmazonSimpleEmailServiceClient emailClient;
     private StudyService studyService;
-    private StudyConsent studyConsent;
     private StudyConsentService studyConsentService;
     private ArgumentCaptor<SendRawEmailRequest> argument;
     private Study study;
@@ -48,26 +47,25 @@ public class SendMailViaAmazonServiceConsentTest {
     
     @Before
     public void setUp() throws Exception {
-        study = new DynamoStudy();
+        study = new DynamoStudy(); // TestUtils.getValidStudy();
         study.setName("Test Study (Sage)");
         study.setIdentifier("api");
         study.setSupportEmail("study-support-email@study.com");
-        study.setMinAgeOfConsent(17);
 
         studyService = mock(StudyService.class);
-        when(studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(studyService.getStudy(study.getIdentifier())).thenReturn(study);
+        
         emailClient = mock(AmazonSimpleEmailServiceClient.class);
-        when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenReturn(new SendRawEmailResult()
-                .withMessageId("test message id"));
+        when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenReturn(
+            new SendRawEmailResult().withMessageId("test message id"));
         argument = ArgumentCaptor.forClass(SendRawEmailRequest.class);
 
         service = new SendMailViaAmazonService();
         service.setSupportEmail(FROM_DEFAULT_AS_FORMATTED);
         service.setEmailClient(emailClient);
         
-        studyConsent = mock(StudyConsent.class);
-
-        StudyConsentView view = new StudyConsentView(studyConsent, "<document>Had this been a real study: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
+        StudyConsentView view = new StudyConsentView(mock(StudyConsent.class), 
+            "<document>Had this been a real study: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
         
         studyConsentService = mock(StudyConsentService.class);
         when(studyConsentService.getActiveConsent(any(StudyIdentifier.class))).thenReturn(view);

@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.*;
 
-import java.util.Iterator;
-
 import org.junit.Test;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;

@@ -11,12 +11,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.format.ISODateTimeFormat;
 import org.junit.Before;
 import org.junit.Test;
-
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
@@ -42,7 +43,7 @@ public class IosSchemaValidationHandler2Test {
     public void setup() {
         // set up common params for test context
         // dummy study, all we need is the ID
-        DynamoStudy study = new DynamoStudy();
+        DynamoStudy study = TestUtils.getValidStudy();
         study.setIdentifier(TEST_STUDY_ID);
 
         // For upload, we need uploadId, healthCode, and uploadDate

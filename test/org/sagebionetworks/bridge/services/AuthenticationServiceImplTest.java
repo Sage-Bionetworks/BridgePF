@@ -16,9 +16,9 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -184,10 +184,7 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void cannotCreateTheSameEmailAccountTwice() {
-        // To really test this, you need to create another study, and then try and add the user to *that*.
-        Study tempStudy = new DynamoStudy();
-        tempStudy.setIdentifier("temp");
-        tempStudy.setName("Temporary Study");
+        Study tempStudy = TestUtils.getValidStudy();
         tempStudy = studyService.createStudy(tempStudy);
 
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);

@@ -28,7 +28,6 @@ import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -149,9 +148,8 @@ public class AuthenticationControllerTest {
     
     private void saveSecondStudyWithSchedulePlan() {
         String id = RandomStringUtils.randomAlphabetic(7).toLowerCase();
-        secondStudy = new DynamoStudy();
+        secondStudy = TestUtils.getValidStudy();
         secondStudy.setIdentifier(id);
-        secondStudy.setName("Second Test Study");
         studyService.createStudy(secondStudy);
         
         Schedule schedule = new Schedule();

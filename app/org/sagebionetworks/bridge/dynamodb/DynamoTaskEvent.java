@@ -15,6 +15,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 public class DynamoTaskEvent implements TaskEvent {
 
     private String healthCode;
+    private String answerValue;
     private Long timestamp;
     private String eventId;
     
@@ -26,6 +27,14 @@ public class DynamoTaskEvent implements TaskEvent {
     @Override
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
+    }
+    @Override
+    public String getAnswerValue() {
+        return answerValue;
+    }
+    @Override
+    public void setAnswerValue(String answerValue) {
+        this.answerValue = answerValue;
     }
     @Override
     public Long getTimestamp() {
@@ -51,7 +60,7 @@ public class DynamoTaskEvent implements TaskEvent {
         private TaskEventObjectType type;
         private String objectId;
         private TaskEventType eventType;
-        private String value;
+        private String answerValue;
         
         public Builder withHealthCode(String healthCode) {
             this.healthCode = healthCode;
@@ -77,18 +86,19 @@ public class DynamoTaskEvent implements TaskEvent {
             this.eventType = type;
             return this;
         }
-        public Builder withValue(String value) {
-            this.value = value;
+        public Builder withAnswerValue(String answerValue) {
+            this.answerValue = answerValue;
             return this;
         }
         private String getEventId() {
             if (type == null) {
                 return null;
             }
+            if (type == TaskEventObjectType.ENROLLMENT) {
+                return type.name().toLowerCase();
+            }
             String typeName = type.name().toLowerCase();
-            if (objectId != null && eventType != null && value != null) {
-                return String.format("%s:%s:%s=%s", typeName, objectId, eventType.name().toLowerCase(), value);
-            } else if (objectId != null && eventType != null) {
+            if (objectId != null && eventType != null) {
                 return String.format("%s:%s:%s", typeName, objectId, eventType.name().toLowerCase());
             } else if (objectId != null) {
                 return String.format("%s:%s", typeName, objectId);
@@ -101,7 +111,8 @@ public class DynamoTaskEvent implements TaskEvent {
             event.setHealthCode(healthCode);
             event.setTimestamp((timestamp == null) ? null : timestamp);
             event.setEventId(getEventId());
-            
+            event.setAnswerValue(answerValue);
+
             Validate.entityThrowingException(TaskEventValidator.INSTANCE, event);
             
             return event;

@@ -42,6 +42,8 @@ import com.stormpath.sdk.tenant.Tenant;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StormpathAccountDaoTest {
 
+    private static final String PASSWORD = "P4ssword!";
+
     @Resource(name="stormpathAccountDao")
     private StormpathAccountDao accountDao;
     
@@ -82,11 +84,12 @@ public class StormpathAccountDaoTest {
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
         Account account = null;
+        
         try {
-            SignUp signUp = new SignUp(random, email, "P4ssword", Sets.newHashSet("test_users"));
+            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet("test_users"));
             accountDao.signUp(study, signUp, false);
             
-            account = accountDao.authenticate(study, new SignIn(email, "P4ssword"));
+            account = accountDao.authenticate(study, new SignIn(email, PASSWORD));
             assertEquals(random, account.getUsername());
             assertEquals(1, account.getRoles().size());
         } finally {
@@ -99,7 +102,7 @@ public class StormpathAccountDaoTest {
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
         try {
-            SignUp signUp = new SignUp(random, email, "P4ssword", Sets.newHashSet("test_users"));
+            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet("test_users"));
             accountDao.signUp(study, signUp, false);
             
             try {
@@ -126,7 +129,7 @@ public class StormpathAccountDaoTest {
         try {
             ConsentSignature sig = ConsentSignature.create("Test Test", "1970-01-01", null, null);
             
-            SignUp signUp = new SignUp(random, email, "P4ssword", Sets.newHashSet("test_users"));
+            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet("test_users"));
             
             accountDao.signUp(study, signUp, false);
             account = accountDao.getAccount(study, signUp.getEmail());
@@ -182,7 +185,7 @@ public class StormpathAccountDaoTest {
     @Test
     public void canResendEmailVerification() throws Exception {
         String random = RandomStringUtils.randomAlphabetic(5);
-        SignUp signUp = new SignUp(random, "bridge-testing+" + random + "@sagebridge.org", "P4ssword", null); 
+        SignUp signUp = new SignUp(random, "bridge-testing+" + random + "@sagebridge.org", PASSWORD, null); 
         try {
             accountDao.signUp(study, signUp, false); // don't send email
             
@@ -275,7 +278,7 @@ public class StormpathAccountDaoTest {
         
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
-        SignUp signUp = new SignUp(random, email, "P4ssword", null);
+        SignUp signUp = new SignUp(random, email, PASSWORD, null);
         dao.signUp(study, signUp, false);
 
         ArgumentCaptor<com.stormpath.sdk.account.Account> argument = ArgumentCaptor.forClass(com.stormpath.sdk.account.Account.class);
@@ -286,7 +289,7 @@ public class StormpathAccountDaoTest {
         verify(acct).setGivenName("<EMPTY>");
         verify(acct).setUsername(random);
         verify(acct).setEmail(email);
-        verify(acct).setPassword("P4ssword");
+        verify(acct).setPassword(PASSWORD);
     }
 
 }
