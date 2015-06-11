@@ -11,6 +11,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.TaskEventDao;
 import org.sagebionetworks.bridge.models.tasks.TaskEvent;
+import org.sagebionetworks.bridge.models.tasks.TaskEventType;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -24,6 +25,8 @@ import com.google.common.collect.Lists;
 @Component
 public class DynamoTaskEventDao implements TaskEventDao {
 
+    private static final String ANSWERED_EVENT_POSTFIX = ":"+TaskEventType.ANSWERED.name().toLowerCase();
+    
     private DynamoDBMapper mapper;
 
     @Resource(name = "taskEventDdbMapper")
@@ -59,7 +62,7 @@ public class DynamoTaskEventDao implements TaskEventDao {
         
         Builder<String,DateTime> builder = ImmutableMap.<String,DateTime>builder();
         for (DynamoTaskEvent event : queryResults) {
-            builder.put(event.getEventId(), new DateTime(event.getTimestamp()));
+            builder.put(getEventMapKey(event), new DateTime(event.getTimestamp()));
         }
         return builder.build();
     }
@@ -84,4 +87,17 @@ public class DynamoTaskEventDao implements TaskEventDao {
         }
     }
 
+    /**
+     * Answer events do schedule against a specific answer, which is added to the key in the
+     * map only. A change in the value is continued to be a change to the same event.
+     * @param event
+     * @return
+     */
+    private String getEventMapKey(DynamoTaskEvent event) {
+        if (event.getEventId().endsWith(ANSWERED_EVENT_POSTFIX)) {
+            return event.getEventId()+"="+event.getAnswerValue();
+        }
+        return event.getEventId();    
+    }
+    
 }

@@ -136,7 +136,7 @@ public class TaskEventServiceTest {
         ArgumentCaptor<TaskEvent> argument = ArgumentCaptor.forClass(TaskEvent.class);
         verify(taskEventDao).publishEvent(argument.capture());
         
-        assertEquals("question:BBB-CCC-DDD:answered=belgium", argument.getValue().getEventId());
+        assertEquals("question:BBB-CCC-DDD:answered", argument.getValue().getEventId());
         assertEquals(new Long(now.getMillis()), argument.getValue().getTimestamp());
         assertEquals("healthCode", argument.getValue().getHealthCode());
     }

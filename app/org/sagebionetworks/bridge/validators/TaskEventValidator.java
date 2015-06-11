@@ -26,7 +26,9 @@ public class TaskEventValidator implements Validator {
             errors.rejectValue("timestamp", "cannot be null");
         }
         if (event.getEventId() == null) {
-            errors.rejectValue("eventId", "cannot be null");
+            errors.rejectValue("eventId", "cannot be null (may be missing object or event type)");
+        } else if (event.getEventId().endsWith(":answered") && isBlank(event.getAnswerValue())) {
+            errors.rejectValue("answerValue", "cannot be null or blank if the event indicates the answer to a survey");
         }
     }
 }
