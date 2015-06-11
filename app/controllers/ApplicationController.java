@@ -9,7 +9,7 @@ import org.springframework.stereotype.Controller;
 import play.libs.Json;
 import play.mvc.Result;
 
-@Controller("applicationController")
+@Controller
 public class ApplicationController extends BaseController {
 
     private static final UserSessionInfo EMPTY_USER_SESSION = new UserSessionInfo(new UserSession());

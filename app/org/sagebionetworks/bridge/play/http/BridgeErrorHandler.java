@@ -1,4 +1,4 @@
-package filters;
+package org.sagebionetworks.bridge.play.http;
 
 import models.StatusMessage;
 import play.http.HttpErrorHandler;

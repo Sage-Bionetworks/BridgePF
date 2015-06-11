@@ -22,7 +22,7 @@ import com.google.common.collect.Lists;
 import play.libs.Json;
 import play.mvc.Result;
 
-@Controller("studyController")
+@Controller
 public class StudyController extends BaseController {
 
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(

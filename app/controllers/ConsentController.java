@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import play.mvc.Result;
 
-@Controller("consentController")
+@Controller
 public class ConsentController extends BaseController {
 
     private static Logger logger = LoggerFactory.getLogger(ConsentController.class);

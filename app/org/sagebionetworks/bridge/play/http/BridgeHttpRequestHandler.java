@@ -1,4 +1,4 @@
-package filters;
+package org.sagebionetworks.bridge.play.http;
 
 import static play.mvc.Http.HeaderNames.X_FORWARDED_PROTO;
 import static play.mvc.Http.Status.MOVED_PERMANENTLY;
