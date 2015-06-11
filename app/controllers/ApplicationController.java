@@ -16,10 +16,7 @@ public class ApplicationController extends BaseController {
     private static final String ASSETS_BUILD = "201501291830";
 
     public Result loadApp() throws Exception {
-        String message = getClass().getName() + ":\r\n";
-        message = message + "    Object ID: " + System.identityHashCode(this) + "\r\n";
-        message = message + "    Study service is injected: " + (studyService != null) + "\r\n";
-        return ok(message);
+        return ok(views.html.index.render());
     }
 
     public Result verifyEmail() {

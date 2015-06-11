@@ -71,10 +71,6 @@ public abstract class BaseController extends Controller {
     @Autowired
     public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
-        String message = getClass().getName() + ":\r\n";
-        message = message + "    Object ID: " + System.identityHashCode(this) + "\r\n";
-        message = message + "    Study service is injected: " + (studyService != null) + "\r\n";
-        logger.info(message);
     }
 
     @Autowired

@@ -8,32 +8,23 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import play.mvc.Result;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 @Controller
 public class ConsentController extends BaseController {
 
-    private static Logger logger = LoggerFactory.getLogger(ConsentController.class);
-
     private ConsentService consentService;
-    
+
     private ParticipantOptionsService optionsService;
 
     @Autowired
     public void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
-        String message = getClass().getName() + ":\r\n";
-        message = message + "    Object ID: " + System.identityHashCode(this) + "\r\n";
-        message = message + "    Study service is injected: " + (studyService != null) + "\r\n";
-        message = message + "    Consent service is injected: " + (consentService != null) + "\r\n";
-        logger.info(message);
     }
     @Autowired
     public void setOptionsService(ParticipantOptionsService optionsService) {
