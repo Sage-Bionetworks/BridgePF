@@ -327,7 +327,7 @@ public final class DynamoStudy implements Study {
 
     @Override
     public String toString() {
-        return String.format("DynamoStudy [name=%s, active=%s, sponsorName=%, identifier=%s, researcherRole=%s, stormpathHref=%s, "
+        return String.format("DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, researcherRole=%s, stormpathHref=%s, "
             + "minAgeOfConsent=%s, maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
             + "version=%s, userProfileAttributes=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s]",
             name, active, sponsorName, identifier, researcherRole, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
