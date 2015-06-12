@@ -2,11 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.fest.util.CollectionFilter;
-import org.fest.util.Collections;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
