@@ -65,15 +65,13 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         DateTime createdOn = DateUtils.getCurrentDateTime();
         String storagePath = studyIdentifier.getIdentifier() + "." + createdOn.getMillis();
         
-        StudyConsent consent = studyConsentDao.addConsent(studyIdentifier, storagePath, createdOn);
         try {
             s3Helper.writeBytesToS3(BUCKET, storagePath, documentContent.getBytes());
+            StudyConsent consent = studyConsentDao.addConsent(studyIdentifier, storagePath, createdOn);
+            return new StudyConsentView(consent, documentContent);
         } catch(Throwable t) {
-            // Compensate if you can't write to S3.
-            studyConsentDao.deleteConsent(studyIdentifier, createdOn.getMillis());
             throw new BridgeServiceException(t);
         }
-        return new StudyConsentView(consent, documentContent);
     }
 
     @Override
@@ -124,17 +122,6 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         consent = studyConsentDao.activate(consent);
         String documentContent = loadDocumentContent(consent);
         return new StudyConsentView(consent, documentContent);
-    }
-
-    @Override
-    public void deleteConsent(StudyIdentifier studyIdentifier, long timestamp) {
-        checkNotNull(studyIdentifier, "StudyIdentifier is null");
-        checkArgument(timestamp > 0, "Timestamp is 0");
-        
-        if (studyConsentDao.getConsent(studyIdentifier, timestamp).getActive()) {
-            throw new BadRequestException("Cannot delete active consent document.");
-        }
-        studyConsentDao.deleteConsent(studyIdentifier, timestamp);
     }
     
     private String loadDocumentContent(StudyConsent consent) {

@@ -27,6 +27,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoStudyConsentDaoTest {
     
+    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("fake-study");
+    
     @Resource
     private DynamoStudyConsentDao studyConsentDao;
     
@@ -40,20 +42,17 @@ public class DynamoStudyConsentDaoTest {
 
     @After
     public void after() {
-        for (StudyConsent consent : toDelete) {
-            if (consent != null) {
-                studyConsentDao.deleteConsent(new StudyIdentifierImpl(consent.getStudyKey()), consent.getCreatedOn());    
-            }
-        }
+        studyConsentDao.deleteAllConsents(STUDY_ID);
+
+        assertEquals(0, studyConsentDao.getConsents(STUDY_ID).size());
     }
 
     @Test
     public void crudStudyConsentWithFileBasedContent() {
-        StudyIdentifier studyId = new StudyIdentifierImpl("fake-study");
         DateTime datetime = DateUtils.getCurrentDateTime();
         
         // Add consent version 1, inactive
-        final StudyConsent consent1 = studyConsentDao.addConsent(studyId, "fake-path."+datetime.getMillis(), datetime);
+        final StudyConsent consent1 = studyConsentDao.addConsent(STUDY_ID, STUDY_ID.getIdentifier()+"."+datetime.getMillis(), datetime);
         toDelete.add(consent1);
         assertNotNull(consent1);
         assertFalse(consent1.getActive());
@@ -69,7 +68,7 @@ public class DynamoStudyConsentDaoTest {
         datetime = DateUtils.getCurrentDateTime();
         
         // Add version 2
-        final StudyConsent consent2 = studyConsentDao.addConsent(studyId, "fake-path."+datetime.getMillis(), datetime);
+        final StudyConsent consent2 = studyConsentDao.addConsent(STUDY_ID, STUDY_ID.getIdentifier()+"."+datetime.getMillis(), datetime);
         toDelete.add(consent2);
         assertNotNull(consent2);
         studyConsentDao.activate(consent2);
@@ -89,10 +88,10 @@ public class DynamoStudyConsentDaoTest {
         datetime = DateUtils.getCurrentDateTime();
         
         // All consents
-        final StudyConsent consent3 = studyConsentDao.addConsent(studyId, "fake-path."+datetime.getMillis(), datetime);
+        final StudyConsent consent3 = studyConsentDao.addConsent(STUDY_ID, STUDY_ID.getIdentifier()+"."+datetime.getMillis(), datetime);
         toDelete.add(consent3);
 
-        List<StudyConsent> all = studyConsentDao.getConsents(studyId);
+        List<StudyConsent> all = studyConsentDao.getConsents(STUDY_ID);
         assertEquals(3, all.size());
         // In reverse order
         consent = all.get(0);
@@ -107,75 +106,49 @@ public class DynamoStudyConsentDaoTest {
         assertFalse(consent.getActive());
         assertEquals(consent1.getStudyKey(), consent.getStudyKey());
         assertEquals(consent1.getStoragePath(), consent.getStoragePath());
-        
-        // Delete all consents
-        for (StudyConsent aConsent : all) {
-            studyConsentDao.deleteConsent(new StudyIdentifierImpl(aConsent.getStudyKey()), aConsent.getCreatedOn());
-            toDelete.remove(aConsent);
-        }
-        all = studyConsentDao.getConsents(studyId);
-        assertTrue(all.isEmpty());
     }
     
     @Test
     public void crudStudyConsentWithS3Content() throws Exception {
-        StudyIdentifier studyId = new StudyIdentifierImpl("fake-study");
         DateTime createdOn = DateTime.now();
-        String key = "fake-study." + createdOn.getMillis();
-        StudyConsent consent = null;
-        try {
-            consent = studyConsentDao.addConsent(studyId, key, createdOn);
-            assertNotNull("1", consent);
-            toDelete.add(consent);
-            assertFalse("2", consent.getActive());
-            assertNull("3", studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey())));
-            
-            // Now activate the consent
-            consent = studyConsentDao.activate(consent);
-            StudyConsent newConsent = studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey()));
-            assertTrue("4", newConsent.getActive());
-            assertEquals("5", consent.getStudyKey(), newConsent.getStudyKey());
-            assertEquals("6", key, consent.getStoragePath());
-            assertEquals("7", createdOn.getMillis(), newConsent.getCreatedOn());
-            
-            List<StudyConsent> all = studyConsentDao.getConsents(studyId);
-            assertEquals("8", 1, all.size());
-            // In reverse order
-            assertEquals("9", consent, all.get(0));
-        } finally {
-            studyConsentDao.deleteConsent(new StudyIdentifierImpl(consent.getStudyKey()), consent.getCreatedOn());
-            toDelete.remove(consent);
-            
-            List<StudyConsent> all = studyConsentDao.getConsents(studyId);
-            assertTrue("10", all.isEmpty());
-        }
+        String key = STUDY_ID.getIdentifier() + "." + createdOn.getMillis();
+        StudyConsent consent = studyConsentDao.addConsent(STUDY_ID, key, createdOn);
+        assertNotNull("1", consent);
+        toDelete.add(consent);
+        assertFalse("2", consent.getActive());
+        assertNull("3", studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey())));
+        
+        // Now activate the consent
+        consent = studyConsentDao.activate(consent);
+        StudyConsent newConsent = studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey()));
+        assertTrue("4", newConsent.getActive());
+        assertEquals("5", consent.getStudyKey(), newConsent.getStudyKey());
+        assertEquals("6", key, consent.getStoragePath());
+        assertEquals("7", createdOn.getMillis(), newConsent.getCreatedOn());
+        
+        List<StudyConsent> all = studyConsentDao.getConsents(STUDY_ID);
+        assertEquals("8", 1, all.size());
+        // In reverse order
+        assertEquals("9", consent, all.get(0));
     }
     
     @Test
     public void activateConsentActivatesOnlyOneVersion() {
-        StudyIdentifier studyId = new StudyIdentifierImpl("fake-study");
-        try {
-            // Add a consent, activate it, add a consent, activate it, etc.
-            for (int i=0; i < 3; i++) {
-                DateTime createdOn = DateTime.now();
-                String key = "fake-study." + createdOn.getMillis();
-                
-                StudyConsent consent = studyConsentDao.addConsent(studyId, key, createdOn);
-                studyConsentDao.activate(consent);
-            }
+        // Add a consent, activate it, add a consent, activate it, etc.
+        for (int i=0; i < 3; i++) {
+            DateTime createdOn = DateTime.now();
+            String key = STUDY_ID.getIdentifier() + "." + createdOn.getMillis();
             
-            // Only one should be active.
-            List<StudyConsent> allConsents = studyConsentDao.getConsents(studyId);
-            assertEquals(3, allConsents.size());
-            assertEquals(true, allConsents.get(0).getActive());
-            assertEquals(false, allConsents.get(1).getActive());
-            assertEquals(false, allConsents.get(2).getActive());
-        } finally {
-            List<StudyConsent> allConsents = studyConsentDao.getConsents(studyId);
-            for (StudyConsent consent : allConsents) {
-                studyConsentDao.deleteConsent(studyId, consent.getCreatedOn());
-            }
+            StudyConsent consent = studyConsentDao.addConsent(STUDY_ID, key, createdOn);
+            studyConsentDao.activate(consent);
         }
+        
+        // Only one should be active.
+        List<StudyConsent> allConsents = studyConsentDao.getConsents(STUDY_ID);
+        assertEquals(3, allConsents.size());
+        assertEquals(true, allConsents.get(0).getActive());
+        assertEquals(false, allConsents.get(1).getActive());
+        assertEquals(false, allConsents.get(2).getActive());
     }
     
 }

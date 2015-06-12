@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
+import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -51,6 +52,7 @@ public class StudyServiceImpl implements StudyService {
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     private StudyConsentService studyConsentService;
+    private StudyConsentDao studyConsentDao;
 
     private StudyConsentForm defaultConsentDocument;
     private String defaultEmailVerificationTemplate;
@@ -105,6 +107,10 @@ public class StudyServiceImpl implements StudyService {
     @Autowired
     final void setStudyConsentService(StudyConsentService studyConsentService) {
         this.studyConsentService = studyConsentService;
+    }
+    @Autowired
+    final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
+        this.studyConsentDao = studyConsentDao;
     }
     
     @Override
@@ -220,6 +226,7 @@ public class StudyServiceImpl implements StudyService {
         try {
             lockId = lockDao.acquireLock(Study.class, identifier);
             directoryDao.deleteDirectoryForStudy(identifier);
+            studyConsentDao.deleteAllConsents(existing.getStudyIdentifier());
             studyDao.deleteStudy(existing);
             cacheProvider.removeStudy(identifier);
         } finally {

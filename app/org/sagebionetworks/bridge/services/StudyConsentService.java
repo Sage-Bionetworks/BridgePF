@@ -71,18 +71,4 @@ public interface StudyConsentService {
      */
     public StudyConsentView activateConsent(StudyIdentifier studyIdentifier, long timestamp) throws BridgeServiceException;
 
-    /**
-     * Deletes the specified consent document from the study. If this consent document is currently active, 
-     * it will throw an exception.
-     *
-     * @param studyIdentifier
-     *            key associated with the study.
-     * @param timestamp
-     *            time the consent document was added to the database.
-     * @throws Exception
-     *             if the specified consent is currently active.
-     * @throws BridgeServiceException
-     */
-    public void deleteConsent(StudyIdentifier studyIdentifier, long timestamp) throws BridgeServiceException;
-
 }
