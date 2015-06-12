@@ -4,18 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
@@ -24,7 +20,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
-import com.google.common.collect.Lists;
 
 @Component
 public class DynamoStudyConsentDao implements StudyConsentDao {
@@ -51,27 +46,15 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
 
     @Override
     public StudyConsent activate(StudyConsent studyConsent) {
-        // Getting desperate to find the problem here. Given up on ensuring there's only one 
-        // active consent, and returning to the earlier code to some extent.
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyConsent.getStudyKey());
         hashKey.setCreatedOn(studyConsent.getCreatedOn());
+        
         DynamoStudyConsent1 consent = mapper.load(hashKey);
-        if (consent == null) {
-            throw new EntityNotFoundException(StudyConsent.class, "Study consent not found.");
-        }
-        
-        StudyIdentifier studyId = new StudyIdentifierImpl(studyConsent.getStudyKey());
-        DynamoStudyConsent1 activeConsent = (DynamoStudyConsent1)getConsent(studyId);
-        
         consent.setActive(true);
         mapper.save(consent);
-        if (activeConsent != null && consent.getCreatedOn() != activeConsent.getCreatedOn()) {
-            activeConsent.setActive(false);
-            mapper.save(activeConsent);
-        }
         return consent;
-        /* Well this seems to not be working, let's try something different
+        /* Well this seems to not be working, pulling out of code for now.
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyConsent.getStudyKey());
         consent.setCreatedOn(studyConsent.getCreatedOn());

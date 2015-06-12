@@ -51,9 +51,7 @@ public final class DynamoStudyConsent1 implements StudyConsent {
         return active;
     }
     public void setActive(boolean active) {
-        if (active) {
-            this.active = active;    
-        }
+        this.active = active;    
     }
 
     @Override
