@@ -161,7 +161,12 @@ public class StudyServiceImpl implements StudyService {
 
             String directory = directoryDao.createDirectoryForStudy(study);
             study.setStormpathHref(directory);
-            uploadCertService.createCmsKeyPair(study.getIdentifier());
+
+            // do not create certs for whitelisted studies (legacy studies)
+            if (!studyWhitelist.contains(study.getIdentifier())) {
+                uploadCertService.createCmsKeyPair(study.getIdentifier());
+            }
+
             study = studyDao.createStudy(study);
             
             cacheProvider.setStudy(study);
