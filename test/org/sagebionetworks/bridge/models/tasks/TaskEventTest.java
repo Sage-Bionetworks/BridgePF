@@ -43,7 +43,7 @@ public class TaskEventTest {
             new DynamoTaskEvent.Builder().withHealthCode("BBB").withTimestamp(DateTime.now()).build();
             fail("Should have thrown an exception");
         } catch(InvalidEntityException e) {
-            assertEquals("eventId cannot be null", e.getErrors().get("eventId").get(0));
+            assertEquals("eventId cannot be null (may be missing object or event type)", e.getErrors().get("eventId").get(0));
         }
         
     }
