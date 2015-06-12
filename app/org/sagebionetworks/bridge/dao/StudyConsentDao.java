@@ -13,7 +13,7 @@ public interface StudyConsentDao {
      * name of an S3 bucket as the storagePath for the document content. Note the consent is added as
      * inactive. Must explicitly set it active.
      */
-    StudyConsent addConsent(StudyIdentifier studyIdentifier, String path, String storagePath, DateTime createdOn);
+    StudyConsent addConsent(StudyIdentifier studyIdentifier, String storagePath, DateTime createdOn);
 
     /**
      * Set this consent to be the one and only activate consent record.
@@ -29,7 +29,7 @@ public interface StudyConsentDao {
      * @param consent
      * @return
      */
-    StudyConsent deactivate(StudyConsent studyConsent);
+    //StudyConsent deactivate(StudyConsent studyConsent);
 
     /**
      * Gets the latest, active consent.

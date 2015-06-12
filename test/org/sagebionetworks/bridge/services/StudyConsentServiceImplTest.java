@@ -79,7 +79,7 @@ public class StudyConsentServiceImplTest {
         StudyConsentView getActiveConsent = studyConsentService.getActiveConsent(STUDY_ID);
         assertTrue(activatedConsent.getCreatedOn() == getActiveConsent.getCreatedOn());
         assertEquals(documentContent, getActiveConsent.getDocumentContent());
-        assertNull(getActiveConsent.getStudyConsent().getPath());
+        assertNull(getActiveConsent.getStudyConsent().getStoragePath());
         
         // Get all consents returns one consent document (addedConsent).
         List<StudyConsent> allConsents = studyConsentService.getAllConsents(STUDY_ID);
@@ -99,7 +99,7 @@ public class StudyConsentServiceImplTest {
         String key = STUDY_ID.getIdentifier() + "." + createdOn.getMillis();
         s3Helper.writeBytesToS3(BUCKET, key, "<document/>".getBytes());
         
-        StudyConsent consent = studyConsentDao.addConsent(STUDY_ID, "/junk/path", key, createdOn);
+        StudyConsent consent = studyConsentDao.addConsent(STUDY_ID, key, createdOn);
         studyConsentDao.activate(consent);
         // The junk path should not prevent the service from getting the S3 content.
         // We actually wouldn't get here if it tried to load from disk with the path we've provided.
