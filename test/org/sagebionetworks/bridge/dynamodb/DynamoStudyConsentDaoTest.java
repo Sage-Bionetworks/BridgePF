@@ -149,6 +149,14 @@ public class DynamoStudyConsentDaoTest {
         assertEquals(false, allConsents.get(0).getActive());
         assertEquals(false, allConsents.get(1).getActive());
         assertEquals(true, allConsents.get(2).getActive());
+        
+        // Re-activating the same one changes nothing
+        studyConsentDao.activate(allConsents.get(2));
+        allConsents = studyConsentDao.getConsents(STUDY_ID);
+        assertEquals(3, allConsents.size());
+        assertEquals(false, allConsents.get(0).getActive());
+        assertEquals(false, allConsents.get(1).getActive());
+        assertEquals(true, allConsents.get(2).getActive());
     }
     
 }
