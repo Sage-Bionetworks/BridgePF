@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -31,13 +30,10 @@ public class DynamoStudyConsentDaoTest {
     
     @Resource
     private DynamoStudyConsentDao studyConsentDao;
-    
-    private List<StudyConsent> toDelete;
 
     @Before
     public void before() {
         DynamoInitializer.init(DynamoStudyConsent1.class);
-        toDelete = new ArrayList<StudyConsent>();
     }
 
     @After
@@ -53,7 +49,6 @@ public class DynamoStudyConsentDaoTest {
         
         // Add consent version 1, inactive
         final StudyConsent consent1 = studyConsentDao.addConsent(STUDY_ID, STUDY_ID.getIdentifier()+"."+datetime.getMillis(), datetime);
-        toDelete.add(consent1);
         assertNotNull(consent1);
         assertFalse(consent1.getActive());
         assertNull(studyConsentDao.getConsent(new StudyIdentifierImpl(consent1.getStudyKey())));
@@ -69,7 +64,6 @@ public class DynamoStudyConsentDaoTest {
         
         // Add version 2
         final StudyConsent consent2 = studyConsentDao.addConsent(STUDY_ID, STUDY_ID.getIdentifier()+"."+datetime.getMillis(), datetime);
-        toDelete.add(consent2);
         assertNotNull(consent2);
         studyConsentDao.activate(consent2);
         
@@ -89,7 +83,6 @@ public class DynamoStudyConsentDaoTest {
         
         // All consents
         final StudyConsent consent3 = studyConsentDao.addConsent(STUDY_ID, STUDY_ID.getIdentifier()+"."+datetime.getMillis(), datetime);
-        toDelete.add(consent3);
 
         List<StudyConsent> all = studyConsentDao.getConsents(STUDY_ID);
         assertEquals(3, all.size());
@@ -113,23 +106,22 @@ public class DynamoStudyConsentDaoTest {
         DateTime createdOn = DateTime.now();
         String key = STUDY_ID.getIdentifier() + "." + createdOn.getMillis();
         StudyConsent consent = studyConsentDao.addConsent(STUDY_ID, key, createdOn);
-        assertNotNull("1", consent);
-        toDelete.add(consent);
-        assertFalse("2", consent.getActive());
-        assertNull("3", studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey())));
+        assertNotNull(consent);
+        assertFalse(consent.getActive());
+        assertNull(studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey())));
         
         // Now activate the consent
         consent = studyConsentDao.activate(consent);
         StudyConsent newConsent = studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey()));
-        assertTrue("4", newConsent.getActive());
-        assertEquals("5", consent.getStudyKey(), newConsent.getStudyKey());
-        assertEquals("6", key, consent.getStoragePath());
-        assertEquals("7", createdOn.getMillis(), newConsent.getCreatedOn());
+        assertTrue(newConsent.getActive());
+        assertEquals(consent.getStudyKey(), newConsent.getStudyKey());
+        assertEquals(key, consent.getStoragePath());
+        assertEquals(createdOn.getMillis(), newConsent.getCreatedOn());
         
         List<StudyConsent> all = studyConsentDao.getConsents(STUDY_ID);
-        assertEquals("8", 1, all.size());
+        assertEquals(1, all.size());
         // In reverse order
-        assertEquals("9", consent, all.get(0));
+        assertEquals(consent, all.get(0));
     }
     
     @Test
@@ -149,6 +141,14 @@ public class DynamoStudyConsentDaoTest {
         assertEquals(true, allConsents.get(0).getActive());
         assertEquals(false, allConsents.get(1).getActive());
         assertEquals(false, allConsents.get(2).getActive());
+        
+        // Now move the active flag.
+        studyConsentDao.activate(allConsents.get(2));
+        allConsents = studyConsentDao.getConsents(STUDY_ID);
+        assertEquals(3, allConsents.size());
+        assertEquals(false, allConsents.get(0).getActive());
+        assertEquals(false, allConsents.get(1).getActive());
+        assertEquals(true, allConsents.get(2).getActive());
     }
     
 }

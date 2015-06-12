@@ -72,8 +72,6 @@ public class ConsentServiceImplTest {
     private Study study;
     
     private TestUser testUser;
-    
-    private StudyConsent newStudyConsent;
 
     @Before
     public void before() {
@@ -226,7 +224,7 @@ public class ConsentServiceImplTest {
                 consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
 
         // Create new study consent, but do not activate it. User is consented and has still signed most recent consent.
-        newStudyConsent = studyConsentService.addConsent(testUser.getStudyIdentifier(), defaultConsentDocument).getStudyConsent();
+        StudyConsent newStudyConsent = studyConsentService.addConsent(testUser.getStudyIdentifier(), defaultConsentDocument).getStudyConsent();
 
         assertTrue("Should be consented.",
                 consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
