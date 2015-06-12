@@ -34,6 +34,12 @@ public class MimeTypeEmailTest {
     }
     
     @Test
+    public void senderOddlyFormattedButLegal() throws Exception {
+        MimeTypeEmail email = makeEmailWithSender("<test@test.com>");
+        assertEquals("<test@test.com>", email.getSenderAddress());
+    }
+    
+    @Test
     public void senderAddressWithNameQuoted() throws Exception {
         MimeTypeEmail email = makeEmailWithSender("A, B, and C <test@test.com>");
         assertEquals("\"A, B, and C\" <test@test.com>", email.getSenderAddress());

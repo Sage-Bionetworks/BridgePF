@@ -4,8 +4,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.mail.internet.MimeBodyPart;
 
@@ -63,7 +61,7 @@ public final class MimeTypeEmail {
      * @return
      */
     private String escapeEmailAddress(String address) {
-        if (address.matches("^.*<.*>$")) {
+        if (address.matches("^.+<.*>$")) {
             String[] parts =  address.split("<");
             String escapedName = parts[0].replaceAll(QUOTE,  QUOTED_QUOTE).trim();
             return QUOTE + escapedName + QUOTE + " <" + parts[1];
