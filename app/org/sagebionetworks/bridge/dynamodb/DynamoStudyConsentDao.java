@@ -6,6 +6,7 @@ import java.util.List;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -50,38 +51,26 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
 
     @Override
     public StudyConsent activate(StudyConsent studyConsent) {
-        // Doing the stupidest thing that will work here.
+        // Getting desperate to find the problem here. Given up on ensuring there's only one 
+        // active consent, and returning to the earlier code to some extent.
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyConsent.getStudyKey());
-        DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
-                new DynamoDBQueryExpression<DynamoStudyConsent1>()
-                .withHashKeyValues(hashKey);
-
-        // Set all of the active consents except the current one to inactive.
-        List<DynamoStudyConsent1> consentsToSave = Lists.newArrayList();
+        hashKey.setCreatedOn(studyConsent.getCreatedOn());
+        DynamoStudyConsent1 consent = mapper.load(hashKey);
+        if (consent == null) {
+            throw new EntityNotFoundException(StudyConsent.class, "Study consent not found.");
+        }
         
-        PaginatedQueryList<DynamoStudyConsent1> consents = mapper.query(DynamoStudyConsent1.class, queryExpression);
-        for (DynamoStudyConsent1 consent : consents) {
-            boolean activation = (consent.getCreatedOn() == studyConsent.getCreatedOn());
-            if (consent.getActive() != activation) {
-                consent.setActive(activation);
-                consentsToSave.add(consent);
-            }
+        StudyIdentifier studyId = new StudyIdentifierImpl(studyConsent.getStudyKey());
+        DynamoStudyConsent1 activeConsent = (DynamoStudyConsent1)getConsent(studyId);
+        
+        consent.setActive(true);
+        mapper.save(consent);
+        if (activeConsent != null && consent.getCreatedOn() != activeConsent.getCreatedOn()) {
+            activeConsent.setActive(false);
+            mapper.save(activeConsent);
         }
-        // Ugly.
-        boolean hasActive = false;
-        for (DynamoStudyConsent1 consent : consentsToSave) {
-            if (consent.getActive()) {
-                hasActive = true;
-            }
-        }
-        // impossible to be true if collection is empty, so there's something to save...
-        if (hasActive) { 
-            List<FailedBatch> failures = mapper.batchSave(consentsToSave);
-            BridgeUtils.ifFailuresThrowException(failures);
-        }
-        return getConsent(new StudyIdentifierImpl(studyConsent.getStudyKey()), studyConsent.getCreatedOn());
-
+        return consent;
         /* Well this seems to not be working, let's try something different
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyConsent.getStudyKey());
