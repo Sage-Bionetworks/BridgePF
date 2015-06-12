@@ -232,11 +232,11 @@ public class StormpathDirectoryDao implements DirectoryDao {
         
         PasswordStrength strength = passwordPolicy.getStrength();
         strength.setMaxLength(org.sagebionetworks.bridge.models.studies.PasswordPolicy.FIXED_MAX_LENGTH);
-        strength.setMinLowerCase(1);
         strength.setMinDiacritic(0);
         strength.setMinLength(study.getPasswordPolicy().getMinLength());
         strength.setMinNumeric(study.getPasswordPolicy().isNumericRequired() ? 1 : 0);
         strength.setMinSymbol(study.getPasswordPolicy().isSymbolRequired() ? 1 : 0);
+        strength.setMinLowerCase(study.getPasswordPolicy().isLowerCaseRequired() ? 1 : 0);
         strength.setMinUpperCase(study.getPasswordPolicy().isUpperCaseRequired() ? 1 : 0);
         strength.save();
         passwordPolicy.save();

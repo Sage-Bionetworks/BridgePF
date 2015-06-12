@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
+import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -51,6 +52,7 @@ public class StudyServiceImpl implements StudyService {
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     private StudyConsentService studyConsentService;
+    private StudyConsentDao studyConsentDao;
 
     private StudyConsentForm defaultConsentDocument;
     private String defaultEmailVerificationTemplate;
@@ -106,6 +108,10 @@ public class StudyServiceImpl implements StudyService {
     final void setStudyConsentService(StudyConsentService studyConsentService) {
         this.studyConsentService = studyConsentService;
     }
+    @Autowired
+    final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
+        this.studyConsentDao = studyConsentDao;
+    }
     
     @Override
     public Study getStudy(String identifier) {
@@ -155,7 +161,12 @@ public class StudyServiceImpl implements StudyService {
 
             String directory = directoryDao.createDirectoryForStudy(study);
             study.setStormpathHref(directory);
-            uploadCertService.createCmsKeyPair(study.getIdentifier());
+
+            // do not create certs for whitelisted studies (legacy studies)
+            if (!studyWhitelist.contains(study.getIdentifier())) {
+                uploadCertService.createCmsKeyPair(study.getIdentifier());
+            }
+
             study = studyDao.createStudy(study);
             
             cacheProvider.setStudy(study);
@@ -190,7 +201,8 @@ public class StudyServiceImpl implements StudyService {
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
         study.setStormpathHref(originalStudy.getStormpathHref());
         study.setResearcherRole(originalStudy.getResearcherRole());
-        study.setActive(originalStudy.isActive());
+        study.setActive(true);
+        // study.setActive(originalStudy.isActive());
 
         // When the version is out of sync in the cache, then an exception is thrown and the study 
         // is not updated in the cache. At least we can delete the study before this, so the next 
@@ -219,8 +231,9 @@ public class StudyServiceImpl implements StudyService {
         String lockId = null;
         try {
             lockId = lockDao.acquireLock(Study.class, identifier);
-            directoryDao.deleteDirectoryForStudy(identifier);
             studyDao.deleteStudy(existing);
+            studyConsentDao.deleteAllConsents(existing.getStudyIdentifier());
+            directoryDao.deleteDirectoryForStudy(identifier);
             cacheProvider.removeStudy(identifier);
         } finally {
             lockDao.releaseLock(Study.class, identifier, lockId);
