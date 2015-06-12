@@ -19,6 +19,12 @@ public final class MimeTypeEmail {
     
     private static final String QUOTE = "\"";
     private static final String QUOTED_QUOTE = "\\\\\"";
+    
+    private final Function<String,String> APPLY_EMAIL_ESCAPER = new Function<String,String>() {
+        @Override public String apply(final String address) {
+            return escapeEmailAddress(address);
+        }
+    };
 
     private final String subject;
     private final String senderAddress;
@@ -34,11 +40,7 @@ public final class MimeTypeEmail {
         
         this.subject = subject;
         this.senderAddress = escapeEmailAddress(senderAddress);
-        this.recipientAddresses = Lists.transform(recipientAddresses, new Function<String,String>() {
-            @Override public String apply(String address) {
-                return escapeEmailAddress(address);
-            }
-        });
+        this.recipientAddresses = Lists.transform(recipientAddresses, APPLY_EMAIL_ESCAPER);
         this.messageParts = ImmutableList.copyOf(messageParts);
     }
     
