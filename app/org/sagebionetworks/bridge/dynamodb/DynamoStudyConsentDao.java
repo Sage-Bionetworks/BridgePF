@@ -2,7 +2,11 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.fest.util.CollectionFilter;
+import org.fest.util.Collections;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
@@ -68,7 +72,15 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
                 consentsToSave.add(consent);
             }
         }
-        if (!consentsToSave.isEmpty()) {
+        // Ugly.
+        boolean hasActive = false;
+        for (DynamoStudyConsent1 consent : consentsToSave) {
+            if (consent.getActive()) {
+                hasActive = true;
+            }
+        }
+        // impossible to be true if collection is empty, so there's something to save...
+        if (hasActive) { 
             List<FailedBatch> failures = mapper.batchSave(consentsToSave);
             BridgeUtils.ifFailuresThrowException(failures);
         }
