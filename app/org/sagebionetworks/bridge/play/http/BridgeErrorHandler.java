@@ -12,15 +12,17 @@ public class BridgeErrorHandler implements HttpErrorHandler {
 
     @Override
     public Promise<Result> onClientError(RequestHeader request, int statusCode, String message) {
-        return getResult(message);
+        return getResult(request, message);
     }
 
     @Override
     public Promise<Result> onServerError(RequestHeader request, Throwable exception) {
-        return getResult(exception.getMessage());
+        return getResult(request, exception.getMessage());
     }
 
-    private Promise<Result> getResult(final String message) {
-        return Promise.<Result>pure(Results.badRequest(Json.toJson(new StatusMessage(message))));
+    private Promise<Result> getResult(final RequestHeader request, final String message) {
+        return Promise.<Result>pure(Results.badRequest(
+                views.html.defaultpages.badRequest.render(request.method(), request.uri(), 
+                        Json.toJson(new StatusMessage(message)).asText())));
     }
 }
