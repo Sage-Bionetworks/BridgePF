@@ -196,7 +196,8 @@ public class StudyServiceImpl implements StudyService {
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
         study.setStormpathHref(originalStudy.getStormpathHref());
         study.setResearcherRole(originalStudy.getResearcherRole());
-        study.setActive(originalStudy.isActive());
+        study.setActive(true);
+        // study.setActive(originalStudy.isActive());
 
         // When the version is out of sync in the cache, then an exception is thrown and the study 
         // is not updated in the cache. At least we can delete the study before this, so the next 
