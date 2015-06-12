@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +20,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.Consi
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
@@ -39,11 +39,10 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
 
     @Override
-    public StudyConsent addConsent(StudyIdentifier studyIdentifier, String path, String storagePath, DateTime createdOn) {
+    public StudyConsent addConsent(StudyIdentifier studyIdentifier, String storagePath, DateTime createdOn) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyIdentifier.getIdentifier());
         consent.setCreatedOn(createdOn.getMillis());
-        consent.setPath(path);
         consent.setStoragePath(storagePath);
         mapper.save(consent);
         return consent;
@@ -51,14 +50,39 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
 
     @Override
     public StudyConsent activate(StudyConsent studyConsent) {
+        // Doing the stupidest thing that will work here.
+        DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
+        hashKey.setStudyKey(studyConsent.getStudyKey());
+        DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
+                new DynamoDBQueryExpression<DynamoStudyConsent1>()
+                .withHashKeyValues(hashKey);
+
+        // Set all of the active consents except the current one to inactive.
+        List<DynamoStudyConsent1> consentsToSave = Lists.newArrayList();
+        
+        PaginatedQueryList<DynamoStudyConsent1> consents = mapper.query(DynamoStudyConsent1.class, queryExpression);
+        for (DynamoStudyConsent1 consent : consents) {
+            boolean activation = (consent.getCreatedOn() == studyConsent.getCreatedOn());
+            if (consent.getActive() != activation) {
+                consent.setActive(activation);
+                consentsToSave.add(consent);
+            }
+        }
+        if (!consentsToSave.isEmpty()) {
+            List<FailedBatch> failures = mapper.batchSave(consentsToSave);
+            BridgeUtils.ifFailuresThrowException(failures);
+        }
+        return getConsent(new StudyIdentifierImpl(studyConsent.getStudyKey()), studyConsent.getCreatedOn());
+
+        /* Well this seems to not be working, let's try something different
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyConsent.getStudyKey());
         consent.setCreatedOn(studyConsent.getCreatedOn());
         consent = mapper.load(consent);
         consent.setActive(true);
-        
+
         List<DynamoStudyConsent1> consentsToSave = Lists.newArrayList(consent);
-        
+
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyConsent.getStudyKey());
         DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
@@ -68,10 +92,10 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
                 .withQueryFilterEntry("active", new Condition()
                         .withComparisonOperator(ComparisonOperator.EQ)
                         .withAttributeValueList(new AttributeValue().withN("1")));
-        
+
         // Set all of the active consents except the current one to inactive.
-        QueryResultPage<DynamoStudyConsent1> page = mapper.queryPage(DynamoStudyConsent1.class, queryExpression);
-        for (DynamoStudyConsent1 otherConsent : page.getResults()) {
+        PaginatedQueryList<DynamoStudyConsent1> consents = mapper.query(DynamoStudyConsent1.class, queryExpression);
+        for (DynamoStudyConsent1 otherConsent : consents) {
             if (otherConsent.getCreatedOn() != consent.getCreatedOn()) {
                 otherConsent.setActive(false);
                 consentsToSave.add(otherConsent);
@@ -81,6 +105,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         BridgeUtils.ifFailuresThrowException(failures);
 
         return consent;
+        */
     }
     
     /**
@@ -89,6 +114,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
      * @param studyConsent
      * @return
      */
+    /*
     @Override
     public StudyConsent deactivate(StudyConsent studyConsent) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
@@ -98,7 +124,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         consent.setActive(false);
         mapper.save(consent);
         return consent;
-    }
+    }*/
 
     @Override
     public StudyConsent getConsent(StudyIdentifier studyIdentifier) {
@@ -111,11 +137,11 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
                 .withQueryFilterEntry("active", new Condition()
                         .withComparisonOperator(ComparisonOperator.EQ)
                         .withAttributeValueList(new AttributeValue().withN("1")));
-        QueryResultPage<DynamoStudyConsent1> page = mapper.queryPage(DynamoStudyConsent1.class, queryExpression);
-        if (page == null || page.getResults().size() == 0) {
+        PaginatedQueryList<DynamoStudyConsent1> page = mapper.query(DynamoStudyConsent1.class, queryExpression);
+        if (page.isEmpty()) {
             return null;
         }
-        return page.getResults().get(0);
+        return page.iterator().next();
     }
 
     @Override

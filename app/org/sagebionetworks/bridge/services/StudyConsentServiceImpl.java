@@ -5,9 +5,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -29,11 +26,8 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
-
-import com.google.common.io.CharStreams;
 
 @Component
 public class StudyConsentServiceImpl implements StudyConsentService {
@@ -71,7 +65,7 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         DateTime createdOn = DateUtils.getCurrentDateTime();
         String storagePath = studyIdentifier.getIdentifier() + "." + createdOn.getMillis();
         
-        StudyConsent consent = studyConsentDao.addConsent(studyIdentifier, null, storagePath, createdOn);
+        StudyConsent consent = studyConsentDao.addConsent(studyIdentifier, storagePath, createdOn);
         try {
             s3Helper.writeBytesToS3(BUCKET, storagePath, documentContent.getBytes());
         } catch(Throwable t) {
@@ -145,20 +139,10 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     
     private String loadDocumentContent(StudyConsent consent) {
         try {
-            if (consent.getStoragePath() != null){
-                logger.info("Loading S3 key: " + consent.getStoragePath());
-                return s3Helper.readS3FileAsString(BUCKET, consent.getStoragePath());
-            } else {
-                logger.info("Loading filesystem path: " + consent.getPath());
-                // This consent has old content on disk, load it for the time being.
-                final FileSystemResource resource = new FileSystemResource(consent.getPath());
-                try (InputStream is = resource.getInputStream();
-                     InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);) {
-                    return CharStreams.toString(isr);
-                }                
-            }
+            logger.info("Loading S3 key: " + consent.getStoragePath());
+            return s3Helper.readS3FileAsString(BUCKET, consent.getStoragePath());
         } catch(IOException ioe) {
-            logger.info("Failure loading storagePath: " + consent.getStoragePath());
+            logger.error("Failure loading storagePath: " + consent.getStoragePath());
             throw new BridgeServiceException(ioe);
         }
     }
