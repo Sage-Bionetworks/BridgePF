@@ -23,15 +23,6 @@ public interface StudyConsentDao {
     StudyConsent activate(StudyConsent studyConsent);
     
     /**
-     * Deactivate this consent record. NOTE that if this is the last active consent record, this 
-     * will break the functionality of a study. At the service layer we prevent the active study 
-     * from being deleted.
-     * @param consent
-     * @return
-     */
-    //StudyConsent deactivate(StudyConsent studyConsent);
-
-    /**
      * Gets the latest, active consent.
      */
     StudyConsent getConsent(StudyIdentifier studyIdentifier);
@@ -40,12 +31,13 @@ public interface StudyConsentDao {
      * Gets the consent, activate or inactive, of the specified timestamp.
      */
     StudyConsent getConsent(StudyIdentifier studyIdentifier, long timestamp);
-    
-    /**
-     * Deletes the consent of the specified timestamp.
-     */
-    void deleteConsent(StudyIdentifier studyIdentifier, long timestamp);
 
+    /**
+     * Delete all the consents for a study. Only call when deleting a study.
+     * @param studyIdentifier
+     */
+    void deleteAllConsents(StudyIdentifier studyIdentifier);
+    
     /**
      * Gets all the consents, active and inactive, in reverse order of the timestamp, of a particular study.
      */

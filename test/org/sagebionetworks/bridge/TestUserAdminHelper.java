@@ -132,6 +132,16 @@ public class TestUserAdminHelper {
         return new TestUser(signUp.getUsername(), signUp.getEmail(), signUp.getPassword(), signUp.getRoles(), study, session);
     }
 
+    public TestUser createUser(Class<?> cls, Study study, boolean consent, Set<String> roles) {
+        checkNotNull(cls, "Class must not be null");
+        checkNotNull(study);
+
+        String name = makeRandomUserName(cls);
+        SignUp signUp = new SignUp(name, name + "@sagebridge.org", PASSWORD, roles);
+        UserSession session = userAdminService.createUser(signUp, study, true, consent);
+        return new TestUser(signUp.getUsername(), signUp.getEmail(), signUp.getPassword(), signUp.getRoles(), study, session);
+    }
+    
     public void deleteUser(TestUser testUser) {
         checkNotNull(testUser);
 

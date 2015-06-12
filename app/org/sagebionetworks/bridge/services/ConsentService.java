@@ -27,4 +27,5 @@ public interface ConsentService {
     void incrementStudyEnrollment(Study study) throws StudyLimitExceededException;
 
     void decrementStudyEnrollment(Study study);
+
 }
