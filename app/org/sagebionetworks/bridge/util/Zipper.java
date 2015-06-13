@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.util;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -14,7 +13,12 @@ import java.util.zip.ZipOutputStream;
 
 import javax.annotation.Nonnull;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
+
 public class Zipper {
+    // Size of temporary buffer in bytes. This is big enough that there should be no churn for most files, but small
+    // enough to have minimal memory overhead.
+    private static final int TEMP_BUFFER_SIZE = 4096;
 
     /** Max number of uncompressed bytes per zip entry. */
     private final int maxZipEntrySize;
@@ -85,24 +89,23 @@ public class Zipper {
 
     private byte[] toByteArray(final String entryName, final InputStream inputStream)
             throws IOException, ZipOverflowException {
-        int offset = 0;
-        int length = 1000;
-        byte[] bytes = new byte[length];
-        int read = inputStream.read(bytes, offset, length - offset);
-        while (read >= 0) {
-            offset = offset + read;
-            if (offset > maxZipEntrySize) {
+        // We want copy data from the stream to a byte array manually, so we can count the bytes and protect against
+        // zip bombs. We use Apache IO's ByteArrayOutputStream, because it's memory optimized, so we don't have to
+        // clean up a bunch of byte arrays.
+        byte[] tempBuffer = new byte[TEMP_BUFFER_SIZE];
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        int totalBytes = 0;
+        int bytesRead;
+        while ((bytesRead = inputStream.read(tempBuffer, 0, TEMP_BUFFER_SIZE)) >= 0) {
+            totalBytes += bytesRead;
+            if (totalBytes > maxZipEntrySize) {
                 throw new ZipOverflowException("Zip entry size is over the max allowed size. The entry " + entryName +
-                        " has size more than " + offset + ". The max allowed size is" + maxZipEntrySize + ".");
+                        " has size more than " + totalBytes + ". The max allowed size is" + maxZipEntrySize + ".");
             }
-            length = length * 3 / 2 + 1;
-            byte[] newBytes = new byte[length];
-            System.arraycopy(bytes, 0, newBytes, 0, offset);
-            bytes = newBytes;
-            read = inputStream.read(bytes, offset, length - offset);
+
+            baos.write(tempBuffer, 0, bytesRead);
         }
-        byte[] newBytes = new byte[offset];
-        System.arraycopy(bytes, 0, newBytes, 0, offset);
-        return newBytes;
+
+        return baos.toByteArray();
     }
 }
