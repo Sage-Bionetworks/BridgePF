@@ -42,7 +42,7 @@ public class SendMailViaAmazonServiceConsentTest {
     private StudyConsentService studyConsentService;
     private ArgumentCaptor<SendRawEmailRequest> argument;
     private Study study;
-    private static final String FROM_STUDY_AS_FORMATTED = "Test Study (Sage) <study-support-email@study.com>";
+    private static final String FROM_STUDY_AS_FORMATTED = "\"Test Study (Sage)\" <study-support-email@study.com>";
     private static final String FROM_DEFAULT_AS_FORMATTED = "Sage Bionetworks <test-sender@sagebase.org>";
     
     @Before
@@ -84,7 +84,8 @@ public class SendMailViaAmazonServiceConsentTest {
 
         verify(emailClient).sendRawEmail(argument.capture());
         SendRawEmailRequest req = argument.getValue();
-        assertEquals("Correct sender", FROM_DEFAULT_AS_FORMATTED, req.getSource());
+        
+        assertEquals("Correct sender", "\"Sage Bionetworks\" <test-sender@sagebase.org>", req.getSource());
     }
 
     @Test
