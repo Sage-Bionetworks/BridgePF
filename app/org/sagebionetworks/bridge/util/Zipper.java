@@ -93,19 +93,20 @@ public class Zipper {
         // zip bombs. We use Apache IO's ByteArrayOutputStream, because it's memory optimized, so we don't have to
         // clean up a bunch of byte arrays.
         byte[] tempBuffer = new byte[TEMP_BUFFER_SIZE];
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        int totalBytes = 0;
-        int bytesRead;
-        while ((bytesRead = inputStream.read(tempBuffer, 0, TEMP_BUFFER_SIZE)) >= 0) {
-            totalBytes += bytesRead;
-            if (totalBytes > maxZipEntrySize) {
-                throw new ZipOverflowException("Zip entry size is over the max allowed size. The entry " + entryName +
-                        " has size more than " + totalBytes + ". The max allowed size is" + maxZipEntrySize + ".");
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            int totalBytes = 0;
+            int bytesRead;
+            while ((bytesRead = inputStream.read(tempBuffer, 0, TEMP_BUFFER_SIZE)) >= 0) {
+                totalBytes += bytesRead;
+                if (totalBytes > maxZipEntrySize) {
+                    throw new ZipOverflowException("Zip entry size is over the max allowed size. The entry " + entryName +
+                            " has size more than " + totalBytes + ". The max allowed size is" + maxZipEntrySize + ".");
+                }
+
+                baos.write(tempBuffer, 0, bytesRead);
             }
 
-            baos.write(tempBuffer, 0, bytesRead);
+            return baos.toByteArray();
         }
-
-        return baos.toByteArray();
     }
 }
