@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import javax.annotation.PostConstruct;
+
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -10,9 +12,16 @@ import org.springframework.stereotype.Component;
 
 @Component("defaultStudyBootstrapper")
 public class DefaultStudyBootstrapper {
-    
+
+    private StudyService studyService;
+
     @Autowired
-    public DefaultStudyBootstrapper(StudyService studyService) {
+    public final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
+    
+    @PostConstruct
+    public void setupDefaultStudy() {
         try {
             studyService.getStudy("api");
         } catch(EntityNotFoundException e) {
