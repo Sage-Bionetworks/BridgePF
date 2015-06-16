@@ -27,10 +27,10 @@ import com.google.common.collect.Sets;
 public class DynamoStudyDaoTest {
 
     private final Set<String> EXTRA_USER_PROFILE_ATTRIBUTES = Sets.newHashSet("can-publish", "can-recontact");
-    
+
     @Resource
     DynamoStudyDao studyDao;
-    
+
     @Before
     public void before() {
         DynamoInitializer.init(DynamoStudy.class);
@@ -42,19 +42,19 @@ public class DynamoStudyDaoTest {
             }
         }
     }
-    
+
     @Test
     public void crudOneStudy() {
         Study study = TestUtils.getValidStudy();
         study.setUserProfileAttributes(EXTRA_USER_PROFILE_ATTRIBUTES);
-        
+
         study = studyDao.createStudy(study);
         assertNotNull("Study was assigned a version", study.getVersion());
-        
+
         study.setName("This is a test name");
         study.setMaxNumOfParticipants(10);
         study = studyDao.updateStudy(study);
-        
+
         study = studyDao.getStudy(study.getIdentifier());
         assertEquals("Name was set", "This is a test name", study.getName());
         assertEquals("Max participants was set", 10, study.getMaxNumOfParticipants());
@@ -68,10 +68,10 @@ public class DynamoStudyDaoTest {
         try {
             study = studyDao.getStudy(identifier);
             fail("Should have thrown EntityNotFoundException");
-        } catch(EntityNotFoundException e) {
+        } catch (EntityNotFoundException e) {
         }
     }
-    
+
     @Test
     public void canRetrieveAllStudies() {
         List<Study> studies = Lists.newArrayList();
@@ -81,11 +81,11 @@ public class DynamoStudyDaoTest {
             studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
             studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
             studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-            
+
             List<Study> savedStudies = studyDao.getStudies();
             // The five studies, plus the API study we refuse to delete...
             assertEquals("There are six studies", 6, savedStudies.size());
-            
+
         } finally {
             for (Study study : studies) {
                 studyDao.deleteStudy(study);
@@ -95,7 +95,7 @@ public class DynamoStudyDaoTest {
         assertEquals("There should be only one study", 1, savedStudies.size());
         assertEquals("That should be the test study study", "api", savedStudies.get(0).getIdentifier());
     }
-    
+
     @Test
     public void willNotSaveTwoStudiesWithSameIdentifier() {
         Study study = null;
@@ -107,21 +107,21 @@ public class DynamoStudyDaoTest {
             study.setVersion(null);
             studyDao.createStudy(study);
             fail("Should have thrown entity exists exception");
-        } catch(EntityAlreadyExistsException e) {
-            
+        } catch (EntityAlreadyExistsException e) {
+
         } finally {
             study.setVersion(version);
             studyDao.deleteStudy(study);
         }
     }
-    
-    @Test(expected=EntityAlreadyExistsException.class)
+
+    @Test(expected = EntityAlreadyExistsException.class)
     public void identifierUniquenessEnforcedByVersionChecks() throws Exception {
         Study study = TestUtils.getValidStudy();
         studyDao.createStudy(study);
-        
+
         study.setVersion(null); // This is now a "new study"
         studyDao.createStudy(study);
     }
-    
+
 }
