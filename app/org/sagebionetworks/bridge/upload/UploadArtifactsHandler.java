@@ -46,6 +46,7 @@ public class UploadArtifactsHandler implements UploadValidationHandler {
         HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
         HealthDataRecord record = recordBuilder.build();
         String recordId = healthDataService.createOrUpdateRecord(record);
+        context.setRecordId(recordId);
 
         Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
         if (!attachmentMap.isEmpty()) {

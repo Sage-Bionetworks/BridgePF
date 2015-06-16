@@ -144,6 +144,9 @@ public class UploadArtifactsHandlerTest {
         verify(mockS3Helper).writeBytesToS3(TestConstants.ATTACHMENT_BUCKET, ATTACHMENT_ID_BAR, BYTES_BAR);
         verify(mockS3Helper).writeBytesToS3(TestConstants.ATTACHMENT_BUCKET, ATTACHMENT_ID_FOO, BYTES_FOO);
 
+        // validate record ID in the context
+        assertEquals(TEST_RECORD_ID, context.getRecordId());
+
         // validate no messages on the context
         assertTrue(context.getMessageList().isEmpty());
     }
