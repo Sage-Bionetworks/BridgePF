@@ -15,7 +15,7 @@ import play.mvc.Result;
 
 import com.google.common.collect.Lists;
 
-@Controller("scheduleController")
+@Controller
 public class ScheduleController extends BaseController {
 
     private SchedulePlanService schedulePlanService;

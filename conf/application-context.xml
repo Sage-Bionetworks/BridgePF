@@ -53,11 +53,11 @@
     <bean id="ConsentControllerProxied" parent="proxiedController">
         <property name="targetName" value="consentController"/>
     </bean>
-    
+
     <bean id="ScheduleControllerProxied" parent="proxiedController">
         <property name="targetName" value="scheduleController"/>
     </bean>
-    
+
     <bean id="BackfillControllerProxied" parent="proxiedController">
         <property name="targetName" value="backfillController" />
     </bean>
@@ -77,19 +77,19 @@
     <bean id="SurveyResponseControllerProxied" parent="proxiedController">
         <property name="targetName" value="surveyResponseController"/>
     </bean>
-    
+
     <bean id="UserManagementControllerProxied" parent="proxiedController">
         <property name="targetName" value="userManagementController"/>
-    </bean>    
+    </bean>
 
     <bean id="SchedulePlanControllerProxied" parent="proxiedController">
         <property name="targetName" value="schedulePlanController"/>
     </bean>
-    
+
     <bean id="StudyControllerProxied" parent="proxiedController">
         <property name="targetName" value="studyController"/>
     </bean>
-    
+
     <bean id="CacheAdminControllerProxied" parent="proxiedController">
         <property name="targetName" value="cacheAdminController"/>
     </bean>
@@ -97,12 +97,9 @@
     <bean id="EmailControllerProxied" parent="proxiedController">
         <property name="targetName" value="emailController"/>
     </bean>
-    
+
     <bean id="TaskControllerProxied" parent="proxiedController">
         <property name="targetName" value="taskController"/>
     </bean>
-    
-    <bean id="LunchControllerProxied" parent="proxiedController">
-        <property name="targetName" value="lunchController"/>
-    </bean>
+
 </beans>

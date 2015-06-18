@@ -8,7 +8,7 @@ import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
-@Controller("cacheAdminController")
+@Controller
 public class CacheAdminController extends BaseController {
 
     private CacheAdminService cacheAdminService;

@@ -12,7 +12,7 @@ import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-@Controller("userManagementController")
+@Controller
 public class UserManagementController extends BaseController {
 
     private static final String CONSENT_FIELD = "consent";

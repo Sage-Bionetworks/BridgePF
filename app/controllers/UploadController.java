@@ -14,7 +14,7 @@ import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
-@Controller("uploadController")
+@Controller
 public class UploadController extends BaseController {
 
     private UploadService uploadService;
