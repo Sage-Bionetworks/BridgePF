@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -51,20 +52,11 @@ public class SendMailViaAmazonServiceConsentTest {
     private ArgumentCaptor<SendRawEmailRequest> argument;
     private Study study;
     private String consentBodyTemplate;
-    private String consentSignatureBlockTemplate;
-    
-    @Value("classpath:study-defaults/consent-page.xhtml")
-    final void setConsentBodyTemplate(org.springframework.core.io.Resource resource) throws IOException {
-        this.consentBodyTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-
-    @Value("classpath:study-defaults/consent-signature.xhtml")
-    public final void setConsentSignatureBlockTemplate(org.springframework.core.io.Resource resource) throws IOException {
-        this.consentSignatureBlockTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
     
     @Before
     public void setUp() throws Exception {
+        consentBodyTemplate = IOUtils.toString(new FileInputStream("conf/study-defaults/consent-page.xhtml"));
+        
         study = new DynamoStudy(); // TestUtils.getValidStudy();
         study.setName("Test Study (Sage)");
         study.setIdentifier("api");
@@ -98,7 +90,7 @@ public class SendMailViaAmazonServiceConsentTest {
         user.setEmail("test-user@sagebase.org");
         
         ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent, SharingScope.NO_SHARING,
-                        studyConsentService, consentBodyTemplate, consentSignatureBlockTemplate);
+                        studyConsentService, consentBodyTemplate);
         service.sendEmail(provider);
 
         verify(emailClient).sendRawEmail(argument.capture());
@@ -114,8 +106,7 @@ public class SendMailViaAmazonServiceConsentTest {
         user.setEmail("test-user@sagebase.org");
         
         ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent,
-                        SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate,
-                        consentSignatureBlockTemplate);
+                        SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate);
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));
@@ -147,8 +138,7 @@ public class SendMailViaAmazonServiceConsentTest {
         user.setEmail("test-user@sagebase.org");
         
         ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent,
-            SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate,
-            consentSignatureBlockTemplate);
+            SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate);
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));

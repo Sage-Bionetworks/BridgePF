@@ -48,17 +48,15 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     private SharingScope sharingScope;
     private StudyConsentService studyConsentService;
     private String consentBodyTemplate;
-    private String consentSignatureBlockTemplate;
 
     public ConsentEmailProvider(Study study, User user, ConsentSignature consentSignature, SharingScope sharingScope,
-        StudyConsentService studyConsentService, String consentBodyTemplate, String consentSignatureBlockTemplate) {
+        StudyConsentService studyConsentService, String consentBodyTemplate) {
         this.study = study;
         this.user = user;
         this.consentSignature = consentSignature;
         this.sharingScope = sharingScope;
         this.studyConsentService = studyConsentService;
         this.consentBodyTemplate = consentBodyTemplate;
-        this.consentSignatureBlockTemplate = consentSignatureBlockTemplate;
     }
 
     @Override
@@ -138,23 +136,20 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
         } else {
             // This is now a fragment, assemble accordingly
             Map<String,String> map = Maps.newHashMap();
-            map.put("participant.name", consentSignature.getName());
-            map.put("participant.signing.date", signingDate);
-            map.put("participant.email", user.getEmail());
-            map.put("participant.sharing", sharingLabel);
-            String fullyResolvedSignature = BridgeUtils.resolveTemplate(consentSignatureBlockTemplate, map);
-            
-            map = Maps.newHashMap();
             map.put("studyName", study.getName());
             map.put("supportEmail", study.getSupportEmail());
             map.put("technicalEmail", study.getTechnicalEmail());
             map.put("sponsorName", study.getSponsorName());
-            String fullyResolvedBody = BridgeUtils.resolveTemplate(consentAgreementHTML, map);
-            
+            String fullyResolvedHTML = BridgeUtils.resolveTemplate(consentAgreementHTML, map);
+
             map = Maps.newHashMap();
             map.put("studyName", study.getName());
-            map.put("consent.body", fullyResolvedBody);
-            map.put("consent.signature", fullyResolvedSignature);
+            map.put("consent.body", fullyResolvedHTML);
+            map.put("participant.name", consentSignature.getName());
+            map.put("participant.signing.date", signingDate);
+            map.put("participant.email", user.getEmail());
+            map.put("participant.sharing", sharingLabel);
+            
             return BridgeUtils.resolveTemplate(consentBodyTemplate, map);
         }
     }

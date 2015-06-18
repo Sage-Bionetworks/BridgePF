@@ -42,16 +42,9 @@ public class SendEmailIntegTest {
 
     private String consentBodyTemplate;
     
-    private String consentSignatureBlockTemplate;
-    
     @Value("classpath:study-defaults/consent-page.xhtml")
     final void setConsentBodyTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.consentBodyTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-
-    @Value("classpath:study-defaults/consent-signature.xhtml")
-    public final void setConsentSignatureBlockTemplate(org.springframework.core.io.Resource resource) throws IOException {
-        this.consentSignatureBlockTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
     
     @Test
@@ -62,7 +55,7 @@ public class SendEmailIntegTest {
         final Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
         
         sendEmailService.sendEmail(new ConsentEmailProvider(study, user, signature, 
-            SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate, consentSignatureBlockTemplate));
+            SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate));
     }
     
 }

@@ -6,10 +6,11 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.LocalDate;
+import java.io.FileInputStream;
 
 import javax.mail.internet.MimeBodyPart;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -33,9 +34,8 @@ public class ConsentEmailProviderTest {
     private StudyConsentService studyConsentService;
     
     @Before
-    public void before() {
-        String consentBodyTemplate = "<html xmlns='http://www.w3.org/1999/xhtml'><head><title>${studyName} Consent To Research</title></head><body>${consent.body}${consent.signature}</body></html>";
-        String consentSignatureBlockTemplate = "<table><tr><td>${participant.name}</td><td><img alt='' src='cid:consentSignature' /></td><td>${participant.signing.date}</td></tr><tr><td>${participant.email}</td><td>${participant.sharing}</td><td></td></tr></table>";
+    public void before() throws Exception {
+        String consentBodyTemplate = IOUtils.toString(new FileInputStream("conf/study-defaults/consent-page.xhtml")); // "<html xmlns='http://www.w3.org/1999/xhtml'><head><title>${studyName} Consent To Research</title></head><body>${consent.body}${consent.signature}</body></html>";
         
         Study study = new DynamoStudy();
         study.setName("Study Name");
@@ -49,7 +49,7 @@ public class ConsentEmailProviderTest {
         studyConsentService = mock(StudyConsentService.class);
         
         provider = new ConsentEmailProvider(study, user, sig, SharingScope.NO_SHARING, 
-            studyConsentService, consentBodyTemplate, consentSignatureBlockTemplate);
+            studyConsentService, consentBodyTemplate);
     }
     
     @Test
@@ -79,9 +79,9 @@ public class ConsentEmailProviderTest {
         assertEquals("consent@consent.com", email.getRecipientAddresses().get(1));
         
         assertTrue("Study name correct", ((String)body.getContent()).contains("<title>Study Name Consent To Research</title>"));
-        assertTrue("Name correct", ((String)body.getContent()).contains("<td>Test Person</td>"));
-        assertTrue("User email correct", ((String)body.getContent()).contains("<td>user@user.com</td>"));
-        assertTrue("Shairng correct", ((String)body.getContent()).contains("<td>Not Sharing</td>"));
+        assertTrue("Name correct", ((String)body.getContent()).contains(">Test Person<"));
+        assertTrue("User email correct", ((String)body.getContent()).contains(">user@user.com<"));
+        assertTrue("Shairng correct", ((String)body.getContent()).contains(">Not Sharing<"));
     }
     
 }

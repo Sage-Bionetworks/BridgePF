@@ -45,16 +45,10 @@ public class ConsentServiceImpl implements ConsentService {
     private UserConsentDao userConsentDao;
     private TaskEventService taskEventService;
     private String consentBodyTemplate;
-    private String consentSignatureBlockTemplate;
     
     @Value("classpath:study-defaults/consent-page.xhtml")
     final void setConsentBodyTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.consentBodyTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-
-    @Value("classpath:study-defaults/consent-signature.xhtml")
-    final void setConsentSignatureBlockTemplate(org.springframework.core.io.Resource resource) throws IOException {
-        this.consentSignatureBlockTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
     
     @Autowired
@@ -136,8 +130,7 @@ public class ConsentServiceImpl implements ConsentService {
 
         if (sendEmail) {
             MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, user, 
-                consentSignature, sharingScope, studyConsentService, consentBodyTemplate, 
-                consentSignatureBlockTemplate);
+                consentSignature, sharingScope, studyConsentService, consentBodyTemplate);
 
             sendMailService.sendEmail(consentEmail);
         }
@@ -202,8 +195,7 @@ public class ConsentServiceImpl implements ConsentService {
 
         final SharingScope sharingScope = optionsService.getSharingScope(user.getHealthCode());
         MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(
-            study, user, consentSignature, sharingScope, studyConsentService, consentBodyTemplate, 
-            consentSignatureBlockTemplate);        
+            study, user, consentSignature, sharingScope, studyConsentService, consentBodyTemplate);
         sendMailService.sendEmail(consentEmail);
     }
 
