@@ -1,4 +1,4 @@
-package controllers;
+package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.ADMIN_GROUP;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_HOST_HEADER;

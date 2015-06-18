@@ -1,4 +1,4 @@
-package controllers;
+package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
+import org.sagebionetworks.bridge.play.controllers.SurveyController;
 import org.sagebionetworks.bridge.services.SurveyService;
 
 import play.mvc.Http;

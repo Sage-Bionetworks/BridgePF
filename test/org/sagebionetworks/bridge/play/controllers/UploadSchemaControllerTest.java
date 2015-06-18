@@ -1,4 +1,4 @@
-package controllers;
+package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doReturn;
@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.play.controllers.UploadSchemaController;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 public class UploadSchemaControllerTest {
@@ -64,7 +65,7 @@ public class UploadSchemaControllerTest {
 
         // execute and validate
         Result result = controller.createOrUpdateUploadSchema();
-        assertEquals(200, Helpers.status(result));
+        assertEquals(200, result.status());
 
         // JSON validation is already tested, so just check obvious things like schema
         String resultJson = Helpers.contentAsString(result);
@@ -93,7 +94,7 @@ public class UploadSchemaControllerTest {
 
         // execute and validate
         Result result = controller.deleteUploadSchemaByIdAndRev("delete-schema", 1);
-        assertEquals(200, Helpers.status(result));
+        assertEquals(200, result.status());
         verify(mockSvc).deleteUploadSchemaByIdAndRev(studyIdentifier, "delete-schema", 1);
     }
 
@@ -114,7 +115,7 @@ public class UploadSchemaControllerTest {
 
         // execute and validate
         Result result = controller.deleteUploadSchemaById("delete-schema");
-        assertEquals(200, Helpers.status(result));
+        assertEquals(200, result.status());
         verify(mockSvc).deleteUploadSchemaById(studyIdentifier, "delete-schema");
     }
 
@@ -136,7 +137,7 @@ public class UploadSchemaControllerTest {
 
         // execute and validate
         Result result = controller.getUploadSchema(TEST_SCHEMA_ID);
-        assertEquals(200, Helpers.status(result));
+        assertEquals(200, result.status());
 
         // JSON validation is already tested, so just check obvious things like schema
         String resultJson = Helpers.contentAsString(result);
@@ -162,7 +163,7 @@ public class UploadSchemaControllerTest {
 
         // execute and validate
         Result result = controller.getUploadSchemasForStudy();
-        assertEquals(200, Helpers.status(result));
+        assertEquals(200, result.status());
 
         String resultJson = Helpers.contentAsString(result);
         JsonNode resultNode = BridgeObjectMapper.get().readTree(resultJson);

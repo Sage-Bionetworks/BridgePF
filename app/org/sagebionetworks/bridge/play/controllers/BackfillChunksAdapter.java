@@ -1,4 +1,4 @@
-package controllers;
+package org.sagebionetworks.bridge.play.controllers;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
