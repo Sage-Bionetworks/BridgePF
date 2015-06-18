@@ -1,10 +1,6 @@
-package controllers;
+package org.sagebionetworks.bridge.play.controllers;
 
-// Absolutely no idea what the replacements are supposed to be for these deprecated methods.
-// Later Play versions specify this but those new methods are not in 2.3.8.
-import static play.test.Helpers.status;
 import static play.test.Helpers.contentAsString;
-import static play.test.Helpers.contentType;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doReturn;
@@ -22,6 +18,7 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.play.controllers.UserProfileController;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsServiceImpl;
 
@@ -41,8 +38,8 @@ public class UserProfileControllerTest {
         UserProfileController controller = controllerForExternalIdTests();
                 
         Result result = controller.createExternalIdentifier();
-        assertEquals(200, status(result));
-        assertEquals("application/json", contentType(result));
+        assertEquals(200, result.status());
+        assertEquals("application/json", result.contentType());
         assertEquals("{\"message\":\"External identifier added to user profile.\"}", contentAsString(result));
         
         verify(optionsService).setOption(studyIdentifier, "healthCode", 

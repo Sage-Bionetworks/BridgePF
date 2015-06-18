@@ -1,4 +1,4 @@
-package controllers;
+package org.sagebionetworks.bridge.play.controllers;
 
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.backfill.BackfillService;

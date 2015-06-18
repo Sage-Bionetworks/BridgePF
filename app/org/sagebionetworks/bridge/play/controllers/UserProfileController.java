@@ -1,4 +1,4 @@
-package controllers;
+package org.sagebionetworks.bridge.play.controllers;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 

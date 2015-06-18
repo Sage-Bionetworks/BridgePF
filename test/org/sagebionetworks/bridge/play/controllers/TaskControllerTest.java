@@ -1,4 +1,4 @@
-package controllers;
+package org.sagebionetworks.bridge.play.controllers;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Task;
+import org.sagebionetworks.bridge.play.controllers.TaskController;
 import org.sagebionetworks.bridge.services.TaskService;
 
 import play.mvc.Http;

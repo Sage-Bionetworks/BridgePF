@@ -1,4 +1,4 @@
-package controllers;
+package org.sagebionetworks.bridge.play.controllers;
 
 import java.util.Collections;
 import java.util.HashSet;

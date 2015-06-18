@@ -1,4 +1,4 @@
-package controllers;
+package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.JSON_MIME_TYPE;
 
