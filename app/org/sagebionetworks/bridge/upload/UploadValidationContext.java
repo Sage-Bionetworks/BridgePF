@@ -23,6 +23,7 @@ public class UploadValidationContext {
     private Map<String, JsonNode> jsonDataMap;
     private HealthDataRecordBuilder healthDataRecordBuilder;
     private Map<String, byte[]> attachmentsByFieldName;
+    private String recordId;
 
     /**
      * This is the study that the upload lives in and is validated against. This is made available by the upload
@@ -155,6 +156,16 @@ public class UploadValidationContext {
         this.attachmentsByFieldName = attachmentsByFieldName;
     }
 
+    /** ID of the health data record created from the upload. This is created by the UploadArtifactsHandler. */
+    public String getRecordId() {
+        return recordId;
+    }
+
+    /** @see #getRecordId */
+    public void setRecordId(String recordId) {
+        this.recordId = recordId;
+    }
+
     /**
      * <p>
      * Makes a shallow copy of this object. The fields of the returned copy can be get and set without affecting the
@@ -182,6 +193,7 @@ public class UploadValidationContext {
         copy.jsonDataMap = this.jsonDataMap;
         copy.healthDataRecordBuilder = this.healthDataRecordBuilder;
         copy.attachmentsByFieldName = this.attachmentsByFieldName;
+        copy.recordId = this.recordId;
 
         // messageList is the only field that gets deep copied
         copy.messageList = new ArrayList<>(this.messageList);

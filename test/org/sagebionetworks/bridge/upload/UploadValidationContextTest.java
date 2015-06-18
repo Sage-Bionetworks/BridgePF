@@ -45,6 +45,7 @@ public class UploadValidationContextTest {
         original.setJsonDataMap(jsonDataMap);
         original.setHealthDataRecordBuilder(recordBuilder);
         original.setAttachmentsByFieldName(attachmentMap);
+        original.setRecordId("test-record");
 
         // copy and validate
         UploadValidationContext copy = original.shallowCopy();
@@ -57,6 +58,7 @@ public class UploadValidationContextTest {
         assertSame(jsonDataMap, copy.getJsonDataMap());
         assertSame(recordBuilder, copy.getHealthDataRecordBuilder());
         assertSame(attachmentMap, copy.getAttachmentsByFieldName());
+        assertEquals("test-record", copy.getRecordId());
 
         assertEquals(1, copy.getMessageList().size());
         assertEquals("common message", copy.getMessageList().get(0));

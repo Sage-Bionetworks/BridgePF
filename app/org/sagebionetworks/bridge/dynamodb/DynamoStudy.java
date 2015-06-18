@@ -1,14 +1,10 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -23,34 +19,12 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 
 @DynamoDBTable(tableName = "Study")
 @BridgeTypeName("Study")
 @JsonFilter("filter") 
 public final class DynamoStudy implements Study {
     
-    private static ObjectMapper mapper = new ObjectMapper();
-
-    private static final String RESEARCHER_ROLE_PROPERTY = "researcherRole";
-    private static final String STORMPATH_HREF_PROPERTY = "stormpathHref";
-    private static final String MAX_NUM_OF_PARTICIPANTS_PROPERTY = "maxNumOfParticipants";
-    private static final String MIN_AGE_OF_CONSENT_PROPERTY = "minAgeOfConsent";
-    private static final String SUPPORT_EMAIL_PROPERTY = "supportEmail";
-    private static final String CONSENT_NOTIFICATION_EMAIL_PROPERTY = "consentNotificationEmail";
-    private static final String USER_PROFILE_ATTRIBUTES_PROPERTY = "userProfileAttributes";
-    private static final String PASSWORD_POLICY_PROPERTY = "passwordPolicy";
-    private static final String VERIFY_EMAIL_TEMPLATE_PROPERTY = "verifyEmailTemplate";
-    private static final String RESET_PASSWORD_TEMPLATE_PROPERTY = "resetPasswordTemplate";
-    private static final String ACTIVE_PROPERTY = "active";
-    private static final String TECHNICAL_EMAIL_PROPERTY = "technicalEmail";
-    private static final String SPONSOR_NAME_PROPERTY = "sponsorName";
-
     private String name;
     private String sponsorName;
     private String identifier;
@@ -233,53 +207,6 @@ public final class DynamoStudy implements Study {
     @Override
     public void setActive(boolean active) {
         this.active = active;
-    }
-    // Left for legacy support of earlier versions of studies. Will be removed after migration.
-    @JsonIgnore
-    public String getData() {
-        ObjectMapper mapper = BridgeObjectMapper.get();
-        
-        ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put(RESEARCHER_ROLE_PROPERTY, researcherRole);
-        node.put(MIN_AGE_OF_CONSENT_PROPERTY, minAgeOfConsent);
-        node.put(MAX_NUM_OF_PARTICIPANTS_PROPERTY, maxNumOfParticipants);
-        node.put(STORMPATH_HREF_PROPERTY, stormpathHref);
-        node.put(SUPPORT_EMAIL_PROPERTY, supportEmail);
-        node.put(CONSENT_NOTIFICATION_EMAIL_PROPERTY, consentNotificationEmail);
-        node.put(SPONSOR_NAME_PROPERTY, sponsorName);
-        node.put(TECHNICAL_EMAIL_PROPERTY, technicalEmail);
-        node.put(ACTIVE_PROPERTY, active);
-        node.putPOJO(PASSWORD_POLICY_PROPERTY, mapper.valueToTree(passwordPolicy));
-        node.putPOJO(VERIFY_EMAIL_TEMPLATE_PROPERTY, mapper.valueToTree(verifyEmailTemplate));
-        node.putPOJO(RESET_PASSWORD_TEMPLATE_PROPERTY, mapper.valueToTree(resetPasswordTemplate));
-        ArrayNode array = JsonNodeFactory.instance.arrayNode();
-        if (profileAttributes != null) {
-            for (String att : profileAttributes) {
-                array.add(att);
-            }
-        }
-        node.set(USER_PROFILE_ATTRIBUTES_PROPERTY, array);    
-        return node.toString();
-    }
-    public void setData(String data) {
-        try {
-            JsonNode node = mapper.readTree(data);
-            this.researcherRole = JsonUtils.asText(node, RESEARCHER_ROLE_PROPERTY);
-            this.minAgeOfConsent = JsonUtils.asIntPrimitive(node, MIN_AGE_OF_CONSENT_PROPERTY);
-            this.maxNumOfParticipants = JsonUtils.asIntPrimitive(node, MAX_NUM_OF_PARTICIPANTS_PROPERTY);
-            this.supportEmail = JsonUtils.asText(node, SUPPORT_EMAIL_PROPERTY);
-            this.consentNotificationEmail = JsonUtils.asText(node, CONSENT_NOTIFICATION_EMAIL_PROPERTY);
-            this.stormpathHref = JsonUtils.asText(node, STORMPATH_HREF_PROPERTY);
-            this.profileAttributes = JsonUtils.asStringSet(node, USER_PROFILE_ATTRIBUTES_PROPERTY);
-            this.passwordPolicy = JsonUtils.asEntity(node, PASSWORD_POLICY_PROPERTY, PasswordPolicy.class);
-            this.verifyEmailTemplate = JsonUtils.asEntity(node, VERIFY_EMAIL_TEMPLATE_PROPERTY, EmailTemplate.class);
-            this.resetPasswordTemplate = JsonUtils.asEntity(node, RESET_PASSWORD_TEMPLATE_PROPERTY, EmailTemplate.class);
-            this.sponsorName = JsonUtils.asText(node, SPONSOR_NAME_PROPERTY);
-            this.technicalEmail = JsonUtils.asText(node, TECHNICAL_EMAIL_PROPERTY);
-            this.active = JsonUtils.asBoolean(node, ACTIVE_PROPERTY);
-        } catch (IOException e) {
-            throw new BridgeServiceException(e);
-        }
     }
 
     @Override

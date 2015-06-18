@@ -19,8 +19,7 @@ public final class MimeTypeEmail {
     
     private static final String QUOTE = "\"";
     private static final String QUOTED_QUOTE = "\\\\\"";
-    
-    private final Function<String,String> APPLY_EMAIL_ESCAPER = new Function<String,String>() {
+    private static final Function<String,String> APPLY_EMAIL_ESCAPER = new Function<String,String>() {
         @Override public String apply(final String address) {
             return escapeEmailAddress(address);
         }
@@ -62,7 +61,7 @@ public final class MimeTypeEmail {
      * @param address
      * @return
      */
-    private String escapeEmailAddress(String address) {
+    private static String escapeEmailAddress(String address) {
         if (address.matches("^.+<.*>$")) {
             String[] parts =  address.split("<");
             String escapedName = parts[0].replaceAll(QUOTE,  QUOTED_QUOTE).trim();
