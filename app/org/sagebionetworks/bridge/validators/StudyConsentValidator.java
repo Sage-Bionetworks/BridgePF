@@ -33,6 +33,7 @@ public class StudyConsentValidator implements Validator {
             errors.rejectValue("documentContent", "is null or blank");
             return;
         }
+        /* As the consent is now a well-formed XHTML fragment, this is no longer relevant.  
         try {
             InputStream stream = new ByteArrayInputStream(consent.getDocumentContent().getBytes(StandardCharsets.UTF_8));
             DocumentBuilder parser = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -42,6 +43,7 @@ public class StudyConsentValidator implements Validator {
         } catch (SAXException e) {
             errors.reject(e.getMessage());
         }
+         */
     }
 
 }

@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.stormpath;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Map;
-
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -16,38 +14,10 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Maps;
 
 public class StormpathUtilsTest {
     
     public static final String TEST_ENDPOINT = "https://webservices.sagebridge.org/api/v1/profile";
-
-    @Test
-    public void templateResolverWorks() {
-        Map<String,String> map = Maps.newHashMap();
-        map.put("baz", "Belgium");
-        map.put("box", "Albuquerque");
-        map.put("foo", "This is unused");
-        
-        // In particular, verifying that replacement of multiple identical tokens occurs,
-        // unmatched variables are left alone
-        String result = StormpathUtils.resolveTemplate("foo ${baz} bar ${baz} ${box} ${unused}", map);
-        assertEquals("foo Belgium bar Belgium Albuquerque ${unused}", result);
-    }
-    
-    @Test
-    public void templateResolverHandlesSomeJunkValues() {
-        Map<String,String> map = Maps.newHashMap();
-        map.put("baz", null);
-        
-        // In particular, verifying that replacement of multiple identical tokens occurs,
-        // unmatched variables are left alone
-        String result = StormpathUtils.resolveTemplate("foo ${baz}", map);
-        assertEquals("foo ${baz}", result);
-        
-        result = StormpathUtils.resolveTemplate(" ", map);
-        assertEquals(" ", result);
-    }
     
     @Test
     public void canGet() throws Exception {

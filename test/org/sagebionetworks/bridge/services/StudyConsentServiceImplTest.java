@@ -16,7 +16,6 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
@@ -52,7 +51,7 @@ public class StudyConsentServiceImplTest {
 
     @Test
     public void crudStudyConsent() {
-        String documentContent = "<document/>";
+        String documentContent = "<p>This is a consent document.</p><p>This is the second paragraph of same.</p>";
         StudyConsentForm form = new StudyConsentForm(documentContent);
 
         // addConsent should return a non-null consent object.
@@ -69,7 +68,9 @@ public class StudyConsentServiceImplTest {
         StudyConsentView activatedConsent = studyConsentService.activateConsent(STUDY_ID, addedConsent1.getCreatedOn());
         StudyConsentView getActiveConsent = studyConsentService.getActiveConsent(STUDY_ID);
         assertTrue(activatedConsent.getCreatedOn() == getActiveConsent.getCreatedOn());
-        assertEquals(documentContent, getActiveConsent.getDocumentContent());
+        
+        // This is "fixed" by the XML and sanitizing parse that happens. It's fine.
+        assertEquals("<p>This is a consent document.</p>\n<p>This is the second paragraph of same.</p>", getActiveConsent.getDocumentContent());
         assertNotNull(getActiveConsent.getStudyConsent().getStoragePath());
         
         // Get all consents returns one consent document (addedConsent).
@@ -91,11 +92,20 @@ public class StudyConsentServiceImplTest {
         assertEquals("<document/>", view.getDocumentContent());
     }
     
-    
-    @Test(expected = InvalidEntityException.class)
-    public void invalidXmlStudyConsentThrowsException() {
+    @Test
+    public void invalidMarkupIsFixed() {
         StudyConsentForm form = new StudyConsentForm("<cml><p>This is not valid XML.</cml>");
-        studyConsentService.addConsent(new StudyIdentifierImpl("api"), form);
+        StudyConsentView view = studyConsentService.addConsent(new StudyIdentifierImpl("api"), form);
+        assertEquals("<p>This is not valid XML.</p>", view.getDocumentContent());
+    }
+    
+    @Test
+    public void fullDocumentsAreConvertedToFragments() {
+        String doc = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title></head><body><p>This is all the content that should be kept.</p><br><p>And this makes it a fragment.</p></body></html>";
+        
+        StudyConsentForm form = new StudyConsentForm(doc);
+        StudyConsentView view = studyConsentService.addConsent(new StudyIdentifierImpl("api"), form);
+        assertEquals("<p>This is all the content that should be kept.</p>\n<br />\n<p>And this makes it a fragment.</p>", view.getDocumentContent());
     }
     
 }

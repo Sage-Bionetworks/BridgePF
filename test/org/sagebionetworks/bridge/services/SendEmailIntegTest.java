@@ -1,7 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 import javax.annotation.Resource;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestConstants;
@@ -10,6 +14,7 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -35,6 +40,20 @@ public class SendEmailIntegTest {
     @Resource
     private SendMailViaAmazonService sendEmailService;
 
+    private String consentBodyTemplate;
+    
+    private String consentSignatureBlockTemplate;
+    
+    @Value("classpath:study-defaults/consent-page.xhtml")
+    final void setConsentBodyTemplate(org.springframework.core.io.Resource resource) throws IOException {
+        this.consentBodyTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+
+    @Value("classpath:study-defaults/consent-signature.xhtml")
+    public final void setConsentSignatureBlockTemplate(org.springframework.core.io.Resource resource) throws IOException {
+        this.consentSignatureBlockTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+    
     @Test
     public void test() {
         final ConsentSignature signature = ConsentSignature.create("Eggplant McTester", "1970-05-01", IMG, "image/png");
@@ -42,8 +61,8 @@ public class SendEmailIntegTest {
         user.setEmail("bridge-testing@sagebase.org");
         final Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
         
-        sendEmailService.sendEmail(new ConsentEmailProvider(
-                study, user, signature, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService));
+        sendEmailService.sendEmail(new ConsentEmailProvider(study, user, signature, 
+            SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate, consentSignatureBlockTemplate));
     }
     
 }

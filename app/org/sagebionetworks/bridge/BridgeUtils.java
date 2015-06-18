@@ -23,6 +23,33 @@ import com.google.common.collect.Maps;
 
 public class BridgeUtils {
     
+    /**
+     * Used to resolve Bridge-specific template variables in the email templates configured for Stormpath's
+     * authentication workflow (sending email verification or password reset emails) as well as in consents documents. 
+     * We follow the template variable format <code>${variableName}</code>. The map includes the variable names as keys,
+     * mapped to their values. For example, "studyName" is mapped to the Bridge study name, and thus the name can be
+     * dynamically inserted into the email templates. Variables can be left unresolved and later substituted by another 
+     * system (e.g. Stormpath, which handles <code>${url}</code>).
+     * 
+     * @see https://sagebionetworks.jira.com/wiki/display/BRIDGE/EmailTemplate
+     * 
+     * @param template
+     * @param values
+     * @return
+     */
+    public static String resolveTemplate(String template, Map<String,String> values) {
+        checkNotNull(template);
+        checkNotNull(values);
+        
+        for (Map.Entry<String,String> entry : values.entrySet()) {
+            if (entry.getValue() != null) {
+                String regex = "\\$\\{"+entry.getKey()+"\\}";
+                template = template.replaceAll(regex, entry.getValue());
+            }
+        }
+        return template;
+    }
+    
     public static String generateGuid() {
         return UUID.randomUUID().toString();
     }
