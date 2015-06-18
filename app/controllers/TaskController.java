@@ -16,7 +16,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import play.mvc.Result;
 
-@Controller("taskController")
+@Controller
 public class TaskController extends BaseController {
 
     private static final TypeReference<ArrayList<DynamoTask>> taskTypeRef = new TypeReference<ArrayList<DynamoTask>>() {};

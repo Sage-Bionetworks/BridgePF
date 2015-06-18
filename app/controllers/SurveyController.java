@@ -22,7 +22,7 @@ import play.mvc.Result;
 
 import com.google.common.base.Supplier;
 
-@Controller("surveyController")
+@Controller
 public class SurveyController extends BaseController {
 
     private static final String MOSTRECENT_KEY = "mostrecent";

@@ -13,7 +13,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 /** Play controller for the /researcher/v1/uploadSchema APIs */
-@Controller("uploadSchemaController")
+@Controller
 public class UploadSchemaController extends BaseController {
     private UploadSchemaService uploadSchemaService;
 

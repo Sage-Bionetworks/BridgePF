@@ -16,7 +16,7 @@ import org.springframework.stereotype.Controller;
 import play.libs.Json;
 import play.mvc.Result;
 
-@Controller("studyController")
+@Controller
 public class StudyController extends BaseController {
 
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(

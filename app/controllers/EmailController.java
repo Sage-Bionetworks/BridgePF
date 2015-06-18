@@ -16,7 +16,7 @@ import play.data.DynamicForm;
 import play.data.Form;
 import play.mvc.Result;
 
-@Controller("emailController")
+@Controller
 public class EmailController extends BaseController {
 
     private AccountDao accountDao;

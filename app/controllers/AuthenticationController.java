@@ -23,7 +23,7 @@ import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-@Controller("authenticationController")
+@Controller
 public class AuthenticationController extends BaseController {
 
     public Result signIn() throws Exception {

@@ -11,15 +11,15 @@ import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import play.mvc.Result;
 
-@Controller("consentController")
+import com.fasterxml.jackson.databind.JsonNode;
+
+@Controller
 public class ConsentController extends BaseController {
 
     private ConsentService consentService;
-    
+
     private ParticipantOptionsService optionsService;
 
     @Autowired

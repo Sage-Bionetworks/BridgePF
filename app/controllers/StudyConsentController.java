@@ -14,7 +14,7 @@ import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
-@Controller("studyConsentController")
+@Controller
 public class StudyConsentController extends BaseController {
 
     private StudyConsentService studyConsentService;

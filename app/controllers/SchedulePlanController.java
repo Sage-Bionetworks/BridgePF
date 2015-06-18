@@ -13,7 +13,7 @@ import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
-@Controller("schedulePlanController")
+@Controller
 public class SchedulePlanController extends BaseController {
 
     private SchedulePlanService schedulePlanService;

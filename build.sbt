@@ -2,7 +2,7 @@ name := "BridgePF"
 
 version := "0.1-SNAPSHOT"
 
-scalaVersion := "2.11.2"
+scalaVersion := "2.11.6"
 
 // The Typesafe repository
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
@@ -22,7 +22,7 @@ libraryDependencies ++= Seq(
   // New Relic
   "com.newrelic.agent.java" % "newrelic-agent" % "3.14.0",
   // Spring
-  "org.springframework" % "spring-context" % "4.0.7.RELEASE",
+  "org.springframework" % "spring-context" % "4.1.6.RELEASE",
   // Apache Commons
   "org.apache.commons" % "commons-lang3" % "3.4",
   "commons-validator" % "commons-validator" % "1.4.1",
@@ -34,6 +34,8 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.5.3",
   // Guava
   "com.google.guava" % "guava" % "18.0",
+  // Guice
+  "com.google.inject" % "guice" % "4.0",
   // Security
   "org.apache.shiro" % "shiro-core" % "1.2.3",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.52",
@@ -56,8 +58,10 @@ libraryDependencies ++= Seq(
   javaWs % Test,
   "junit" % "junit" % "4.12" % Test,
   "org.mockito" % "mockito-core" % "1.10.19" % Test,
-  "org.springframework" % "spring-test" % "4.0.7.RELEASE" % Test,
+  "org.springframework" % "spring-test" % "4.1.6.RELEASE" % Test,
   "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.1" % Test
 )
 
 lazy val root = (project in file(".")).enablePlugins(PlayJava)
+
+routesGenerator := InjectedRoutesGenerator

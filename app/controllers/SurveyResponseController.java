@@ -20,7 +20,7 @@ import play.mvc.Result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
-@Controller("surveyResponseController")
+@Controller
 public class SurveyResponseController extends BaseController {
     
     private SurveyResponseService responseService;
