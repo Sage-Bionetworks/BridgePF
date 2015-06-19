@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.interceptors;
 
 import models.ExceptionMessage;
-import models.RequestUtils;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;

@@ -4,7 +4,6 @@ import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.METRICS_EXPIRE_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 import models.Metrics;
-import models.RequestUtils;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
