@@ -1,4 +1,4 @@
-package interceptors;
+package org.sagebionetworks.bridge.play.interceptors;
 
 import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.METRICS_EXPIRE_SECONDS;

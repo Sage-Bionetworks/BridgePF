@@ -1,4 +1,4 @@
-package interceptors;
+package org.sagebionetworks.bridge.play.interceptors;
 
 import models.ExceptionMessage;
 import models.RequestUtils;
