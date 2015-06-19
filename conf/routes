@@ -1,5 +1,4 @@
 # Top level views
-OPTIONS    /*all                       @org.sagebionetworks.bridge.play.controllers.ApplicationController.preflight(all: String)
 GET        /                           @org.sagebionetworks.bridge.play.controllers.ApplicationController.loadApp
 GET        /index.html                 @org.sagebionetworks.bridge.play.controllers.ApplicationController.loadApp
 GET        /mobile/verifyEmail.html    @org.sagebionetworks.bridge.play.controllers.ApplicationController.verifyEmail

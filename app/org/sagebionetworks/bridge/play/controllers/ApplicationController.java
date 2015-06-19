@@ -26,15 +26,4 @@ public class ApplicationController extends BaseController {
     public Result resetPassword() {
         return ok(views.html.resetPassword.render(Json.toJson(EMPTY_USER_SESSION).toString(), ASSETS_HOST, ASSETS_BUILD));
     }
-
-    // NOTE: I don't see this getting called...
-    public Result preflight(String all) {
-        response().setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*");
-        response().setHeader(ACCESS_CONTROL_ALLOW_METHODS, "HEAD, GET, OPTIONS, POST, PUT, DELETE");
-        // Accept,  Accept-Language, Content-Language and Content-Type for normal HTML types are all allowed by default.
-        // We add Content-Type to specify JSON. We can add other headers here when needed, but wildcards don't always 
-        // seem to work, it's browser-dependent.
-        response().setHeader(ACCESS_CONTROL_ALLOW_HEADERS, "Content-Type, User-Agent, Bridge-Session");
-        return ok();
-    }
 }
