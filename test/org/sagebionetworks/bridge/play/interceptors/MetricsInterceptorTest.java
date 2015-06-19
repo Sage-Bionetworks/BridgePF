@@ -1,4 +1,4 @@
-package interceptors;
+package org.sagebionetworks.bridge.play.interceptors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -9,9 +9,9 @@ import static org.mockito.Mockito.when;
 import java.util.HashMap;
 import java.util.Map;
 
-import models.Metrics;
-
 import org.junit.Test;
+import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.play.interceptors.MetricsInterceptor;
 
 import play.mvc.Http;
 import play.mvc.Http.Context;

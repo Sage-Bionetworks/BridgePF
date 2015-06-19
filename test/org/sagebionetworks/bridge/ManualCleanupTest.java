@@ -1,4 +1,4 @@
-package global;
+package org.sagebionetworks.bridge;
 
 import javax.annotation.Resource;
 

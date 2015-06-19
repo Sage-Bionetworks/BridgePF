@@ -1,4 +1,4 @@
-package models;
+package org.sagebionetworks.bridge.play.interceptors;
 
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import play.mvc.Http.Request;
