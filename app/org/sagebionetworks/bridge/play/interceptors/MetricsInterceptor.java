@@ -3,10 +3,10 @@ package org.sagebionetworks.bridge.play.interceptors;
 import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.METRICS_EXPIRE_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
-import models.Metrics;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.sagebionetworks.bridge.models.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

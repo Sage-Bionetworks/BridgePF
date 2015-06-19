@@ -1,4 +1,4 @@
-package models;
+package org.sagebionetworks.bridge.models;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;

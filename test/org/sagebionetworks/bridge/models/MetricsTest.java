@@ -1,12 +1,12 @@
-package models;
+package org.sagebionetworks.bridge.models;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import models.Metrics;
 
 import org.junit.Test;
+import org.sagebionetworks.bridge.models.Metrics;
 
 public class MetricsTest {
 

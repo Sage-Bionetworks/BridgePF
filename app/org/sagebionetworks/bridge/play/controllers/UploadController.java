@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import models.Metrics;
-
+import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;

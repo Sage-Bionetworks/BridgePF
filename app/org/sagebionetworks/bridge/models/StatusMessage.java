@@ -1,4 +1,4 @@
-package models;
+package org.sagebionetworks.bridge.models;
 
 public class StatusMessage {
 

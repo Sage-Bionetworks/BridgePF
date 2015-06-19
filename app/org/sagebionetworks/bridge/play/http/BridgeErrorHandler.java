@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.http;
 
-import models.StatusMessage;
+import org.sagebionetworks.bridge.models.StatusMessage;
+
 import play.http.HttpErrorHandler;
 import play.libs.F.Promise;
 import play.libs.Json;

@@ -1,13 +1,12 @@
 package org.sagebionetworks.bridge.play.interceptors;
 
-import models.ExceptionMessage;
-
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NoStackTraceException;
+import org.sagebionetworks.bridge.models.ExceptionMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
