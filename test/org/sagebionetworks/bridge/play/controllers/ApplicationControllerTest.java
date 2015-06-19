@@ -8,6 +8,10 @@ import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static play.mvc.Http.HeaderNames.ACCESS_CONTROL_ALLOW_HEADERS;
 import static play.mvc.Http.HeaderNames.ACCESS_CONTROL_ALLOW_METHODS;
 import static play.mvc.Http.HeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static play.mvc.Http.HeaderNames.ACCESS_CONTROL_REQUEST_HEADERS;
+import static play.mvc.Http.HeaderNames.ACCESS_CONTROL_REQUEST_METHOD;
+import static play.mvc.Http.HeaderNames.ORIGIN;
+import static play.mvc.Http.HeaderNames.REFERER;
 import static play.mvc.Http.HeaderNames.X_FORWARDED_PROTO;
 import static play.test.Helpers.running;
 import static play.test.Helpers.testServer;
@@ -32,13 +36,36 @@ public class ApplicationControllerTest {
         running(testServer(3333), new Runnable() {
             @Override
             public void run() {
-                WSRequest request = WS.url(TEST_BASE_URL + "/anything");
-                request.setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix());
+                WSRequest request = WS.url(TEST_BASE_URL + "/anything")
+                        .setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix())
+                        .setHeader(ACCESS_CONTROL_REQUEST_HEADERS, "accept, content-type")
+                        .setHeader(ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .setHeader(ORIGIN, "https://some.remote.server.org");
                 WSResponse response = request.options().get(TIMEOUT);
                 assertEquals(200, response.getStatus());
-                assertEquals("*", response.getHeader(ACCESS_CONTROL_ALLOW_ORIGIN));
-                assertEquals("HEAD, GET, OPTIONS, POST, PUT, DELETE", response.getHeader(ACCESS_CONTROL_ALLOW_METHODS));
-                assertEquals("Content-Type, User-Agent, Bridge-Session", response.getHeader(ACCESS_CONTROL_ALLOW_HEADERS));
+                assertEquals("Should echo back the origin",
+                        "https://some.remote.server.org", response.getHeader(ACCESS_CONTROL_ALLOW_ORIGIN));
+                assertEquals("Should echo back the access-control-allow-methods",
+                        "POST", response.getHeader(ACCESS_CONTROL_ALLOW_METHODS));
+                assertTrue("Should echo back the access-control-allow-request-headers",
+                        response.getHeader(ACCESS_CONTROL_ALLOW_HEADERS).toLowerCase().contains("accept"));
+                assertTrue("Should echo back the access-control-allow-request-headers",
+                        response.getHeader(ACCESS_CONTROL_ALLOW_HEADERS).toLowerCase().contains("content-type"));
+            }
+        });
+    }
+
+    @Test
+    public void testCors() {
+        running(testServer(3333), new Runnable() {
+            @Override
+            public void run() {
+                WSRequest request = WS.url(TEST_BASE_URL + "/")
+                        .setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix())
+                        .setHeader(ORIGIN, "https://some.remote.server.org")
+                        .setHeader(REFERER, "https://some.remote.server.org");
+                WSResponse response = request.get().get(TIMEOUT);
+                assertEquals(200, response.getStatus());
             }
         });
     }
@@ -48,11 +75,11 @@ public class ApplicationControllerTest {
         running(testServer(3333), new Runnable() {
             @Override
             public void run() {
-                WSRequest request = WS.url(TEST_BASE_URL + "/anything")
+                WSRequest request = WS.url(TEST_BASE_URL + "/")
                         .setFollowRedirects(Boolean.FALSE)
                         .setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix())
                         .setHeader(X_FORWARDED_PROTO, "http");
-                WSResponse response = request.options().get(TIMEOUT);
+                WSResponse response = request.get().get(TIMEOUT);
                 assertEquals(301, response.getStatus());
                 assertNotNull(response.getHeader("location"));
                 assertTrue(response.getHeader("location").startsWith("https://"));
