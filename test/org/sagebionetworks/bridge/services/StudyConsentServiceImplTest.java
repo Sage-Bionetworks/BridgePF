@@ -16,7 +16,6 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
@@ -109,11 +108,16 @@ public class StudyConsentServiceImplTest {
         assertEquals("<p>This is all the content that should be kept.</p>\n<br />\n<p>And this makes it a fragment.</p>", view.getDocumentContent());
     }
     
-    @Test(expected = InvalidEntityException.class)
-    public void veryBrokenContentIsRejected() {
+    /**
+     * There used to be a test that an InvalidEntityException would be thrown if the content was not valid XML. But
+     * Jsoup is very dogged in fixing even the worst documents, as this test demonstrates. Consenquently the validator 
+     * just isn't throwing an exception when testing through the service.
+     */
+    @Test
+    public void evenVeryBrokenContentIsFixed() {
         StudyConsentForm form = new StudyConsentForm("</script><div ankle='foo'>This just isn't a SGML-based document no matter how you slice it.</p><h4><img>");
         StudyConsentView view = studyConsentService.addConsent(new StudyIdentifierImpl("api"), form);
-        System.out.println(view.getDocumentContent());
+        assertEquals("<div>\n This just isn't a SGML-based document no matter how you slice it.\n <p></p>\n <h4><img /></h4>\n</div>", view.getDocumentContent());
     }
     
 }
