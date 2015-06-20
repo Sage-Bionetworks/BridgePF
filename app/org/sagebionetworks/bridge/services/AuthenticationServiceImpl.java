@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
@@ -112,28 +113,27 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
+
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signIn, "Sign in cannot be null");
-
         Validate.entityThrowingException(signInValidator, signIn);
+
         String lockId = null;
         try {
-            lockId = lockDao.acquireLock(SignIn.class, signIn.getUsername());
+            lockId = lockDao.acquireLock(SignIn.class,
+                    study.getIdentifier() + RedisKey.SEPARATOR + signIn.getUsername());
             Account account = accountDao.authenticate(study, signIn);
             UserSession session = getSessionFromAccount(study, account);
             cacheProvider.setUserSession(session);
-
             if (!session.getUser().doesConsent()) {
                 throw new ConsentRequiredException(session);
             }
-
             return session;
         } finally {
             if (lockId != null) {
                 lockDao.releaseLock(SignIn.class, signIn.getUsername(), lockId);
             }
         }
-
     }
 
     @Override

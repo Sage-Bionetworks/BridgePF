@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -19,6 +20,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.stereotype.Controller;
 
+import play.Logger;
 import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,24 +29,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class AuthenticationController extends BaseController {
 
     public Result signIn() throws Exception {
-        UserSession session = getSessionIfItExists();
-        if (session != null) {
-            setSessionToken(session.getSessionToken());
-            return okResult(new UserSessionInfo(session));
-        }
-        try {
-            JsonNode json = requestToJSON(request());
-            SignIn signIn = parseJson(request(), SignIn.class);
-            Study study = getStudyOrThrowException(json);
-            
-            session = authenticationService.signIn(study, signIn);
-            setSessionToken(session.getSessionToken());
-            Result result = okResult(new UserSessionInfo(session));
-            return result;
-        } catch(ConsentRequiredException e) {
-            setSessionToken(e.getUserSession().getSessionToken());
-            throw e;
-        }
+        return signInWithRetry(3);
     }
 
     public Result signOut() throws Exception {
@@ -102,7 +87,40 @@ public class AuthenticationController extends BaseController {
         authenticationService.resetPassword(passwordReset);
         return okResult("Password has been changed.");
     }
-    
+
+    private Result signInWithRetry(final int retryCounter) throws Exception {
+
+        UserSession session = getSessionIfItExists();
+        if (session != null) {
+            setSessionToken(session.getSessionToken());
+            return okResult(new UserSessionInfo(session));
+        }
+
+        final JsonNode json = requestToJSON(request());
+        final SignIn signIn = parseJson(request(), SignIn.class);
+        final Study study = getStudyOrThrowException(json);
+        try {
+            Logger.info("User " + signIn.getUsername() + " signing in for study " + study.getIdentifier() + ".");
+            session = authenticationService.signIn(study, signIn);
+        } catch(ConsentRequiredException e) {
+            setSessionToken(e.getUserSession().getSessionToken());
+            throw e;
+        } catch(ConcurrentModificationException e) {
+            if (retryCounter > 0) {
+                Logger.info("User " + signIn.getUsername() +
+                        " is having a race condition with signing in for study " + study.getIdentifier() + "." +
+                        " Will retry after 1 second.");
+                // controller.signIn() 95% is < 1000 ms 
+                Thread.sleep(1000);
+                return signInWithRetry(retryCounter - 1);
+            }
+            throw e;
+        }
+
+        setSessionToken(session.getSessionToken());
+        return okResult(new UserSessionInfo(session));
+    }
+
     /**
      * Unauthenticated calls that require a study (most of the calls not requiring authentication, including this one),
      * should include the study identifier as part of the JSON payload. This call handles such JSON and converts it to a
