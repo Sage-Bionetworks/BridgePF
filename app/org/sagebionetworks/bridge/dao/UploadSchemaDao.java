@@ -5,6 +5,7 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 /** DAO for upload schemas. This encapsulates standard CRUD operations as well as list operations. */
@@ -20,6 +21,20 @@ public interface UploadSchemaDao {
      * @return the created or updated schema, will be non-null
      */
     @Nonnull UploadSchema createOrUpdateUploadSchema(@Nonnull String studyId, @Nonnull UploadSchema uploadSchema);
+
+    /**
+     * DAO method for creating an upload schema from a survey. This is generally called when a survey is published, to
+     * create the corresponding upload schema, so that health data records can be created from survey responses.
+     * This method will also persist the schema to the backing store.
+     *
+     * @param studyIdentifier
+     *         study that the schema should be created or updated in, must be non-null and empty
+     * @param survey
+     *         survey to create the upload schema from
+     * @return the created upload schema
+     */
+    @Nonnull UploadSchema createUploadSchemaFromSurvey(@Nonnull StudyIdentifier studyIdentifier,
+            @Nonnull Survey survey);
 
     /**
      * DAO method for deleting an upload schema with the specified study, schema ID, and revision. If the schema

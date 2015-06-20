@@ -77,16 +77,20 @@ public interface SurveyService {
      * @return
      */
     public Survey updateSurvey(Survey survey);
-    
+
     /**
-     * Publish this survey. Although a non-published survey must still be accessible to users (in case 
-     * a schedule has been cached that references that survey), surveys should not be available for 
-     * assignment to schedules until they are published. 
+     * Publish this survey. Although a non-published survey must still be accessible to users (in case
+     * a schedule has been cached that references that survey), surveys should not be available for
+     * assignment to schedules until they are published.
+     *
+     * @param study
+     *         study ID of study to publish the survey to
      * @param keys
-     * @return
+     *         survey keys (guid, created on timestamp)
+     * @return published survey
      */
-    public Survey publishSurvey(GuidCreatedOnVersionHolder keys);
-    
+    public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys);
+
     /**
      * Delete a survey. A survey cannot be deleted unless 1) it is not published (either never was published 
      * or was subsequently closed); 2) there are no survey responses created against this survey, and 3) 

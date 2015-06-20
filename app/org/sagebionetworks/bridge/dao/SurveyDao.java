@@ -14,7 +14,7 @@ public interface SurveyDao {
     
     public Survey versionSurvey(GuidCreatedOnVersionHolder keys);
     
-    public Survey publishSurvey(GuidCreatedOnVersionHolder keys);
+    public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys);
     
     /**
      * Delete a survey. If a survey is published, or if there is a schedule plan
