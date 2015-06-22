@@ -2,7 +2,7 @@ name := "BridgePF"
 
 version := "0.1-SNAPSHOT"
 
-scalaVersion := "2.11.2"
+scalaVersion := "2.11.6"
 
 // The Typesafe repository
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
@@ -13,15 +13,16 @@ resolvers += "Heroku Maven repository" at "http://s3pository.heroku.com/maven-ce
 libraryDependencies ++= Seq(
   cache,
   filters,
+  "org.jsoup" % "jsoup" % "1.8.2",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.9.38",
   "com.amazonaws" % "aws-java-sdk-sts" % "1.9.38",
   "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.9.38",
   "com.amazonaws" % "aws-java-sdk-ses" % "1.9.38",
   // New Relic
-  "com.newrelic.agent.java" % "newrelic-agent" % "3.16.1",
+  "com.newrelic.agent.java" % "newrelic-agent" % "3.14.0",
   // Spring
-  "org.springframework" % "spring-context" % "4.0.7.RELEASE",
+  "org.springframework" % "spring-context" % "4.1.6.RELEASE",
   // Apache Commons
   "org.apache.commons" % "commons-lang3" % "3.4",
   "commons-validator" % "commons-validator" % "1.4.1",
@@ -33,6 +34,8 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.5.3",
   // Guava
   "com.google.guava" % "guava" % "18.0",
+  // Guice
+  "com.google.inject" % "guice" % "4.0",
   // Security
   "org.apache.shiro" % "shiro-core" % "1.2.3",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.52",
@@ -46,6 +49,7 @@ libraryDependencies ++= Seq(
   // Stormpath
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC4.2",
   "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC4.2",
+  "org.apache.httpcomponents" % "httpclient" % "4.4.1",
   // Redis
   "redis.clients" % "jedis" % "2.7.2",
   // PDF
@@ -54,8 +58,10 @@ libraryDependencies ++= Seq(
   javaWs % Test,
   "junit" % "junit" % "4.12" % Test,
   "org.mockito" % "mockito-core" % "1.10.19" % Test,
-  "org.springframework" % "spring-test" % "4.0.7.RELEASE" % Test,
+  "org.springframework" % "spring-test" % "4.1.6.RELEASE" % Test,
   "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.1" % Test
 )
 
 lazy val root = (project in file(".")).enablePlugins(PlayJava)
+
+routesGenerator := InjectedRoutesGenerator

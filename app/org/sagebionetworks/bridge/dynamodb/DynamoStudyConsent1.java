@@ -21,7 +21,6 @@ public final class DynamoStudyConsent1 implements StudyConsent {
     private String studyKey;
     private long createdOn;
     private boolean active;
-    private String path;
     private String storagePath;
     private Long version;
 
@@ -52,17 +51,7 @@ public final class DynamoStudyConsent1 implements StudyConsent {
         return active;
     }
     public void setActive(boolean active) {
-        this.active = active;
-    }
-
-    @Override
-    @DynamoDBAttribute
-    @JsonIgnore
-    public String getPath() {
-        return path;
-    }
-    public void setPath(String path) {
-        this.path = path;
+        this.active = active;    
     }
 
     @Override
@@ -90,7 +79,6 @@ public final class DynamoStudyConsent1 implements StudyConsent {
         int result = 1;
         result = prime * result + Objects.hash(active);
         result = prime * result + Objects.hash(createdOn);
-        result = prime * result + Objects.hash(path);
         result = prime * result + Objects.hash(storagePath);
         result = prime * result + Objects.hash(studyKey);
         result = prime * result + Objects.hash(version);
@@ -104,13 +92,13 @@ public final class DynamoStudyConsent1 implements StudyConsent {
             return false;
         DynamoStudyConsent1 other = (DynamoStudyConsent1) obj;
         return (Objects.equals(active, other.active) && Objects.equals(createdOn, other.createdOn) && 
-                Objects.equals(path, other.path) && Objects.equals(storagePath, other.storagePath) &&
+                Objects.equals(storagePath, other.storagePath) &&
                 Objects.equals(studyKey, other.studyKey) && Objects.equals(version, other.version));
     }
     
     @Override
     public String toString() {
-        return String.format("DynamoStudyConsent1 [studyKey=%s, createdOn=%s, active=%s, path=%s, storagePath=%s, version=%s]",
-            studyKey, createdOn, active, path, storagePath, version);
+        return String.format("DynamoStudyConsent1 [studyKey=%s, createdOn=%s, active=%s, storagePath=%s, version=%s]",
+            studyKey, createdOn, active, storagePath, version);
     }
 }

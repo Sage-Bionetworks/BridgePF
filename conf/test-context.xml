@@ -1,19 +1,18 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-   xmlns:context="http://www.springframework.org/schema/context"
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xmlns:mvc="http://www.springframework.org/schema/mvc"
-   xsi:schemaLocation="
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xsi:schemaLocation="
         http://www.springframework.org/schema/beans     
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/context 
         http://www.springframework.org/schema/context/spring-context.xsd">
 
-    <import resource="file:conf/application-context.xml"/>
+    <import resource="file:conf/application-context.xml" />
 
-    <bean id="testUserAdminHelper" class="org.sagebionetworks.bridge.TestUserAdminHelper" depends-on="studyConsentBootstrapper">
-        <property name="userAdminService" ref="userAdminService"/>
-        <property name="authService" ref="authenticationService"/>
-        <property name="studyService" ref="studyService"/>
+    <bean id="testUserAdminHelper" class="org.sagebionetworks.bridge.TestUserAdminHelper" depends-on="defaultStudyBootstrapper">
+        <property name="userAdminService" ref="userAdminService" />
+        <property name="authService" ref="authenticationService" />
+        <property name="studyService" ref="studyService" />
     </bean>
 
 </beans>

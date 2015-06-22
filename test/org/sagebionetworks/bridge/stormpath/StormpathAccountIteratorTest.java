@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Test;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -87,7 +87,7 @@ public class StormpathAccountIteratorTest {
     }
     
     private Study createStudy(String href) {
-        Study study = new DynamoStudy();
+        Study study = TestUtils.getValidStudy();
         study.setStormpathHref(href);
         return study;
     }

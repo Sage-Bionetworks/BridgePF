@@ -9,6 +9,9 @@ public interface TaskEvent extends BridgeEntity {
     
     public String getEventId();
     public void setEventId(String eventId);
+
+    public String getAnswerValue();
+    public void setAnswerValue(String answerValue);
     
     public Long getTimestamp();
     public void setTimestamp(Long timestamp);

@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.redis.RedisKey;
 import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
@@ -39,7 +40,9 @@ import org.springframework.stereotype.Component;
 public class AuthenticationServiceImpl implements AuthenticationService {
     
     private final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
-    
+
+    private final int LOCK_EXPIRE_IN_SECONDS = 5;
+
     private DistributedLockDao lockDao;
     private CacheProvider cacheProvider;
     private BridgeConfig config;
@@ -112,26 +115,27 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public UserSession signIn(Study study, SignIn signIn) throws ConsentRequiredException, EntityNotFoundException {
+
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signIn, "Sign in cannot be null");
-
         Validate.entityThrowingException(signInValidator, signIn);
+
         String lockId = null;
         try {
-            lockId = lockDao.acquireLock(SignIn.class, signIn.getUsername());
+            lockId = lockDao.acquireLock(SignIn.class,
+                    study.getIdentifier() + RedisKey.SEPARATOR + signIn.getUsername(), LOCK_EXPIRE_IN_SECONDS);
             Account account = accountDao.authenticate(study, signIn);
             UserSession session = getSessionFromAccount(study, account);
             cacheProvider.setUserSession(session);
-
             if (!session.getUser().doesConsent()) {
                 throw new ConsentRequiredException(session);
             }
-
             return session;
         } finally {
-            lockDao.releaseLock(SignIn.class, signIn.getUsername(), lockId);
+            if (lockId != null) {
+                lockDao.releaseLock(SignIn.class, signIn.getUsername(), lockId);
+            }
         }
-
     }
 
     @Override
@@ -150,7 +154,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         String lockId = null;
         try {
-            lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail());
+            lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail(), LOCK_EXPIRE_IN_SECONDS);
             if (consentService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }
@@ -210,7 +214,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         final UserSession session = getSession(account);
         session.setAuthenticated(true);
-        session.setEnvironment(config.getEnvironment().name().toLowerCase());
+        session.setEnvironment(config.getEnvironment());
         session.setStudyIdentifier(study.getStudyIdentifier());
 
         final User user = new User(account);

@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
@@ -24,9 +23,8 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
     @Override
     public void handle(@Nonnull UploadValidationContext context) throws UploadValidationException {
         // read sharing scope from options service
-        User user = context.getUser();
-        
-        Map<ParticipantOption,String> options = optionsService.getAllParticipantOptions(user.getHealthCode());
+        Map<ParticipantOption,String> options = optionsService.getAllParticipantOptions(
+                context.getUpload().getHealthCode());
         SharingScope userSharingScope = SharingScope.valueOf(options.get(ParticipantOption.SHARING_SCOPE));
         String userExternalId = options.get(ParticipantOption.EXTERNAL_IDENTIFIER);
 

@@ -10,7 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
-import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
@@ -29,14 +29,14 @@ public class TranscribeConsentHandlerTest {
         TranscribeConsentHandler handler = new TranscribeConsentHandler();
         handler.setOptionsService(mockOptionsService);
 
-        // set up context - handler expects User and RecordBuilder
-        User user = new User();
-        user.setHealthCode(TEST_HEALTHCODE);
+        // set up context - handler expects Upload and RecordBuilder
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setHealthCode(TEST_HEALTHCODE);
 
         HealthDataRecordBuilder recordBuilder = new DynamoHealthDataRecord.Builder();
 
         UploadValidationContext context = new UploadValidationContext();
-        context.setUser(user);
+        context.setUpload(upload);
         context.setHealthDataRecordBuilder(recordBuilder);
 
         // execute

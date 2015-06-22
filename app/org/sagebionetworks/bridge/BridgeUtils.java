@@ -33,6 +33,12 @@ public class BridgeUtils {
         return String.format("%s:%s", task.getSchedulePlanGuid(), Long.toString(task.getScheduledOn()));
     }
     
+    /**
+     * Searches for a @BridgeTypeName annotation on this or any parent class in the class hierarchy, returning 
+     * that value as the type name. If none exists, defaults to the simple class name. 
+     * @param clazz
+     * @return
+     */
     public static String getTypeName(Class<?> clazz) {
         BridgeTypeName att = AnnotationUtils.findAnnotation(clazz,BridgeTypeName.class);
         if (att != null) {

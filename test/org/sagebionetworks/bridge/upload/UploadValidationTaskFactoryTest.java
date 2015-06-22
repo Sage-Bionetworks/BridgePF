@@ -6,10 +6,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadDao;
-import org.sagebionetworks.bridge.models.accounts.User;
 
 public class UploadValidationTaskFactoryTest {
     @Test
@@ -24,12 +24,11 @@ public class UploadValidationTaskFactoryTest {
         taskFactory.setUploadDao(dao);
 
         // inputs
-        DynamoStudy study = new DynamoStudy();
+        DynamoStudy study = TestUtils.getValidStudy();
         DynamoUpload2 upload2 = new DynamoUpload2();
-        User user = new User();
 
         // execute and validate
-        UploadValidationTask task = taskFactory.newTask(study, user, upload2);
+        UploadValidationTask task = taskFactory.newTask(study, upload2);
         assertSame(study, task.getContext().getStudy());
         assertSame(upload2, task.getContext().getUpload());
         assertSame(handlerList, task.getHandlerList());

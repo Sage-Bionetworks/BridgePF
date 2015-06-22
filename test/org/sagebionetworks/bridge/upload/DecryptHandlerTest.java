@@ -5,8 +5,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.base.Charsets;
-import org.junit.Test;
 
+import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.services.UploadArchiveService;
 
@@ -17,8 +18,7 @@ public class DecryptHandlerTest {
         // to the service as expected.
 
         // inputs
-        DynamoStudy study = new DynamoStudy();
-        study.setIdentifier("test-study");
+        DynamoStudy study = TestUtils.getValidStudy();
 
         UploadValidationContext ctx = new UploadValidationContext();
         ctx.setStudy(study);
@@ -26,7 +26,7 @@ public class DecryptHandlerTest {
 
         // mock UploadArchiveService
         UploadArchiveService mockSvc = mock(UploadArchiveService.class);
-        when(mockSvc.decrypt("test-study", ctx.getData())).thenReturn("decrypted test data".getBytes(Charsets.UTF_8));
+        when(mockSvc.decrypt(study.getIdentifier(), ctx.getData())).thenReturn("decrypted test data".getBytes(Charsets.UTF_8));
 
         // set up test handler
         DecryptHandler handler = new DecryptHandler();

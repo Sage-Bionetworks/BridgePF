@@ -25,7 +25,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
@@ -110,7 +110,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         Map<String, byte[]> unzippedDataMap = context.getUnzippedDataMap();
         Upload upload = context.getUpload();
         String uploadId = upload.getUploadId();
-        Study study = context.getStudy();
+        StudyIdentifier study = context.getStudy();
         String studyId = study.getIdentifier();
 
         // Add empty record builder and attachment map to the context. We'll fill these in as we need them.

@@ -11,11 +11,10 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -24,8 +23,7 @@ public class UploadValidationContextTest {
     @Test
     public void shallowCopy() {
         // dummy objects to test against
-        Study study = new DynamoStudy();
-        User user = new User();
+        Study study = TestUtils.getValidStudy();
         Upload upload = new DynamoUpload2();
         byte[] data = "test-data".getBytes(Charsets.UTF_8);
         byte[] decryptedData = "test-decrypted-data".getBytes(Charsets.UTF_8);
@@ -38,7 +36,6 @@ public class UploadValidationContextTest {
         // create original
         UploadValidationContext original = new UploadValidationContext();
         original.setStudy(study);
-        original.setUser(user);
         original.setUpload(upload);
         original.setSuccess(false);
         original.addMessage("common message");
@@ -48,11 +45,11 @@ public class UploadValidationContextTest {
         original.setJsonDataMap(jsonDataMap);
         original.setHealthDataRecordBuilder(recordBuilder);
         original.setAttachmentsByFieldName(attachmentMap);
+        original.setRecordId("test-record");
 
         // copy and validate
         UploadValidationContext copy = original.shallowCopy();
         assertSame(study, copy.getStudy());
-        assertSame(user, copy.getUser());
         assertSame(upload, copy.getUpload());
         assertFalse(copy.getSuccess());
         assertSame(data, copy.getData());
@@ -61,6 +58,7 @@ public class UploadValidationContextTest {
         assertSame(jsonDataMap, copy.getJsonDataMap());
         assertSame(recordBuilder, copy.getHealthDataRecordBuilder());
         assertSame(attachmentMap, copy.getAttachmentsByFieldName());
+        assertEquals("test-record", copy.getRecordId());
 
         assertEquals(1, copy.getMessageList().size());
         assertEquals("common message", copy.getMessageList().get(0));

@@ -6,21 +6,23 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 import javax.annotation.Resource;
 
+import org.apache.commons.io.IOUtils;
 import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
@@ -29,9 +31,9 @@ import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
-import org.sagebionetworks.bridge.models.studies.StudyConsentView;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.RedisKey;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -39,18 +41,12 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ConsentServiceImplTest {
 
-    private StudyConsent studyConsent;
-
     @Resource
     private JedisOps jedisOps;
     
     @Resource
     private ConsentServiceImpl consentService;
     
-    // We need the DAO here because you can't delete the active consent document...
-    @Resource
-    private StudyConsentDao studyConsentDao;
-
     @Resource
     private StudyConsentService studyConsentService;
 
@@ -66,26 +62,23 @@ public class ConsentServiceImplTest {
     @Resource
     private TestUserAdminHelper helper;
 
+    private StudyConsentForm defaultConsentDocument;
+    
+    @Value("classpath:study-defaults/consent.xhtml")
+    public void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
+    }
+    
     private Study study;
     
     private TestUser testUser;
 
     @Before
     public void before() {
-        study = studyService.getStudy("api");
-        testUser = helper.createUser(ConsentServiceImplTest.class, true, false, null);
+        study = TestUtils.getValidStudy();
+        studyService.createStudy(study);
         
-        StudyConsentView view = studyConsentService.addConsent(study.getStudyIdentifier(), new StudyConsentForm(BridgeConstants.BRIDGE_DEFAULT_CONSENT_DOCUMENT));
-        studyConsent = view.getStudyConsent();
-        studyConsentService.activateConsent(study.getStudyIdentifier(), view.getCreatedOn());
-        
-        // Ensure that user gives no consent.
-        assertFalse(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
-        try {
-            consentService.getConsentSignature(testUser.getStudy(), testUser.getUser());
-            fail("expected exception");
-        } catch (EntityNotFoundException e) {
-        }
+        testUser = helper.createUser(ConsentServiceImplTest.class, study, false, null);
     }
 
     @After
@@ -93,11 +86,20 @@ public class ConsentServiceImplTest {
         if (consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser())) {
             consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
         }
-        studyConsentDao.setActive(studyConsent, false);
-        studyConsentDao.deleteConsent(testUser.getStudyIdentifier(), studyConsent.getCreatedOn());
         helper.deleteUser(testUser);
+        studyService.deleteStudy(study.getIdentifier());
     }
 
+    @Test
+    public void userHasNotGivenConsent() {
+        assertFalse(consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
+        try {
+            consentService.getConsentSignature(testUser.getStudy(), testUser.getUser());
+            fail("expected exception");
+        } catch (EntityNotFoundException e) {
+        }
+    }
+    
     @Test
     public void canConsent() {
         // Consent and verify.
@@ -185,9 +187,7 @@ public class ConsentServiceImplTest {
         try {
             jedisOps.del(key);
             
-            Study study = new DynamoStudy();
-            study.setIdentifier("test");
-            study.setName("Test Study");
+            Study study = TestUtils.getValidStudy();
             study.setMaxNumOfParticipants(2);
 
             // Set the cache so we avoid going to DynamoDB. We're testing the caching layer
@@ -214,47 +214,41 @@ public class ConsentServiceImplTest {
 
     @Test
     public void checkConsentUpToDate() {
-        StudyConsent newStudyConsent = null;
-        try {
-            ConsentSignature researchConsent = ConsentSignature.create("John Smith", "1990-11-11", null, null);
-            consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), researchConsent,
-                    SharingScope.SPONSORS_AND_PARTNERS, false);
+        ConsentSignature researchConsent = ConsentSignature.create("John Smith", "1990-11-11", null, null);
+        consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), researchConsent,
+                SharingScope.SPONSORS_AND_PARTNERS, false);
 
-            assertTrue("Should be consented",
-                    consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
-            assertTrue("Should have signed most recent consent.",
-                    consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
+        assertTrue("Should be consented",
+                consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
+        assertTrue("Should have signed most recent consent.",
+                consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
 
-            // Create new study consent, but do not activate it. User is consented and has still signed most recent consent.
-            newStudyConsent = studyConsentService.addConsent(testUser.getStudyIdentifier(),
-                            new StudyConsentForm(BridgeConstants.BRIDGE_DEFAULT_CONSENT_DOCUMENT)).getStudyConsent();
+        // Create new study consent, but do not activate it. User is consented and has still signed most recent consent.
+        StudyConsent newStudyConsent = studyConsentService.addConsent(testUser.getStudyIdentifier(), defaultConsentDocument).getStudyConsent();
 
-            assertTrue("Should be consented.",
-                    consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
-            assertTrue("Should have signed most recent consent, even though new consent is added.",
-                    consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
+        assertTrue("Should be consented.",
+                consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
+        assertTrue("Should have signed most recent consent, even though new consent is added.",
+                consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
 
-            // Activate new study consent. User is consented and but has not signed most recent consent.
-            newStudyConsent = studyConsentService.activateConsent(testUser.getStudyIdentifier(),
-                            newStudyConsent.getCreatedOn()).getStudyConsent();
+        // Activate new study consent. User is consented and but has not signed most recent consent.
+        newStudyConsent = studyConsentService.activateConsent(testUser.getStudyIdentifier(),
+                        newStudyConsent.getCreatedOn()).getStudyConsent();
 
-            assertTrue("Should still be consented.",
-                    consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
-            assertFalse("New consent activated. Should no longer have signed most recent consent. ",
-                    consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
+        assertTrue("Should still be consented.",
+                consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
+        assertFalse("New consent activated. Should no longer have signed most recent consent. ",
+                consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
 
-            // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
-            consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
-            consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), researchConsent,
-                    SharingScope.SPONSORS_AND_PARTNERS, false);
+        // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
+        consentService.withdrawConsent(testUser.getStudy(), testUser.getUser());
+        consentService.consentToResearch(testUser.getStudy(), testUser.getUser(), researchConsent,
+                SharingScope.SPONSORS_AND_PARTNERS, false);
 
-            assertTrue("Should still be consented.",
-                    consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
-            assertTrue("Should again have signed most recent consent.",
-                    consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
-        } finally {
-            studyConsentDao.deleteConsent(testUser.getStudyIdentifier(), newStudyConsent.getCreatedOn());
-        }
+        assertTrue("Should still be consented.",
+                consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));
+        assertTrue("Should again have signed most recent consent.",
+                consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
     }
     
 }
