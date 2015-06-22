@@ -40,7 +40,9 @@ import org.springframework.stereotype.Component;
 public class AuthenticationServiceImpl implements AuthenticationService {
     
     private final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
-    
+
+    private final int LOCK_EXPIRE_IN_SECONDS = 5;
+
     private DistributedLockDao lockDao;
     private CacheProvider cacheProvider;
     private BridgeConfig config;
@@ -121,7 +123,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String lockId = null;
         try {
             lockId = lockDao.acquireLock(SignIn.class,
-                    study.getIdentifier() + RedisKey.SEPARATOR + signIn.getUsername());
+                    study.getIdentifier() + RedisKey.SEPARATOR + signIn.getUsername(), LOCK_EXPIRE_IN_SECONDS);
             Account account = accountDao.authenticate(study, signIn);
             UserSession session = getSessionFromAccount(study, account);
             cacheProvider.setUserSession(session);
@@ -152,7 +154,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         String lockId = null;
         try {
-            lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail());
+            lockId = lockDao.acquireLock(SignUp.class, signUp.getEmail(), LOCK_EXPIRE_IN_SECONDS);
             if (consentService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }

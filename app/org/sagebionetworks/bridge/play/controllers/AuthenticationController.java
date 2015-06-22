@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
+import org.apache.commons.codec.digest.Sha2Crypt;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -88,6 +89,11 @@ public class AuthenticationController extends BaseController {
         return okResult("Password has been changed.");
     }
 
+    /**
+     * Retries sign-in on lock.
+     *
+     * @param retryCounter the number of retries, excluding the initial try
+     */
     private Result signInWithRetry(final int retryCounter) throws Exception {
 
         UserSession session = getSessionIfItExists();
@@ -100,18 +106,18 @@ public class AuthenticationController extends BaseController {
         final SignIn signIn = parseJson(request(), SignIn.class);
         final Study study = getStudyOrThrowException(json);
         try {
-            Logger.info("User " + signIn.getUsername() + " signing in for study " + study.getIdentifier() + ".");
+            Logger.info("User " + sha256(signIn.getUsername()) + " signing in for study " + study.getIdentifier() + ".");
             session = authenticationService.signIn(study, signIn);
         } catch(ConsentRequiredException e) {
             setSessionToken(e.getUserSession().getSessionToken());
             throw e;
         } catch(ConcurrentModificationException e) {
             if (retryCounter > 0) {
-                Logger.info("User " + signIn.getUsername() +
+                Logger.info("User " + sha256(signIn.getUsername()) +
                         " is having a race condition with signing in for study " + study.getIdentifier() + "." +
-                        " Will retry after 1 second.");
+                        " Will retry after 250 millisecond.");
                 // controller.signIn() 95% is < 1000 ms 
-                Thread.sleep(1000);
+                Thread.sleep(250);
                 return signInWithRetry(retryCounter - 1);
             }
             throw e;
@@ -152,5 +158,9 @@ public class AuthenticationController extends BaseController {
             return studyId;
         }
         throw new EntityNotFoundException(Study.class);
+    }
+
+    private String sha256(final String string) {
+        return Sha2Crypt.sha256Crypt(string.getBytes(), string);
     }
 }
