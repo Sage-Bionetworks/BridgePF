@@ -3,7 +3,9 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
-import org.apache.commons.codec.digest.Sha2Crypt;
+import java.util.UUID;
+
+import org.apache.shiro.crypto.hash.Sha256Hash;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -105,15 +107,17 @@ public class AuthenticationController extends BaseController {
         final JsonNode json = requestToJSON(request());
         final SignIn signIn = parseJson(request(), SignIn.class);
         final Study study = getStudyOrThrowException(json);
+        // TODO: Remove the logging once the investigation is done
+        final String userNameHash = new Sha256Hash(signIn.getUsername(), UUID.randomUUID().toString()).toBase64();
         try {
-            Logger.info("User " + sha256(signIn.getUsername()) + " signing in for study " + study.getIdentifier() + ".");
+            Logger.info("User " + userNameHash + " signing in for study " + study.getIdentifier() + ".");
             session = authenticationService.signIn(study, signIn);
         } catch(ConsentRequiredException e) {
             setSessionToken(e.getUserSession().getSessionToken());
             throw e;
         } catch(ConcurrentModificationException e) {
             if (retryCounter > 0) {
-                Logger.info("User " + sha256(signIn.getUsername()) +
+                Logger.info("User " + userNameHash +
                         " is having a race condition with signing in for study " + study.getIdentifier() + "." +
                         " Will retry after 250 millisecond.");
                 // controller.signIn() 95% is < 1000 ms 
@@ -141,12 +145,12 @@ public class AuthenticationController extends BaseController {
         String studyId = getStudyStringOrThrowException(node);
         return studyService.getStudy(studyId);
     }
-    
+
     private StudyIdentifier getStudyIdentifierOrThrowException(JsonNode node) {
         String studyId = getStudyStringOrThrowException(node);
         return new StudyIdentifierImpl(studyId);
     }
-    
+
     @SuppressWarnings("deprecation")
     private String getStudyStringOrThrowException(JsonNode node) {
         String studyId = JsonUtils.asText(node, STUDY_PROPERTY);
@@ -158,9 +162,5 @@ public class AuthenticationController extends BaseController {
             return studyId;
         }
         throw new EntityNotFoundException(Study.class);
-    }
-
-    private String sha256(final String string) {
-        return Sha2Crypt.sha256Crypt(string.getBytes(), string);
     }
 }

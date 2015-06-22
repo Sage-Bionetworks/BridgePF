@@ -120,10 +120,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(signIn, "Sign in cannot be null");
         Validate.entityThrowingException(signInValidator, signIn);
 
+        final String lock = study.getIdentifier() + RedisKey.SEPARATOR + signIn.getUsername();
         String lockId = null;
         try {
-            lockId = lockDao.acquireLock(SignIn.class,
-                    study.getIdentifier() + RedisKey.SEPARATOR + signIn.getUsername(), LOCK_EXPIRE_IN_SECONDS);
+            lockId = lockDao.acquireLock(SignIn.class, lock, LOCK_EXPIRE_IN_SECONDS);
             Account account = accountDao.authenticate(study, signIn);
             UserSession session = getSessionFromAccount(study, account);
             cacheProvider.setUserSession(session);
@@ -133,7 +133,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             return session;
         } finally {
             if (lockId != null) {
-                lockDao.releaseLock(SignIn.class, signIn.getUsername(), lockId);
+                lockDao.releaseLock(SignIn.class, lock, lockId);
             }
         }
     }
