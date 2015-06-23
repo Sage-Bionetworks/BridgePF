@@ -5,11 +5,12 @@ import java.util.Map.Entry;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import play.Logger;
 import play.mvc.Controller;
 
 import com.google.inject.AbstractModule;
@@ -17,9 +18,11 @@ import com.google.inject.Binder;
 
 public class BridgeSpringContextModule extends AbstractModule {
 
+    private static final Logger logger = LoggerFactory.getLogger(BridgeSpringContextModule.class);
+
     @Override
     protected void configure() {
-        Logger.info("Environment: " + BridgeConfigFactory.getConfig().getEnvironment().name());
+        logger.info("Environment: " + BridgeConfigFactory.getConfig().getEnvironment().name());
         loadDynamo();
         final AbstractApplicationContext appContext = loadAppContext();
         bindControllers(appContext);
@@ -27,7 +30,7 @@ public class BridgeSpringContextModule extends AbstractModule {
 
     private void loadDynamo() {
         DynamoInitializer.init("org.sagebionetworks.bridge.dynamodb");
-        Logger.info("DynamoDB tables loaded.");
+        logger.info("DynamoDB tables loaded.");
     }
 
     private AbstractApplicationContext loadAppContext() {
@@ -41,7 +44,7 @@ public class BridgeSpringContextModule extends AbstractModule {
             }
         });
         bridgeAppContext.start();
-        Logger.info("Bridge Spring context loaded.");
+        logger.info("Bridge Spring context loaded.");
         return bridgeAppContext;
     }
 
@@ -61,6 +64,6 @@ public class BridgeSpringContextModule extends AbstractModule {
             binder.bind(clazz).toInstance(clazz.cast(
                     beanFactory.getBean(clazz.getSimpleName() + "Proxied")));
         }
-        Logger.info(clazz.getName() + " is bound.");
+        logger.info(clazz.getName() + " is bound.");
     }
 }
