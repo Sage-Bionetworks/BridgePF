@@ -19,15 +19,18 @@ import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 
-import play.Logger;
 import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 @Controller
 public class AuthenticationController extends BaseController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
     public Result signIn() throws Exception {
         return signInWithRetry(3);
@@ -108,14 +111,14 @@ public class AuthenticationController extends BaseController {
         // TODO: Remove the logging once the investigation is done
         final String userNameHash = new Sha256Hash(signIn.getUsername(), signIn.getUsername()).toBase64();
         try {
-            Logger.info("User " + userNameHash + " signing in for study " + study.getIdentifier() + ".");
+            logger.info("User " + userNameHash + " signing in for study " + study.getIdentifier() + ".");
             session = authenticationService.signIn(study, signIn);
         } catch(ConsentRequiredException e) {
             setSessionToken(e.getUserSession().getSessionToken());
             throw e;
         } catch(ConcurrentModificationException e) {
             if (retryCounter > 0) {
-                Logger.info("User " + userNameHash +
+                logger.info("User " + userNameHash +
                         " is having a race condition with signing in for study " + study.getIdentifier() + "." +
                         " Will retry after 250 millisecond.");
                 // controller.signIn() 95% is < 1000 ms 
