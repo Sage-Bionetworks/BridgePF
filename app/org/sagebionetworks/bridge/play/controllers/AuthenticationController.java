@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
-import java.util.UUID;
-
 import org.apache.shiro.crypto.hash.Sha256Hash;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -108,7 +106,7 @@ public class AuthenticationController extends BaseController {
         final SignIn signIn = parseJson(request(), SignIn.class);
         final Study study = getStudyOrThrowException(json);
         // TODO: Remove the logging once the investigation is done
-        final String userNameHash = new Sha256Hash(signIn.getUsername(), UUID.randomUUID().toString()).toBase64();
+        final String userNameHash = new Sha256Hash(signIn.getUsername(), signIn.getUsername()).toBase64();
         try {
             Logger.info("User " + userNameHash + " signing in for study " + study.getIdentifier() + ".");
             session = authenticationService.signIn(study, signIn);
