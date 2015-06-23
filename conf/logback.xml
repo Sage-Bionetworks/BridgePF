@@ -11,12 +11,6 @@
   <logger name="play" level="INFO">
     <appender-ref ref="STDOUT" />
   </logger>
-  <logger name="interceptors" level="DEBUG" additivity="false">
-    <appender-ref ref="STDOUT" />
-  </logger>
-  <logger name="controllers" level="DEBUG" additivity="false">
-    <appender-ref ref="STDOUT" />
-  </logger>
   <logger name="org.sagebionetworks.bridge" level="DEBUG" additivity="false">
     <appender-ref ref="STDOUT" />
   </logger>
