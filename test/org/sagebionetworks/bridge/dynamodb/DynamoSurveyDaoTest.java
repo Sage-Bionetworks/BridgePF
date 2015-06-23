@@ -476,15 +476,20 @@ public class DynamoSurveyDaoTest {
         nextVersion = surveyDao.versionSurvey(nextVersion);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
         surveyDao.publishSurvey(studyIdentifier, nextVersion);
-        
-        // This should retrieve two surveys matching the references firstVersion & nextVersion
+
+        // This should include firstVersion and nextVersion.
         List<Survey> surveys = surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
-        
-        assertEquals("Second survey is the correct version", nextVersion.getGuid(), surveys.get(0).getGuid());
-        assertEquals("Second survey is the correct version", nextVersion.getCreatedOn(), surveys.get(0).getCreatedOn());
-        
-        assertEquals("First survey is the correct version", firstVersion.getGuid(), surveys.get(1).getGuid());
-        assertEquals("First survey is the correct version", firstVersion.getCreatedOn(), surveys.get(1).getCreatedOn());
+        boolean foundFirstVersion = false;
+        boolean foundNextVersion = false;
+        for (Survey oneSurvey : surveys) {
+            if (oneSurvey.keysEqual(firstVersion)) {
+                foundFirstVersion = true;
+            } else if (oneSurvey.keysEqual(nextVersion)) {
+                foundNextVersion = true;
+            }
+        }
+        assertTrue(foundFirstVersion);
+        assertTrue(foundNextVersion);
     }
     
     @Test
@@ -509,36 +514,40 @@ public class DynamoSurveyDaoTest {
         nextVersion = surveyDao.versionSurvey(nextVersion);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
 
-        // This should retrieve two surveys matching the references firstVersion & nextVersion
+        // This should include firstVersion and nextVersion.
         List<Survey> surveys = surveyDao.getAllSurveysMostRecentVersion(studyIdentifier);
-        
-        assertEquals("There should be two survey versions", 2, surveys.size());
-        
-        assertEquals("Second survey is the correct version, first in list", nextVersion.getGuid(), surveys.get(0).getGuid());
-        assertEquals("Second survey is the correct version, first in list", nextVersion.getCreatedOn(), surveys.get(0).getCreatedOn());
-        
-        assertEquals("First survey is the correct version, second in list", firstVersion.getGuid(), surveys.get(1).getGuid());
-        assertEquals("First survey is the correct version, second in list", firstVersion.getCreatedOn(), surveys.get(1).getCreatedOn());
+        boolean foundFirstVersion = false;
+        boolean foundNextVersion = false;
+        for (Survey oneSurvey : surveys) {
+            if (oneSurvey.keysEqual(firstVersion)) {
+                foundFirstVersion = true;
+            } else if (oneSurvey.keysEqual(nextVersion)) {
+                foundNextVersion = true;
+            }
+        }
+        assertTrue(foundFirstVersion);
+        assertTrue(foundNextVersion);
     }
-    
+
     @Test
     public void canGetAllSurveys() {
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyDao.createSurvey(new TestSurvey(true))));
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyDao.createSurvey(new TestSurvey(true))));
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyDao.createSurvey(new TestSurvey(true))));
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyDao.createSurvey(new TestSurvey(true))));
+        Set<GuidCreatedOnVersionHolderImpl> mostRecentVersionSurveys = new HashSet<>();
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyDao.createSurvey(new TestSurvey(true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyDao.createSurvey(new TestSurvey(true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyDao.createSurvey(new TestSurvey(true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyDao.createSurvey(new TestSurvey(true))));
 
         Survey survey = surveyDao.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         Survey nextVersion = surveyDao.versionSurvey(survey);
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
+        surveysToDelete.addAll(mostRecentVersionSurveys);
 
         // Get all surveys
-        
+        // Make sure this returns all surveys that we created
         List<Survey> surveys = surveyDao.getAllSurveysMostRecentVersion(studyIdentifier);
-
-        assertEquals("All most recent surveys are returned", 5, surveys.size());
+        assertContainsAllKeys(mostRecentVersionSurveys, surveys);
 
         // Get all surveys of a version
         surveys = surveyDao.getSurveyAllVersions(studyIdentifier, survey.getGuid());
@@ -591,15 +600,30 @@ public class DynamoSurveyDaoTest {
         surveyDao.publishSurvey(studyIdentifier, survey1);
         schemaIdsToDelete.add(survey1.getIdentifier());
 
+        // Find the survey that we created and make sure it's the published version (survey1)
         List<Survey> surveys = surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
-        assertEquals("Retrieved published testSurvey v1", survey1.getCreatedOn(), surveys.get(0).getCreatedOn());
+        boolean foundSurvey1 = false;
+        for (Survey oneSurvey : surveys) {
+            if (oneSurvey.keysEqual(survey1)) {
+                foundSurvey1 = true;
+                assertEquals("Retrieved published testSurvey v1", survey1.getCreatedOn(), oneSurvey.getCreatedOn());
+            }
+        }
+        assertTrue(foundSurvey1);
 
         // Publish a later version
         surveyDao.publishSurvey(studyIdentifier, survey2);
 
         // Now the most recent version of this testSurvey should be survey2.
         surveys = surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
-        assertEquals("Retrieved published testSurvey v2", survey2.getCreatedOn(), surveys.get(0).getCreatedOn());
+        boolean foundSurvey2 = false;
+        for (Survey oneSurvey : surveys) {
+            if (oneSurvey.keysEqual(survey2)) {
+                foundSurvey2 = true;
+                assertEquals("Retrieved published testSurvey v2", survey2.getCreatedOn(), oneSurvey.getCreatedOn());
+            }
+        }
+        assertTrue(foundSurvey2);
     }
 
     @Test
@@ -617,12 +641,9 @@ public class DynamoSurveyDaoTest {
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey3));
         surveyDao.publishSurvey(studyIdentifier, survey3);
 
+        // Make sure this returns all surveys that we created
         List<Survey> published = surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
-
-        assertEquals("There are three published surveys", 3, published.size());
-        assertEquals("The first is survey3", survey3.getGuid(), published.get(0).getGuid());
-        assertEquals("The middle is survey2", survey2.getGuid(), published.get(1).getGuid());
-        assertEquals("The last is survey1", survey1.getGuid(), published.get(2).getGuid());
+        assertContainsAllKeys(surveysToDelete, published);
     }
 
     // DELETE SURVEY
@@ -710,6 +731,19 @@ public class DynamoSurveyDaoTest {
             if (plan != null) {
                 schedulePlanDao.deleteSchedulePlan(studyIdentifier, plan.getGuid());    
             }
+        }
+    }
+
+    private static void assertContainsAllKeys(Set<GuidCreatedOnVersionHolderImpl> expected, List<Survey> actual) {
+        for (GuidCreatedOnVersionHolderImpl oneExpected : expected) {
+            boolean found = false;
+            for (Survey oneActual : actual) {
+                if (oneExpected.keysEqual(oneActual)) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue("Found survey " + oneExpected, found);
         }
     }
 }

@@ -270,7 +270,7 @@ public class SurveyServiceTest {
 
         assertTrue("Survey is marked published", survey.isPublished());
 
-        Survey pubSurvey = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier).get(0);
+        Survey pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, survey.getGuid());
 
         assertEquals("Same testSurvey GUID", survey.getGuid(), pubSurvey.getGuid());
         assertEquals("Same testSurvey createdOn", survey.getCreatedOn(), pubSurvey.getCreatedOn());
@@ -278,7 +278,7 @@ public class SurveyServiceTest {
 
         // Publishing again is harmless
         survey = surveyService.publishSurvey(studyIdentifier, survey);
-        pubSurvey = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier).get(0);
+        pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, survey.getGuid());
         assertEquals("Same testSurvey GUID", survey.getGuid(), pubSurvey.getGuid());
         assertEquals("Same testSurvey createdOn", survey.getCreatedOn(), pubSurvey.getCreatedOn());
         assertTrue("Published testSurvey is marked published", pubSurvey.isPublished());
@@ -298,7 +298,7 @@ public class SurveyServiceTest {
 
         laterSurvey = surveyService.publishSurvey(studyIdentifier, laterSurvey);
 
-        Survey pubSurvey = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier).get(0);
+        Survey pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, survey.getGuid());
         assertEquals("Later testSurvey is the published testSurvey", laterSurvey.getCreatedOn(), pubSurvey.getCreatedOn());
     }
 
@@ -313,21 +313,23 @@ public class SurveyServiceTest {
 
     @Test
     public void canGetAllSurveys() {
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
+        Set<GuidCreatedOnVersionHolderImpl> mostRecentVersionSurveys = new HashSet<>();
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
 
         Survey survey = surveyService.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         Survey nextVersion = surveyService.versionSurvey(survey);
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
+        surveysToDelete.addAll(mostRecentVersionSurveys);
 
         // Get all surveys
-        
+        // Make sure this returns all surveys that we created
         List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyIdentifier);
-        assertEquals("All surveys are returned", 5, surveys.size());
+        assertContainsAllKeys(mostRecentVersionSurveys, surveys);
 
         // Get all surveys of a version
         surveys = surveyService.getSurveyAllVersions(studyIdentifier, survey.getGuid());
@@ -377,15 +379,30 @@ public class SurveyServiceTest {
         surveyService.publishSurvey(studyIdentifier, survey1);
         schemaIdsToDelete.add(survey1.getIdentifier());
 
+        // Find the survey that we created and make sure it's the published version (survey1)
         List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
-        assertEquals("Retrieved published testSurvey v1", survey1.getCreatedOn(), surveys.get(0).getCreatedOn());
+        boolean foundSurvey1 = false;
+        for (Survey oneSurvey : surveys) {
+            if (oneSurvey.keysEqual(survey1)) {
+                foundSurvey1 = true;
+                assertEquals("Retrieved published testSurvey v1", survey1.getCreatedOn(), oneSurvey.getCreatedOn());
+            }
+        }
+        assertTrue(foundSurvey1);
 
         // Publish a later version
         surveyService.publishSurvey(studyIdentifier, survey2);
 
         // Now the most recent version of this testSurvey should be survey2.
         surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
-        assertEquals("Retrieved published testSurvey v2", survey2.getCreatedOn(), surveys.get(0).getCreatedOn());
+        boolean foundSurvey2 = false;
+        for (Survey oneSurvey : surveys) {
+            if (oneSurvey.keysEqual(survey2)) {
+                foundSurvey2 = true;
+                assertEquals("Retrieved published testSurvey v2", survey2.getCreatedOn(), oneSurvey.getCreatedOn());
+            }
+        }
+        assertTrue(foundSurvey2);
     }
 
     @Test
@@ -403,12 +420,9 @@ public class SurveyServiceTest {
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey3));
         surveyService.publishSurvey(studyIdentifier, survey3);
 
+        // Make sure this returns all surveys that we created
         List<Survey> published = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
-
-        assertEquals("There are three published surveys", 3, published.size());
-        assertEquals("The first is survey3", survey3.getGuid(), published.get(0).getGuid());
-        assertEquals("The middle is survey2", survey2.getGuid(), published.get(1).getGuid());
-        assertEquals("The last is survey1", survey1.getGuid(), published.get(2).getGuid());
+        assertContainsAllKeys(surveysToDelete, published);
     }
 
     // DELETE SURVEY
@@ -456,4 +470,16 @@ public class SurveyServiceTest {
         }
     }
 
+    private static void assertContainsAllKeys(Set<GuidCreatedOnVersionHolderImpl> expected, List<Survey> actual) {
+        for (GuidCreatedOnVersionHolderImpl oneExpected : expected) {
+            boolean found = false;
+            for (Survey oneActual : actual) {
+                if (oneExpected.keysEqual(oneActual)) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue("Found survey " + oneExpected, found);
+        }
+    }
 }
