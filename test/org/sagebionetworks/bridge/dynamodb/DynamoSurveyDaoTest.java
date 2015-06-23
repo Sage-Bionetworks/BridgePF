@@ -9,7 +9,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,6 +18,7 @@ import javax.annotation.Resource;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -67,19 +68,22 @@ public class DynamoSurveyDaoTest {
     @Resource
     DynamoUploadSchemaDao uploadSchemaDao;
 
+    private final StudyIdentifier studyIdentifier = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
+
     private TestSurvey testSurvey;
-    private StudyIdentifier studyIdentifier;
-    private List<GuidCreatedOnVersionHolder> surveysToDelete;
+    private Set<GuidCreatedOnVersionHolderImpl> surveysToDelete;
     private Set<String> schemaIdsToDelete;
+
+    @BeforeClass
+    public static void beforeClass() {
+        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyElement.class);
+    }
 
     @Before
     public void before() {
         testSurvey = new TestSurvey(true);
-        studyIdentifier = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
-        surveysToDelete = new ArrayList<>();
+        surveysToDelete = new HashSet<>();
         schemaIdsToDelete = new HashSet<>();
-
-        DynamoInitializer.init(DynamoSurvey.class, DynamoSurveyElement.class);
     }
 
     @After
@@ -117,7 +121,7 @@ public class DynamoSurveyDaoTest {
     @Test(expected = BridgeServiceException.class)
     public void createPreventsRecreatingASurvey() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         surveyDao.createSurvey(testSurvey);
     }
@@ -177,10 +181,10 @@ public class DynamoSurveyDaoTest {
     @Test
     public void canUpdateASurveyVersion() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         Survey nextVersion = surveyDao.versionSurvey(survey);
-        surveysToDelete.add(nextVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
 
         // If you change these, it looks like a different testSurvey, you'll just get a not found exception.
         // testSurvey.setGuid("A");
@@ -204,7 +208,7 @@ public class DynamoSurveyDaoTest {
     @Test
     public void crudSurveyQuestions() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         int count = survey.getElements().size();
         
@@ -231,7 +235,7 @@ public class DynamoSurveyDaoTest {
     @Test(expected = ConcurrentModificationException.class)
     public void cannotUpdateVersionWithoutException() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         survey.setVersion(44L);
         surveyDao.updateSurvey(survey);
@@ -240,7 +244,7 @@ public class DynamoSurveyDaoTest {
     @Test(expected = PublishedSurveyException.class)
     public void cannotUpdatePublishedSurveys() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         surveyDao.publishSurvey(studyIdentifier, survey);
         schemaIdsToDelete.add(survey.getIdentifier());
 
@@ -253,7 +257,7 @@ public class DynamoSurveyDaoTest {
     @Test
     public void canVersionASurveyEvenIfPublished() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         Survey publishedSurvey = surveyDao.publishSurvey(studyIdentifier, survey);
         schemaIdsToDelete.add(survey.getIdentifier());
@@ -261,7 +265,7 @@ public class DynamoSurveyDaoTest {
 
         Long originalVersion = survey.getCreatedOn();
         survey = surveyDao.versionSurvey(survey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         assertEquals("Newly versioned testSurvey is not published", false, survey.isPublished());
         assertNull(survey.getSchemaRevision());
@@ -273,12 +277,12 @@ public class DynamoSurveyDaoTest {
     @Test
     public void versioningASurveyCopiesTheQuestions() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         String v1SurveyCompoundKey = survey.getElements().get(0).getSurveyCompoundKey();
         String v1Guid = survey.getElements().get(0).getGuid();
 
         survey = surveyDao.versionSurvey(survey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         String v2SurveyCompoundKey = survey.getElements().get(0).getSurveyCompoundKey();
         String v2Guid = survey.getElements().get(0).getGuid();
 
@@ -291,7 +295,7 @@ public class DynamoSurveyDaoTest {
     @Test
     public void canPublishASurvey() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         survey = surveyDao.publishSurvey(studyIdentifier, survey);
         schemaIdsToDelete.add(survey.getIdentifier());
 
@@ -356,12 +360,12 @@ public class DynamoSurveyDaoTest {
     @Test
     public void canPublishANewerVersionOfASurvey() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         survey = surveyDao.publishSurvey(studyIdentifier, survey);
         schemaIdsToDelete.add(survey.getIdentifier());
 
         Survey laterSurvey = surveyDao.versionSurvey(survey);
-        surveysToDelete.add(laterSurvey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(laterSurvey));
         assertNotEquals("Surveys do not have the same createdOn", survey.getCreatedOn(),
                 laterSurvey.getCreatedOn());
 
@@ -391,7 +395,8 @@ public class DynamoSurveyDaoTest {
     @Test
     public void getSurveyAllVersions() {
         // Get a survey (one GUID), and no other surveys, all the versions, ordered most to least recent
-        surveysToDelete.add(surveyDao.createSurvey(new SimpleSurvey())); // spurious survey
+        Survey spuriousSurvey = surveyDao.createSurvey(new SimpleSurvey()); // spurious survey
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(spuriousSurvey));
         
         Survey versionedSurvey = surveyDao.createSurvey(new SimpleSurvey());
         surveyDao.versionSurvey(versionedSurvey);
@@ -399,7 +404,9 @@ public class DynamoSurveyDaoTest {
         long lastCreatedOnTime = surveyDao.versionSurvey(versionedSurvey).getCreatedOn();
         
         List<Survey> surveyVersions = surveyDao.getSurveyAllVersions(studyIdentifier, versionedSurvey.getGuid());
-        surveysToDelete.addAll(surveyVersions);
+        for (Survey oneSurveyVersion : surveyVersions) {
+            surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(oneSurveyVersion));
+        }
 
         for (Survey survey : surveyVersions) {
             assertEquals("All surveys verions of one survey", versionedSurvey.getGuid(), survey.getGuid());
@@ -413,11 +420,11 @@ public class DynamoSurveyDaoTest {
         // Get one survey (with the GUID), the most recent version (unpublished or published)
         
         Survey firstVersion = surveyDao.createSurvey(new SimpleSurvey());
-        surveysToDelete.add(firstVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(firstVersion));
         Survey middleVersion = surveyDao.versionSurvey(firstVersion);
-        surveysToDelete.add(middleVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(middleVersion));
         Survey finalVersion = surveyDao.versionSurvey(firstVersion);
-        surveysToDelete.add(finalVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(finalVersion));
 
         // Now confuse the matter by publishing a version before the last one.
         surveyDao.publishSurvey(studyIdentifier, middleVersion);
@@ -432,10 +439,11 @@ public class DynamoSurveyDaoTest {
         // Get one survey (with the GUID), the most recently published version
         
         Survey firstVersion = surveyDao.createSurvey(new SimpleSurvey());
-        surveysToDelete.add(firstVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(firstVersion));
         Survey middleVersion = surveyDao.versionSurvey(firstVersion);
-        surveysToDelete.add(middleVersion);
-        surveysToDelete.add(surveyDao.versionSurvey(firstVersion));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(middleVersion));
+        Survey finalVersion = surveyDao.versionSurvey(firstVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(finalVersion));
         
         // This is the version we want to retrieve now
         surveyDao.publishSurvey(studyIdentifier, middleVersion);
@@ -448,7 +456,7 @@ public class DynamoSurveyDaoTest {
     @Test(expected = EntityNotFoundException.class)
     public void getSurveyMostRecentlyPublishedVersionThrowsException() {
         Survey firstVersion = surveyDao.createSurvey(new SimpleSurvey());
-        surveysToDelete.add(firstVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(firstVersion));
         surveyDao.getSurveyMostRecentlyPublishedVersion(studyIdentifier, firstVersion.getGuid());
     }
     
@@ -456,17 +464,17 @@ public class DynamoSurveyDaoTest {
     public void getAllSurveysMostRecentlyPublishedVersion() {
         // Get all surveys (complete set of the GUIDS, most recently published (if never published, GUID isn't included)
         Survey firstVersion = surveyDao.createSurvey(new SimpleSurvey());
-        surveysToDelete.add(firstVersion);
-        surveysToDelete.add(surveyDao.versionSurvey(firstVersion));
-        surveysToDelete.add(surveyDao.versionSurvey(firstVersion));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(firstVersion));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyDao.versionSurvey(firstVersion)));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyDao.versionSurvey(firstVersion)));
         surveyDao.publishSurvey(studyIdentifier, firstVersion);
         schemaIdsToDelete.add(firstVersion.getIdentifier());
 
         Survey nextVersion = surveyDao.createSurvey(new SimpleSurvey());
-        surveysToDelete.add(nextVersion);
-        surveysToDelete.add(surveyDao.versionSurvey(nextVersion));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyDao.versionSurvey(nextVersion)));
         nextVersion = surveyDao.versionSurvey(nextVersion);
-        surveysToDelete.add(nextVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
         surveyDao.publishSurvey(studyIdentifier, nextVersion);
         
         // This should retrieve two surveys matching the references firstVersion & nextVersion
@@ -484,22 +492,22 @@ public class DynamoSurveyDaoTest {
         // Get all surveys (complete set of the GUIDS, most recent (published or unpublished)
         // Get all surveys (complete set of the GUIDS, most recently published (if never published, GUID isn't included)
         Survey firstVersion = surveyDao.createSurvey(new SimpleSurvey());
-        surveysToDelete.add(firstVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(firstVersion));
         firstVersion = surveyDao.versionSurvey(firstVersion);
-        surveysToDelete.add(firstVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(firstVersion));
         surveyDao.publishSurvey(studyIdentifier, firstVersion); // published is not the most recent
         schemaIdsToDelete.add(firstVersion.getIdentifier());
         firstVersion = surveyDao.versionSurvey(firstVersion);
-        surveysToDelete.add(firstVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(firstVersion));
 
         Survey nextVersion = surveyDao.createSurvey(new SimpleSurvey());
-        surveysToDelete.add(nextVersion);
-        surveysToDelete.add(surveyDao.versionSurvey(nextVersion));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyDao.versionSurvey(nextVersion)));
         nextVersion = surveyDao.versionSurvey(nextVersion);
-        surveysToDelete.add(nextVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
         surveyDao.publishSurvey(studyIdentifier, nextVersion); // published is again not the most recent.
         nextVersion = surveyDao.versionSurvey(nextVersion);
-        surveysToDelete.add(nextVersion);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
 
         // This should retrieve two surveys matching the references firstVersion & nextVersion
         List<Survey> surveys = surveyDao.getAllSurveysMostRecentVersion(studyIdentifier);
@@ -515,15 +523,16 @@ public class DynamoSurveyDaoTest {
     
     @Test
     public void canGetAllSurveys() {
-        surveysToDelete.add(surveyDao.createSurvey(new TestSurvey(true)));
-        surveysToDelete.add(surveyDao.createSurvey(new TestSurvey(true)));
-        surveysToDelete.add(surveyDao.createSurvey(new TestSurvey(true)));
-        surveysToDelete.add(surveyDao.createSurvey(new TestSurvey(true)));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyDao.createSurvey(new TestSurvey(true))));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyDao.createSurvey(new TestSurvey(true))));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyDao.createSurvey(new TestSurvey(true))));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyDao.createSurvey(new TestSurvey(true))));
 
         Survey survey = surveyDao.createSurvey(new TestSurvey(true));
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
-        surveysToDelete.add(surveyDao.versionSurvey(survey));
+        Survey nextVersion = surveyDao.versionSurvey(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
 
         // Get all surveys
         
@@ -547,7 +556,7 @@ public class DynamoSurveyDaoTest {
     @Test
     public void canClosePublishedSurvey() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         survey = surveyDao.publishSurvey(studyIdentifier, survey);
         schemaIdsToDelete.add(survey.getIdentifier());
@@ -568,14 +577,15 @@ public class DynamoSurveyDaoTest {
     public void canRetrieveMostRecentlyPublishedSurveysWithManyVersions() {
         // Version 1.
         Survey survey1 = surveyDao.createSurvey(new TestSurvey(true));
-        surveysToDelete.add(survey1);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey1));
 
         // Version 2.
         Survey survey2 = surveyDao.versionSurvey(survey1);
-        surveysToDelete.add(survey2);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey2));
 
         // Version 3 (tossed)
-        surveysToDelete.add(surveyDao.versionSurvey(survey2));
+        Survey survey3 = surveyDao.versionSurvey(survey2);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey3));
 
         // Publish one version
         surveyDao.publishSurvey(studyIdentifier, survey1);
@@ -595,16 +605,16 @@ public class DynamoSurveyDaoTest {
     @Test
     public void canRetrieveMostRecentPublishedSurveysWithManySurveys() {
         Survey survey1 = surveyDao.createSurvey(new TestSurvey(true));
-        surveysToDelete.add(survey1);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey1));
         surveyDao.publishSurvey(studyIdentifier, survey1);
         schemaIdsToDelete.add(survey1.getIdentifier());
 
         Survey survey2 = surveyDao.createSurvey(new TestSurvey(true));
-        surveysToDelete.add(survey2);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey2));
         surveyDao.publishSurvey(studyIdentifier, survey2);
 
         Survey survey3 = surveyDao.createSurvey(new TestSurvey(true));
-        surveysToDelete.add(survey3);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey3));
         surveyDao.publishSurvey(studyIdentifier, survey3);
 
         List<Survey> published = surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
@@ -620,7 +630,7 @@ public class DynamoSurveyDaoTest {
     @Test
     public void cannotDeletePublishedSurvey() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        surveysToDelete.add(survey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         survey = surveyDao.publishSurvey(studyIdentifier, survey);
         schemaIdsToDelete.add(survey.getIdentifier());
         try {
@@ -636,7 +646,7 @@ public class DynamoSurveyDaoTest {
     public void cannotDeleteSurveyWithResponses() {
         try {
             Survey survey = surveyDao.createSurvey(testSurvey);
-            surveysToDelete.add(survey);
+            surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
             survey = surveyDao.publishSurvey(studyIdentifier, survey);
             schemaIdsToDelete.add(survey.getIdentifier());
 
@@ -665,7 +675,7 @@ public class DynamoSurveyDaoTest {
         SchedulePlan plan = null;
         try {
             Survey survey = surveyDao.createSurvey(testSurvey);
-            surveysToDelete.add(survey);
+            surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
             survey = surveyDao.publishSurvey(studyIdentifier, survey);
             schemaIdsToDelete.add(survey.getIdentifier());
 
