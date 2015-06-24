@@ -33,10 +33,6 @@ public class StudyConsentValidator implements Validator {
     public final void setConsentBodyTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.consentBodyTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-
-    public final void setConsentBodyTemplate(String content) {
-        this.consentBodyTemplate = content;
-    }
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -52,7 +48,8 @@ public class StudyConsentValidator implements Validator {
             return;
         }
         // Assemble the final document and validate that it parses as XML. Otherwise the PDF generator
-        // will throw an error.
+        // will throw an error. We don't substitute any of the variables (these should not be XML, although
+        // we currently make no effort to prevent this).
         try {
             Map<String,String> map = Maps.newHashMap();
             map.put("consent.body", consent.getDocumentContent());

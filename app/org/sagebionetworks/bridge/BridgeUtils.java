@@ -24,12 +24,10 @@ import com.google.common.collect.Maps;
 public class BridgeUtils {
     
     /**
-     * Used to resolve Bridge-specific template variables in the email templates configured for Stormpath's
-     * authentication workflow (sending email verification or password reset emails) as well as in consents documents. 
-     * We follow the template variable format <code>${variableName}</code>. The map includes the variable names as keys,
-     * mapped to their values. For example, "studyName" is mapped to the Bridge study name, and thus the name can be
-     * dynamically inserted into the email templates. Variables can be left unresolved and later substituted by another 
-     * system (e.g. Stormpath, which handles <code>${url}</code>).
+     * A simple means of providing template variables in template strings, in the format <code>${variableName}</code>.
+     * This value will be replaced with the value of the variable name. The variable name/value pairs are passed to the
+     * method as a map. Variables that are not found in the map will be left in the string as is. This includes
+     * variables that are resolved by Stormpath when resolving templates for the emails sent by that system.
      * 
      * @see https://sagebionetworks.jira.com/wiki/display/BRIDGE/EmailTemplate
      * 
@@ -121,7 +119,7 @@ public class BridgeUtils {
             throw new EntityAlreadyExistsException(entity, message);
         }
     }
-    
+
     public static String toString(Long datetime) {
         return (datetime == null) ? null : new DateTime(datetime).toString();
     }

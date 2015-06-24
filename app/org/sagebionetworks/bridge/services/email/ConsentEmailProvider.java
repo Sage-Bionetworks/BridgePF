@@ -47,16 +47,16 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     private ConsentSignature consentSignature;
     private SharingScope sharingScope;
     private StudyConsentService studyConsentService;
-    private String consentBodyTemplate;
+    private String consentTemplate;
 
     public ConsentEmailProvider(Study study, User user, ConsentSignature consentSignature, SharingScope sharingScope,
-        StudyConsentService studyConsentService, String consentBodyTemplate) {
+        StudyConsentService studyConsentService, String consentTemplate) {
         this.study = study;
         this.user = user;
         this.consentSignature = consentSignature;
         this.sharingScope = sharingScope;
         this.studyConsentService = studyConsentService;
-        this.consentBodyTemplate = consentBodyTemplate;
+        this.consentTemplate = consentTemplate;
     }
 
     @Override
@@ -140,17 +140,17 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
             map.put("supportEmail", study.getSupportEmail());
             map.put("technicalEmail", study.getTechnicalEmail());
             map.put("sponsorName", study.getSponsorName());
-            String fullyResolvedHTML = BridgeUtils.resolveTemplate(consentAgreementHTML, map);
+            String resolvedConsentAgreementHTML = BridgeUtils.resolveTemplate(consentAgreementHTML, map);
 
             map = Maps.newHashMap();
             map.put("studyName", study.getName());
-            map.put("consent.body", fullyResolvedHTML);
+            map.put("consent.body", resolvedConsentAgreementHTML);
             map.put("participant.name", consentSignature.getName());
             map.put("participant.signing.date", signingDate);
             map.put("participant.email", user.getEmail());
             map.put("participant.sharing", sharingLabel);
             
-            return BridgeUtils.resolveTemplate(consentBodyTemplate, map);
+            return BridgeUtils.resolveTemplate(consentTemplate, map);
         }
     }
 

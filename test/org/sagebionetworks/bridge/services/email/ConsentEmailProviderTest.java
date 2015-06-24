@@ -25,9 +25,9 @@ import org.sagebionetworks.bridge.services.StudyConsentService;
 
 public class ConsentEmailProviderTest {
 
-    private static final String LEGACY_DOCUMENT = "<html><head></head><body>Passed through as is.</body></html>";
+    private static final String LEGACY_DOCUMENT = "<html><head></head><body>Passed through as is. |@@name@@|@@signing.date@@|@@email@@|@@sharing@@|</body></html>";
     
-    private static final String NEW_DOCUMENT_FRAGMENT = "<p>This is a consent agreement body.</p>";
+    private static final String NEW_DOCUMENT_FRAGMENT = "<p>This is a consent agreement body</p>";
     
     private ConsentEmailProvider provider;
     
@@ -63,7 +63,11 @@ public class ConsentEmailProviderTest {
         assertEquals("sender@default.com", email.getSenderAddress());
         assertEquals("user@user.com", email.getRecipientAddresses().get(0));
         assertEquals("consent@consent.com", email.getRecipientAddresses().get(1));
-        assertEquals(LEGACY_DOCUMENT, body.getContent());
+        
+        assertTrue("Name correct", ((String)body.getContent()).contains("|Test Person|"));
+        assertTrue("User email correct", ((String)body.getContent()).contains("|user@user.com|"));
+        assertTrue("Sharing correct", ((String)body.getContent()).contains("|Not Sharing|"));
+        assertTrue("HTML markup preserved", ((String)body.getContent()).contains("<html><head></head><body>Passed through as is."));
     }
     
     @Test
@@ -81,7 +85,7 @@ public class ConsentEmailProviderTest {
         assertTrue("Study name correct", ((String)body.getContent()).contains("<title>Study Name Consent To Research</title>"));
         assertTrue("Name correct", ((String)body.getContent()).contains(">Test Person<"));
         assertTrue("User email correct", ((String)body.getContent()).contains(">user@user.com<"));
-        assertTrue("Shairng correct", ((String)body.getContent()).contains(">Not Sharing<"));
+        assertTrue("Sharing correct", ((String)body.getContent()).contains(">Not Sharing<"));
     }
     
 }
