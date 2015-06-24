@@ -18,4 +18,4 @@ common: &default_settings
 
   # The levels in increasing order of verboseness are:
   #   off, severe, warning, info, fine, finer, finest
-  log_level: info
+  log_level: fine
