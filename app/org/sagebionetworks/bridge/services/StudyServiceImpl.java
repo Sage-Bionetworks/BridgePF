@@ -60,7 +60,7 @@ public class StudyServiceImpl implements StudyService {
     private String defaultResetPasswordTemplate;
     private String defaultResetPasswordTemplateSubject;
     
-    @Value("classpath:study-defaults/consent.xhtml")
+    @Value("classpath:study-defaults/consent-body.xhtml")
     final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
     }

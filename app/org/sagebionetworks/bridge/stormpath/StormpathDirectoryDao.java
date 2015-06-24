@@ -13,6 +13,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
@@ -308,6 +309,6 @@ public class StormpathDirectoryDao implements DirectoryDao {
         map.put("supportEmail", study.getSupportEmail());
         map.put("technicalEmail", study.getTechnicalEmail());
         map.put("sponsorName", study.getSponsorName());
-        return StormpathUtils.resolveTemplate(template, map);
+        return BridgeUtils.resolveTemplate(template, map);
     }
 }

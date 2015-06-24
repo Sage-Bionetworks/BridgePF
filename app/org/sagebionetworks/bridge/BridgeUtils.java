@@ -23,6 +23,32 @@ import com.google.common.collect.Maps;
 
 public class BridgeUtils {
     
+    /**
+     * A simple means of providing template variables in template strings, in the format <code>${variableName}</code>.
+     * This value will be replaced with the value of the variable name. The variable name/value pairs are passed to the
+     * method as a map. Variables that are not found in the map will be left in the string as is. This includes
+     * variables that are resolved by Stormpath when resolving templates for the emails sent by that system.
+     * 
+     * @see https://sagebionetworks.jira.com/wiki/display/BRIDGE/EmailTemplate
+     * 
+     * @param template
+     * @param values
+     * @return
+     */
+    public static String resolveTemplate(String template, Map<String,String> values) {
+        checkNotNull(template);
+        checkNotNull(values);
+        
+        for (Map.Entry<String,String> entry : values.entrySet()) {
+            if (entry.getValue() != null) {
+                String adjKey = entry.getKey().replaceAll("\\.", "\\\\.");
+                String regex = "\\$\\{"+adjKey+"\\}";
+                template = template.replaceAll(regex, entry.getValue());
+            }
+        }
+        return template;
+    }
+    
     public static String generateGuid() {
         return UUID.randomUUID().toString();
     }
@@ -94,7 +120,7 @@ public class BridgeUtils {
             throw new EntityAlreadyExistsException(entity, message);
         }
     }
-    
+
     public static String toString(Long datetime) {
         return (datetime == null) ? null : new DateTime(datetime).toString();
     }
