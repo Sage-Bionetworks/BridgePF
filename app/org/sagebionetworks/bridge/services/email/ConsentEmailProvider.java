@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services.email;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -169,7 +170,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
 
     private Set<String> commaListToSet(String commaList) {
         if (isNotBlank(commaList)) {
-            return org.springframework.util.StringUtils.commaDelimitedListToSet(commaList);
+            return commaDelimitedListToSet(commaList);
         }
         return Collections.emptySet();
     }

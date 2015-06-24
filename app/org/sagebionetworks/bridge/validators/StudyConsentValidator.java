@@ -63,6 +63,7 @@ public class StudyConsentValidator implements Validator {
             
             InputSource inputSource = new InputSource(new StringReader(mergedDocument));
             reader.parse(inputSource);
+            
         } catch(ParserConfigurationException | IOException e) {
             throw new BridgeServiceException(e);
         } catch (SAXException e) {

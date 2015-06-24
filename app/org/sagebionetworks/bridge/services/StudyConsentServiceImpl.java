@@ -141,10 +141,8 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     private String sanitizeHTML(String documentContent) {
         documentContent = Jsoup.clean(documentContent, Whitelist.relaxed());
         Document document = Jsoup.parseBodyFragment(documentContent);
-        document.outputSettings().escapeMode(EscapeMode.xhtml);
-        document.outputSettings().prettyPrint(false);
-        document.outputSettings().syntax(Syntax.xml);
-        document.outputSettings().charset("UTF-8");
+        document.outputSettings().escapeMode(EscapeMode.xhtml)
+            .prettyPrint(false).syntax(Syntax.xml).charset("UTF-8");
         return document.body().html();
     }
 }

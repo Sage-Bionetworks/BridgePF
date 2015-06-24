@@ -36,5 +36,14 @@ public class BridgeUtilsTest {
         result = BridgeUtils.resolveTemplate(" ", map);
         assertEquals(" ", result);
     }
+    
+    @Test
+    public void periodsNotInterpretedAsRegex() {
+        Map<String,String> map = Maps.newHashMap();
+        map.put("b.z", "bar");
+        
+        String result = BridgeUtils.resolveTemplate("${baz}", map);
+        assertEquals("${baz}", result);
+    }
 
 }
