@@ -180,4 +180,26 @@ public class StudyValidatorTest {
         study.setResetPasswordTemplate(new EmailTemplate("subject", null, MimeType.TEXT));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void cannotSetMinAgeOfConsentLessThanZero() {
+        study.setMinAgeOfConsent(-100);
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void cannotSetMaxNumOfParticipantsLessThanZero() {
+        study.setMaxNumOfParticipants(-100);
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    /*
+    if (study.getMinAgeOfConsent() < 0) {
+        errors.rejectValue("minAgeOfConsent", "must be zero (no minimum age of consent) or higher");
+    }
+    if (study.getMaxNumOfParticipants() < 0) {
+        errors.rejectValue("maxNumOfParticipants", "must be zero (no limit on enrollees) or higher");
+    }
+    */
+
 }
