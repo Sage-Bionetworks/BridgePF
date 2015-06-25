@@ -37,6 +37,13 @@ public class StudyConsentController extends BaseController {
         StudyConsentView consent = studyConsentService.getActiveConsent(studyId);
         return okResult(consent);
     }
+    
+    public Result getMostRecentConsent() throws Exception {
+        UserSession session = getAuthenticatedResearcherSession();
+        StudyIdentifier studyId = session.getStudyIdentifier();
+        StudyConsentView consent = studyConsentService.getMostRecentConsent(studyId);
+        return okResult(consent);
+    }
 
     public Result getConsent(String createdOn) throws Exception {
         UserSession session = getAuthenticatedResearcherSession();
@@ -45,7 +52,7 @@ public class StudyConsentController extends BaseController {
         StudyConsentView consent = studyConsentService.getConsent(studyId, timestamp);
         return okResult(consent);
     }
-
+    
     public Result addConsent() throws Exception {
         UserSession session = getAuthenticatedResearcherSession();
         StudyIdentifier studyId = session.getStudyIdentifier();

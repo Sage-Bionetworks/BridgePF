@@ -77,6 +77,7 @@ DELETE /researchers/v1/scheduleplans/:guid     @org.sagebionetworks.bridge.play.
 
 # Researchers - Study Consent Documents
 GET    /researcher/v1/consents                      @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getAllConsents
+GET    /researcher/v1/consents/recent               @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getMostRecentConsent
 GET    /researcher/v1/consents/active               @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getActiveConsent
 GET    /researcher/v1/consents/:timestamp           @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getConsent(timestamp: String)
 POST   /researcher/v1/consents                      @org.sagebionetworks.bridge.play.controllers.StudyConsentController.addConsent

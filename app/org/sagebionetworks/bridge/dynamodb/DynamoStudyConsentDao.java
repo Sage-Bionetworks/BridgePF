@@ -3,21 +3,18 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Resource;
+
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
@@ -29,14 +26,11 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
 
     private DynamoDBMapper mapper;
 
-    @Autowired
-    public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
-                .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoStudyConsent1.class)).build();
-        mapper = new DynamoDBMapper(client, mapperConfig);
+    @Resource(name = "studyConsentDdbMapper")
+    public void setDdbMapper(DynamoDBMapper mapper) {
+        this.mapper = mapper;
     }
-
+    
     @Override
     public StudyConsent addConsent(StudyIdentifier studyIdentifier, String storagePath, DateTime createdOn) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
@@ -55,7 +49,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         DynamoStudyConsent1 consent = mapper.load(hashKey);
         
         StudyIdentifier studyId = new StudyIdentifierImpl(studyConsent.getStudyKey());
-        StudyConsent activeConsent = getConsent(studyId);
+        StudyConsent activeConsent = getActiveConsent(studyId);
         
         consent.setActive(true);
         mapper.save(consent);
@@ -68,7 +62,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
 
     @Override
-    public StudyConsent getConsent(StudyIdentifier studyIdentifier) {
+    public StudyConsent getActiveConsent(StudyIdentifier studyIdentifier) {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyIdentifier.getIdentifier());
         DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
@@ -85,6 +79,22 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         return page.iterator().next();
     }
 
+    @Override
+    public StudyConsent getMostRecentConsent(StudyIdentifier studyIdentifier) {
+        DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
+        hashKey.setStudyKey(studyIdentifier.getIdentifier());
+        DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
+                new DynamoDBQueryExpression<DynamoStudyConsent1>()
+                .withHashKeyValues(hashKey)
+                .withScanIndexForward(false)
+                .withLimit(1);
+        PaginatedQueryList<DynamoStudyConsent1> page = mapper.query(DynamoStudyConsent1.class, queryExpression);
+        if (page.isEmpty()) {
+            return null;
+        }
+        return page.iterator().next();
+    }
+    
     @Override
     public StudyConsent getConsent(StudyIdentifier studyIdentifier, long timestamp) {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();

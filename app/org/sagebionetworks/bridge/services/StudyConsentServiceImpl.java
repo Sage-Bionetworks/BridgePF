@@ -82,7 +82,19 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     public StudyConsentView getActiveConsent(StudyIdentifier studyIdentifier) {
         checkNotNull(studyIdentifier, "StudyIdentifier is null");
         
-        StudyConsent consent = studyConsentDao.getConsent(studyIdentifier);
+        StudyConsent consent = studyConsentDao.getActiveConsent(studyIdentifier);
+        if (consent == null) {
+            throw new EntityNotFoundException(StudyConsent.class);
+        }
+        String documentContent = loadDocumentContent(consent);
+        return new StudyConsentView(consent, documentContent);
+    }
+    
+    @Override
+    public StudyConsentView getMostRecentConsent(StudyIdentifier studyIdentifier) {
+        checkNotNull(studyIdentifier, "StudyIdentifier is null");
+        
+        StudyConsent consent = studyConsentDao.getMostRecentConsent(studyIdentifier);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
