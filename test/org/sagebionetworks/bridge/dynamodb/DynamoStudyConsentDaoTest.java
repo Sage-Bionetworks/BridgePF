@@ -51,54 +51,49 @@ public class DynamoStudyConsentDaoTest {
         final StudyConsent consent1 = studyConsentDao.addConsent(STUDY_ID, STUDY_ID.getIdentifier()+"."+datetime.getMillis(), datetime);
         assertNotNull(consent1);
         assertFalse(consent1.getActive());
-        assertNull(studyConsentDao.getConsent(new StudyIdentifierImpl(consent1.getStudyKey())));
+        assertNull(studyConsentDao.getActiveConsent(new StudyIdentifierImpl(consent1.getStudyKey())));
         
         // Make version1 active
         StudyConsent consent = studyConsentDao.activate(consent1);
-        assertTrue(consent.getActive());
-        assertEquals(consent1.getStudyKey(), consent.getStudyKey());
-        assertEquals(consent1.getStoragePath(), consent.getStoragePath());
-        assertTrue(consent.getCreatedOn() > 0);
+        assertConsentsEqual(consent1, consent, true);
         
         datetime = DateUtils.getCurrentDateTime();
         
         // Add version 2
         final StudyConsent consent2 = studyConsentDao.addConsent(STUDY_ID, STUDY_ID.getIdentifier()+"."+datetime.getMillis(), datetime);
         assertNotNull(consent2);
-        studyConsentDao.activate(consent2);
         
-        // The latest should be version 2
-        consent = studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey()));
-        assertTrue(consent.getActive());
-        assertEquals(consent2.getStudyKey(), consent.getStudyKey());
-        assertEquals(consent2.getStoragePath(), consent.getStoragePath());
+        // The most recent consent should be version 2
+        consent = studyConsentDao.getMostRecentConsent(STUDY_ID);
+        assertConsentsEqual(consent2, consent, false);
+
+        // The active consent is still version 1
+        consent = studyConsentDao.getActiveConsent(STUDY_ID);
+        assertConsentsEqual(consent1, consent, true);
+        
+        // Now make consent 2 the active consent. It should be retrieved by active consent call
+        studyConsentDao.activate(consent2);
+        consent = studyConsentDao.getActiveConsent(STUDY_ID);
+        assertConsentsEqual(consent2, consent, true);
+        
+        // And by the way, it's still also the most recent
+        consent = studyConsentDao.getMostRecentConsent(STUDY_ID);
+        assertConsentsEqual(consent2, consent, true);
         
         // Can still get version 1 using its timestamp
-        consent = studyConsentDao.getConsent(new StudyIdentifierImpl(consent1.getStudyKey()), consent1.getCreatedOn());
-        assertFalse(consent.getActive());
-        assertEquals(consent1.getStudyKey(), consent.getStudyKey());
-        assertEquals(consent1.getStoragePath(), consent.getStoragePath());
+        consent = studyConsentDao.getConsent(STUDY_ID, consent1.getCreatedOn());
+        assertConsentsEqual(consent1, consent, false);
         
+        // Add a third consent to test list of consents
         datetime = DateUtils.getCurrentDateTime();
-        
-        // All consents
         final StudyConsent consent3 = studyConsentDao.addConsent(STUDY_ID, STUDY_ID.getIdentifier()+"."+datetime.getMillis(), datetime);
-
+        
+        // Get all consents. Should return in reverse order
         List<StudyConsent> all = studyConsentDao.getConsents(STUDY_ID);
         assertEquals(3, all.size());
-        // In reverse order
-        consent = all.get(0);
-        assertFalse(consent.getActive());
-        assertEquals(consent3.getStudyKey(), consent.getStudyKey());
-        assertEquals(consent3.getStoragePath(), consent.getStoragePath());
-        consent = all.get(1);
-        assertTrue(consent.getActive());
-        assertEquals(consent2.getStudyKey(), consent.getStudyKey());
-        assertEquals(consent2.getStoragePath(), consent.getStoragePath());
-        consent = all.get(2);
-        assertFalse(consent.getActive());
-        assertEquals(consent1.getStudyKey(), consent.getStudyKey());
-        assertEquals(consent1.getStoragePath(), consent.getStoragePath());
+        assertConsentsEqual(consent3, all.get(0), false);
+        assertConsentsEqual(consent2, all.get(1), true);
+        assertConsentsEqual(consent1, all.get(2), false);
     }
     
     @Test
@@ -108,20 +103,13 @@ public class DynamoStudyConsentDaoTest {
         StudyConsent consent = studyConsentDao.addConsent(STUDY_ID, key, createdOn);
         assertNotNull(consent);
         assertFalse(consent.getActive());
-        assertNull(studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey())));
-        
+        assertNull(studyConsentDao.getActiveConsent(new StudyIdentifierImpl(consent.getStudyKey())));
+
         // Now activate the consent
         consent = studyConsentDao.activate(consent);
-        StudyConsent newConsent = studyConsentDao.getConsent(new StudyIdentifierImpl(consent.getStudyKey()));
-        assertTrue(newConsent.getActive());
-        assertEquals(consent.getStudyKey(), newConsent.getStudyKey());
-        assertEquals(key, consent.getStoragePath());
-        assertEquals(createdOn.getMillis(), newConsent.getCreatedOn());
-        
-        List<StudyConsent> all = studyConsentDao.getConsents(STUDY_ID);
-        assertEquals(1, all.size());
-        // In reverse order
-        assertEquals(consent, all.get(0));
+        StudyConsent newConsent = studyConsentDao.getActiveConsent(new StudyIdentifierImpl(consent.getStudyKey()));
+        assertConsentsEqual(consent, newConsent, true);
+        assertEquals(key, newConsent.getStoragePath());
     }
     
     @Test
@@ -157,6 +145,13 @@ public class DynamoStudyConsentDaoTest {
         assertEquals(false, allConsents.get(0).getActive());
         assertEquals(false, allConsents.get(1).getActive());
         assertEquals(true, allConsents.get(2).getActive());
+    }
+    
+    private void assertConsentsEqual(StudyConsent existing, StudyConsent newOne, boolean isActive) {
+        assertEquals(isActive, newOne.getActive());
+        assertEquals(existing.getStudyKey(), newOne.getStudyKey());
+        assertEquals(existing.getStoragePath(), newOne.getStoragePath());
+        assertTrue(newOne.getCreatedOn() > 0);
     }
     
 }
