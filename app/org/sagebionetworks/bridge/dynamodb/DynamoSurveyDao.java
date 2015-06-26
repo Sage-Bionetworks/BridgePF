@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.ImmutableSurveyException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -230,6 +231,8 @@ public class DynamoSurveyDao implements SurveyDao {
         long time = DateUtils.getCurrentMillisFromEpoch();
         survey.setCreatedOn(time);
         survey.setModifiedOn(time);
+        survey.setPublished(false);
+        survey.setImmutable(false);
         return saveSurvey(survey);
     }
 
@@ -238,6 +241,7 @@ public class DynamoSurveyDao implements SurveyDao {
         Survey survey = getSurvey(keys);
         if (!survey.isPublished()) {
             survey.setPublished(true);
+            survey.setImmutable(true);
             survey.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
             try {
                 surveyMapper.save(survey);
@@ -253,6 +257,8 @@ public class DynamoSurveyDao implements SurveyDao {
         Survey existing = getSurvey(survey);
         if (existing.isPublished()) {
             throw new PublishedSurveyException(survey);
+        } else if (existing.isImmutable()) {
+            throw new ImmutableSurveyException(survey);
         }
         existing.setIdentifier(survey.getIdentifier());
         existing.setName(survey.getName());
@@ -267,6 +273,7 @@ public class DynamoSurveyDao implements SurveyDao {
         DynamoSurvey existing = (DynamoSurvey)getSurvey(keys);
         DynamoSurvey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
+        copy.setImmutable(false);
         copy.setVersion(null);
         long time = DateUtils.getCurrentMillisFromEpoch();
         copy.setCreatedOn(time);
@@ -303,6 +310,7 @@ public class DynamoSurveyDao implements SurveyDao {
     public Survey closeSurvey(GuidCreatedOnVersionHolder keys) {
         Survey existing = getSurvey(keys);
         existing.setPublished(false);
+        // if this survey was never published, it's still mutable. If it was published, it's still immutable.
         existing.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         try {
             surveyMapper.save(existing);

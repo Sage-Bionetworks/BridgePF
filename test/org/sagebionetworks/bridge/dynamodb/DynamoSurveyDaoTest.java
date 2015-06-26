@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -12,6 +13,7 @@ import javax.annotation.Resource;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -19,6 +21,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.ImmutableSurveyException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -529,5 +532,28 @@ public class DynamoSurveyDaoTest {
                 schedulePlanDao.deleteSchedulePlan(studyIdentifier, plan.getGuid());    
             }
         }
+    }
+    
+    @Test
+    public void closedSurveyCannotBeChanged() {
+        Survey survey = surveyDao.createSurvey(new TestSurvey(true));
+        survey = surveyDao.publishSurvey(survey);
+        survey = surveyDao.closeSurvey(survey);
+        assertTrue(survey.isImmutable());
+        
+        survey.setName("A new name that now cannot be saved");
+        try {
+            surveyDao.updateSurvey(survey);
+            fail("Should have thrown an exception.");
+        } catch(ImmutableSurveyException e) {
+            assertEquals("Once published a survey cannot be updated.", e.getMessage());
+        }
+        
+        // But this is okay because it is never published
+        survey = surveyDao.createSurvey(new TestSurvey(true));
+        survey = surveyDao.closeSurvey(survey);
+        assertFalse(survey.isImmutable());
+        survey.setName("A new name that now cannot be saved");
+        surveyDao.updateSurvey(survey);
     }
 }
