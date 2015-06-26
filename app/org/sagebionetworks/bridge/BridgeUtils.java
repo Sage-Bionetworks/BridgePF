@@ -41,9 +41,8 @@ public class BridgeUtils {
         
         for (Map.Entry<String,String> entry : values.entrySet()) {
             if (entry.getValue() != null) {
-                String adjKey = entry.getKey().replaceAll("\\.", "\\\\.");
-                String regex = "\\$\\{"+adjKey+"\\}";
-                template = template.replaceAll(regex, entry.getValue());
+                String var = "${"+entry.getKey()+"}";
+                template = template.replace(var, entry.getValue());
             }
         }
         return template;
