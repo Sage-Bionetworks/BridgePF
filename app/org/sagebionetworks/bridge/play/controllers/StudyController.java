@@ -2,9 +2,11 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -29,6 +31,12 @@ public class StudyController extends BaseController {
         this.userProfileService = userProfileService;
     }
 
+    public Result getStudyList() throws Exception {
+        List<Study> studies = studyService.getStudies();
+        
+        return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
+    }
+    
     public Result getStudyForResearcher() throws Exception {
         UserSession session = getAuthenticatedResearcherSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());

@@ -84,6 +84,7 @@ POST   /researcher/v1/consents                      @org.sagebionetworks.bridge.
 POST   /researcher/v1/consents/active/:timestamp    @org.sagebionetworks.bridge.play.controllers.StudyConsentController.setActiveConsent(timestamp: String)
 
 # Researchers - Studies
+GET    /researcher/v1/studies            @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyList
 GET    /researcher/v1/study              @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyForResearcher
 POST   /researcher/v1/study/participants @org.sagebionetworks.bridge.play.controllers.StudyController.sendStudyParticipantsRoster          
 POST   /researcher/v1/study              @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForResearcher

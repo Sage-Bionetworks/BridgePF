@@ -24,6 +24,10 @@ public interface Study extends BridgeEntity, StudyIdentifier {
         new SimpleFilterProvider().addFilter("filter", 
         SimpleBeanPropertyFilter.serializeAllExcept("researcherRole", "stormpathHref")));
 
+    public static final ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
+        new SimpleFilterProvider().addFilter("filter",
+        SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
+    
     /**
      * The display name of the study (will be seen by participants in email). This name makes the 
      * most sense when it starts with "The".
