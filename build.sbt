@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.10.1",
   "com.amazonaws" % "aws-java-sdk-ses" % "1.10.1",
   // New Relic
-  "com.newrelic.agent.java" % "newrelic-agent" % "3.14.0",
+  "com.newrelic.agent.java" % "newrelic-agent" % "3.16.1",
   // Spring
   "org.springframework" % "spring-context" % "4.1.6.RELEASE",
   // Apache Commons
