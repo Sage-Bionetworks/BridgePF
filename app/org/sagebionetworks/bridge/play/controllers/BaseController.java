@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_I
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_STUDY_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 
-import java.util.Collection;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 
@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -38,8 +39,6 @@ import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Strings;
 
 public abstract class BaseController extends Controller {
@@ -230,19 +229,9 @@ public abstract class BaseController extends Controller {
     Result okResult(Object obj) {
         return ok((JsonNode)mapper.valueToTree(obj));
     }
-
-    Result okResult(Collection<?> items) throws Exception {
-        ArrayNode itemsNode = mapper.createArrayNode();
-        for (Object item : items) {
-            JsonNode node = mapper.valueToTree(item);
-            itemsNode.add(node);
-        }
-        ObjectNode json = mapper.createObjectNode();
-        json.set("items", itemsNode);
-        json.put("total", items.size());
-        json.put("type", "ResourceList");
-        
-        return ok(json);
+    
+    <T> Result okResult(List<T> list) {
+        return ok((JsonNode)mapper.valueToTree(new ResourceList<T>(list)));
     }
 
     Result createdResult(Object obj) throws Exception {
