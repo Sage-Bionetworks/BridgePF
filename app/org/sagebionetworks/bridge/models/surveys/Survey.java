@@ -36,6 +36,15 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
 
     public boolean isPublished();
     public void setPublished(boolean published);
+    
+    /**
+     * Once published, a survey cannot be edited again, even if it is closed and withdrawn from
+     * circulation. This is because once a survey is published, it may be referenced by the 
+     * system even after it is closed (through issued tasks, delayed uploads, etc.).
+     * @return
+     */
+    public boolean isImmutable();
+    public void setImmutable(boolean immutable);
 
     /**
      * Gets the upload schema revision that corresponds to this survey. See

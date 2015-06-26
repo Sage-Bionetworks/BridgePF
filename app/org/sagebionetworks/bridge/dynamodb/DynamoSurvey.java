@@ -34,6 +34,7 @@ public class DynamoSurvey implements Survey {
     private String name;
     private String identifier;
     private boolean published;
+    private boolean immutable;
     private Integer schemaRevision;
     private List<SurveyElement> elements;
     
@@ -62,6 +63,7 @@ public class DynamoSurvey implements Survey {
         setName(survey.getName());
         setIdentifier(survey.getIdentifier());
         setPublished(survey.isPublished());
+        setImmutable(survey.isImmutable());
         setSchemaRevision(survey.getSchemaRevision());
         for (SurveyElement element : survey.getElements()) {
             elements.add(SurveyElementFactory.fromDynamoEntity(element));
@@ -160,6 +162,18 @@ public class DynamoSurvey implements Survey {
     public void setPublished(boolean published) {
         this.published = published;
     }
+    
+    @JsonIgnore
+    @Override
+    @DynamoDBAttribute
+    public boolean isImmutable() {
+        return immutable;
+    }
+
+    @Override
+    public void setImmutable(boolean immutable) {
+        this.immutable = immutable;
+    }
 
     @Override
     public Integer getSchemaRevision() {
@@ -212,6 +226,7 @@ public class DynamoSurvey implements Survey {
         result = prime * result + Objects.hashCode(name);
         result = prime * result + Objects.hashCode(identifier);
         result = prime * result + Objects.hashCode(published);
+        result = prime * result + Objects.hashCode(immutable);
         result = prime * result + Objects.hashCode(schemaRevision);
         result = prime * result + Objects.hashCode(elements);
         return result;
@@ -233,6 +248,7 @@ public class DynamoSurvey implements Survey {
                 && Objects.equals(this.name, that.name)
                 && Objects.equals(this.identifier, that.identifier)
                 && Objects.equals(this.published, that.published)
+                && Objects.equals(this.immutable, that.immutable)
                 && Objects.equals(this.schemaRevision, that.schemaRevision)
                 && Objects.equals(this.elements, that.elements);
     }
@@ -240,7 +256,8 @@ public class DynamoSurvey implements Survey {
     @Override
     public String toString() {
         return "DynamoSurvey [studyKey=" + studyKey + ", guid=" + guid + ", createdOn=" + createdOn + ", modifiedOn="
-                + modifiedOn + ", version=" + version + ", name=" + name + ", identifier=" + identifier
-                + ", published=" + published + ", schemaRevision=" + schemaRevision + ", elements=" + elements + "]";
+                        + modifiedOn + ", version=" + version + ", name=" + name + ", identifier=" + identifier
+                        + ", published=" + published + ", immutable=" + immutable + ", schemaRevision="
+                        + schemaRevision + ", elements=" + elements + "]";
     }
 }
