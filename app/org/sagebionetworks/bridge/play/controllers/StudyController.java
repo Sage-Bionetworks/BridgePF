@@ -45,7 +45,6 @@ public class StudyController extends BaseController {
     }
     
     public Result sendStudyParticipantsRoster() throws Exception {
-        // Researchers only, administrators cannot get this list so easily
         UserSession session = getAuthenticatedResearcherSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -59,7 +58,7 @@ public class StudyController extends BaseController {
 
         Study studyUpdate = parseJson(request(), Study.class);
         studyUpdate.setIdentifier(studyId.getIdentifier());
-        studyUpdate = studyService.updateStudy(studyUpdate);
+        studyUpdate = studyService.updateStudy(studyUpdate, false);
         return okResult(new VersionHolder(studyUpdate.getVersion()));
     }
 
@@ -67,7 +66,7 @@ public class StudyController extends BaseController {
         getAuthenticatedAdminSession();
 
         Study studyUpdate = parseJson(request(), Study.class);
-        studyUpdate = studyService.updateStudy(studyUpdate);
+        studyUpdate = studyService.updateStudy(studyUpdate, true);
         return okResult(new VersionHolder(studyUpdate.getVersion()));
     }
 

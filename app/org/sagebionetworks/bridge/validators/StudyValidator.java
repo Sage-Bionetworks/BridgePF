@@ -57,6 +57,12 @@ public class StudyValidator implements Validator {
             }
             errors.popNestedPath();
         }
+        if (study.getMinAgeOfConsent() < 0) {
+            errors.rejectValue("minAgeOfConsent", "must be zero (no minimum age of consent) or higher");
+        }
+        if (study.getMaxNumOfParticipants() < 0) {
+            errors.rejectValue("maxNumOfParticipants", "must be zero (no limit on enrollees) or higher");
+        }
         validateTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate");
         validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate");
         

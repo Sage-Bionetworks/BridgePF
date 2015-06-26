@@ -15,7 +15,7 @@ public interface StudyService {
 
     public Study createStudy(Study study);
 
-    public Study updateStudy(Study study);
+    public Study updateStudy(Study study, boolean isAdminUpdate);
 
     public void deleteStudy(String identifier);
 
