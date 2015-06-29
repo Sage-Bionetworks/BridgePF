@@ -8,30 +8,24 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dao.SurveyDao;
-import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.ConsistentReads;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
@@ -54,6 +48,7 @@ public class DynamoSurveyDao implements SurveyDao {
     class QueryBuilder {
         
         private static final String PUBLISHED_PROPERTY = "published";
+        private static final String DELETED_PROPERTY = "deleted";
         private static final String CREATED_ON_PROPERTY = "versionedOn";
         private static final String STUDY_KEY_PROPERTY = "studyKey";
         private static final String IDENTIFIER_PROPERTY = "identifier";
@@ -63,6 +58,7 @@ public class DynamoSurveyDao implements SurveyDao {
         String identifier;
         long createdOn;
         boolean published;
+        boolean notDeleted;
         
         QueryBuilder setSurvey(String surveyGuid) {
             this.surveyGuid = surveyGuid;
@@ -82,6 +78,10 @@ public class DynamoSurveyDao implements SurveyDao {
         }
         QueryBuilder isPublished() {
             this.published = true;
+            return this;
+        }
+        QueryBuilder isNotDeleted() {
+            this.notDeleted = true;
             return this;
         }
         
@@ -116,13 +116,16 @@ public class DynamoSurveyDao implements SurveyDao {
             query.withScanIndexForward(false);
             query.withHashKeyValues(new DynamoSurvey(surveyGuid, createdOn));    
             if (studyIdentifier != null) {
-                query.withQueryFilterEntry(STUDY_KEY_PROPERTY, studyCondition());
+                query.withQueryFilterEntry(STUDY_KEY_PROPERTY, equalsString(studyIdentifier));
             }
             if (createdOn != 0L) {
-                query.withRangeKeyCondition(CREATED_ON_PROPERTY, createdOnCondition());
+                query.withRangeKeyCondition(CREATED_ON_PROPERTY, equalsNumber(Long.toString(createdOn)));
             }
             if (published) {
-                query.withQueryFilterEntry(PUBLISHED_PROPERTY, publishedCondition());
+                query.withQueryFilterEntry(PUBLISHED_PROPERTY, equalsNumber("1"));
+            }
+            if (notDeleted) {
+                query.withQueryFilterEntry(DELETED_PROPERTY, equalsNumber("0"));
             }
             return surveyMapper.queryPage(DynamoSurvey.class, query).getResults();
         }
@@ -130,50 +133,38 @@ public class DynamoSurveyDao implements SurveyDao {
         private List<DynamoSurvey> scan() {
             DynamoDBScanExpression scan = new DynamoDBScanExpression();
             if (studyIdentifier != null) {
-                scan.addFilterCondition(STUDY_KEY_PROPERTY, studyCondition());
+                scan.addFilterCondition(STUDY_KEY_PROPERTY, equalsString(studyIdentifier));
             }
             if (createdOn != 0L) {
-                scan.addFilterCondition(CREATED_ON_PROPERTY, createdOnCondition());
+                scan.addFilterCondition(CREATED_ON_PROPERTY, equalsNumber(Long.toString(createdOn)));
             }
             if (published) {
-                scan.addFilterCondition(PUBLISHED_PROPERTY, publishedCondition());
+                scan.addFilterCondition(PUBLISHED_PROPERTY, equalsNumber("1"));
             }
             if (identifier != null) {
-                scan.addFilterCondition(IDENTIFIER_PROPERTY, identifierCondition());
+                scan.addFilterCondition(IDENTIFIER_PROPERTY, equalsString(identifier));
             }
-                
+            if (notDeleted) {
+                scan.addFilterCondition(DELETED_PROPERTY, equalsNumber("0"));
+            }
             // Scans will not sort as queries do. Sort Manually.
             List<DynamoSurvey> surveys = Lists.newArrayList(surveyMapper.scan(DynamoSurvey.class, scan));
             Collections.sort(surveys, VERSIONED_ON_DESC_SORTER);
             return surveys;
         }
 
-        private Condition publishedCondition() {
+        private Condition equalsNumber(String equalTo) {
             Condition condition = new Condition();
             condition.withComparisonOperator(ComparisonOperator.EQ);
-            condition.withAttributeValueList(new AttributeValue().withN("1"));
+            condition.withAttributeValueList(new AttributeValue().withN(equalTo));
             return condition;
         }
-
-        private Condition studyCondition() {
-            Condition studyCond = new Condition();
-            studyCond.withComparisonOperator(ComparisonOperator.EQ);
-            studyCond.withAttributeValueList(new AttributeValue().withS(studyIdentifier));
-            return studyCond;
-        }
-
-        private Condition identifierCondition() {
-            Condition studyCond = new Condition();
-            studyCond.withComparisonOperator(ComparisonOperator.EQ);
-            studyCond.withAttributeValueList(new AttributeValue().withS(identifier));
-            return studyCond;
-        }
         
-        private Condition createdOnCondition() {
-            Condition rangeCond = new Condition();
-            rangeCond.withComparisonOperator(ComparisonOperator.EQ);
-            rangeCond.withAttributeValueList(new AttributeValue().withN(Long.toString(createdOn)));
-            return rangeCond;
+        private Condition equalsString(String equalTo) {
+            Condition condition = new Condition();
+            condition.withComparisonOperator(ComparisonOperator.EQ);
+            condition.withAttributeValueList(new AttributeValue().withS(equalTo));
+            return condition;
         }
         
         private void attachSurveyElements(Survey survey) {
@@ -195,30 +186,15 @@ public class DynamoSurveyDao implements SurveyDao {
 
     private DynamoDBMapper surveyMapper;
     private DynamoDBMapper surveyElementMapper;
-    private SurveyResponseDao responseDao;
-    private SchedulePlanDao schedulePlanDao;
 
-    @Autowired
-    public void setSurveyResponseDao(SurveyResponseDao responseDao) {
-        this.responseDao = responseDao;
+    @Resource(name = "surveyMapper")
+    public void setSurveyMapper(DynamoDBMapper surveyMapper) {
+        this.surveyMapper = surveyMapper;
     }
     
-    @Autowired
-    public void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
-        this.schedulePlanDao = schedulePlanDao;
-    }
-
-    @Autowired
-    public void setDynamoDbClient(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
-                .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoSurvey.class)).build();
-        surveyMapper = new DynamoDBMapper(client, mapperConfig);
-        
-        mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
-                .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoSurveyElement.class)).build();
-        surveyElementMapper = new DynamoDBMapper(client, mapperConfig);
+    @Resource(name = "surveyElementMapper")
+    public void setSurveyElementMapper(DynamoDBMapper surveyElementMapper) {
+        this.surveyElementMapper = surveyElementMapper;
     }
 
     @Override
@@ -230,12 +206,17 @@ public class DynamoSurveyDao implements SurveyDao {
         long time = DateUtils.getCurrentMillisFromEpoch();
         survey.setCreatedOn(time);
         survey.setModifiedOn(time);
+        survey.setPublished(false);
+        survey.setDeleted(false);
         return saveSurvey(survey);
     }
 
     @Override
     public Survey publishSurvey(GuidCreatedOnVersionHolder keys) {
         Survey survey = getSurvey(keys);
+        if (survey.isDeleted()) {
+            throw new EntityNotFoundException(Survey.class);
+        }
         if (!survey.isPublished()) {
             survey.setPublished(true);
             survey.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
@@ -251,6 +232,9 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey updateSurvey(Survey survey) {
         Survey existing = getSurvey(survey);
+        if (existing.isDeleted()) {
+            throw new EntityNotFoundException(Survey.class);
+        }
         if (existing.isPublished()) {
             throw new PublishedSurveyException(survey);
         }
@@ -265,8 +249,12 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey versionSurvey(GuidCreatedOnVersionHolder keys) {
         DynamoSurvey existing = (DynamoSurvey)getSurvey(keys);
+        if (existing.isDeleted()) {
+            throw new EntityNotFoundException(Survey.class);
+        }
         DynamoSurvey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
+        copy.setDeleted(false);
         copy.setVersion(null);
         long time = DateUtils.getCurrentMillisFromEpoch();
         copy.setCreatedOn(time);
@@ -278,68 +266,43 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+    public void deleteSurvey(GuidCreatedOnVersionHolder keys) {
         Survey existing = getSurvey(keys);
-        if (existing.isPublished()) {
-            throw new PublishedSurveyException(existing);
+        if (existing.isDeleted()) {
+            throw new EntityNotFoundException(Survey.class);
         }
-        // If there are responses to this survey, it can't be deleted. Some tests aren't creating responses
-        // and don't have a user with a healthCode, these are skipped
-        if (responseDao.surveyHasResponses(keys)) {
-            throw new IllegalStateException("Survey has been answered by participants; it cannot be deleted.");
-        }
-        // If there are schedule plans for this survey, it can't be deleted. Would need to delete them all first. 
-        if (studyIdentifier != null) {
-            List<SchedulePlan> plans = schedulePlanDao.getSchedulePlansForSurvey(studyIdentifier, keys);
-            if (!plans.isEmpty()) {
-                throw new IllegalStateException("Survey has been scheduled; it cannot be deleted.");
-            }
-        }
-        deleteAllElements(existing.getGuid(), existing.getCreatedOn());
-        surveyMapper.delete(existing);
-    }
-    
-    @Override
-    public Survey closeSurvey(GuidCreatedOnVersionHolder keys) {
-        Survey existing = getSurvey(keys);
-        existing.setPublished(false);
-        existing.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        try {
-            surveyMapper.save(existing);
-        } catch(ConditionalCheckFailedException e) {
-            throw new ConcurrentModificationException(existing);
-        }
-        return existing;
+        existing.setDeleted(true);
+        saveSurvey(existing);
     }
 
     @Override
     public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid) {
-        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).getAll(true);
+        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).isNotDeleted().getAll(true);
     }
     
     @Override
     public Survey getSurveyMostRecentVersion(StudyIdentifier studyIdentifier, String guid) {
-        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).getOne(true);
+        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).isNotDeleted().getOne(true);
     }
 
     @Override
     public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid) {
-        return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).getOne(true);
+        return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).isNotDeleted().getOne(true);
     }
     
     @Override
     public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(StudyIdentifier studyIdentifier, String identifier) {
-        return new QueryBuilder().setStudy(studyIdentifier).setIdentifier(identifier).isPublished().getOne(true);
+        return new QueryBuilder().setStudy(studyIdentifier).setIdentifier(identifier).isPublished().isNotDeleted().getOne(true);
     }
     
     @Override
     public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier) {
-        return new QueryBuilder().setStudy(studyIdentifier).isPublished().getAll(false);
+        return new QueryBuilder().setStudy(studyIdentifier).isPublished().isNotDeleted().getAll(false);
     }
     
     @Override
     public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier) {
-        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).getAll(false);
+        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isNotDeleted().getAll(false);
         if (surveys.isEmpty()) {
             return surveys;
         }
@@ -354,9 +317,13 @@ public class DynamoSurveyDao implements SurveyDao {
             }
         }
         return new ArrayList<Survey>(map.values());
-        
     }
     
+    /**
+     * Get a specific survey version regardless of whether or not is has been deleted. This is the only call 
+     * that will return a deleted survey. With most scheduling now pointing to the most recently published 
+     * version (not a specific timestamped version), this method should be rarely called.
+     */
     @Override
     public Survey getSurvey(GuidCreatedOnVersionHolder keys) {
         return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn()).getOne(true);

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -10,33 +11,22 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
-import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.schedules.ScheduleType;
-import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import com.google.common.collect.Lists;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -45,12 +35,6 @@ public class DynamoSurveyDaoTest {
     @Resource
     DynamoSurveyDao surveyDao;
     
-    @Resource
-    DynamoSurveyResponseDao surveyResponseDao;
-    
-    @Resource
-    DynamoSchedulePlanDao schedulePlanDao;
-
     private TestSurvey testSurvey;
     
     private StudyIdentifier studyIdentifier;
@@ -93,10 +77,10 @@ public class DynamoSurveyDaoTest {
         survey = surveyDao.getSurvey(survey);
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
 
-        surveyDao.deleteSurvey(studyIdentifier, survey);
+        surveyDao.deleteSurvey(survey);
 
         try {
-            survey = surveyDao.getSurvey(survey);
+            survey = surveyDao.getSurveyMostRecentlyPublishedVersion(studyIdentifier, survey.getGuid());
             fail("Should have thrown an exception");
         } catch (EntityNotFoundException enfe) {
         }
@@ -124,9 +108,9 @@ public class DynamoSurveyDaoTest {
         assertEquals("Name can be updated", "C", survey.getName());
 
         // Now verify the nextVersion has not been changed
-        nextVersion = surveyDao.getSurvey(nextVersion);
-        assertEquals("Next version has same identifier", "bloodpressure", nextVersion.getIdentifier());
-        assertEquals("Next name has not changed", "General Blood Pressure Survey", nextVersion.getName());
+        Survey finalVersion = surveyDao.getSurvey(nextVersion);
+        assertEquals("Next version has same identifier", nextVersion.getIdentifier(), finalVersion.getIdentifier());
+        assertEquals("Next name has not changed", nextVersion.getName(), finalVersion.getName());
     }
 
     @Test
@@ -227,7 +211,7 @@ public class DynamoSurveyDaoTest {
     @Test
     public void canPublishANewerVersionOfASurvey() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        survey = surveyDao.publishSurvey(survey);
+                survey = surveyDao.publishSurvey(survey);
 
         Survey laterSurvey = surveyDao.versionSurvey(survey);
         assertNotEquals("Surveys do not have the same createdOn", survey.getCreatedOn(),
@@ -389,20 +373,6 @@ public class DynamoSurveyDaoTest {
         assertNotEquals("Surveys have different createdOn attribute", version1.getCreatedOn(), version2.getCreatedOn());
     }
 
-    // CLOSE SURVEY
-
-    @Test
-    public void canClosePublishedSurvey() {
-        Survey survey = surveyDao.createSurvey(testSurvey);
-        survey = surveyDao.publishSurvey(survey);
-
-        survey = surveyDao.closeSurvey(survey);
-        assertEquals("Survey no longer published", false, survey.isPublished());
-
-        survey = surveyDao.getSurvey(survey);
-        assertEquals("Survey no longer published", false, survey.isPublished());
-    }
-
     // GET PUBLISHED SURVEY
 
     @Test
@@ -452,82 +422,32 @@ public class DynamoSurveyDaoTest {
     // DELETE SURVEY
 
     @Test
-    public void cannotDeletePublishedSurvey() {
+    public void canDeletePublishedSurvey() {
         Survey survey = surveyDao.createSurvey(testSurvey);
         survey = surveyDao.publishSurvey(survey);
+
+        surveyDao.deleteSurvey(survey);
+        
+        // This survey can only be retrieved by direct reference
         try {
-            surveyDao.deleteSurvey(studyIdentifier, survey);
-            fail("Should have thrown an exception.");
-        } catch(PublishedSurveyException e) {
-            assertEquals("A published survey cannot be updated or deleted (only closed).", e.getMessage());
-            assertEquals(survey, e.getSurvey());
+            surveyDao.getSurveyMostRecentlyPublishedVersion(studyIdentifier, survey.getGuid());
+            fail("Should have thrown exception [1].");
+        } catch(EntityNotFoundException e) {
+            assertEquals("Survey not found.", e.getMessage());
         }
-    }
-    
-    @Test
-    public void cannotDeleteSurveyWithResponses() {
         try {
-            Survey survey = surveyDao.createSurvey(testSurvey);
-            survey = surveyDao.publishSurvey(survey);
-            
-            SurveyAnswer answer = new SurveyAnswer();
-            answer.setAnsweredOn(DateTime.now().getMillis());
-            answer.setClient("mobile");
-            answer.setQuestionGuid(survey.getElements().get(0).getGuid());
-            answer.setDeclined(false);
-            answer.setAnswers(Lists.newArrayList("true"));
-            
-            surveyResponseDao.createSurveyResponse(survey, "BBB", Lists.newArrayList(answer), BridgeUtils.generateGuid());
-            survey = surveyDao.closeSurvey(survey);
-            
-            surveyDao.deleteSurvey(studyIdentifier, survey);
-            fail("Should have thrown an exception.");
-            
-        } catch(IllegalStateException e) {
-            assertEquals("Survey has been answered by participants; it cannot be deleted.", e.getMessage());
-        } finally {
-            surveyResponseDao.deleteSurveyResponses("BBB");
+            surveyDao.getSurveyMostRecentlyPublishedVersionByIdentifier(studyIdentifier, survey.getIdentifier());
+            fail("Should have thrown exception [2].");
+        } catch(EntityNotFoundException e) {
+            assertEquals("Survey not found.", e.getMessage());
         }
-    }
-    
-    @Test
-    public void cannotDeleteSurveyThatHasBeenScheduled() {
-        SchedulePlan plan = null;
         try {
-            Survey survey = surveyDao.createSurvey(testSurvey);
-            survey = surveyDao.publishSurvey(survey);
-            
-            String url = String.format("https://webservices-%s.sagebridge.org/api/v2/surveys/%s/revisions/%s",
-                BridgeConfigFactory.getConfig().getEnvironment().name().toLowerCase(), survey.getGuid(),
-                new DateTime(survey.getCreatedOn()).toString());
-            Activity activity = new Activity("Activty", url);
-            
-            Schedule schedule = new Schedule();
-            schedule.addActivity(activity);
-            schedule.setDelay("P1D");
-            schedule.setInterval("P2D");
-            schedule.setScheduleType(ScheduleType.RECURRING);
-            schedule.setLabel("Schedule");
-            
-            SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
-            strategy.setSchedule(schedule);
-            
-            plan = new DynamoSchedulePlan();
-            plan.setStudyKey(studyIdentifier.getIdentifier());
-            plan.setLabel("SchedulePlan");
-            plan.setStrategy(strategy);
-            plan = schedulePlanDao.createSchedulePlan(plan);
-            
-            survey = surveyDao.closeSurvey(survey);
-            surveyDao.deleteSurvey(studyIdentifier, survey);
-            fail("Should have thrown an exception.");
-            
-        } catch(IllegalStateException e) {
-            assertEquals("Survey has been scheduled; it cannot be deleted.", e.getMessage());
-        } finally {
-            if (plan != null) {
-                schedulePlanDao.deleteSchedulePlan(studyIdentifier, plan.getGuid());    
-            }
+            surveyDao.getSurveyMostRecentVersion(studyIdentifier, survey.getGuid());
+            fail("Should have thrown exception [3].");
+        } catch(EntityNotFoundException e) {
+            assertEquals("Survey not found.", e.getMessage());
         }
+        survey = surveyDao.getSurvey(survey);
+        assertNotNull(survey);
     }
 }

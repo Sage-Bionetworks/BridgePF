@@ -54,14 +54,16 @@ public class DynamoSurveyTest {
 
         // Convert JSON to map to validate JSON. Note that study ID is intentionally omitted, but type is added.
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(jsonText, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(10, jsonMap.size());
+        assertEquals(11, jsonMap.size());
         assertEquals("test-survey-guid", jsonMap.get("guid"));
         assertEquals(2, jsonMap.get("version"));
         assertEquals("General Blood Pressure Survey", jsonMap.get("name"));
         assertEquals("bloodpressure", jsonMap.get("identifier"));
         assertTrue((boolean) jsonMap.get("published"));
+        assertTrue((boolean) jsonMap.get("deleted"));
         assertEquals(42, jsonMap.get("schemaRevision"));
         assertEquals("Survey", jsonMap.get("type"));
+        
 
         // Timestamps are stored as long, but serialized as ISO timestamps. Convert them back to long millis so we
         // don't have to deal with timezones and formatting issues.
@@ -148,6 +150,8 @@ public class DynamoSurveyTest {
         survey.setGuid("test-survey-guid");
         survey.setCreatedOn(TEST_CREATED_ON_MILLIS);
         survey.setModifiedOn(TEST_MODIFIED_ON_MILLIS);
+        survey.setPublished(true);
+        survey.setDeleted(true);
         return survey;
     }
 }
