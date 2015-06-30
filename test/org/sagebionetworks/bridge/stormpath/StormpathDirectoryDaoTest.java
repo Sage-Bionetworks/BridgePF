@@ -3,6 +3,10 @@ package org.sagebionetworks.bridge.stormpath;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 
 import javax.annotation.Resource;
 
@@ -15,6 +19,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -69,7 +74,10 @@ public class StormpathDirectoryDaoTest {
         
         assertEquals("Name is the right one", identifier + " ("+config.getEnvironment().name().toLowerCase()+")", directory.getName());
         assertTrue("Mapping exists for new directory in the right application", containsMapping(stormpathHref));
-        assertTrue("The researcher group was created", researcherGroupExists(directory, identifier));
+        assertTrue("The researcher group was created", groupExists(directory, RESEARCHER));
+        assertTrue("The developer group was created", groupExists(directory, DEVELOPER));
+        assertTrue("The admin group was created", groupExists(directory, ADMIN));
+        assertTrue("The test_users group was created", groupExists(directory, TEST_USERS));
         
         Directory newDirectory = directoryDao.getDirectoryForStudy(identifier);
         assertDirectoriesAreEqual(study, "subject", "subject", directory, newDirectory);
@@ -152,9 +160,9 @@ public class StormpathDirectoryDaoTest {
         assertTrue(templateJSON.get("defaultModel").get("linkBaseUrl").asText().contains("/mobile/verifyEmail.html?study="));
     }
     
-    private boolean researcherGroupExists(Directory directory, String name) {
+    private boolean groupExists(Directory directory, Roles role) {
         for (Group group : directory.getGroups()) {
-            if (group.getName().equals(name+"_researcher")) {
+            if (group.getName().equals(role.name().toLowerCase())) {
                 return true;
             }
         }

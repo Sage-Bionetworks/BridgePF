@@ -20,10 +20,6 @@ public final class StudyIdentifierImpl implements StudyIdentifier {
     public String getIdentifier() {
         return identifier;
     }
-    
-    public String getResearcherRole() {
-        return identifier + "_researcher";
-    }
 
     @Override
     public int hashCode() {
@@ -45,7 +41,6 @@ public final class StudyIdentifierImpl implements StudyIdentifier {
 
     @Override
     public String toString() {
-        return String.format("StudyIdentifierImpl [identifier=%s, researcherRole=%s]", 
-            getIdentifier(), getResearcherRole());
+        return String.format("StudyIdentifierImpl [identifier=%s]", identifier);
     }
 }

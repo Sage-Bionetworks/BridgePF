@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.dao;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.stormpath.sdk.directory.Directory;
-import com.stormpath.sdk.group.Group;
 
 public interface DirectoryDao {
 
@@ -14,7 +13,5 @@ public interface DirectoryDao {
     public Directory getDirectoryForStudy(String identifier);
 
     public void deleteDirectoryForStudy(String identifier);
-
-    public Group getGroup(String name);
 
 }

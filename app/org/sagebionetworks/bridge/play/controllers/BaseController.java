@@ -1,15 +1,15 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.ADMIN_GROUP;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_HOST_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_STUDY_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 
 import javax.annotation.Nonnull;
-
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -22,7 +22,6 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -131,28 +130,21 @@ public abstract class BaseController extends Controller {
         }
         return session;
     }
-
-    /**
-     * Checks if the user is in the "admin" group.
-     */
-    UserSession getAuthenticatedAdminSession() throws NotAuthenticatedException, UnauthorizedException {
+    
+    UserSession getAuthenticatedSession(Roles role) {
+        checkNotNull(role);
+        
         UserSession session = getAuthenticatedSession();
-        if (!session.getUser().isInRole(ADMIN_GROUP)) {
+        
+        logger.info("LOOKING FOR ROLE: " + role.toString());
+        logger.info("USER'S ROLES: " + session.getUser().getRoles().toString());
+        
+        if (!session.getUser().isInRole(role)) {
             throw new UnauthorizedException();
         }
         return session;
     }
-
-    UserSession getAuthenticatedResearcherSession() throws NotAuthenticatedException, UnauthorizedException {
-        UserSession session = getAuthenticatedSession();
-        User user = session.getUser();
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        if (!user.isInRole(studyId.getResearcherRole())) {
-            throw new UnauthorizedException();
-        }
-        return session;
-    }
-
+    
     void setSessionToken(String sessionToken) {
         response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }

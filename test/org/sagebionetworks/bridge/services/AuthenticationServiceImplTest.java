@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import javax.annotation.Resource;
 
@@ -12,8 +14,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
@@ -159,9 +159,8 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
-        Study study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
         TestUser researcher = helper.createUser(AuthenticationServiceImplTest.class, false, false,
-                Sets.newHashSet(study.getResearcherRole()));
+                Sets.newHashSet(RESEARCHER));
         try {
             authService.signIn(researcher.getStudy(), researcher.getSignIn());
             // no exception should have been thrown.
@@ -173,7 +172,7 @@ public class AuthenticationServiceImplTest {
     @Test
     public void createAdminAndSignInWithoutConsentError() {
         TestUser researcher = helper.createUser(AuthenticationServiceImplTest.class, false, false,
-                Sets.newHashSet(BridgeConstants.ADMIN_GROUP));
+                        Sets.newHashSet(ADMIN));
         try {
             authService.signIn(researcher.getStudy(), researcher.getSignIn());
             // no exception should have been thrown.

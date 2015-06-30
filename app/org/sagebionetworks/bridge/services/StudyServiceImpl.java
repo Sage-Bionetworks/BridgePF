@@ -157,7 +157,6 @@ public class StudyServiceImpl implements StudyService {
             studyConsentService.activateConsent(study.getStudyIdentifier(), view.getCreatedOn());
             
             study.setActive(true);
-            study.setResearcherRole(study.getIdentifier() + "_researcher");
 
             String directory = directoryDao.createDirectoryForStudy(study);
             study.setStormpathHref(directory);
@@ -199,7 +198,6 @@ public class StudyServiceImpl implements StudyService {
         // These cannot be set through the API and will be null here, so they are set on update
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
         study.setStormpathHref(originalStudy.getStormpathHref());
-        study.setResearcherRole(originalStudy.getResearcherRole());
         study.setActive(true);
         // study.setActive(originalStudy.isActive());
         // And this cannot be set unless you're an administrator.

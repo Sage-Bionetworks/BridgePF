@@ -111,7 +111,6 @@ public class StudyServiceImplTest {
         assertEquals(200, study.getMaxNumOfParticipants());
         assertEquals(18, study.getMinAgeOfConsent());
         // these should have been changed
-        assertEquals(identifier+"_researcher", study.getResearcherRole());
         assertNotEquals("http://local-test-junk", study.getStormpathHref());
         verify(cache).getStudy(study.getIdentifier());
         verify(cache).setStudy(study);

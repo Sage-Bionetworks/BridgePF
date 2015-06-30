@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 
 import java.util.Iterator;
 
@@ -86,7 +87,7 @@ public class StormpathAccountDaoTest {
         Account account = null;
         
         try {
-            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet("test_users"));
+            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS));
             accountDao.signUp(study, signUp, false);
             
             account = accountDao.authenticate(study, new SignIn(email, PASSWORD));
@@ -102,7 +103,7 @@ public class StormpathAccountDaoTest {
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
         try {
-            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet("test_users"));
+            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS));
             accountDao.signUp(study, signUp, false);
             
             try {
@@ -129,7 +130,7 @@ public class StormpathAccountDaoTest {
         try {
             ConsentSignature sig = ConsentSignature.create("Test Test", "1970-01-01", null, null);
             
-            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet("test_users"));
+            SignUp signUp = new SignUp(random, email, PASSWORD, Sets.newHashSet(TEST_USERS));
             
             accountDao.signUp(study, signUp, false);
             account = accountDao.getAccount(study, signUp.getEmail());
@@ -160,7 +161,7 @@ public class StormpathAccountDaoTest {
 
             // Just remove a group... this gets into verifying and avoiding saving the underlying
             // Stormpath account. 
-            account.getRoles().remove("test_users");
+            account.getRoles().remove(TEST_USERS);
             accountDao.updateAccount(study, account);
             
             newAccount = accountDao.getAccount(study, newAccount.getEmail());

@@ -12,8 +12,8 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
@@ -73,7 +73,6 @@ public class StormpathDirectoryDao implements DirectoryDao {
         Application app = getApplication();
         checkNotNull(app);
         String dirName = createDirectoryName(study.getIdentifier());
-        String groupName = createGroupName(study.getIdentifier());
 
         Directory directory = getDirectory(dirName);
         if (directory == null) {
@@ -95,22 +94,14 @@ public class StormpathDirectoryDao implements DirectoryDao {
             mapping.setListIndex(10); // this is a priority number
             app.createAccountStoreMapping(mapping);
         }
-        
-        // NOTE: As these are application scoped, they only work because the researcher role won't already exist.
-        // The admin is not created because it is found in another study (API).
-        Group group = getGroup(app, groupName);
-        if (group == null) {
-            group = client.instantiate(Group.class);
-            group.setName(groupName);
-            directory.createGroup(group);
+        for (Roles role : Roles.values()) {
+            Group group = getGroup(directory, role);
+            if (group == null) {
+                group = client.instantiate(Group.class);
+                group.setName(role.name().toLowerCase());
+                directory.createGroup(group);
+            }
         }
-        group = getGroup(app, BridgeConstants.ADMIN_GROUP);
-        if (group == null) {
-            group = client.instantiate(Group.class);
-            group.setName(BridgeConstants.ADMIN_GROUP);
-            directory.createGroup(group);
-        }
-
         return directory.getHref();
     }
     
@@ -158,26 +149,16 @@ public class StormpathDirectoryDao implements DirectoryDao {
         }
     }
 
-    @Override
-    public Group getGroup(String name) {
-        Application app = getApplication();
-        return getGroup(app, name);
-    }
-
-    private Group getGroup(Application app, String name) {
-        GroupCriteria criteria = Groups.where(Groups.name().eqIgnoreCase(name));
-        GroupList list = app.getGroups(criteria);
+    private Group getGroup(Directory dir, Roles role) {
+        GroupCriteria criteria = Groups.where(Groups.name().eqIgnoreCase(role.name().toLowerCase()));
+        GroupList list = dir.getGroups(criteria);
         return (list.iterator().hasNext()) ? list.iterator().next() : null;
     }
-
-    private String createGroupName(String identifier) {
-        return identifier + "_researcher";
-    }
-
+    
     private String createDirectoryName(String identifier) {
         return String.format("%s (%s)", identifier, config.getEnvironment().name().toLowerCase());
     }
-
+    
     private Application getApplication() {
         return client.getResource(config.getStormpathApplicationHref(), Application.class);
     }

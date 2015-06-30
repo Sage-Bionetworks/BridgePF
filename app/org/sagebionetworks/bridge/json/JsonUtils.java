@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DataType;
@@ -172,6 +173,22 @@ public class JsonUtils {
             ArrayNode array = (ArrayNode)parent.get(property);
             for (int i = 0; i < array.size(); i++) {
                 results.add(array.get(i).asText());
+            }
+        }
+        return results;
+    }
+    
+    public static Set<Roles> asRolesSet(JsonNode parent, String property) {
+        Set<Roles> results = new HashSet<>();
+        if (parent != null && parent.hasNonNull(property)) {
+            ArrayNode array = (ArrayNode)parent.get(property);
+            for (int i = 0; i < array.size(); i++) {
+                try {
+                    Roles role = Roles.valueOf(array.get(i).asText().toUpperCase());
+                    results.add(role);    
+                } catch(IllegalArgumentException e) {
+                    // Almost certainly "api_researcher"
+                }
             }
         }
         return results;

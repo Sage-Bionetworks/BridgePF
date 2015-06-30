@@ -3,8 +3,10 @@ package org.sagebionetworks.bridge;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.joda.time.DateTime;
@@ -20,6 +22,8 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.stormpath.sdk.group.Group;
+import com.stormpath.sdk.group.GroupList;
 
 public class BridgeUtils {
     
@@ -122,5 +126,19 @@ public class BridgeUtils {
 
     public static String toString(Long datetime) {
         return (datetime == null) ? null : new DateTime(datetime).toString();
+    }
+    
+    public static Set<Roles> convertRolesQuietly(GroupList groups) {
+        Set<Roles> roleSet = new HashSet<>();
+        if (groups != null) {
+            for (Group group : groups) {
+                try {
+                    roleSet.add(Roles.valueOf(group.getName().toUpperCase()));
+                } catch(IllegalArgumentException e) {
+                    // probably api_researcher
+                }
+            }
+        }
+        return roleSet;
     }
 }

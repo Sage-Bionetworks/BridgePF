@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.Set;
@@ -39,18 +40,18 @@ public class TestUserAdminHelper {
         private final String username;
         private final String email;
         private final String password;
-        private final Set<String> roles;
+        private final Set<Roles> roles;
         private final Study study;
         private final UserSession session;
 
-        public TestUser(String username, String email, String password, Set<String> roleList, Study study, UserSession session) {
+        public TestUser(String username, String email, String password, Set<Roles> roleList, Study study, UserSession session) {
             this.username = username;
             this.email = email;
             this.password = password;
             this.study = study;
             this.session = session;
-            this.roles = (roleList == null) ? Sets.<String>newHashSet() : roleList;
-            this.roles.add(BridgeConstants.TEST_USERS_GROUP);
+            this.roles = (roleList == null) ? Sets.<Roles>newHashSet() : roleList;
+            this.roles.add(TEST_USERS);
         }
         public SignUp getSignUp() {
             return new SignUp(username, email, password, roles);
@@ -107,13 +108,13 @@ public class TestUserAdminHelper {
         return createUser(cls, null);
     }
 
-    public TestUser createUser(Class<?> cls, Set<String> roles) {
+    public TestUser createUser(Class<?> cls, Set<Roles> roles) {
         checkNotNull(cls, "Class must not be null");
 
         return createUser(cls, true, true, roles);
     }
 
-    public TestUser createUser(Class<?> cls, boolean signIn, boolean consent, Set<String> roles) {
+    public TestUser createUser(Class<?> cls, boolean signIn, boolean consent, Set<Roles> roles) {
         checkNotNull(cls, "Class must not be null");
 
         String name = makeRandomUserName(cls);
@@ -132,7 +133,7 @@ public class TestUserAdminHelper {
         return new TestUser(signUp.getUsername(), signUp.getEmail(), signUp.getPassword(), signUp.getRoles(), study, session);
     }
 
-    public TestUser createUser(Class<?> cls, Study study, boolean consent, Set<String> roles) {
+    public TestUser createUser(Class<?> cls, Study study, boolean consent, Set<Roles> roles) {
         checkNotNull(cls, "Class must not be null");
         checkNotNull(study);
 
