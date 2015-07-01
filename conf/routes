@@ -63,7 +63,6 @@ GET    /researchers/v1/surveys/:surveyGuid/revisions/recent              @org.sa
 GET    /researchers/v1/surveys/:surveyGuid/revisions/published           @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentlyPublishedVersion(surveyGuid: String)
 POST   /researchers/v1/surveys/:surveyGuid/revisions/:createdOn/version  @org.sagebionetworks.bridge.play.controllers.SurveyController.versionSurvey(surveyGuid: String, createdOn: String)
 POST   /researchers/v1/surveys/:surveyGuid/revisions/:createdOn/publish  @org.sagebionetworks.bridge.play.controllers.SurveyController.publishSurvey(surveyGuid: String, createdOn: String)
-POST   /researchers/v1/surveys/:surveyGuid/revisions/:createdOn/close    @org.sagebionetworks.bridge.play.controllers.SurveyController.closeSurvey(surveyGuid: String, createdOn: String)
 GET    /researchers/v1/surveys/:surveyGuid/revisions/:createdOn          @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurvey(surveyGuid: String, createdOn: String)
 POST   /researchers/v1/surveys/:surveyGuid/revisions/:createdOn          @org.sagebionetworks.bridge.play.controllers.SurveyController.updateSurvey(surveyGuid: String, createdOn: String)
 DELETE /researchers/v1/surveys/:surveyGuid/revisions/:createdOn          @org.sagebionetworks.bridge.play.controllers.SurveyController.deleteSurvey(surveyGuid: String, createdOn: String)
