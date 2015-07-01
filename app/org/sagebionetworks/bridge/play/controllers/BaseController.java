@@ -135,10 +135,6 @@ public abstract class BaseController extends Controller {
         checkNotNull(role);
         
         UserSession session = getAuthenticatedSession();
-        
-        logger.info("LOOKING FOR ROLE: " + role.toString());
-        logger.info("USER'S ROLES: " + session.getUser().getRoles().toString());
-        
         if (!session.getUser().isInRole(role)) {
             throw new UnauthorizedException();
         }
