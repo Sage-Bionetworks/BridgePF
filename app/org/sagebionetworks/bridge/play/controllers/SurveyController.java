@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.JSON_MIME_TYPE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
 
@@ -254,7 +253,7 @@ public class SurveyController extends BaseController {
     }
     
     public Result closeSurvey(String surveyGuid, String createdOnString) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
