@@ -3,8 +3,10 @@ package org.sagebionetworks.bridge;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.joda.time.DateTime;
@@ -13,6 +15,8 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.schedules.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -20,8 +24,12 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.stormpath.sdk.group.Group;
+import com.stormpath.sdk.group.GroupList;
 
 public class BridgeUtils {
+
+    private static Logger logger = LoggerFactory.getLogger(BridgeUtils.class);
     
     /**
      * A simple means of providing template variables in template strings, in the format <code>${variableName}</code>.
@@ -122,5 +130,20 @@ public class BridgeUtils {
 
     public static String toString(Long datetime) {
         return (datetime == null) ? null : new DateTime(datetime).toString();
+    }
+    
+    public static Set<Roles> convertRolesQuietly(GroupList groups) {
+        Set<Roles> roleSet = new HashSet<>();
+        if (groups != null) {
+            for (Group group : groups) {
+                try {
+                    roleSet.add(Roles.valueOf(group.getName().toUpperCase()));
+                } catch(IllegalArgumentException e) {
+                    // probably api_researcher.
+                    logger.info("Found an invalid role: " + group.getName().toUpperCase());
+                }
+            }
+        }
+        return roleSet;
     }
 }

@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -21,8 +25,8 @@ import play.mvc.Result;
 @Controller
 public class StudyController extends BaseController {
 
-    private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
-        BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
+    private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(BridgeConfigFactory
+                    .getConfig().getPropertyAsList("study.whitelist")));
 
     private UserProfileService userProfileService;
 
@@ -33,27 +37,27 @@ public class StudyController extends BaseController {
 
     public Result getStudyList() throws Exception {
         List<Study> studies = studyService.getStudies();
-        
+
         return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
     }
-    
-    public Result getStudyForResearcher() throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+
+    public Result getStudyForDeveloper() throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        
+
         return ok(Study.STUDY_WRITER.writeValueAsString(study));
     }
-    
+
     public Result sendStudyParticipantsRoster() throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        
+
         userProfileService.sendStudyParticipantRoster(study);
         return okResult("A roster of study participants will be emailed to the study's consent notification contact.");
     }
 
-    public Result updateStudyForResearcher() throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+    public Result updateStudyForDeveloper() throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         Study studyUpdate = parseJson(request(), Study.class);
@@ -63,7 +67,7 @@ public class StudyController extends BaseController {
     }
 
     public Result updateStudy(String identifier) throws Exception {
-        getAuthenticatedAdminSession();
+        getAuthenticatedSession(ADMIN);
 
         Study studyUpdate = parseJson(request(), Study.class);
         studyUpdate = studyService.updateStudy(studyUpdate, true);
@@ -71,20 +75,20 @@ public class StudyController extends BaseController {
     }
 
     public Result getStudy(String identifier) throws Exception {
-        getAuthenticatedAdminSession();
+        getAuthenticatedSession(ADMIN);
 
         Study study = studyService.getStudy(identifier);
         return ok(Study.STUDY_WRITER.writeValueAsString(study));
     }
 
     public Result getAllStudies() throws Exception {
-        getAuthenticatedAdminSession();
+        getAuthenticatedSession(ADMIN);
 
         return ok(Study.STUDY_WRITER.writeValueAsString(studyService.getStudies()));
     }
 
     public Result createStudy() throws Exception {
-        getAuthenticatedAdminSession();
+        getAuthenticatedSession(ADMIN);
 
         Study study = parseJson(request(), Study.class);
         study = studyService.createStudy(study);
@@ -92,7 +96,7 @@ public class StudyController extends BaseController {
     }
 
     public Result deleteStudy(String identifier) throws Exception {
-        getAuthenticatedAdminSession();
+        getAuthenticatedSession(ADMIN);
         if (studyWhitelist.contains(identifier)) {
             return forbidden(Json.toJson(identifier + " is protected by whitelist."));
         }

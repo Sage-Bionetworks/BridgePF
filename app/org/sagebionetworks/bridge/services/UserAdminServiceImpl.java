@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Iterator;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
@@ -146,7 +147,7 @@ public class UserAdminServiceImpl implements UserAdminService {
     }
 
     @Override
-    public void deleteAllUsers(String role) {
+    public void deleteAllUsers(Roles role) {
         Iterator<Account> iterator = accountDao.getAllAccounts();
         while(iterator.hasNext()) {
             Account account = iterator.next();

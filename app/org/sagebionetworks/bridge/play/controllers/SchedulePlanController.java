@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+
 import java.util.List;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -24,7 +26,7 @@ public class SchedulePlanController extends BaseController {
     }
     
     public Result getSchedulePlans() throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         List<SchedulePlan> plans =  schedulePlanService.getSchedulePlans(studyId);
@@ -32,7 +34,7 @@ public class SchedulePlanController extends BaseController {
     }
 
     public Result createSchedulePlan() throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
@@ -42,7 +44,7 @@ public class SchedulePlanController extends BaseController {
     }
 
     public Result getSchedulePlan(String guid) throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         SchedulePlan plan = schedulePlanService.getSchedulePlan(studyId, guid);
@@ -50,7 +52,7 @@ public class SchedulePlanController extends BaseController {
     }
 
     public Result updateSchedulePlan(String guid) throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
@@ -61,7 +63,7 @@ public class SchedulePlanController extends BaseController {
     }
 
     public Result deleteSchedulePlan(String guid) {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         schedulePlanService.deleteSchedulePlan(studyId, guid);

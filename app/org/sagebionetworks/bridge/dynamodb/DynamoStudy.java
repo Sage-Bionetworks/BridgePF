@@ -28,7 +28,6 @@ public final class DynamoStudy implements Study {
     private String name;
     private String sponsorName;
     private String identifier;
-    private String researcherRole;
     private String stormpathHref;
     private String supportEmail;
     private String technicalEmail;
@@ -95,15 +94,6 @@ public final class DynamoStudy implements Study {
     }
     public void setVersion(Long version) {
         this.version = version;
-    }
-    /** {@inheritDoc} */
-    @Override
-    public String getResearcherRole() {
-        return researcherRole;
-    }
-    @Override
-    public void setResearcherRole(String role) {
-        this.researcherRole = role;
     }
     /** {@inheritDoc} */
     @Override
@@ -218,7 +208,6 @@ public final class DynamoStudy implements Study {
         result = prime * result + Objects.hashCode(minAgeOfConsent);
         result = prime * result + Objects.hashCode(name);
         result = prime * result + Objects.hashCode(sponsorName);
-        result = prime * result + Objects.hashCode(researcherRole);
         result = prime * result + Objects.hashCode(supportEmail);
         result = prime * result + Objects.hashCode(technicalEmail);
         result = prime * result + Objects.hashCode(consentNotificationEmail);
@@ -243,7 +232,7 @@ public final class DynamoStudy implements Study {
         return (Objects.equals(identifier, other.identifier) && Objects.equals(supportEmail, other.supportEmail) &&
             Objects.equals(maxNumOfParticipants, other.maxNumOfParticipants) && 
             Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name) && 
-            Objects.equals(researcherRole, other.researcherRole) && Objects.equals(stormpathHref, other.stormpathHref) &&
+            Objects.equals(stormpathHref, other.stormpathHref) &&
             Objects.equals(passwordPolicy, other.passwordPolicy) && Objects.equals(active, other.active)) && 
             Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate) && 
             Objects.equals(consentNotificationEmail, other.consentNotificationEmail) && 
@@ -254,12 +243,13 @@ public final class DynamoStudy implements Study {
 
     @Override
     public String toString() {
-        return String.format("DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, researcherRole=%s, stormpathHref=%s, "
-            + "minAgeOfConsent=%s, maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
-            + "version=%s, userProfileAttributes=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s]",
-            name, active, sponsorName, identifier, researcherRole, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
-            supportEmail, technicalEmail, consentNotificationEmail, version, profileAttributes, passwordPolicy,
-            verifyEmailTemplate, resetPasswordTemplate);        
+        return String.format(
+            "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, " 
+                + "maxNumOfParticipants=%s, supportEmail=%s, technicalEmail=%s, consentNotificationEmail=%s, "
+                + "version=%s, userProfileAttributes=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s]",
+                name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, maxNumOfParticipants,
+                supportEmail, technicalEmail, consentNotificationEmail, version, profileAttributes,
+                passwordPolicy, verifyEmailTemplate, resetPasswordTemplate);
     }
     
 }

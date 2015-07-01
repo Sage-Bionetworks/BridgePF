@@ -84,9 +84,9 @@ POST   /researcher/v1/consents/active/:timestamp    @org.sagebionetworks.bridge.
 
 # Researchers - Studies
 GET    /researcher/v1/studies            @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyList
-GET    /researcher/v1/study              @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyForResearcher
+GET    /researcher/v1/study              @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyForDeveloper
 POST   /researcher/v1/study/participants @org.sagebionetworks.bridge.play.controllers.StudyController.sendStudyParticipantsRoster          
-POST   /researcher/v1/study              @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForResearcher
+POST   /researcher/v1/study              @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
 
 # Researchers - Upload Schemas
 GET    /researcher/v1/uploadSchemas                           @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemasForStudy

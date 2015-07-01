@@ -1,10 +1,11 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.Roles.TEST_USERS;
+
 import javax.annotation.Resource;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -18,6 +19,6 @@ public class ManualCleanupTest {
 
     @Test
     public void deleteAllRemainingTestUsers() {
-        userAdminService.deleteAllUsers(BridgeConstants.TEST_USERS_GROUP);
+        userAdminService.deleteAllUsers(TEST_USERS);
     }
 }

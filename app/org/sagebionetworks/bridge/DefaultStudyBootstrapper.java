@@ -30,7 +30,6 @@ public class DefaultStudyBootstrapper {
             study.setIdentifier("api");
             study.setSponsorName("Sage Bionetworks");
             study.setMinAgeOfConsent(18);
-            study.setResearcherRole("api_researcher");
             study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
             study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
             study.setSupportEmail("support@sagebridge.org");

@@ -11,6 +11,7 @@ import java.util.SortedMap;
 
 import javax.annotation.Resource;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -213,7 +214,7 @@ public class StormpathAccountDao implements AccountDao {
         account.setLastName(StormpathAccount.PLACEHOLDER_STRING);
         acct.setPassword(signUp.getPassword());
         if (signUp.getRoles() != null) {
-            account.getRoles().addAll(signUp.getRoles());    
+            account.getRoles().addAll(signUp.getRoles());
         }
         try {
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
@@ -286,7 +287,10 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     private void updateGroups(Directory directory, Account account) {
-        Set<String> roles = Sets.newHashSet(account.getRoles());
+        Set<String> roles = Sets.newHashSet();
+        for (Roles role : account.getRoles()) {
+            roles.add(role.name().toLowerCase());
+        }
         com.stormpath.sdk.account.Account acct = ((StormpathAccount)account).getAccount();
         
         // Remove any memberships that don't match a role
