@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
@@ -422,10 +423,8 @@ public class DynamoSurveyDaoTest {
     // DELETE SURVEY
 
     @Test
-    public void canDeletePublishedSurvey() {
+    public void canDeleteSurvey() {
         Survey survey = surveyDao.createSurvey(testSurvey);
-        survey = surveyDao.publishSurvey(survey);
-
         surveyDao.deleteSurvey(survey);
         
         // This survey can only be retrieved by direct reference
@@ -449,5 +448,20 @@ public class DynamoSurveyDaoTest {
         }
         survey = surveyDao.getSurvey(survey);
         assertNotNull(survey);
+        
+        survey = surveyDao.createSurvey(new TestSurvey(true));
+        survey = surveyDao.publishSurvey(survey);
+        try {
+            surveyDao.deleteSurvey(survey);
+        } catch(PublishedSurveyException e) {
+            assertEquals("You cannot delete the last published version of a published survey.", e.getMessage());
+        }
+        
+        GuidCreatedOnVersionHolder keys = surveyDao.versionSurvey(survey);
+        survey.setCreatedOn(keys.getCreatedOn());
+        survey = surveyDao.publishSurvey(survey);
+        
+        // now you can delete this second version because you've created anotherversion.
+        surveyDao.deleteSurvey(survey);
     }
 }

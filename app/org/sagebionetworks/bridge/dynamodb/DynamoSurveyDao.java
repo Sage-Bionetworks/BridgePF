@@ -85,6 +85,27 @@ public class DynamoSurveyDao implements SurveyDao {
             return this;
         }
         
+        int getCount() {
+            DynamoSurvey key = new DynamoSurvey();
+            key.setGuid(surveyGuid);
+            DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
+            query.withScanIndexForward(false);
+            query.withHashKeyValues(key);    
+            if (studyIdentifier != null) {
+                query.withQueryFilterEntry(STUDY_KEY_PROPERTY, equalsString(studyIdentifier));
+            }
+            if (createdOn != 0L) {
+                query.withRangeKeyCondition(CREATED_ON_PROPERTY, equalsNumber(Long.toString(createdOn)));
+            }
+            if (published) {
+                query.withQueryFilterEntry(PUBLISHED_PROPERTY, equalsNumber("1"));
+            }
+            if (notDeleted) {
+                query.withQueryFilterEntry(DELETED_PROPERTY, equalsNumber("0"));
+            }
+            return surveyMapper.queryPage(DynamoSurvey.class, query).getCount();
+        }
+        
         List<Survey> getAll(boolean exceptionIfEmpty) {
             List<DynamoSurvey> dynamoSurveys = null;
             if (surveyGuid == null) {
@@ -270,6 +291,14 @@ public class DynamoSurveyDao implements SurveyDao {
         Survey existing = getSurvey(keys);
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(Survey.class);
+        }
+        // If a survey has been published, you can't delete the last published version of that survey.
+        // This is going to create a lot of test errors.
+        if (existing.isPublished()) {
+            int publishedVersionCount = new QueryBuilder().setSurvey(keys.getGuid()).isPublished().isNotDeleted().getCount();
+            if (publishedVersionCount < 2) {
+                throw new PublishedSurveyException(existing, "You cannot delete the last published version of a published survey.");
+            }
         }
         existing.setDeleted(true);
         saveSurvey(existing);

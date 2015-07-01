@@ -57,8 +57,8 @@ public class DynamoSurveyTest {
         assertEquals(11, jsonMap.size());
         assertEquals("test-survey-guid", jsonMap.get("guid"));
         assertEquals(2, jsonMap.get("version"));
-        assertEquals("General Blood Pressure Survey", jsonMap.get("name"));
-        assertEquals("bloodpressure", jsonMap.get("identifier"));
+        assertEquals(survey.getName(), jsonMap.get("name"));
+        assertEquals(survey.getIdentifier(), jsonMap.get("identifier"));
         assertTrue((boolean) jsonMap.get("published"));
         assertTrue((boolean) jsonMap.get("deleted"));
         assertEquals(42, jsonMap.get("schemaRevision"));
@@ -82,8 +82,8 @@ public class DynamoSurveyTest {
         assertEquals(TEST_CREATED_ON_MILLIS, convertedSurvey.getCreatedOn());
         assertEquals(TEST_MODIFIED_ON_MILLIS, convertedSurvey.getModifiedOn());
         assertEquals(2, convertedSurvey.getVersion().longValue());
-        assertEquals("General Blood Pressure Survey", convertedSurvey.getName());
-        assertEquals("bloodpressure", convertedSurvey.getIdentifier());
+        assertEquals(survey.getName(), convertedSurvey.getName());
+        assertEquals(survey.getIdentifier(), convertedSurvey.getIdentifier());
         assertTrue(convertedSurvey.isPublished());
         assertEquals(42, convertedSurvey.getSchemaRevision().longValue());
         assertEquals(10, convertedSurvey.getElements().size());
@@ -120,8 +120,8 @@ public class DynamoSurveyTest {
         assertEquals(TEST_CREATED_ON_MILLIS, copy.getCreatedOn());
         assertEquals(TEST_MODIFIED_ON_MILLIS, copy.getModifiedOn());
         assertEquals(2, copy.getVersion().longValue());
-        assertEquals("General Blood Pressure Survey", copy.getName());
-        assertEquals("bloodpressure", copy.getIdentifier());
+        assertEquals(survey.getName(), copy.getName());
+        assertEquals(survey.getIdentifier(), copy.getIdentifier());
         assertTrue(copy.isPublished());
         assertEquals(42, copy.getSchemaRevision().longValue());
         assertEquals(9, copy.getElements().size());
