@@ -171,7 +171,7 @@ public class SurveyController extends BaseController {
         Survey survey = surveyService.getSurvey(keys);
         verifySurveyIsInStudy(session, studyId, survey);
         
-        surveyService.deleteSurvey(studyId, survey);
+        surveyService.deleteSurvey(survey);
         expireCache(surveyGuid, createdOnString);
         
         return okResult("Survey deleted.");
@@ -250,22 +250,6 @@ public class SurveyController extends BaseController {
         expireCache(surveyGuid, createdOnString);
         
         return okResult(new GuidCreatedOnVersionHolderImpl(survey));
-    }
-    
-    public Result closeSurvey(String surveyGuid, String createdOnString) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        
-        long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
-        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
-        
-        Survey survey = surveyService.getSurvey(keys);
-        verifySurveyIsInStudy(session, studyId, survey);
-        
-        surveyService.closeSurvey(survey);
-        expireCache(surveyGuid, createdOnString);
-        
-        return okResult("Survey closed.");
     }
     
     private void verifySurveyIsInStudy(UserSession session, StudyIdentifier studyIdentifier, List<Survey> surveys) {

@@ -13,6 +13,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent;
@@ -167,6 +169,18 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper studyConsentDdbMapper(AmazonDynamoDB client) {
         return getMapperForClass(client, DynamoStudyConsent1.class);
+    }
+    
+    @Bean(name = "surveyMapper")
+    @Autowired
+    public DynamoDBMapper surveyDdbMapper(AmazonDynamoDB client) {
+        return getMapperForClass(client, DynamoSurvey.class);
+    }
+    
+    @Bean(name = "surveyElementMapper")
+    @Autowired
+    public DynamoDBMapper surveyElementDdbMapper(AmazonDynamoDB client) {
+        return getMapperForClass(client, DynamoSurveyElement.class);
     }
     
     @Bean(name = "healthDataHealthCodeIndex")

@@ -113,10 +113,10 @@ public class SurveyServiceTest {
         survey = surveyService.getSurvey(survey);
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
         assertEquals("Be honest: do you have high blood pressue?", question.getPromptDetail());
-        surveyService.deleteSurvey(studyIdentifier, survey);
+        surveyService.deleteSurvey(survey);
 
         try {
-            survey = surveyService.getSurvey(survey);
+            surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, survey.getGuid()); 
             fail("Should have thrown an exception");
         } catch (EntityNotFoundException enfe) {
         }
@@ -144,9 +144,9 @@ public class SurveyServiceTest {
         assertEquals("Name can be updated", "C", survey.getName());
 
         // Now verify the nextVersion has not been changed
-        nextVersion = surveyService.getSurvey(nextVersion);
-        assertEquals("Next version has same identifier", "bloodpressure", nextVersion.getIdentifier());
-        assertEquals("Next name has not changed", "General Blood Pressure Survey", nextVersion.getName());
+        Survey finalVersion = surveyService.getSurvey(nextVersion);
+        assertEquals("Next version has same identifier", nextVersion.getIdentifier(), finalVersion.getIdentifier());
+        assertEquals("Next name has not changed", nextVersion.getName(), finalVersion.getName());
     }
 
     @Test
@@ -295,20 +295,6 @@ public class SurveyServiceTest {
                 version2.getCreatedOn());
     }
 
-    // CLOSE SURVEY
-
-    @Test
-    public void canClosePublishedSurvey() {
-        Survey survey = surveyService.createSurvey(testSurvey);
-        survey = surveyService.publishSurvey(survey);
-
-        survey = surveyService.closeSurvey(survey);
-        assertEquals("Survey no longer published", false, survey.isPublished());
-
-        survey = surveyService.getSurvey(survey);
-        assertEquals("Survey no longer published", false, survey.isPublished());
-    }
-
     // GET PUBLISHED SURVEY
 
     @Test
@@ -356,14 +342,6 @@ public class SurveyServiceTest {
     }
 
     // DELETE SURVEY
-
-    @Test(expected = PublishedSurveyException.class)
-    public void cannotDeleteAPublishedSurvey() {
-        Survey survey = surveyService.createSurvey(testSurvey);
-        surveyService.publishSurvey(survey);
-
-        surveyService.deleteSurvey(studyIdentifier, survey);
-    }
     
     @Test
     public void canRetrieveASurveyByIdentifier() {

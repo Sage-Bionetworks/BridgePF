@@ -37,6 +37,9 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
     public boolean isPublished();
     public void setPublished(boolean published);
 
+    public boolean isDeleted();
+    public void setDeleted(boolean deleted);
+    
     /**
      * Gets the upload schema revision that corresponds to this survey. See
      * {@link org.sagebionetworks.bridge.models.upload.UploadSchema#getRevision} for more details.

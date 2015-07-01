@@ -369,7 +369,6 @@ public class SurveyControllerTest {
     
     @Test
     public void deleteSurvey() throws Exception {
-        StudyIdentifier studyId = new StudyIdentifierImpl("api");
         String guid = BridgeUtils.generateGuid();
         DateTime date = DateTime.now();
         Survey survey = getSurvey(false);
@@ -380,7 +379,7 @@ public class SurveyControllerTest {
         controller.deleteSurvey(guid, date.toString());
 
         verify(service).getSurvey(eq(keys));
-        verify(service).deleteSurvey(eq(studyId), eq(survey));
+        verify(service).deleteSurvey(eq(survey));
         verifyNoMoreInteractions(service);
     }
     
@@ -560,21 +559,7 @@ public class SurveyControllerTest {
     }
     
     @Test
-    public void closeSurvey() throws Exception {
-        Survey survey = getSurvey(false);
-        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(survey.getGuid(), survey.getCreatedOn());
-        setContext();
-        when(service.getSurvey(keys)).thenReturn(survey);
-        
-        controller.closeSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
-        
-        verify(service).getSurvey(keys);
-        verify(service).closeSurvey(any(Survey.class));
-        verifyNoMoreInteractions(service);
-    }
-    
-    @Test
-    public void cannotCloseSurveyInOtherStudy() throws Exception {
+    public void cannotDeleteSurveyInOtherStudy() throws Exception {
         Survey survey = getSurvey(false);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(survey.getGuid(), survey.getCreatedOn());
         setContext();
@@ -582,7 +567,7 @@ public class SurveyControllerTest {
         setUserSession("secondstudy");
         
         try {
-            controller.closeSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
+            controller.deleteSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
             fail("Exception should have been thrown.");
         } catch(UnauthorizedException e) {
             verify(service).getSurvey(keys);

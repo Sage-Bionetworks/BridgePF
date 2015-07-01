@@ -54,14 +54,16 @@ public class DynamoSurveyTest {
 
         // Convert JSON to map to validate JSON. Note that study ID is intentionally omitted, but type is added.
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(jsonText, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(10, jsonMap.size());
+        assertEquals(11, jsonMap.size());
         assertEquals("test-survey-guid", jsonMap.get("guid"));
         assertEquals(2, jsonMap.get("version"));
-        assertEquals("General Blood Pressure Survey", jsonMap.get("name"));
-        assertEquals("bloodpressure", jsonMap.get("identifier"));
+        assertEquals(survey.getName(), jsonMap.get("name"));
+        assertEquals(survey.getIdentifier(), jsonMap.get("identifier"));
         assertTrue((boolean) jsonMap.get("published"));
+        assertTrue((boolean) jsonMap.get("deleted"));
         assertEquals(42, jsonMap.get("schemaRevision"));
         assertEquals("Survey", jsonMap.get("type"));
+        
 
         // Timestamps are stored as long, but serialized as ISO timestamps. Convert them back to long millis so we
         // don't have to deal with timezones and formatting issues.
@@ -80,8 +82,8 @@ public class DynamoSurveyTest {
         assertEquals(TEST_CREATED_ON_MILLIS, convertedSurvey.getCreatedOn());
         assertEquals(TEST_MODIFIED_ON_MILLIS, convertedSurvey.getModifiedOn());
         assertEquals(2, convertedSurvey.getVersion().longValue());
-        assertEquals("General Blood Pressure Survey", convertedSurvey.getName());
-        assertEquals("bloodpressure", convertedSurvey.getIdentifier());
+        assertEquals(survey.getName(), convertedSurvey.getName());
+        assertEquals(survey.getIdentifier(), convertedSurvey.getIdentifier());
         assertTrue(convertedSurvey.isPublished());
         assertEquals(42, convertedSurvey.getSchemaRevision().longValue());
         assertEquals(10, convertedSurvey.getElements().size());
@@ -118,8 +120,8 @@ public class DynamoSurveyTest {
         assertEquals(TEST_CREATED_ON_MILLIS, copy.getCreatedOn());
         assertEquals(TEST_MODIFIED_ON_MILLIS, copy.getModifiedOn());
         assertEquals(2, copy.getVersion().longValue());
-        assertEquals("General Blood Pressure Survey", copy.getName());
-        assertEquals("bloodpressure", copy.getIdentifier());
+        assertEquals(survey.getName(), copy.getName());
+        assertEquals(survey.getIdentifier(), copy.getIdentifier());
         assertTrue(copy.isPublished());
         assertEquals(42, copy.getSchemaRevision().longValue());
         assertEquals(9, copy.getElements().size());
@@ -148,6 +150,8 @@ public class DynamoSurveyTest {
         survey.setGuid("test-survey-guid");
         survey.setCreatedOn(TEST_CREATED_ON_MILLIS);
         survey.setModifiedOn(TEST_MODIFIED_ON_MILLIS);
+        survey.setPublished(true);
+        survey.setDeleted(true);
         return survey;
     }
 }
