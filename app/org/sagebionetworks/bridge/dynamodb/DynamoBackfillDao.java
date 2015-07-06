@@ -35,11 +35,11 @@ public class DynamoBackfillDao implements BackfillDao {
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig taskMapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoBackfillTask.class)).build();
+                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoBackfillTask.class)).build();
         taskMapper = new DynamoDBMapper(client, taskMapperConfig);
         DynamoDBMapperConfig recordMapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoBackfillRecord.class)).build();
+                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoBackfillRecord.class)).build();
         recordMapper = new DynamoDBMapper(client, recordMapperConfig);
     }
 

@@ -98,7 +98,7 @@ public class DynamoInitializer {
     }
 
     static void deleteTable(Class<?> table) {
-        final String tableName = TableNameOverrideFactory.getTableName(table);
+        final String tableName = DynamoUtils.getTableName(table);
         try {
             DescribeTableResult tableResult = DYNAMO.describeTable(tableName);
             TableDescription tableDscr = tableResult.getTable();
@@ -223,7 +223,7 @@ public class DynamoInitializer {
                     attributes.put(attrName, attribute);
                 }
             }
-            final String tableName = TableNameOverrideFactory.getTableName(clazz);
+            final String tableName = DynamoUtils.getTableName(clazz);
             // Create the table description
             final TableDescription table = (new TableDescription())
                 .withTableName(tableName)
