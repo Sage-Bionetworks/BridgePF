@@ -58,7 +58,7 @@ import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
 import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 
-@ComponentScan({"controllers","filters","interceptors","models","org.sagebionetworks.bridge"})
+@ComponentScan({"org.sagebionetworks.bridge"})
 @Configuration
 public class BridgeSpringConfig {
 
@@ -77,37 +77,40 @@ public class BridgeSpringConfig {
     public AesGcmEncryptor healthCodeEncryptor(BridgeConfig bridgeConfig) {
         return new AesGcmEncryptor(bridgeConfig.getHealthCodeKey());
     }
-    
+
     @Bean(name = "awsCredentials")
     @Resource(name = "bridgeConfig")
     public BasicAWSCredentials awsCredentials(BridgeConfig bridgeConfig) {
-        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key"), bridgeConfig.getProperty("aws.secret.key"));
+        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key"),
+                bridgeConfig.getProperty("aws.secret.key"));
     }
-    
+
     @Bean(name = "s3UploadCredentials")
     @Resource(name = "bridgeConfig")
     public BasicAWSCredentials s3UploadCredentials(BridgeConfig bridgeConfig) {
-        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.upload"), bridgeConfig.getProperty("aws.secret.key.upload"));
+        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.upload"),
+                bridgeConfig.getProperty("aws.secret.key.upload"));
     }
-    
+
     @Bean(name = "s3CmsCredentials")
     @Resource(name = "bridgeConfig")
     public BasicAWSCredentials s3CmsCredentials(BridgeConfig bridgeConfig) {
-        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.upload.cms"), bridgeConfig.getProperty("aws.secret.key.upload.cms"));
+        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.upload.cms"),
+                bridgeConfig.getProperty("aws.secret.key.upload.cms"));
     }
-    
+
     @Bean(name = "dynamoDbClient")
     @Resource(name = "awsCredentials")
     public AmazonDynamoDBClient dynamoDbClient(BasicAWSCredentials awsCredentials) {
         return new AmazonDynamoDBClient(awsCredentials);
     }
-    
+
     @Bean(name = "s3Client")
     @Resource(name = "awsCredentials")
     public AmazonS3Client s3Client(BasicAWSCredentials awsCredentials) {
         return new AmazonS3Client(awsCredentials);
     }
-    
+
     @Bean(name = "s3UploadClient")
     @Resource(name = "s3UploadCredentials")
     public AmazonS3Client s3UploadClient(BasicAWSCredentials s3UploadCredentials) {
@@ -119,7 +122,7 @@ public class BridgeSpringConfig {
     public AmazonS3Client s3CmsClient(BasicAWSCredentials s3CmsCredentials) {
         return new AmazonS3Client(s3CmsCredentials);
     }
-    
+
     @Bean(name ="uploadTokenServiceClient")
     @Resource(name = "s3UploadCredentials")
     public AWSSecurityTokenServiceClient uploadTokenServiceClient(BasicAWSCredentials s3UploadCredentials) {
@@ -161,59 +164,33 @@ public class BridgeSpringConfig {
     public DynamoDBMapper taskEventDdbMapper(AmazonDynamoDB client) {
         return getMapperForClass(client, DynamoTaskEvent.class);
     }
-    
+
     @Bean(name = "healthDataHealthCodeIndex")
     @Autowired
     public DynamoIndexHelper healthDataHealthCodeIndex(AmazonDynamoDB client) {
-        // DDB index
-        String tableName = TableNameOverrideFactory.getTableName(DynamoHealthDataRecord.class);
-        DynamoDB ddb = new DynamoDB(client);
-        Table ddbTable = ddb.getTable(tableName);
-        Index ddbIndex = ddbTable.getIndex("healthCode-index");
-
-        // construct index helper
-        DynamoIndexHelper indexHelper = new DynamoIndexHelper();
-        indexHelper.setIndex(ddbIndex);
-        indexHelper.setMapper(healthDataDdbMapper(client));
-        return indexHelper;
+        return getDynamoIndexHelper(DynamoHealthDataRecord.class, "healthCode-index", client);
     }
 
     @Bean(name = "healthDataUploadDateIndex")
     @Autowired
     public DynamoIndexHelper healthDataUploadDateIndex(AmazonDynamoDB client) {
-        // DDB index
-        String tableName = TableNameOverrideFactory.getTableName(DynamoHealthDataRecord.class);
-        DynamoDB ddb = new DynamoDB(client);
-        Table ddbTable = ddb.getTable(tableName);
-        Index ddbIndex = ddbTable.getIndex("uploadDate-index");
-
-        // construct index helper
-        DynamoIndexHelper indexHelper = new DynamoIndexHelper();
-        indexHelper.setIndex(ddbIndex);
-        indexHelper.setMapper(healthDataDdbMapper(client));
-        return indexHelper;
+        return getDynamoIndexHelper(DynamoHealthDataRecord.class, "uploadDate-index", client);
     }
 
     @Bean(name = "jedisPool")
-    public JedisPool jedisPool(BridgeConfig config) {
-        // configure Jedis pool
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
+    public JedisPool jedisPool(final BridgeConfig config) {
+
+        final JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
 
-        String host = config.getProperty("redis.host");
-        int port = config.getPropertyAsInt("redis.port");
-        int timeout = config.getPropertyAsInt("redis.timeout");
+        final String host = config.getProperty("redis.host");
+        final int port = config.getPropertyAsInt("redis.port");
+        final int timeout = config.getPropertyAsInt("redis.timeout");
+        final String password = config.getProperty("redis.password");
+        final JedisPool jedisPool = password == null ?
+                new JedisPool(poolConfig, host, port, timeout) :
+                new JedisPool(poolConfig, host, port, timeout, password);
 
-        // create Jedis pool
-        final JedisPool jedisPool;
-        if (config.isLocal()) {
-            jedisPool = new JedisPool(poolConfig, host, port, timeout);
-        } else {
-            String password = config.getProperty("redis.password");
-            jedisPool = new JedisPool(poolConfig, host, port, timeout, password);
-        }
-
-        // configure shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
@@ -243,9 +220,10 @@ public class BridgeSpringConfig {
     @Bean(name = "s3ConsentsCredentials")
     @Resource(name = "bridgeConfig")
     public BasicAWSCredentials s3ConsentsCredentials(BridgeConfig bridgeConfig) {
-        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.consents"), bridgeConfig.getProperty("aws.secret.key.consents"));
+        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.consents"),
+                bridgeConfig.getProperty("aws.secret.key.consents"));
     }
-    
+
     @Bean(name = "s3ConsentsClient")
     @Resource(name = "s3ConsentsCredentials")
     public AmazonS3Client s3ConsentsClient(BasicAWSCredentials awsCredentials) {
@@ -259,7 +237,7 @@ public class BridgeSpringConfig {
         s3Helper.setS3Client(s3Client);
         return s3Helper;
     }    
-    
+
     @Bean(name = "uploadDdbMapper")
     @Autowired
     public DynamoDBMapper uploadDdbMapper(AmazonDynamoDB client) {
@@ -291,28 +269,17 @@ public class BridgeSpringConfig {
     public DynamoDBMapper taskDdbMapper(AmazonDynamoDB client) {
         return getMapperForClass(client, DynamoTask.class);
     }
-    
+
     @Bean(name = "surveyResponseDdbMapper")
     @Autowired
     public DynamoDBMapper surveyResponseDdbMapper(AmazonDynamoDB client) {
         return getMapperForClass(client, DynamoSurveyResponse.class);
     }
-    
+
     @Bean(name = "uploadSchemaStudyIdIndex")
     @Autowired
     public DynamoIndexHelper uploadSchemaStudyIdIndex(AmazonDynamoDB client) {
-        // DDB index
-        DynamoDBMapperConfig.TableNameOverride tableNameOverride = TableNameOverrideFactory.getTableNameOverride(
-                DynamoUploadSchema.class);
-        DynamoDB ddb = new DynamoDB(client);
-        Table ddbTable = ddb.getTable(tableNameOverride.getTableName());
-        Index ddbIndex = ddbTable.getIndex("studyId-index");
-
-        // construct index helper
-        DynamoIndexHelper indexHelper = new DynamoIndexHelper();
-        indexHelper.setIndex(ddbIndex);
-        indexHelper.setMapper(uploadSchemaDdbMapper(client));
-        return indexHelper;
+        return getDynamoIndexHelper(DynamoUploadSchema.class, "studyId-index", client);
     }
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
@@ -322,7 +289,6 @@ public class BridgeSpringConfig {
         ApiKey apiKey = ApiKeys.builder()
             .setId(bridgeConfig.getStormpathId().trim())
             .setSecret(bridgeConfig.getStormpathSecret().trim()).build();
-        
         ClientBuilder clientBuilder = Clients.builder().setApiKey(apiKey);
         ((DefaultClientBuilder)clientBuilder).setBaseUrl("https://enterprise.stormpath.io/v1");
         return clientBuilder.build();        
@@ -334,18 +300,25 @@ public class BridgeSpringConfig {
     public Application getStormpathApplication(BridgeConfig bridgeConfig, Client stormpathClient) {
         return stormpathClient.getResource(bridgeConfig.getStormpathApplicationHref().trim(), Application.class);
     }
-    
+
     @Bean(name = "sesClient")
     @Resource(name="awsCredentials")
     public AmazonSimpleEmailServiceClient sesClient(BasicAWSCredentials awsCredentials) {
         return new AmazonSimpleEmailServiceClient(awsCredentials);
     }
-    
-    private static DynamoDBMapper getMapperForClass(AmazonDynamoDB client, Class<?> clazz) {
+
+    private DynamoDBMapper getMapperForClass(AmazonDynamoDB client, Class<?> clazz) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder()
                 .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE)
                 .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
                 .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(clazz)).build();
         return new DynamoDBMapper(client, mapperConfig);
+    }
+
+    private DynamoIndexHelper getDynamoIndexHelper(Class<?> dynamoTable, String indexName, AmazonDynamoDB client) {
+        DynamoDB ddb = new DynamoDB(client);
+        Table ddbTable = ddb.getTable(TableNameOverrideFactory.getTableName(dynamoTable));
+        Index ddbIndex = ddbTable.getIndex(indexName);
+        return new DynamoIndexHelper(ddbIndex, getMapperForClass(client, dynamoTable));
     }
 }

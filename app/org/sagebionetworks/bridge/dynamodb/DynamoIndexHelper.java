@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import javax.annotation.Nonnull;
 
 import java.util.ArrayList;
@@ -9,6 +11,7 @@ import java.util.Map;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -19,19 +22,18 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
  * class also encapsulates logic to re-query tables to get full table entries.
  */
 public class DynamoIndexHelper {
-    private Index index;
-    private DynamoDBMapper mapper;
 
-    /** DynamoDB index. THis is used to query the global secondary index. This is configured by Spring. */
-    public void setIndex(Index index) {
-        this.index = index;
-    }
+    private final Index index;
+    private final DynamoDBMapper mapper;
 
     /**
-     * DynamoDB mapper. This is used to re-query the DynamoDB table to get full entries from the key objects. This is
-     * configured by Spring.
+     * @param index Index to query the global secondary index.
+     * @param mapper Mapper to query the DynamoDB table.
      */
-    public void setMapper(DynamoDBMapper mapper) {
+    public DynamoIndexHelper(Index index, DynamoDBMapper mapper) {
+        checkNotNull(index);
+        checkNotNull(mapper);
+        this.index = index;
         this.mapper = mapper;
     }
 
@@ -117,7 +119,17 @@ public class DynamoIndexHelper {
      * Iterable, it overrides iterator() to return an IteratorSupport, which is not publicly exposed. This makes
      * index.query() nearly impossible to mock. So we abstract it away into a method that we can mock.
      */
-    protected Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue) {
+    private Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue) {
+        return index.query(indexKeyName, indexKeyValue);
+    }
+
+    /**
+     * This abstracts away the call to index.query(), which returns an ItemCollection. While ItemCollection implements
+     * Iterable, it overrides iterator() to return an IteratorSupport, which is not publicly exposed. This makes
+     * index.query() nearly impossible to mock. So we abstract it away into a method that we can mock.
+     */
+    private Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object from, @Nonnull Object to) {
+        index.query(indexKeyName, new RangeKeyCondition());
         return index.query(indexKeyName, indexKeyValue);
     }
 }

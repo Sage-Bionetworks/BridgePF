@@ -7,19 +7,19 @@ import org.sagebionetworks.bridge.config.Environment;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
-public class TableNameOverrideFactory {
+final class TableNameOverrideFactory {
 
-    public static TableNameOverride getTableNameOverride(Class<?> clazz) {
-        BridgeConfig config = BridgeConfigFactory.getConfig();
-        Environment env = config.getEnvironment();
-        String tableName = clazz.getAnnotation(DynamoDBTable.class).tableName();
-        if (tableName == null || tableName.isEmpty()) {
-            throw new IllegalArgumentException("Missing DynamoDBTable table name for " + clazz.getName());
+    static TableNameOverride getTableNameOverride(final Class<?> dynamoTable) {
+        final DynamoDBTable table = dynamoTable.getAnnotation(DynamoDBTable.class);
+        if (table == null) {
+            throw new IllegalArgumentException("Missing DynamoDBTable annotation for " + dynamoTable.getName());
         }
-        return new TableNameOverride(env.name().toLowerCase() + "-" + config.getUser() + "-" + tableName);
+        final BridgeConfig config = BridgeConfigFactory.getConfig();
+        final Environment env = config.getEnvironment();
+        return new TableNameOverride(env.name().toLowerCase() + "-" + config.getUser() + "-" + table.tableName());
     }
 
-    public static String getTableName(Class<?> clazz) {
-        return getTableNameOverride(clazz).getTableName();
+    static String getTableName(final Class<?> dynamoTable) {
+        return getTableNameOverride(dynamoTable).getTableName();
     }
 }
