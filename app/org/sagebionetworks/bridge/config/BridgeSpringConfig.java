@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.config;
 
 import java.util.List;
+import java.util.MissingResourceException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -20,7 +21,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.dynamodb.DynamoTaskEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
-import org.sagebionetworks.bridge.dynamodb.TableNameOverrideFactory;
+import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
@@ -31,11 +32,14 @@ import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
 import org.sagebionetworks.bridge.upload.UnzipHandler;
 import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
 import org.sagebionetworks.bridge.upload.UploadValidationHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -43,10 +47,6 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.document.DynamoDB;
-import com.amazonaws.services.dynamodbv2.document.Index;
-import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
@@ -65,6 +65,8 @@ import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 @Configuration
 public class BridgeSpringConfig {
 
+    private final static Logger logger = LoggerFactory.getLogger(BridgeSpringConfig.class);
+
     @Bean(name = "bridgeObjectMapper")
     public BridgeObjectMapper bridgeObjectMapper() {
         return BridgeObjectMapper.get();
@@ -73,6 +75,44 @@ public class BridgeSpringConfig {
     @Bean(name = "bridgeConfig")
     public BridgeConfig bridgeConfig() {
         return BridgeConfigFactory.getConfig();
+    }
+
+    @Bean(name = "jedisPool")
+    public JedisPool jedisPool(final BridgeConfig config) {
+
+        // Configure pool
+        final JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
+
+        // Create pool
+        final String host = config.getProperty("redis.host");
+        final int port = config.getPropertyAsInt("redis.port");
+        final int timeout = config.getPropertyAsInt("redis.timeout");
+        final String password = config.getProperty("redis.password");
+        final JedisPool jedisPool = config.isLocal() ?
+                new JedisPool(poolConfig, host, port, timeout) :
+                new JedisPool(poolConfig, host, port, timeout, password);
+
+        // Test pool
+        try (Jedis jedis = jedisPool.getResource()) {
+            final String result = jedis.ping();
+            if (result == null || !"PONG".equalsIgnoreCase(result.trim())) {
+                throw new MissingResourceException(
+                        "No PONG from PINGing Redis: " + result + ".",
+                        JedisPool.class.getName(),
+                        host + ":" + port);
+            }
+        }
+
+        // Shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                jedisPool.destroy();
+            }
+        }));
+
+        return jedisPool;
     }
 
     @Bean(name = "healthCodeEncryptor")
@@ -132,96 +172,6 @@ public class BridgeSpringConfig {
         return new AWSSecurityTokenServiceClient(s3UploadCredentials);
     }
 
-    @Bean(name = "asyncExecutorService")
-    @Resource(name = "bridgeConfig")
-    public ExecutorService asyncExecutorService(BridgeConfig bridgeConfig) {
-        return Executors.newFixedThreadPool(bridgeConfig.getPropertyAsInt("async.worker.thread.count"));
-    }
-
-    @Bean(name = "supportEmail")
-    @Resource(name = "bridgeConfig")
-    public String supportEmail(BridgeConfig bridgeConfig) {
-        return bridgeConfig.getProperty("support.email");
-    }
-
-    @Bean(name = "cmsEncryptorCache")
-    @Autowired
-    public LoadingCache<String, CmsEncryptor> cmsEncryptorCache(CmsEncryptorCacheLoader cacheLoader) {
-        return CacheBuilder.newBuilder().build(cacheLoader);
-    }
-
-    @Bean(name = "healthDataAttachmentDdbMapper")
-    @Autowired
-    public DynamoDBMapper healthDataAttachmentDdbMapper(AmazonDynamoDB client) {
-        return getMapperForClass(client, DynamoHealthDataAttachment.class);
-    }
-
-    @Bean(name = "healthDataDdbMapper")
-    @Autowired
-    public DynamoDBMapper healthDataDdbMapper(AmazonDynamoDB client) {
-        return getMapperForClass(client, DynamoHealthDataRecord.class);
-    }
-
-    @Bean(name = "taskEventDdbMapper")
-    @Autowired
-    public DynamoDBMapper taskEventDdbMapper(AmazonDynamoDB client) {
-        return getMapperForClass(client, DynamoTaskEvent.class);
-    }
-    
-    @Bean(name = "studyConsentDdbMapper")
-    @Autowired
-    public DynamoDBMapper studyConsentDdbMapper(AmazonDynamoDB client) {
-        return getMapperForClass(client, DynamoStudyConsent1.class);
-    }
-    
-    @Bean(name = "surveyMapper")
-    @Autowired
-    public DynamoDBMapper surveyDdbMapper(AmazonDynamoDB client) {
-        return getMapperForClass(client, DynamoSurvey.class);
-    }
-    
-    @Bean(name = "surveyElementMapper")
-    @Autowired
-    public DynamoDBMapper surveyElementDdbMapper(AmazonDynamoDB client) {
-        return getMapperForClass(client, DynamoSurveyElement.class);
-    }
-
-    @Bean(name = "healthDataHealthCodeIndex")
-    @Autowired
-    public DynamoIndexHelper healthDataHealthCodeIndex(AmazonDynamoDB client) {
-        return getDynamoIndexHelper(DynamoHealthDataRecord.class, "healthCode-index", client);
-    }
-
-    @Bean(name = "healthDataUploadDateIndex")
-    @Autowired
-    public DynamoIndexHelper healthDataUploadDateIndex(AmazonDynamoDB client) {
-        return getDynamoIndexHelper(DynamoHealthDataRecord.class, "uploadDate-index", client);
-    }
-
-    @Bean(name = "jedisPool")
-    public JedisPool jedisPool(final BridgeConfig config) {
-
-        final JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(config.getPropertyAsInt("redis.max.total"));
-
-        final String host = config.getProperty("redis.host");
-        final int port = config.getPropertyAsInt("redis.port");
-        final int timeout = config.getPropertyAsInt("redis.timeout");
-        final String password = config.getProperty("redis.password");
-        final JedisPool jedisPool = password == null ?
-                new JedisPool(poolConfig, host, port, timeout) :
-                new JedisPool(poolConfig, host, port, timeout, password);
-
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                jedisPool.destroy();
-            }
-        }));
-
-        return jedisPool;
-    }
-
     @Bean(name = "s3CmsHelper")
     @Resource(name = "s3CmsClient")
     public S3Helper s3CmsHelper(AmazonS3Client s3CmsClient) {
@@ -257,12 +207,84 @@ public class BridgeSpringConfig {
         S3Helper s3Helper = new S3Helper();
         s3Helper.setS3Client(s3Client);
         return s3Helper;
-    }    
+    }
+
+    @Bean(name = "sesClient")
+    @Resource(name="awsCredentials")
+    public AmazonSimpleEmailServiceClient sesClient(BasicAWSCredentials awsCredentials) {
+        return new AmazonSimpleEmailServiceClient(awsCredentials);
+    }
+
+    @Bean(name = "asyncExecutorService")
+    @Resource(name = "bridgeConfig")
+    public ExecutorService asyncExecutorService(BridgeConfig bridgeConfig) {
+        return Executors.newFixedThreadPool(bridgeConfig.getPropertyAsInt("async.worker.thread.count"));
+    }
+
+    @Bean(name = "supportEmail")
+    @Resource(name = "bridgeConfig")
+    public String supportEmail(BridgeConfig bridgeConfig) {
+        return bridgeConfig.getProperty("support.email");
+    }
+
+    @Bean(name = "cmsEncryptorCache")
+    @Autowired
+    public LoadingCache<String, CmsEncryptor> cmsEncryptorCache(CmsEncryptorCacheLoader cacheLoader) {
+        return CacheBuilder.newBuilder().build(cacheLoader);
+    }
+
+    @Bean(name = "healthDataAttachmentDdbMapper")
+    @Autowired
+    public DynamoDBMapper healthDataAttachmentDdbMapper(AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoHealthDataAttachment.class, client);
+    }
+
+    @Bean(name = "healthDataDdbMapper")
+    @Autowired
+    public DynamoDBMapper healthDataDdbMapper(AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoHealthDataRecord.class, client);
+    }
+
+    @Bean(name = "taskEventDdbMapper")
+    @Autowired
+    public DynamoDBMapper taskEventDdbMapper(AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoTaskEvent.class, client);
+    }
+
+    @Bean(name = "studyConsentDdbMapper")
+    @Autowired
+    public DynamoDBMapper studyConsentDdbMapper(AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoStudyConsent1.class, client);
+    }
+
+    @Bean(name = "surveyMapper")
+    @Autowired
+    public DynamoDBMapper surveyDdbMapper(AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoSurvey.class, client);
+    }
+
+    @Bean(name = "surveyElementMapper")
+    @Autowired
+    public DynamoDBMapper surveyElementDdbMapper(AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoSurveyElement.class, client);
+    }
+
+    @Bean(name = "healthDataHealthCodeIndex")
+    @Autowired
+    public DynamoIndexHelper healthDataHealthCodeIndex(AmazonDynamoDB client) {
+        return DynamoUtils.getDynamoIndexHelper(DynamoHealthDataRecord.class, "healthCode-index", client);
+    }
+
+    @Bean(name = "healthDataUploadDateIndex")
+    @Autowired
+    public DynamoIndexHelper healthDataUploadDateIndex(AmazonDynamoDB client) {
+        return DynamoUtils.getDynamoIndexHelper(DynamoHealthDataRecord.class, "uploadDate-index", client);
+    }
 
     @Bean(name = "uploadDdbMapper")
     @Autowired
     public DynamoDBMapper uploadDdbMapper(AmazonDynamoDB client) {
-        return getMapperForClass(client, DynamoUpload2.class);
+        return DynamoUtils.getMapper(DynamoUpload2.class, client);
     }
 
     @Bean(name = "uploadValidationHandlerList")
@@ -271,7 +293,6 @@ public class BridgeSpringConfig {
             DecryptHandler decryptHandler, UnzipHandler unzipHandler, ParseJsonHandler parseJsonHandler,
             IosSchemaValidationHandler2 iosSchemaValidationHandler2, TranscribeConsentHandler transcribeConsentHandler,
             UploadArtifactsHandler uploadArtifactsHandler) {
-
         return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler, parseJsonHandler,
                 iosSchemaValidationHandler2, transcribeConsentHandler, uploadArtifactsHandler);
     }
@@ -279,28 +300,25 @@ public class BridgeSpringConfig {
     @Bean(name = "uploadSchemaDdbMapper")
     @Autowired
     public DynamoDBMapper uploadSchemaDdbMapper(AmazonDynamoDB client) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder()
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoUploadSchema.class))
-                .build();
-        return new DynamoDBMapper(client, mapperConfig);
+        return DynamoUtils.getMapperEventually(DynamoUploadSchema.class, client);
     }
 
     @Bean(name = "taskDdbMapper")
     @Autowired
     public DynamoDBMapper taskDdbMapper(AmazonDynamoDB client) {
-        return getMapperForClass(client, DynamoTask.class);
+        return DynamoUtils.getMapper(DynamoTask.class, client);
     }
 
     @Bean(name = "surveyResponseDdbMapper")
     @Autowired
     public DynamoDBMapper surveyResponseDdbMapper(AmazonDynamoDB client) {
-        return getMapperForClass(client, DynamoSurveyResponse.class);
+        return DynamoUtils.getMapper(DynamoSurveyResponse.class, client);
     }
 
     @Bean(name = "uploadSchemaStudyIdIndex")
     @Autowired
     public DynamoIndexHelper uploadSchemaStudyIdIndex(AmazonDynamoDB client) {
-        return getDynamoIndexHelper(DynamoUploadSchema.class, "studyId-index", client);
+        return DynamoUtils.getDynamoIndexHelper(DynamoUploadSchema.class, "studyId-index", client);
     }
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
@@ -308,8 +326,8 @@ public class BridgeSpringConfig {
     @Autowired
     public Client getStormpathClient(BridgeConfig bridgeConfig) {
         ApiKey apiKey = ApiKeys.builder()
-            .setId(bridgeConfig.getStormpathId().trim())
-            .setSecret(bridgeConfig.getStormpathSecret().trim()).build();
+            .setId(bridgeConfig.getStormpathId())
+            .setSecret(bridgeConfig.getStormpathSecret()).build();
         ClientBuilder clientBuilder = Clients.builder().setApiKey(apiKey);
         ((DefaultClientBuilder)clientBuilder).setBaseUrl("https://enterprise.stormpath.io/v1");
         return clientBuilder.build();        
@@ -319,27 +337,6 @@ public class BridgeSpringConfig {
     @Bean(name = "stormpathApplication")
     @Autowired
     public Application getStormpathApplication(BridgeConfig bridgeConfig, Client stormpathClient) {
-        return stormpathClient.getResource(bridgeConfig.getStormpathApplicationHref().trim(), Application.class);
-    }
-
-    @Bean(name = "sesClient")
-    @Resource(name="awsCredentials")
-    public AmazonSimpleEmailServiceClient sesClient(BasicAWSCredentials awsCredentials) {
-        return new AmazonSimpleEmailServiceClient(awsCredentials);
-    }
-
-    private DynamoDBMapper getMapperForClass(AmazonDynamoDB client, Class<?> clazz) {
-        DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder()
-                .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE)
-                .withConsistentReads(DynamoDBMapperConfig.ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(clazz)).build();
-        return new DynamoDBMapper(client, mapperConfig);
-    }
-
-    private DynamoIndexHelper getDynamoIndexHelper(Class<?> dynamoTable, String indexName, AmazonDynamoDB client) {
-        DynamoDB ddb = new DynamoDB(client);
-        Table ddbTable = ddb.getTable(TableNameOverrideFactory.getTableName(dynamoTable));
-        Index ddbIndex = ddbTable.getIndex(indexName);
-        return new DynamoIndexHelper(ddbIndex, getMapperForClass(client, dynamoTable));
+        return stormpathClient.getResource(bridgeConfig.getStormpathApplicationHref(), Application.class);
     }
 }

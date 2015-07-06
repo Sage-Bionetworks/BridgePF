@@ -33,7 +33,7 @@ public class DynamoTestUtil {
 
     public static void clearTable(Class<?> clazz) {
         List<String> keyAttrs = getKeyAttrs(clazz);
-        String tableName = TableNameOverrideFactory.getTableName(clazz);
+        String tableName = DynamoUtils.getTableName(clazz);
         ScanResult result = DYNAMO.scan((new ScanRequest(tableName)).withAttributesToGet(keyAttrs));
         List<Map<String, AttributeValue>> items = result.getItems();
         do {

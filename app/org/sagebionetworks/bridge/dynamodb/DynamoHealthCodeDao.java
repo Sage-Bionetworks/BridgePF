@@ -23,7 +23,7 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoHealthCode.class)).build();
+                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoHealthCode.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 

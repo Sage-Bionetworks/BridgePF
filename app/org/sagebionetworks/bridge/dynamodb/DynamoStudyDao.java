@@ -33,7 +33,7 @@ public class DynamoStudyDao implements StudyDao {
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoStudy.class)).build();
+                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoStudy.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 
