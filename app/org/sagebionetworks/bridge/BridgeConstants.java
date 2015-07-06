@@ -24,10 +24,6 @@ public class BridgeConstants {
     public static final String CUSTOM_DATA_CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
 
     public static final String CUSTOM_DATA_VERSION = "version";
-
-    public static final String ADMIN_GROUP = "admin";
-
-    public static final String TEST_USERS_GROUP = "test_users";
     
     public static final String STUDY_PROPERTY = "study";
 
@@ -48,4 +44,5 @@ public class BridgeConstants {
 
     /** Per-request metrics expires in the cache after 120 seconds. */
     public static final int METRICS_EXPIRE_SECONDS = 2 * 60;
+    
 }

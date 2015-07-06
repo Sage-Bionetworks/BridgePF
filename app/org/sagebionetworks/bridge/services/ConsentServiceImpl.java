@@ -2,8 +2,12 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 import javax.annotation.Resource;
 
+import org.apache.commons.io.IOUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
@@ -25,6 +29,7 @@ import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -39,7 +44,13 @@ public class ConsentServiceImpl implements ConsentService {
     private StudyConsentService studyConsentService;
     private UserConsentDao userConsentDao;
     private TaskEventService taskEventService;
-
+    private String consentTemplate;
+    
+    @Value("classpath:study-defaults/consent-page.xhtml")
+    final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
+        this.consentTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+    
     @Autowired
     public void setStringOps(JedisOps jedisOps) {
         this.jedisOps = jedisOps;
@@ -118,8 +129,9 @@ public class ConsentServiceImpl implements ConsentService {
         optionsService.setOption(study, user.getHealthCode(), sharingScope);
 
         if (sendEmail) {
-            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(
-                study, user, consentSignature, sharingScope, studyConsentService);
+            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, user, 
+                consentSignature, sharingScope, studyConsentService, consentTemplate);
+
             sendMailService.sendEmail(consentEmail);
         }
 
@@ -183,7 +195,7 @@ public class ConsentServiceImpl implements ConsentService {
 
         final SharingScope sharingScope = optionsService.getSharingScope(user.getHealthCode());
         MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(
-            study, user, consentSignature, sharingScope, studyConsentService);        
+            study, user, consentSignature, sharingScope, studyConsentService, consentTemplate);
         sendMailService.sendEmail(consentEmail);
     }
 

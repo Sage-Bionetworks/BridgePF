@@ -75,7 +75,7 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     @Override
     public SurveyResponseView getSurveyResponse(String healthCode, String identifier) {
         checkNotNull(healthCode, CANNOT_BE_NULL, "health code");
-        checkNotNull(identifier, CANNOT_BE_NULL, "guid");
+        checkNotNull(identifier, CANNOT_BE_NULL, "identifier");
         
         SurveyResponse response = surveyResponseDao.getSurveyResponse(healthCode, identifier);
         Survey survey = getSurveyForResponse(response);

@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.backfill.BackfillService;
 import org.slf4j.Logger;
@@ -42,7 +44,7 @@ public class BackfillController extends BaseController implements ApplicationCon
     }
 
     private String checkUser() throws Exception {
-        UserSession session = getAuthenticatedAdminSession();
+        UserSession session = getAuthenticatedSession(ADMIN);
         return session.getUser().getEmail();
     }
 }

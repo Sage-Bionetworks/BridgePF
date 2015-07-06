@@ -3,11 +3,15 @@ package org.sagebionetworks.bridge.json;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 
 import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.surveys.Image;
@@ -193,6 +197,17 @@ public class JsonUtilsTest {
         assertEquals(Sets.newHashSet(), JsonUtils.asStringSet(node, null));
         assertEquals(Sets.newHashSet(), JsonUtils.asStringSet(node, "badProp"));
         assertEquals(set, JsonUtils.asStringSet(node, "key"));
+    }
+
+    @Test
+    public void asRolesSet() throws Exception {
+        Set<Roles> set = Sets.newHashSet(ADMIN, RESEARCHER, TEST_USERS);
+        
+        JsonNode node = mapper.readTree(esc("{'key':['admin','researcher','test_users', 'junk']}"));
+        
+        assertEquals(Sets.newHashSet(), JsonUtils.asRolesSet(node, null));
+        assertEquals(Sets.newHashSet(), JsonUtils.asRolesSet(node, "badProp"));
+        assertEquals(set, JsonUtils.asRolesSet(node, "key"));
     }
 
 }

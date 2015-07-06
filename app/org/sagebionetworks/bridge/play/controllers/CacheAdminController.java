@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+
 import java.util.Set;
 
 import org.sagebionetworks.bridge.services.CacheAdminService;
@@ -19,14 +21,14 @@ public class CacheAdminController extends BaseController {
     }
     
     public Result listItems() throws Exception {
-        getAuthenticatedAdminSession();
+        getAuthenticatedSession(ADMIN);
         
         Set<String> keys = cacheAdminService.listItems();
         return okResult(keys);
     }
     
     public Result removeItem(String cacheKey) {
-        getAuthenticatedAdminSession();
+        getAuthenticatedSession(ADMIN);
         
         cacheAdminService.removeItem(cacheKey);
         return ok("Item removed from cache.");

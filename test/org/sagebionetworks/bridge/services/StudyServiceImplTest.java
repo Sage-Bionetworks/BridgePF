@@ -111,7 +111,6 @@ public class StudyServiceImplTest {
         assertEquals(200, study.getMaxNumOfParticipants());
         assertEquals(18, study.getMinAgeOfConsent());
         // these should have been changed
-        assertEquals(identifier+"_researcher", study.getResearcherRole());
         assertNotEquals("http://local-test-junk", study.getStormpathHref());
         verify(cache).getStudy(study.getIdentifier());
         verify(cache).setStudy(study);
@@ -162,7 +161,7 @@ public class StudyServiceImplTest {
         study.setVerifyEmailTemplate(new EmailTemplate("subject *", "body ${url} *", MimeType.TEXT));
         study.setResetPasswordTemplate(new EmailTemplate("subject **", "body ${url} **", MimeType.TEXT));
         
-        study = studyService.updateStudy(study);
+        study = studyService.updateStudy(study, true);
         policy = study.getPasswordPolicy();
         assertEquals(6, policy.getMinLength());
         assertTrue(policy.isNumericRequired());
@@ -199,7 +198,7 @@ public class StudyServiceImplTest {
         study.setVerifyEmailTemplate(new EmailTemplate(null, "body ${url}", MimeType.TEXT));
         study.setResetPasswordTemplate(new EmailTemplate("subject", null, MimeType.TEXT));
 
-        study = studyService.updateStudy(study);
+        study = studyService.updateStudy(study, true);
         
         assertEquals("Verify your account", study.getVerifyEmailTemplate().getSubject());
         assertNotNull(study.getResetPasswordTemplate().getBody());
@@ -224,6 +223,21 @@ public class StudyServiceImplTest {
         assertEquals("This is not allowed [rp]", template.getSubject());
         assertEquals("Test [rp] ${url}", template.getBody());
         assertEquals(MimeType.TEXT, template.getMimeType());
+    }
+    
+    @Test
+    public void adminsCanChangeMaxNumParticipantsResearchersCannot() {
+        study = TestUtils.getValidStudy(); // it's 200.
+        study = studyService.createStudy(study);
+        
+        // Okay, not that it's set, researchers can change it to no effect
+        study.setMaxNumOfParticipants(1000);
+        study = studyService.updateStudy(study, false);
+        assertEquals(200, study.getMaxNumOfParticipants()); // nope
+        
+        study.setMaxNumOfParticipants(1000);
+        study = studyService.updateStudy(study, true);
+        assertEquals(1000, study.getMaxNumOfParticipants()); // yep
     }
 
 }

@@ -17,6 +17,7 @@ import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -195,6 +196,30 @@ public class DynamoSurveyResponseDaoTest {
         } catch(EntityNotFoundException e) {
             
         }
+    }
+    
+    // This test is due to a bug where the range key was not being set correctly for a query, and 
+    // a list of results were being returned and the wrong response then being selected.
+    // NOTE: Cannot get tests to pass right now because of a Stormpath issue.
+    @Test
+    @Ignore
+    public void createTwoResponsesAndRetrieveTheCorrectOneByIdentifier() {
+        String targetIdentifier = BridgeUtils.generateGuid();
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), BridgeUtils.generateGuid());
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), targetIdentifier);
+        surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), BridgeUtils.generateGuid());
+        
+        // This is *necessary* or this test cannot be made to fail by removing the relevant range query filter.
+        // This probably indicates other tests are not 100% accurate due to eventual consistency.
+        /*
+        try {
+            Thread.sleep(1000);    
+        } catch(InterruptedException e){
+            Thread.currentThread().interrupt();
+        }
+        */
+        SurveyResponse response = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, targetIdentifier);
+        assertEquals(targetIdentifier, response.getIdentifier());
     }
     
     private boolean noResponses(Survey survey) {

@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -227,9 +228,9 @@ public class StormpathAccountTest {
     
     @Test
     public void canSetAndGetRoles() {
-        acct.getRoles().add("aRole");
+        acct.getRoles().add(DEVELOPER);
         
         assertEquals(1, acct.getRoles().size());
-        assertEquals("aRole", acct.getRoles().iterator().next());
+        assertEquals(DEVELOPER, acct.getRoles().iterator().next());
     }
 }

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.Set;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -35,7 +36,7 @@ public interface Account extends BridgeEntity {
 
     public StudyIdentifier getStudyIdentifier();
     
-    public Set<String> getRoles();
+    public Set<Roles> getRoles();
 
     /**
      * This is the store-specific identifier for the account (in the case of 

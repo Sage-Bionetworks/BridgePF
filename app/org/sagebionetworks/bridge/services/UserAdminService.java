@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -35,10 +36,10 @@ public interface UserAdminService {
     public void deleteUser(Study study, String email);
     
     /**
-     * Deletes all all users in the "test users" group in Stormpath.
+     * Deletes all all users with a given role (used to remove TEST_USERS).
      *
      * @throws BridgeServiceException
      */
-    public void deleteAllUsers(String role) throws BridgeServiceException;
+    public void deleteAllUsers(Roles role);
 
 }

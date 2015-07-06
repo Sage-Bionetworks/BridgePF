@@ -8,8 +8,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.FileInputStream;
 import java.util.List;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -35,6 +37,10 @@ import com.google.common.base.Charsets;
  * are in a separate class.
  */
 public class SendMailViaAmazonServiceConsentTest {
+    
+    private static final String FROM_STUDY_AS_FORMATTED = "\"Test Study (Sage)\" <study-support-email@study.com>";
+    private static final String FROM_DEFAULT_UNFORMATTED = "Sage Bionetworks <test-sender@sagebase.org>";
+    private static final String FROM_DEFAULT_AS_FORMATTED = "\"Sage Bionetworks\" <test-sender@sagebase.org>";
 
     private SendMailViaAmazonService service;
     private AmazonSimpleEmailServiceClient emailClient;
@@ -42,12 +48,12 @@ public class SendMailViaAmazonServiceConsentTest {
     private StudyConsentService studyConsentService;
     private ArgumentCaptor<SendRawEmailRequest> argument;
     private Study study;
-    private static final String FROM_STUDY_AS_FORMATTED = "\"Test Study (Sage)\" <study-support-email@study.com>";
-    private static final String FROM_DEFAULT_UNFORMATTED = "Sage Bionetworks <test-sender@sagebase.org>";
-    private static final String FROM_DEFAULT_AS_FORMATTED = "\"Sage Bionetworks\" <test-sender@sagebase.org>";
+    private String consentBodyTemplate;
     
     @Before
     public void setUp() throws Exception {
+        consentBodyTemplate = IOUtils.toString(new FileInputStream("conf/study-defaults/consent-page.xhtml"));
+        
         study = new DynamoStudy(); // TestUtils.getValidStudy();
         study.setName("Test Study (Sage)");
         study.setIdentifier("api");
@@ -80,7 +86,8 @@ public class SendMailViaAmazonServiceConsentTest {
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent, SharingScope.NO_SHARING, studyConsentService);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent, SharingScope.NO_SHARING,
+                        studyConsentService, consentBodyTemplate);
         service.sendEmail(provider);
 
         verify(emailClient).sendRawEmail(argument.capture());
@@ -95,7 +102,8 @@ public class SendMailViaAmazonServiceConsentTest {
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent,
+                        SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate);
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));
@@ -126,7 +134,8 @@ public class SendMailViaAmazonServiceConsentTest {
         User user = new User();
         user.setEmail("test-user@sagebase.org");
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent, SharingScope.SPONSORS_AND_PARTNERS, studyConsentService);
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, user, consent,
+            SharingScope.SPONSORS_AND_PARTNERS, studyConsentService, consentBodyTemplate);
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));

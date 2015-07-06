@@ -52,6 +52,11 @@ public class CacheAdminServiceTest {
     }
     
     @Test(expected = BridgeServiceException.class)
+    public void doesNotRemoveUserSessions() {
+        adminService.removeItem("xh7YDmjGQuTKnfdv9iJb0:session:user");
+    }
+    
+    @Test(expected = BridgeServiceException.class)
     public void throwsExceptionWhenThereIsNoKey() {
         adminService.removeItem("not:a:key");
     }
@@ -68,7 +73,8 @@ public class CacheAdminServiceTest {
     
     private Jedis createStubJedis() {
         return new Jedis("") {
-            private Set<String> set = Sets.newHashSet("foo:study", "bar:session", "baz:Survey:view");
+            // xh7YDmjGQuTKnfdv9iJb0:session:user is an actual key we're suppressing
+            private Set<String> set = Sets.newHashSet("foo:study", "bar:session", "baz:Survey:view", "xh7YDmjGQuTKnfdv9iJb0:session:user");
 
             @Override
             public Set<String> keys(String pattern) {

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.Set;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
@@ -18,9 +19,9 @@ public class SignUp implements BridgeEntity {
     private final String username;
     private final String email;
     private final String password;
-    private final Set<String> roles;
+    private final Set<Roles> roles;
 
-    public SignUp(String username, String email, String password, Set<String> roles) {
+    public SignUp(String username, String email, String password, Set<Roles> roles) {
         this.username = username;
         this.email = email;
         this.password = password;
@@ -34,7 +35,7 @@ public class SignUp implements BridgeEntity {
         String username = JsonUtils.asText(node, USERNAME_FIELD);
         String email = JsonUtils.asText(node, EMAIL_FIELD);
         String password = JsonUtils.asText(node, PASSWORD_FIELD);
-        Set<String> roles = (allowRoles) ? JsonUtils.asStringSet(node, ROLES_FIELD) : null;
+        Set<Roles> roles = (allowRoles) ? JsonUtils.asRolesSet(node, ROLES_FIELD) : null;
         return new SignUp(username, email, password, roles);
     }
 
@@ -50,14 +51,13 @@ public class SignUp implements BridgeEntity {
         return password;
     }
 
-    public Set<String> getRoles() {
+    public Set<Roles> getRoles() {
         return roles;
     }
 
     @Override
     public String toString() {
-        return "SignUp [username=" + username + ", email=" + email + ", password=" + password + ", roles=" + roles
-                + "]";
+        return "SignUp [username=" + username + ", email=" + email + ", password=" + password + ", roles=" + roles + "]";
     }
 
 }

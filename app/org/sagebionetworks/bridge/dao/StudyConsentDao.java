@@ -23,10 +23,15 @@ public interface StudyConsentDao {
     StudyConsent activate(StudyConsent studyConsent);
     
     /**
-     * Gets the latest, active consent.
+     * Gets the active consent.
      */
-    StudyConsent getConsent(StudyIdentifier studyIdentifier);
+    StudyConsent getActiveConsent(StudyIdentifier studyIdentifier);
 
+    /**
+     * Gets the most recent consent (active or not).
+     */
+    StudyConsent getMostRecentConsent(StudyIdentifier studyIdentifier);
+    
     /**
      * Gets the consent, activate or inactive, of the specified timestamp.
      */

@@ -22,8 +22,12 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     public static final ObjectWriter STUDY_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter", 
-        SimpleBeanPropertyFilter.serializeAllExcept("researcherRole", "stormpathHref")));
+        SimpleBeanPropertyFilter.serializeAllExcept("stormpathHref")));
 
+    public static final ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
+        new SimpleFilterProvider().addFilter("filter",
+        SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
+    
     /**
      * The display name of the study (will be seen by participants in email). This name makes the 
      * most sense when it starts with "The".
@@ -59,12 +63,6 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      */
     public Long getVersion();
     public void setVersion(Long version);
-    
-    /**
-     * The role assigned to participants who have researcher privileges in the study.
-     */
-    public String getResearcherRole();
-    public void setResearcherRole(String role);
     
     /**
      * User must confirm that they are at least this many years old in order to 

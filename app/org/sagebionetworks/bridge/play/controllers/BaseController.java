@@ -1,15 +1,15 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.ADMIN_GROUP;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_HOST_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_STUDY_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.Collection;
+import java.util.List;
 
 import javax.annotation.Nonnull;
-
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -18,10 +18,10 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -38,8 +38,6 @@ import play.mvc.Result;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Strings;
 
 public abstract class BaseController extends Controller {
@@ -132,28 +130,17 @@ public abstract class BaseController extends Controller {
         }
         return session;
     }
-
-    /**
-     * Checks if the user is in the "admin" group.
-     */
-    UserSession getAuthenticatedAdminSession() throws NotAuthenticatedException, UnauthorizedException {
+    
+    UserSession getAuthenticatedSession(Roles role) {
+        checkNotNull(role);
+        
         UserSession session = getAuthenticatedSession();
-        if (!session.getUser().isInRole(ADMIN_GROUP)) {
+        if (!session.getUser().isInRole(role)) {
             throw new UnauthorizedException();
         }
         return session;
     }
-
-    UserSession getAuthenticatedResearcherSession() throws NotAuthenticatedException, UnauthorizedException {
-        UserSession session = getAuthenticatedSession();
-        User user = session.getUser();
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        if (!user.isInRole(studyId.getResearcherRole())) {
-            throw new UnauthorizedException();
-        }
-        return session;
-    }
-
+    
     void setSessionToken(String sessionToken) {
         response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
@@ -230,19 +217,9 @@ public abstract class BaseController extends Controller {
     Result okResult(Object obj) {
         return ok((JsonNode)mapper.valueToTree(obj));
     }
-
-    Result okResult(Collection<?> items) throws Exception {
-        ArrayNode itemsNode = mapper.createArrayNode();
-        for (Object item : items) {
-            JsonNode node = mapper.valueToTree(item);
-            itemsNode.add(node);
-        }
-        ObjectNode json = mapper.createObjectNode();
-        json.set("items", itemsNode);
-        json.put("total", items.size());
-        json.put("type", "ResourceList");
-        
-        return ok(json);
+    
+    <T> Result okResult(List<T> list) {
+        return ok((JsonNode)mapper.valueToTree(new ResourceList<T>(list)));
     }
 
     Result createdResult(Object obj) throws Exception {

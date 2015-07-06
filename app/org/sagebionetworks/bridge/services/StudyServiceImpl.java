@@ -60,7 +60,7 @@ public class StudyServiceImpl implements StudyService {
     private String defaultResetPasswordTemplate;
     private String defaultResetPasswordTemplateSubject;
     
-    @Value("classpath:study-defaults/consent.xhtml")
+    @Value("classpath:study-defaults/consent-body.xhtml")
     final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
     }
@@ -157,7 +157,6 @@ public class StudyServiceImpl implements StudyService {
             studyConsentService.activateConsent(study.getStudyIdentifier(), view.getCreatedOn());
             
             study.setActive(true);
-            study.setResearcherRole(study.getIdentifier() + "_researcher");
 
             String directory = directoryDao.createDirectoryForStudy(study);
             study.setStormpathHref(directory);
@@ -176,7 +175,7 @@ public class StudyServiceImpl implements StudyService {
         return study;
     }
     @Override
-    public Study updateStudy(Study study) {
+    public Study updateStudy(Study study, boolean isAdminUpdate) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
         // do not set defaults for the existing studies that are in use. Throw an error if 
@@ -195,14 +194,17 @@ public class StudyServiceImpl implements StudyService {
             setDefaultsIfAbsent(study);    
         }
         sanitizeHTML(study);
-        Validate.entityThrowingException(validator, study);
 
         // These cannot be set through the API and will be null here, so they are set on update
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
         study.setStormpathHref(originalStudy.getStormpathHref());
-        study.setResearcherRole(originalStudy.getResearcherRole());
         study.setActive(true);
         // study.setActive(originalStudy.isActive());
+        // And this cannot be set unless you're an administrator.
+        if (!isAdminUpdate) {
+            study.setMaxNumOfParticipants(originalStudy.getMaxNumOfParticipants());
+        }
+        Validate.entityThrowingException(validator, study);
 
         // When the version is out of sync in the cache, then an exception is thrown and the study 
         // is not updated in the cache. At least we can delete the study before this, so the next 

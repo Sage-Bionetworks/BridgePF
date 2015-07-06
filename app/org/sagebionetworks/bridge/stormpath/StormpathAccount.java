@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.SortedMap;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -16,8 +18,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
-import com.stormpath.sdk.group.Group;
 
 /**
  * Account values are decrypted with the appropriate Encryptor implementation based on the version 
@@ -51,7 +51,7 @@ class StormpathAccount implements Account {
     private final String consentSignatureKey;
     private final String oldHealthIdVersionKey;
     private final String oldConsentSignatureKey;
-    private final Set<String> roles;
+    private final Set<Roles> roles;
     
     StormpathAccount(StudyIdentifier studyIdentifier, com.stormpath.sdk.account.Account acct,
             SortedMap<Integer, Encryptor> encryptors) {
@@ -68,12 +68,7 @@ class StormpathAccount implements Account {
         this.consentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
         this.oldHealthIdVersionKey = studyId + OLD_VERSION_SUFFIX;
         this.oldConsentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
-        this.roles = Sets.newHashSet();
-        if (acct.getGroups() != null) {
-            for (Group group : acct.getGroups()) {
-                this.roles.add(group.getName());
-            }
-        }
+        this.roles = BridgeUtils.convertRolesQuietly(acct.getGroups());
     }
     
     com.stormpath.sdk.account.Account getAccount() {
@@ -151,7 +146,7 @@ class StormpathAccount implements Account {
         return studyIdentifier;
     }
     @Override
-    public Set<String> getRoles() {
+    public Set<Roles> getRoles() {
         return this.roles;
     }
     @Override

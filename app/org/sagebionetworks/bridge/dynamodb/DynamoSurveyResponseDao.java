@@ -23,6 +23,9 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -135,11 +138,13 @@ public class DynamoSurveyResponseDao implements SurveyResponseDao {
     private DynamoSurveyResponse getSurveyResponseInternal(String healthCode, String identifier) {
         DynamoSurveyResponse hashKey = new DynamoSurveyResponse();
         hashKey.setHealthCode(healthCode);
-        hashKey.setIdentifier(identifier);
         
         DynamoDBQueryExpression<DynamoSurveyResponse> query = new DynamoDBQueryExpression<DynamoSurveyResponse>();
         query.withScanIndexForward(false);
         query.withHashKeyValues(hashKey);
+        query.withRangeKeyCondition("identifier", new Condition()
+            .withComparisonOperator(ComparisonOperator.EQ)
+            .withAttributeValueList(new AttributeValue().withS(identifier)));
         List<DynamoSurveyResponse> results = mapper.queryPage(DynamoSurveyResponse.class, query).getResults();
         if (results == null || results.isEmpty()) {
             return null;

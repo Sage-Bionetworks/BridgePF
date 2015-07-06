@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
@@ -10,6 +9,11 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.joda.time.DateTime;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Document.OutputSettings.Syntax;
+import org.jsoup.nodes.Entities.EscapeMode;
+import org.jsoup.safety.Whitelist;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -59,16 +63,16 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         checkNotNull(studyIdentifier, "StudyIdentifier is null");
         checkNotNull(form, "Study consent is null");
         
-        Validate.entityThrowingException(validator, form);
+        String sanitizedContent = sanitizeHTML(form.getDocumentContent());
+        Validate.entityThrowingException(validator, new StudyConsentForm(sanitizedContent));
         
-        String documentContent = form.getDocumentContent();
         DateTime createdOn = DateUtils.getCurrentDateTime();
         String storagePath = studyIdentifier.getIdentifier() + "." + createdOn.getMillis();
         
         try {
-            s3Helper.writeBytesToS3(BUCKET, storagePath, documentContent.getBytes());
+            s3Helper.writeBytesToS3(BUCKET, storagePath, sanitizedContent.getBytes());
             StudyConsent consent = studyConsentDao.addConsent(studyIdentifier, storagePath, createdOn);
-            return new StudyConsentView(consent, documentContent);
+            return new StudyConsentView(consent, sanitizedContent);
         } catch(Throwable t) {
             throw new BridgeServiceException(t);
         }
@@ -78,7 +82,19 @@ public class StudyConsentServiceImpl implements StudyConsentService {
     public StudyConsentView getActiveConsent(StudyIdentifier studyIdentifier) {
         checkNotNull(studyIdentifier, "StudyIdentifier is null");
         
-        StudyConsent consent = studyConsentDao.getConsent(studyIdentifier);
+        StudyConsent consent = studyConsentDao.getActiveConsent(studyIdentifier);
+        if (consent == null) {
+            throw new EntityNotFoundException(StudyConsent.class);
+        }
+        String documentContent = loadDocumentContent(consent);
+        return new StudyConsentView(consent, documentContent);
+    }
+    
+    @Override
+    public StudyConsentView getMostRecentConsent(StudyIdentifier studyIdentifier) {
+        checkNotNull(studyIdentifier, "StudyIdentifier is null");
+        
+        StudyConsent consent = studyConsentDao.getMostRecentConsent(studyIdentifier);
         if (consent == null) {
             throw new EntityNotFoundException(StudyConsent.class);
         }
@@ -134,4 +150,11 @@ public class StudyConsentServiceImpl implements StudyConsentService {
         }
     }
     
+    private String sanitizeHTML(String documentContent) {
+        documentContent = Jsoup.clean(documentContent, Whitelist.relaxed());
+        Document document = Jsoup.parseBodyFragment(documentContent);
+        document.outputSettings().escapeMode(EscapeMode.xhtml)
+            .prettyPrint(false).syntax(Syntax.xml).charset("UTF-8");
+        return document.body().html();
+    }
 }

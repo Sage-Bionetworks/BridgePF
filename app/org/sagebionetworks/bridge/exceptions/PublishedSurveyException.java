@@ -6,12 +6,16 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 public class PublishedSurveyException extends BridgeServiceException {
     
     private final Survey survey;
-    
-    public PublishedSurveyException(Survey survey) {
-        super("A published survey cannot be updated or deleted (only closed).", 400);
+
+    public PublishedSurveyException(Survey survey, String message) {
+        super(message, 400);
         this.survey = survey;
     }
-
+    
+    public PublishedSurveyException(Survey survey) {
+        this(survey, "A published survey cannot be updated or deleted (only closed).");
+    }
+    
     public Survey getSurvey() {
         return survey;
     }

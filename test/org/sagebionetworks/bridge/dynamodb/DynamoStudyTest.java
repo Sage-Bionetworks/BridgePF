@@ -50,7 +50,6 @@ public class DynamoStudyTest {
         assertEquals(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
         assertEquals(study.getMaxNumOfParticipants(), node.get("maxNumOfParticipants").asInt());
         assertEquals(study.getStormpathHref(), node.get("stormpathHref").asText());
-        assertEquals(study.getResearcherRole(), node.get("researcherRole").asText());
         assertEquals(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
         assertEquals(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate", EmailTemplate.class));
         assertEquals(study.getResetPasswordTemplate(), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
@@ -64,7 +63,6 @@ public class DynamoStudyTest {
         // Study.STUDY_WRITER.
         json = Study.STUDY_WRITER.writeValueAsString(study);
         study = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
-        assertNull(study.getResearcherRole());
         assertNull(study.getStormpathHref());
         assertEquals("Study", node.get("type").asText());
     }
