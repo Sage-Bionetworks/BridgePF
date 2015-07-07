@@ -48,7 +48,16 @@ public interface SurveyDao {
      * @param keys
      */
     public void deleteSurvey(GuidCreatedOnVersionHolder keys);
-    
+
+    /**
+     * Admin API to remove the survey from the backing store. This exists to clean up surveys from tests. This will
+     * remove the survey regardless of publish status, whether it has responses. This will delete all survey elements
+     * as well.
+     *
+     * @param keys survey keys (guid, created-on timestamp)
+     */
+    public void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys);
+
     /**
      * Get a specific version of a survey.
      * @param keys

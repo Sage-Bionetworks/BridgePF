@@ -87,6 +87,14 @@ public class SurveyServiceImpl implements SurveyService {
     }
 
     @Override
+    public void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys) {
+        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
+        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
+
+        surveyDao.deleteSurveyPermanently(keys);
+    }
+
+    @Override
     public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");

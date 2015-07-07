@@ -75,9 +75,7 @@ public class SurveyServiceTest {
         // clean up surveys
         for (GuidCreatedOnVersionHolder oneSurvey : surveysToDelete) {
             try {
-                // close (unpublish) survey before deleting it, since published surveys can't be deleted
-                // TODO: actually delete the survey
-                surveyService.deleteSurvey(oneSurvey);
+                surveyService.deleteSurveyPermanently(oneSurvey);
             } catch (Exception ex) {
                 // suppress exception
             }
@@ -400,10 +398,12 @@ public class SurveyServiceTest {
         Survey survey2 = surveyService.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey2));
         surveyService.publishSurvey(studyIdentifier, survey2);
+        schemaIdsToDelete.add(survey2.getIdentifier());
 
         Survey survey3 = surveyService.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey3));
         surveyService.publishSurvey(studyIdentifier, survey3);
+        schemaIdsToDelete.add(survey3.getIdentifier());
 
         // Make sure this returns all surveys that we created
         List<Survey> published = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);

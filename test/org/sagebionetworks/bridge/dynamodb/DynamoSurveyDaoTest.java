@@ -73,9 +73,7 @@ public class DynamoSurveyDaoTest {
         // clean up surveys
         for (GuidCreatedOnVersionHolder oneSurvey : surveysToDelete) {
             try {
-                // close (unpublish) survey before deleting it, since published surveys can't be deleted
-                // TODO: actually delete surveys
-                surveyDao.deleteSurvey(oneSurvey);
+                surveyDao.deleteSurveyPermanently(oneSurvey);
             } catch (Exception ex) {
                 // suppress exception
             }
@@ -599,10 +597,12 @@ public class DynamoSurveyDaoTest {
         Survey survey2 = surveyDao.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey2));
         surveyDao.publishSurvey(studyIdentifier, survey2);
+        schemaIdsToDelete.add(survey2.getIdentifier());
 
         Survey survey3 = surveyDao.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey3));
         surveyDao.publishSurvey(studyIdentifier, survey3);
+        schemaIdsToDelete.add(survey3.getIdentifier());
 
         // Make sure this returns all surveys that we created
         List<Survey> published = surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
@@ -615,8 +615,6 @@ public class DynamoSurveyDaoTest {
     public void canDeleteSurvey() {
         Survey survey = surveyDao.createSurvey(testSurvey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
-        survey = surveyDao.publishSurvey(studyIdentifier, survey);
-        schemaIdsToDelete.add(survey.getIdentifier());
 
         surveyDao.deleteSurvey(survey);
         

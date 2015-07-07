@@ -330,6 +330,13 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
+    public void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys) {
+        Survey existing = getSurvey(keys);
+        deleteAllElements(existing.getGuid(), existing.getCreatedOn());
+        surveyMapper.delete(existing);
+    }
+
+    @Override
     public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid) {
         return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).isNotDeleted().getAll(true);
     }
@@ -384,6 +391,17 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     private Survey saveSurvey(Survey survey) {
+        // Save the survey first, so if there's a concurrent modification exception or some other exception, we don't
+        // end up with end up with orphaned survey elements.
+        try {
+            surveyMapper.save(survey);
+        } catch(ConditionalCheckFailedException throwable) {
+            throw new ConcurrentModificationException(survey);
+        } catch(Throwable t) {
+            throw new BridgeServiceException(t);
+        }
+
+        // Delete old survey elements (if any) and create new, updated survey elements.
         deleteAllElements(survey.getGuid(), survey.getCreatedOn());
         
         List<DynamoSurveyElement> dynamoElements = Lists.newArrayList();
@@ -400,13 +418,6 @@ public class DynamoSurveyDao implements SurveyDao {
         List<FailedBatch> failures = surveyElementMapper.batchSave(dynamoElements);
         BridgeUtils.ifFailuresThrowException(failures);
         
-        try {
-            surveyMapper.save(survey);    
-        } catch(ConditionalCheckFailedException throwable) {
-            throw new ConcurrentModificationException(survey);
-        } catch(Throwable t) {
-            throw new BridgeServiceException(t);
-        }
         return survey;
     }
     
