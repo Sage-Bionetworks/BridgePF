@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -230,7 +232,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         // And now for some exceptions...
         // All administrators and all researchers are assumed to consent when using any API.
         // This is needed so they can sign in without facing a 412 exception.
-        if (user.isInRole(BridgeConstants.ADMIN_GROUP) || user.isInRole(study.getResearcherRole())) {
+        if (user.isInRole(ADMIN) || user.isInRole(RESEARCHER) || user.isInRole(DEVELOPER)) {
             user.setConsent(true);
         }
         // And then we set *any* account that has the admin email to be consented as well

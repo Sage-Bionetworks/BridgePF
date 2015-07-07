@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+
 import java.util.List;
 
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -25,29 +27,36 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result getAllConsents() throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         List<StudyConsent> consents = studyConsentService.getAllConsents(studyId);
         return okResult(consents);
     }
 
     public Result getActiveConsent() throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         StudyConsentView consent = studyConsentService.getActiveConsent(studyId);
         return okResult(consent);
     }
+    
+    public Result getMostRecentConsent() throws Exception {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        StudyIdentifier studyId = session.getStudyIdentifier();
+        StudyConsentView consent = studyConsentService.getMostRecentConsent(studyId);
+        return okResult(consent);
+    }
 
     public Result getConsent(String createdOn) throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
         StudyConsentView consent = studyConsentService.getConsent(studyId, timestamp);
         return okResult(consent);
     }
-
+    
     public Result addConsent() throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         StudyConsentForm form = parseJson(request(), StudyConsentForm.class);
         StudyConsentView studyConsent = studyConsentService.addConsent(studyId, form);
@@ -55,7 +64,7 @@ public class StudyConsentController extends BaseController {
     }
 
     public Result setActiveConsent(String createdOn) throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
         studyConsentService.activateConsent(studyId, timestamp);

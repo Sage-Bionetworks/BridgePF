@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.*;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.config.Environment;
@@ -9,7 +10,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Sets;
 
 public class UserSessionInfoTest {
 
@@ -22,7 +22,7 @@ public class UserSessionInfoTest {
         user.setLastName("last name");
         user.setHealthCode("healthCode");
         user.setId("user-identifier");
-        user.setRoles(Sets.newHashSet("test_role"));
+        user.getRoles().add(RESEARCHER);
         user.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         user.setSignedMostRecentConsent(false);
         user.setStudyKey("study-identifier");
@@ -47,11 +47,12 @@ public class UserSessionInfoTest {
         assertEquals(user.getSharingScope().name(), node.get("sharingScope").asText().toUpperCase());
         assertEquals(session.getSessionToken(), node.get("sessionToken").asText());
         assertEquals(user.getUsername(), node.get("username").asText());
+        assertEquals("researcher", node.get("roles").get(0).asText());
         assertEquals("staging", node.get("environment").asText());
         assertEquals("UserSessionInfo", node.get("type").asText());
         
         // ... and no things that shouldn't be there
-        assertEquals(9, node.size());
+        assertEquals(10, node.size());
     }
     
 }

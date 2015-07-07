@@ -69,14 +69,6 @@ public class SurveyServiceImpl implements SurveyService {
         
         return surveyDao.publishSurvey(study, keys);
     }
-
-    @Override
-    public Survey closeSurvey(GuidCreatedOnVersionHolder keys) {
-        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
-        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
-        
-        return surveyDao.closeSurvey(keys);
-    }
     
     @Override
     public Survey versionSurvey(GuidCreatedOnVersionHolder keys) {
@@ -87,12 +79,11 @@ public class SurveyServiceImpl implements SurveyService {
     }
     
     @Override
-    public void deleteSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
-        checkNotNull(studyIdentifier, "study cannot be null");
+    public void deleteSurvey(GuidCreatedOnVersionHolder keys) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
 
-        surveyDao.deleteSurvey(studyIdentifier, keys);
+        surveyDao.deleteSurvey(keys);
     }
 
     @Override

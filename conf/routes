@@ -63,7 +63,6 @@ GET    /researchers/v1/surveys/:surveyGuid/revisions/recent              @org.sa
 GET    /researchers/v1/surveys/:surveyGuid/revisions/published           @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentlyPublishedVersion(surveyGuid: String)
 POST   /researchers/v1/surveys/:surveyGuid/revisions/:createdOn/version  @org.sagebionetworks.bridge.play.controllers.SurveyController.versionSurvey(surveyGuid: String, createdOn: String)
 POST   /researchers/v1/surveys/:surveyGuid/revisions/:createdOn/publish  @org.sagebionetworks.bridge.play.controllers.SurveyController.publishSurvey(surveyGuid: String, createdOn: String)
-POST   /researchers/v1/surveys/:surveyGuid/revisions/:createdOn/close    @org.sagebionetworks.bridge.play.controllers.SurveyController.closeSurvey(surveyGuid: String, createdOn: String)
 GET    /researchers/v1/surveys/:surveyGuid/revisions/:createdOn          @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurvey(surveyGuid: String, createdOn: String)
 POST   /researchers/v1/surveys/:surveyGuid/revisions/:createdOn          @org.sagebionetworks.bridge.play.controllers.SurveyController.updateSurvey(surveyGuid: String, createdOn: String)
 DELETE /researchers/v1/surveys/:surveyGuid/revisions/:createdOn          @org.sagebionetworks.bridge.play.controllers.SurveyController.deleteSurvey(surveyGuid: String, createdOn: String)
@@ -77,15 +76,17 @@ DELETE /researchers/v1/scheduleplans/:guid     @org.sagebionetworks.bridge.play.
 
 # Researchers - Study Consent Documents
 GET    /researcher/v1/consents                      @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getAllConsents
+GET    /researcher/v1/consents/recent               @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getMostRecentConsent
 GET    /researcher/v1/consents/active               @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getActiveConsent
 GET    /researcher/v1/consents/:timestamp           @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getConsent(timestamp: String)
 POST   /researcher/v1/consents                      @org.sagebionetworks.bridge.play.controllers.StudyConsentController.addConsent
 POST   /researcher/v1/consents/active/:timestamp    @org.sagebionetworks.bridge.play.controllers.StudyConsentController.setActiveConsent(timestamp: String)
 
 # Researchers - Studies
-GET    /researcher/v1/study              @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyForResearcher
+GET    /researcher/v1/studies            @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyList
+GET    /researcher/v1/study              @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyForDeveloper
 POST   /researcher/v1/study/participants @org.sagebionetworks.bridge.play.controllers.StudyController.sendStudyParticipantsRoster          
-POST   /researcher/v1/study              @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForResearcher
+POST   /researcher/v1/study              @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
 
 # Researchers - Upload Schemas
 GET    /researcher/v1/uploadSchemas                           @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemasForStudy

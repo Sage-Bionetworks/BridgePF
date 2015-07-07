@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import java.util.HashSet;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.Encryptor;
@@ -28,7 +30,7 @@ public class User implements BridgeEntity {
     private boolean consent;
     private boolean signedMostRecentConsent;
     private SharingScope sharingScope;
-    private Set<String> roles = Sets.newHashSet();
+    private Set<Roles> roles = Sets.newHashSet();
 
     public User() {
     }
@@ -39,7 +41,7 @@ public class User implements BridgeEntity {
         this.firstName = account.getFirstName();
         this.lastName = account.getLastName();
         this.id = account.getId();
-        this.roles = account.getRoles();
+        this.roles = new HashSet<>(account.getRoles());
     }
 
     public User(String id, String email) {
@@ -113,11 +115,11 @@ public class User implements BridgeEntity {
         this.studyKey = studyKey;
     }
 
-    public Set<String> getRoles() {
+    public Set<Roles> getRoles() {
         return roles;
     }
 
-    public void setRoles(Set<String> roles) {
+    public void setRoles(Set<Roles> roles) {
         this.roles = roles;
     }
 
@@ -155,7 +157,7 @@ public class User implements BridgeEntity {
         this.sharingScope = sharingScope;
     }
 
-    public boolean isInRole(String role) {
+    public boolean isInRole(Roles role) {
         return this.roles.contains(role);
     }
 

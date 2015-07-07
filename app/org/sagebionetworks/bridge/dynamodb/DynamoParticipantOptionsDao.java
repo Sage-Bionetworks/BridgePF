@@ -29,7 +29,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
     public void setDynamoDbClient(AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(TableNameOverrideFactory.getTableNameOverride(DynamoParticipantOptions.class)).build();
+                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoParticipantOptions.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
     

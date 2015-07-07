@@ -18,7 +18,8 @@ import com.google.common.collect.Sets;
 @Component
 public class CacheAdminService {
 
-    private final String SUFFIX = RedisKey.SEPARATOR + RedisKey.SESSION.getSuffix(); 
+    private final String SESSION_SUFFIX = RedisKey.SEPARATOR + RedisKey.SESSION.getSuffix();
+    private final String USER_SESSION_SUFFIX = RedisKey.SEPARATOR + RedisKey.SESSION.getSuffix() + RedisKey.SEPARATOR + RedisKey.USER.getSuffix();
     private JedisPool jedisPool;
     
     @Autowired
@@ -35,7 +36,7 @@ public class CacheAdminService {
             Set<String> allKeys = jedis.keys("*");
             Set<String> set = Sets.newHashSet();
             for (String key : allKeys) {
-                if (!key.endsWith(SUFFIX)) {
+                if (notASessionKey(key)) {
                     set.add(key);
                 }
             }
@@ -50,7 +51,8 @@ public class CacheAdminService {
     public void removeItem(String cacheKey) {
         checkArgument(isNotBlank(cacheKey));
         Long removed = null;
-        if (!cacheKey.endsWith(SUFFIX)) {
+        
+        if (notASessionKey(cacheKey)) {
             try (Jedis jedis = jedisPool.getResource()) {
                 removed = jedis.del(cacheKey);
             }
@@ -58,5 +60,9 @@ public class CacheAdminService {
         if (removed == null || removed == 0) {
             throw new BridgeServiceException("Item could not be removed from cache: does key '"+cacheKey+"' exist?"); 
         }
+    }
+    
+    private boolean notASessionKey(String key) {
+        return !(key.endsWith(SESSION_SUFFIX) || key.endsWith(USER_SESSION_SUFFIX));
     }
 }

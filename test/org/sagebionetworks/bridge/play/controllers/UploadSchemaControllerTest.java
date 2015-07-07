@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -18,6 +19,7 @@ import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -61,7 +63,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedResearcherSession();
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
 
         // execute and validate
         Result result = controller.createOrUpdateUploadSchema();
@@ -90,7 +92,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedResearcherSession();
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
 
         // execute and validate
         Result result = controller.deleteUploadSchemaByIdAndRev("delete-schema", 1);
@@ -111,7 +113,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedResearcherSession();
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
 
         // execute and validate
         Result result = controller.deleteUploadSchemaById("delete-schema");
@@ -133,7 +135,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedResearcherSession();
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
 
         // execute and validate
         Result result = controller.getUploadSchema(TEST_SCHEMA_ID);
@@ -159,7 +161,7 @@ public class UploadSchemaControllerTest {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(mockSvc);
-        doReturn(mockSession).when(controller).getAuthenticatedResearcherSession();
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
 
         // execute and validate
         Result result = controller.getUploadSchemasForStudy();

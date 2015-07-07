@@ -64,7 +64,7 @@ public class ConsentServiceImplTest {
 
     private StudyConsentForm defaultConsentDocument;
     
-    @Value("classpath:study-defaults/consent.xhtml")
+    @Value("classpath:study-defaults/consent-body.xhtml")
     public void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
     }

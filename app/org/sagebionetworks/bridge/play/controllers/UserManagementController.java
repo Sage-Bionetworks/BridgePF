@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -25,7 +27,7 @@ public class UserManagementController extends BaseController {
     }
 
     public Result createUser() throws Exception {
-        UserSession session = getAuthenticatedAdminSession();
+        UserSession session = getAuthenticatedSession(ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         JsonNode node = requestToJSON(request());
@@ -39,7 +41,7 @@ public class UserManagementController extends BaseController {
     }
 
     public Result deleteUser(String email) throws Exception {
-        UserSession session = getAuthenticatedAdminSession();
+        UserSession session = getAuthenticatedSession(ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         userAdminService.deleteUser(study, email);

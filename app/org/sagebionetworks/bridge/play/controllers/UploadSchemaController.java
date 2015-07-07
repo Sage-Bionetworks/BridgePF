@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +33,7 @@ public class UploadSchemaController extends BaseController {
      * @return Play result, with the created or updated schema in JSON format
      */
     public Result createOrUpdateUploadSchema() {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         UploadSchema uploadSchema = parseJson(request(), UploadSchema.class);
@@ -50,7 +52,7 @@ public class UploadSchemaController extends BaseController {
      * @return Play result with the OK message
      */
     public Result deleteUploadSchemaByIdAndRev(String schemaId, int rev) {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
 
         uploadSchemaService.deleteUploadSchemaByIdAndRev(studyIdentifier, schemaId, rev);
@@ -67,7 +69,7 @@ public class UploadSchemaController extends BaseController {
      * @return Play result with the OK message
      */
     public Result deleteUploadSchemaById(String schemaId) {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
 
         uploadSchemaService.deleteUploadSchemaById(studyIdentifier, schemaId);
@@ -84,7 +86,7 @@ public class UploadSchemaController extends BaseController {
      * @return Play result with the fetched schema in JSON format
      */
     public Result getUploadSchema(String schemaId) {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         UploadSchema uploadSchema = uploadSchemaService.getUploadSchema(studyId, schemaId);
@@ -94,10 +96,11 @@ public class UploadSchemaController extends BaseController {
     /**
      * Play controller for GET /researcher/v1/uploadSchema/forStudy. This API fetches all revisions of all upload
      * schemas in the current study. This is generally used by worker apps to validate uploads against schemas.
+     * 
      * @return Play result with list of schemas for this study
      */
     public Result getUploadSchemasForStudy() throws Exception {
-        UserSession session = getAuthenticatedResearcherSession();
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForStudy(studyId);

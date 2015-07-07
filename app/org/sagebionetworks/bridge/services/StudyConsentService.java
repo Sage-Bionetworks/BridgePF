@@ -36,6 +36,16 @@ public interface StudyConsentService {
     public StudyConsentView getActiveConsent(StudyIdentifier studyIdentifier) throws BridgeServiceException;
 
     /**
+     * Gets the most recently created consent document for the study.
+     *
+     * @param studyIdentifier
+     *            key associated with the study.
+     * @return the most recent StudyConsent along with its document content
+     * @throws BridgeServiceException
+     */
+    public StudyConsentView getMostRecentConsent(StudyIdentifier studyIdentifier) throws BridgeServiceException;
+    
+    /**
      * Get all added consent documents for the study.
      *
      * @param studyIdentifier

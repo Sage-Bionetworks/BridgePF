@@ -1,10 +1,7 @@
 package org.sagebionetworks.bridge.stormpath;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.io.IOException;
 import java.nio.charset.UnsupportedCharsetException;
-import java.util.Map;
 
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -71,33 +68,6 @@ class StormpathUtils {
             }
             return (ObjectNode)MAPPER.readTree(bodyString);
         }
-    }
-    
-    /**
-     * Used to resolve Bridge-specific template variables in the email templates configured for Stormpath's
-     * authentication workflow (sending email verification or password reset emails). We follow the template variable
-     * format used by Stormpath, specifically <code>${variableName}</code>. The map includes the variable names as keys,
-     * mapped to their values. For example, "studyName" is mapped to the Bridge study name, and thus the name can be
-     * dynamically inserted into the email templates. Some of these variables are left unresolved and later substituted
-     * by Stormpath (e.g. <code>${url}</code>, which is required to be in the templates).
-     * 
-     * @see https://sagebionetworks.jira.com/wiki/display/BRIDGE/EmailTemplate
-     * 
-     * @param template
-     * @param values
-     * @return
-     */
-    static String resolveTemplate(String template, Map<String,String> values) {
-        checkNotNull(template);
-        checkNotNull(values);
-        
-        for (Map.Entry<String,String> entry : values.entrySet()) {
-            if (entry.getValue() != null) {
-                String regex = "\\$\\{"+entry.getKey()+"\\}";
-                template = template.replaceAll(regex, entry.getValue());
-            }
-        }
-        return template;
     }
     
 }

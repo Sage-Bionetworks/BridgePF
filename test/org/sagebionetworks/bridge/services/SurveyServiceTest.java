@@ -76,8 +76,8 @@ public class SurveyServiceTest {
         for (GuidCreatedOnVersionHolder oneSurvey : surveysToDelete) {
             try {
                 // close (unpublish) survey before deleting it, since published surveys can't be deleted
-                surveyService.closeSurvey(oneSurvey);
-                surveyService.deleteSurvey(studyIdentifier, oneSurvey);
+                // TODO: actually delete the survey
+                surveyService.deleteSurvey(oneSurvey);
             } catch (Exception ex) {
                 // suppress exception
             }
@@ -127,6 +127,7 @@ public class SurveyServiceTest {
     @Test
     public void crudSurvey() {
         Survey survey = surveyService.createSurvey(testSurvey);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         assertTrue("Survey has a guid", survey.getGuid() != null);
         assertTrue("Survey has been versioned", survey.getCreatedOn() != 0L);
@@ -140,10 +141,10 @@ public class SurveyServiceTest {
         survey = surveyService.getSurvey(survey);
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
         assertEquals("Be honest: do you have high blood pressue?", question.getPromptDetail());
-        surveyService.deleteSurvey(studyIdentifier, survey);
+        surveyService.deleteSurvey(survey);
 
         try {
-            surveyService.getSurvey(survey);
+            surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, survey.getGuid());
             fail("Should have thrown an exception");
         } catch (EntityNotFoundException enfe) {
             // expected exception
@@ -174,9 +175,9 @@ public class SurveyServiceTest {
         assertEquals("Name can be updated", "C", survey.getName());
 
         // Now verify the nextVersion has not been changed
-        nextVersion = surveyService.getSurvey(nextVersion);
-        assertEquals("Next version has same identifier", "bloodpressure", nextVersion.getIdentifier());
-        assertEquals("Next name has not changed", "General Blood Pressure Survey", nextVersion.getName());
+        Survey finalVersion = surveyService.getSurvey(nextVersion);
+        assertEquals("Next version has same identifier", nextVersion.getIdentifier(), finalVersion.getIdentifier());
+        assertEquals("Next name has not changed", nextVersion.getName(), finalVersion.getName());
     }
 
     @Test
@@ -343,22 +344,6 @@ public class SurveyServiceTest {
                 version2.getCreatedOn());
     }
 
-    // CLOSE SURVEY
-
-    @Test
-    public void canClosePublishedSurvey() {
-        Survey survey = surveyService.createSurvey(testSurvey);
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
-        survey = surveyService.publishSurvey(studyIdentifier, survey);
-        schemaIdsToDelete.add(survey.getIdentifier());
-
-        survey = surveyService.closeSurvey(survey);
-        assertEquals("Survey no longer published", false, survey.isPublished());
-
-        survey = surveyService.getSurvey(survey);
-        assertEquals("Survey no longer published", false, survey.isPublished());
-    }
-
     // GET PUBLISHED SURVEY
 
     @Test
@@ -426,16 +411,6 @@ public class SurveyServiceTest {
     }
 
     // DELETE SURVEY
-
-    @Test(expected = PublishedSurveyException.class)
-    public void cannotDeleteAPublishedSurvey() {
-        Survey survey = surveyService.createSurvey(testSurvey);
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
-        surveyService.publishSurvey(studyIdentifier, survey);
-        schemaIdsToDelete.add(survey.getIdentifier());
-
-        surveyService.deleteSurvey(studyIdentifier, survey);
-    }
 
     @Test
     public void canRetrieveASurveyByIdentifier() {

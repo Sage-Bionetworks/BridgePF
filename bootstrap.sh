@@ -20,11 +20,11 @@ apt-get -q -y install nfs-common
 # Java
 apt-get -q -y install openjdk-8-jdk
 
-export ACTIVATOR_VERSION=1.3.4
+export ACTIVATOR_VERSION=1.3.5
 
 # Play
 su - vagrant -c "wget http://downloads.typesafe.com/typesafe-activator/${ACTIVATOR_VERSION}/typesafe-activator-${ACTIVATOR_VERSION}.zip"
-su - vagrant -c "rm -rf activator-${ACTIVATOR_VERSION}"
+su - vagrant -c "rm -rf activator-dist-${ACTIVATOR_VERSION}"
 su - vagrant -c "unzip typesafe-activator-${ACTIVATOR_VERSION}.zip"
 rm typesafe-activator-${ACTIVATOR_VERSION}.zip
 
@@ -33,6 +33,6 @@ apt-get -q -y install redis-server
 
 # .bash_profile
 su - vagrant -c "echo 'source ~/.profile' > .bash_profile"
-su - vagrant -c "echo 'export PATH=$PATH:~/activator-${ACTIVATOR_VERSION}' >> ~/.bash_profile"
+su - vagrant -c "echo 'export PATH=$PATH:~/activator-dist-${ACTIVATOR_VERSION}' >> ~/.bash_profile"
 su - vagrant -c "echo 'export SBT_OPTS=\"-Xmx2000M -Xss2M -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled\"' >> ~/.bash_profile"
 su - vagrant -c "source ~/.bash_profile"

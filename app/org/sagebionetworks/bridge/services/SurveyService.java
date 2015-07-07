@@ -9,8 +9,8 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 public interface SurveyService {
 
     /**
-     * Get all versions of a specific survey, ordered by most recent version 
-     * first in the list.
+     * Get all versions of a specific survey, ordered by most recent version first in the list.
+     * 
      * @param studyIdentifier
      * @param guid
      * @return
@@ -18,8 +18,8 @@ public interface SurveyService {
     public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid);    
     
     /**
-     * Get the most recent version of a survey, regardless of whether it is published
-     * or not.
+     * Get the most recent version of a survey, regardless of whether it is published or not.
+     * 
      * @param studyIdentifier
      * @param guid
      * @return
@@ -36,7 +36,7 @@ public interface SurveyService {
     public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid);
     
     /**
-     * Get the most recently published version of a survey, using the identifier for the
+     * Get the most recently published version of a survey, using the identifier for the survey.
      * @param studyIdentifier
      * @param identifier
      * @return
@@ -44,7 +44,8 @@ public interface SurveyService {
     public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(StudyIdentifier studyIdentifier, String identifier);
     
     /**
-     * Get the most recent version of each survey in the study, that has been published. 
+     * Get the most recent version of each survey in the study that has been published. If a survey has not 
+     * been published, nothing is returned. 
      * @param studyIdentifier
      * @return
      */
@@ -58,7 +59,8 @@ public interface SurveyService {
     public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier);
     
     /**
-     * Get one instance of a survey. This call alone does not require the study's researcher role.
+     * Get one instance of a survey. This method will return a survey regardless of whether or not it has been 
+     * published. It will return a survey even if it has been deleted.
      * @param keys
      * @return
      */
@@ -79,10 +81,10 @@ public interface SurveyService {
     public Survey updateSurvey(Survey survey);
 
     /**
-     * Publish this survey. Although a non-published survey must still be accessible to users (in case
-     * a schedule has been cached that references that survey), surveys should not be available for
-     * assignment to schedules until they are published.
-     *
+     * Make this version of this survey available for scheduling. One scheduled for publishing,
+     * a survey version can no longer be changed (it can still be the source of a new version).  
+     * There can be more than one published version of a survey.
+     *  
      * @param study
      *         study ID of study to publish the survey to
      * @param keys
@@ -92,23 +94,13 @@ public interface SurveyService {
     public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys);
 
     /**
-     * Delete a survey. A survey cannot be deleted unless 1) it is not published (either never was published 
-     * or was subsequently closed); 2) there are no survey responses created against this survey, and 3) 
-     * the survey is not referenced in any schedule plans. NOTE that the survey may still be referenced by 
-     * schedules that have been issued to clients (due to caching), so this action should still be done with 
-     * care. 
-     * @param studyIdentifier
+     * Delete this survey. Survey still exists in system and can be retrieved by direct reference
+     * (URLs that directly reference the GUID and createdOn timestamp of the survey), put cannot be 
+     * retrieved in any list of surveys, and is no longer considered when finding the most recently 
+     * published version of the survey. 
      * @param keys
      */
-    public void deleteSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys);
-    
-    /**
-     * Un-publish a survey. Survey will still be accessible to any users who have schedules that point to the 
-     * survey, but the survey should not be available for further scheduling.
-     * @param keys
-     * @return
-     */
-    public Survey closeSurvey(GuidCreatedOnVersionHolder keys);
+    public void deleteSurvey(GuidCreatedOnVersionHolder keys);
     
     /**
      * Copy the survey and return a new version of it.
