@@ -24,6 +24,12 @@ public interface Upload {
      */
     String getObjectId();
 
+    /**
+     * Record ID of the corresponding health data record. This is generally null until upload validation is complete
+     * and creates the corresponding record.
+     */
+    String getRecordId();
+
     /** Represents upload status, such as requested, validation in progress, validation failed, or succeeded. */
     UploadStatus getStatus();
 

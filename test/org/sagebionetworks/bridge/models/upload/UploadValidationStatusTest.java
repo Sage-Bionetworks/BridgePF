@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.models.upload;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -15,6 +17,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.validation.MapBindingResult;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -30,15 +33,19 @@ public class UploadValidationStatusTest {
         assertEquals("test-upload", status.getId());
         assertTrue(status.getMessageList().isEmpty());
         assertEquals(UploadStatus.SUCCEEDED, status.getStatus());
+        assertNull(status.getRecord());
     }
 
     @Test
-    public void withMessages() {
+    public void withOptionalValues() {
+        DynamoHealthDataRecord dummyRecord = new DynamoHealthDataRecord();
+
         UploadValidationStatus status = new UploadValidationStatus.Builder().withId("happy-case-2")
                 .withMessageList(ImmutableList.of("foo", "bar", "baz")).withStatus(UploadStatus.VALIDATION_FAILED)
-                .build();
+                .withRecord(dummyRecord).build();
         assertEquals("happy-case-2", status.getId());
         assertEquals(UploadStatus.VALIDATION_FAILED, status.getStatus());
+        assertSame(dummyRecord, status.getRecord());
 
         List<String> messageList = status.getMessageList();
         assertEquals(3, messageList.size());
@@ -56,17 +63,38 @@ public class UploadValidationStatusTest {
         upload2.setStatus(UploadStatus.SUCCEEDED);
 
         // construct and validate
-        UploadValidationStatus status = UploadValidationStatus.from(upload2);
+        UploadValidationStatus status = UploadValidationStatus.from(upload2, null);
         assertEquals("from-upload", status.getId());
         assertEquals(UploadStatus.SUCCEEDED, status.getStatus());
+        assertNull(status.getRecord());
 
         assertEquals(1, status.getMessageList().size());
         assertEquals("foo", status.getMessageList().get(0));
     }
 
+    @Test
+    public void fromUploadWithRecord() {
+        // make upload
+        DynamoUpload2 upload2 = new DynamoUpload2();
+        upload2.setUploadId("from-upload-with-record");
+        upload2.appendValidationMessages(Collections.singletonList("hasRecord"));
+        upload2.setStatus(UploadStatus.SUCCEEDED);
+
+        DynamoHealthDataRecord dummyRecord = new DynamoHealthDataRecord();
+
+        // construct and validate
+        UploadValidationStatus status = UploadValidationStatus.from(upload2, dummyRecord);
+        assertEquals("from-upload-with-record", status.getId());
+        assertEquals(UploadStatus.SUCCEEDED, status.getStatus());
+        assertSame(dummyRecord, status.getRecord());
+
+        assertEquals(1, status.getMessageList().size());
+        assertEquals("hasRecord", status.getMessageList().get(0));
+    }
+
     @Test(expected = InvalidEntityException.class)
-    public void nullUpload() {
-        UploadValidationStatus.from(null);
+    public void fromNullUpload() {
+        UploadValidationStatus.from(null, null);
     }
 
     @Test(expected = InvalidEntityException.class)

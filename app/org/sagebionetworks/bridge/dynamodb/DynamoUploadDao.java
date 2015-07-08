@@ -101,11 +101,12 @@ public class DynamoUploadDao implements UploadDao {
      */
     @Override
     public void writeValidationStatus(@Nonnull Upload upload, @Nonnull UploadStatus status,
-            @Nonnull List<String> validationMessageList) {
+            @Nonnull List<String> validationMessageList, String recordId) {
         // set status and append messages
         DynamoUpload2 upload2 = (DynamoUpload2) upload;
         upload2.setStatus(status);
         upload2.appendValidationMessages(validationMessageList);
+        upload2.setRecordId(recordId);
 
         // persist
         mapper.save(upload2);

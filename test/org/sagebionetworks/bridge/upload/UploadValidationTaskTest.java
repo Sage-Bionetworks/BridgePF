@@ -27,12 +27,12 @@ public class UploadValidationTaskTest {
     @Test
     public void happyCase() {
         // test handlers
-        List<UploadValidationHandler> handlerList = ImmutableList.<UploadValidationHandler>of(
+        List<UploadValidationHandler> handlerList = ImmutableList.of(
                 new MessageHandler("foo was here"), new MessageHandler("bar was here"),
-                new MessageHandler("kilroy was here"));
+                new MessageHandler("kilroy was here"), new RecordIdHandler("test-record-id"));
 
         // execute
-        UploadValidationContext ctx = testHelper(handlerList, UploadStatus.SUCCEEDED);
+        UploadValidationContext ctx = testHelper(handlerList, UploadStatus.SUCCEEDED, "test-record-id");
         assertTrue(ctx.getSuccess());
 
         // validate that the handlers ran by checking the messages they wrote
@@ -69,10 +69,13 @@ public class UploadValidationTaskTest {
         UploadValidationHandler bazHandler = mock(UploadValidationHandler.class);
         verifyZeroInteractions(bazHandler);
 
-        List<UploadValidationHandler> handlerList = ImmutableList.of(fooHandler, barHandler, bazHandler);
+        UploadValidationHandler recordIdHandler = new RecordIdHandler("never called");
+
+        List<UploadValidationHandler> handlerList = ImmutableList.of(fooHandler, barHandler, bazHandler,
+                recordIdHandler);
 
         // execute
-        UploadValidationContext ctx = testHelper(handlerList, UploadStatus.VALIDATION_FAILED);
+        UploadValidationContext ctx = testHelper(handlerList, UploadStatus.VALIDATION_FAILED, null);
         assertFalse(ctx.getSuccess());
 
         // Validate validation messages. First message is foo handler. Second message is error message. Just check that
@@ -85,7 +88,7 @@ public class UploadValidationTaskTest {
 
     // helper test method, encapsulating core setup and validation
     private static UploadValidationContext testHelper(List<UploadValidationHandler> handlerList,
-            UploadStatus expectedStatus) {
+            UploadStatus expectedStatus, String expectedRecordId) {
         // input
         DynamoStudy study = TestUtils.getValidStudy();
 
@@ -108,7 +111,7 @@ public class UploadValidationTaskTest {
         task.run();
 
         // validate the upload dao write validation status call
-        verify(mockDao).writeValidationStatus(upload2, expectedStatus, ctx.getMessageList());
+        verify(mockDao).writeValidationStatus(upload2, expectedStatus, ctx.getMessageList(), expectedRecordId);
 
         return ctx;
     }
@@ -122,8 +125,23 @@ public class UploadValidationTaskTest {
         }
 
         @Override
-        public void handle(@Nonnull UploadValidationContext context) throws UploadValidationException {
+        public void handle(@Nonnull UploadValidationContext context) {
             context.addMessage(message);
+        }
+    }
+
+    // Test handler that simulates writing the record ID to the context, so we can test writing the record ID to the
+    // validation status.
+    private static class RecordIdHandler implements UploadValidationHandler {
+        private final String recordId;
+
+        public RecordIdHandler(String recordId) {
+            this.recordId = recordId;
+        }
+
+        @Override
+        public void handle(@Nonnull UploadValidationContext context) {
+            context.setRecordId(recordId);
         }
     }
 }

@@ -314,5 +314,14 @@ public class HealthDataRecordTest {
         Map<String, String> metadata = (Map<String, String>) jsonMap.get("metadata");
         assertEquals(1, metadata.size());
         assertEquals("myMetaValue", metadata.get("myMetadata"));
+
+        // convert back to JSON with PUBLIC_RECORD_WRITER
+        String publicJson = HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(record);
+
+        // Convert back to map again. Only validate a few key fields are present and the filtered fields are absent.
+        Map<String, Object> publicJsonMap = BridgeObjectMapper.get().readValue(publicJson, JsonUtils.TYPE_REF_RAW_MAP);
+        assertEquals(13, publicJsonMap.size());
+        assertFalse(publicJsonMap.containsKey("healthCode"));
+        assertEquals("json record ID", publicJsonMap.get("id"));
     }
 }
