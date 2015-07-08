@@ -20,9 +20,11 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.accounts.User;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
+import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.validators.UploadValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
@@ -44,16 +46,22 @@ public class UploadService {
     private static final long EXPIRATION = 60 * 1000; // 1 minute
     private static final String BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
 
-    private UploadSessionCredentialsService uploadCredentailsService;
+    private HealthDataService healthDataService;
     private AmazonS3 s3UploadClient;
     private AmazonS3 s3Client;
     private UploadDao uploadDao;
+    private UploadSessionCredentialsService uploadCredentailsService;
     private Validator validator;
 
+    /**
+     * Health data record service. This is needed to fetch the health data record when constructing the upload
+     * validation status.
+     */
     @Autowired
-    public void setUploadSessionCredentialsService(UploadSessionCredentialsService uploadCredentialsService) {
-        this.uploadCredentailsService = uploadCredentialsService;
+    public void setHealthDataService(HealthDataService healthDataService) {
+        this.healthDataService = healthDataService;
     }
+
     @Resource(name = "s3UploadClient")
     public void setS3UploadClient(AmazonS3 s3UploadClient) {
         this.s3UploadClient = s3UploadClient;
@@ -65,6 +73,10 @@ public class UploadService {
     @Autowired
     public void setUploadDao(UploadDao uploadDao) {
         this.uploadDao = uploadDao;
+    }
+    @Autowired
+    public void setUploadSessionCredentialsService(UploadSessionCredentialsService uploadCredentialsService) {
+        this.uploadCredentailsService = uploadCredentialsService;
     }
     @Autowired
     public void setValidator(UploadValidator validator) {
@@ -130,6 +142,43 @@ public class UploadService {
         }
 
         return upload;
+    }
+
+    /**
+     * <p>
+     * Gets validation status and messages for the given upload ID. This includes the health data record, if one was
+     * created for the upload. The logged in user is passed in to verify that the logged in user owns the given upload.
+     * </p>
+     * <p>
+     * user comes from the controller, and is guaranteed to be present. However, uploadId is user input and must be
+     * validated.
+     * </p>
+     *
+     * @param user
+     *         calling user, must be non-null
+     * @param uploadId
+     *         ID of upload to fetch, must be non-null and non-empty
+     * @return upload validation status, which includes the health data record if one was created
+     */
+    public UploadValidationStatus getUploadValidationStatus(@Nonnull User user, @Nonnull String uploadId) {
+        // The call to getUpload() also validates inputs and verifies the user matches.
+        Upload upload = getUpload(user, uploadId);
+
+        // get record, if it exists
+        HealthDataRecord record = null;
+        String recordId = upload.getRecordId();
+        if (!Strings.isNullOrEmpty(recordId)) {
+            try {
+                record = healthDataService.getRecordById(recordId);
+            } catch (RuntimeException ex) {
+                // Underlying service failed to get the health data record. Log a warning, but move on.
+                logger.warn("Error getting record ID " + recordId + " for upload ID " + uploadId + ": "
+                        + ex.getMessage(), ex);
+            }
+        }
+
+        UploadValidationStatus validationStatus = UploadValidationStatus.from(upload, record);
+        return validationStatus;
     }
 
     public void uploadComplete(Upload upload) {

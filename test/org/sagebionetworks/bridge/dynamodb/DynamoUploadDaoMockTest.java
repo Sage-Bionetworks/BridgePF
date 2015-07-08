@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -126,12 +127,13 @@ public class DynamoUploadDaoMockTest {
         // execute
         DynamoUploadDao dao = new DynamoUploadDao();
         dao.setDdbMapper(mockMapper);
-        dao.writeValidationStatus(upload2, UploadStatus.SUCCEEDED, ImmutableList.of("wrote new"));
+        dao.writeValidationStatus(upload2, UploadStatus.SUCCEEDED, ImmutableList.of("wrote new"), null);
 
         // Verify our mock. We set the status and append messages.
         ArgumentCaptor<DynamoUpload2> argSave = ArgumentCaptor.forClass(DynamoUpload2.class);
         verify(mockMapper).save(argSave.capture());
         assertEquals(UploadStatus.SUCCEEDED, argSave.getValue().getStatus());
+        assertNull(argSave.getValue().getRecordId());
 
         List<String> messageList = argSave.getValue().getValidationMessageList();
         assertEquals(1, messageList.size());
@@ -139,7 +141,7 @@ public class DynamoUploadDaoMockTest {
     }
 
     @Test
-    public void writeValidationStatusNonEmptyList() {
+    public void writeValidationStatusOptionalValues() {
         // create input
         DynamoUpload2 upload2 = new DynamoUpload2();
         upload2.setUploadId("test-upload");
@@ -151,12 +153,14 @@ public class DynamoUploadDaoMockTest {
         // execute
         DynamoUploadDao dao = new DynamoUploadDao();
         dao.setDdbMapper(mockMapper);
-        dao.writeValidationStatus(upload2, UploadStatus.SUCCEEDED, ImmutableList.of("appended this message"));
+        dao.writeValidationStatus(upload2, UploadStatus.SUCCEEDED, ImmutableList.of("appended this message"),
+                "test-record-id");
 
         // Verify our mock. We set the status and append messages.
         ArgumentCaptor<DynamoUpload2> argSave = ArgumentCaptor.forClass(DynamoUpload2.class);
         verify(mockMapper).save(argSave.capture());
         assertEquals(UploadStatus.SUCCEEDED, argSave.getValue().getStatus());
+        assertEquals("test-record-id", argSave.getValue().getRecordId());
 
         List<String> messageList = argSave.getValue().getValidationMessageList();
         assertEquals(2, messageList.size());

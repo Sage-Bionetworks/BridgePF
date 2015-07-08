@@ -59,7 +59,8 @@ public interface UploadDao {
     void uploadComplete(@Nonnull Upload upload);
 
     /**
-     * Persists the validation status and message list to the Upload metadata object.
+     * Persists the validation status, message list, and health data record ID (if it exists) to the Upload metadata
+     * object.
      *
      * @param upload
      *         Upload metadata object to write to, must be non-null
@@ -68,7 +69,9 @@ public interface UploadDao {
      * @param validationMessageList
      *         validation messages, generally used for error message, must be non-null and
      *         non-empty, and must not contain null elements
+     * @param recordId
+     *         ID of the corresponding health data record, may be null if the record doesn't exist
      */
     void writeValidationStatus(@Nonnull Upload upload, @Nonnull UploadStatus status,
-            @Nonnull List<String> validationMessageList);
+            @Nonnull List<String> validationMessageList, String recordId);
 }

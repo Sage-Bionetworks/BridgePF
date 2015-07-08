@@ -2,12 +2,15 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.services.UploadService;
 import org.sagebionetworks.bridge.services.UploadValidationService;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -31,11 +34,12 @@ public class UploadController extends BaseController {
     }
 
     /** Gets validation status and messages for the given upload ID. */
-    public Result getValidationStatus(String uploadId) {
+    public Result getValidationStatus(String uploadId) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Upload upload = uploadService.getUpload(session.getUser(), uploadId);
-        UploadValidationStatus validationStatus = UploadValidationStatus.from(upload);
-        return okResult(validationStatus);
+        UploadValidationStatus validationStatus = uploadService.getUploadValidationStatus(session.getUser(), uploadId);
+
+        // Upload validation status may contain the health data record. Use the filter to filter out health code.
+        return ok(HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(validationStatus));
     }
 
     public Result upload() throws Exception {
