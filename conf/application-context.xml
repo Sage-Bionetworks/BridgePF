@@ -10,12 +10,7 @@
         http://www.springframework.org/schema/util 
         http://www.springframework.org/schema/util/spring-util.xsd">
 
-    <context:annotation-config base-package="
-        controllers,
-        filters,
-        interceptors,
-        models,
-        org.sagebionetworks.bridge" />
+    <context:annotation-config base-package="org.sagebionetworks.bridge" />
 
     <bean class="org.sagebionetworks.bridge.config.BridgeSpringConfig" />
 
