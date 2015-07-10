@@ -1,47 +1,51 @@
 package org.sagebionetworks.bridge.services.backfill;
 
+import javax.annotation.Resource;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.S3Object;
+import com.google.common.base.Charsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
+import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
-import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.services.UploadValidationService;
 
 /**
- * Backfills unvalidated uploads from a list of upload IDs. Only accept uploads that failed (VALIDATION_FAILED) or ones
- * that crashed partway through (VALIDATION_IN_PROGRESS). This is used for things like redriving large PD activities
- * that failed due to OutOfMemoryErrors.
+ * <p>
+ * Re-drives backfills for a list of record IDs. These record IDs live in a file called
+ * upload-validation-backfill-recordIds in an S3 bucket called org-sagebridge-backfill-prod (replace prod) with your
+ * env name.
+ * </p>
+ * <p>
+ * File format is one record ID per line.
+ * </p>
  */
 @Component("uploadValidationBackfill")
 public class UploadValidationBackfill extends AsyncBackfillTemplate {
     private static final Logger logger = LoggerFactory.getLogger(UploadValidationBackfill.class);
 
-    private static final String[] uploadIdArray = {
-            "97ae3ff8-00ef-4512-86fb-3df612618926",
-            "5506da3a-33e5-4f37-adb5-bd775b14fdb7",
-            "6331f331-5f1c-48c9-b509-5d874c002598",
-            "4642289b-7da7-4cb3-8833-2a84ef4b589f",
-            "e2f37830-3433-4364-ae13-94b63eadec30",
-            "577faaf2-8932-476c-a26a-cdf526855a52",
-            "80dab53d-9757-4bf0-8858-ff2219e45a0d",
-            "2db4d335-6b47-4700-b57c-e1caeb7b2ead",
-            "32228d19-a05e-4721-bf05-56fec361b002",
-            "b91ff9a2-57dd-4ffa-9f25-2944deb12469",
-            "d6035f81-7296-4e16-9415-e71f99912636",
-            "0d64afe4-1606-411f-a1b7-5d4c5e9c164a",
-            "6793a8d2-94ff-4661-80c5-a5c1f23c7f67",
-            "a414289d-80c2-4d15-975e-c6cb13816fe5",
-            "8ce4afd3-5fb5-46af-bbaf-fb08640cc173"
-    };
+    private static final String RECORD_ID_BUCKET = "org-sagebridge-backfill-" + BridgeConfigFactory.getConfig()
+            .getEnvironment().name().toLowerCase();
+    private static final String RECORD_ID_FILENAME = "upload-validation-backfill-recordIds";
 
     private HealthCodeDao healthCodeDao;
+    private HealthDataDao healthDataDao;
+    private AmazonS3Client s3Client;
     private UploadDao uploadDao;
     private UploadValidationService uploadValidationService;
 
@@ -49,6 +53,18 @@ public class UploadValidationBackfill extends AsyncBackfillTemplate {
     @Autowired
     public final void setHealthCodeDao(HealthCodeDao healthCodeDao) {
         this.healthCodeDao = healthCodeDao;
+    }
+
+    /** Health data DAO, used to get the upload ID from the record ID. This is configured by Spring. */
+    @Autowired
+    public void setHealthDataDao(HealthDataDao healthDataDao) {
+        this.healthDataDao = healthDataDao;
+    }
+
+    /** S3 client for reading file of record IDs. This is configured by Spring. */
+    @Resource(name = "s3Client")
+    public void setS3Client(AmazonS3Client s3Client) {
+        this.s3Client = s3Client;
     }
 
     /** DAO for manipulating upload objects. This is configured by Spring. */
@@ -65,48 +81,54 @@ public class UploadValidationBackfill extends AsyncBackfillTemplate {
 
     @Override
     int getLockExpireInSeconds() {
-        // 5 minutes should be more than enough time to backfill 15 records.
-        return 5 * 60;
+        // We do roughly one record per second. One hour should be enough for most cases.
+        return 3600;
     }
 
     @Override
     void doBackfill(BackfillTask task, BackfillCallback callback) {
-        // query and iterate over uploads
-        for (String uploadId : uploadIdArray) {
-            // rate limit so we down starve threads or brown out DDB
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ex) {
-                logger.error("Interrupted while sleeping: " + ex.getMessage(), ex);
-            }
-
-            try {
-                // If it's already succeeded, don't backfill it
-                Upload oneUpload = uploadDao.getUpload(uploadId);
-                if (oneUpload.getStatus() == UploadStatus.SUCCEEDED) {
-                    logger.info("Upload " + uploadId + " already succeeded, skipping backfill");
-                    continue;
+        // get file of list of record IDs
+        S3Object recordIdFile = s3Client.getObject(RECORD_ID_BUCKET, RECORD_ID_FILENAME);
+        try (BufferedReader recordIdReader = new BufferedReader(new InputStreamReader(recordIdFile.getObjectContent(),
+                Charsets.UTF_8))) {
+            // query and iterate over record IDs
+            String oneRecordId;
+            while ((oneRecordId = recordIdReader.readLine()) != null) {
+                // rate limit so we down starve threads or brown out DDB
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) {
+                    logger.error("Interrupted while sleeping: " + ex.getMessage(), ex);
                 }
 
-                // Call uploadComplete() to reset the upload status and uploadDate. This will make the upload
-                // eligible for validation again.
-                uploadDao.uploadComplete(oneUpload);
+                try {
+                    // get upload ID for record ID
+                    HealthDataRecord record = healthDataDao.getRecordById(oneRecordId);
+                    String uploadId = record.getUploadId();
 
-                // Get study ID from health code. Upload validation needs this.
-                String studyId = healthCodeDao.getStudyIdentifier(oneUpload.getHealthCode());
-                StudyIdentifier studyIdentifier = new StudyIdentifierImpl(studyId);
+                    // Get upload.
+                    Upload oneUpload = uploadDao.getUpload(uploadId);
 
-                // Kick off upload validation.
-                uploadValidationService.validateUpload(studyIdentifier, oneUpload);
+                    // Get study ID from health code. Upload validation needs this.
+                    String studyId = healthCodeDao.getStudyIdentifier(oneUpload.getHealthCode());
+                    StudyIdentifier studyIdentifier = new StudyIdentifierImpl(studyId);
 
-                recordMessage(task, callback, "Backfilled upload ID " + uploadId);
-                logger.info("Backfilled upload ID " + uploadId);
-            } catch (RuntimeException ex) {
-                // Ensure that errors won't fail the entire backfill. Log an error and move on.
-                String errMsg = "Error backfilling upload ID " + uploadId + ": " + ex.getMessage();
-                logger.error(errMsg, ex);
-                recordMessage(task, callback, errMsg);
+                    // Kick off upload validation.
+                    uploadValidationService.validateUpload(studyIdentifier, oneUpload);
+
+                    recordMessage(task, callback, "Backfilled record ID " + oneRecordId);
+                    logger.info("Backfilled record ID " + oneRecordId);
+                } catch (RuntimeException ex) {
+                    // Ensure that errors won't fail the entire backfill. Log an error and move on.
+                    String errMsg = "Error backfilling record ID " + oneRecordId + ": " + ex.getMessage();
+                    logger.error(errMsg, ex);
+                    recordMessage(task, callback, errMsg);
+                }
             }
+        } catch (IOException ex) {
+            // reading from S3 failed
+            // doBackfill() super class doesn't declare exceptions. Wrap this in a RuntimeException.
+            throw new RuntimeException(ex);
         }
 
         logger.info("UploadValidationBackfill complete");
