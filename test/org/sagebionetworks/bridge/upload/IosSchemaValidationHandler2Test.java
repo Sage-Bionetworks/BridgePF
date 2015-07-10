@@ -14,9 +14,10 @@ import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
-import org.joda.time.format.ISODateTimeFormat;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -424,9 +425,11 @@ public class IosSchemaValidationHandler2Test {
     }
 
     private static void validateCommonRecordProps(HealthDataRecordBuilder recordBuilder) {
+        LocalDate todaysDate = LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE);
+
         assertEquals(TEST_HEALTHCODE, recordBuilder.getHealthCode());
         assertEquals(TEST_STUDY_ID, recordBuilder.getStudyId());
-        assertEquals(TEST_UPLOAD_DATE_STRING, recordBuilder.getUploadDate().toString(ISODateTimeFormat.date()));
+        assertEquals(todaysDate, recordBuilder.getUploadDate());
         assertEquals(TEST_UPLOAD_ID, recordBuilder.getUploadId());
 
         // Don't parse into the metadata. Just check that it exists and is an object node.

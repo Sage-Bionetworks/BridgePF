@@ -17,9 +17,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -122,7 +124,8 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         // health data records fields
         recordBuilder.withHealthCode(upload.getHealthCode());
         recordBuilder.withStudyId(studyId);
-        recordBuilder.withUploadDate(upload.getUploadDate());
+        // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
+        recordBuilder.withUploadDate(LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE));
         recordBuilder.withUploadId(uploadId);
 
         // create an empty object node in our record builder, which we'll fill in as we go

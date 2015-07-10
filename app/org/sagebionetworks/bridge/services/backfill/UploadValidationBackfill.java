@@ -106,10 +106,8 @@ public class UploadValidationBackfill extends AsyncBackfillTemplate {
                     HealthDataRecord record = healthDataDao.getRecordById(oneRecordId);
                     String uploadId = record.getUploadId();
 
-                    // Call uploadComplete() to reset the upload status and uploadDate. This will make the upload
-                    // eligible for validation again.
+                    // Get upload.
                     Upload oneUpload = uploadDao.getUpload(uploadId);
-                    uploadDao.uploadComplete(oneUpload);
 
                     // Get study ID from health code. Upload validation needs this.
                     String studyId = healthCodeDao.getStudyIdentifier(oneUpload.getHealthCode());
