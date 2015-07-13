@@ -123,7 +123,7 @@ public class AuthenticationControllerTest {
                     node.put(STUDY_PROPERTY, testUser.getStudy().getIdentifier());
                     node.put(USERNAME, testUser.getUsername());
                     node.put(PASSWORD, testUser.getPassword());
-                    
+
                     WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
                     WSResponse response = request.post(node).get(TIMEOUT);
                     WSCookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);

@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -161,7 +162,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 throw new StudyLimitExceededException(study);
             }
             accountDao.signUp(study, signUp, sendEmail);
-
+        } catch(EntityAlreadyExistsException eae) {
+            // Do not indicate to the end user that this email address has already been taken, as this 
+            // leaks information about who is in the study. Instead send a reset password request to the 
+            // email address in case user has forgotten password and is trying to sign up again.
+            logger.info(String.format("Sign up attempt for existing account: %s, %s", study.getIdentifier(), signUp.getEmail()));
+            Email email = new Email(study.getIdentifier(), signUp.getEmail());
+            requestResetPassword(study, email);
         } finally {
             lockDao.releaseLock(SignUp.class, signUp.getEmail(), lockId);
         }

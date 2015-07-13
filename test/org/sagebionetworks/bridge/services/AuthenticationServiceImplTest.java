@@ -6,6 +6,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import javax.annotation.Resource;
 
@@ -183,6 +186,9 @@ public class AuthenticationServiceImplTest {
 
     @Test
     public void cannotCreateTheSameEmailAccountTwice() {
+        // Verify that requestResetPassword is called in this case
+        authService = spy(authService);
+        
         Study tempStudy = TestUtils.getValidStudy();
         tempStudy = studyService.createStudy(tempStudy);
 
@@ -190,9 +196,10 @@ public class AuthenticationServiceImplTest {
         try {
             authService.signUp(user.getStudy(), user.getSignUp(), false);
             authService.signUp(tempStudy, user.getSignUp(), false);
-            fail("Should not get here");
+            
+            verify(authService).requestResetPassword(any(Study.class), any(Email.class));
         } catch (EntityAlreadyExistsException e) {
-            assertEquals("Account already exists.", e.getMessage());
+            fail("Should not throw entity already exists");
         } finally {
             studyService.deleteStudy(tempStudy.getIdentifier());    
             helper.deleteUser(user);
