@@ -32,6 +32,7 @@ public class DynamoUpload2 implements Upload {
     private String contentType;
     private String filename;
     private String healthCode;
+    private String recordId;
     private UploadStatus status;
     private LocalDate uploadDate;
     private String uploadId;
@@ -120,6 +121,17 @@ public class DynamoUpload2 implements Upload {
     public String getObjectId() {
         // In DynamoUpload2, object ID and upload ID are the same.
         return uploadId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String getRecordId() {
+        return recordId;
+    }
+
+    /** @see #getRecordId */
+    public void setRecordId(String recordId) {
+        this.recordId = recordId;
     }
 
     /** {@inheritDoc} */

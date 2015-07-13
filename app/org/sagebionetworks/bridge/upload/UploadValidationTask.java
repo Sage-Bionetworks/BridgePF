@@ -98,7 +98,7 @@ public class UploadValidationTask implements Runnable {
 
         // write validation status to the upload DAO
         UploadStatus status = context.getSuccess() ? UploadStatus.SUCCEEDED : UploadStatus.VALIDATION_FAILED;
-        uploadDao.writeValidationStatus(context.getUpload(), status, context.getMessageList());
+        uploadDao.writeValidationStatus(context.getUpload(), status, context.getMessageList(), context.getRecordId());
         logger.info(String.format("Upload validation for study %s, upload %s, record %s, with status %s",
                 context.getStudy().getIdentifier(), context.getUpload().getUploadId(), context.getRecordId(), status));
 

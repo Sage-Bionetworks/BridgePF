@@ -1,8 +1,12 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
@@ -13,6 +17,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @BridgeTypeName("HealthData")
 @JsonDeserialize(as = DynamoHealthDataRecord.class)
 public interface HealthDataRecord extends BridgeEntity {
+    public static final ObjectWriter PUBLIC_RECORD_WRITER = new BridgeObjectMapper().writer(
+            new SimpleFilterProvider().addFilter("filter",
+                    SimpleBeanPropertyFilter.serializeAllExcept("healthCode")));
+
     /**
      * The timestamp at which this health data was created (recorded on the client), in milliseconds since 1970-01-01
      * (start of epoch).
