@@ -12,6 +12,7 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
+import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -22,6 +23,9 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
+import org.sagebionetworks.bridge.models.upload.UploadSchema;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -207,6 +211,7 @@ public class DynamoSurveyDao implements SurveyDao {
 
     private DynamoDBMapper surveyMapper;
     private DynamoDBMapper surveyElementMapper;
+    private UploadSchemaDao uploadSchemaDao;
 
     @Resource(name = "surveyMapper")
     public void setSurveyMapper(DynamoDBMapper surveyMapper) {
@@ -218,6 +223,11 @@ public class DynamoSurveyDao implements SurveyDao {
         this.surveyElementMapper = surveyElementMapper;
     }
 
+    @Autowired
+    public final void setUploadSchemaDao(UploadSchemaDao uploadSchemaDao) {
+        this.uploadSchemaDao = uploadSchemaDao;
+    }
+
     @Override
     public Survey createSurvey(Survey survey) {
         checkNotNull(survey.getStudyIdentifier(), "Survey study identifier is null");
@@ -227,20 +237,26 @@ public class DynamoSurveyDao implements SurveyDao {
         long time = DateUtils.getCurrentMillisFromEpoch();
         survey.setCreatedOn(time);
         survey.setModifiedOn(time);
+        survey.setSchemaRevision(null);
         survey.setPublished(false);
         survey.setDeleted(false);
         return saveSurvey(survey);
     }
 
     @Override
-    public Survey publishSurvey(GuidCreatedOnVersionHolder keys) {
+    public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys) {
         Survey survey = getSurvey(keys);
         if (survey.isDeleted()) {
             throw new EntityNotFoundException(Survey.class);
         }
         if (!survey.isPublished()) {
+            // make schema from survey
+            UploadSchema schema = uploadSchemaDao.createUploadSchemaFromSurvey(study, survey);
+
+            // update survey
             survey.setPublished(true);
             survey.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+            survey.setSchemaRevision(schema.getRevision());
             try {
                 surveyMapper.save(survey);
             } catch(ConditionalCheckFailedException e) {
@@ -259,12 +275,20 @@ public class DynamoSurveyDao implements SurveyDao {
         if (existing.isPublished()) {
             throw new PublishedSurveyException(survey);
         }
+
+        // copy over mutable fields
         existing.setIdentifier(survey.getIdentifier());
         existing.setName(survey.getName());
         existing.setElements(survey.getElements());
+
+        // copy over DDB version so we can handle concurrent modification exceptions
+        existing.setVersion(survey.getVersion());
+
+        // internal bookkeeping - update modified timestamp, clear schema revision from unpublished survey
         existing.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        
-        return saveSurvey(survey);
+        existing.setSchemaRevision(null);
+
+        return saveSurvey(existing);
     }
     
     @Override
@@ -280,6 +304,7 @@ public class DynamoSurveyDao implements SurveyDao {
         long time = DateUtils.getCurrentMillisFromEpoch();
         copy.setCreatedOn(time);
         copy.setModifiedOn(time);
+        copy.setSchemaRevision(null);
         for (SurveyElement element : copy.getElements()) {
             element.setGuid(BridgeUtils.generateGuid());
         }
@@ -302,6 +327,13 @@ public class DynamoSurveyDao implements SurveyDao {
         }
         existing.setDeleted(true);
         saveSurvey(existing);
+    }
+
+    @Override
+    public void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys) {
+        Survey existing = getSurvey(keys);
+        deleteAllElements(existing.getGuid(), existing.getCreatedOn());
+        surveyMapper.delete(existing);
     }
 
     @Override
@@ -374,9 +406,9 @@ public class DynamoSurveyDao implements SurveyDao {
         
         List<FailedBatch> failures = surveyElementMapper.batchSave(dynamoElements);
         BridgeUtils.ifFailuresThrowException(failures);
-        
+
         try {
-            surveyMapper.save(survey);    
+            surveyMapper.save(survey);
         } catch(ConditionalCheckFailedException throwable) {
             throw new ConcurrentModificationException(survey);
         } catch(Throwable t) {

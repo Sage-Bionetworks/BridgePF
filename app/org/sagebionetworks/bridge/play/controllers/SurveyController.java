@@ -246,7 +246,7 @@ public class SurveyController extends BaseController {
         Survey survey = surveyService.getSurvey(keys);
         verifySurveyIsInStudy(session, studyId, survey);
         
-        survey = surveyService.publishSurvey(survey);
+        survey = surveyService.publishSurvey(studyId, survey);
         expireCache(surveyGuid, createdOnString);
         
         return okResult(new GuidCreatedOnVersionHolderImpl(survey));
