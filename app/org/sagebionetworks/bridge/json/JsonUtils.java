@@ -189,12 +189,7 @@ public class JsonUtils {
             ArrayNode array = (ArrayNode)parent.get(property);
             for (int i = 0; i < array.size(); i++) {
                 String name = array.get(i).asText().toUpperCase();
-                try {
-                    results.add(Roles.valueOf(name));    
-                } catch(IllegalArgumentException e) {
-                    // probably api_researcher.
-                    logger.info("Found an invalid role: " + name);
-                }
+                results.add(Roles.valueOf(name));
             }
         }
         return results;

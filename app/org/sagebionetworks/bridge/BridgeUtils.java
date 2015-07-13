@@ -28,8 +28,6 @@ import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.group.GroupList;
 
 public class BridgeUtils {
-
-    private static Logger logger = LoggerFactory.getLogger(BridgeUtils.class);
     
     /**
      * A simple means of providing template variables in template strings, in the format <code>${variableName}</code>.
@@ -136,12 +134,7 @@ public class BridgeUtils {
         Set<Roles> roleSet = new HashSet<>();
         if (groups != null) {
             for (Group group : groups) {
-                try {
-                    roleSet.add(Roles.valueOf(group.getName().toUpperCase()));
-                } catch(IllegalArgumentException e) {
-                    // probably api_researcher.
-                    logger.info("Found an invalid role: " + group.getName().toUpperCase());
-                }
+                roleSet.add(Roles.valueOf(group.getName().toUpperCase()));
             }
         }
         return roleSet;
