@@ -235,7 +235,7 @@ public class StudyServiceImpl implements StudyService {
             lockId = lockDao.acquireLock(Study.class, identifier);
             studyDao.deleteStudy(existing);
             studyConsentDao.deleteAllConsents(existing.getStudyIdentifier());
-            directoryDao.deleteDirectoryForStudy(identifier);
+            directoryDao.deleteDirectoryForStudy(existing);
             cacheProvider.removeStudy(identifier);
         } finally {
             lockDao.releaseLock(Study.class, identifier, lockId);
