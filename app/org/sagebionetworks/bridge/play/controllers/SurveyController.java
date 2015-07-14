@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -69,42 +70,15 @@ public class SurveyController extends BaseController {
         return okResult(surveys);
     }
     
-    public Result getSurveyForUser(final String surveyGuid, final String createdOnString) throws Exception {
-        final UserSession session = getAuthenticatedAndConsentedSession();
-
-        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString); 
-        String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
-            @Override public Survey get() {
-                StudyIdentifier studyId = session.getStudyIdentifier();
-                long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
-                GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
-
-                Survey survey = surveyService.getSurvey(keys);
-                verifySurveyIsInStudy(session, studyId, survey);
-                return surveyService.getSurvey(keys);
-            }
-        });
-        return ok(json).as(JSON_MIME_TYPE);
-    }
-
-    public Result getSurveyMostRecentlyPublishedVersionForUser(final String surveyGuid) throws Exception {
-        final UserSession session = getAuthenticatedAndConsentedSession();
-        
-        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY);
-        String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
-            @Override public Survey get() {
-                StudyIdentifier studyId = session.getStudyIdentifier();
-                Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(studyId, surveyGuid);
-                verifySurveyIsInStudy(session, studyId, survey);
-                return survey;
-            }
-        });
-        return ok(json).as(JSON_MIME_TYPE);
-    }
-    
     // Otherwise you don't need consent but you must be a researcher or an administrator
     public Result getSurvey(final String surveyGuid, final String createdOnString) throws Exception {
-        final UserSession session = getAuthenticatedSession(DEVELOPER);
+        final UserSession session = getSessionIfItExists();
+        if (session == null) {
+            throw new NotAuthenticatedException();
+        }
+        if (!session.getUser().isInRole(DEVELOPER) && !session.getUser().doesConsent()) {
+            throw new UnauthorizedException();    
+        }
         final StudyIdentifier studyId = session.getStudyIdentifier();
         
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString); 
@@ -136,9 +110,14 @@ public class SurveyController extends BaseController {
     }
     
     public Result getSurveyMostRecentlyPublishedVersion(final String surveyGuid) throws Exception {
-        final UserSession session = getAuthenticatedSession(DEVELOPER);
+        final UserSession session = getSessionIfItExists();
+        if (session == null) {
+            throw new NotAuthenticatedException();
+        }
+        if (!session.getUser().isInRole(DEVELOPER) && !session.getUser().doesConsent()) {
+            throw new UnauthorizedException();    
+        }
         final StudyIdentifier studyId = session.getStudyIdentifier();
-        
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY);
         String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
             @Override public Survey get() {

@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +26,12 @@ import play.mvc.Result;
 @Controller
 public class StudyController extends BaseController {
 
+    private final Comparator<Study> STUDY_COMPARATOR = new Comparator<Study>() {
+        public int compare(Study study1, Study study2) {
+            return study1.getName().compareToIgnoreCase(study2.getName());
+        }
+    };
+    
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(BridgeConfigFactory
                     .getConfig().getPropertyAsList("study.whitelist")));
 
@@ -33,12 +40,6 @@ public class StudyController extends BaseController {
     @Autowired
     public void setUserProfileService(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
-    }
-
-    public Result getStudyList() throws Exception {
-        List<Study> studies = studyService.getStudies();
-
-        return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
     }
 
     public Result getStudyForDeveloper() throws Exception {
@@ -81,10 +82,15 @@ public class StudyController extends BaseController {
         return ok(Study.STUDY_WRITER.writeValueAsString(study));
     }
 
-    public Result getAllStudies() throws Exception {
+    public Result getAllStudies(String format) throws Exception {
+        List<Study> studies = studyService.getStudies();
+        if ("summary".equals(format)) {
+            Collections.sort(studies, STUDY_COMPARATOR);
+            return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
+        }
         getAuthenticatedSession(ADMIN);
 
-        return ok(Study.STUDY_WRITER.writeValueAsString(studyService.getStudies()));
+        return ok(Study.STUDY_WRITER.writeValueAsString(studies));
     }
 
     public Result createStudy() throws Exception {

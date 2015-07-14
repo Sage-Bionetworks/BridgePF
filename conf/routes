@@ -145,11 +145,7 @@ GET    /v3/surveys/:identifier                              @org.sagebionetworks
 GET    /v3/surveys/:surveyGuid/revisions                    @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyAllVersions(surveyGuid: String)
 GET    /v3/surveys/:surveyGuid/revisions/recent             @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentVersion(surveyGuid: String)
 GET    /v3/surveys/:surveyGuid/revisions/published          @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentlyPublishedVersion(surveyGuid: String)
-# Examine role in method and branch appropriately
-# @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
 GET    /v3/surveys/:surveyGuid/revisions/:createdOn         @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurvey(surveyGuid: String, createdOn: String)
-# Examine role in method and branch appropriately
-# @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
 POST   /v3/surveys/:surveyGuid/revisions/:createdOn         @org.sagebionetworks.bridge.play.controllers.SurveyController.updateSurvey(surveyGuid: String, createdOn: String)
 POST   /v3/surveys/:surveyGuid/revisions/:createdOn/publish @org.sagebionetworks.bridge.play.controllers.SurveyController.publishSurvey(surveyGuid: String, createdOn: String)
 POST   /v3/surveys/:surveyGuid/revisions/:createdOn/version @org.sagebionetworks.bridge.play.controllers.SurveyController.versionSurvey(surveyGuid: String, createdOn: String)
@@ -199,9 +195,7 @@ GET    /v3/tasks @org.sagebionetworks.bridge.play.controllers.TaskController.get
 POST   /v3/tasks @org.sagebionetworks.bridge.play.controllers.TaskController.updateTasks()
 
 # Studies
-# TODO: Better to adjust this with a query parameter or something
-GET    /v3/studies/summary     @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyList
-GET    /v3/studies             @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies
+GET    /v3/studies             @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies(format: java.lang.String ?= null)
 POST   /v3/studies             @org.sagebionetworks.bridge.play.controllers.StudyController.createStudy
 GET    /v3/studies/self        @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyForDeveloper
 POST   /v3/studies/self        @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
