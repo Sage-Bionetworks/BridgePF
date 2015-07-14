@@ -37,9 +37,9 @@ public class TestUtils {
 
     public static final String ACTIVITY_1 = "task:task3";
     
-    public static final String ACTIVITY_2 = "http://webservices.sagebridge.org/api/v1/surveys/AAA/revisions/2015-04-12T14:20:56.123-07:00";
+    public static final String ACTIVITY_2 = "http://webservices.sagebridge.org/v3/surveys/AAA/revisions/2015-04-12T14:20:56.123-07:00";
     
-    public static final String ACTIVITY_3 = "http://webservices.sagebridge.org/api/v1/surveys/AAA/revisions/published";
+    public static final String ACTIVITY_3 = "http://webservices.sagebridge.org/v3/surveys/AAA/revisions/published";
     
     public static final DateTime ENROLLMENT = DateTime.parse("2015-04-10T10:40:34.000-07:00");
     

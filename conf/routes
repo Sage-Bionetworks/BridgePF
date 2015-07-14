@@ -113,3 +113,106 @@ DELETE /admin/v1/users          @org.sagebionetworks.bridge.play.controllers.Use
 # Admin - Cache Management
 GET    /admin/v1/cache           @org.sagebionetworks.bridge.play.controllers.CacheAdminController.listItems
 DELETE /admin/v1/cache/:cacheKey @org.sagebionetworks.bridge.play.controllers.CacheAdminController.removeItem(cacheKey: String)
+
+# v3 routes
+# -----------------------------------------------------------------------------------------------------------------------
+
+# Authentication
+POST   /v3/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
+GET    /v3/auth/signOut                 @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signOut
+POST   /v3/auth/requestResetPassword    @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestResetPassword
+POST   /v3/auth/resetPassword           @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resetPassword
+POST   /v3/auth/signUp                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signUp
+POST   /v3/auth/verifyEmail             @org.sagebionetworks.bridge.play.controllers.AuthenticationController.verifyEmail
+POST   /v3/auth/resendEmailVerification @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resendEmailVerification
+
+# Users
+POST   /v3/users                  @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUser
+POST   /v3/users/email            @org.sagebionetworks.bridge.play.controllers.StudyController.sendStudyParticipantsRoster
+DELETE /v3/users                  @org.sagebionetworks.bridge.play.controllers.UserManagementController.deleteUser(email: java.lang.String ?= null)
+GET    /v3/users/self             @org.sagebionetworks.bridge.play.controllers.UserProfileController.getUserProfile
+POST   /v3/users/self             @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateUserProfile
+POST   /v3/users/self/externalId  @org.sagebionetworks.bridge.play.controllers.UserProfileController.createExternalIdentifier
+POST   /v3/users/self/unsubscribe @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
+POST   /v3/users/self/dataSharing @org.sagebionetworks.bridge.play.controllers.ConsentController.changeSharingScope
+
+# Surveys
+GET    /v3/surveys                                          @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion
+POST   /v3/surveys                                          @org.sagebionetworks.bridge.play.controllers.SurveyController.createSurvey
+GET    /v3/surveys/recent                                   @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion2
+GET    /v3/surveys/published                                @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersion
+GET    /v3/surveys/:identifier                              @org.sagebionetworks.bridge.play.controllers.SurveyController.getMostRecentPublishedSurveyVersionByIdentifier(identifier: String)
+GET    /v3/surveys/:surveyGuid/revisions                    @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyAllVersions(surveyGuid: String)
+GET    /v3/surveys/:surveyGuid/revisions/recent             @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentVersion(surveyGuid: String)
+GET    /v3/surveys/:surveyGuid/revisions/published          @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentlyPublishedVersion(surveyGuid: String)
+# Examine role in method and branch appropriately
+# @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
+GET    /v3/surveys/:surveyGuid/revisions/:createdOn         @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurvey(surveyGuid: String, createdOn: String)
+# Examine role in method and branch appropriately
+# @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
+POST   /v3/surveys/:surveyGuid/revisions/:createdOn         @org.sagebionetworks.bridge.play.controllers.SurveyController.updateSurvey(surveyGuid: String, createdOn: String)
+POST   /v3/surveys/:surveyGuid/revisions/:createdOn/publish @org.sagebionetworks.bridge.play.controllers.SurveyController.publishSurvey(surveyGuid: String, createdOn: String)
+POST   /v3/surveys/:surveyGuid/revisions/:createdOn/version @org.sagebionetworks.bridge.play.controllers.SurveyController.versionSurvey(surveyGuid: String, createdOn: String)
+DELETE /v3/surveys/:surveyGuid/revisions/:createdOn         @org.sagebionetworks.bridge.play.controllers.SurveyController.deleteSurvey(surveyGuid: String, createdOn: String)
+
+# Survey responses
+GET    /v3/surveyresponses/:guid                                        @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.getSurveyResponse(guid: String)
+POST   /v3/surveyresponses/:guid                                        @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
+POST   /v3/surveyresponses/:surveyGuid/revisions/:createdOn             @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
+POST   /v3/surveyresponses/:surveyGuid/revisions/:createdOn/:identifier @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
+
+# Study Consents & Signatures
+GET    /v3/consents                     @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getAllConsents
+GET    /v3/consents/recent              @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getMostRecentConsent
+GET    /v3/consents/active              @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getActiveConsent
+GET    /v3/consents/:timestamp          @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getConsent(timestamp: String)
+POST   /v3/consents/:timestamp/activate @org.sagebionetworks.bridge.play.controllers.StudyConsentController.setActiveConsent(timestamp: String)
+POST   /v3/consents                     @org.sagebionetworks.bridge.play.controllers.StudyConsentController.addConsent
+GET    /v3/consents/signature           @org.sagebionetworks.bridge.play.controllers.ConsentController.getConsentSignature
+POST   /v3/consents/signature           @org.sagebionetworks.bridge.play.controllers.ConsentController.giveV2
+POST   /v3/consents/signature/email     @org.sagebionetworks.bridge.play.controllers.ConsentController.emailCopy
+
+# Upload Schemas
+GET    /v3/uploadschemas                               @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemasForStudy
+POST   /v3/uploadschemas                               @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.createOrUpdateUploadSchema
+GET    /v3/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchema(schemaId: String)
+DELETE /v3/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteUploadSchemaById(schemaId: String)
+DELETE /v3/uploadschemas/:schemaId/revisions/:revision @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteUploadSchemaByIdAndRev(schemaId: String, revision: Int)
+
+# Uploads
+POST   /v3/uploads              @org.sagebionetworks.bridge.play.controllers.UploadController.upload
+GET    /v3/uploads/:id          @org.sagebionetworks.bridge.play.controllers.UploadController.getValidationStatus(id: String)
+POST   /v3/uploads/:id/complete @org.sagebionetworks.bridge.play.controllers.UploadController.uploadComplete(id: String)
+
+# Schedule plans
+GET    /v3/scheduleplans       @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlans
+POST   /v3/scheduleplans       @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.createSchedulePlan
+GET    /v3/scheduleplans/:guid @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlan(guid: String)
+POST   /v3/scheduleplans/:guid @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.updateSchedulePlan(guid: String)
+DELETE /v3/scheduleplans/:guid @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
+
+# Schedules
+GET    /v3/schedules  @org.sagebionetworks.bridge.play.controllers.ScheduleController.getSchedules
+
+# Tasks
+GET    /v3/tasks @org.sagebionetworks.bridge.play.controllers.TaskController.getTasks(until: java.lang.String ?= null)
+POST   /v3/tasks @org.sagebionetworks.bridge.play.controllers.TaskController.updateTasks()
+
+# Studies
+# TODO: Better to adjust this with a query parameter or something
+GET    /v3/studies/summary     @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyList
+GET    /v3/studies             @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies
+POST   /v3/studies             @org.sagebionetworks.bridge.play.controllers.StudyController.createStudy
+GET    /v3/studies/self        @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyForDeveloper
+POST   /v3/studies/self        @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
+GET    /v3/studies/:identifier @org.sagebionetworks.bridge.play.controllers.StudyController.getStudy(identifier: String)
+POST   /v3/studies/:identifier @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudy(identifier: String)
+DELETE /v3/studies/:identifier @org.sagebionetworks.bridge.play.controllers.StudyController.deleteStudy(identifier: String)
+
+# Backfills
+GET    /v3/backfills/:name       @org.sagebionetworks.bridge.play.controllers.BackfillController.backfill(name: String)
+POST   /v3/backfills/:name/start @org.sagebionetworks.bridge.play.controllers.BackfillController.start(name: String)
+
+# Cache control
+GET    /v3/cache           @org.sagebionetworks.bridge.play.controllers.CacheAdminController.listItems
+DELETE /v3/cache/:cacheKey @org.sagebionetworks.bridge.play.controllers.CacheAdminController.removeItem(cacheKey: String)
