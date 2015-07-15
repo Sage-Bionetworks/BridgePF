@@ -43,7 +43,7 @@ public class UserProfileController extends BaseController {
         this.viewCache = viewCache;
     }
 
-    public Result getUserProfile() throws Exception {
+    public Result getUserProfileV3() throws Exception {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -55,8 +55,8 @@ public class UserProfileController extends BaseController {
         });
         return ok(json).as(BridgeConstants.JSON_MIME_TYPE);
     }
-
-    public Result updateUserProfile() throws Exception {
+    
+    public Result updateUserProfileV3() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -71,7 +71,7 @@ public class UserProfileController extends BaseController {
         return okResult("Profile updated.");
     }
     
-    public Result createExternalIdentifier() throws Exception {
+    public Result createExternalIdentifierV3() throws Exception {
         UserSession session = getAuthenticatedSession();
 
         ExternalIdentifier externalId = parseJson(request(), ExternalIdentifier.class);
@@ -85,5 +85,19 @@ public class UserProfileController extends BaseController {
             ParticipantOption.EXTERNAL_IDENTIFIER, externalId.getIdentifier());
         
         return okResult("External identifier added to user profile.");
+    }
+    
+    
+    @Deprecated
+    public Result getUserProfileV1() throws Exception {
+        return getUserProfileV3();
+    }
+    @Deprecated
+    public Result updateUserProfileV1() throws Exception {
+        return updateUserProfileV3();
+    }
+    @Deprecated
+    public Result createExternalIdentifierV1() throws Exception {
+        return createExternalIdentifierV3();
     }
 }

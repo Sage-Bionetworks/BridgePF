@@ -25,8 +25,8 @@ public class UserManagementController extends BaseController {
     public void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
     }
-
-    public Result createUser() throws Exception {
+    
+    public Result createUserV3() throws Exception {
         UserSession session = getAuthenticatedSession(ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -40,13 +40,21 @@ public class UserManagementController extends BaseController {
         return createdResult("User created.");
     }
 
-    public Result deleteUser(String email) throws Exception {
+    public Result deleteUserV3(String email) throws Exception {
         UserSession session = getAuthenticatedSession(ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         userAdminService.deleteUser(study, email);
         
         return okResult("User deleted.");
-    }
+    }    
 
+    @Deprecated
+    public Result createUserV1() throws Exception {
+        return createUserV3();
+    }
+    @Deprecated
+    public Result deleteUserV1(String email) throws Exception {
+        return deleteUserV3(email);
+    }
 }

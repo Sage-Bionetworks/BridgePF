@@ -75,7 +75,7 @@ public class ScheduleValidatorTest {
     
     @Test
     public void surveyRelativePathIsTreatedAsTaskId() {
-        schedule.addActivity(new Activity("Label", "/api/v1/surveys/AAA/revisions/published"));
+        schedule.addActivity(new Activity("Label", "/v3/surveys/AAA/revisions/published"));
         schedule.setScheduleType(ScheduleType.ONCE);
         
         DateTime now = DateUtils.getCurrentDateTime();
@@ -87,7 +87,7 @@ public class ScheduleValidatorTest {
     
     @Test
     public void activityCorrectlyParsesPublishedSurveyPath() {
-        Activity activity = new Activity("Label", "https://server/api/v1/surveys/AAA/revisions/published");
+        Activity activity = new Activity("Label", "https://server/v3/surveys/AAA/revisions/published");
         
         SurveyReference ref = activity.getSurvey();
         assertEquals("AAA", ref.getGuid());
@@ -96,7 +96,7 @@ public class ScheduleValidatorTest {
         activity = new Activity("Label", "task:AAA");
         assertNull(activity.getSurvey());
         
-        activity = new Activity("Label", "https://server/api/v1/surveys/AAA/revisions/2015-01-27T17:46:31.237Z");
+        activity = new Activity("Label", "https://server/v3/surveys/AAA/revisions/2015-01-27T17:46:31.237Z");
         ref = activity.getSurvey();
         assertEquals("AAA", ref.getGuid());
         assertEquals(DateTime.parse("2015-01-27T17:46:31.237Z"), ref.getCreatedOn());

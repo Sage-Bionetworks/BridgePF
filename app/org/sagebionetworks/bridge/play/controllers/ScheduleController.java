@@ -25,7 +25,7 @@ public class ScheduleController extends BaseController {
         this.schedulePlanService = schedulePlanService;
     }
     
-    public Result getSchedules() throws Exception {
+    public Result getSchedulesV3() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         Study study = studyService.getStudy(studyId);
@@ -40,4 +40,8 @@ public class ScheduleController extends BaseController {
         return okResult(schedules);
     }
     
+    @Deprecated
+    public Result getSchedulesV1() throws Exception {
+        return getSchedulesV1();
+    }
 }

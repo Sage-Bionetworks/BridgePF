@@ -104,7 +104,7 @@ public class EmailControllerTest {
         mockContext("data[email]", "bridge-testing@sagebase.org", "study", "api", "token", "unsubscribeToken");
         
         EmailController controller = createController("bridge-testing@sagebase.org");
-        controller.unsubscribeFromEmail();
+        controller.unsubscribeFromEmailV3();
         
         verify(optionsService).setOption(study, "healthCode", 
             ParticipantOption.EMAIL_NOTIFICATIONS, "false");
@@ -115,7 +115,7 @@ public class EmailControllerTest {
         mockContext("data[email]", "bridge-testing@sagebase.org", "token", "unsubscribeToken");
         
         EmailController controller = createController("bridge-testing@sagebase.org");
-        Result result = controller.unsubscribeFromEmail();
+        Result result = controller.unsubscribeFromEmailV3();
         contentAsString(result).contains("Study not found");
     }
     
@@ -124,7 +124,7 @@ public class EmailControllerTest {
         mockContext("study", "api", "token", "unsubscribeToken");
         
         EmailController controller = createController(null);
-        Result result = controller.unsubscribeFromEmail();
+        Result result = controller.unsubscribeFromEmailV3();
         contentAsString(result).contains("Email not found");
     }
     
@@ -135,7 +135,7 @@ public class EmailControllerTest {
         EmailController controller = createController("bridge-testing@sagebase.org");
         when(accountDao.getAccount(study, "bridge-testing@sagebase.org")).thenReturn(null);
         
-        Result result = controller.unsubscribeFromEmail();
+        Result result = controller.unsubscribeFromEmailV3();
         contentAsString(result).contains("Account not found");
     }
     
@@ -144,7 +144,7 @@ public class EmailControllerTest {
         mockContext("data[email]", "bridge-testing@sagebase.org", "study", "api");
         
         EmailController controller = createController("bridge-testing@sagebase.org");
-        Result result = controller.unsubscribeFromEmail();
+        Result result = controller.unsubscribeFromEmailV3();
         contentAsString(result).contains("Not authorized");
     }
     

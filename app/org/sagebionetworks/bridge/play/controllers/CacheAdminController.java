@@ -20,18 +20,26 @@ public class CacheAdminController extends BaseController {
         this.cacheAdminService = cacheService;
     }
     
-    public Result listItems() throws Exception {
+    public Result listItemsV3() throws Exception {
         getAuthenticatedSession(ADMIN);
         
         Set<String> keys = cacheAdminService.listItems();
         return okResult(keys);
     }
     
-    public Result removeItem(String cacheKey) {
+    public Result removeItemV3(String cacheKey) {
         getAuthenticatedSession(ADMIN);
         
         cacheAdminService.removeItem(cacheKey);
         return ok("Item removed from cache.");
     }
-
+    
+    @Deprecated
+    public Result listItemsV1() throws Exception {
+        return listItemsV3();
+    }
+    @Deprecated
+    public Result removeItemV1(String cacheKey) {
+        return removeItemV3(cacheKey);
+    }
 }

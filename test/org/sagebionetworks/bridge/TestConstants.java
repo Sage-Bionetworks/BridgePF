@@ -11,7 +11,7 @@ public class TestConstants {
     public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";
-    public static final String API_URL = "/api/v1";
+    public static final String API_URL = "/v3";
     public static final String SIGN_OUT_URL = API_URL + "/auth/signOut";
     public static final String SIGN_IN_URL = API_URL + "/auth/signIn";
     public static final String SCHEDULES_API = API_URL + "/schedules";

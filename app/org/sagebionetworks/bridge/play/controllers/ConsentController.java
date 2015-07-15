@@ -30,8 +30,8 @@ public class ConsentController extends BaseController {
     public void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
-
-    public Result getConsentSignature() throws Exception {
+    
+    public Result getConsentSignatureV3() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -39,39 +39,53 @@ public class ConsentController extends BaseController {
         return okResult(sig);
     }
 
-    @Deprecated
-    public Result giveV1() throws Exception {
-        return giveConsentForVersion(1);
-    }
-
-    public Result giveV2() throws Exception {
+    public Result giveV3() throws Exception {
         return giveConsentForVersion(2);
     }
 
-    public Result emailCopy() throws Exception {
+    public Result emailCopyV3() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         consentService.emailConsentAgreement(study, session.getUser());
         return okResult("Emailed consent.");
     }
-
-    @Deprecated
-    public Result suspendDataSharing() throws Exception {
-        return changeSharingScope(SharingScope.NO_SHARING, 
-                "Data sharing with the study researchers has been suspended.");
-    }
-
-    @Deprecated
-    public Result resumeDataSharing() throws Exception {
-        return changeSharingScope(SharingScope.SPONSORS_AND_PARTNERS,
-                "Data sharing with the study researchers has been resumed.");
-    }
     
-    public Result changeSharingScope() throws Exception {
+    public Result changeSharingScopeV3() throws Exception {
         SharingOption sharing = SharingOption.fromJson(requestToJSON(request()), 2);
         return changeSharingScope(sharing.getSharingScope(), "Data sharing has been changed.");
     }
 
+    @Deprecated
+    public Result getConsentSignatureV1() throws Exception {
+        return getConsentSignatureV3();
+    }
+    @Deprecated
+    public Result giveV1() throws Exception {
+        return giveConsentForVersion(1);
+    }
+    @Deprecated
+    public Result giveV2() throws Exception {
+        return giveConsentForVersion(2);
+    }
+    @Deprecated
+    public Result emailCopyV1() throws Exception {
+        return emailCopyV3();
+    }
+    @Deprecated
+    public Result suspendDataSharingV1() throws Exception {
+        return changeSharingScope(SharingScope.NO_SHARING, 
+            "Data sharing with the study researchers has been suspended.");
+    }
+    @Deprecated
+    public Result resumeDataSharingV1() throws Exception {
+        return changeSharingScope(SharingScope.SPONSORS_AND_PARTNERS,
+            "Data sharing with the study researchers has been resumed.");
+    }
+    @Deprecated
+    public Result changeSharingScopeV1() throws Exception {
+        return changeSharingScopeV3();
+    }
+    
     Result changeSharingScope(SharingScope sharingScope, String message) {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final User user = session.getUser();

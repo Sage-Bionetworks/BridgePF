@@ -66,7 +66,7 @@ public class UploadSchemaControllerTest {
         doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
 
         // execute and validate
-        Result result = controller.createOrUpdateUploadSchema();
+        Result result = controller.createOrUpdateUploadSchemaV3();
         assertEquals(200, result.status());
 
         // JSON validation is already tested, so just check obvious things like schema
@@ -95,7 +95,7 @@ public class UploadSchemaControllerTest {
         doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
 
         // execute and validate
-        Result result = controller.deleteUploadSchemaByIdAndRev("delete-schema", 1);
+        Result result = controller.deleteUploadSchemaByIdAndRevV3("delete-schema", 1);
         assertEquals(200, result.status());
         verify(mockSvc).deleteUploadSchemaByIdAndRev(studyIdentifier, "delete-schema", 1);
     }
@@ -116,7 +116,7 @@ public class UploadSchemaControllerTest {
         doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
 
         // execute and validate
-        Result result = controller.deleteUploadSchemaById("delete-schema");
+        Result result = controller.deleteUploadSchemaByIdV3("delete-schema");
         assertEquals(200, result.status());
         verify(mockSvc).deleteUploadSchemaById(studyIdentifier, "delete-schema");
     }
@@ -138,7 +138,7 @@ public class UploadSchemaControllerTest {
         doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
 
         // execute and validate
-        Result result = controller.getUploadSchema(TEST_SCHEMA_ID);
+        Result result = controller.getUploadSchemaV3(TEST_SCHEMA_ID);
         assertEquals(200, result.status());
 
         // JSON validation is already tested, so just check obvious things like schema
@@ -164,7 +164,7 @@ public class UploadSchemaControllerTest {
         doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
 
         // execute and validate
-        Result result = controller.getUploadSchemasForStudy();
+        Result result = controller.getUploadSchemasForStudyV3();
         assertEquals(200, result.status());
 
         String resultJson = Helpers.contentAsString(result);

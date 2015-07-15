@@ -32,7 +32,7 @@ public class UploadSchemaController extends BaseController {
      *
      * @return Play result, with the created or updated schema in JSON format
      */
-    public Result createOrUpdateUploadSchema() {
+    public Result createOrUpdateUploadSchemaV3() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
@@ -51,7 +51,7 @@ public class UploadSchemaController extends BaseController {
      *         revision number of the upload schema to delete, must be positive
      * @return Play result with the OK message
      */
-    public Result deleteUploadSchemaByIdAndRev(String schemaId, int rev) {
+    public Result deleteUploadSchemaByIdAndRevV3(String schemaId, int rev) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
 
@@ -68,7 +68,7 @@ public class UploadSchemaController extends BaseController {
      *         schema ID of the upload schemas to delete, must be non-null and non-empty
      * @return Play result with the OK message
      */
-    public Result deleteUploadSchemaById(String schemaId) {
+    public Result deleteUploadSchemaByIdV3(String schemaId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
 
@@ -85,7 +85,7 @@ public class UploadSchemaController extends BaseController {
      *         schema ID to fetch
      * @return Play result with the fetched schema in JSON format
      */
-    public Result getUploadSchema(String schemaId) {
+    public Result getUploadSchemaV3(String schemaId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
@@ -99,11 +99,32 @@ public class UploadSchemaController extends BaseController {
      * 
      * @return Play result with list of schemas for this study
      */
-    public Result getUploadSchemasForStudy() throws Exception {
+    public Result getUploadSchemasForStudyV3() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForStudy(studyId);
         return okResult(schemaList);
+    }
+    
+    @Deprecated
+    public Result createOrUpdateUploadSchemaV1() {
+        return createOrUpdateUploadSchemaV3();
+    }
+    @Deprecated
+    public Result deleteUploadSchemaByIdAndRevV1(String schemaId, int rev) {
+        return deleteUploadSchemaByIdAndRevV3(schemaId, rev);
+    }
+    @Deprecated
+    public Result deleteUploadSchemaByIdV1(String schemaId) {
+        return deleteUploadSchemaByIdV3(schemaId);
+    }
+    @Deprecated
+    public Result getUploadSchemaV1(String schemaId) {
+        return getUploadSchemaV1(schemaId);
+    }
+    @Deprecated
+    public Result getUploadSchemasForStudyV1() throws Exception {
+        return getUploadSchemasForStudyV3();
     }
 }

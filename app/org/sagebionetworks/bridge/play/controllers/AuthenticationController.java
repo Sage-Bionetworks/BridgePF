@@ -26,12 +26,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 @Controller
 public class AuthenticationController extends BaseController {
-
-    public Result signIn() throws Exception {
+    
+    public Result signInV3() throws Exception {
         return signInWithRetry(5);
     }
 
-    public Result signOut() throws Exception {
+    public Result signOutV3() throws Exception {
         final UserSession session = getSessionIfItExists();
         if (session != null) {
             authenticationService.signOut(session);
@@ -40,7 +40,7 @@ public class AuthenticationController extends BaseController {
         return okResult("Signed out.");
     }
 
-    public Result signUp() throws Exception {
+    public Result signUpV3() throws Exception {
         JsonNode json = requestToJSON(request());
         SignUp signUp = SignUp.fromJson(json, false);
         signUp.getRoles().clear();
@@ -49,7 +49,7 @@ public class AuthenticationController extends BaseController {
         return createdResult("Signed up.");
     }
 
-    public Result verifyEmail() throws Exception {
+    public Result verifyEmailV3() throws Exception {
         JsonNode json = requestToJSON(request());
         EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
         Study study = getStudyOrThrowException(json);
@@ -60,7 +60,7 @@ public class AuthenticationController extends BaseController {
         return okResult(new UserSessionInfo(session));
     }
 
-    public Result resendEmailVerification() throws Exception {
+    public Result resendEmailVerificationV3() throws Exception {
         JsonNode json = requestToJSON(request());
         Email email = parseJson(request(), Email.class);
         StudyIdentifier studyIdentifier = getStudyIdentifierOrThrowException(json);
@@ -68,7 +68,7 @@ public class AuthenticationController extends BaseController {
         return okResult("A request to verify an email address was re-sent.");
     }
 
-    public Result requestResetPassword() throws Exception {
+    public Result requestResetPasswordV3() throws Exception {
         JsonNode json = requestToJSON(request());
         Email email = parseJson(request(), Email.class);
         Study study = getStudyOrThrowException(json);
@@ -76,10 +76,39 @@ public class AuthenticationController extends BaseController {
         return okResult("An email has been sent allowing you to set a new password.");
     }
 
-    public Result resetPassword() throws Exception {
+    public Result resetPasswordV3() throws Exception {
         PasswordReset passwordReset = parseJson(request(), PasswordReset.class);
         authenticationService.resetPassword(passwordReset);
         return okResult("Password has been changed.");
+    }
+
+    @Deprecated
+    public Result signInV1() throws Exception {
+        return signInV3();
+    }
+    @Deprecated
+    public Result signOutV1() throws Exception {
+        return signOutV3();
+    }
+    @Deprecated
+    public Result signUpV1() throws Exception {
+        return signUpV3();
+    }
+    @Deprecated
+    public Result verifyEmailV1() throws Exception {
+        return verifyEmailV3();
+    }
+    @Deprecated
+    public Result resendEmailVerificationV1() throws Exception {
+        return resendEmailVerificationV3();
+    }
+    @Deprecated
+    public Result requestResetPasswordV1() throws Exception {
+        return requestResetPasswordV3();
+    }
+    @Deprecated
+    public Result resetPasswordV1() throws Exception {
+        return resetPasswordV3();
     }
 
     /**

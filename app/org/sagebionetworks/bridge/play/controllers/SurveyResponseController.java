@@ -30,7 +30,7 @@ public class SurveyResponseController extends BaseController {
         this.responseService = responseService;
     }
     
-    public Result createSurveyResponse(String surveyGuid, String versionString) throws Exception {
+    public Result createSurveyResponseV3(String surveyGuid, String versionString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         List<SurveyAnswer> answers = deserializeSurveyAnswers();
         Long version = DateUtils.convertToMillisFromEpoch(versionString);
@@ -41,7 +41,7 @@ public class SurveyResponseController extends BaseController {
         return createdResult(new IdentifierHolder(response.getIdentifier()));
     }
     
-    public Result createSurveyResponseWithIdentifier(String surveyGuid, String versionString, String identifier)
+    public Result createSurveyResponseWithIdentifierV3(String surveyGuid, String versionString, String identifier)
             throws Exception {
         
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -54,19 +54,37 @@ public class SurveyResponseController extends BaseController {
         return createdResult(new IdentifierHolder(response.getIdentifier()));
     }
 
-    public Result getSurveyResponse(String identifier) throws Exception {
+    public Result getSurveyResponseV3(String identifier) throws Exception {
         SurveyResponseView response = getSurveyResponseIfAuthorized(identifier);
         return okResult(response);
     }
     
-    public Result appendSurveyAnswers(String identifier) throws Exception {
+    public Result appendSurveyAnswersV3(String identifier) throws Exception {
         SurveyResponseView response = getSurveyResponseIfAuthorized(identifier);
         
         List<SurveyAnswer> answers = deserializeSurveyAnswers();
         responseService.appendSurveyAnswers(response.getResponse(), answers);
         return okResult("Survey response updated.");
     }
-
+    
+    @Deprecated
+    public Result createSurveyResponseV1(String surveyGuid, String versionString) throws Exception {
+        return createSurveyResponseV3(surveyGuid, versionString);
+    }
+    @Deprecated
+    public Result createSurveyResponseWithIdentifierV1(String surveyGuid, String versionString, String identifier)
+            throws Exception {
+        return createSurveyResponseWithIdentifierV3(surveyGuid, versionString, identifier);
+    }
+    @Deprecated
+    public Result getSurveyResponseV1(String identifier) throws Exception {
+        return getSurveyResponseV3(identifier);
+    }
+    @Deprecated
+    public Result appendSurveyAnswersV1(String identifier) throws Exception {
+        return appendSurveyAnswersV3(identifier);
+    }
+    
     private List<SurveyAnswer> deserializeSurveyAnswers() throws JsonProcessingException, IOException {
         JsonNode node = requestToJSON(request());
         return JsonUtils.asEntityList(node, SurveyAnswer.class);
