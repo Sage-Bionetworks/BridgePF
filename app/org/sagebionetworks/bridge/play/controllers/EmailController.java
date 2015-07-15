@@ -47,7 +47,7 @@ public class EmailController extends BaseController {
      * @return
      * @throws Exception
      */
-    public Result unsubscribeFromEmail() throws Exception {
+    public Result unsubscribeFromEmailV3() throws Exception {
         try {
             String token = getParameter("token");
             if (token == null || !token.equals(getBridgeConfig().getEmailUnsubscribeToken())) {
@@ -82,6 +82,20 @@ public class EmailController extends BaseController {
         } catch(Throwable throwable) {
             return ok(throwable.getMessage());
         }
+    }
+    
+    /**
+     * An URL to which a POST can be sent to set the user's email notification preference to "off". Cannot turn email
+     * notifications back on through this endpoint. This cannot be part of the public API, because MailChimp doesn't
+     * deal with non-200 status codes. The token that is submitted is set in the configuration, and must match to allow
+     * this call to succeed. Subject to change without warning or backwards compatibility.
+     * 
+     * @return
+     * @throws Exception
+     */
+    @Deprecated
+    public Result unsubscribeFromEmailV1() throws Exception {
+        return unsubscribeFromEmailV3();
     }
 
     /**

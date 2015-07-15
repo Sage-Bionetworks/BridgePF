@@ -37,7 +37,7 @@ public class UserProfileControllerTest {
         
         UserProfileController controller = controllerForExternalIdTests();
                 
-        Result result = controller.createExternalIdentifier();
+        Result result = controller.createExternalIdentifierV3();
         assertEquals(200, result.status());
         assertEquals("application/json", result.contentType());
         assertEquals("{\"message\":\"External identifier added to user profile.\"}", contentAsString(result));
@@ -53,7 +53,7 @@ public class UserProfileControllerTest {
         UserProfileController controller = controllerForExternalIdTests();
 
         try {
-            controller.createExternalIdentifier();
+            controller.createExternalIdentifierV3();
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals("ExternalIdentifier is not valid.", e.getMessage());

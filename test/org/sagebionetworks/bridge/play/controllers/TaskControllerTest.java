@@ -65,7 +65,7 @@ public class TaskControllerTest {
     
     @Test
     public void getTasks() throws Exception {
-        controller.getTasks(DateTime.now().toString());
+        controller.getTasksV3(DateTime.now().toString());
         verify(taskService).getTasks(any(User.class), any(DateTime.class));
         verifyNoMoreInteractions(taskService);
     }
@@ -73,7 +73,7 @@ public class TaskControllerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void updateTasks() throws Exception {
-        controller.updateTasks();
+        controller.updateTasksV3();
         verify(taskService).updateTasks(anyString(), any(List.class));
         verifyNoMoreInteractions(taskService);
     }
@@ -81,7 +81,7 @@ public class TaskControllerTest {
     @Test(expected = NotAuthenticatedException.class)
     public void mustBeAuthenticated() throws Exception {
         controller = new TaskController();
-        controller.getTasks(DateTime.now().toString());
+        controller.getTasksV3(DateTime.now().toString());
     }
     
 }

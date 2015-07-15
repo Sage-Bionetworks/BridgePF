@@ -3,12 +3,16 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.JSON_MIME_TYPE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
-import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -43,7 +47,7 @@ public class SurveyController extends BaseController {
         this.viewCache = viewCache;
     }
     
-    public Result getAllSurveysMostRecentVersion() throws Exception {
+    public Result getAllSurveysMostRecentVersionV3() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -52,7 +56,8 @@ public class SurveyController extends BaseController {
         return okResult(surveys);
     }
     
-    public Result getAllSurveysMostRecentVersion2() throws Exception {
+    // This is "2V3" because Play Framework cannot route two URLs to the same code.
+    public Result getAllSurveysMostRecentVersion2V3() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -61,7 +66,7 @@ public class SurveyController extends BaseController {
         return okResult(surveys);
     }
     
-    public Result getAllSurveysMostRecentlyPublishedVersion() throws Exception {
+    public Result getAllSurveysMostRecentlyPublishedVersionV3() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -70,16 +75,11 @@ public class SurveyController extends BaseController {
         return okResult(surveys);
     }
     
-    // Otherwise you don't need consent but you must be a researcher or an administrator
-    public Result getSurvey(final String surveyGuid, final String createdOnString) throws Exception {
-        final UserSession session = getSessionIfItExists();
-        if (session == null) {
-            throw new NotAuthenticatedException();
-        }
-        if (!session.getUser().isInRole(DEVELOPER) && !session.getUser().doesConsent()) {
-            throw new UnauthorizedException();    
-        }
+    // You don't need consent but if you don't have consent, you need to be a developer
+    public Result getSurveyV3(final String surveyGuid, final String createdOnString) throws Exception {
+        final UserSession session = getAuthenticatedSession();
         final StudyIdentifier studyId = session.getStudyIdentifier();
+        canAccessSurvey(session);
         
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString); 
         String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
@@ -94,7 +94,7 @@ public class SurveyController extends BaseController {
         return ok(json).as(JSON_MIME_TYPE);
     }
     
-    public Result getSurveyMostRecentVersion(final String surveyGuid) throws Exception {
+    public Result getSurveyMostRecentVersionV3(final String surveyGuid) throws Exception {
         final UserSession session = getAuthenticatedSession(DEVELOPER);
         final StudyIdentifier studyId = session.getStudyIdentifier();
         
@@ -109,15 +109,11 @@ public class SurveyController extends BaseController {
         return ok(json).as(JSON_MIME_TYPE);
     }
     
-    public Result getSurveyMostRecentlyPublishedVersion(final String surveyGuid) throws Exception {
-        final UserSession session = getSessionIfItExists();
-        if (session == null) {
-            throw new NotAuthenticatedException();
-        }
-        if (!session.getUser().isInRole(DEVELOPER) && !session.getUser().doesConsent()) {
-            throw new UnauthorizedException();    
-        }
+    public Result getSurveyMostRecentlyPublishedVersionV3(final String surveyGuid) throws Exception {
+        final UserSession session = getAuthenticatedSession();
         final StudyIdentifier studyId = session.getStudyIdentifier();
+        canAccessSurvey(session);
+
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY);
         String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
             @Override public Survey get() {
@@ -129,7 +125,7 @@ public class SurveyController extends BaseController {
         return ok(json).as(JSON_MIME_TYPE);
     }
     
-    public Result getMostRecentPublishedSurveyVersionByIdentifier(String identifier) throws Exception {
+    public Result getMostRecentPublishedSurveyVersionByIdentifierV3(String identifier) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
@@ -140,7 +136,7 @@ public class SurveyController extends BaseController {
         return okResult(survey);
     }
     
-    public Result deleteSurvey(String surveyGuid, String createdOnString) throws Exception {
+    public Result deleteSurveyV3(String surveyGuid, String createdOnString) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
@@ -156,7 +152,7 @@ public class SurveyController extends BaseController {
         return okResult("Survey deleted.");
     }
     
-    public Result getSurveyAllVersions(String surveyGuid) throws Exception {
+    public Result getSurveyAllVersionsV3(String surveyGuid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
@@ -165,7 +161,7 @@ public class SurveyController extends BaseController {
         return okResult(surveys);
     }
     
-    public Result createSurvey() throws Exception {
+    public Result createSurveyV3() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
@@ -176,7 +172,7 @@ public class SurveyController extends BaseController {
         return createdResult(new GuidCreatedOnVersionHolderImpl(survey));
     }
     
-    public Result versionSurvey(String surveyGuid, String createdOnString) throws Exception {
+    public Result versionSurveyV3(String surveyGuid, String createdOnString) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
@@ -192,7 +188,7 @@ public class SurveyController extends BaseController {
         return createdResult(new GuidCreatedOnVersionHolderImpl(survey));
     }
     
-    public Result updateSurvey(String surveyGuid, String createdOnString) throws Exception {
+    public Result updateSurveyV3(String surveyGuid, String createdOnString) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
@@ -215,7 +211,7 @@ public class SurveyController extends BaseController {
         return okResult(new GuidCreatedOnVersionHolderImpl(survey));
     }
     
-    public Result publishSurvey(String surveyGuid, String createdOnString) throws Exception {
+    public Result publishSurveyV3(String surveyGuid, String createdOnString) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
          
@@ -229,6 +225,77 @@ public class SurveyController extends BaseController {
         expireCache(surveyGuid, createdOnString);
         
         return okResult(new GuidCreatedOnVersionHolderImpl(survey));
+    }
+    
+    @Deprecated
+    public Result getAllSurveysMostRecentVersionV1() throws Exception {
+        return getAllSurveysMostRecentVersionV3();
+    }
+    @Deprecated
+    public Result getAllSurveysMostRecentVersion2V1() throws Exception {
+        return getAllSurveysMostRecentVersion2V3();
+    }
+    @Deprecated
+    public Result getAllSurveysMostRecentlyPublishedVersionV1() throws Exception {
+        return getAllSurveysMostRecentlyPublishedVersionV3();
+    }
+    @Deprecated
+    public Result getSurveyV1(final String surveyGuid, final String createdOnString) throws Exception {
+        return getSurveyV3(surveyGuid, createdOnString);
+    }
+    @Deprecated
+    public Result getSurveyMostRecentVersionV1(final String surveyGuid) throws Exception {
+        return getSurveyMostRecentVersionV3(surveyGuid);
+    }
+    @Deprecated
+    public Result getSurveyMostRecentlyPublishedVersionV1(final String surveyGuid) throws Exception {
+        return getSurveyMostRecentlyPublishedVersionV3(surveyGuid);
+    }
+    @Deprecated
+    public Result getMostRecentPublishedSurveyVersionByIdentifierV1(String identifier) throws Exception {
+        return getMostRecentPublishedSurveyVersionByIdentifierV3(identifier);
+    }
+    @Deprecated
+    public Result deleteSurveyV1(String surveyGuid, String createdOnString) throws Exception {
+        return deleteSurveyV3(surveyGuid, createdOnString);
+    }
+    @Deprecated
+    public Result getSurveyAllVersionsV1(String surveyGuid) throws Exception {
+        return getSurveyAllVersionsV3(surveyGuid);
+    }
+    @Deprecated
+    public Result createSurveyV1() throws Exception {
+        return createSurveyV3();
+    }
+    @Deprecated
+    public Result versionSurveyV1(String surveyGuid, String createdOnString) throws Exception {
+        return versionSurveyV3(surveyGuid, createdOnString);
+    }
+    @Deprecated
+    public Result updateSurveyV1(String surveyGuid, String createdOnString) throws Exception {
+        return updateSurveyV3(surveyGuid, createdOnString);
+    }
+    @Deprecated
+    public Result publishSurveyV1(String surveyGuid, String createdOnString) throws Exception {
+        return publishSurveyV3(surveyGuid, createdOnString);
+    }
+    
+    private void canAccessSurvey(UserSession session) {
+        boolean isDeveloper = session.getUser().isInRole(DEVELOPER);
+        boolean isConsentedUser = session.getUser().doesConsent();
+        
+        if (isDeveloper || isConsentedUser) {
+            return;
+        }
+        // An imperfect test, but normal users have no other roles, so for them, access 
+        // is restricted because they have not consented.
+        Set<Roles> roles = new HashSet<>(session.getUser().getRoles());
+        roles.remove(TEST_USERS);
+        if (session.getUser().getRoles().isEmpty()) {
+            throw new ConsentRequiredException(session);
+        }
+        // Otherwise, for researchers and administrators, the issue is one of authorization.
+        throw new UnauthorizedException();        
     }
     
     private void verifySurveyIsInStudy(UserSession session, StudyIdentifier studyIdentifier, List<Survey> surveys) {

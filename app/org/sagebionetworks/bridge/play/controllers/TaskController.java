@@ -30,7 +30,7 @@ public class TaskController extends BaseController {
         this.taskService = taskService;
     }
     
-    public Result getTasks(String untilString) throws Exception {
+    public Result getTasksV3(String untilString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         DateTime endsOn = (untilString == null) ? 
@@ -41,7 +41,7 @@ public class TaskController extends BaseController {
         return okResult(tasks);
     }
     
-    public Result updateTasks() throws Exception {
+    public Result updateTasksV3() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         List<Task> tasks = mapper.convertValue(requestToJSON(request()), taskTypeRef);
@@ -50,4 +50,12 @@ public class TaskController extends BaseController {
         return okResult("Tasks updated.");
     }
     
+    @Deprecated
+    public Result getTasksV1(String untilString) throws Exception {
+        return getTasksV3(untilString);
+    }
+    @Deprecated
+    public Result updateTasksV1() throws Exception {
+        return updateTasksV3();
+    }
 }

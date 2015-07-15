@@ -25,7 +25,7 @@ public class SchedulePlanController extends BaseController {
         this.schedulePlanService = schedulePlanService;
     }
     
-    public Result getSchedulePlans() throws Exception {
+    public Result getSchedulePlansV3() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -33,7 +33,7 @@ public class SchedulePlanController extends BaseController {
         return okResult(plans);
     }
 
-    public Result createSchedulePlan() throws Exception {
+    public Result createSchedulePlanV3() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -43,7 +43,7 @@ public class SchedulePlanController extends BaseController {
         return createdResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
     }
 
-    public Result getSchedulePlan(String guid) throws Exception {
+    public Result getSchedulePlanV3(String guid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
@@ -51,7 +51,7 @@ public class SchedulePlanController extends BaseController {
         return okResult(plan);
     }
 
-    public Result updateSchedulePlan(String guid) throws Exception {
+    public Result updateSchedulePlanV3(String guid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -62,12 +62,32 @@ public class SchedulePlanController extends BaseController {
         return okResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
     }
 
-    public Result deleteSchedulePlan(String guid) {
+    public Result deleteSchedulePlanV3(String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         schedulePlanService.deleteSchedulePlan(studyId, guid);
         return okResult("Schedule plan deleted.");
     }
-
+    
+    @Deprecated
+    public Result getSchedulePlansV1() throws Exception {
+        return getSchedulePlansV3();
+    }
+    @Deprecated
+    public Result createSchedulePlanV1() throws Exception {
+        return createSchedulePlanV3();
+    }
+    @Deprecated
+    public Result getSchedulePlanV1(String guid) throws Exception {
+        return getSchedulePlanV3(guid);
+    }
+    @Deprecated
+    public Result updateSchedulePlanV1(String guid) throws Exception {
+        return updateSchedulePlanV3(guid);
+    }
+    @Deprecated
+    public Result deleteSchedulePlanV1(String guid) {
+        return deleteSchedulePlanV3(guid);
+    }
 }

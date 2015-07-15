@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.services.UploadService;
 import org.sagebionetworks.bridge.services.UploadValidationService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -34,7 +35,7 @@ public class UploadController extends BaseController {
     }
 
     /** Gets validation status and messages for the given upload ID. */
-    public Result getValidationStatus(String uploadId) throws JsonProcessingException {
+    public Result getValidationStatusV3(String uploadId) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
         UploadValidationStatus validationStatus = uploadService.getUploadValidationStatus(session.getUser(), uploadId);
 
@@ -42,7 +43,7 @@ public class UploadController extends BaseController {
         return ok(HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(validationStatus));
     }
 
-    public Result upload() throws Exception {
+    public Result uploadV3() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         UploadRequest uploadRequest = UploadRequest.fromJson(requestToJSON(request()));
         UploadSession uploadSession = uploadService.createUpload(session.getUser(), uploadRequest);
@@ -58,8 +59,7 @@ public class UploadController extends BaseController {
      * Signals to the Bridge server that the upload is complete. This kicks off the asynchronous validation process
      * through the Upload Validation Service.
      */
-    public Result uploadComplete(String uploadId) throws Exception {
-
+    public Result uploadCompleteV3(String uploadId) throws Exception {
         final Metrics metrics = getMetrics();
         if (metrics != null) {
             metrics.setUploadId(uploadId);
@@ -77,4 +77,16 @@ public class UploadController extends BaseController {
         return ok("Upload " + uploadId + " complete!");
     }
 
+    @Deprecated
+    public Result getValidationStatusV1(String uploadId) throws JsonProcessingException {
+        return getValidationStatusV3(uploadId);
+    }
+    @Deprecated
+    public Result uploadV1() throws Exception {
+        return uploadV3();
+    }
+    @Deprecated
+    public Result uploadCompleteV1(String uploadId) throws Exception {
+        return uploadCompleteV3(uploadId);
+    }
 }
