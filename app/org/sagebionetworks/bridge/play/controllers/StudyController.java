@@ -90,13 +90,13 @@ public class StudyController extends BaseController {
     }
 
     public Result getAllStudies(String format) throws Exception {
-        getAuthenticatedSession(ADMIN);
-        
         List<Study> studies = studyService.getStudies();
         if ("summary".equals(format)) {
             Collections.sort(studies, STUDY_COMPARATOR);
             return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
         }
+        getAuthenticatedSession(ADMIN);
+        
         return ok(Study.STUDY_WRITER.writeValueAsString(studies));
     }
 
