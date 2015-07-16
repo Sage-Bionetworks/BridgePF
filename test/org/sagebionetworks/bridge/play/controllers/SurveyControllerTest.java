@@ -11,7 +11,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import java.util.List;
 import java.util.Map;
@@ -123,9 +123,10 @@ public class SurveyControllerTest {
         User user = new User();
         user.setHealthCode("BBB");
         user.setStudyKey(studyIdentifier);
-        user.setRoles(Sets.newHashSet(RESEARCHER));
+        user.setRoles(Sets.newHashSet(DEVELOPER));
         session.setUser(user);
         session.setStudyIdentifier(new StudyIdentifierImpl(studyIdentifier));
+        doReturn(session).when(controller).getAuthenticatedSession();
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(session).when(controller).getAuthenticatedSession(any(Roles.class));
     }
