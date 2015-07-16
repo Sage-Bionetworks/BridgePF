@@ -36,6 +36,7 @@ public class DynamoStudyTest {
     public void studyFullySerializesForCaching() throws Exception {
         DynamoStudy study = TestUtils.getValidStudy();
         study.setVersion(2L);
+        study.setStormpathHref("test");
         
         String json = BridgeObjectMapper.get().writeValueAsString(study);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
@@ -49,6 +50,7 @@ public class DynamoStudyTest {
         assertEquals(study.getIdentifier(), node.get("identifier").asText());
         assertEquals(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
         assertEquals(study.getMaxNumOfParticipants(), node.get("maxNumOfParticipants").asInt());
+        assertEquals(study.getStormpathHref(), node.get("stormpathHref").asText());
         assertEquals(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
         assertEquals(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate", EmailTemplate.class));
         assertEquals(study.getResetPasswordTemplate(), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
