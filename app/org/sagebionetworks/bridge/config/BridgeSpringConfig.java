@@ -85,9 +85,8 @@ public class BridgeSpringConfig {
         final int port = config.getPropertyAsInt("redis.port");
         final int timeout = config.getPropertyAsInt("redis.timeout");
         final String password = config.getProperty("redis.password");
-        final JedisPool jedisPool = config.isLocal() ?
-                new JedisPool(poolConfig, host, port, timeout) :
-                new JedisPool(poolConfig, host, port, timeout, password);
+        final JedisPool jedisPool = 
+                new JedisPool(poolConfig, host, port, timeout);
 
         // Test pool
         try (Jedis jedis = jedisPool.getResource()) {

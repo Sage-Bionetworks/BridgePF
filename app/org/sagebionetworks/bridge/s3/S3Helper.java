@@ -1,11 +1,14 @@
 package org.sagebionetworks.bridge.s3;
 
 import javax.annotation.Nonnull;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
@@ -63,5 +66,10 @@ public class S3Helper {
         try (InputStream dataInputStream = new ByteArrayInputStream(data)) {
             s3Client.putObject(bucket, key, dataInputStream, null);
         }
+    }
+
+    public boolean exists(@Nonnull String bucket, @Nonnull String key) {
+        final ObjectListing listing = s3Client.listObjects(bucket, key);
+        return !listing.getObjectSummaries().isEmpty();
     }
 }
