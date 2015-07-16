@@ -22,7 +22,7 @@ POST   /v3/consents                      @org.sagebionetworks.bridge.play.contro
 GET    /v3/consents/recent               @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getMostRecentConsent
 GET    /v3/consents/published            @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getActiveConsent
 GET    /v3/consents/:timestamp           @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getConsent(timestamp: String)
-POST   /v3/consents/:timestamp/publish  @org.sagebionetworks.bridge.play.controllers.StudyConsentController.setActiveConsent(timestamp: String)
+POST   /v3/consents/:timestamp/publish   @org.sagebionetworks.bridge.play.controllers.StudyConsentController.setActiveConsent(timestamp: String)
 
 # Users
 POST   /v3/users                        @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUser
@@ -66,7 +66,7 @@ POST   /v3/tasks       @org.sagebionetworks.bridge.play.controllers.TaskControll
 # Uploads
 POST   /v3/uploads                     @org.sagebionetworks.bridge.play.controllers.UploadController.upload
 POST   /v3/uploads/:uploadId/complete  @org.sagebionetworks.bridge.play.controllers.UploadController.uploadComplete(uploadId: String)
-GET    /v3/uploadstatuses/:uploadId   @org.sagebionetworks.bridge.play.controllers.UploadController.getValidationStatus(uploadId: String)
+GET    /v3/uploadstatuses/:uploadId    @org.sagebionetworks.bridge.play.controllers.UploadController.getValidationStatus(uploadId: String)
 
 # Upload Schemas
 GET    /v3/uploadschemas                           @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemasForStudy
@@ -88,8 +88,8 @@ POST   /v3/studies                 @org.sagebionetworks.bridge.play.controllers.
 GET    /v3/studies/:identifier     @org.sagebionetworks.bridge.play.controllers.StudyController.getStudy(identifier: String)
 POST   /v3/studies/:identifier     @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudy(identifier: String)
 DELETE /v3/studies/:identifier     @org.sagebionetworks.bridge.play.controllers.StudyController.deleteStudy(identifier: String)
-GET    /v3/study/self              @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyForDeveloper
-POST   /v3/study/self              @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
+GET    /v3/studies/self            @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyForDeveloper
+POST   /v3/studies/self            @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
 
 # Backfills
 GET    /v3/backfill/:name          @org.sagebionetworks.bridge.play.controllers.BackfillController.backfill(name: String)
