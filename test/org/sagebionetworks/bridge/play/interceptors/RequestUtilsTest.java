@@ -21,7 +21,7 @@ public class RequestUtilsTest {
     public void test() {
         final Request mockRequest = mock(Request.class);
         when(mockRequest.method()).thenReturn("POST");
-        when(mockRequest.path()).thenReturn("/api/v1/test");
+        when(mockRequest.path()).thenReturn("/v3/test");
         when(mockRequest.version()).thenReturn("HTTP/1.1");
         final Map<String, String[]> headerMap = new HashMap<>();
         headerMap.put("X-Request-Id", new String[]{"123", "789"});

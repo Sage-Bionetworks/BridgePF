@@ -57,7 +57,7 @@ public class ConsentControllerTest {
                 node.put("scope", SharingScope.NO_SHARING.name().toLowerCase());
                 
                 // First, verify this header isn't on *every* endpoint
-                WSRequest request = WS.url(TEST_BASE_URL + "/api/v1/consent/email");
+                WSRequest request = WS.url(TEST_BASE_URL + "/v3/consents/signature");
                 WSResponse response = request.post(node).get(TIMEOUT);
                 String headerValue = response.getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
                 assertNull(headerValue);

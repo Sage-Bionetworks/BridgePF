@@ -46,10 +46,12 @@ public class DynamoStudyDaoTest {
     @Test
     public void crudOneStudy() {
         Study study = TestUtils.getValidStudy();
+        study.setStormpathHref("http://url.com/");
         study.setUserProfileAttributes(EXTRA_USER_PROFILE_ATTRIBUTES);
 
         study = studyDao.createStudy(study);
         assertNotNull("Study was assigned a version", study.getVersion());
+        assertNotNull("Study has an identifier", study.getIdentifier());
 
         study.setName("This is a test name");
         study.setMaxNumOfParticipants(10);
@@ -58,7 +60,6 @@ public class DynamoStudyDaoTest {
         study = studyDao.getStudy(study.getIdentifier());
         assertEquals("Name was set", "This is a test name", study.getName());
         assertEquals("Max participants was set", 10, study.getMaxNumOfParticipants());
-        assertNotNull("Study deployment was set", study.getStormpathHref());
         assertEquals("bridge-testing+support@sagebase.org", study.getSupportEmail());
         assertEquals("bridge-testing+consent@sagebase.org", study.getConsentNotificationEmail());
         assertEquals(EXTRA_USER_PROFILE_ATTRIBUTES, study.getUserProfileAttributes());
@@ -69,6 +70,7 @@ public class DynamoStudyDaoTest {
             study = studyDao.getStudy(identifier);
             fail("Should have thrown EntityNotFoundException");
         } catch (EntityNotFoundException e) {
+            // expected
         }
     }
 

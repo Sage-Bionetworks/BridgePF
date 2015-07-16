@@ -20,9 +20,9 @@ POST   /v3/consents/signature/email      @org.sagebionetworks.bridge.play.contro
 GET    /v3/consents                      @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getAllConsents
 POST   /v3/consents                      @org.sagebionetworks.bridge.play.controllers.StudyConsentController.addConsent
 GET    /v3/consents/recent               @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getMostRecentConsent
-GET    /v3/consents/active               @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getActiveConsent
+GET    /v3/consents/published            @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getActiveConsent
 GET    /v3/consents/:timestamp           @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getConsent(timestamp: String)
-POST   /v3/consents/:timestamp/activate  @org.sagebionetworks.bridge.play.controllers.StudyConsentController.setActiveConsent(timestamp: String)
+POST   /v3/consents/:timestamp/publish  @org.sagebionetworks.bridge.play.controllers.StudyConsentController.setActiveConsent(timestamp: String)
 
 # Users
 POST   /v3/users                        @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUser
@@ -31,8 +31,8 @@ POST   /v3/users/emailParticipantRoster @org.sagebionetworks.bridge.play.control
 GET    /v3/users/self                   @org.sagebionetworks.bridge.play.controllers.UserProfileController.getUserProfile
 POST   /v3/users/self                   @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateUserProfile
 POST   /v3/users/self/externalId   	    @org.sagebionetworks.bridge.play.controllers.UserProfileController.createExternalIdentifier
-GET    /v3/users/self/unsubscribe       @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
-POST   /v3/users/self/unsubscribe       @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
+GET    /v3/users/self/unsubscribeEmail  @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
+POST   /v3/users/self/unsubscribeEmail  @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
 POST   /v3/users/self/dataSharing       @org.sagebionetworks.bridge.play.controllers.ConsentController.changeSharingScope
           
 # Surveys

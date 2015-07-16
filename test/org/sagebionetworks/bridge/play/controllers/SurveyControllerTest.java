@@ -11,6 +11,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import java.util.List;
@@ -26,6 +27,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -576,7 +578,42 @@ public class SurveyControllerTest {
             verifyNoMoreInteractions(service);
         }
     }
+
+    @Test
+    public void adminRejectedAsUnauthorized() throws Exception {
+        Survey survey = getSurvey(false);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(survey.getGuid(), survey.getCreatedOn());
+        setContext();
+        when(service.getSurvey(keys)).thenReturn(survey);
+        setUserSession("api");
+        session.getUser().getRoles().clear();
+        session.getUser().getRoles().add(ADMIN);
+        
+        try {
+            controller.getSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
+            fail("Exception should have been thrown.");
+        } catch(UnauthorizedException e) {
+            verifyNoMoreInteractions(service);
+        }
+    }
     
+    @Test
+    public void studyParticipantRejectedAsNotConsented() throws Exception {
+        Survey survey = getSurvey(false);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(survey.getGuid(), survey.getCreatedOn());
+        setContext();
+        when(service.getSurvey(keys)).thenReturn(survey);
+        setUserSession("api");
+        session.getUser().getRoles().clear();
+        session.getUser().setConsent(false);
+        
+        try {
+            controller.getSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
+            fail("Exception should have been thrown.");
+        } catch(ConsentRequiredException e) {
+            verifyNoMoreInteractions(service);
+        }
+    }    
     private Survey getSurvey(boolean makeNew) {
         Survey survey = new TestSurvey(makeNew);
         survey.setName("bloodpressure " + survey.getGuid());

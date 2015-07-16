@@ -204,7 +204,7 @@ public class JsonUtilsTest {
         Set<Roles> set = Sets.newHashSet(ADMIN, RESEARCHER, TEST_USERS);
         
         JsonNode node = mapper.readTree(esc("{'key':['admin','researcher','test_users']}"));
-        
+
         assertEquals(Sets.newHashSet(), JsonUtils.asRolesSet(node, null));
         assertEquals(Sets.newHashSet(), JsonUtils.asRolesSet(node, "badProp"));
         assertEquals(set, JsonUtils.asRolesSet(node, "key"));
