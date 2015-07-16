@@ -32,8 +32,6 @@ import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
 import org.sagebionetworks.bridge.upload.UnzipHandler;
 import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
 import org.sagebionetworks.bridge.upload.UploadValidationHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -64,8 +62,6 @@ import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 @ComponentScan({"org.sagebionetworks.bridge"})
 @Configuration
 public class BridgeSpringConfig {
-
-    private final static Logger logger = LoggerFactory.getLogger(BridgeSpringConfig.class);
 
     @Bean(name = "bridgeObjectMapper")
     public BridgeObjectMapper bridgeObjectMapper() {

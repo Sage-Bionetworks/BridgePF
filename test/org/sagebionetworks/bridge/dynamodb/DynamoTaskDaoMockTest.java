@@ -22,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -110,11 +111,11 @@ public class DynamoTaskDaoMockTest {
         
         // These also show that stuff is getting sorted by label
         /* Expired tasks are not returned, so this starts on the 12th */
-        assertTask("2015-04-12T13:00:00.000-07:00", TestUtils.ACTIVITY_2, tasks2.get(0));
-        assertTask("2015-04-13T13:00:00.000-07:00", TestUtils.ACTIVITY_2, tasks2.get(1));
-        assertTask("2015-04-13T13:00:00.000-07:00", TestUtils.ACTIVITY_3, tasks2.get(2));
-        assertTask("2015-04-14T13:00:00.000-07:00", TestUtils.ACTIVITY_2, tasks2.get(3));
-        assertTask("2015-04-14T13:00:00.000-07:00", TestUtils.ACTIVITY_1, tasks2.get(4));
+        assertTask("2015-04-12T13:00:00.000-07:00", TestConstants.ACTIVITY_2, tasks2.get(0));
+        assertTask("2015-04-13T13:00:00.000-07:00", TestConstants.ACTIVITY_2, tasks2.get(1));
+        assertTask("2015-04-13T13:00:00.000-07:00", TestConstants.ACTIVITY_3, tasks2.get(2));
+        assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_2, tasks2.get(3));
+        assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_1, tasks2.get(4));
         
         verify(mapper).query(any(Class.class), any(DynamoDBQueryExpression.class));
         verifyNoMoreInteractions(mapper);
@@ -131,14 +132,14 @@ public class DynamoTaskDaoMockTest {
         List<Task> tasks2 = taskDao.getTasks(HEALTH_CODE, endsOn);
 
         // These also show that stuff is getting sorted by label
-        assertTask("2015-04-12T13:00:00.000-07:00", TestUtils.ACTIVITY_2, tasks2.get(0));
-        assertTask("2015-04-13T13:00:00.000-07:00", TestUtils.ACTIVITY_2, tasks2.get(1));
-        assertTask("2015-04-13T13:00:00.000-07:00", TestUtils.ACTIVITY_3, tasks2.get(2));
-        assertTask("2015-04-14T13:00:00.000-07:00", TestUtils.ACTIVITY_2, tasks2.get(3));
-        assertTask("2015-04-14T13:00:00.000-07:00", TestUtils.ACTIVITY_1, tasks2.get(4));
-        assertTask("2015-04-15T13:00:00.000-07:00", TestUtils.ACTIVITY_2, tasks2.get(5));
-        assertTask("2015-04-15T13:00:00.000-07:00", TestUtils.ACTIVITY_3, tasks2.get(6));
-        assertTask("2015-04-16T13:00:00.000-07:00", TestUtils.ACTIVITY_2, tasks2.get(7));
+        assertTask("2015-04-12T13:00:00.000-07:00", TestConstants.ACTIVITY_2, tasks2.get(0));
+        assertTask("2015-04-13T13:00:00.000-07:00", TestConstants.ACTIVITY_2, tasks2.get(1));
+        assertTask("2015-04-13T13:00:00.000-07:00", TestConstants.ACTIVITY_3, tasks2.get(2));
+        assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_2, tasks2.get(3));
+        assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_1, tasks2.get(4));
+        assertTask("2015-04-15T13:00:00.000-07:00", TestConstants.ACTIVITY_2, tasks2.get(5));
+        assertTask("2015-04-15T13:00:00.000-07:00", TestConstants.ACTIVITY_3, tasks2.get(6));
+        assertTask("2015-04-16T13:00:00.000-07:00", TestConstants.ACTIVITY_2, tasks2.get(7));
         
         verify(mapper).query(any(Class.class), any(DynamoDBQueryExpression.class));
         verifyNoMoreInteractions(mapper);

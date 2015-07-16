@@ -100,8 +100,9 @@ public class AuthenticationControllerTest {
                 String sessionToken = cookie.getValue();
                 assertTrue("Cookie is not empty", StringUtils.isNotBlank(sessionToken));
 
+                ObjectNode emptyNode = JsonNodeFactory.instance.objectNode();
                 response = WS.url(TEST_BASE_URL + SIGN_OUT_URL)
-                        .setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue()).get().get(TIMEOUT);
+                        .setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue()).post(emptyNode).get(TIMEOUT);
 
                 cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
                 assertEquals("Cookie has been set to empty string", "", cookie.getValue());

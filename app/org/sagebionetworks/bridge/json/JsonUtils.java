@@ -6,13 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DataType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -30,8 +27,6 @@ import com.google.common.collect.Lists;
  * type casting as well. Hence these utility methods.
  */
 public class JsonUtils {
-
-    private static Logger logger = LoggerFactory.getLogger(JsonUtils.class);
 
     private static final String DATA_TYPE_PROPERTY = "dataType";
     private static final String ENUM_PROPERTY = "enumeration";
