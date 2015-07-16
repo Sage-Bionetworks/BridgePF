@@ -36,6 +36,7 @@ public class DynamoStudyTest {
     public void studyFullySerializesForCaching() throws Exception {
         DynamoStudy study = TestUtils.getValidStudy();
         study.setVersion(2L);
+        study.setStormpathHref("test");
         
         String json = BridgeObjectMapper.get().writeValueAsString(study);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
