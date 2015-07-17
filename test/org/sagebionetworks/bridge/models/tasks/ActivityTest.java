@@ -86,7 +86,7 @@ public class ActivityTest {
         
         SurveyReference ref1 = activity.getSurvey();
         assertEquals("identifier", ref1.getIdentifier());
-        assertEquals("2015-01-01T10:10:10.000Z", ref1.getCreatedOn());
+        assertEquals(DateTime.parse("2015-01-01T10:10:10.000Z"), ref1.getCreatedOn());
         assertEquals("guid", ref1.getGuid());
         assertTrue(ref1.getHref().matches("http[s]?://.*/v3/surveys/guid/revisions/2015-01-01T10:10:10.000Z"));
     }
@@ -199,6 +199,14 @@ public class ActivityTest {
         Activity activity = mapper.readValue(oldJson, Activity.class);
         
         assertNotEquals("junk", activity.getSurvey().getHref());
+    }
+    
+    @Test
+    public void creatingSurveyWithoutCreatedOnIsExpressedAsPublished() throws Exception {
+        Activity activity = new Activity.Builder().withSurvey("identifier", "guid", null).withLabel("Label").build();
+        
+        System.out.println(activity.getSurvey().getHref());
+        assertTrue(activity.getSurvey().getHref().matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
     }
 
 }

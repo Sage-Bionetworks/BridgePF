@@ -9,6 +9,11 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * This is a "soft" reference to a survey that does not need to include a createdOn timestamp. 
+ * It can be used to create JSON for published versions of surveys as well as hard references 
+ * to a specific version.
+ */
 public final class SurveyReference {
 
     private static final String BASE_URL = BridgeConfigFactory.getConfig().getBaseURL() + "/v3/surveys/";

@@ -32,11 +32,9 @@ public class ActivityValidator implements Validator {
         if (activity.getTask() != null) {
             validate(errors, activity.getTask());
         } else if (activity.getSurveyResponse() != null) {
-            if (activity.getSurvey() == null) {
-                errors.reject("has a survey reference, so it must also reference the survey");
-                return;
+            if (activity.getSurvey() != null) {
+                validate(errors, activity.getSurvey());
             }
-            validate(errors, activity.getSurvey());
             validate(errors, activity.getSurveyResponse());
         } else {
             validate(errors, activity.getSurvey());

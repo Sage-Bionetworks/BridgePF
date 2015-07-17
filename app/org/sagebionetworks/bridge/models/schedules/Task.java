@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-
 public interface Task {
     
     public TaskStatus getStatus();

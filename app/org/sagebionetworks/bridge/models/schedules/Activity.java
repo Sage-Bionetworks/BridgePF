@@ -64,6 +64,12 @@ public final class Activity implements BridgeEntity {
     public SurveyResponseReference getSurveyResponse() {
         return response;
     }
+    /**
+     * This property is maintained for backwards compatibility, but clients should now look for 
+     * metadata information, including links, in the survey, surveyResponse or task property 
+     * objects.
+     * @return
+     */
     public String getRef() { 
         if (task != null) {
             return task.getIdentifier();
