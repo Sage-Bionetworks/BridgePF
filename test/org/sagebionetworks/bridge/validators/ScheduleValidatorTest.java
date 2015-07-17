@@ -7,13 +7,13 @@ import static org.junit.Assert.fail;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
-import org.sagebionetworks.bridge.models.schedules.SurveyReference;
+import org.sagebionetworks.bridge.models.tasks.Activity;
+import org.sagebionetworks.bridge.models.tasks.ActivityType;
 
 public class ScheduleValidatorTest {
 
@@ -38,25 +38,9 @@ public class ScheduleValidatorTest {
     }
     
     @Test
-    public void activityMustBeFullyInitialized() {
-        Activity activity = new Activity(null, null);
-        
-        schedule.addActivity(activity);
-        
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("scheduleType cannot be null", e.getErrors().get("scheduleType").get(0));
-            assertEquals("activities[0].activityType cannot be null", e.getErrors().get("activities[0].activityType").get(0));
-            assertEquals("activities[0].ref cannot be missing, null, or blank", e.getErrors().get("activities[0].ref").get(0));
-        }
-    }
-    
-    @Test
     public void datesMustBeChronologicallyOrdered() {
         // make it valid except for the dates....
-        schedule.addActivity(new Activity("Label", "task:AAA"));
+        schedule.addActivity(TestConstants.TEST_ACTIVITY);
         schedule.setScheduleType(ScheduleType.ONCE);
 
         DateTime startsOn = DateUtils.getCurrentDateTime();
@@ -75,7 +59,8 @@ public class ScheduleValidatorTest {
     
     @Test
     public void surveyRelativePathIsTreatedAsTaskId() {
-        schedule.addActivity(new Activity("Label", "/v3/surveys/AAA/revisions/published"));
+        Activity activity = TestConstants.TEST_ACTIVITY;
+        schedule.addActivity(activity);
         schedule.setScheduleType(ScheduleType.ONCE);
         
         DateTime now = DateUtils.getCurrentDateTime();
@@ -85,23 +70,6 @@ public class ScheduleValidatorTest {
         assertEquals(ActivityType.TASK, schedule.getActivities().get(0).getActivityType());
     }
     
-    @Test
-    public void activityCorrectlyParsesPublishedSurveyPath() {
-        Activity activity = new Activity("Label", "https://server/v3/surveys/AAA/revisions/published");
-        
-        SurveyReference ref = activity.getSurvey();
-        assertEquals("AAA", ref.getGuid());
-        assertNull(ref.getCreatedOn());
-        
-        activity = new Activity("Label", "task:AAA");
-        assertNull(activity.getSurvey());
-        
-        activity = new Activity("Label", "https://server/v3/surveys/AAA/revisions/2015-01-27T17:46:31.237Z");
-        ref = activity.getSurvey();
-        assertEquals("AAA", ref.getGuid());
-        assertEquals(DateTime.parse("2015-01-27T17:46:31.237Z"), ref.getCreatedOn());
-    }
-
     @Test
     public void rejectsScheduleWithTwoBothCronTriggerAndInterval() {
         Schedule schedule = new Schedule();

@@ -4,6 +4,7 @@ import org.joda.time.Period;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.tasks.Activity;
 
 public class TestABSchedulePlan extends DynamoSchedulePlan {
 
@@ -11,7 +12,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
     {
         schedule1.setScheduleType(ScheduleType.RECURRING);
         schedule1.setCronTrigger("0 0 8 ? * TUE *");
-        schedule1.addActivity(new Activity("Do AAA task", "task:AAA"));
+        schedule1.addActivity(new Activity.Builder().withLabel("Do AAA task").withTask("AAA").build());
         schedule1.setExpires(Period.parse("PT1H"));
         schedule1.setLabel("Schedule 1");
     }
@@ -19,7 +20,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
     {
         schedule2.setScheduleType(ScheduleType.RECURRING);
         schedule2.setCronTrigger("0 0 8 ? * TUE *");
-        schedule2.addActivity(new Activity("Do BBB task", "task:BBB"));
+        schedule2.addActivity(new Activity.Builder().withLabel("Do BBB task").withTask("BBB").build());
         schedule2.setExpires(Period.parse("PT1H"));
         schedule2.setLabel("Schedule 2");
     }
@@ -27,7 +28,7 @@ public class TestABSchedulePlan extends DynamoSchedulePlan {
     {
         schedule3.setScheduleType(ScheduleType.RECURRING);
         schedule3.setCronTrigger("0 0 8 ? * TUE *");
-        schedule3.addActivity(new Activity("Do CCC task", "task:CCC"));
+        schedule3.addActivity(new Activity.Builder().withLabel("Do CCC task").withTask("CCC").build());
         schedule3.setExpires(Period.parse("PT1H"));
         schedule3.setLabel("Schedule 3");
     }

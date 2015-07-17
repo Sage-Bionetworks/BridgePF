@@ -4,6 +4,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.tasks.Activity;
 
 public class TestConstants {
     public static final String DUMMY_IMAGE_DATA = "VGhpcyBpc24ndCBhIHJlYWwgaW1hZ2Uu";
@@ -24,9 +25,13 @@ public class TestConstants {
 
     public static final String ATTACHMENT_BUCKET = BridgeConfigFactory.getConfig().getProperty("attachment.bucket");
     public static final String UPLOAD_BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
+    public static final String BASE_URL = BridgeConfigFactory.getConfig().getBaseURL();
 
-    public static final String ACTIVITY_1 = "task:task3";
-    public static final String ACTIVITY_2 = "http://webservices.sagebridge.org/v3/surveys/AAA/revisions/2015-04-12T14:20:56.123-07:00";
-    public static final String ACTIVITY_3 = "http://webservices.sagebridge.org/v3/surveys/AAA/revisions/published";
+    public static final String ACTIVITY_1_REF = BASE_URL + "/v3/surveys/AAA/revisions/published";
+    public static final String ACTIVITY_2_REF = BASE_URL + "/v3/surveys/BBB/revisions/published";
+    public static final String ACTIVITY_3_REF = "tapTest";
+    
     public static final DateTime ENROLLMENT = DateTime.parse("2015-04-10T10:40:34.000-07:00");
+    
+    public static final Activity TEST_ACTIVITY = new Activity.Builder().withLabel("Label").withTask("tapTest").build();
 }

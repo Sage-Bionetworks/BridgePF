@@ -10,6 +10,8 @@ import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.tasks.Activity;
+import org.sagebionetworks.bridge.models.tasks.SurveyReference;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
@@ -150,7 +152,7 @@ public final class Schedule implements BridgeEntity {
         for (Activity activity : activities) {
             SurveyReference reference = activity.getSurvey();
             if (reference != null && reference.getCreatedOn() != null) {
-                long createdOn = reference.getCreatedOn().getMillis();    
+                long createdOn = DateTime.parse(reference.getCreatedOn()).getMillis();    
                 if (keys.getGuid().equals(reference.getGuid()) && keys.getCreatedOn() == createdOn) {
                     return true;
                 }

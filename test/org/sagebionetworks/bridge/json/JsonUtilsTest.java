@@ -12,11 +12,11 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.sagebionetworks.bridge.models.tasks.ActivityType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -24,11 +24,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
-import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
@@ -158,7 +158,7 @@ public class AuthenticationControllerTest {
         schedule.setLabel("Schedule label");
         schedule.setDelay("P1D");
         schedule.addTimes("08:00");
-        schedule.getActivities().add(new Activity("An Activity", "task:AAA"));
+        schedule.getActivities().add(TestConstants.TEST_ACTIVITY);
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
         

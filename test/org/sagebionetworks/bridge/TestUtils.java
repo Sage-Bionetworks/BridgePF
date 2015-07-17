@@ -2,9 +2,6 @@ package org.sagebionetworks.bridge;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_1;
-import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_2;
-import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_3;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
@@ -17,7 +14,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.models.accounts.User;
-import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
@@ -29,6 +25,7 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.tasks.Activity;
 
 import play.mvc.Http;
 
@@ -105,34 +102,37 @@ public class TestUtils {
         
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("DDD");
-        plan.setStrategy(getStrategy("3", "P3D", ACTIVITY_1));
+        plan.setStrategy(getStrategy("3", "P3D", "AAA", null));
         plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plans.add(plan);
         
         plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
-        plan.setStrategy(getStrategy("1", "P1D", ACTIVITY_2));
+        plan.setStrategy(getStrategy("1", "P1D", "BBB", null));
         plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plans.add(plan);
         
         plan = new DynamoSchedulePlan();
         plan.setGuid("CCC");
-        plan.setStrategy(getStrategy("2", "P2D", ACTIVITY_3));
+        plan.setStrategy(getStrategy("2", "P2D", "CCC", TestConstants.TEST_ACTIVITY));
         plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plans.add(plan);
 
         return plans;
     }
     
-    private static ScheduleStrategy getStrategy(String label, String interval, String activityRef) {
+    private static ScheduleStrategy getStrategy(String label, String interval, String guid, Activity activity) {
+        if (activity == null) {
+            activity = new Activity.Builder().withLabel("Activity " + label).withPublishedSurvey("identifier", guid)
+                            .build();
+        }
         Schedule schedule = new Schedule();
         schedule.setLabel("Schedule " + label);
         schedule.setInterval(interval);
         schedule.setDelay("P1D");
         schedule.addTimes("13:00");
         schedule.setExpires("PT10H");
-        schedule.addActivity(new Activity("Activity " + label, activityRef));
-        
+        schedule.addActivity(activity);
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
         return strategy;

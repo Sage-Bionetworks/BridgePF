@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.models.schedules.SurveyReference.SURVEY_PATH_FRAGMENT;
-import static org.sagebionetworks.bridge.models.schedules.SurveyReference.SURVEY_RESPONSE_PATH_FRAGMENT;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -17,18 +15,18 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
-import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SchedulerFactory;
-import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
+import org.sagebionetworks.bridge.models.tasks.Activity;
+import org.sagebionetworks.bridge.models.tasks.ActivityType;
+import org.sagebionetworks.bridge.models.tasks.SurveyReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -170,10 +168,9 @@ public class TaskService {
     }
     
     private Activity createResponseActivityIfNeeded(StudyIdentifier studyIdentifier, String healthCode, Activity activity) {
-        if ((activity.getActivityType() != ActivityType.SURVEY)) {
+        if (activity.getActivityType() != ActivityType.SURVEY || activity.getSurveyResponse() != null) {
             return activity;
         }
-        String baseUrl = activity.getRef().split(SURVEY_PATH_FRAGMENT)[0];
         
         SurveyReference ref = activity.getSurvey();
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
@@ -181,8 +178,13 @@ public class TaskService {
             keys = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, ref.getGuid());
         }   
         SurveyResponseView response = surveyResponseService.createSurveyResponse(keys, healthCode, EMPTY_ANSWERS);
-        String url = baseUrl + SURVEY_RESPONSE_PATH_FRAGMENT + response.getIdentifier();
-        return new Activity(activity.getLabel(), url);
+        
+        return new Activity.Builder()
+            .withLabel(activity.getLabel())
+            .withLabelDetail(activity.getLabelDetail())
+            .withSurvey(response.getSurvey().getIdentifier(), keys.getGuid(), ref.getCreatedOn())
+            .withSurveyResponse(response.getResponse().getIdentifier())
+            .build();
     }
     
 }

@@ -6,12 +6,13 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Objects;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
-import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
+import org.sagebionetworks.bridge.models.tasks.SurveyReference;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -43,7 +44,7 @@ public final class GuidCreatedOnVersionHolderImpl implements GuidCreatedOnVersio
     public GuidCreatedOnVersionHolderImpl(SurveyReference reference) {
         checkNotNull(reference);
         this.guid = reference.getGuid();
-        this.createdOn = (reference.getCreatedOn() == null) ? 0L : reference.getCreatedOn().getMillis();
+        this.createdOn = (reference.getCreatedOn() == null) ? 0L : DateTime.parse(reference.getCreatedOn()).getMillis();
         this.version = null;
     }
     

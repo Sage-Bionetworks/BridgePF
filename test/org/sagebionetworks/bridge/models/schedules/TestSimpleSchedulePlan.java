@@ -4,6 +4,7 @@ import org.joda.time.Period;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.tasks.Activity;
 
 public class TestSimpleSchedulePlan extends DynamoSchedulePlan {
     
@@ -11,7 +12,7 @@ public class TestSimpleSchedulePlan extends DynamoSchedulePlan {
     {
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("0 0 8 ? * TUE *");
-        schedule.addActivity(new Activity("Do task CCC", "task:CCC"));
+        schedule.addActivity(new Activity.Builder().withLabel("Do task CCC").withTask("CCC").build());
         schedule.setExpires(Period.parse("PT60S"));
         schedule.setLabel("Test label for the user");
     }

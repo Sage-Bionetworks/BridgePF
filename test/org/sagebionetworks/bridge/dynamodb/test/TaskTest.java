@@ -4,8 +4,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoDBProjection;
 import org.sagebionetworks.bridge.dynamodb.DynamoThroughput;
 import org.sagebionetworks.bridge.dynamodb.JsonNodeMarshaller;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.TaskStatus;
+import org.sagebionetworks.bridge.models.tasks.Activity;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;

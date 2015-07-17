@@ -1,0 +1,76 @@
+package org.sagebionetworks.bridge.models.tasks;
+
+import java.util.Objects;
+
+import org.joda.time.DateTime;
+import org.joda.time.format.ISODateTimeFormat;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public final class SurveyReference {
+
+    private static final String BASE_URL = BridgeConfigFactory.getConfig().getBaseURL() + "/v3/surveys/";
+    
+    private final String identifier;
+    private final String guid;
+    private final String createdOn;
+    
+    @JsonCreator
+    public SurveyReference(@JsonProperty("identifier") String identifier, @JsonProperty("guid") String guid,
+                    @JsonProperty("createdOn") DateTime createdOn) {
+        this.identifier = identifier;
+        this.guid = guid;
+        this.createdOn = (createdOn == null) ? null : createdOn.toString(ISODateTimeFormat.dateTime());
+    }
+    
+    public SurveyReference(String identifier, String guid, String createdOn) {
+        this.identifier = identifier;
+        this.guid = guid;
+        this.createdOn = ("published".equals(createdOn)) ? null : createdOn;
+    }
+
+    public String getIdentifier() {
+        return identifier;
+    }
+    public String getGuid() {
+        return guid;
+    }
+    public String getCreatedOn() {
+        return createdOn;
+    }
+    public String getHref() {
+        if (createdOn == null) {
+            return BASE_URL + guid + "/revisions/published";
+        }
+        return BASE_URL + guid + "/revisions/" + createdOn;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Objects.hashCode(createdOn);
+        result = prime * result + Objects.hashCode(guid);
+        result = prime * result + Objects.hashCode(identifier);
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        SurveyReference other = (SurveyReference) obj;
+        return (Objects.equals(createdOn, other.createdOn) && Objects.equals(guid, other.guid) &&
+            Objects.equals(identifier, other.identifier));
+    }
+
+    @Override
+    public String toString() {
+        return String.format("SurveyReference [identifier=%s, guid=%s, createdOn=%s, href=%s]",
+            identifier, guid, createdOn, getHref());
+    }
+}
