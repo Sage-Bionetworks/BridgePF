@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.tasks;
+package org.sagebionetworks.bridge.models.schedules;
 
 import static org.sagebionetworks.bridge.models.tasks.ActivityType.TASK;
 import static org.sagebionetworks.bridge.models.tasks.ActivityType.SURVEY;
@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.tasks.ActivityType;
 import org.sagebionetworks.bridge.validators.ActivityValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 

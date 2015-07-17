@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import org.sagebionetworks.bridge.models.tasks.Activity;
 
 public interface Task {
     

@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.tasks;
+package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.Objects;
 

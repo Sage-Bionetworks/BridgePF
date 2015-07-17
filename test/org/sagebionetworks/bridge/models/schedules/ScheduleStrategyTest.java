@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.tasks.Activity;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;

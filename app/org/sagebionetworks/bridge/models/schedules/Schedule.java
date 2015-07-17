@@ -10,8 +10,6 @@ import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.tasks.Activity;
-import org.sagebionetworks.bridge.models.tasks.SurveyReference;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;

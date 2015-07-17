@@ -10,7 +10,6 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
-import org.sagebionetworks.bridge.models.tasks.Activity;
 
 public abstract class TaskScheduler {
 

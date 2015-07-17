@@ -10,6 +10,9 @@ import nl.jqno.equalsverifier.Warning;
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.SurveyReference;
+import org.sagebionetworks.bridge.models.schedules.SurveyResponseReference;
 
 import com.fasterxml.jackson.databind.JsonNode;
 

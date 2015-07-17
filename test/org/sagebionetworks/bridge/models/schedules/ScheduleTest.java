@@ -9,7 +9,6 @@ import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.tasks.Activity;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;

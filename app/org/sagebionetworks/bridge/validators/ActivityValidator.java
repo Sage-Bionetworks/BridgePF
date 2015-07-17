@@ -2,10 +2,10 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-import org.sagebionetworks.bridge.models.tasks.Activity;
-import org.sagebionetworks.bridge.models.tasks.SurveyReference;
-import org.sagebionetworks.bridge.models.tasks.SurveyResponseReference;
-import org.sagebionetworks.bridge.models.tasks.TaskReference;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.SurveyReference;
+import org.sagebionetworks.bridge.models.schedules.SurveyResponseReference;
+import org.sagebionetworks.bridge.models.schedules.TaskReference;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 

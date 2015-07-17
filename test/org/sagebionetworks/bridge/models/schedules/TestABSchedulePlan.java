@@ -4,7 +4,6 @@ import org.joda.time.Period;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.tasks.Activity;
 
 public class TestABSchedulePlan extends DynamoSchedulePlan {
 

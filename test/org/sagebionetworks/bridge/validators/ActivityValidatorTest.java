@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.tasks.Activity;
+import org.sagebionetworks.bridge.models.schedules.Activity;
 
 public class ActivityValidatorTest {
 
