@@ -168,17 +168,23 @@ public class TaskService {
     }
     
     private Activity createResponseActivityIfNeeded(StudyIdentifier studyIdentifier, String healthCode, Activity activity) {
-        if (activity.getActivityType() != ActivityType.SURVEY || activity.getSurveyResponse() != null) {
+        // If this activity is a task activity, or the survey response for this survey has already been determined
+        // and added to the activity, then do not generate a survey response for this activity.
+        if (activity.getActivityType() == ActivityType.TASK || activity.getSurveyResponse() != null) {
             return activity;
         }
         
+        // Get a survey reference and if necessary, resolve the timestamp to use for the survey
         SurveyReference ref = activity.getSurvey();
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
         if (keys.getCreatedOn() == 0L) {
             keys = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, ref.getGuid());
         }   
+        
+        // Now create a response for that specific survey version
         SurveyResponseView response = surveyResponseService.createSurveyResponse(keys, healthCode, EMPTY_ANSWERS);
         
+        // And reconstruct the activity with that survey instance as well as the new response object.
         return new Activity.Builder()
             .withLabel(activity.getLabel())
             .withLabelDetail(activity.getLabelDetail())
