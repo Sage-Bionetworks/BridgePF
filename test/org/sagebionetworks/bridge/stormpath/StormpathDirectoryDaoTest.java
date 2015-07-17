@@ -50,28 +50,29 @@ public class StormpathDirectoryDaoTest {
     @Resource
     Client client;
     
-    private String identifier;
+    private DynamoStudy study;
     
     @After
     public void after() {
-        if (identifier != null) {
-            directoryDao.deleteDirectoryForStudy(identifier);
+        if (study != null) {
+            directoryDao.deleteDirectoryForStudy(study);
         }
     }
     
     @Test
     public void crudDirectory() throws Exception {
-        identifier = TestUtils.randomName();
+        String identifier = TestUtils.randomName();
         
-        DynamoStudy study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy();
         study.setIdentifier(identifier);
         
         String stormpathHref = directoryDao.createDirectoryForStudy(study);
+        study.setStormpathHref(stormpathHref);
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
         // Verify the directory and mapping were created
         Directory directory = getDirectory(stormpathHref);
-        
+
         assertEquals("Name is the right one", identifier + " ("+config.getEnvironment().name().toLowerCase()+")", directory.getName());
         assertTrue("Mapping exists for new directory in the right application", containsMapping(stormpathHref));
         assertTrue("The researcher group was created", groupExists(directory, RESEARCHER));
@@ -79,7 +80,7 @@ public class StormpathDirectoryDaoTest {
         assertTrue("The admin group was created", groupExists(directory, ADMIN));
         assertTrue("The test_users group was created", groupExists(directory, TEST_USERS));
         
-        Directory newDirectory = directoryDao.getDirectoryForStudy(identifier);
+        Directory newDirectory = directoryDao.getDirectoryForStudy(study);
         assertDirectoriesAreEqual(study, "subject", "subject", directory, newDirectory);
         
         // Verify that we can update the directory.
@@ -89,14 +90,14 @@ public class StormpathDirectoryDaoTest {
         
         directoryDao.updateDirectoryForStudy(study);
         
-        newDirectory = directoryDao.getDirectoryForStudy(identifier);
+        newDirectory = directoryDao.getDirectoryForStudy(study);
         assertDirectoriesAreEqual(study, "new rp subject", "new ve subject", directory, newDirectory);
         
-        directoryDao.deleteDirectoryForStudy(study.getIdentifier());
-        newDirectory = directoryDao.getDirectoryForStudy(identifier);
+        directoryDao.deleteDirectoryForStudy(study);
+        newDirectory = directoryDao.getDirectoryForStudy(study);
         assertNull("Directory has been deleted", newDirectory);
         
-        identifier = null;
+        study = null;
     }
 
     private void assertDirectoriesAreEqual(DynamoStudy study, String rpSubject, String veSubject, Directory directory, Directory newDirectory) throws Exception {

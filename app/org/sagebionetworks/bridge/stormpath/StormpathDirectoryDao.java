@@ -6,6 +6,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -34,10 +35,7 @@ import com.stormpath.sdk.application.AccountStoreMappingCriteria;
 import com.stormpath.sdk.application.AccountStoreMappings;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.directory.Directories;
 import com.stormpath.sdk.directory.Directory;
-import com.stormpath.sdk.directory.DirectoryCriteria;
-import com.stormpath.sdk.directory.DirectoryList;
 import com.stormpath.sdk.directory.PasswordPolicy;
 import com.stormpath.sdk.directory.PasswordStrength;
 import com.stormpath.sdk.group.Group;
@@ -47,6 +45,7 @@ import com.stormpath.sdk.group.Groups;
 import com.stormpath.sdk.mail.EmailStatus;
 import com.stormpath.sdk.mail.ModeledEmailTemplate;
 import com.stormpath.sdk.mail.ModeledEmailTemplateList;
+import com.stormpath.sdk.resource.ResourceException;
 
 @Component
 public class StormpathDirectoryDao implements DirectoryDao {
@@ -74,7 +73,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
         checkNotNull(app);
         String dirName = createDirectoryName(study.getIdentifier());
 
-        Directory directory = getDirectory(dirName);
+        Directory directory = getDirectoryForStudy(study);
         if (directory == null) {
             directory = client.instantiate(Directory.class);
             directory.setName(dirName);
@@ -113,24 +112,34 @@ public class StormpathDirectoryDao implements DirectoryDao {
     public void updateDirectoryForStudy(Study study) {
         checkNotNull(study);
         
-        Directory directory = getDirectoryForStudy(study.getIdentifier());
+        Directory directory = getDirectoryForStudy(study);
         adjustPasswordPolicies(study, directory);
         adjustVerifyEmailPolicies(study, directory);
     };
 
     @Override
-    public Directory getDirectoryForStudy(String identifier) {
-        String dirName = createDirectoryName(identifier);
-        return getDirectory(dirName);
+    public Directory getDirectoryForStudy(Study study) {
+        if (study != null && StringUtils.isNotBlank(study.getStormpathHref())) {
+            try {
+                return client.getResource(study.getStormpathHref(), Directory.class);    
+            } catch(ResourceException e) {
+                // Not unusual, as we check for the existence of a directory before creating a study.
+                // Only rethrow if this is not a 404, otherwise ignore.
+                if (e.getCode() != 404) {
+                    throw e;
+                }
+            }
+        }
+        return null;
     }
 
     @Override
-    public void deleteDirectoryForStudy(String identifier) {
-        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
+    public void deleteDirectoryForStudy(Study study) {
+        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         Application app = getApplication();
         checkNotNull(app);
-
-        Directory existing = getDirectory(createDirectoryName(identifier));
+        
+        Directory existing = getDirectoryForStudy(study);
         
         // delete the mapping
         AccountStoreMapping mapping = getApplicationMapping(existing.getHref(), app);
@@ -174,12 +183,6 @@ public class StormpathDirectoryDao implements DirectoryDao {
         return null;
     }
 
-    private Directory getDirectory(String name) {
-        DirectoryCriteria criteria = Directories.where(Directories.name().eqIgnoreCase(name));
-        DirectoryList list = client.getDirectories(criteria);
-        return (list.iterator().hasNext()) ? list.iterator().next() : null;
-    }
-    
     private void adjustPasswordPolicies(Study study, Directory directory) {
         EmailTemplate rp = study.getResetPasswordTemplate();
         
