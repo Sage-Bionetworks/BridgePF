@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import org.sagebionetworks.bridge.models.tasks.ActivityType;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMarshaller;
 
