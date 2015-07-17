@@ -34,6 +34,8 @@ public class ActivityValidator implements Validator {
         } else if (activity.getSurveyResponse() != null) {
             if (activity.getSurvey() != null) {
                 validate(errors, activity.getSurvey());
+            } else {
+                errors.reject("has a survey response, so it must also reference the survey");
             }
             validate(errors, activity.getSurveyResponse());
         } else {
