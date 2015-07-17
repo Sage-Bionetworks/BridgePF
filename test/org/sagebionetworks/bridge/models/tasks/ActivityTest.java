@@ -98,7 +98,7 @@ public class ActivityTest {
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String json = mapper.writeValueAsString(activity);
-        
+
         JsonNode node = mapper.readTree(json);
         assertEquals("Label", node.get("label").asText());
         assertEquals("Label Detail", node.get("labelDetail").asText());
@@ -205,7 +205,6 @@ public class ActivityTest {
     public void creatingSurveyWithoutCreatedOnIsExpressedAsPublished() throws Exception {
         Activity activity = new Activity.Builder().withSurvey("identifier", "guid", null).withLabel("Label").build();
         
-        System.out.println(activity.getSurvey().getHref());
         assertTrue(activity.getSurvey().getHref().matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
     }
 
