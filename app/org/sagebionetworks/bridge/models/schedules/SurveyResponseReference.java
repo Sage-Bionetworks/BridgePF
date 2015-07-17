@@ -14,7 +14,7 @@ public final class SurveyResponseReference {
     private final String guid;
     
     @JsonCreator
-    public SurveyResponseReference(@JsonProperty("guid") String guid) {
+    SurveyResponseReference(@JsonProperty("guid") String guid) {
         this.guid = guid;
     }
     

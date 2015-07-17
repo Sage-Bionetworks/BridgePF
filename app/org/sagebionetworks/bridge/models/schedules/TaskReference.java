@@ -10,7 +10,7 @@ public final class TaskReference {
     private final String identifier;
     
     @JsonCreator
-    public TaskReference(@JsonProperty("identifier") String identifier) {
+    TaskReference(@JsonProperty("identifier") String identifier) {
         this.identifier = identifier;
     }
     

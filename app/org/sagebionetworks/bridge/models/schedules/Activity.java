@@ -41,7 +41,6 @@ public final class Activity implements BridgeEntity {
         this.labelDetail = labelDetail;
         this.survey = survey;
         this.task = task;
-        this.survey = survey;
         this.response = response;
         this.activityType = (task != null) ? TASK : SURVEY;
     }
@@ -69,7 +68,9 @@ public final class Activity implements BridgeEntity {
      * metadata information, including links, in the survey, surveyResponse or task property 
      * objects.
      * @return
+     * @deprecated
      */
+    @Deprecated
     public String getRef() { 
         if (task != null) {
             return task.getIdentifier();
