@@ -93,11 +93,7 @@ public final class Activity implements BridgeEntity {
             return this;
         }
         public Builder withPublishedSurvey(String identifier, String guid) {
-            this.survey = new SurveyReference(identifier, guid, (String)null);
-            return this;
-        }
-        public Builder withSurvey(String identifier, String guid, String createdOn) {
-            this.survey = new SurveyReference(identifier, guid, createdOn);
+            this.survey = new SurveyReference(identifier, guid, null);
             return this;
         }
         public Builder withSurvey(String identifier, String guid, DateTime createdOn) {

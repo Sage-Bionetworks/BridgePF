@@ -15,20 +15,14 @@ public final class SurveyReference {
     
     private final String identifier;
     private final String guid;
-    private final String createdOn;
+    private final DateTime createdOn;
     
     @JsonCreator
     public SurveyReference(@JsonProperty("identifier") String identifier, @JsonProperty("guid") String guid,
                     @JsonProperty("createdOn") DateTime createdOn) {
         this.identifier = identifier;
         this.guid = guid;
-        this.createdOn = (createdOn == null) ? null : createdOn.toString(ISODateTimeFormat.dateTime());
-    }
-    
-    public SurveyReference(String identifier, String guid, String createdOn) {
-        this.identifier = identifier;
-        this.guid = guid;
-        this.createdOn = ("published".equals(createdOn)) ? null : createdOn;
+        this.createdOn = (createdOn == null) ? null : createdOn;
     }
 
     public String getIdentifier() {
@@ -37,14 +31,14 @@ public final class SurveyReference {
     public String getGuid() {
         return guid;
     }
-    public String getCreatedOn() {
+    public DateTime getCreatedOn() {
         return createdOn;
     }
     public String getHref() {
         if (createdOn == null) {
             return BASE_URL + guid + "/revisions/published";
         }
-        return BASE_URL + guid + "/revisions/" + createdOn;
+        return BASE_URL + guid + "/revisions/" + createdOn.toString(ISODateTimeFormat.dateTime());
     }
 
     @Override

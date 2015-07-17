@@ -20,7 +20,7 @@ public class ActivityValidatorTest {
     @Test
     public void rejectsSurveyWithoutIdentifier() {
         try {
-            new Activity.Builder().withLabel("Label").withSurvey(null, "BBB", (String)null).build();
+            new Activity.Builder().withLabel("Label").withSurvey(null, "BBB", null).build();
         } catch(InvalidEntityException e) {
             assertEquals("survey.identifier cannot be missing, null, or blank", e.getErrors().get("survey.identifier").get(0));
         }
@@ -29,7 +29,7 @@ public class ActivityValidatorTest {
     @Test
     public void rejectsSurveyWithoutGuid() {
         try {
-            new Activity.Builder().withLabel("Label").withSurvey("identifier", null, (String)null).build();
+            new Activity.Builder().withLabel("Label").withSurvey("identifier", null, null).build();
         } catch(InvalidEntityException e) {
             assertEquals("survey.guid cannot be missing, null, or blank", e.getErrors().get("survey.guid").get(0));
         }

@@ -150,7 +150,7 @@ public final class Schedule implements BridgeEntity {
         for (Activity activity : activities) {
             SurveyReference reference = activity.getSurvey();
             if (reference != null && reference.getCreatedOn() != null) {
-                long createdOn = DateTime.parse(reference.getCreatedOn()).getMillis();    
+                long createdOn = reference.getCreatedOn().getMillis();    
                 if (keys.getGuid().equals(reference.getGuid()) && keys.getCreatedOn() == createdOn) {
                     return true;
                 }
