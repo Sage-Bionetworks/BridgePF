@@ -2,9 +2,6 @@ package org.sagebionetworks.bridge;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_1;
-import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_2;
-import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_3;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
@@ -105,34 +102,37 @@ public class TestUtils {
         
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("DDD");
-        plan.setStrategy(getStrategy("3", "P3D", ACTIVITY_1));
+        plan.setStrategy(getStrategy("3", "P3D", "AAA", null));
         plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plans.add(plan);
         
         plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
-        plan.setStrategy(getStrategy("1", "P1D", ACTIVITY_2));
+        plan.setStrategy(getStrategy("1", "P1D", "BBB", null));
         plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plans.add(plan);
         
         plan = new DynamoSchedulePlan();
         plan.setGuid("CCC");
-        plan.setStrategy(getStrategy("2", "P2D", ACTIVITY_3));
+        plan.setStrategy(getStrategy("2", "P2D", "CCC", TestConstants.TEST_ACTIVITY));
         plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plans.add(plan);
 
         return plans;
     }
     
-    private static ScheduleStrategy getStrategy(String label, String interval, String activityRef) {
+    private static ScheduleStrategy getStrategy(String label, String interval, String guid, Activity activity) {
+        if (activity == null) {
+            activity = new Activity.Builder().withLabel("Activity " + label).withPublishedSurvey("identifier", guid)
+                            .build();
+        }
         Schedule schedule = new Schedule();
         schedule.setLabel("Schedule " + label);
         schedule.setInterval(interval);
         schedule.setDelay("P1D");
         schedule.addTimes("13:00");
         schedule.setExpires("PT10H");
-        schedule.addActivity(new Activity("Activity " + label, activityRef));
-        
+        schedule.addActivity(activity);
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
         return strategy;

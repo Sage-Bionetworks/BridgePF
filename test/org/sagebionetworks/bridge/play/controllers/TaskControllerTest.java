@@ -15,13 +15,13 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.play.controllers.TaskController;
 import org.sagebionetworks.bridge.services.TaskService;
@@ -42,7 +42,7 @@ public class TaskControllerTest {
         task.setGuid(BridgeUtils.generateGuid());
         task.setSchedulePlanGuid(BridgeUtils.generateGuid());
         task.setScheduledOn(DateTime.now().minusDays(1).getMillis());
-        task.setActivity(new Activity("Activity Label", "task:task2"));
+        task.setActivity(TestConstants.TEST_ACTIVITY);
         task.setRunKey(BridgeUtils.generateTaskRunKey(task));
         List<Task> list = Lists.newArrayList(task);
         

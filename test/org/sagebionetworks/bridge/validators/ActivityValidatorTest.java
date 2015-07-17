@@ -1,69 +1,80 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.junit.Assert.assertEquals;
 
-import org.joda.time.DateTime;
-import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.ActivityType;
-import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.springframework.validation.MapBindingResult;
-
-import com.google.common.collect.Maps;
 
 public class ActivityValidatorTest {
 
-    private static final ActivityValidator validator = new ActivityValidator();
-    private MapBindingResult errors;
-    
-    @Before
-    public void before() { 
-        errors = new MapBindingResult(Maps.newHashMap(), "Activity");
+    @Test
+    public void rejectsWithoutLabel() {
+        try {
+            new Activity.Builder().withPublishedSurvey("identifier", "BBB").build();
+        } catch(InvalidEntityException e) {
+            assertEquals("label cannot be missing, null, or blank", e.getErrors().get("label").get(0));
+        }
     }
-    
     
     @Test
-    public void rejectsActivityWithoutType() {
-        Activity activity = new Activity("label", null);
-
-        validator.validate(activity, errors);
-        assertEquals(2, errors.getErrorCount());
-        assertEquals("cannot be null", errors.getFieldError("activityType").getCode());
-        assertEquals("cannot be missing, null, or blank", errors.getFieldError("ref").getCode());
+    public void rejectsSurveyWithoutIdentifier() {
+        try {
+            new Activity.Builder().withLabel("Label").withSurvey(null, "BBB", null).build();
+        } catch(InvalidEntityException e) {
+            assertEquals("survey.identifier cannot be missing, null, or blank", e.getErrors().get("survey.identifier").get(0));
+        }
     }
     
+    @Test
+    public void rejectsSurveyWithoutGuid() {
+        try {
+            new Activity.Builder().withLabel("Label").withSurvey("identifier", null, null).build();
+        } catch(InvalidEntityException e) {
+            assertEquals("survey.guid cannot be missing, null, or blank", e.getErrors().get("survey.guid").get(0));
+        }
+    }
+    
+    @Test
+    public void rejectsTaskWithoutIdentifier() {
+        try {
+            new Activity.Builder().withLabel("Label").withTask(null).build();
+        } catch(InvalidEntityException e) {
+            assertEquals("task.identifier cannot be missing, null, or blank", e.getErrors().get("task.identifier").get(0));
+        }
+    }
+    
+    @Test
+    public void rejectsSurveyResponseWithoutSurvey() {
+        try {
+            new Activity.Builder().withLabel("Label").withSurveyResponse(null).build();
+        } catch(InvalidEntityException e) {
+            assertEquals("Activity has a survey reference, so it must also reference the survey", e.getErrors().get("Activity").get(0));
+        }
+    }
+    
+    @Test
+    public void rejectsSurveyResponseWithoutGuid() {
+        try {
+            new Activity.Builder().withLabel("Label").withSurveyResponse(null).withPublishedSurvey("identifier", "guid").build();
+        } catch(InvalidEntityException e) {
+            assertEquals("surveyResponse.guid cannot be missing, null, or blank", e.getErrors().get("surveyResponse.guid").get(0));
+        }
+    }
+    /*
     @Test
     public void rejectsActivityWithoutLabel() {
-        Activity activity = new Activity(null, "task:foo");
+        Activity activity = new Activity(null, "Label Detail", null, null, null);
 
         validator.validate(activity, errors);
-        assertEquals(1, errors.getErrorCount());
         assertEquals("cannot be missing, null, or blank", errors.getFieldError("label").getCode());
     }
     
     @Test
-    public void acceptsSurveysWithAbsoluteHrefs() {
-        Activity activity = new Activity("Label", "https://foooserver.com/v3/surveys/AAA/revisions/" + DateTime.now().toString());
-
-        validator.validate(activity, errors);
-        assertEquals(0, errors.getErrorCount());
-        
-        activity = new Activity("Label", "http://foooserver.com/v3/surveys/AAA/revisions/" + DateTime.now().toString());
-        validator.validate(activity, errors);
-        assertEquals(0, errors.getErrorCount());
-    }
-    
-    @Test
     public void rejectsSurveysWithInvalidSurveyReference() {
-        Activity activity = mock(Activity.class);
-        when(activity.getActivityType()).thenReturn(ActivityType.SURVEY);
-        when(activity.getLabel()).thenReturn("Label");
-        when(activity.getRef()).thenReturn("http://webservices.sagebridge.org/v3/surveys/AAA/revisions/" + DateTime.now().toString());
-        when(activity.getSurvey()).thenReturn(new SurveyReference("http://webservices.sagebridge.org/v3/surveys/CCC/revisions/" + DateTime.now().minusHours(1).toString()));
-        
+        SurveyReference reference = new SurveyReference(null, null, (String)null);
+        Activity activity = new Activity("Label", null, null, reference, null);
+
         validator.validate(activity, errors);
         assertEquals("does not match the URL for this activity", errors.getFieldError("survey.guid").getCode());
         // Can no longer happen because the reference is always created from the ref string.
@@ -74,4 +85,5 @@ public class ActivityValidatorTest {
         validator.validate(activity, errors);
         assertEquals("cannot be null", errors.getFieldError("survey").getCode());
     }
+    */
 }

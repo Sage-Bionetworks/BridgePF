@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.models.schedules.SurveyReference.SURVEY_PATH_FRAGMENT;
-import static org.sagebionetworks.bridge.models.schedules.SurveyReference.SURVEY_RESPONSE_PATH_FRAGMENT;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -170,19 +168,29 @@ public class TaskService {
     }
     
     private Activity createResponseActivityIfNeeded(StudyIdentifier studyIdentifier, String healthCode, Activity activity) {
-        if ((activity.getActivityType() != ActivityType.SURVEY)) {
+        // If this activity is a task activity, or the survey response for this survey has already been determined
+        // and added to the activity, then do not generate a survey response for this activity.
+        if (activity.getActivityType() == ActivityType.TASK || activity.getSurveyResponse() != null) {
             return activity;
         }
-        String baseUrl = activity.getRef().split(SURVEY_PATH_FRAGMENT)[0];
         
+        // Get a survey reference and if necessary, resolve the timestamp to use for the survey
         SurveyReference ref = activity.getSurvey();
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
         if (keys.getCreatedOn() == 0L) {
             keys = surveyService.getSurveyMostRecentlyPublishedVersion(studyIdentifier, ref.getGuid());
         }   
+        
+        // Now create a response for that specific survey version
         SurveyResponseView response = surveyResponseService.createSurveyResponse(keys, healthCode, EMPTY_ANSWERS);
-        String url = baseUrl + SURVEY_RESPONSE_PATH_FRAGMENT + response.getIdentifier();
-        return new Activity(activity.getLabel(), url);
+        
+        // And reconstruct the activity with that survey instance as well as the new response object.
+        return new Activity.Builder()
+            .withLabel(activity.getLabel())
+            .withLabelDetail(activity.getLabelDetail())
+            .withSurvey(response.getSurvey().getIdentifier(), keys.getGuid(), ref.getCreatedOn())
+            .withSurveyResponse(response.getResponse().getIdentifier())
+            .build();
     }
     
 }
