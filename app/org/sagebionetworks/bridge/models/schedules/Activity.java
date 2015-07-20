@@ -1,49 +1,133 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import static org.sagebionetworks.bridge.models.schedules.ActivityType.SURVEY;
+import static org.sagebionetworks.bridge.models.schedules.ActivityType.TASK;
+
 import java.util.Objects;
+
+import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.validators.ActivityValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class Activity {
-
-    private final String label;
-    private final ActivityType activityType;
-    private final String ref;
+/**
+ * An activity we wish a study participant to do. The two main types of activities are 
+ * tasks in the application (such as taking a tapping test), and surveys to be filled 
+ * out and returned to the sever.
+ * 
+ * In schedules, activities are set with surveys. In tasks, these are "resolved" to point 
+ * to a specific survey, and a survey response object is also added to the activity. This includes 
+ * an endpoint where answers to the survey can be submitted.
+ */
+public final class Activity implements BridgeEntity {
     
+    private static final ActivityValidator VALIDATOR = new ActivityValidator();
+    
+    private String label;
+    private String labelDetail;
+    private TaskReference task;
+    private SurveyReference survey;
+    private SurveyResponseReference response;
+    private ActivityType activityType;
+
     @JsonCreator
-    public Activity(@JsonProperty("label") String label, @JsonProperty("ref") String ref) {
+    private Activity(@JsonProperty("label") String label, @JsonProperty("labelDetail") String labelDetail, 
+        @JsonProperty("task") TaskReference task, @JsonProperty("survey") SurveyReference survey, 
+        @JsonProperty("surveyResponse") SurveyResponseReference response) {
         this.label = label;
-        this.ref = ref;
-        if (ref == null) {
-            this.activityType = null;
-        } else {
-            this.activityType = SurveyReference.isSurveyRef(ref) ? ActivityType.SURVEY : ActivityType.TASK;    
-        }
+        this.labelDetail = labelDetail;
+        this.survey = survey;
+        this.task = task;
+        this.response = response;
+        this.activityType = (task != null) ? TASK : SURVEY;
     }
     
-    public String getLabel() {
+    public String getLabel() { 
         return label;
     }
-
+    public String getLabelDetail() {
+        return labelDetail;
+    }
     public ActivityType getActivityType() {
         return activityType;
     }
-
-    public String getRef() {
-        return ref;
+    public TaskReference getTask() {
+        return task;
+    }
+    public SurveyReference getSurvey() {
+        return survey;
+    }
+    public SurveyResponseReference getSurveyResponse() {
+        return response;
+    }
+    /**
+     * This property is maintained for backwards compatibility, but clients should now look for 
+     * metadata information, including links, in the survey, surveyResponse or task property 
+     * objects.
+     * @return
+     * @deprecated
+     */
+    @Deprecated
+    public String getRef() { 
+        if (task != null) {
+            return task.getIdentifier();
+        } else if (survey != null) {
+            return survey.getHref();
+        }
+        return null;
     }
 
-    public SurveyReference getSurvey() {
-        return SurveyReference.isSurveyRef(ref) ? new SurveyReference(ref) : null;
+    public static class Builder {
+        private String label;
+        private String labelDetail;
+        private TaskReference task;
+        private SurveyReference survey;
+        private SurveyResponseReference response;
+        
+        public Builder withLabel(String label) {
+            this.label = label;
+            return this;
+        }
+        public Builder withLabelDetail(String labelDetail) {
+            this.labelDetail = labelDetail;
+            return this;
+        }
+        public Builder withTask(String taskId) {
+            this.task = new TaskReference(taskId);
+            return this;
+        }
+        public Builder withPublishedSurvey(String identifier, String guid) {
+            this.survey = new SurveyReference(identifier, guid, null);
+            return this;
+        }
+        public Builder withSurvey(String identifier, String guid, DateTime createdOn) {
+            this.survey = new SurveyReference(identifier, guid, createdOn);
+            return this;
+        }
+        public Builder withSurveyResponse(String guid) {
+            this.response = new SurveyResponseReference(guid);
+            return this;
+        }
+        public Activity build() {
+            Activity activity = new Activity(label, labelDetail, task, survey, response);
+            Validate.entityThrowingException(VALIDATOR, activity);
+            return activity;
+        }
     }
     
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * Objects.hashCode(label);
-        result = prime * Objects.hashCode(ref);
+        result = prime * result + Objects.hashCode(activityType);
+        result = prime * result + Objects.hashCode(label);
+        result = prime * result + Objects.hashCode(labelDetail);
+        result = prime * result + Objects.hashCode(response);
+        result = prime * result + Objects.hashCode(survey);
+        result = prime * result + Objects.hashCode(task);
         return result;
     }
 
@@ -54,13 +138,16 @@ public class Activity {
         if (obj == null || getClass() != obj.getClass())
             return false;
         Activity other = (Activity) obj;
-        return (Objects.equals(label, other.label) && Objects.equals(ref, other.ref));
+        return (Objects.equals(activityType, other.activityType) && 
+            Objects.equals(label, other.label) && Objects.equals(labelDetail, other.labelDetail) &&
+            Objects.equals(response, other.response) && Objects.equals(survey, other.survey) &&
+            Objects.equals(task, other.task));
+                        
     }
 
     @Override
     public String toString() {
-        return String.format("Activity [label=%s, activityType=%s, ref=%s]", 
-            label, activityType.name().toLowerCase(), ref);
+        return String.format("Activity [label=%s, labelDetail=%s, ref=%s, task=%s, survey=%s, response=%s, activityType=%s]",
+            label, labelDetail, getRef(), task, survey, response, activityType);
     }
-
 }

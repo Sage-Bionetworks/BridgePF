@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.RECURRING;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ACTIVITY;
 
 import java.util.List;
 import java.util.Map;
@@ -112,7 +113,7 @@ public class CronTaskSchedulerTest {
         Schedule schedule = new Schedule();
         // Wed. and Sat. at 9:15am
         schedule.setCronTrigger("0 15 9 ? * WED,SAT *");
-        schedule.getActivities().add(new Activity("Label", "tapTest"));
+        schedule.getActivities().add(TEST_ACTIVITY);
         schedule.setScheduleType(type);
         return schedule;
     }

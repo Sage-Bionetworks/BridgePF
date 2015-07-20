@@ -3,20 +3,15 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
+import org.sagebionetworks.bridge.models.schedules.SurveyResponseReference;
+import org.sagebionetworks.bridge.models.schedules.TaskReference;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class ActivityValidator implements Validator {
     
     private static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
-    private static final String CANNOT_BE_NULL = "cannot be null";
-    private static final String ACTIVITY_TYPE_PROPERTY = "activityType";
-    private static final String REF_PROPERTY = "ref";
-    private static final String SURVEY_PROPERTY = "survey";
-    private static final String GUID_PROPERTY = "guid";
-    private static final String CREATED_ON_PROPERTY = "createdOn";
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -26,38 +21,53 @@ public class ActivityValidator implements Validator {
     @Override
     public void validate(Object obj, Errors errors) {
         Activity activity = (Activity)obj;
-        if (activity.getActivityType() == null) {
-            errors.rejectValue(ACTIVITY_TYPE_PROPERTY, CANNOT_BE_NULL);
-        }
+        
         if (isBlank(activity.getLabel())) {
             errors.rejectValue("label", CANNOT_BE_BLANK);
         }
-        if (isBlank(activity.getRef())) {
-            errors.rejectValue(REF_PROPERTY, CANNOT_BE_BLANK);
+        if (activity.getTask() == null && activity.getSurvey() == null && activity.getSurveyResponse() == null) {
+            errors.reject("Activity must have a task, survey, and/or a survey response");
+            return;
         }
-        if (activity.getActivityType() == ActivityType.SURVEY) {
-            if (!activity.getRef().startsWith("http://") && !activity.getRef().startsWith("https://")) {
-                errors.rejectValue(REF_PROPERTY, "must be an absolute URL to retrieve a survey response");
-            }                    
-            // This never should be empty because it is generated from the ref property, which we know is not null.
-            if (activity.getSurvey() == null) {
-                errors.rejectValue(SURVEY_PROPERTY, CANNOT_BE_NULL);
+        if (activity.getTask() != null) {
+            validate(errors, activity.getTask());
+        } else if (activity.getSurveyResponse() != null) {
+            if (activity.getSurvey() != null) {
+                validate(errors, activity.getSurvey());
             } else {
-                // It's not clear how much the survey reference object can vary from the ref string, since 
-                // it's created on demand from that string...
-                errors.pushNestedPath(SURVEY_PROPERTY);    
-                SurveyReference keys = activity.getSurvey();
-                if (isBlank(keys.getGuid())) {
-                    errors.rejectValue(GUID_PROPERTY, CANNOT_BE_BLANK);
-                }
-                if (!activity.getRef().contains(keys.getGuid())) {
-                    errors.rejectValue(GUID_PROPERTY, "does not match the URL for this activity");
-                }
-                if (keys.getCreatedOn() != null && !keys.getCreatedOn().equals(activity.getSurvey().getCreatedOn())) {
-                    errors.rejectValue(CREATED_ON_PROPERTY, "does not match the URL for this activity");
-                }
-                errors.popNestedPath();    
+                errors.reject("has a survey response, so it must also reference the survey");
             }
+            validate(errors, activity.getSurveyResponse());
+        } else {
+            validate(errors, activity.getSurvey());
         }
     }
+    
+    private void validate(Errors errors, TaskReference ref) {
+        errors.pushNestedPath("task");
+        if (isBlank(ref.getIdentifier())) {
+            errors.rejectValue("identifier", CANNOT_BE_BLANK);
+        }
+        errors.popNestedPath();
+    }
+    
+    private void validate(Errors errors, SurveyReference ref) {
+        errors.pushNestedPath("survey");
+        if (isBlank(ref.getIdentifier())) {
+            errors.rejectValue("identifier", CANNOT_BE_BLANK);
+        }
+        if (isBlank(ref.getGuid())) {
+            errors.rejectValue("guid", CANNOT_BE_BLANK);
+        }
+        errors.popNestedPath();
+    }
+    
+    private void validate(Errors errors, SurveyResponseReference ref) {
+        errors.pushNestedPath("surveyResponse");
+        if (isBlank(ref.getGuid())) {
+            errors.rejectValue("guid", CANNOT_BE_BLANK);
+        }
+        errors.popNestedPath();
+    }
+    
 }

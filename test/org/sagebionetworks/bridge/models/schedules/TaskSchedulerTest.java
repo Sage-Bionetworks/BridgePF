@@ -16,6 +16,7 @@ import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestConstants;
 
 import com.newrelic.agent.deps.com.google.common.collect.Maps;
 
@@ -53,7 +54,7 @@ public class TaskSchedulerTest {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ONCE);
         schedule.setDelay("P1D");
-        schedule.addActivity(new Activity("activity label", "task:ref"));
+        schedule.addActivity(TestConstants.TEST_ACTIVITY);
         
         Map<String,DateTime> empty = Maps.newHashMap();
         
@@ -69,7 +70,7 @@ public class TaskSchedulerTest {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setLabel("This is a label");
-        schedule.addActivity(new Activity("activity label", "task:ref"));
+        schedule.addActivity(TestConstants.TEST_ACTIVITY);
         schedule.setExpires("P3Y");
         
         tasks = SchedulerFactory.getScheduler("schedulePlanGuid", schedule).getTasks(events, NOW.plusWeeks(1));
@@ -77,8 +78,8 @@ public class TaskSchedulerTest {
 
         assertEquals("schedulePlanGuid", task.getSchedulePlanGuid());
         assertNotNull(task.getGuid());
-        assertEquals("activity label", task.getActivity().getLabel());
-        assertEquals("task:ref", task.getActivity().getRef());
+        assertEquals("Label", task.getActivity().getLabel());
+        assertEquals("tapTest", task.getActivity().getRef());
         assertNotNull(task.getScheduledOn());
         assertNotNull(task.getExpiresOn());
     }
@@ -91,12 +92,12 @@ public class TaskSchedulerTest {
     @Test
     public void tasksCanBeChainedTogether() throws Exception {
         Schedule schedule = new Schedule();
-        schedule.getActivities().add(new Activity("Task #1", "task1"));
+        schedule.getActivities().add(TestConstants.TEST_ACTIVITY);
         schedule.setScheduleType(ONCE);
         schedule.setDelay("P1M");
         
         Schedule schedule2 = new Schedule();
-        schedule2.getActivities().add(new Activity("Task #2", "task2"));
+        schedule2.getActivities().add(TestConstants.TEST_ACTIVITY);
         schedule2.setScheduleType(ONCE);
         schedule2.setEventId("task:task1");
 
@@ -118,7 +119,7 @@ public class TaskSchedulerTest {
     @Test
     public void taskSchedulerWorksInDifferentTimezone() {
         Schedule schedule = new Schedule();
-        schedule.addActivity(new Activity("A label", "task:foo"));
+        schedule.addActivity(TestConstants.TEST_ACTIVITY);
         schedule.setEventId("foo");
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setDelay("P2D");
@@ -141,7 +142,7 @@ public class TaskSchedulerTest {
         events.put("anEvent", asDT("2015-04-12 08:31"));
         
         Schedule schedule = new Schedule();
-        schedule.addActivity(new Activity("A label", "task:foo"));
+        schedule.addActivity(TestConstants.TEST_ACTIVITY);
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setEventId("anEvent");
         schedule.setInterval("P1D");
@@ -161,7 +162,7 @@ public class TaskSchedulerTest {
         events.put("anEvent", asDT("2015-04-12 08:31"));
         
         Schedule schedule = new Schedule();
-        schedule.addActivity(new Activity("A label", "task:foo"));
+        schedule.addActivity(TestConstants.TEST_ACTIVITY);
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setEventId("anEvent");
         schedule.setCronTrigger("0 0 10 ? * MON,TUE,WED,THU,FRI,SAT,SUN *");
@@ -178,8 +179,8 @@ public class TaskSchedulerTest {
     public void twoTasksWithSameTimestampCanBeDifferentiated() throws Exception {
         // Add second activity to same schedule
         Schedule schedule = new Schedule();
-        schedule.getActivities().add(new Activity("Label1", "task:tapTest"));
-        schedule.getActivities().add(new Activity("Label2", "task:gaitTest"));
+        schedule.getActivities().add(new Activity.Builder().withLabel("Label1").withTask("tapTest").build());
+        schedule.getActivities().add(new Activity.Builder().withLabel("Label2").withTask("tapTest").build());
         schedule.setScheduleType(ONCE);
 
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(7));
@@ -196,7 +197,7 @@ public class TaskSchedulerTest {
         // Just fire this each time it is itself completed, and it never expires.
         Schedule schedule = new Schedule();
         schedule.setEventId("scheduledOn:task:foo");
-        schedule.addActivity(new Activity("Label", "task:foo"));
+        schedule.addActivity(TestConstants.TEST_ACTIVITY);
         schedule.setScheduleType(ONCE);
         
         events.put("scheduledOn:task:foo", NOW.minusHours(3));
@@ -212,7 +213,7 @@ public class TaskSchedulerTest {
     public void willSelectFirstEventIdWithARecord() throws Exception {
         Schedule schedule = new Schedule();
         schedule.setEventId("survey:event, enrollment");
-        schedule.addActivity(new Activity("Label", "task:foo"));
+        schedule.addActivity(TestConstants.TEST_ACTIVITY);
         schedule.setScheduleType(ONCE);
         
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));

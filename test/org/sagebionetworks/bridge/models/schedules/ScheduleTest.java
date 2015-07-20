@@ -10,6 +10,8 @@ import org.joda.time.Period;
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
 
 public class ScheduleTest {
@@ -21,7 +23,7 @@ public class ScheduleTest {
     
     @Test
     public void canRountripSerialize() throws Exception {
-        Activity activity = new Activity("label", "http://ref/");
+        Activity activity = new Activity.Builder().withLabel("label").withTask("ref").build();
         
         Schedule schedule = new Schedule();
         schedule.getActivities().add(activity);
@@ -36,10 +38,36 @@ public class ScheduleTest {
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setTimes(Lists.newArrayList(LocalTime.parse("10:10"), LocalTime.parse("14:00")));
         
-        String string = BridgeObjectMapper.get().writeValueAsString(schedule);
-        assertEquals("{\"label\":\"label\",\"scheduleType\":\"recurring\",\"eventId\":\"eventId\",\"cronTrigger\":\"0 0 8 ? * TUE *\",\"activities\":[{\"label\":\"label\",\"ref\":\"http://ref/\",\"activityType\":\"task\",\"type\":\"Activity\"}],\"delay\":\"P1D\",\"interval\":\"P3D\",\"expires\":\"P2D\",\"startsOn\":\"2015-02-02T10:10:10.000Z\",\"endsOn\":\"2015-01-01T10:10:10.000Z\",\"times\":[\"10:10:00.000\",\"14:00:00.000\"],\"type\":\"Schedule\"}", string);
-        schedule = BridgeObjectMapper.get().readValue(string, Schedule.class);
+        BridgeObjectMapper mapper = BridgeObjectMapper.get();
+        String string = mapper.writeValueAsString(schedule);
+
+        JsonNode node = mapper.readTree(string);
+        assertEquals("label", node.get("label").asText());
+        assertEquals("recurring", node.get("scheduleType").asText());
+        assertEquals("eventId", node.get("eventId").asText());
+        assertEquals("0 0 8 ? * TUE *", node.get("cronTrigger").asText());
+        assertEquals("P1D", node.get("delay").asText());
+        assertEquals("P3D", node.get("interval").asText());
+        assertEquals("P2D", node.get("expires").asText());
+        assertEquals("2015-02-02T10:10:10.000Z", node.get("startsOn").asText());
+        assertEquals("2015-01-01T10:10:10.000Z", node.get("endsOn").asText());
+        assertEquals("Schedule", node.get("type").asText());
+
+        ArrayNode times = (ArrayNode)node.get("times");
+        assertEquals("10:10:00.000", times.get(0).asText());
+        assertEquals("14:00:00.000", times.get(1).asText());
         
+        JsonNode actNode = node.get("activities").get(0);
+        assertEquals("label", actNode.get("label").asText());
+        assertEquals("task", actNode.get("activityType").asText());
+        assertEquals("ref", actNode.get("ref").asText());
+        assertEquals("Activity", actNode.get("type").asText());
+
+        JsonNode taskNode = actNode.get("task");
+        assertEquals("ref", taskNode.get("identifier").asText());
+        assertEquals("TaskReference", taskNode.get("type").asText());
+        
+        schedule = mapper.readValue(string, Schedule.class);
         assertEquals("0 0 8 ? * TUE *", schedule.getCronTrigger());
         assertEquals("P1D", schedule.getDelay().toString());
         assertEquals("P2D", schedule.getExpires().toString());
@@ -53,7 +81,8 @@ public class ScheduleTest {
         assertEquals("14:00:00.000", schedule.getTimes().get(1).toString());
         activity = schedule.getActivities().get(0);
         assertEquals("label", activity.getLabel());
-        assertEquals("http://ref/", activity.getRef());
+        assertEquals("ref", activity.getRef());
+        assertEquals("ref", activity.getTask().getIdentifier());
     }
     
     @Test

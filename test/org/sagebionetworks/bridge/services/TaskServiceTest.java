@@ -86,6 +86,7 @@ public class TaskServiceTest {
 
         Survey survey = new DynamoSurvey();
         survey.setGuid("guid");
+        survey.setIdentifier("identifier");
         survey.setCreatedOn(20000L);
         SurveyService surveyService = mock(SurveyService.class);
         when(surveyService.getSurveyMostRecentlyPublishedVersion(any(StudyIdentifier.class), anyString())).thenReturn(survey);
@@ -154,21 +155,21 @@ public class TaskServiceTest {
     @Test
     public void changePublishedAndAbsoluteSurveyActivity() {
         service.getTasks(user, endsOn.plusDays(2));
-        
+
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         verify(taskDao).saveTasks(anyString(), argument.capture());
 
         boolean foundTask3 = false;
         for (Task task : (List<Task>)argument.getValue()) {
-            // ignoring task3
-            String ref = task.getActivity().getRef();
-            if (!"task:task3".equals(ref)) {
-                assertTrue("Found task with survey response ref", ref.contains("/surveyresponses/identifier"));        
+            // ignoring tapTest
+            if (!"tapTest".equals(task.getActivity().getRef())) {
+                String ref = task.getActivity().getSurveyResponse().getHref();
+                assertTrue("Found task with survey response ref", ref.contains("/v3/surveyresponses/identifier"));        
             } else {
                 foundTask3 = true;
             }
         }
-        assertTrue("Found task with task:task3 ref", foundTask3);
+        assertTrue("Found task with tapTest ref", foundTask3);
     }
     
 }

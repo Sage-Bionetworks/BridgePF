@@ -24,7 +24,7 @@ public class MetricsInterceptorTest {
         // Mock request
         final Request mockRequest = mock(Request.class);
         when(mockRequest.method()).thenReturn("POST");
-        when(mockRequest.path()).thenReturn("/api/v1/test");
+        when(mockRequest.path()).thenReturn("/v3/test");
         when(mockRequest.version()).thenReturn("HTTP/1.1");
         final Map<String, String[]> headerMap = new HashMap<>();
         headerMap.put("X-Request-Id", new String[]{"12345"});
@@ -51,7 +51,7 @@ public class MetricsInterceptorTest {
         assertTrue(json.contains("\"start\":"));
         assertTrue(json.contains("\"request_id\":\"12345\""));
         assertTrue(json.contains("\"method\":\"POST\""));
-        assertTrue(json.contains("\"uri\":\"/api/v1/test\""));
+        assertTrue(json.contains("\"uri\":\"/v3/test\""));
         assertTrue(json.contains("\"protocol\":\"HTTP/1.1\""));
         assertTrue(json.contains("\"remote_address\":\"1.2.3.4\""));
         assertTrue(json.contains("\"user_agent\":\"ifeng 6\""));

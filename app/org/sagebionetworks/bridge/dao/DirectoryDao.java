@@ -10,8 +10,8 @@ public interface DirectoryDao {
 
     public void updateDirectoryForStudy(Study study);
     
-    public Directory getDirectoryForStudy(String identifier);
+    public Directory getDirectoryForStudy(Study study);
 
-    public void deleteDirectoryForStudy(String identifier);
+    public void deleteDirectoryForStudy(Study study);
 
 }

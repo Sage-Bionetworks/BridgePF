@@ -3,11 +3,16 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.JSON_MIME_TYPE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -104,8 +109,9 @@ public class SurveyController extends BaseController {
     
     // Otherwise you don't need consent but you must be a researcher or an administrator
     public Result getSurvey(final String surveyGuid, final String createdOnString) throws Exception {
-        final UserSession session = getAuthenticatedSession(DEVELOPER);
+        final UserSession session = getAuthenticatedSession();
         final StudyIdentifier studyId = session.getStudyIdentifier();
+        canAccessSurvey(session);
         
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString); 
         String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
@@ -136,8 +142,9 @@ public class SurveyController extends BaseController {
     }
     
     public Result getSurveyMostRecentlyPublishedVersion(final String surveyGuid) throws Exception {
-        final UserSession session = getAuthenticatedSession(DEVELOPER);
+        final UserSession session = getAuthenticatedSession();
         final StudyIdentifier studyId = session.getStudyIdentifier();
+        canAccessSurvey(session);
         
         ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY);
         String json = viewCache.getView(cacheKey, new Supplier<Survey>() {
@@ -246,10 +253,28 @@ public class SurveyController extends BaseController {
         Survey survey = surveyService.getSurvey(keys);
         verifySurveyIsInStudy(session, studyId, survey);
         
-        survey = surveyService.publishSurvey(survey);
+        survey = surveyService.publishSurvey(studyId, survey);
         expireCache(surveyGuid, createdOnString);
         
         return okResult(new GuidCreatedOnVersionHolderImpl(survey));
+    }
+    
+    private void canAccessSurvey(UserSession session) {
+        boolean isDeveloper = session.getUser().isInRole(DEVELOPER);
+        boolean isConsentedUser = session.getUser().doesConsent();
+
+        if (isDeveloper || isConsentedUser) {
+            return;
+        }
+        // An imperfect test, but normal users have no other roles, so for them, access 
+        // is restricted because they have not consented.
+        Set<Roles> roles = new HashSet<>(session.getUser().getRoles());
+        roles.remove(TEST_USERS);
+        if (session.getUser().getRoles().isEmpty()) {
+            throw new ConsentRequiredException(session);
+        }
+        // Otherwise, for researchers and administrators, the issue is one of authorization.
+        throw new UnauthorizedException();
     }
     
     private void verifySurveyIsInStudy(UserSession session, StudyIdentifier studyIdentifier, List<Survey> surveys) {

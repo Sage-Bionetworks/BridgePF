@@ -15,6 +15,7 @@ import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestConstants;
 
 import com.google.common.collect.Maps;
 
@@ -42,7 +43,7 @@ public class IntervalTaskSchedulerTest {
     @Test
     public void oneWeekAfterEnrollmentAt8amExpireAfter24hours() throws Exception {
         Schedule schedule = new Schedule();
-        schedule.addActivity(new Activity("Take the tapping test", "task:tapTest"));
+        schedule.addActivity(TestConstants.TEST_ACTIVITY);
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setDelay("P1W");
         schedule.addTimes("08:00");
@@ -477,7 +478,7 @@ public class IntervalTaskSchedulerTest {
     private Schedule createScheduleWith(ScheduleType type) {
         Schedule schedule = new Schedule();
         schedule.addTimes("09:40", "13:40");
-        schedule.getActivities().add(new Activity("Label", "tapTest"));
+        schedule.getActivities().add(TestConstants.TEST_ACTIVITY);
         schedule.setScheduleType(type);
         if (type == RECURRING) {
             schedule.setInterval("P2D");

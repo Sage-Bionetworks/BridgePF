@@ -7,11 +7,13 @@ import nl.jqno.equalsverifier.Warning;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.schedules.TaskStatus;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class DynamoTaskTest {
 
@@ -26,20 +28,33 @@ public class DynamoTaskTest {
         DateTime expiresOn = DateTime.now().plusWeeks(1).plusDays(4).withZone(DateTimeZone.UTC);
         
         DynamoTask task = new DynamoTask();
-        task.setActivity(new Activity("Label", "task:foo"));
+        task.setActivity(TestConstants.TEST_ACTIVITY);
         task.setScheduledOn(scheduledOn.getMillis());
         task.setExpiresOn(expiresOn.getMillis());
         task.setGuid("AAA-BBB-CCC");
         task.setSchedulePlanGuid("DDD-EEE-FFF");
         task.setHealthCode("FFF-GGG-HHH");
         
+        BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String output = BridgeObjectMapper.get().writeValueAsString(task);
-        assertEquals("{\"guid\":\"AAA-BBB-CCC\",\"scheduledOn\":\""+scheduledOn.toString()+"\",\"expiresOn\":\""+expiresOn.toString()+"\",\"activity\":{\"label\":\"Label\",\"ref\":\"task:foo\",\"activityType\":\"task\",\"type\":\"Activity\"},\"status\":\"scheduled\",\"type\":\"Task\"}", output);
+        
+        JsonNode node = mapper.readTree(output);
+        assertEquals("AAA-BBB-CCC", node.get("guid").asText());
+        assertEquals(scheduledOn.toString(), node.get("scheduledOn").asText());
+        assertEquals(expiresOn.toString(), node.get("expiresOn").asText());
+        assertEquals("scheduled", node.get("status").asText());
+        assertEquals("Task", node.get("type").asText());
+        
+        JsonNode activityNode = node.get("activity");
+        assertEquals("Label", activityNode.get("label").asText());
+        assertEquals("tapTest", activityNode.get("ref").asText());
+        assertEquals("task", activityNode.get("activityType").asText());
+        assertEquals("Activity", activityNode.get("type").asText());
         
         // zero out the health code field, because that will not be serialized
         task.setHealthCode(null);
 
-        DynamoTask newTask = BridgeObjectMapper.get().readValue(output, DynamoTask.class);
+        DynamoTask newTask = mapper.readValue(output, DynamoTask.class);
         newTask.setSchedulePlanGuid(task.getSchedulePlanGuid());
         assertEquals(task, newTask);
     }

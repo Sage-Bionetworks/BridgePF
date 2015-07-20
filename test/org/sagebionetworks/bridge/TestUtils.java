@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
 import java.util.Map;
@@ -34,16 +36,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class TestUtils {
-
-    public static final String ACTIVITY_1 = "task:task3";
-    
-    public static final String ACTIVITY_2 = "http://webservices.sagebridge.org/api/v1/surveys/AAA/revisions/2015-04-12T14:20:56.123-07:00";
-    
-    public static final String ACTIVITY_3 = "http://webservices.sagebridge.org/api/v1/surveys/AAA/revisions/published";
-    
-    public static final DateTime ENROLLMENT = DateTime.parse("2015-04-10T10:40:34.000-07:00");
-    
-    public static final String STUDY_IDENTIFIER = "api";
     
     public abstract static class FailableRunnable implements Runnable {
         public abstract void testCode() throws Exception;
@@ -97,7 +89,7 @@ public class TestUtils {
         List<SchedulePlan> plans = getSchedulePlans();
         for (SchedulePlan plan : plans) {
             TaskScheduler scheduler = SchedulerFactory.getScheduler("",
-                plan.getStrategy().getScheduleForUser(new StudyIdentifierImpl(STUDY_IDENTIFIER), plan, user));
+                plan.getStrategy().getScheduleForUser(new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER), plan, user));
             for (Task dTask : scheduler.getTasks(events, endsOn)) {
                 tasks.add((DynamoTask)dTask);
             }
@@ -110,34 +102,37 @@ public class TestUtils {
         
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("DDD");
-        plan.setStrategy(getStrategy("3", "P3D", ACTIVITY_1));
-        plan.setStudyKey(STUDY_IDENTIFIER);
+        plan.setStrategy(getStrategy("3", "P3D", "AAA", null));
+        plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plans.add(plan);
         
         plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
-        plan.setStrategy(getStrategy("1", "P1D", ACTIVITY_2));
-        plan.setStudyKey(STUDY_IDENTIFIER);
+        plan.setStrategy(getStrategy("1", "P1D", "BBB", null));
+        plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plans.add(plan);
         
         plan = new DynamoSchedulePlan();
         plan.setGuid("CCC");
-        plan.setStrategy(getStrategy("2", "P2D", ACTIVITY_3));
-        plan.setStudyKey(STUDY_IDENTIFIER);
+        plan.setStrategy(getStrategy("2", "P2D", "CCC", TestConstants.TEST_ACTIVITY));
+        plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plans.add(plan);
 
         return plans;
     }
     
-    private static ScheduleStrategy getStrategy(String label, String interval, String activityRef) {
+    private static ScheduleStrategy getStrategy(String label, String interval, String guid, Activity activity) {
+        if (activity == null) {
+            activity = new Activity.Builder().withLabel("Activity " + label).withPublishedSurvey("identifier", guid)
+                            .build();
+        }
         Schedule schedule = new Schedule();
         schedule.setLabel("Schedule " + label);
         schedule.setInterval(interval);
         schedule.setDelay("P1D");
         schedule.addTimes("13:00");
         schedule.setExpires("PT10H");
-        schedule.addActivity(new Activity("Activity " + label, activityRef));
-        
+        schedule.addActivity(activity);
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
         return strategy;
@@ -153,7 +148,6 @@ public class TestUtils {
         study.setIdentifier(TestUtils.randomName());
         study.setMinAgeOfConsent(18);
         study.setMaxNumOfParticipants(200);
-        study.setStormpathHref("http://enterprise.stormpath.io/directories/asdf");
         study.setSponsorName("The Council on Test Studies");
         study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
         study.setTechnicalEmail("bridge-testing+technical@sagebase.org");

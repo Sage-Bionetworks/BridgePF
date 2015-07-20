@@ -20,7 +20,6 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
-import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
@@ -58,7 +57,7 @@ public class DynamoTaskDaoTest {
         schedule.setInterval("P1D");
         schedule.setExpires("PT6H");
         schedule.addTimes("10:00", "14:00");
-        schedule.addActivity(new Activity("Label 1", "task:task1"));
+        schedule.addActivity(TestConstants.TEST_ACTIVITY);
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
