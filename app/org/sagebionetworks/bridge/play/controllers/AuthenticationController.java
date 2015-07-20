@@ -36,7 +36,6 @@ public class AuthenticationController extends BaseController {
         if (session != null) {
             authenticationService.signOut(session);
         }
-        response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         return okResult("Signed out.");
     }
 
