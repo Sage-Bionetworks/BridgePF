@@ -95,7 +95,6 @@ public class ConsentController extends BaseController {
 
         user.setSharingScope(sharing.getSharingScope());
         updateSessionUser(session, user);
-        setSessionToken(session.getSessionToken());
         return createdResult("Consent to research has been recorded.");
     }
 }
