@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULES_API;
 import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_URL;
+import static org.sagebionetworks.bridge.TestConstants.SIGN_OUT_URL;
 import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 import static org.sagebionetworks.bridge.TestConstants.TIMEOUT;
 import static org.sagebionetworks.bridge.TestConstants.USERNAME;
@@ -15,21 +16,13 @@ import static play.test.Helpers.testServer;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.schedules.ScheduleType;
-import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.services.SchedulePlanServiceImpl;
 import org.sagebionetworks.bridge.services.StudyServiceImpl;
@@ -63,10 +56,6 @@ public class AuthenticationControllerTest {
     
     private TestUser testUser;
     
-    private SchedulePlan plan;
-    
-    private Study secondStudy;
-    
     @Before
     public void before() {
         testUser = helper.createUser(AuthenticationControllerTest.class);
@@ -91,8 +80,6 @@ public class AuthenticationControllerTest {
                 
                 String sessionToken = new ObjectMapper().readTree(response.getBody()).get("sessionToken").asText();
 
-                // There's actually no way to *request* stuff from another study at this point,
-                // so this test hardly makes sense at this point.
                 request = WS.url(TEST_BASE_URL + SCHEDULES_API);
                 request.setHeader("Bridge-Session", sessionToken);
                 response = request.get().get(TIMEOUT);
@@ -116,7 +103,12 @@ public class AuthenticationControllerTest {
                 JsonNode responseNode = new ObjectMapper().readTree(response.getBody());
                 String sessionToken = responseNode.get("sessionToken").asText();
                 
-                String output = jedisOps.get(sessionToken);
+                JsonNode emptyNode = JsonNodeFactory.instance.objectNode();
+                request = WS.url(TEST_BASE_URL + SIGN_OUT_URL);
+                request.setHeader("Bridge-Session", sessionToken);
+                response = request.post(emptyNode).get(TIMEOUT);
+                
+                String output = jedisOps.get(sessionToken+":session");
                 assertNull("Should no longer be session data", output);
             }
         });
