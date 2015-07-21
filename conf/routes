@@ -128,7 +128,7 @@ POST   /api/v2/surveys/:surveyGuid/revisions/:createdOn             @org.sagebio
 POST   /api/v2/surveys/:surveyGuid/revisions/:createdOn/:identifier @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
 
 # API - Schedules
-GET    /api/v1/schedules   @org.sagebionetworks.bridge.play.controllers.ScheduleController.getSchedules
+GET    /api/v1/schedules   @org.sagebionetworks.bridge.play.controllers.ScheduleController.getSchedulesV1
 
 # API - Consent
 POST   /api/v1/consent                       @org.sagebionetworks.bridge.play.controllers.ConsentController.giveV1
