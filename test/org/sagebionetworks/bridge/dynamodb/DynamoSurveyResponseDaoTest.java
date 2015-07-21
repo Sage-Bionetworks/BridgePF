@@ -17,7 +17,6 @@ import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -202,7 +201,6 @@ public class DynamoSurveyResponseDaoTest {
     // a list of results were being returned and the wrong response then being selected.
     // NOTE: Cannot get tests to pass right now because of a Stormpath issue.
     @Test
-    @Ignore
     public void createTwoResponsesAndRetrieveTheCorrectOneByIdentifier() {
         String targetIdentifier = BridgeUtils.generateGuid();
         surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), BridgeUtils.generateGuid());
