@@ -75,7 +75,7 @@ public class DynamoStudyDaoTest {
     }
 
     @Test
-    public void canRetrieveAllStudies() {
+    public void canRetrieveAllStudies() throws InterruptedException {
         List<Study> studies = Lists.newArrayList();
         try {
             studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
@@ -92,6 +92,7 @@ public class DynamoStudyDaoTest {
             for (Study study : studies) {
                 studyDao.deleteStudy(study);
             }
+            Thread.sleep(2000);
         }
         List<Study> savedStudies = studyDao.getStudies();
         assertEquals("There should be only one study", 1, savedStudies.size());

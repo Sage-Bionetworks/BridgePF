@@ -19,7 +19,7 @@ public interface AuthenticationService {
 
     public void signOut(UserSession session);
 
-    public void signUp(Study study, SignUp signUp, boolean sendEmail);
+    public void signUp(Study study, SignUp signUp, boolean isAnonSignUp);
 
     public UserSession verifyEmail(Study study, EmailVerification verification) throws ConsentRequiredException;
     

@@ -104,8 +104,6 @@ public class StormPathUserAdminServiceTest {
     }
 
     // Next two test the same thing in two different ways.
-    
-    @Test(expected = EntityAlreadyExistsException.class)
     public void cannotCreateTheSameUserTwice() {
         testUser = userAdminService.createUser(signUp, study, true, true).getUser();
         testUser = userAdminService.createUser(signUp, study, true, true).getUser();
