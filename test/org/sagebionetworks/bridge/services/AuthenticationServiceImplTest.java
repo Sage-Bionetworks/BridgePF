@@ -130,9 +130,9 @@ public class AuthenticationServiceImplTest {
         authService.requestResetPassword(testUser.getStudy(), email);
     }
     
-    @Test(expected = BridgeServiceException.class)
+    @Test(expected = EntityNotFoundException.class)
     public void resetPasswordWithBadTokenFails() throws Exception {
-        authService.resetPassword(new PasswordReset("foo", "newpassword"));
+        authService.resetPassword(new PasswordReset("newpassword", "foo"));
     }
 
     @Test
@@ -154,7 +154,18 @@ public class AuthenticationServiceImplTest {
         try {
             Email email = new Email(testUser.getStudyIdentifier(), user.getEmail());
             authService.resendEmailVerification(user.getStudyIdentifier(), email);
-        } catch (ConsentRequiredException e) {
+        } finally {
+            helper.deleteUser(user);
+        }
+    }
+    
+    @Test
+    public void resendEmailVerificationLooksSuccessfulWhenNoAccount() throws Exception {
+        // In particular, it must not throw an EntityNotFoundException
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
+        try {
+            Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
+            authService.resendEmailVerification(user.getStudyIdentifier(), email);
         } finally {
             helper.deleteUser(user);
         }
