@@ -18,14 +18,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
@@ -37,6 +37,10 @@ public class IosSchemaValidationHandler2Test {
     private static final String TEST_UPLOAD_DATE_STRING = "2015-04-13";
     private static final String TEST_UPLOAD_ID = "test-upload";
 
+    private static final Map<String, Map<String, Integer>> DEFAULT_SCHEMA_REV_MAP =
+            ImmutableMap.<String, Map<String, Integer>>of(TEST_STUDY_ID,
+                    ImmutableMap.of("schema-rev-test", 2));
+
     private UploadValidationContext context;
     private IosSchemaValidationHandler2 handler;
 
@@ -44,8 +48,7 @@ public class IosSchemaValidationHandler2Test {
     public void setup() {
         // set up common params for test context
         // dummy study, all we need is the ID
-        DynamoStudy study = TestUtils.getValidStudy();
-        study.setIdentifier(TEST_STUDY_ID);
+        StudyIdentifier study = new StudyIdentifierImpl(TEST_STUDY_ID);
 
         // For upload, we need uploadId, healthCode, and uploadDate
         DynamoUpload2 upload = new DynamoUpload2();
@@ -130,16 +133,39 @@ public class IosSchemaValidationHandler2Test {
                 new DynamoUploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
+        DynamoUploadSchema schemaRevTest2 = new DynamoUploadSchema();
+        schemaRevTest2.setStudyId(TEST_STUDY_ID);
+        schemaRevTest2.setSchemaId("schema-rev-test");
+        schemaRevTest2.setRevision(2);
+        schemaRevTest2.setName("Schema Rev Test 2: Electric Buggaloo");
+        schemaRevTest2.setSchemaType(UploadSchemaType.IOS_DATA);
+        schemaRevTest2.setFieldDefinitions(ImmutableList.<UploadFieldDefinition>of(
+                new DynamoUploadFieldDefinition.Builder().withName("dummy.json.field").withType(UploadFieldType.STRING)
+                        .build()));
+
+        DynamoUploadSchema schemaRevTest3 = new DynamoUploadSchema();
+        schemaRevTest3.setStudyId(TEST_STUDY_ID);
+        schemaRevTest3.setSchemaId("schema-rev-test");
+        schemaRevTest3.setRevision(3);
+        schemaRevTest3.setName("Schema Rev Test 3: The Quickening");
+        schemaRevTest3.setSchemaType(UploadSchemaType.IOS_DATA);
+        schemaRevTest3.setFieldDefinitions(ImmutableList.<UploadFieldDefinition>of(
+                new DynamoUploadFieldDefinition.Builder().withName("dummy.json.field").withType(UploadFieldType.STRING)
+                        .build()));
+
         // mock upload schema service
         UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
-        when(mockSchemaService.getUploadSchema(study, "test-survey")).thenReturn(surveySchema);
-        when(mockSchemaService.getUploadSchema(study, "json-data")).thenReturn(jsonDataSchema);
-        when(mockSchemaService.getUploadSchema(study, "non-json-data")).thenReturn(nonJsonDataSchema);
-        when(mockSchemaService.getUploadSchema(study, "mixed-data")).thenReturn(mixedSchema);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "test-survey", 1)).thenReturn(surveySchema);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "json-data", 1)).thenReturn(jsonDataSchema);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "non-json-data", 1)).thenReturn(nonJsonDataSchema);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "mixed-data", 1)).thenReturn(mixedSchema);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "schema-rev-test", 2)).thenReturn(schemaRevTest2);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "schema-rev-test", 3)).thenReturn(schemaRevTest3);
 
         // set up handler
         handler = new IosSchemaValidationHandler2();
         handler.setUploadSchemaService(mockSchemaService);
+        handler.setDefaultSchemaRevisionMap(DEFAULT_SCHEMA_REV_MAP);
 
         // health data dao is only used for getBuilder(), so we can just create one without any depedencies
         handler.setHealthDataDao(new DynamoHealthDataDao());
@@ -419,6 +445,95 @@ public class IosSchemaValidationHandler2Test {
         assertEquals("mixed", fieldJsonAttachmentNode.get(0).textValue());
         assertEquals("data", fieldJsonAttachmentNode.get(1).textValue());
         assertEquals("attachment", fieldJsonAttachmentNode.get(2).textValue());
+
+        // We should have no messages.
+        assertTrue(context.getMessageList().isEmpty());
+    }
+
+    @Test
+    public void schemaRevTestLegacyMap() throws Exception {
+        // fill in context with JSON data
+        String infoJsonText = "{\n" +
+                "   \"files\":[{\n" +
+                "       \"filename\":\"dummy.json\",\n" +
+                "       \"timestamp\":\"2015-07-21T15:24:57-07:00\"\n" +
+                "   }],\n" +
+                "   \"item\":\"schema-rev-test\"\n" +
+                "}";
+        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+
+        String dummyJsonText = "{\n" +
+                "   \"field\":\"dummy field value\"\n" +
+                "}";
+        JsonNode dummyJsonNode = BridgeObjectMapper.get().readTree(dummyJsonText);
+
+        context.setJsonDataMap(ImmutableMap.of(
+                "info.json", infoJsonNode,
+                "dummy.json", dummyJsonNode));
+        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
+
+        // execute
+        handler.handle(context);
+
+        // validate
+        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
+        validateCommonRecordProps(recordBuilder);
+        assertEquals(DateTime.parse("2015-07-21T15:24:57-07:00").getMillis(),
+                recordBuilder.getCreatedOn().longValue());
+        assertEquals("schema-rev-test", recordBuilder.getSchemaId());
+        assertEquals(2, recordBuilder.getSchemaRevision());
+
+        JsonNode dataNode = recordBuilder.getData();
+        assertEquals(1, dataNode.size());
+        assertEquals("dummy field value", dataNode.get("dummy.json.field").textValue());
+
+        // no attachments
+        assertTrue(context.getAttachmentsByFieldName().isEmpty());
+
+        // We should have no messages.
+        assertTrue(context.getMessageList().isEmpty());
+    }
+
+    @Test
+    public void schemaRevTestWithRev() throws Exception {
+        // fill in context with JSON data
+        String infoJsonText = "{\n" +
+                "   \"files\":[{\n" +
+                "       \"filename\":\"dummy.json\",\n" +
+                "       \"timestamp\":\"2015-07-21T15:24:57-07:00\"\n" +
+                "   }],\n" +
+                "   \"item\":\"schema-rev-test\",\n" +
+                "   \"schemaRevision\":3\n" +
+                "}";
+        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+
+        String dummyJsonText = "{\n" +
+                "   \"field\":\"dummy field value\"\n" +
+                "}";
+        JsonNode dummyJsonNode = BridgeObjectMapper.get().readTree(dummyJsonText);
+
+        context.setJsonDataMap(ImmutableMap.of(
+                "info.json", infoJsonNode,
+                "dummy.json", dummyJsonNode));
+        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
+
+        // execute
+        handler.handle(context);
+
+        // validate
+        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
+        validateCommonRecordProps(recordBuilder);
+        assertEquals(DateTime.parse("2015-07-21T15:24:57-07:00").getMillis(),
+                recordBuilder.getCreatedOn().longValue());
+        assertEquals("schema-rev-test", recordBuilder.getSchemaId());
+        assertEquals(3, recordBuilder.getSchemaRevision());
+
+        JsonNode dataNode = recordBuilder.getData();
+        assertEquals(1, dataNode.size());
+        assertEquals("dummy field value", dataNode.get("dummy.json.field").textValue());
+
+        // no attachments
+        assertTrue(context.getAttachmentsByFieldName().isEmpty());
 
         // We should have no messages.
         assertTrue(context.getMessageList().isEmpty());
