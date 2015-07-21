@@ -194,9 +194,9 @@ public class AuthenticationServiceImplTest {
 
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
         try {
-            authService.signUp(user.getStudy(), user.getSignUp(), false);
-            authService.signUp(tempStudy, user.getSignUp(), false);
-            
+            authService.signUp(user.getStudy(), user.getSignUp(), true);
+            authService.signUp(tempStudy, user.getSignUp(), true);
+
             verify(authService).requestResetPassword(any(Study.class), any(Email.class));
         } catch (EntityAlreadyExistsException e) {
             fail("Should not throw entity already exists");

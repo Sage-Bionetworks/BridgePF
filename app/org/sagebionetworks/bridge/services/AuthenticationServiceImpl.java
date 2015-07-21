@@ -149,7 +149,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void signUp(Study study, SignUp signUp, boolean sendEmail) {
+    public void signUp(Study study, SignUp signUp, boolean isAnonSignUp) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
         
@@ -161,14 +161,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             if (consentService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }
-            accountDao.signUp(study, signUp, sendEmail);
-        } catch(EntityAlreadyExistsException eae) {
+            accountDao.signUp(study, signUp, isAnonSignUp);
+        } catch(EntityAlreadyExistsException e) {
             // Do not indicate to the end user that this email address has already been taken, as this 
             // leaks information about who is in the study. Instead send a reset password request to the 
             // email address in case user has forgotten password and is trying to sign up again.
-            logger.info(String.format("Sign up attempt for existing account: %s, %s", study.getIdentifier(), signUp.getEmail()));
-            Email email = new Email(study.getIdentifier(), signUp.getEmail());
-            requestResetPassword(study, email);
+            if (isAnonSignUp) {
+                logger.info(String.format("Sign up attempt for existing account: %s, %s", study.getIdentifier(), signUp.getEmail()));
+                Email email = new Email(study.getIdentifier(), signUp.getEmail());
+                requestResetPassword(study, email);
+            } else {
+                throw e;
+            }
         } finally {
             lockDao.releaseLock(SignUp.class, signUp.getEmail(), lockId);
         }
