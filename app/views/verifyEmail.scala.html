@@ -36,7 +36,7 @@ try {
     var p = $.ajax({
         type: "POST",
         url: "/v3/auth/verifyEmail",
-        data: JSON.stringify({"sptoken":qd.sptoken[0], "study": host}),
+        data: JSON.stringify({"sptoken":qd.sptoken[0], "study": host[0]}),
         contentType: "application/json, charset=utf-8",
         dataType: "json"
     });
