@@ -168,7 +168,17 @@ public class SurveyController extends BaseController {
         return okResult(survey);
     }
     
-    public Result deleteSurvey(String surveyGuid, String createdOnString) throws Exception {
+    /**
+     * Administrators can pass the ?physical=true flag to this endpoint to physicall delete a survey and all its 
+     * survey elements, rather than only marking it deleted to maintain referential integrity. This should only be 
+     * used as part of testing.
+     * @param surveyGuid
+     * @param createdOnString
+     * @param physical
+     * @return
+     * @throws Exception
+     */
+    public Result deleteSurvey(String surveyGuid, String createdOnString, String physical) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
@@ -178,9 +188,12 @@ public class SurveyController extends BaseController {
         Survey survey = surveyService.getSurvey(keys);
         verifySurveyIsInStudy(session, studyId, survey);
         
-        surveyService.deleteSurvey(survey);
+        if ("true".equals(physical) && session.getUser().isInRole(Roles.ADMIN)) {
+            surveyService.deleteSurveyPermanently(survey);
+        } else {
+            surveyService.deleteSurvey(survey);    
+        }
         expireCache(surveyGuid, createdOnString);
-        
         return okResult("Survey deleted.");
     }
     

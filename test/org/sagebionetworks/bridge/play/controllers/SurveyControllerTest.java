@@ -380,7 +380,7 @@ public class SurveyControllerTest {
         when(service.getSurvey(eq(keys))).thenReturn(survey);
         setContext();
         
-        controller.deleteSurvey(guid, date.toString());
+        controller.deleteSurvey(guid, date.toString(), "false");
 
         verify(service).getSurvey(eq(keys));
         verify(service).deleteSurvey(eq(survey));
@@ -395,7 +395,7 @@ public class SurveyControllerTest {
         when(service.getSurvey(eq(keys))).thenThrow(new EntityNotFoundException(Survey.class));
         setContext();
         
-        controller.deleteSurvey(guid, date.toString());
+        controller.deleteSurvey(guid, date.toString(), "false");
     }
     
     @Test
@@ -409,7 +409,7 @@ public class SurveyControllerTest {
         setUserSession("secondstudy");
         
         try {
-            controller.deleteSurvey(guid, date.toString());
+            controller.deleteSurvey(guid, date.toString(), "false");
             fail("Should have thrown exception");
         } catch(UnauthorizedException e) {
             verify(service).getSurvey(eq(keys));
@@ -571,7 +571,7 @@ public class SurveyControllerTest {
         setUserSession("secondstudy");
         
         try {
-            controller.deleteSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
+            controller.deleteSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString(), "false");
             fail("Exception should have been thrown.");
         } catch(UnauthorizedException e) {
             verify(service).getSurvey(keys);

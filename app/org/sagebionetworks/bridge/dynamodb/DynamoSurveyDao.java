@@ -172,8 +172,8 @@ public class DynamoSurveyDao implements SurveyDao {
             if (notDeleted) {
                 scan.addFilterCondition(DELETED_PROPERTY, equalsNumber("0"));
             }
-            // Scans will not sort as queries do. Sort Manually.
-            List<DynamoSurvey> surveys = Lists.newArrayList(surveyMapper.scan(DynamoSurvey.class, scan));
+            List<DynamoSurvey> surveys = Lists.newArrayList(surveyMapper.scanPage(DynamoSurvey.class, scan).getResults());
+            // Scans will not sort as queries do. Sort Manually. Probably a dog.
             Collections.sort(surveys, VERSIONED_ON_DESC_SORTER);
             return surveys;
         }
@@ -351,16 +351,19 @@ public class DynamoSurveyDao implements SurveyDao {
         return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).isNotDeleted().getOne(true);
     }
     
+    // SCAN
     @Override
     public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(StudyIdentifier studyIdentifier, String identifier) {
         return new QueryBuilder().setStudy(studyIdentifier).setIdentifier(identifier).isPublished().isNotDeleted().getOne(true);
     }
     
+    // SCAN
     @Override
     public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier) {
         return new QueryBuilder().setStudy(studyIdentifier).isPublished().isNotDeleted().getAll(false);
     }
     
+    // SCAN
     @Override
     public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier) {
         List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isNotDeleted().getAll(false);
@@ -424,8 +427,8 @@ public class DynamoSurveyDao implements SurveyDao {
         DynamoDBQueryExpression<DynamoSurveyElement> query = new DynamoDBQueryExpression<DynamoSurveyElement>();
         query.withHashKeyValues(template);
         
-        QueryResultPage<DynamoSurveyElement> page = surveyElementMapper.queryPage(DynamoSurveyElement.class, query);
-        List<FailedBatch> failures = surveyElementMapper.batchDelete(page.getResults());
+        List<DynamoSurveyElement> page = surveyElementMapper.query(DynamoSurveyElement.class, query);
+        List<FailedBatch> failures = surveyElementMapper.batchDelete(page);
         BridgeUtils.ifFailuresThrowException(failures);
     }
 }

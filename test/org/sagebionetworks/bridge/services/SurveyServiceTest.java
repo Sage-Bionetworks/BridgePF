@@ -40,12 +40,17 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class SurveyServiceTest {
+
+    private static Logger logger = LoggerFactory.getLogger(SurveyServiceTest.class);
+    
     @Resource
     UploadSchemaService schemaService;
 
@@ -77,7 +82,7 @@ public class SurveyServiceTest {
             try {
                 surveyService.deleteSurveyPermanently(oneSurvey);
             } catch (Exception ex) {
-                // suppress exception
+                logger.error(ex.getMessage(), ex);
             }
         }
 
@@ -86,7 +91,7 @@ public class SurveyServiceTest {
             try {
                 schemaService.deleteUploadSchemaById(studyIdentifier, oneSchemaId);
             } catch (Exception ex) {
-                // suppress exception
+                logger.error(ex.getMessage(), ex);
             }
         }
     }

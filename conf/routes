@@ -48,7 +48,7 @@ POST   /v3/surveys/:surveyGuid/revisions/:createdOn/version  @org.sagebionetwork
 POST   /v3/surveys/:surveyGuid/revisions/:createdOn/publish  @org.sagebionetworks.bridge.play.controllers.SurveyController.publishSurvey(surveyGuid: String, createdOn: String)
 GET    /v3/surveys/:surveyGuid/revisions/:createdOn          @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurvey(surveyGuid: String, createdOn: String)
 POST   /v3/surveys/:surveyGuid/revisions/:createdOn          @org.sagebionetworks.bridge.play.controllers.SurveyController.updateSurvey(surveyGuid: String, createdOn: String)
-DELETE /v3/surveys/:surveyGuid/revisions/:createdOn          @org.sagebionetworks.bridge.play.controllers.SurveyController.deleteSurvey(surveyGuid: String, createdOn: String)
+DELETE /v3/surveys/:surveyGuid/revisions/:createdOn          @org.sagebionetworks.bridge.play.controllers.SurveyController.deleteSurvey(surveyGuid: String, createdOn: String, physical: String ?= "false")
 
 # Survey responses
 GET    /v3/surveyresponses/:guid                                        @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.getSurveyResponse(guid: String)
