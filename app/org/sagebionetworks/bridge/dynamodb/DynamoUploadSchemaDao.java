@@ -233,6 +233,25 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         return uploadSchema;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public @Nonnull UploadSchema getUploadSchemaByIdAndRev(@Nonnull StudyIdentifier studyIdentifier,
+            @Nonnull String schemaId, int schemaRev) {
+        String studyId = studyIdentifier.getIdentifier();
+
+        DynamoUploadSchema key = new DynamoUploadSchema();
+        key.setStudyId(studyId);
+        key.setSchemaId(schemaId);
+        key.setRevision(schemaRev);
+
+        DynamoUploadSchema schema = mapper.load(key);
+        if (schema == null) {
+            throw new EntityNotFoundException(UploadSchema.class, String.format(
+                    "Upload schema not found for study %s, schema ID %s, revision %d", studyId, schemaId, schemaRev));
+        }
+        return schema;
+    }
+
     /**
      * Private helper function, which gets a schema from DDB. This is used by the get (which validates afterwards) and
      * the put (which needs to check for concurrent modification exceptions). The return value of this helper method

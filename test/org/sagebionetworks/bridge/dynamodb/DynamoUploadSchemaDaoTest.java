@@ -519,6 +519,53 @@ public class DynamoUploadSchemaDaoTest {
     }
 
     @Test
+    public void getSchemaByIdAndRev() {
+        // mock DDB mapper
+        DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
+        DynamoUploadSchema schema = new DynamoUploadSchema();
+        ArgumentCaptor<DynamoUploadSchema> loadSchemaArgCaptor = ArgumentCaptor.forClass(DynamoUploadSchema.class);
+        when(mockMapper.load(loadSchemaArgCaptor.capture())).thenReturn(schema);
+
+        // set up test dao and execute
+        DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
+        dao.setDdbMapper(mockMapper);
+        UploadSchema retVal = dao.getUploadSchemaByIdAndRev(new StudyIdentifierImpl("test-study"), "test-schema", 1);
+        assertSame(schema, retVal);
+
+        // validate intermediate args
+        DynamoUploadSchema loadSchemaArg = loadSchemaArgCaptor.getValue();
+        assertEquals("test-study", loadSchemaArg.getStudyId());
+        assertEquals("test-schema", loadSchemaArg.getSchemaId());
+        assertEquals(1, loadSchemaArg.getRevision());
+    }
+
+    @Test
+    public void getSchemaByIdAndRevNotFound() {
+        // mock DDB mapper
+        DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
+        ArgumentCaptor<DynamoUploadSchema> loadSchemaArgCaptor = ArgumentCaptor.forClass(DynamoUploadSchema.class);
+        when(mockMapper.load(loadSchemaArgCaptor.capture())).thenReturn(null);
+
+        // set up test dao and execute
+        DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
+        dao.setDdbMapper(mockMapper);
+        Exception thrownEx = null;
+        try {
+            dao.getUploadSchemaByIdAndRev(new StudyIdentifierImpl("test-study"), "test-schema", 1);
+            fail();
+        } catch (EntityNotFoundException ex) {
+            thrownEx = ex;
+        }
+        assertNotNull(thrownEx);
+
+        // validate intermediate args
+        DynamoUploadSchema loadSchemaArg = loadSchemaArgCaptor.getValue();
+        assertEquals("test-study", loadSchemaArg.getStudyId());
+        assertEquals("test-schema", loadSchemaArg.getSchemaId());
+        assertEquals(1, loadSchemaArg.getRevision());
+    }
+
+    @Test
     public void getUploadSchemasForStudy() {
         // mock result
         List<UploadSchema> mockResult = ImmutableList.<UploadSchema>of(new DynamoUploadSchema());
