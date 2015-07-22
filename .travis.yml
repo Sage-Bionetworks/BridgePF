@@ -23,7 +23,7 @@ env:
   - secure: hG+O3ytuluFaq+Un3Y7uVrCTlVZWrBufVNd2WluKCNJ62zCUEhFgw43SO3g+/eRuhhPAos0n/y1KeOEpisFdFNCBthlHTA1solk2TVE7pVoJkEtv0DTdt9d5Dg3Rit7XA0QzsMvlErdZrCE7NhfjFe7clwnUQfgIEM7jVlsESro=
   - secure: R0bZSTX5dYjPSv9Skb3EtojMYPkl0hyFjLHknCE8+C1i9jrpT9iQFV3Xb0JrM9MEgdlbKtk19mYGfK7SFL8yjJIXYSR2a/Is5Q5+A7n9HCH1jyEoNDuem9EvCzbY5ywCpb7cHQ0TUK1tMdwDZ/OrMJ6No1eajI/hGRSni4kGcOU=
 script:
-- sbt test
+- sbt clean test
 deploy:
   provider: heroku
   api_key:
