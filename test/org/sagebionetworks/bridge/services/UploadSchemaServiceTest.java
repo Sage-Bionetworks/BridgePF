@@ -160,6 +160,46 @@ public class UploadSchemaServiceTest {
         assertSame(daoRetVal, svcRetVal);
     }
 
+    @Test(expected = BadRequestException.class)
+    public void getByIdAndRevNullId() {
+        new UploadSchemaService().getUploadSchemaByIdAndRev(makeTestStudy(), null, 1);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getByIdAndRevEmptyId() {
+        new UploadSchemaService().getUploadSchemaByIdAndRev(makeTestStudy(), "", 1);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getByIdAndRevBlankId() {
+        new UploadSchemaService().getUploadSchemaByIdAndRev(makeTestStudy(), "   ", 1);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getByIdAndRevNegativeRev() {
+        new UploadSchemaService().getUploadSchemaByIdAndRev(makeTestStudy(), "test-schema-rev", -1);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getByIdAndRevZeroRev() {
+        new UploadSchemaService().getUploadSchemaByIdAndRev(makeTestStudy(), "test-schema-rev", 0);
+    }
+
+    @Test
+    public void getByIdAndRevSuccess() {
+        // mock dao
+        StudyIdentifier studyIdentifier = makeTestStudy();
+        UploadSchema daoRetVal = new DynamoUploadSchema();
+        UploadSchemaDao mockDao = mock(UploadSchemaDao.class);
+        when(mockDao.getUploadSchemaByIdAndRev(studyIdentifier, "test-schema-rev", 1)).thenReturn(daoRetVal);
+
+        // execute and validate
+        UploadSchemaService svc = new UploadSchemaService();
+        svc.setUploadSchemaDao(mockDao);
+        UploadSchema svcRetVal = svc.getUploadSchemaByIdAndRev(makeTestStudy(), "test-schema-rev", 1);
+        assertSame(daoRetVal, svcRetVal);
+    }
+
     @Test
     public void getSchemasForStudy() {
         // mock dao

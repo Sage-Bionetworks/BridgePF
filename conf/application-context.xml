@@ -18,6 +18,55 @@
         <ref bean="healthCodeEncryptor"/>
     </util:list>
 
+    <!--
+        Normally, Upload Validation defaults to rev 1. However, some schemas had to be bumped up to higher versions,
+        but the apps weren't sending schemaRevision yet. So we need this legacy map to track those exceptions where we
+        default to a different revision.
+
+        Hopefully as these schemas and app versions get phased out, we can eventually remove this map.
+    -->
+    <util:map id="defaultSchemaRevisionMap" key-type="java.lang.String" value-type="java.util.Map">
+        <entry key="api">
+            <map key-type="java.lang.String" value-type="java.lang.Integer">
+                <entry key="schema-rev-test" value="2" />
+            </map>
+        </entry>
+        <entry key="asthma">
+            <map key-type="java.lang.String" value-type="java.lang.Integer">
+                <entry key="Air Quality Report" value="4" />
+                <entry key="NonIdentifiableDemographicsTask" value="2" />
+            </map>
+        </entry>
+        <entry key="breastcancer">
+            <map key-type="java.lang.String" value-type="java.lang.Integer">
+                <entry key="Journal" value="3"/>
+                <entry key="My Journal" value="3"/>
+                <entry key="NonIdentifiableDemographicsTask" value="2"/>
+            </map>
+        </entry>
+        <entry key="cardiovascular">
+            <map key-type="java.lang.String" value-type="java.lang.Integer">
+                <entry key="2-APHHeartAge-7259AC18-D711-47A6-ADBD-6CFCECDED1DF" value="2" />
+                <entry key="6-Minute Walk Test" value="3" />
+                <entry key="NonIdentifiableDemographicsTask" value="2" />
+            </map>
+        </entry>
+        <entry key="diabetes">
+            <map key-type="java.lang.String" value-type="java.lang.Integer">
+                <entry key="NonIdentifiableDemographicsTask" value="2" />
+                <entry key="glucoseLogEntryStep" value="2" />
+            </map>
+        </entry>
+        <entry key="parkinson">
+            <map key-type="java.lang.String" value-type="java.lang.Integer">
+                <entry key="NonIdentifiableDemographicsTask" value="2" />
+                <entry key="Tapping Activity" value="6" />
+                <entry key="Voice Activity" value="3" />
+                <entry key="Walking Activity" value="5" />
+            </map>
+        </entry>
+    </util:map>
+
     <bean id="proxiedController" class="org.springframework.aop.framework.ProxyFactoryBean">
         <property name="proxyTargetClass" value="true"/>
         <property name="interceptorNames">

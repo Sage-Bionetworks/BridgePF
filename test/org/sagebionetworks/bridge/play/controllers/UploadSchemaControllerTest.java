@@ -26,7 +26,6 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
-import org.sagebionetworks.bridge.play.controllers.UploadSchemaController;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 public class UploadSchemaControllerTest {
@@ -139,6 +138,32 @@ public class UploadSchemaControllerTest {
 
         // execute and validate
         Result result = controller.getUploadSchema(TEST_SCHEMA_ID);
+        assertEquals(200, result.status());
+
+        // JSON validation is already tested, so just check obvious things like schema
+        String resultJson = Helpers.contentAsString(result);
+        UploadSchema resultSchema = BridgeObjectMapper.get().readValue(resultJson, UploadSchema.class);
+        assertEquals(TEST_SCHEMA_ID, resultSchema.getSchemaId());
+    }
+
+    @Test
+    public void getSchemaByIdAndRev() throws Exception {
+        // mock session
+        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("get-schema-study");
+        UserSession mockSession = new UserSession();
+        mockSession.setStudyIdentifier(studyIdentifier);
+
+        // mock UploadSchemaService
+        UploadSchemaService mockSvc = mock(UploadSchemaService.class);
+        when(mockSvc.getUploadSchemaByIdAndRev(studyIdentifier, TEST_SCHEMA_ID, 1)).thenReturn(makeUploadSchema());
+
+        // spy controller
+        UploadSchemaController controller = spy(new UploadSchemaController());
+        controller.setUploadSchemaService(mockSvc);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
+
+        // execute and validate
+        Result result = controller.getUploadSchemaByIdAndRev(TEST_SCHEMA_ID, 1);
         assertEquals(200, result.status());
 
         // JSON validation is already tested, so just check obvious things like schema

@@ -124,6 +124,33 @@ public class UploadSchemaService {
 
     /**
      * <p>
+     * Fetches the upload schema for the specified study, schema ID, and revision. If no schema is found, this API
+     * throws an EntityNotFoundException
+     * </p>
+     * <p>
+     * This method validates the schema ID and rev. However, it does not validate the study, as that is not user input.
+     * </p>
+     *
+     * @param studyIdentifier
+     *         study to fetch the schema from, provided by the controller
+     * @param schemaId
+     *         ID of the schema to fetch, must be non-null and non-empty
+     * @param schemaRev
+     *         revision number of the schema to fetch, must be positive
+     * @return the fetched schema, will be non-null
+     */
+    public UploadSchema getUploadSchemaByIdAndRev(StudyIdentifier studyIdentifier, String schemaId, int schemaRev) {
+        if (StringUtils.isBlank(schemaId)) {
+            throw new BadRequestException(String.format("Invalid schema ID %s", schemaId));
+        }
+        if (schemaRev <= 0) {
+            throw new BadRequestException(String.format("Invalid schema revision %d", schemaRev));
+        }
+        return uploadSchemaDao.getUploadSchemaByIdAndRev(studyIdentifier, schemaId, schemaRev);
+    }
+
+    /**
+     * <p>
      * Service handler for fetching all revisions of all upload schemas in a study. This is used by upload unpacking
      * and validation to match up the data to the schema.
      * </p>
