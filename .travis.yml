@@ -1,5 +1,3 @@
-# Use container-based infrastructure, what the heck
-sudo: false
 language: scala
 scala:
 - 2.11
