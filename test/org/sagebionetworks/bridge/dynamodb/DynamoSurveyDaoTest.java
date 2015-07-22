@@ -122,8 +122,7 @@ public class DynamoSurveyDaoTest {
 
     @Test(expected = BridgeServiceException.class)
     public void createPreventsRecreatingASurvey() {
-        Survey survey = createSurvey(testSurvey);
-
+        createSurvey(testSurvey);
         surveyDao.createSurvey(testSurvey);
     }
 
@@ -219,8 +218,6 @@ public class DynamoSurveyDaoTest {
 
         assertEquals("Survey has one less question", count-1, survey.getElements().size());
         
-        // TODO: So this doesn't work, from a concrete parent class to sub-interface.
-        // BUT: getting closer.
         SurveyQuestion restored = (SurveyQuestion)survey.getElements().get(6);
         MultiValueConstraints mvc = (MultiValueConstraints)restored.getConstraints();
         

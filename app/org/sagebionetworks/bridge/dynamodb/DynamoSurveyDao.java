@@ -413,6 +413,8 @@ public class DynamoSurveyDao implements SurveyDao {
         try {
             surveyMapper.save(survey);
         } catch(ConditionalCheckFailedException throwable) {
+            // At this point, delete the elements you just created... compensating transaction
+            deleteAllElements(survey.getGuid(), survey.getCreatedOn());
             throw new ConcurrentModificationException(survey);
         } catch(Throwable t) {
             throw new BridgeServiceException(t);

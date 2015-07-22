@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -179,7 +180,11 @@ public class SurveyController extends BaseController {
      * @throws Exception
      */
     public Result deleteSurvey(String surveyGuid, String createdOnString, String physical) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession();
+        User user = session.getUser();
+        if (!user.isInRole(DEVELOPER) && !user.isInRole(ADMIN)) {
+            throw new UnauthorizedException();
+        }
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
@@ -188,7 +193,7 @@ public class SurveyController extends BaseController {
         Survey survey = surveyService.getSurvey(keys);
         verifySurveyIsInStudy(session, studyId, survey);
         
-        if ("true".equals(physical) && session.getUser().isInRole(Roles.ADMIN)) {
+        if ("true".equals(physical) && user.isInRole(Roles.ADMIN)) {
             surveyService.deleteSurveyPermanently(survey);
         } else {
             surveyService.deleteSurvey(survey);    
