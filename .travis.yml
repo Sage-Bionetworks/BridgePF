@@ -22,6 +22,9 @@ env:
   - secure: HepX8b2aoAqu0MPuyEpy+PB2IbkTl/OE8h+CmWoaqDXLEPnYN0tQTdKAmqPk+G5VNb/UzNcCc4b4lMioKyJtx80eQo4io6R68lq/uG9FAkE20J6PhzxB9ZBRULi1BurxrE5lRj3RxU4lXn3bJJYyoormCqTSOai6nCtsIJ4MOaU=
   - secure: hG+O3ytuluFaq+Un3Y7uVrCTlVZWrBufVNd2WluKCNJ62zCUEhFgw43SO3g+/eRuhhPAos0n/y1KeOEpisFdFNCBthlHTA1solk2TVE7pVoJkEtv0DTdt9d5Dg3Rit7XA0QzsMvlErdZrCE7NhfjFe7clwnUQfgIEM7jVlsESro=
   - secure: R0bZSTX5dYjPSv9Skb3EtojMYPkl0hyFjLHknCE8+C1i9jrpT9iQFV3Xb0JrM9MEgdlbKtk19mYGfK7SFL8yjJIXYSR2a/Is5Q5+A7n9HCH1jyEoNDuem9EvCzbY5ywCpb7cHQ0TUK1tMdwDZ/OrMJ6No1eajI/hGRSni4kGcOU=
+before_script:
+- mkdir -p $HOME/.sbt/launchers/0.13.8/
+- curl -L -o $HOME/.sbt/launchers/0.13.8/sbt-launch.jar http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/0.13.8/sbt-launch.jar
 script:
 - sbt clean test
 deploy:
