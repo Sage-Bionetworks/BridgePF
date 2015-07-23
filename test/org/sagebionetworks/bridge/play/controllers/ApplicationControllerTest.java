@@ -18,6 +18,8 @@ import static play.test.Helpers.testServer;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -35,6 +37,7 @@ public class ApplicationControllerTest {
             @Override
             public void run() {
                 WSRequest request = WS.url(TEST_BASE_URL + "/anything")
+                        .setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix())
                         .setHeader(ACCESS_CONTROL_REQUEST_HEADERS, "accept, content-type")
                         .setHeader(ACCESS_CONTROL_REQUEST_METHOD, "POST")
                         .setHeader(ORIGIN, "https://some.remote.server.org");
@@ -58,6 +61,7 @@ public class ApplicationControllerTest {
             @Override
             public void run() {
                 WSRequest request = WS.url(TEST_BASE_URL + "/")
+                        .setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix())
                         .setHeader(ORIGIN, "https://some.remote.server.org")
                         .setHeader(REFERER, "https://some.remote.server.org");
                 WSResponse response = request.get().get(TIMEOUT);
@@ -73,6 +77,7 @@ public class ApplicationControllerTest {
             public void run() {
                 WSRequest request = WS.url(TEST_BASE_URL + "/")
                         .setFollowRedirects(Boolean.FALSE)
+                        .setHeader(BridgeConstants.BRIDGE_HOST_HEADER, "api" + BridgeConfigFactory.getConfig().getStudyHostnamePostfix())
                         .setHeader(X_FORWARDED_PROTO, "http");
                 WSResponse response = request.get().get(TIMEOUT);
                 assertEquals(301, response.getStatus());

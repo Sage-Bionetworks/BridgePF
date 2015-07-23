@@ -70,5 +70,4 @@ public class BaseControllerTest {
         // execute and validate
         BaseController.parseJson(mockRequest, Map.class);
     }
-    
 }
