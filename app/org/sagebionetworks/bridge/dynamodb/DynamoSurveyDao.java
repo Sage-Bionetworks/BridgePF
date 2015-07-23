@@ -20,11 +20,11 @@ import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -334,6 +334,15 @@ public class DynamoSurveyDao implements SurveyDao {
         Survey existing = getSurvey(keys);
         deleteAllElements(existing.getGuid(), existing.getCreatedOn());
         surveyMapper.delete(existing);
+        
+        // Delete the schemas as well, or they accumulate.
+        try {
+            StudyIdentifier studyId = new StudyIdentifierImpl(existing.getStudyIdentifier());
+            String schemaId = existing.getStudyIdentifier() + ":" + existing.getIdentifier();
+            uploadSchemaDao.deleteUploadSchemaById(studyId, schemaId);
+        } catch(EntityNotFoundException e) {
+            // This is OK. Just means this survey wasn't published.
+        }
     }
 
     @Override
