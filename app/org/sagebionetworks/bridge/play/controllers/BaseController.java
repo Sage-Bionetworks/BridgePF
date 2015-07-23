@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -27,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
+import play.mvc.Http.Cookie;
 import play.mvc.Http.Request;
 import play.mvc.Result;
 
@@ -112,7 +114,7 @@ public abstract class BaseController extends Controller {
     }
 
     /**
-     * Retrieve user's session using the Bridge-Session header, throwing an exception if the session doesn't
+     * Retrieve user's session using the Bridge-Session header or cookie, throwing an exception if the session doesn't
      * exist (user not authorized) or consent has not been given.
      */
     UserSession getAuthenticatedAndConsentedSession() throws NotAuthenticatedException, ConsentRequiredException {
@@ -132,6 +134,10 @@ public abstract class BaseController extends Controller {
         }
         return session;
     }
+    
+    void setSessionToken(String sessionToken) {
+        response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+    }
 
     void updateSessionUser(UserSession session, User user) {
         session.setUser(user);
@@ -141,6 +147,10 @@ public abstract class BaseController extends Controller {
     private String getSessionToken() {
         String[] session = request().headers().get(SESSION_TOKEN_HEADER);
         if (session == null || session.length == 0 || session[0].isEmpty()) {
+            Cookie sessionCookie = request().cookie(SESSION_TOKEN_HEADER);
+            if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
+                return sessionCookie.value();
+            }
             return null;
         }
         return session[0];
