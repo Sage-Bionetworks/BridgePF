@@ -107,8 +107,8 @@ public final class Activity implements BridgeEntity {
             this.survey = new SurveyReference(identifier, guid, createdOn);
             return this;
         }
-        public Builder withSurveyResponse(String guid) {
-            this.response = new SurveyResponseReference(guid);
+        public Builder withSurveyResponse(String identifier) {
+            this.response = new SurveyResponseReference(identifier);
             return this;
         }
         public Activity build() {
