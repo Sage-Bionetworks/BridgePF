@@ -148,7 +148,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
         }
     }
 
-    private Group getGroup(Directory dir, Roles role) {
+    private static Group getGroup(Directory dir, Roles role) {
         GroupCriteria criteria = Groups.where(Groups.name().eqIgnoreCase(role.name().toLowerCase()));
         GroupList list = dir.getGroups(criteria);
         return (list.iterator().hasNext()) ? list.iterator().next() : null;
@@ -162,7 +162,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
         return client.getResource(config.getStormpathApplicationHref(), Application.class);
     }
     
-    private AccountStoreMapping getApplicationMapping(String href, Application app) {
+    private static AccountStoreMapping getApplicationMapping(String href, Application app) {
         // This is tedious but I see no way to search for or make a reference to this 
         // mapping without iterating through the application's mappings.
         for (AccountStoreMapping mapping : app.getAccountStoreMappings(asmCriteria)) {
@@ -203,6 +203,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
         updateTemplate(study, template, study.getVerifyEmailTemplate(), "verifyEmail");
         
         policy.setVerificationEmailStatus(EmailStatus.ENABLED);
+        policy.setVerificationSuccessEmailStatus(EmailStatus.DISABLED);
         policy.setWelcomeEmailStatus(EmailStatus.DISABLED);
         policy.save();
     }
@@ -230,12 +231,12 @@ public class StormpathDirectoryDao implements DirectoryDao {
         stormpathTemplate.save();
     }
 
-    private com.stormpath.sdk.mail.MimeType getStormpathMimeType(EmailTemplate template) {
+    public static com.stormpath.sdk.mail.MimeType getStormpathMimeType(EmailTemplate template) {
         return (template.getMimeType() == EmailTemplate.MimeType.TEXT) ? 
             com.stormpath.sdk.mail.MimeType.PLAIN_TEXT : com.stormpath.sdk.mail.MimeType.HTML;
     }
     
-    private String partiallyResolveTemplate(String template, Study study) {
+    private static String partiallyResolveTemplate(String template, Study study) {
         Map<String,String> map = Maps.newHashMap();
         map.put("studyName", study.getName());
         map.put("supportEmail", study.getSupportEmail());

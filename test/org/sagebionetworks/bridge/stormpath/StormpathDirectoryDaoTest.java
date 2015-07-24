@@ -105,7 +105,7 @@ public class StormpathDirectoryDaoTest {
         assertEquals(study.getSponsorName(), template.getFromName());
         assertEquals(study.getSupportEmail(), template.getFromEmailAddress());
         assertEquals(rpSubject, template.getSubject());
-        assertEquals(getStormpathMimeType(study.getResetPasswordTemplate()), template.getMimeType());
+        assertEquals(StormpathDirectoryDao.getStormpathMimeType(study.getResetPasswordTemplate()), template.getMimeType());
         assertEquals(study.getResetPasswordTemplate().getBody(), template.getTextBody());
         String url = String.format("%s/mobile/resetPassword.html?study=%s", BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier());
         assertEquals(url, template.getLinkBaseUrl());
@@ -128,15 +128,10 @@ public class StormpathDirectoryDaoTest {
         assertEquals(study.getSponsorName(), template.getFromName());
         assertEquals(study.getSupportEmail(), template.getFromEmailAddress());
         assertEquals(veSubject, template.getSubject());
-        assertEquals(getStormpathMimeType(study.getVerifyEmailTemplate()), template.getMimeType());
+        assertEquals(StormpathDirectoryDao.getStormpathMimeType(study.getVerifyEmailTemplate()), template.getMimeType());
         assertEquals(study.getVerifyEmailTemplate().getBody(), template.getTextBody());
         url = String.format("%s/mobile/verifyEmail.html?study=%s", BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier());
         assertEquals(url, template.getLinkBaseUrl());
-    }
-    
-    private com.stormpath.sdk.mail.MimeType getStormpathMimeType(EmailTemplate template) {
-        return (template.getMimeType() == EmailTemplate.MimeType.TEXT) ? 
-            com.stormpath.sdk.mail.MimeType.PLAIN_TEXT : com.stormpath.sdk.mail.MimeType.HTML;
     }
     
     private boolean groupExists(Directory directory, Roles role) {
