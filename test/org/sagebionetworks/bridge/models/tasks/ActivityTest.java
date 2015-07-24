@@ -168,7 +168,7 @@ public class ActivityTest {
         assertTrue(ref1.getHref().matches("http[s]?://.*/v3/surveys/guid/revisions/published"));
         
         SurveyResponseReference ref2 = activity.getSurveyResponse();
-        assertEquals("BBB", ref2.getGuid());
+        assertEquals("BBB", ref2.getIdentifier());
         assertTrue(ref2.getHref().matches("http[s]?://.*/v3/surveyresponses/BBB"));
     }
     
