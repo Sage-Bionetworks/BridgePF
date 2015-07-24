@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Email;
@@ -158,18 +157,6 @@ public class AuthenticationServiceImplTest {
             helper.deleteUser(user);
         }
     }
-    
-    @Test
-    public void resendEmailVerificationLooksSuccessfulWhenNoAccount() throws Exception {
-        // In particular, it must not throw an EntityNotFoundException
-        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
-        try {
-            Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
-            authService.resendEmailVerification(user.getStudyIdentifier(), email);
-        } finally {
-            helper.deleteUser(user);
-        }
-    }
 
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
@@ -196,28 +183,6 @@ public class AuthenticationServiceImplTest {
     }
 
     @Test
-    public void cannotCreateTheSameEmailAccountTwice() {
-        // Verify that requestResetPassword is called in this case
-        authService = spy(authService);
-        
-        Study tempStudy = TestUtils.getValidStudy();
-        tempStudy = studyService.createStudy(tempStudy);
-
-        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
-        try {
-            authService.signUp(user.getStudy(), user.getSignUp(), true);
-            authService.signUp(tempStudy, user.getSignUp(), true);
-
-            verify(authService).requestResetPassword(any(Study.class), any(Email.class));
-        } catch (EntityAlreadyExistsException e) {
-            fail("Should not throw entity already exists");
-        } finally {
-            studyService.deleteStudy(tempStudy.getIdentifier());    
-            helper.deleteUser(user);
-        }
-    }
-
-    @Test
     public void testSignOut() {
         final String sessionToken = testUser.getSessionToken();
         final String userId = testUser.getUser().getId();
@@ -235,4 +200,52 @@ public class AuthenticationServiceImplTest {
         assertNull(cacheProvider.getUserSession(sessionToken));
         assertNull(cacheProvider.getUserSessionByUserId(userId));
     }
+    
+    // Account enumeration security. Verify the service is quite (throws no exceptions) when we don't
+    // recognize an account.
+
+    @Test
+    public void secondSignUpTriggersResetPasswordInstead() {
+        // Verify that requestResetPassword is called in this case
+        authService = spy(authService);
+        
+        Study tempStudy = TestUtils.getValidStudy();
+        tempStudy = studyService.createStudy(tempStudy);
+
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
+        try {
+            authService.signUp(user.getStudy(), user.getSignUp(), true);
+            authService.signUp(tempStudy, user.getSignUp(), true);
+
+            verify(authService).requestResetPassword(any(Study.class), any(Email.class));
+        } finally {
+            studyService.deleteStudy(tempStudy.getIdentifier());    
+            helper.deleteUser(user);
+        }
+    }
+    
+    @Test
+    public void resendEmailVerificationLooksSuccessfulWhenNoAccount() throws Exception {
+        // In particular, it must not throw an EntityNotFoundException
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
+        try {
+            Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
+            authService.resendEmailVerification(user.getStudyIdentifier(), email);
+        } finally {
+            helper.deleteUser(user);
+        }
+    }
+    
+    @Test
+    public void requestResetPasswordLooksSuccessfulWhenNoAccount() throws Exception {
+        // In particular, it must not throw an EntityNotFoundException
+        TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);
+        try {
+            Email email = new Email(testUser.getStudyIdentifier(), "notarealaccount@sagebase.org");
+            authService.requestResetPassword(testUser.getStudy(), email);
+        } finally {
+            helper.deleteUser(user);
+        }
+    }
+    
 }
