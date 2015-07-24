@@ -72,6 +72,7 @@ GET    /v3/uploadstatuses/:uploadId    @org.sagebionetworks.bridge.play.controll
 GET    /v3/uploadschemas                           @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemasForStudy
 POST   /v3/uploadschemas                           @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.createOrUpdateUploadSchema
 GET    /v3/uploadschemas/:schemaId                 @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchema(schemaId: String)
+GET    /v3/uploadschemas/:schemaId/revisions/:rev  @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByIdAndRev(schemaId: String, rev: Int)
 DELETE /v3/uploadschemas/:schemaId                 @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteUploadSchemaById(schemaId: String)
 DELETE /v3/uploadschemas/:schemaId/revisions/:rev  @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteUploadSchemaByIdAndRev(schemaId: String, rev: Int)
 
@@ -85,11 +86,11 @@ DELETE /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.
 # Studies
 GET    /v3/studies                 @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies(format: String ?= null)
 POST   /v3/studies                 @org.sagebionetworks.bridge.play.controllers.StudyController.createStudy 
+GET    /v3/studies/self            @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyForDeveloper
+POST   /v3/studies/self            @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
 GET    /v3/studies/:identifier     @org.sagebionetworks.bridge.play.controllers.StudyController.getStudy(identifier: String)
 POST   /v3/studies/:identifier     @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudy(identifier: String)
 DELETE /v3/studies/:identifier     @org.sagebionetworks.bridge.play.controllers.StudyController.deleteStudy(identifier: String)
-GET    /v3/studies/self            @org.sagebionetworks.bridge.play.controllers.StudyController.getStudyForDeveloper
-POST   /v3/studies/self            @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudyForDeveloper
 
 # Backfills
 GET    /v3/backfill/:name          @org.sagebionetworks.bridge.play.controllers.BackfillController.backfill(name: String)

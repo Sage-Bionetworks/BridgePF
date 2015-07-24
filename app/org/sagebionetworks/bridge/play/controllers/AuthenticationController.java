@@ -1,8 +1,9 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -35,6 +36,7 @@ public class AuthenticationController extends BaseController {
         if (session != null) {
             authenticationService.signOut(session);
         }
+        response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         return okResult("Signed out.");
     }
 
@@ -54,6 +56,7 @@ public class AuthenticationController extends BaseController {
         // In normal course of events (verify email, consent to research),
         // an exception is thrown. Code after this line will rarely execute
         UserSession session = authenticationService.verifyEmail(study, emailVerification);
+        setSessionToken(session.getSessionToken());
         return okResult(new UserSessionInfo(session));
     }
 
@@ -88,6 +91,7 @@ public class AuthenticationController extends BaseController {
 
         UserSession session = getSessionIfItExists();
         if (session != null) {
+            setSessionToken(session.getSessionToken());
             return okResult(new UserSessionInfo(session));
         }
 
@@ -97,6 +101,7 @@ public class AuthenticationController extends BaseController {
         try {
             session = authenticationService.signIn(study, signIn);
         } catch(ConsentRequiredException e) {
+            setSessionToken(e.getUserSession().getSessionToken());
             throw e;
         } catch(ConcurrentModificationException e) {
             if (retryCounter > 0) {
@@ -106,6 +111,8 @@ public class AuthenticationController extends BaseController {
             }
             throw e;
         }
+
+        setSessionToken(session.getSessionToken());
         return okResult(new UserSessionInfo(session));
     }
 
@@ -131,9 +138,9 @@ public class AuthenticationController extends BaseController {
 
     private String getStudyStringOrThrowException(JsonNode node) {
         String studyId = JsonUtils.asText(node, STUDY_PROPERTY);
-        if (isBlank(studyId)) {
-            throw new EntityNotFoundException(Study.class);    
+        if (isNotBlank(studyId)) {
+            return studyId;
         }
-        return studyId;
+        throw new EntityNotFoundException(Study.class);
     }
 }
