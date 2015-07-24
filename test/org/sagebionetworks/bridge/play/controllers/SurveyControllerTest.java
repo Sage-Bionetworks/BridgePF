@@ -372,7 +372,7 @@ public class SurveyControllerTest {
     }
     
     @Test
-    public void deleteSurvey() throws Exception {
+    public void deleteSurveyAllowedForDeveloper() throws Exception {
         String guid = BridgeUtils.generateGuid();
         DateTime date = DateTime.now();
         Survey survey = getSurvey(false);
@@ -418,6 +418,26 @@ public class SurveyControllerTest {
         verify(service).getSurvey(eq(keys));
         verify(service).deleteSurveyPermanently(eq(survey));
         verifyNoMoreInteractions(service);
+    }
+    
+    @Test
+    public void deleteBlockedForAdminThatDoesntAskForPhysicalDelete() throws Exception {
+        String guid = BridgeUtils.generateGuid();
+        DateTime date = DateTime.now();
+        Survey survey = getSurvey(false);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(guid, date.getMillis());
+        when(service.getSurvey(eq(keys))).thenReturn(survey);
+        setContext();
+        
+        session.getUser().getRoles().remove(DEVELOPER);
+        session.getUser().getRoles().add(ADMIN);
+        try {
+            controller.deleteSurvey(guid, date.toString(), "false");
+            fail("This should have thrown an exception");
+        } catch(UnauthorizedException e) {
+            verify(service).getSurvey(eq(keys));
+            verifyNoMoreInteractions(service);
+        }
     }
     
     @Test(expected = EntityNotFoundException.class)
