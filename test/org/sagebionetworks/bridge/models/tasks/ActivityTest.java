@@ -151,7 +151,7 @@ public class ActivityTest {
         assertEquals("SurveyReference", ref.get("type").asText());
         
         ref = node.get("surveyResponse");
-        assertEquals("BBB", ref.get("guid").asText());
+        assertEquals("BBB", ref.get("identifier").asText());
         href = ref.get("href").asText();
         assertTrue(href.matches("http[s]?://.*/v3/surveyresponses/BBB"));
         assertEquals("SurveyResponseReference", ref.get("type").asText());
@@ -172,6 +172,7 @@ public class ActivityTest {
         assertTrue(ref2.getHref().matches("http[s]?://.*/v3/surveyresponses/BBB"));
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void olderPublishedActivitiesCanBeDeserialized() throws Exception {
         String oldJson = "{\"label\":\"Personal Health Survey\",\"ref\":\"https://webservices-staging.sagebridge.org/api/v2/surveys/ac1e57fd-5e8e-473f-b82f-bac7547b6783/revisions/published\",\"activityType\":\"survey\",\"survey\":{\"guid\":\"ac1e57fd-5e8e-473f-b82f-bac7547b6783\",\"type\":\"GuidCreatedOnVersionHolder\"},\"type\":\"Activity\"}";
