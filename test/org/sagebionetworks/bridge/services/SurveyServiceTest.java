@@ -40,12 +40,17 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class SurveyServiceTest {
+
+    private static Logger logger = LoggerFactory.getLogger(SurveyServiceTest.class);
+    
     @Resource
     UploadSchemaService schemaService;
 
@@ -56,7 +61,6 @@ public class SurveyServiceTest {
 
     private TestSurvey testSurvey;
     private Set<GuidCreatedOnVersionHolderImpl> surveysToDelete;
-    private Set<String> schemaIdsToDelete;
 
     @BeforeClass
     public static void beforeClass() {
@@ -67,7 +71,6 @@ public class SurveyServiceTest {
     public void before() {
         testSurvey = new TestSurvey(true);
         surveysToDelete = new HashSet<>();
-        schemaIdsToDelete = new HashSet<>();
     }
 
     @After
@@ -77,16 +80,7 @@ public class SurveyServiceTest {
             try {
                 surveyService.deleteSurveyPermanently(oneSurvey);
             } catch (Exception ex) {
-                // suppress exception
-            }
-        }
-
-        // clean up schemas
-        for (String oneSchemaId : schemaIdsToDelete) {
-            try {
-                schemaService.deleteUploadSchemaById(studyIdentifier, oneSchemaId);
-            } catch (Exception ex) {
-                // suppress exception
+                logger.error(ex.getMessage(), ex);
             }
         }
     }
@@ -217,7 +211,6 @@ public class SurveyServiceTest {
         Survey survey = surveyService.createSurvey(testSurvey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         surveyService.publishSurvey(studyIdentifier, survey);
-        schemaIdsToDelete.add(survey.getIdentifier());
 
         survey.setName("This is a new name");
         surveyService.updateSurvey(survey);
@@ -230,7 +223,6 @@ public class SurveyServiceTest {
         Survey survey = surveyService.createSurvey(testSurvey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         surveyService.publishSurvey(studyIdentifier, survey);
-        schemaIdsToDelete.add(survey.getIdentifier());
 
         Long originalVersion = survey.getCreatedOn();
         survey = surveyService.versionSurvey(survey);
@@ -265,7 +257,6 @@ public class SurveyServiceTest {
         Survey survey = surveyService.createSurvey(testSurvey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         survey = surveyService.publishSurvey(studyIdentifier, survey);
-        schemaIdsToDelete.add(survey.getIdentifier());
 
         assertTrue("Survey is marked published", survey.isPublished());
 
@@ -288,7 +279,6 @@ public class SurveyServiceTest {
         Survey survey = surveyService.createSurvey(testSurvey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         survey = surveyService.publishSurvey(studyIdentifier, survey);
-        schemaIdsToDelete.add(survey.getIdentifier());
 
         Survey laterSurvey = surveyService.versionSurvey(survey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(laterSurvey));
@@ -360,7 +350,6 @@ public class SurveyServiceTest {
 
         // Publish one version
         surveyService.publishSurvey(studyIdentifier, survey1);
-        schemaIdsToDelete.add(survey1.getIdentifier());
 
         // Find the survey that we created and make sure it's the published version (survey1)
         List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
@@ -393,17 +382,14 @@ public class SurveyServiceTest {
         Survey survey1 = surveyService.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey1));
         surveyService.publishSurvey(studyIdentifier, survey1);
-        schemaIdsToDelete.add(survey1.getIdentifier());
 
         Survey survey2 = surveyService.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey2));
         surveyService.publishSurvey(studyIdentifier, survey2);
-        schemaIdsToDelete.add(survey2.getIdentifier());
 
         Survey survey3 = surveyService.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey3));
         surveyService.publishSurvey(studyIdentifier, survey3);
-        schemaIdsToDelete.add(survey3.getIdentifier());
 
         // Make sure this returns all surveys that we created
         List<Survey> published = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
@@ -422,7 +408,6 @@ public class SurveyServiceTest {
         Survey createdSurvey = surveyService.createSurvey(survey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(createdSurvey));
         surveyService.publishSurvey(studyIdentifier, createdSurvey);
-        schemaIdsToDelete.add(survey.getIdentifier());
 
         Survey found = surveyService.getSurveyMostRecentlyPublishedVersionByIdentifier(studyIdentifier, identifier);
         assertNotNull(found);

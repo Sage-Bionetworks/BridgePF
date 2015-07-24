@@ -9,7 +9,9 @@ import java.util.Set;
 
 import javax.annotation.Resource;
 
+import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUtils;
@@ -31,9 +33,13 @@ public class DynamoStudyDaoTest {
     @Resource
     DynamoStudyDao studyDao;
 
+    @BeforeClass
+    public static void beforeClass() {
+        DynamoInitializer.init(DynamoStudy.class);
+    }
+    
     @Before
     public void before() {
-        DynamoInitializer.init(DynamoStudy.class);
         // We need to leave the test study in the database.
         List<Study> studies = studyDao.getStudies();
         for (Study study : studies) {
@@ -80,20 +86,17 @@ public class DynamoStudyDaoTest {
         try {
             studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
             studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-
+            
             List<Study> savedStudies = studyDao.getStudies();
             // The five studies, plus the API study we refuse to delete...
-            assertEquals("There are six studies", 6, savedStudies.size());
-
+            assertEquals("There are three studies", 3, savedStudies.size());
         } finally {
             for (Study study : studies) {
                 studyDao.deleteStudy(study);
             }
-            Thread.sleep(2000);
         }
+        // TODO: Investigating why tests fail often (not always) without this
+        Thread.sleep(5000);
         List<Study> savedStudies = studyDao.getStudies();
         assertEquals("There should be only one study", 1, savedStudies.size());
         assertEquals("That should be the test study study", "api", savedStudies.get(0).getIdentifier());

@@ -20,11 +20,11 @@ import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -172,8 +172,8 @@ public class DynamoSurveyDao implements SurveyDao {
             if (notDeleted) {
                 scan.addFilterCondition(DELETED_PROPERTY, equalsNumber("0"));
             }
-            // Scans will not sort as queries do. Sort Manually.
             List<DynamoSurvey> surveys = Lists.newArrayList(surveyMapper.scan(DynamoSurvey.class, scan));
+            // Scans will not sort as queries do. Sort Manually. Probably a dog.
             Collections.sort(surveys, VERSIONED_ON_DESC_SORTER);
             return surveys;
         }
@@ -334,6 +334,14 @@ public class DynamoSurveyDao implements SurveyDao {
         Survey existing = getSurvey(keys);
         deleteAllElements(existing.getGuid(), existing.getCreatedOn());
         surveyMapper.delete(existing);
+        
+        // Delete the schemas as well, or they accumulate.
+        try {
+            StudyIdentifier studyId = new StudyIdentifierImpl(existing.getStudyIdentifier());
+            uploadSchemaDao.deleteUploadSchemaById(studyId, existing.getIdentifier());
+        } catch(EntityNotFoundException e) {
+            // This is OK. Just means this survey wasn't published.
+        }
     }
 
     @Override
@@ -351,16 +359,19 @@ public class DynamoSurveyDao implements SurveyDao {
         return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).isNotDeleted().getOne(true);
     }
     
+    // SCAN
     @Override
     public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(StudyIdentifier studyIdentifier, String identifier) {
         return new QueryBuilder().setStudy(studyIdentifier).setIdentifier(identifier).isPublished().isNotDeleted().getOne(true);
     }
     
+    // SCAN
     @Override
     public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier) {
         return new QueryBuilder().setStudy(studyIdentifier).isPublished().isNotDeleted().getAll(false);
     }
     
+    // SCAN
     @Override
     public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier) {
         List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isNotDeleted().getAll(false);
@@ -410,6 +421,8 @@ public class DynamoSurveyDao implements SurveyDao {
         try {
             surveyMapper.save(survey);
         } catch(ConditionalCheckFailedException throwable) {
+            // At this point, delete the elements you just created... compensating transaction
+            deleteAllElements(survey.getGuid(), survey.getCreatedOn());
             throw new ConcurrentModificationException(survey);
         } catch(Throwable t) {
             throw new BridgeServiceException(t);
@@ -424,8 +437,8 @@ public class DynamoSurveyDao implements SurveyDao {
         DynamoDBQueryExpression<DynamoSurveyElement> query = new DynamoDBQueryExpression<DynamoSurveyElement>();
         query.withHashKeyValues(template);
         
-        QueryResultPage<DynamoSurveyElement> page = surveyElementMapper.queryPage(DynamoSurveyElement.class, query);
-        List<FailedBatch> failures = surveyElementMapper.batchDelete(page.getResults());
+        List<DynamoSurveyElement> page = surveyElementMapper.query(DynamoSurveyElement.class, query);
+        List<FailedBatch> failures = surveyElementMapper.batchDelete(page);
         BridgeUtils.ifFailuresThrowException(failures);
     }
 }
