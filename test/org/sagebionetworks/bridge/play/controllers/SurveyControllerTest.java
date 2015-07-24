@@ -387,6 +387,39 @@ public class SurveyControllerTest {
         verifyNoMoreInteractions(service);
     }
     
+    @Test
+    public void physicalDeleteOfSurveyNotAllowedForDeveloper() throws Exception {
+        String guid = BridgeUtils.generateGuid();
+        DateTime date = DateTime.now();
+        Survey survey = getSurvey(false);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(guid, date.getMillis());
+        when(service.getSurvey(eq(keys))).thenReturn(survey);
+        setContext();
+        
+        controller.deleteSurvey(guid, date.toString(), "true");
+        
+        verify(service).getSurvey(eq(keys));
+        verify(service).deleteSurvey(eq(survey));
+        verifyNoMoreInteractions(service);
+    }
+    
+    @Test
+    public void physicalDeleteAllowedForAdmin() throws Exception {
+        String guid = BridgeUtils.generateGuid();
+        DateTime date = DateTime.now();
+        Survey survey = getSurvey(false);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(guid, date.getMillis());
+        when(service.getSurvey(eq(keys))).thenReturn(survey);
+        setContext();
+        
+        session.getUser().getRoles().add(ADMIN);
+        controller.deleteSurvey(guid, date.toString(), "true");
+        
+        verify(service).getSurvey(eq(keys));
+        verify(service).deleteSurveyPermanently(eq(survey));
+        verifyNoMoreInteractions(service);
+    }
+    
     @Test(expected = EntityNotFoundException.class)
     public void deleteSurveyThrowsGoodExceptionIfSurveyDoesntExist() throws Exception {
         String guid = BridgeUtils.generateGuid();

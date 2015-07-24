@@ -182,6 +182,8 @@ public class SurveyController extends BaseController {
     public Result deleteSurvey(String surveyGuid, String createdOnString, String physical) throws Exception {
         UserSession session = getAuthenticatedSession();
         User user = session.getUser();
+        
+        // If not in either of these roles, don't do the work of getting the survey
         if (!user.isInRole(DEVELOPER) && !user.isInRole(ADMIN)) {
             throw new UnauthorizedException();
         }
@@ -193,10 +195,13 @@ public class SurveyController extends BaseController {
         Survey survey = surveyService.getSurvey(keys);
         verifySurveyIsInStudy(session, studyId, survey);
         
-        if ("true".equals(physical) && user.isInRole(Roles.ADMIN)) {
+        if ("true".equals(physical) && user.isInRole(ADMIN)) {
             surveyService.deleteSurveyPermanently(survey);
-        } else {
+        } else if (user.isInRole(DEVELOPER)) {
             surveyService.deleteSurvey(survey);    
+        } else {
+            // An admin calling for a logical delete. That wasn't allowed before so we don't allow it now.
+            throw new UnauthorizedException();
         }
         expireCache(surveyGuid, createdOnString);
         return okResult("Survey deleted.");

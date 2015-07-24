@@ -172,7 +172,7 @@ public class DynamoSurveyDao implements SurveyDao {
             if (notDeleted) {
                 scan.addFilterCondition(DELETED_PROPERTY, equalsNumber("0"));
             }
-            List<DynamoSurvey> surveys = Lists.newArrayList(surveyMapper.scanPage(DynamoSurvey.class, scan).getResults());
+            List<DynamoSurvey> surveys = Lists.newArrayList(surveyMapper.scan(DynamoSurvey.class, scan));
             // Scans will not sort as queries do. Sort Manually. Probably a dog.
             Collections.sort(surveys, VERSIONED_ON_DESC_SORTER);
             return surveys;
@@ -338,8 +338,7 @@ public class DynamoSurveyDao implements SurveyDao {
         // Delete the schemas as well, or they accumulate.
         try {
             StudyIdentifier studyId = new StudyIdentifierImpl(existing.getStudyIdentifier());
-            String schemaId = existing.getStudyIdentifier() + ":" + existing.getIdentifier();
-            uploadSchemaDao.deleteUploadSchemaById(studyId, schemaId);
+            uploadSchemaDao.deleteUploadSchemaById(studyId, existing.getIdentifier());
         } catch(EntityNotFoundException e) {
             // This is OK. Just means this survey wasn't published.
         }

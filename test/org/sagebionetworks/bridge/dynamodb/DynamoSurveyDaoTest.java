@@ -56,8 +56,7 @@ public class DynamoSurveyDaoTest {
 
     private final StudyIdentifier studyIdentifier = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
     private TestSurvey testSurvey;
-    private Set<GuidCreatedOnVersionHolder> surveysToDelete;
-    private Set<String> schemaIdsToDelete;
+    private Set<GuidCreatedOnVersionHolderImpl> surveysToDelete;
 
     @BeforeClass
     public static void beforeClass() {
@@ -68,7 +67,6 @@ public class DynamoSurveyDaoTest {
     public void before() {
         testSurvey = new TestSurvey(true);
         surveysToDelete = new HashSet<>();
-        schemaIdsToDelete = new HashSet<>();
     }
 
     @After
@@ -77,14 +75,6 @@ public class DynamoSurveyDaoTest {
         for (GuidCreatedOnVersionHolder oneSurvey : surveysToDelete) {
             try {
                 surveyDao.deleteSurveyPermanently(oneSurvey);
-            } catch (Exception ex) {
-                logger.error(ex.getMessage(), ex);
-            }
-        }
-        // clean up schemas
-        for (String oneSchemaId : schemaIdsToDelete) {
-            try {
-                uploadSchemaDao.deleteUploadSchemaById(studyIdentifier, oneSchemaId);
             } catch (Exception ex) {
                 logger.error(ex.getMessage(), ex);
             }
@@ -107,7 +97,6 @@ public class DynamoSurveyDaoTest {
     
     private Survey publishSurvey(StudyIdentifier studyIdentifier, Survey survey) {
         Survey publishedSurvey = surveyDao.publishSurvey(studyIdentifier, survey);
-        schemaIdsToDelete.add(publishedSurvey.getIdentifier());
         return publishedSurvey;
     }
     
@@ -491,11 +480,11 @@ public class DynamoSurveyDaoTest {
 
     @Test
     public void canGetAllSurveys() {
-        Set<GuidCreatedOnVersionHolder> mostRecentVersionSurveys = new HashSet<>();
-        mostRecentVersionSurveys.add(createSurvey(new TestSurvey(true)));
-        mostRecentVersionSurveys.add(createSurvey(new TestSurvey(true)));
-        mostRecentVersionSurveys.add(createSurvey(new TestSurvey(true)));
-        mostRecentVersionSurveys.add(createSurvey(new TestSurvey(true)));
+        Set<GuidCreatedOnVersionHolderImpl> mostRecentVersionSurveys = new HashSet<>();
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(true))));
+        mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(createSurvey(new TestSurvey(true))));
 
         Survey survey = createSurvey(new TestSurvey(true));
 
@@ -606,7 +595,7 @@ public class DynamoSurveyDaoTest {
         assertNotNull(survey);
     }
 
-    private static void assertContainsAllKeys(Set<GuidCreatedOnVersionHolder> expected, List<Survey> actual) {
+    private static void assertContainsAllKeys(Set<GuidCreatedOnVersionHolderImpl> expected, List<Survey> actual) {
         for (GuidCreatedOnVersionHolder oneExpected : expected) {
             boolean found = false;
             for (Survey oneActual : actual) {
