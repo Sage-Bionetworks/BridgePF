@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.play.controllers;
 import java.io.IOException;
 import java.util.List;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -10,6 +12,7 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
+import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import org.sagebionetworks.bridge.services.SurveyResponseService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +32,41 @@ public class SurveyResponseController extends BaseController {
     public void setSurveyResponseService(SurveyResponseService responseService) {
         this.responseService = responseService;
     }
+
+    // --- BETTER SURVEY RESPONSE API ---
+    
+    public Result createSurveyResponseV4() throws Exception {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        SurveyResponse res = parseJson(request(), DynamoSurveyResponse.class);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(
+            res.getSurveyGuid(), res.getSurveyCreatedOn());
+        
+        String identifier = res.getIdentifier();
+        if (identifier == null) {
+            identifier = BridgeUtils.generateGuid();
+        }
+        
+        SurveyResponseView response = responseService.createSurveyResponse(
+            keys, session.getUser().getHealthCode(), res.getAnswers(), identifier);
+
+        return createdResult(new IdentifierHolder(response.getIdentifier()));
+    }
+    
+    public Result getSurveyResponseV4(String identifier) throws Exception {
+        SurveyResponseView response = getSurveyResponseIfAuthorized(identifier);
+        return okResult(response);
+    }
+    
+    public Result appendAnswersToSurveyResponseV4(String identifier) throws Exception {
+        SurveyResponseView response = getSurveyResponseIfAuthorized(identifier);
+        
+        SurveyResponse res = parseJson(request(), DynamoSurveyResponse.class);
+        responseService.appendSurveyAnswers(response.getResponse(), res.getAnswers());
+        return okResult("Survey response updated.");
+    }
+
+    // --- END BETTER SURVEY RESPONSE API ---
     
     public Result createSurveyResponse(String surveyGuid, String versionString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();

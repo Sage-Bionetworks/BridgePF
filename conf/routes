@@ -56,6 +56,11 @@ POST   /v3/surveyresponses/:guid                                        @org.sag
 POST   /v3/surveyresponses/:surveyGuid/revisions/:createdOn             @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
 POST   /v3/surveyresponses/:surveyGuid/revisions/:createdOn/:identifier @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
 
+# Temporarily, an improved API
+POST   /v3/surveyresponses			@org.sagebionetworks.bridge.play.controllers.SurveyResponseController.createSurveyResponseV4
+GET    /v3/surveyresponses/:guid    @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.getSurveyResponseV4(String identifier)
+POST   /v3/surveyresponses/:guid    @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.appendAnswersToSurveyResponseV4(String identifier)
+
 # Schedules
 GET    /v3/schedules   @org.sagebionetworks.bridge.play.controllers.ScheduleController.getSchedules
 
