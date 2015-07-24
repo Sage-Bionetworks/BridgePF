@@ -65,6 +65,7 @@ public class TaskSchedulerTest {
         assertEquals(0, tasks.size());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void taskIsComplete() {
         Schedule schedule = new Schedule();

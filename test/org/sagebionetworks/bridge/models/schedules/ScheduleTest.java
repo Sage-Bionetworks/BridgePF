@@ -21,6 +21,7 @@ public class ScheduleTest {
         EqualsVerifier.forClass(Schedule.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void canRountripSerialize() throws Exception {
         Activity activity = new Activity.Builder().withLabel("label").withTask("ref").build();
