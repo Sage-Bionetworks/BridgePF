@@ -10,12 +10,6 @@ import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 
 import javax.annotation.Resource;
 
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,10 +24,10 @@ import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.stormpath.sdk.application.AccountStoreMapping;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.directory.AccountCreationPolicy;
 import com.stormpath.sdk.directory.Directory;
 import com.stormpath.sdk.directory.PasswordStrength;
 import com.stormpath.sdk.group.Group;
@@ -61,10 +55,8 @@ public class StormpathDirectoryDaoTest {
     
     @Test
     public void crudDirectory() throws Exception {
-        String identifier = TestUtils.randomName();
-        
         study = TestUtils.getValidStudy();
-        study.setIdentifier(identifier);
+        study.setIdentifier(TestUtils.randomName());
         
         String stormpathHref = directoryDao.createDirectoryForStudy(study);
         study.setStormpathHref(stormpathHref);
@@ -73,7 +65,7 @@ public class StormpathDirectoryDaoTest {
         // Verify the directory and mapping were created
         Directory directory = getDirectory(stormpathHref);
 
-        assertEquals("Name is the right one", identifier + " ("+config.getEnvironment().name().toLowerCase()+")", directory.getName());
+        assertEquals("Name is the right one", study.getIdentifier() + " ("+config.getEnvironment().name().toLowerCase()+")", directory.getName());
         assertTrue("Mapping exists for new directory in the right application", containsMapping(stormpathHref));
         assertTrue("The researcher group was created", groupExists(directory, RESEARCHER));
         assertTrue("The developer group was created", groupExists(directory, DEVELOPER));
@@ -92,7 +84,7 @@ public class StormpathDirectoryDaoTest {
         
         newDirectory = directoryDao.getDirectoryForStudy(study);
         assertDirectoriesAreEqual(study, "new rp subject", "new ve subject", directory, newDirectory);
-        
+
         directoryDao.deleteDirectoryForStudy(study);
         newDirectory = directoryDao.getDirectoryForStudy(study);
         assertNull("Directory has been deleted", newDirectory);
@@ -113,7 +105,7 @@ public class StormpathDirectoryDaoTest {
         assertEquals(study.getSponsorName(), template.getFromName());
         assertEquals(study.getSupportEmail(), template.getFromEmailAddress());
         assertEquals(rpSubject, template.getSubject());
-        assertEquals(com.stormpath.sdk.mail.MimeType.PLAIN_TEXT, template.getMimeType());
+        assertEquals(StormpathDirectoryDao.getStormpathMimeType(study.getResetPasswordTemplate()), template.getMimeType());
         assertEquals(study.getResetPasswordTemplate().getBody(), template.getTextBody());
         String url = String.format("%s/mobile/resetPassword.html?study=%s", BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier());
         assertEquals(url, template.getLinkBaseUrl());
@@ -127,38 +119,19 @@ public class StormpathDirectoryDaoTest {
         assertEquals(0, strength.getMinDiacritic());
         assertEquals(study.getPasswordPolicy().getMinLength(), strength.getMinLength());
         
-        // Need to use HTTP and the REST API to retrieve and test the verify email template...
-        EmailTemplate ve = study.getVerifyEmailTemplate();
-        BridgeConfig config = BridgeConfigFactory.getConfig();
+        AccountCreationPolicy policy = newDirectory.getAccountCreationPolicy();
+        assertEquals(EmailStatus.ENABLED, policy.getVerificationEmailStatus());
+        assertEquals(EmailStatus.DISABLED, policy.getWelcomeEmailStatus());
+        assertEquals(1, policy.getAccountVerificationEmailTemplates().getSize());
         
-        // Create an HTTP client using Basic Auth with stormpath credentials (yes it's basic auth but it's over SSL and going away)
-        CredentialsProvider provider = new BasicCredentialsProvider();
-        UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(config.getStormpathId(), config.getStormpathSecret());
-        provider.setCredentials(AuthScope.ANY, credentials);
-        CloseableHttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
-        
-        // Get directory as JSON
-        ObjectNode directoryNode = StormpathUtils.getJSON(client, directory.getHref());
-        String accountCreationUrl = directoryNode.get("accountCreationPolicy").get("href").asText();
-        
-        // Get account policy as JSON, update to our standard configuration
-        ObjectNode accountPolicyNode = StormpathUtils.getJSON(client, accountCreationUrl);
-        String verificationEmailTemplatesUrl = accountPolicyNode.get("verificationEmailTemplates").get("href").asText();
-        
-        // Get the verify email template
-        ObjectNode templateNode = StormpathUtils.getJSON(client, verificationEmailTemplatesUrl);
-        String templateUrl = templateNode.get("items").get(0).get("href").asText();
-        // Update this template with study-specific information
-        ObjectNode templateJSON = StormpathUtils.getJSON(client, templateUrl);
-        
-        // TODO: Test that the study name is used if no study name is provided.
-        assertEquals(study.getSponsorName(), templateJSON.get("fromName").asText());
-        assertEquals(study.getSupportEmail(), templateJSON.get("fromEmailAddress").asText());
-        assertEquals(ve.getSubject(), templateJSON.get("subject").asText());
-        assertEquals(ve.getMimeType().toString(), templateJSON.get("mimeType").asText());
-        assertEquals(ve.getBody(), templateJSON.get("textBody").asText());
-        
-        assertTrue(templateJSON.get("defaultModel").get("linkBaseUrl").asText().contains("/mobile/verifyEmail.html?study="));
+        template = policy.getAccountVerificationEmailTemplates().iterator().next();
+        assertEquals(study.getSponsorName(), template.getFromName());
+        assertEquals(study.getSupportEmail(), template.getFromEmailAddress());
+        assertEquals(veSubject, template.getSubject());
+        assertEquals(StormpathDirectoryDao.getStormpathMimeType(study.getVerifyEmailTemplate()), template.getMimeType());
+        assertEquals(study.getVerifyEmailTemplate().getBody(), template.getTextBody());
+        url = String.format("%s/mobile/verifyEmail.html?study=%s", BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier());
+        assertEquals(url, template.getLinkBaseUrl());
     }
     
     private boolean groupExists(Directory directory, Roles role) {
