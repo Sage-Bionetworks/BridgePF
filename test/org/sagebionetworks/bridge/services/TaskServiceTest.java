@@ -151,7 +151,7 @@ public class TaskServiceTest {
         verifyNoMoreInteractions(taskDao);
     }
 
-    @SuppressWarnings({"unchecked","rawtypes"})
+    @SuppressWarnings({"unchecked","rawtypes","deprecation"})
     @Test
     public void changePublishedAndAbsoluteSurveyActivity() {
         service.getTasks(user, endsOn.plusDays(2));

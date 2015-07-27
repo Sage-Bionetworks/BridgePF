@@ -232,6 +232,7 @@ public class DynamoTaskDaoMockTest {
         assertEquals(TaskStatus.FINISHED, savedTask2.getStatus());
     }
     
+    @SuppressWarnings("deprecation")
     private void assertTask(String dateString, String ref, Task task) {
         if ("tapTest".equals(dateString)) {
             assertEquals(ref, task.getActivity().getRef());

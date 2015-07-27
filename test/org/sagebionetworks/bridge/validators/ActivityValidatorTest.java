@@ -54,11 +54,11 @@ public class ActivityValidatorTest {
     }
     
     @Test
-    public void rejectsSurveyResponseWithoutGuid() {
+    public void rejectsSurveyResponseWithoutIdentifier() {
         try {
             new Activity.Builder().withLabel("Label").withSurveyResponse(null).withPublishedSurvey("identifier", "guid").build();
         } catch(InvalidEntityException e) {
-            assertEquals("surveyResponse.guid cannot be missing, null, or blank", e.getErrors().get("surveyResponse.guid").get(0));
+            assertEquals("surveyResponse.identifier cannot be missing, null, or blank", e.getErrors().get("surveyResponse.identifier").get(0));
         }
     }
 }

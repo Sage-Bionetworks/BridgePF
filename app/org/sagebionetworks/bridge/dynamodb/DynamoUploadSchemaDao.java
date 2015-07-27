@@ -126,15 +126,22 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
             return UploadFieldType.INLINE_JSON_BLOB;
         }
 
-        if (constraints instanceof MultiValueConstraints
-                && ((MultiValueConstraints) constraints).getAllowMultiple()) {
-            if (constraints.getDataType() == DataType.STRING) {
-                // Multiple choice string answers frequently become longer than the 100-char limit. This will have
-                // to be a JSON attachment.
-                return UploadFieldType.ATTACHMENT_JSON_BLOB;
+        if (constraints instanceof MultiValueConstraints) {
+            MultiValueConstraints multiValueConstraints = (MultiValueConstraints) constraints;
+
+            if (multiValueConstraints.getAllowMultiple()) {
+                if (constraints.getDataType() == DataType.STRING) {
+                    // Multiple choice string answers frequently become longer than the 100-char limit. This will have
+                    // to be a JSON attachment.
+                    return UploadFieldType.ATTACHMENT_JSON_BLOB;
+                } else {
+                    // Multiple choice non-string answers (frequently ints) tend to be very short, so this can fit in
+                    // an inline_json_blob.
+                    return UploadFieldType.INLINE_JSON_BLOB;
+                }
             } else {
-                // Multiple choice non-string answers (frequently ints) tend to be very short, so this can fit in
-                // an inline_json_blob.
+                // iOS always returns a JSON array with a single element, so we treat this as an INLINE_JSON_BLOB.
+                // TODO: revisit this in the new upload data format
                 return UploadFieldType.INLINE_JSON_BLOB;
             }
         } else {

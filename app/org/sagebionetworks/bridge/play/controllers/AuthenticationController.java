@@ -65,7 +65,7 @@ public class AuthenticationController extends BaseController {
         Email email = parseJson(request(), Email.class);
         StudyIdentifier studyIdentifier = getStudyIdentifierOrThrowException(json);
         authenticationService.resendEmailVerification(studyIdentifier, email);
-        return okResult("A request to verify an email address was re-sent.");
+        return okResult("If registered with the study, we'll email you instructions on how to verify your account.");
     }
 
     public Result requestResetPassword() throws Exception {
@@ -73,7 +73,7 @@ public class AuthenticationController extends BaseController {
         Email email = parseJson(request(), Email.class);
         Study study = getStudyOrThrowException(json);
         authenticationService.requestResetPassword(study, email);
-        return okResult("An email has been sent allowing you to set a new password.");
+        return okResult("If registered with the study, we'll email you instructions on how to change your password.");
     }
 
     public Result resetPassword() throws Exception {

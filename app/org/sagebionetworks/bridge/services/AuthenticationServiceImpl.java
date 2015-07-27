@@ -163,13 +163,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             }
             accountDao.signUp(study, signUp, isAnonSignUp);
         } catch(EntityAlreadyExistsException e) {
-            // Do not indicate to the end user that this email address has already been taken, as this 
-            // leaks information about who is in the study. Instead send a reset password request to the 
-            // email address in case user has forgotten password and is trying to sign up again.
+            // Suppress this. Otherwise it the response reveals that the email has already been taken, 
+            // and you can infer who is in the study from the response. Instead send a reset password 
+            // request to the email address in case user has forgotten password and is trying to sign 
+            // up again. Non-anonymous sign ups (sign ups done by admins on behalf of users) still get a 404
             if (isAnonSignUp) {
-                logger.info(String.format("Sign up attempt for existing account: %s, %s", study.getIdentifier(), signUp.getEmail()));
                 Email email = new Email(study.getIdentifier(), signUp.getEmail());
                 requestResetPassword(study, email);
+                logger.info("Sign up attempt for existing email address in study '"+study.getIdentifier()+"'");
             } else {
                 throw e;
             }
@@ -200,8 +201,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(email, "Email object cannnot be null");
         
         Validate.entityThrowingException(emailValidator, email);
-        
-        accountDao.resendEmailVerificationToken(studyIdentifier, email);
+        try {
+            accountDao.resendEmailVerificationToken(studyIdentifier, email);    
+        } catch(EntityNotFoundException e) {
+            // Suppress this. Otherwise it reveals if the account does not exist
+            logger.info("Resend email verification for unregistered email in study '"+studyIdentifier.getIdentifier()+"'");
+        }
     }
 
     @Override
@@ -210,8 +215,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(email);
         
         Validate.entityThrowingException(emailValidator, email);
-
-        accountDao.requestResetPassword(study, email);
+        try {
+            accountDao.requestResetPassword(study, email);    
+        } catch(EntityNotFoundException e) {
+            // Suppress this. Otherwise it reveals if the account does not exist
+            logger.info("Request reset password request for unregistered email in study '"+study.getIdentifier()+"'");
+        }
     }
 
     @Override
