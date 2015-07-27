@@ -10,7 +10,6 @@ import java.util.Set;
 import javax.annotation.Resource;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,7 +20,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -38,8 +36,8 @@ public class DynamoStudyDaoTest {
         DynamoInitializer.init(DynamoStudy.class);
     }
     
-    @Before
-    public void before() {
+    @After
+    public void after() throws Exception {
         // We need to leave the test study in the database.
         List<Study> studies = studyDao.getStudies();
         for (Study study : studies) {
@@ -82,24 +80,16 @@ public class DynamoStudyDaoTest {
 
     @Test
     public void canRetrieveAllStudies() throws InterruptedException {
-        List<Study> studies = Lists.newArrayList();
-        try {
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-            
-            List<Study> savedStudies = studyDao.getStudies();
-            // The five studies, plus the API study we refuse to delete...
-            assertEquals("There are three studies", 3, savedStudies.size());
-        } finally {
-            for (Study study : studies) {
-                studyDao.deleteStudy(study);
-            }
-        }
-        // TODO: Investigating why tests fail often (not always) without this
-        Thread.sleep(5000);
         List<Study> savedStudies = studyDao.getStudies();
         assertEquals("There should be only one study", 1, savedStudies.size());
         assertEquals("That should be the test study study", "api", savedStudies.get(0).getIdentifier());
+        
+        studyDao.createStudy(TestUtils.getValidStudy());
+        studyDao.createStudy(TestUtils.getValidStudy());
+        Thread.sleep(5000);
+        
+        // The two studies, plus the API study we refuse to delete...
+        assertEquals("There are three studies", 3, studyDao.getStudies().size());
     }
 
     @Test
