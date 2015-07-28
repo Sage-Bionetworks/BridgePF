@@ -51,15 +51,9 @@ POST   /v3/surveys/:surveyGuid/revisions/:createdOn          @org.sagebionetwork
 DELETE /v3/surveys/:surveyGuid/revisions/:createdOn          @org.sagebionetworks.bridge.play.controllers.SurveyController.deleteSurvey(surveyGuid: String, createdOn: String, physical: String ?= "false")
 
 # Survey responses
-GET    /v3/surveyresponses/:guid                                        @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.getSurveyResponse(guid: String)
-POST   /v3/surveyresponses/:guid                                        @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
-POST   /v3/surveyresponses/:surveyGuid/revisions/:createdOn             @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
-POST   /v3/surveyresponses/:surveyGuid/revisions/:createdOn/:identifier @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
-
-# Temporarily, an improved API
-POST   /v3/surveyresponses			@org.sagebionetworks.bridge.play.controllers.SurveyResponseController.createSurveyResponseV4
-GET    /v3/surveyresponses/:guid    @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.getSurveyResponseV4(String identifier)
-POST   /v3/surveyresponses/:guid    @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.appendAnswersToSurveyResponseV4(String identifier)
+POST   /v3/surveyresponses			   @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.createSurveyResponse
+GET    /v3/surveyresponses/:identifier @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.getSurveyResponse(identifier: String)
+POST   /v3/surveyresponses/:identifier @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.appendSurveyAnswers(identifier: String)
 
 # Schedules
 GET    /v3/schedules   @org.sagebionetworks.bridge.play.controllers.ScheduleController.getSchedules
@@ -124,14 +118,6 @@ POST   /api/v1/profile                   @org.sagebionetworks.bridge.play.contro
 POST   /api/v1/profile/external-id       @org.sagebionetworks.bridge.play.controllers.UserProfileController.createExternalIdentifier
 POST   /api/v1/profile/unsubscribe       @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
 GET    /api/v1/profile/unsubscribe       @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
-
-# API - Surveys & Survey Response v2
-GET    /api/v2/surveyresponses/:guid                                @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.getSurveyResponse(guid: String)
-POST   /api/v2/surveyresponses/:guid                                @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.appendSurveyAnswers(guid: String)
-GET    /api/v2/surveys/:surveyGuid/revisions/published              @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
-GET    /api/v2/surveys/:surveyGuid/revisions/:createdOn             @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
-POST   /api/v2/surveys/:surveyGuid/revisions/:createdOn             @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.createSurveyResponse(surveyGuid: String, createdOn: String)
-POST   /api/v2/surveys/:surveyGuid/revisions/:createdOn/:identifier @org.sagebionetworks.bridge.play.controllers.SurveyResponseController.createSurveyResponseWithIdentifier(surveyGuid: String, createdOn: String, identifier: String)
 
 # API - Schedules
 GET    /api/v1/schedules   @org.sagebionetworks.bridge.play.controllers.ScheduleController.getSchedulesV1

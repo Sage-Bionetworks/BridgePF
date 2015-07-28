@@ -51,17 +51,14 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
     }
     
     @Override
-    public SurveyResponseView createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode, List<SurveyAnswer> answers) {
-        return createSurveyResponse(keys, healthCode, answers, BridgeUtils.generateGuid());
-    }
-
-    @Override
     public SurveyResponseView createSurveyResponse(GuidCreatedOnVersionHolder keys, String healthCode,
             List<SurveyAnswer> answers, String identifier) {
+        if (identifier == null) {
+            identifier = BridgeUtils.generateGuid();
+        }
         checkNotNull(keys, CANNOT_BE_NULL, "keys");
         checkNotNull(answers, CANNOT_BE_NULL, "survey answers");
         checkArgument(isNotBlank(keys.getGuid()), CANNOT_BE_BLANK, "survey guid");
-        checkArgument(isNotBlank(identifier), CANNOT_BE_BLANK, "identifier");
         checkArgument(isNotBlank(healthCode), CANNOT_BE_BLANK, "health code");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn cannot be 0");
 

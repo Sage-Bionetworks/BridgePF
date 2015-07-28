@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponseDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
@@ -63,10 +64,12 @@ public class SurveyResponseServiceImplTest {
         
         DynamoSurveyResponse response = new DynamoSurveyResponse();
         response.setSurveyKey(survey);
+        response.setHealthCode("BBB");
         
         surveyResponseDao = mock(DynamoSurveyResponseDao.class);
         when(surveyResponseDao.appendSurveyAnswers(any(SurveyResponse.class), any(List.class))).thenReturn(response);
         when(surveyResponseDao.getSurveyResponse(anyString(), anyString())).thenReturn(response);
+        when(surveyResponseDao.createSurveyResponse(any(GuidCreatedOnVersionHolderImpl.class), anyString(), any(List.class), anyString())).thenReturn(response);
         
         service.setSurveyResponseDao(surveyResponseDao);
     }
@@ -75,31 +78,6 @@ public class SurveyResponseServiceImplTest {
     public void createSurveyResponseNoSurveyGuid() {
         try {
             survey.setGuid(null);
-            service.createSurveyResponse(survey, "healthCode", getAnswers());
-            fail("Should have thrown exception");
-        } catch(Throwable t) {
-            verifyNoMoreInteractions(surveyDao);
-            verifyNoMoreInteractions(surveyResponseDao);
-            verifyNoMoreInteractions(taskEventService);
-        }
-    }
-    
-    @Test
-    public void createSurveyResponseNoSurveyCreatedOn() {
-        try {
-            survey.setCreatedOn(0L);
-            service.createSurveyResponse(survey, "healthCode", getAnswers());
-            fail("Should have thrown exception");
-        } catch(Throwable t) {
-            verifyNoMoreInteractions(surveyDao);
-            verifyNoMoreInteractions(surveyResponseDao);
-            verifyNoMoreInteractions(taskEventService);
-        }
-    }
-    
-    @Test
-    public void createSurveyResponseNoIdentifier() {
-        try {
             service.createSurveyResponse(survey, "healthCode", getAnswers(), null);
             fail("Should have thrown exception");
         } catch(Throwable t) {
@@ -109,10 +87,19 @@ public class SurveyResponseServiceImplTest {
         }
     }
     
+    @SuppressWarnings("unchecked")
+    @Test
+    public void createSurveyResponseNoIdentifier() {
+        service.createSurveyResponse(survey, "healthCode", getAnswers(), null);
+        
+        verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolderImpl.class));
+        verify(surveyResponseDao).createSurveyResponse(any(Survey.class), anyString(), any(List.class), anyString());
+    }
+    
     @Test
     public void createSurveyResponseBlankHealthCode() {
         try {
-            service.createSurveyResponse(survey, "   ", getAnswers());
+            service.createSurveyResponse(survey, "   ", getAnswers(), null);
             fail("Should have thrown exception");
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
@@ -124,7 +111,7 @@ public class SurveyResponseServiceImplTest {
     @Test
     public void createSurveyResponseNoAnswers() {
         try {
-            service.createSurveyResponse(survey, "healthCode", null);
+            service.createSurveyResponse(survey, "healthCode", null, null);
             fail("Should have thrown exception");
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyDao);
@@ -139,7 +126,7 @@ public class SurveyResponseServiceImplTest {
             List<SurveyAnswer> answers = getAnswers();
             answers.get(0).setQuestionGuid(null);
             
-            service.createSurveyResponse(survey, "healthCode", answers);
+            service.createSurveyResponse(survey, "healthCode", answers, null);
             fail("Should have thrown exception");
         } catch(Throwable t) {
             verifyNoMoreInteractions(surveyResponseDao);
@@ -154,7 +141,7 @@ public class SurveyResponseServiceImplTest {
         when(surveyResponseDao.createSurveyResponse(
             any(GuidCreatedOnVersionHolder.class), any(String.class), any(List.class), any(String.class))).thenReturn(getSurveyResponse());
         
-        SurveyResponseView response = service.createSurveyResponse(survey, "healthCode", getAnswers());
+        SurveyResponseView response = service.createSurveyResponse(survey, "healthCode", getAnswers(), null);
         
         assertNotNull(response);
         assertNotNull(response.getSurvey());

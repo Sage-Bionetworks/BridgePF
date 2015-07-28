@@ -34,8 +34,8 @@ public final class DynamoSurveyResponse implements SurveyResponse {
     private String healthCode;
     private String identifier;
     
-    // These three are stored in Dynamo.
-    private String surveyKey;
+    private String surveyGuid;
+    private long surveyCreatedOn;
     
     private Long startedOn;
     private Long completedOn;
@@ -68,35 +68,46 @@ public final class DynamoSurveyResponse implements SurveyResponse {
     @DynamoDBAttribute
     @DynamoDBIndexHashKey(globalSecondaryIndexName = "surveyKey-index")
     public String getSurveyKey() {
-        return surveyKey;
-    }
-    public void setSurveyKey(String surveyKey) {
-        this.surveyKey = surveyKey;
+        return String.format("%s:%d", surveyGuid, surveyCreatedOn);
     }
     public void setSurveyKey(GuidCreatedOnVersionHolder keys) {
-        this.surveyKey = String.format("%s:%d", keys.getGuid(), keys.getCreatedOn());
+        clearSurveyKeys();
+        if (keys != null) {
+            this.surveyCreatedOn = keys.getCreatedOn();
+            this.surveyGuid = keys.getGuid();
+        }
+    }
+    public void setSurveyKey(String surveyKey) {
+        clearSurveyKeys();
+        if (surveyKey != null) {
+            String[] parts = surveyKey.split(":");
+            this.surveyCreatedOn = Long.parseLong(parts[1]);
+            this.surveyGuid = parts[0];
+        }
+    }
+    private void clearSurveyKeys() {
+        this.surveyCreatedOn = 0L;
+        this.surveyGuid = null;
     }
     @DynamoDBIgnore
-    @JsonIgnore
     @Override
     public String getSurveyGuid() {
-        try {
-            if (surveyKey != null) {
-                return surveyKey.split(":")[0];
-            }
-        } catch(Exception e) { /* noop */ }
-        return null;
+        return surveyGuid;
+    }
+    @Override
+    public void setSurveyGuid(String surveyGuid) {
+        this.surveyGuid = surveyGuid;
     }
     @DynamoDBIgnore
-    @JsonIgnore
     @Override
+    @JsonSerialize(using = DateTimeJsonSerializer.class)
     public long getSurveyCreatedOn() {
-        try {
-            if (surveyKey != null) {
-                return Long.parseLong(surveyKey.split(":")[1]);
-            }
-        } catch(Exception e) { /* noop */ }
-        return 0L;
+        return surveyCreatedOn;
+    }
+    @Override
+    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    public void setSurveyCreatedOn(long surveyCreatedOn) {
+        this.surveyCreatedOn = surveyCreatedOn;
     }
     @Override
     @DynamoDBVersionAttribute
@@ -167,7 +178,8 @@ public final class DynamoSurveyResponse implements SurveyResponse {
         int result = 1;
         result = prime * result + Objects.hashCode(healthCode);
         result = prime * result + Objects.hashCode(identifier);
-        result = prime * result + Objects.hashCode(surveyKey);
+        result = prime * result + Objects.hashCode(surveyGuid);
+        result = prime * result + Objects.hashCode(surveyCreatedOn);
         result = prime * result + Objects.hashCode(startedOn);
         result = prime * result + Objects.hashCode(completedOn);
         result = prime * result + Objects.hashCode(answers);
@@ -183,14 +195,14 @@ public final class DynamoSurveyResponse implements SurveyResponse {
             return false;
         DynamoSurveyResponse other = (DynamoSurveyResponse) obj;
         return (Objects.equals(healthCode, other.healthCode) && Objects.equals(identifier, other.identifier)
-            && Objects.equals(surveyKey, other.surveyKey) && Objects.equals(startedOn, other.startedOn) 
-            && Objects.equals(completedOn, other.completedOn) && Objects.equals(answers, other.answers)
-            && Objects.equals(version, other.version));
+            && Objects.equals(surveyGuid, other.surveyGuid) && Objects.equals(surveyCreatedOn, other.surveyCreatedOn) 
+            && Objects.equals(startedOn, other.startedOn) && Objects.equals(completedOn, other.completedOn) && 
+            Objects.equals(answers, other.answers) && Objects.equals(version, other.version));
     }
 
     @Override
     public String toString() {
-        return String.format("DynamoSurveyResponse [identifier=%s, surveyKey=%s, startedOn=%s, completedOn=%s, version=%s, answers=%s, version=%s]", 
-                identifier, surveyKey, startedOn, completedOn, version, answers, version);
+        return String.format("DynamoSurveyResponse [identifier=%s, surveyGuid=%s, surveyCreatedOn=%s, startedOn=%s, completedOn=%s, version=%s, answers=%s, version=%s]", 
+                identifier, surveyGuid, surveyCreatedOn, startedOn, completedOn, version, answers, version);
     }
 }
