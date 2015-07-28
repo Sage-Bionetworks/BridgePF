@@ -65,3 +65,5 @@ libraryDependencies ++= Seq(
 lazy val root = (project in file(".")).enablePlugins(PlayJava)
 
 routesGenerator := InjectedRoutesGenerator
+
+testOptions += Tests.Argument(TestFrameworks.JUnit, "-a")
