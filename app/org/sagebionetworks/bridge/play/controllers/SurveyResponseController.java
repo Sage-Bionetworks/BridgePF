@@ -1,15 +1,10 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import java.io.IOException;
-import java.util.List;
-
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 import org.sagebionetworks.bridge.services.SurveyResponseService;
@@ -19,9 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 
 @Controller
 public class SurveyResponseController extends BaseController {
@@ -60,11 +52,6 @@ public class SurveyResponseController extends BaseController {
         
         responseService.appendSurveyAnswers(view.getResponse(), res.getAnswers());
         return okResult("Survey response updated.");
-    }
-
-    List<SurveyAnswer> deserializeSurveyAnswers() throws JsonProcessingException, IOException {
-        JsonNode node = requestToJSON(request());
-        return JsonUtils.asEntityList(node, SurveyAnswer.class);
     }
 
     SurveyResponseView getSurveyResponseIfAuthorized(String identifier) {
