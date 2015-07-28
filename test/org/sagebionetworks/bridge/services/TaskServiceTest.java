@@ -98,7 +98,7 @@ public class TaskServiceTest {
         SurveyResponseView surveyResponse = new SurveyResponseView(response, survey);
         SurveyResponseService surveyResponseService = mock(SurveyResponseService.class);
         when(surveyResponseService.createSurveyResponse(
-            any(GuidCreatedOnVersionHolder.class), anyString(), any(List.class))).thenReturn(surveyResponse);
+            any(GuidCreatedOnVersionHolder.class), anyString(), any(List.class), anyString())).thenReturn(surveyResponse);
         
         service.setSchedulePlanService(schedulePlanService);
         service.setUserConsentDao(userConsentDao);

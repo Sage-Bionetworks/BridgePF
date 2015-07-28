@@ -7,7 +7,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.Date;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -32,7 +31,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
@@ -40,8 +38,6 @@ import com.google.common.collect.Lists;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoSurveyResponseDaoTest {
-
-    private static final String SURVEY_GUID = "surveyGuid";
 
     private static final String SURVEY_RESPONSE_IDENTIFIER = "surveyResponseIdentifier";
 
@@ -79,26 +75,30 @@ public class DynamoSurveyResponseDaoTest {
 
     @Test
     public void sensitiveFieldsNotSerializedToJSON() throws Exception {
+        long time = DateTime.parse("2014-10-08T07:02:21.123Z").getMillis();
         ObjectNode data = JsonNodeFactory.instance.objectNode();
         data.put("test", "value");
         DynamoSurveyResponse response = new DynamoSurveyResponse();
         response.setIdentifier("foo");
         response.setHealthCode("AAA");
-        response.setSurveyKey("BBB:"+new Date().getTime());
+        response.setSurveyKey("BBB:"+time);
         response.setStartedOn(DateTime.parse("2014-10-10T10:02:21.123Z").getMillis());
         response.setVersion(1L);
         response.setData(data);
         
-        String string = new BridgeObjectMapper().writeValueAsString(response);
-        assertEquals("{\"identifier\":\"foo\",\"startedOn\":\"2014-10-10T10:02:21.123Z\",\"answers\":[],\"status\":\"in_progress\",\"type\":\"SurveyResponse\"}", string);
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.readTree(string);
-
+        String string = BridgeObjectMapper.get().writeValueAsString(response);
+        System.out.println(string);
+        JsonNode node = BridgeObjectMapper.get().readTree(string);
+        
+        assertEquals("foo", node.get("identifier").asText());
+        assertEquals("2014-10-10T10:02:21.123Z", node.get("startedOn").asText());
+        assertEquals("in_progress", node.get("status").asText());
+        assertEquals("SurveyResponse", node.get("type").asText());
+        assertEquals("BBB", node.get("surveyGuid").asText());
+        assertEquals("2014-10-08T07:02:21.123Z", node.get("surveyCreatedOn").asText());
         assertFalse("No version in JSON", node.has("version"));
         assertFalse("No data in JSON", node.has("data"));
         assertFalse("No healthCode in JSON", node.has("healthCode"));
-        assertFalse("No surveyGuid in JSON", node.has(SURVEY_GUID));
-        assertFalse("No surveyCreatedOn in JSON", node.has("surveyCreatedOn"));
     }
     
     @Test

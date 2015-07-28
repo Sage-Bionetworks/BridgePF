@@ -10,9 +10,6 @@ import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
 public interface SurveyResponseService {
     
     public SurveyResponseView createSurveyResponse(GuidCreatedOnVersionHolder survey, String healthCode,
-            List<SurveyAnswer> answers);
-    
-    public SurveyResponseView createSurveyResponse(GuidCreatedOnVersionHolder survey, String healthCode,
             List<SurveyAnswer> answers, String identifier);
     
     public SurveyResponseView getSurveyResponse(String healthCode, String identifier);

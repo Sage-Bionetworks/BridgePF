@@ -79,8 +79,6 @@ public class DynamoSurveyResponseTest {
         DynamoSurveyResponse newResponse = mapper.readValue(string, DynamoSurveyResponse.class);
         response.setSurveyKey(newResponse.getSurveyKey());
         
-        assertNull(newResponse.getSurveyGuid());
-        assertEquals(0, newResponse.getSurveyCreatedOn());
         assertNull(newResponse.getVersion());
         assertNull(newResponse.getHealthCode());
         

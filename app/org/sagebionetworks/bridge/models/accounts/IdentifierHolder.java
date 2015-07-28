@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Normally we would only return the version for an object that was identified
  * by a user-supplied string (an identifier). But at least survey responses allow
@@ -11,8 +14,9 @@ package org.sagebionetworks.bridge.models.accounts;
 public class IdentifierHolder {
 
     private final String identifier;
-    
-    public IdentifierHolder(String identifier) {
+
+    @JsonCreator
+    public IdentifierHolder(@JsonProperty("identifier") String identifier) {
         this.identifier = identifier;
     }
 
