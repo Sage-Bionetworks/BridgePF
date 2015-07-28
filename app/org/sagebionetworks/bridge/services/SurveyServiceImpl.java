@@ -117,13 +117,6 @@ public class SurveyServiceImpl implements SurveyService {
 
         return surveyDao.getSurveyMostRecentlyPublishedVersion(studyIdentifier, guid);
     }
-    
-    @Override
-    public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(StudyIdentifier studyIdentifier, String identifier) {
-        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "survey identifier");
-        
-        return surveyDao.getSurveyMostRecentlyPublishedVersionByIdentifier(studyIdentifier, identifier);
-    }
 
     @Override
     public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier) {

@@ -6,13 +6,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.amazonaws.services.dynamodbv2.model.ProjectionType;
+
 /**
  * An optional annotation for global indices, sets the projection type of 
  * the index. This annotation should go on the same method as the annotation 
- * for the index.
+ * for the index's hash key.
  */
-import com.amazonaws.services.dynamodbv2.model.ProjectionType;
-
 @Target({METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface DynamoDBProjection {

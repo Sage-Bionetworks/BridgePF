@@ -342,36 +342,6 @@ public class SurveyControllerTest {
     }
     
     @Test
-    public void getMostRecentPublishedSurveyVersionByIdentifier() throws Exception {
-        StudyIdentifier studyId = new StudyIdentifierImpl("api");
-        String identifier = BridgeUtils.generateGuid();
-        setContext();
-        when(service.getSurveyMostRecentlyPublishedVersionByIdentifier(eq(studyId), eq(identifier))).thenReturn(getSurvey(false));
-        
-        controller.getMostRecentPublishedSurveyVersionByIdentifier(identifier);
-        
-        verify(service).getSurveyMostRecentlyPublishedVersionByIdentifier(eq(studyId), eq(identifier));
-        verifyNoMoreInteractions(service);
-    }
-    
-    @Test
-    public void cannotGetMostRecentPublishedSurveyVersionByIdentifierFromOtherStudy() throws Exception {
-        StudyIdentifier studyId = new StudyIdentifierImpl("secondstudy");
-        String identifier = BridgeUtils.generateGuid();
-        setContext();
-        when(service.getSurveyMostRecentlyPublishedVersionByIdentifier(eq(studyId), eq(identifier))).thenReturn(getSurvey(false));
-        setUserSession("secondstudy");
-        
-        try {
-            controller.getMostRecentPublishedSurveyVersionByIdentifier(identifier);
-            fail("Should have thrown exception");
-        } catch(UnauthorizedException e) {
-            verify(service).getSurveyMostRecentlyPublishedVersionByIdentifier(eq(studyId), eq(identifier));
-            verifyNoMoreInteractions(service);
-        }
-    }
-    
-    @Test
     public void deleteSurveyAllowedForDeveloper() throws Exception {
         String guid = BridgeUtils.generateGuid();
         DateTime date = DateTime.now();

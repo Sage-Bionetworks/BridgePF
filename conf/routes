@@ -40,7 +40,6 @@ GET    /v3/surveys                                           @org.sagebionetwork
 POST   /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.createSurvey
 GET    /v3/surveys/recent                                    @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion2
 GET    /v3/surveys/published                                 @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersion
-GET    /v3/surveys/:identifier                               @org.sagebionetworks.bridge.play.controllers.SurveyController.getMostRecentPublishedSurveyVersionByIdentifier(identifier: String)
 GET    /v3/surveys/:surveyGuid/revisions                     @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyAllVersions(surveyGuid: String)
 GET    /v3/surveys/:surveyGuid/revisions/recent              @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentVersion(surveyGuid: String)
 GET    /v3/surveys/:surveyGuid/revisions/published           @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentlyPublishedVersion(surveyGuid: String)

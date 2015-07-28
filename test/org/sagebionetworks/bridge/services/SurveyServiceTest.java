@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -18,7 +17,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
@@ -397,22 +395,6 @@ public class SurveyServiceTest {
     }
 
     // DELETE SURVEY
-
-    @Test
-    public void canRetrieveASurveyByIdentifier() {
-        String identifier = TestUtils.randomName();
-        Survey survey = new TestSurvey(true);
-        survey.setName("This is a different test name");
-        survey.setIdentifier(identifier);
-        
-        Survey createdSurvey = surveyService.createSurvey(survey);
-        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(createdSurvey));
-        surveyService.publishSurvey(studyIdentifier, createdSurvey);
-
-        Survey found = surveyService.getSurveyMostRecentlyPublishedVersionByIdentifier(studyIdentifier, identifier);
-        assertNotNull(found);
-        assertEquals(survey.getName(), found.getName());
-    }
 
     @Test
     public void validationInfoScreen() {

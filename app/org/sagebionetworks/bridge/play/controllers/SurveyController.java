@@ -158,17 +158,6 @@ public class SurveyController extends BaseController {
         return ok(json).as(JSON_MIME_TYPE);
     }
     
-    public Result getMostRecentPublishedSurveyVersionByIdentifier(String identifier) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        
-        // Do not cache this. It's only used by researchers and without the GUID, you cannot
-        // cache it properly.
-        Survey survey = surveyService.getSurveyMostRecentlyPublishedVersionByIdentifier(studyId, identifier);
-        verifySurveyIsInStudy(session, studyId, survey);
-        return okResult(survey);
-    }
-    
     /**
      * Administrators can pass the ?physical=true flag to this endpoint to physicall delete a survey and all its 
      * survey elements, rather than only marking it deleted to maintain referential integrity. This should only be 
