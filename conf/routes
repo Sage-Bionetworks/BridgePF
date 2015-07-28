@@ -119,6 +119,10 @@ POST   /api/v1/profile/external-id       @org.sagebionetworks.bridge.play.contro
 POST   /api/v1/profile/unsubscribe       @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
 GET    /api/v1/profile/unsubscribe       @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
 
+# API - Surveys
+GET    /api/v2/surveys/:surveyGuid/revisions/published     @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentlyPublishedVersionForUser(surveyGuid: String)
+GET    /api/v2/surveys/:surveyGuid/revisions/:createdOn    @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyForUser(surveyGuid: String, createdOn: String)
+
 # API - Schedules
 GET    /api/v1/schedules   @org.sagebionetworks.bridge.play.controllers.ScheduleController.getSchedulesV1
 

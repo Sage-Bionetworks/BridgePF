@@ -16,7 +16,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dao.SurveyResponseDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyResponse;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
