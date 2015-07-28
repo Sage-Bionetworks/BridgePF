@@ -42,6 +42,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.google.common.collect.Sets;
+
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoSurveyDaoTest {
@@ -442,14 +444,12 @@ public class DynamoSurveyDaoTest {
         List<Survey> surveys = surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
 
         assertEquals(2, surveys.size());
-        assertTrue(secondSurvey.keysEqual(surveys.get(0)));
-        assertTrue(firstSurvey.keysEqual(surveys.get(1)));
+        assertEquals(Sets.newHashSet(surveys), Sets.newHashSet(firstSurvey, secondSurvey));
     }
     
     @Test
     public void getAllSurveysMostRecentVersion() {
         // Get all surveys (complete set of the GUIDS, most recent (published or unpublished)
-        // Get all surveys (complete set of the GUIDS, most recently published (if never published, GUID isn't included)
         Survey firstSurvey = createSurvey(new SimpleSurvey("First Survey"));
         firstSurvey = versionSurvey(firstSurvey);
         firstSurvey = publishSurvey(studyIdentifier, firstSurvey); // published is not the most recent
@@ -464,8 +464,7 @@ public class DynamoSurveyDaoTest {
         List<Survey> surveys = surveyDao.getAllSurveysMostRecentVersion(studyIdentifier);
         
         assertEquals(2, surveys.size());
-        assertTrue(secondSurvey.keysEqual(surveys.get(0)));
-        assertTrue(firstSurvey.keysEqual(surveys.get(1)));
+        assertEquals(Sets.newHashSet(surveys), Sets.newHashSet(firstSurvey, secondSurvey));
     }
 
     @Test

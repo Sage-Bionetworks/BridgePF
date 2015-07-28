@@ -19,6 +19,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -74,7 +75,8 @@ public class DynamoSurvey implements Survey {
     @Override
     @JsonIgnore
     @DynamoDBAttribute(attributeName = "studyKey")
-    @DynamoDBIndexHashKey(globalSecondaryIndexName = "studyKey-index")
+    @DynamoDBIndexHashKey(attributeName="studyKey", globalSecondaryIndexName = "studyKey-index")
+    @DynamoDBProjection(projectionType=ProjectionType.ALL, globalSecondaryIndexName = "studyKey-index")
     public String getStudyIdentifier() {
         return studyKey;
     }

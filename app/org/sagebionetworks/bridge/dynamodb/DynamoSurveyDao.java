@@ -158,30 +158,7 @@ public class DynamoSurveyDao implements SurveyDao {
             }
             return surveyMapper.queryPage(DynamoSurvey.class, query).getResults();
         }
-        /*
-        private List<DynamoSurvey> scan() {
-            DynamoDBScanExpression scan = new DynamoDBScanExpression();
-            if (studyIdentifier != null) {
-                scan.addFilterCondition(STUDY_KEY_PROPERTY, equalsString(studyIdentifier));
-            }
-            if (createdOn != 0L) {
-                scan.addFilterCondition(CREATED_ON_PROPERTY, equalsNumber(Long.toString(createdOn)));
-            }
-            if (published) {
-                scan.addFilterCondition(PUBLISHED_PROPERTY, equalsNumber("1"));
-            }
-            if (identifier != null) {
-                scan.addFilterCondition(IDENTIFIER_PROPERTY, equalsString(identifier));
-            }
-            if (notDeleted) {
-                scan.addFilterCondition(DELETED_PROPERTY, equalsNumber("0"));
-            }
-            List<DynamoSurvey> surveys = Lists.newArrayList(surveyMapper.scan(DynamoSurvey.class, scan));
-            // Scans will not sort as queries do. Sort Manually. Probably a dog.
-            Collections.sort(surveys, VERSIONED_ON_DESC_SORTER);
-            return surveys;
-        }
-        */
+
         private Condition equalsNumber(String equalTo) {
             Condition condition = new Condition();
             condition.withComparisonOperator(ComparisonOperator.EQ);
