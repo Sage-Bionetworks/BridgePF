@@ -232,8 +232,7 @@ public class ConsentServiceImplTest {
                 consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
 
         // Activate new study consent. User is consented and but has not signed most recent consent.
-        newStudyConsent = studyConsentService.activateConsent(testUser.getStudyIdentifier(),
-                        newStudyConsent.getCreatedOn()).getStudyConsent();
+        newStudyConsent = studyConsentService.publishConsent(study, newStudyConsent.getCreatedOn()).getStudyConsent();
 
         assertTrue("Should still be consented.",
                 consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));

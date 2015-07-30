@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
@@ -232,7 +233,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
     }
 
     public static com.stormpath.sdk.mail.MimeType getStormpathMimeType(EmailTemplate template) {
-        return (template.getMimeType() == EmailTemplate.MimeType.TEXT) ? 
+        return (template.getMimeType() == MimeType.TEXT) ? 
             com.stormpath.sdk.mail.MimeType.PLAIN_TEXT : com.stormpath.sdk.mail.MimeType.HTML;
     }
     

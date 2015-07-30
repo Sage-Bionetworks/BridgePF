@@ -39,12 +39,9 @@ public class BridgeConfig {
     // Property name for the environment
     private static final String ENVIRONMENT = "bridge.env";
 
-    // For testing, a host name may be specified that will override the actual host name of the server
-    private static final String BRIDGE_HOST = "bridge.host";
-
     private static final String HEALTHCODE_KEY = "bridge.healthcode.key";
 
-    private static final String STUDY_HOSTNAME = "study.hostname";
+    private static final String HOST_POSTFIX = "host.postfix";
 
     private static final String STUDY_BASE_URL = "study.base.url";
     
@@ -152,10 +149,6 @@ public class BridgeConfig {
         return getProperty(EMAIL_UNSUBSCRIBE_TOKEN);
     }
     
-    public String getHost() {
-        return getProperty(BRIDGE_HOST);
-    }
-    
     public String getProperty(String name) {
         return properties.getProperty(name);
     }
@@ -189,17 +182,17 @@ public class BridgeConfig {
         return getProperty(CONSENTS_BUCKET);
     }
     
-    public String getStudyHostnamePostfix() {
-        return getProperty(STUDY_HOSTNAME);
+    public String getHostPostfix() {
+        return getProperty(HOST_POSTFIX);
     }
 
     public String getBaseURL() {
         return getProperty(STUDY_BASE_URL);
     }
     
-    public String getStudyHostname(String identifier) {
+    public String getHostnameWithPostfix(String identifier) {
         checkNotNull(identifier);
-        return identifier + getStudyHostnamePostfix();
+        return identifier + getHostPostfix();
     }
 
     ///////////////////////////

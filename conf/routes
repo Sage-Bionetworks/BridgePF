@@ -22,7 +22,7 @@ POST   /v3/consents                      @org.sagebionetworks.bridge.play.contro
 GET    /v3/consents/recent               @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getMostRecentConsent
 GET    /v3/consents/published            @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getActiveConsent
 GET    /v3/consents/:timestamp           @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getConsent(timestamp: String)
-POST   /v3/consents/:timestamp/publish   @org.sagebionetworks.bridge.play.controllers.StudyConsentController.setActiveConsent(timestamp: String)
+POST   /v3/consents/:timestamp/publish   @org.sagebionetworks.bridge.play.controllers.StudyConsentController.publishConsent(timestamp: String)
 
 # Users
 POST   /v3/users                        @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUser

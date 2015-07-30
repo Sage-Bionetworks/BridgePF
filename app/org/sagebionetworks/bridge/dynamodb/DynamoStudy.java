@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -25,6 +26,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @JsonFilter("filter")
 public final class DynamoStudy implements Study {
 
+    private static final String DOCS_HOST = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
+    
     private String name;
     private String sponsorName;
     private String identifier;
@@ -228,7 +231,21 @@ public final class DynamoStudy implements Study {
     public void setActive(boolean active) {
         this.active = active;
     }
+    
+    /** {@inheritDoc} */
+    @Override
+    @DynamoDBIgnore
+    public String getConsentHTML() {
+        return String.format("http://%s/%s/consent.html", DOCS_HOST, identifier);
+    }
 
+    /** {@inheritDoc} */
+    @Override
+    @DynamoDBIgnore
+    public String getConsentPDF() {
+        return String.format("http://%s/%s/consent.pdf", DOCS_HOST, identifier);
+    }
+    
     @Override
     public int hashCode() {
         final int prime = 31;

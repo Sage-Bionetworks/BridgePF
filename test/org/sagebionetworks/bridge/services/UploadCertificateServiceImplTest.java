@@ -67,7 +67,7 @@ public class UploadCertificateServiceImplTest {
         String certPem = readPem(certObject);
         X509Certificate cert = PemUtils.loadCertificateFromPem(certPem);
         cert.checkValidity();
-        String commonName = "cn=" + STUDY_ID.toLowerCase() + CONFIG.getStudyHostnamePostfix().toLowerCase();
+        String commonName = "cn=" + STUDY_ID.toLowerCase() + CONFIG.getHostPostfix().toLowerCase();
         assertTrue(cert.getSubjectX500Principal().getName().toLowerCase().contains(commonName));
         assertTrue(cert.getSubjectDN().getName().toLowerCase().contains(commonName));
         S3Object privObject = s3Client.getObject(PRIV_BUCKET, STUDY_ID + ".pem");

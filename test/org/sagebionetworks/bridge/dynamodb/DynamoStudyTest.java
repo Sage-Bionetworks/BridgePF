@@ -6,6 +6,7 @@ import nl.jqno.equalsverifier.Warning;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -55,8 +56,16 @@ public class DynamoStudyTest {
         assertEquals(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate", EmailTemplate.class));
         assertEquals(study.getResetPasswordTemplate(), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
         assertEquals(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
+        assertEquals(study.getConsentHTML(), JsonUtils.asText(node,  "consentHTML"));
+        assertEquals(study.getConsentPDF(), JsonUtils.asText(node,  "consentPDF"));
         assertEquals((Long)study.getVersion(), (Long)node.get("version").asLong());
         assertEquals("Study", node.get("type").asText());
+        
+        String htmlURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + study.getIdentifier() + "/consent.html";
+        assertEquals(htmlURL, study.getConsentHTML());
+        
+        String pdfURL = "http://" + BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs") + "/" + study.getIdentifier() + "/consent.pdf";
+        assertEquals(pdfURL, study.getConsentPDF());
         
         // Using the filtered view of a study, this should not include a couple of fields we don't expose to researchers.
         // Negates the need for a view wrapper object, is contextually adjustable, unlike @JsonIgnore.
