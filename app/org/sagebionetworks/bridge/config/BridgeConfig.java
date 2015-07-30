@@ -43,7 +43,7 @@ public class BridgeConfig {
 
     private static final String HOST_POSTFIX = "host.postfix";
 
-    private static final String STUDY_BASE_URL = "study.base.url";
+    private static final String WEBSERVICES_URL = "webservices.url";
     
     // Comma surrounded by optional whitespace
     private static final String DEFAULT_DELIMITER = "\\s*,\\s*";
@@ -186,8 +186,8 @@ public class BridgeConfig {
         return getProperty(HOST_POSTFIX);
     }
 
-    public String getBaseURL() {
-        return getProperty(STUDY_BASE_URL);
+    public String getWebservicesURL() {
+        return getProperty(WEBSERVICES_URL);
     }
     
     public String getHostnameWithPostfix(String identifier) {

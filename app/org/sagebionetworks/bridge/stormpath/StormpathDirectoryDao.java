@@ -227,7 +227,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
         stormpathTemplate.setTextBody(body);
         stormpathTemplate.setHtmlBody(body);
 
-        String link = String.format("%s/mobile/%s.html?study=%s", config.getBaseURL(), pageName, study.getIdentifier());
+        String link = String.format("%s/mobile/%s.html?study=%s", config.getWebservicesURL(), pageName, study.getIdentifier());
         stormpathTemplate.setLinkBaseUrl(link);
         stormpathTemplate.save();
     }

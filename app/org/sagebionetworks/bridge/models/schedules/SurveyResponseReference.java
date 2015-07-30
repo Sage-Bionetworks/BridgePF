@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class SurveyResponseReference {
 
-    private static final String BASE_URL = BridgeConfigFactory.getConfig().getBaseURL() + "/v3/surveyresponses/";
+    private static final String BASE_URL = BridgeConfigFactory.getConfig().getWebservicesURL() + "/v3/surveyresponses/";
     
     private final String identifier;
     

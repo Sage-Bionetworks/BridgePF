@@ -25,7 +25,7 @@ public class TestConstants {
 
     public static final String ATTACHMENT_BUCKET = BridgeConfigFactory.getConfig().getProperty("attachment.bucket");
     public static final String UPLOAD_BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
-    public static final String BASE_URL = BridgeConfigFactory.getConfig().getBaseURL();
+    public static final String BASE_URL = BridgeConfigFactory.getConfig().getWebservicesURL();
 
     public static final String ACTIVITY_1_REF = BASE_URL + "/v3/surveys/AAA/revisions/published";
     public static final String ACTIVITY_2_REF = BASE_URL + "/v3/surveys/BBB/revisions/published";
