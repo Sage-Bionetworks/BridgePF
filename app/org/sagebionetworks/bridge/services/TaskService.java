@@ -182,7 +182,7 @@ public class TaskService {
         }   
         
         // Now create a response for that specific survey version
-        SurveyResponseView response = surveyResponseService.createSurveyResponse(keys, healthCode, EMPTY_ANSWERS);
+        SurveyResponseView response = surveyResponseService.createSurveyResponse(keys, healthCode, EMPTY_ANSWERS, null);
         
         // And reconstruct the activity with that survey instance as well as the new response object.
         return new Activity.Builder()

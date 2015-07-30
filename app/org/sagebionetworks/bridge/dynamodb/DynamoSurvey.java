@@ -15,9 +15,11 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -71,8 +73,10 @@ public class DynamoSurvey implements Survey {
     }
     
     @Override
-    @DynamoDBAttribute(attributeName = "studyKey")
     @JsonIgnore
+    @DynamoDBAttribute(attributeName = "studyKey")
+    @DynamoDBIndexHashKey(attributeName="studyKey", globalSecondaryIndexName = "studyKey-index")
+    @DynamoDBProjection(projectionType=ProjectionType.ALL, globalSecondaryIndexName = "studyKey-index")
     public String getStudyIdentifier() {
         return studyKey;
     }

@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +29,6 @@ import org.springframework.stereotype.Component;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
@@ -43,23 +40,15 @@ import com.google.common.collect.Maps;
 @Component
 public class DynamoSurveyDao implements SurveyDao {
 
-    Comparator<DynamoSurvey> VERSIONED_ON_DESC_SORTER = new Comparator<DynamoSurvey>() {
-        @Override public int compare(DynamoSurvey o1, DynamoSurvey o2) {
-            return (int)(o2.getCreatedOn() - o1.getCreatedOn());
-        }
-    };
-    
     class QueryBuilder {
         
         private static final String PUBLISHED_PROPERTY = "published";
         private static final String DELETED_PROPERTY = "deleted";
         private static final String CREATED_ON_PROPERTY = "versionedOn";
         private static final String STUDY_KEY_PROPERTY = "studyKey";
-        private static final String IDENTIFIER_PROPERTY = "identifier";
         
         String surveyGuid;
         String studyIdentifier;
-        String identifier;
         long createdOn;
         boolean published;
         boolean notDeleted;
@@ -70,10 +59,6 @@ public class DynamoSurveyDao implements SurveyDao {
         }
         QueryBuilder setStudy(StudyIdentifier studyIdentifier) {
             this.studyIdentifier = studyIdentifier.getIdentifier();
-            return this;
-        }
-        QueryBuilder setIdentifier(String identifier) {
-            this.identifier = identifier;
             return this;
         }
         QueryBuilder setCreatedOn(long createdOn) {
@@ -113,7 +98,7 @@ public class DynamoSurveyDao implements SurveyDao {
         List<Survey> getAll(boolean exceptionIfEmpty) {
             List<DynamoSurvey> dynamoSurveys = null;
             if (surveyGuid == null) {
-                dynamoSurveys = scan();
+                dynamoSurveys = queryBySecondaryIndex();
             } else {
                 dynamoSurveys = query();
             }
@@ -154,28 +139,24 @@ public class DynamoSurveyDao implements SurveyDao {
             }
             return surveyMapper.queryPage(DynamoSurvey.class, query).getResults();
         }
-
-        private List<DynamoSurvey> scan() {
-            DynamoDBScanExpression scan = new DynamoDBScanExpression();
-            if (studyIdentifier != null) {
-                scan.addFilterCondition(STUDY_KEY_PROPERTY, equalsString(studyIdentifier));
+        
+        private List<DynamoSurvey> queryBySecondaryIndex() {
+            if (studyIdentifier == null) {
+                throw new IllegalStateException("Calculated the need to query by secondary index, but study identifier is not set");
             }
-            if (createdOn != 0L) {
-                scan.addFilterCondition(CREATED_ON_PROPERTY, equalsNumber(Long.toString(createdOn)));
-            }
+            DynamoSurvey hashKey = new DynamoSurvey();
+            hashKey.setStudyIdentifier(studyIdentifier);
+            
+            DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
+            query.withHashKeyValues(hashKey);
+            query.withConsistentRead(false);
             if (published) {
-                scan.addFilterCondition(PUBLISHED_PROPERTY, equalsNumber("1"));
-            }
-            if (identifier != null) {
-                scan.addFilterCondition(IDENTIFIER_PROPERTY, equalsString(identifier));
+                query.withQueryFilterEntry(PUBLISHED_PROPERTY, equalsNumber("1"));
             }
             if (notDeleted) {
-                scan.addFilterCondition(DELETED_PROPERTY, equalsNumber("0"));
+                query.withQueryFilterEntry(DELETED_PROPERTY, equalsNumber("0"));
             }
-            List<DynamoSurvey> surveys = Lists.newArrayList(surveyMapper.scan(DynamoSurvey.class, scan));
-            // Scans will not sort as queries do. Sort Manually. Probably a dog.
-            Collections.sort(surveys, VERSIONED_ON_DESC_SORTER);
-            return surveys;
+            return surveyMapper.queryPage(DynamoSurvey.class, query).getResults();
         }
 
         private Condition equalsNumber(String equalTo) {
@@ -212,7 +193,7 @@ public class DynamoSurveyDao implements SurveyDao {
     private DynamoDBMapper surveyMapper;
     private DynamoDBMapper surveyElementMapper;
     private UploadSchemaDao uploadSchemaDao;
-
+    
     @Resource(name = "surveyMapper")
     public void setSurveyMapper(DynamoDBMapper surveyMapper) {
         this.surveyMapper = surveyMapper;
@@ -359,36 +340,18 @@ public class DynamoSurveyDao implements SurveyDao {
         return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).isNotDeleted().getOne(true);
     }
     
-    // SCAN
-    @Override
-    public Survey getSurveyMostRecentlyPublishedVersionByIdentifier(StudyIdentifier studyIdentifier, String identifier) {
-        return new QueryBuilder().setStudy(studyIdentifier).setIdentifier(identifier).isPublished().isNotDeleted().getOne(true);
-    }
-    
-    // SCAN
+    // secondary index query (not survey GUID) 
     @Override
     public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier) {
-        return new QueryBuilder().setStudy(studyIdentifier).isPublished().isNotDeleted().getAll(false);
+        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isPublished().isNotDeleted().getAll(false);
+        return findMostRecentVersions(surveys);
     }
     
-    // SCAN
+    // secondary index query (not survey GUID)
     @Override
     public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier) {
         List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isNotDeleted().getAll(false);
-        if (surveys.isEmpty()) {
-            return surveys;
-        }
-        // If you knew the number of unique guids, you could iterate until you had found
-        // that many unique GUIDs, and stop, since they're ordered from largest timestamp 
-        // to smaller. This would be faster with many versions to go through.
-        Map<String, Survey> map = Maps.newLinkedHashMap();
-        for (Survey survey : surveys) {
-            Survey stored = map.get(survey.getGuid());
-            if (stored == null || survey.getCreatedOn() > stored.getCreatedOn()) {
-                map.put(survey.getGuid(), survey);
-            }
-        }
-        return new ArrayList<Survey>(map.values());
+        return findMostRecentVersions(surveys);
     }
     
     /**
@@ -399,6 +362,26 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey getSurvey(GuidCreatedOnVersionHolder keys) {
         return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn()).getOne(true);
+    }
+    
+    /**
+     * This scan gets expensive when there are many revisions. We don't know the set of unique GUIDs, so 
+     * we also have to iterate over everything. 
+     * @param surveys
+     * @return
+     */
+    private List<Survey> findMostRecentVersions(List<Survey> surveys) {
+        if (surveys.isEmpty()) {
+            return surveys;
+        }
+        Map<String, Survey> map = Maps.newLinkedHashMap();
+        for (Survey survey : surveys) {
+            Survey stored = map.get(survey.getGuid());
+            if (stored == null || survey.getCreatedOn() > stored.getCreatedOn()) {
+                map.put(survey.getGuid(), survey);
+            }
+        }
+        return new ArrayList<Survey>(map.values());
     }
     
     private Survey saveSurvey(Survey survey) {

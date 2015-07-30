@@ -13,7 +13,7 @@ public interface SurveyResponse extends BridgeEntity {
         IN_PROGRESS,
         FINISHED;
     }
-
+    
     public Long getVersion();
     public void setVersion(Long version);
     
@@ -32,7 +32,10 @@ public interface SurveyResponse extends BridgeEntity {
     public void setCompletedOn(Long completedOn);
 
     public String getSurveyGuid();
+    public void setSurveyGuid(String surveyGuid);
+    
     public long getSurveyCreatedOn();
+    public void setSurveyCreatedOn(long surveyCreatedOn);
     
     public List<SurveyAnswer> getAnswers();
     public void setAnswers(List<SurveyAnswer> answers);
