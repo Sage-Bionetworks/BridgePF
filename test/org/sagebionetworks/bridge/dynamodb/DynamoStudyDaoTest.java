@@ -38,7 +38,7 @@ public class DynamoStudyDaoTest {
     }
     
     @Before
-    public void before() {
+    public void before() throws Exception {
         // We need to leave the test study in the database.
         List<Study> studies = studyDao.getStudies();
         for (Study study : studies) {
@@ -85,7 +85,7 @@ public class DynamoStudyDaoTest {
         try {
             studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
             studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-            
+        
             List<Study> savedStudies = studyDao.getStudies();
             // The five studies, plus the API study we refuse to delete...
             assertEquals("There are three studies", 3, savedStudies.size());
@@ -95,7 +95,7 @@ public class DynamoStudyDaoTest {
             }
         }
         // TODO: Investigating why tests fail often (not always) without this
-        Thread.sleep(5000);
+        Thread.sleep(5000);        
         List<Study> savedStudies = studyDao.getStudies();
         assertEquals("There should be only one study", 1, savedStudies.size());
         assertEquals("That should be the test study study", "api", savedStudies.get(0).getIdentifier());

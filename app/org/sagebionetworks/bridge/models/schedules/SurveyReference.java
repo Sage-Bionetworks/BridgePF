@@ -16,7 +16,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public final class SurveyReference {
 
-    private static final String BASE_URL = BridgeConfigFactory.getConfig().getBaseURL() + "/v3/surveys/";
+    private static final String BASE_URL = BridgeConfigFactory.getConfig().getWebservicesURL() + "/v3/surveys/";
     
     private final String identifier;
     private final String guid;

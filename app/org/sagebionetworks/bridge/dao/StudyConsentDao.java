@@ -20,7 +20,7 @@ public interface StudyConsentDao {
      * @param consent
      * @return
      */
-    StudyConsent activate(StudyConsent studyConsent);
+    StudyConsent publish(StudyConsent studyConsent);
     
     /**
      * Gets the active consent.

@@ -45,7 +45,7 @@ public class UploadCertificateServiceImpl implements UploadCertificateService {
     public void createCmsKeyPair(String studyIdentifier) {
         checkNotNull(studyIdentifier);
         final KeyPair keyPair = KeyPairFactory.newRsa2048();
-        final String studyFqdn = CONFIG.getStudyHostname(studyIdentifier);
+        final String studyFqdn = CONFIG.getWebservicesURL();
         final X509Certificate cert = certificateFactory.newCertificate(keyPair, studyFqdn);
         final String name = studyIdentifier + ".pem";
         try {

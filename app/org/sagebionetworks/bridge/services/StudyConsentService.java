@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import java.util.List;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
@@ -72,13 +73,13 @@ public interface StudyConsentService {
      * Set the specified consent document as active, setting all other consent documents 
      * as inactive.
      *
-     * @param studyIdentifier
-     *            key associated with the study.
+     * @param study
+     *            study for this consent
      * @param timestamp
      *            time the consent document was added to the database.
      * @return the activated consent document along with its document content
      * @throws BridgeServiceException
      */
-    public StudyConsentView activateConsent(StudyIdentifier studyIdentifier, long timestamp) throws BridgeServiceException;
+    public StudyConsentView publishConsent(Study study, long timestamp) throws BridgeServiceException;
 
 }

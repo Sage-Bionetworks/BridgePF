@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -107,7 +107,7 @@ public class StormpathDirectoryDaoTest {
         assertEquals(rpSubject, template.getSubject());
         assertEquals(StormpathDirectoryDao.getStormpathMimeType(study.getResetPasswordTemplate()), template.getMimeType());
         assertEquals(study.getResetPasswordTemplate().getBody(), template.getTextBody());
-        String url = String.format("%s/mobile/resetPassword.html?study=%s", BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier());
+        String url = String.format("%s/mobile/resetPassword.html?study=%s", BridgeConfigFactory.getConfig().getWebservicesURL(), study.getIdentifier());
         assertEquals(url, template.getLinkBaseUrl());
         
         PasswordStrength strength = passwordPolicy.getStrength();
@@ -130,7 +130,7 @@ public class StormpathDirectoryDaoTest {
         assertEquals(veSubject, template.getSubject());
         assertEquals(StormpathDirectoryDao.getStormpathMimeType(study.getVerifyEmailTemplate()), template.getMimeType());
         assertEquals(study.getVerifyEmailTemplate().getBody(), template.getTextBody());
-        url = String.format("%s/mobile/verifyEmail.html?study=%s", BridgeConfigFactory.getConfig().getBaseURL(), study.getIdentifier());
+        url = String.format("%s/mobile/verifyEmail.html?study=%s", BridgeConfigFactory.getConfig().getWebservicesURL(), study.getIdentifier());
         assertEquals(url, template.getLinkBaseUrl());
     }
     

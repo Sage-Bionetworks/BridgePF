@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
@@ -154,7 +154,7 @@ public class StudyServiceImpl implements StudyService {
             
             // The system is broken if the study does not have a consent. Create a default consent so the study is usable.
             StudyConsentView view = studyConsentService.addConsent(study.getStudyIdentifier(), defaultConsentDocument);
-            studyConsentService.activateConsent(study.getStudyIdentifier(), view.getCreatedOn());
+            studyConsentService.publishConsent(study, view.getCreatedOn());
             
             study.setActive(true);
 

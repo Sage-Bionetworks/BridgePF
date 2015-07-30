@@ -5,7 +5,6 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
