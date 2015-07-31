@@ -178,21 +178,7 @@ public class StudyServiceImpl implements StudyService {
     public Study updateStudy(Study study, boolean isAdminUpdate) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
-        // do not set defaults for the existing studies that are in use. Throw an error if 
-        // these studies do not already include templates. Once they are migrated, this check 
-        // can be removed.
-        if (studyWhitelist.contains(study.getIdentifier())) {
-            checkNotNull(study.getVerifyEmailTemplate());
-            checkNotNull(study.getVerifyEmailTemplate().getSubject());
-            checkNotNull(study.getVerifyEmailTemplate().getMimeType());
-            checkNotNull(study.getVerifyEmailTemplate().getBody());
-            checkNotNull(study.getResetPasswordTemplate());
-            checkNotNull(study.getResetPasswordTemplate().getSubject());
-            checkNotNull(study.getResetPasswordTemplate().getMimeType());
-            checkNotNull(study.getResetPasswordTemplate().getBody());
-        } else {
-            setDefaultsIfAbsent(study);    
-        }
+        setDefaultsIfAbsent(study);    
         sanitizeHTML(study);
 
         // These cannot be set through the API and will be null here, so they are set on update
