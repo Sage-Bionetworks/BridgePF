@@ -296,7 +296,7 @@ public class BridgeSpringConfig {
     @Bean(name = "uploadSchemaDdbMapper")
     @Autowired
     public DynamoDBMapper uploadSchemaDdbMapper(AmazonDynamoDB client) {
-        return DynamoUtils.getMapperEventually(DynamoUploadSchema.class, client);
+        return DynamoUtils.getMapper(DynamoUploadSchema.class, client);
     }
 
     @Bean(name = "taskDdbMapper")
