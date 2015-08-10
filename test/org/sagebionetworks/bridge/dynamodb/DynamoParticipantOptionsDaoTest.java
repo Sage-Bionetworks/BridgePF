@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -25,6 +26,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
 import com.google.common.collect.Maps;
@@ -76,14 +78,14 @@ public class DynamoParticipantOptionsDaoTest {
         DynamoParticipantOptions options = getOptionsForUser();
         
         DynamoDBMapper mapper = mock(DynamoDBMapper.class);
-        when(mapper.load(any())).thenReturn(options);
+        when(mapper.load(any(DynamoParticipantOptions.class), any(DynamoDBMapperConfig.class))).thenReturn(options);
 
         DynamoParticipantOptionsDao optionsDao = new DynamoParticipantOptionsDao();
         optionsDao.setMapper(mapper);
         
         optionsDao.getAllParticipantOptions("aaa");
         
-        verify(mapper).load(any());
+        verify(mapper).load(any(DynamoParticipantOptions.class), any(DynamoDBMapperConfig.class));
         verifyNoMoreInteractions(mapper);
     }
     

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
 
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ public class DynamoTaskEventDao implements TaskEventDao {
         hashKey.setEventId(event.getEventId());
         
         // Only save if the timestamp is later than the current timestamp in the table
-        TaskEvent savedEvent = mapper.load(hashKey);
+        TaskEvent savedEvent = mapper.load(hashKey, CONSISTENT_READ_CONFIG);
         if (savedEvent == null || event.getTimestamp() > savedEvent.getTimestamp()) {
             mapper.save(event);    
         }

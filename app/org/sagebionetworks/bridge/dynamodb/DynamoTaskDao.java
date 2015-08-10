@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -99,7 +101,7 @@ public class DynamoTaskDao implements TaskDao {
                 DynamoTask hashKey = new DynamoTask();
                 hashKey.setHealthCode(healthCode);
                 hashKey.setGuid(task.getGuid());
-                Task dbTask = mapper.load(hashKey);
+                Task dbTask = mapper.load(hashKey, CONSISTENT_READ_CONFIG);
                 
                 if (dbTask != null) {
                     if (task.getStartedOn() != null) {

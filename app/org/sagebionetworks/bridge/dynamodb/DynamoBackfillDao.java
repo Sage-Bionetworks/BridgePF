@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
 
 import java.util.Iterator;
 import java.util.List;
@@ -57,7 +58,7 @@ public class DynamoBackfillDao implements BackfillDao {
         checkArgument(isNotBlank(taskId));
         checkNotNull(status);
         DynamoBackfillTask task = new DynamoBackfillTask(taskId);
-        task = taskMapper.load(task);
+        task = taskMapper.load(task, CONSISTENT_READ_CONFIG);
         task.setStatus(status.name());
         taskMapper.save(task);
     }
@@ -66,7 +67,7 @@ public class DynamoBackfillDao implements BackfillDao {
     public BackfillTask getTask(String taskId) {
         checkArgument(isNotBlank(taskId));
         DynamoBackfillTask task = new DynamoBackfillTask(taskId);
-        task = taskMapper.load(task);
+        task = taskMapper.load(task, CONSISTENT_READ_CONFIG);
         return task;
     }
 

@@ -14,7 +14,9 @@ import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Table;
 
 public final class DynamoUtils {
-
+    
+    public static final DynamoDBMapperConfig CONSISTENT_READ_CONFIG = new DynamoDBMapperConfig(DynamoDBMapperConfig.ConsistentReads.CONSISTENT);
+    
     static TableNameOverride getTableNameOverride(final Class<?> dynamoTable) {
         final DynamoDBTable table = dynamoTable.getAnnotation(DynamoDBTable.class);
         if (table == null) {

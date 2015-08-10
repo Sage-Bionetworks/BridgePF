@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -197,7 +199,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         key.setStudyId(studyId);
         key.setSchemaId(schemaId);
         key.setRevision(rev);
-        DynamoUploadSchema schemaToDelete = mapper.load(key);
+        DynamoUploadSchema schemaToDelete = mapper.load(key, CONSISTENT_READ_CONFIG);
         if (schemaToDelete == null) {
             throw new EntityNotFoundException(UploadSchema.class, String.format(
                     "Upload schema not found for study %s, schema ID %s, revision %d", studyId, schemaId, rev));
@@ -251,7 +253,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         key.setSchemaId(schemaId);
         key.setRevision(schemaRev);
 
-        DynamoUploadSchema schema = mapper.load(key);
+        DynamoUploadSchema schema = mapper.load(key, CONSISTENT_READ_CONFIG);
         if (schema == null) {
             throw new EntityNotFoundException(UploadSchema.class, String.format(
                     "Upload schema not found for study %s, schema ID %s, revision %d", studyId, schemaId, schemaRev));
