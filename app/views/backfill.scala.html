@@ -12,7 +12,7 @@
   <script>
     $(function(){
       var data, xhr = new XMLHttpRequest();
-      xhr.open("POST", "/admin/v1/backfill/@name/start", true);
+      xhr.open("POST", "/v3/backfill/@name/start", true);
       xhr.seenBytes = 0;
       xhr.addEventListener("progress", function () {
         data = xhr.responseText.substr(xhr.seenBytes);
