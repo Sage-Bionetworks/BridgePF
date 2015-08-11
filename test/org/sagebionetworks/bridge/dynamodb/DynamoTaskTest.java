@@ -38,7 +38,6 @@ public class DynamoTaskTest {
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String output = BridgeObjectMapper.get().writeValueAsString(task);
-        System.out.println(output);
         
         JsonNode node = mapper.readTree(output);
         assertEquals("AAA-BBB-CCC", node.get("guid").asText());
