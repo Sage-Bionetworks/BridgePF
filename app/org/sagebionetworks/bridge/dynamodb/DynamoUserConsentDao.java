@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
 
 import java.util.List;
 import java.util.Set;
@@ -78,7 +79,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     @Override
     public UserConsent getUserConsent(String healthCode, StudyIdentifier studyIdentifier) {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyIdentifier.getIdentifier());
-        consent = mapper.load(consent);
+        consent = mapper.load(consent, CONSISTENT_READ_CONFIG);
         return consent;
     }
 
@@ -101,7 +102,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
 
     private DynamoUserConsent2 getUserConsent(String healthCode, StudyConsent studyConsent) {
         DynamoUserConsent2 consent = new DynamoUserConsent2(healthCode, studyConsent);
-        consent = mapper.load(consent);
+        consent = mapper.load(consent, CONSISTENT_READ_CONFIG);
         return consent;
     }
 }

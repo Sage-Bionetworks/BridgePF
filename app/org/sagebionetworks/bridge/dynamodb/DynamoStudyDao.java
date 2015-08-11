@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +42,7 @@ public class DynamoStudyDao implements StudyDao {
     public boolean doesIdentifierExist(String identifier) {
         DynamoStudy study = new DynamoStudy();
         study.setIdentifier(identifier);
-        return (mapper.load(study) != null);
+        return (mapper.load(study, CONSISTENT_READ_CONFIG) != null);
     }
     
     @Override
@@ -50,7 +51,7 @@ public class DynamoStudyDao implements StudyDao {
         
         DynamoStudy study = new DynamoStudy();
         study.setIdentifier(identifier);
-        study = mapper.load(study);
+        study = mapper.load(study, CONSISTENT_READ_CONFIG);
         if (study == null) {
             throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found.");
         }

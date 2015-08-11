@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 import java.util.List;
@@ -77,7 +79,7 @@ public class DynamoHealthDataDao implements HealthDataDao {
     /** {@inheritDoc} */
     @Override
     public HealthDataRecord getRecordById(@Nonnull String id) {
-        return mapper.load(DynamoHealthDataRecord.class, id);
+        return mapper.load(DynamoHealthDataRecord.class, id, CONSISTENT_READ_CONFIG);
     }
 
     /** {@inheritDoc} */

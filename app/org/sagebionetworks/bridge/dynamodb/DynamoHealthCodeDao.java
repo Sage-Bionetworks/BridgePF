@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
 
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +45,7 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
     public String getStudyIdentifier(final String code) {
         DynamoHealthCode key = new DynamoHealthCode();
         key.setCode(code);
-        DynamoHealthCode loaded = mapper.load(key);
+        DynamoHealthCode loaded = mapper.load(key, CONSISTENT_READ_CONFIG);
         if (loaded == null) {
             return null;
         }

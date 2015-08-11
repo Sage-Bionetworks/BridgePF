@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.notNull;
@@ -14,15 +15,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -369,7 +371,7 @@ public class DynamoUploadSchemaDaoTest {
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
         DynamoUploadSchema schemaToDelete = new DynamoUploadSchema();
         ArgumentCaptor<DynamoUploadSchema> loadSchemaArgCaptor = ArgumentCaptor.forClass(DynamoUploadSchema.class);
-        when(mockMapper.load(loadSchemaArgCaptor.capture())).thenReturn(schemaToDelete);
+        when(mockMapper.load(loadSchemaArgCaptor.capture(), any(DynamoDBMapperConfig.class))).thenReturn(schemaToDelete);
 
         // set up test dao and execute
         DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
@@ -391,7 +393,7 @@ public class DynamoUploadSchemaDaoTest {
         // mock DDB mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
         ArgumentCaptor<DynamoUploadSchema> loadSchemaArgCaptor = ArgumentCaptor.forClass(DynamoUploadSchema.class);
-        when(mockMapper.load(loadSchemaArgCaptor.capture())).thenReturn(null);
+        when(mockMapper.load(loadSchemaArgCaptor.capture(), any(DynamoDBMapperConfig.class))).thenReturn(null);
 
         // set up test dao and execute
         DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
@@ -539,7 +541,7 @@ public class DynamoUploadSchemaDaoTest {
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
         DynamoUploadSchema schema = new DynamoUploadSchema();
         ArgumentCaptor<DynamoUploadSchema> loadSchemaArgCaptor = ArgumentCaptor.forClass(DynamoUploadSchema.class);
-        when(mockMapper.load(loadSchemaArgCaptor.capture())).thenReturn(schema);
+        when(mockMapper.load(loadSchemaArgCaptor.capture(), any(DynamoDBMapperConfig.class))).thenReturn(schema);
 
         // set up test dao and execute
         DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
@@ -559,7 +561,7 @@ public class DynamoUploadSchemaDaoTest {
         // mock DDB mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
         ArgumentCaptor<DynamoUploadSchema> loadSchemaArgCaptor = ArgumentCaptor.forClass(DynamoUploadSchema.class);
-        when(mockMapper.load(loadSchemaArgCaptor.capture())).thenReturn(null);
+        when(mockMapper.load(loadSchemaArgCaptor.capture(), any(DynamoDBMapperConfig.class))).thenReturn(null);
 
         // set up test dao and execute
         DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();

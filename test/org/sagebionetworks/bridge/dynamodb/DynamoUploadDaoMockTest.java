@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,6 +25,7 @@ import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
@@ -58,7 +60,7 @@ public class DynamoUploadDaoMockTest {
         DynamoUpload2 upload = new DynamoUpload2();
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
         ArgumentCaptor<DynamoUpload2> arg = ArgumentCaptor.forClass(DynamoUpload2.class);
-        when(mockMapper.load(arg.capture())).thenReturn(upload);
+        when(mockMapper.load(arg.capture(), any(DynamoDBMapperConfig.class))).thenReturn(upload);
 
         // execute
         DynamoUploadDao dao = new DynamoUploadDao();
@@ -75,7 +77,7 @@ public class DynamoUploadDaoMockTest {
         // mock DDB mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
         ArgumentCaptor<DynamoUpload2> arg = ArgumentCaptor.forClass(DynamoUpload2.class);
-        when(mockMapper.load(arg.capture())).thenReturn(null);
+        when(mockMapper.load(arg.capture(), any(DynamoDBMapperConfig.class))).thenReturn(null);
 
         // execute
         DynamoUploadDao dao = new DynamoUploadDao();

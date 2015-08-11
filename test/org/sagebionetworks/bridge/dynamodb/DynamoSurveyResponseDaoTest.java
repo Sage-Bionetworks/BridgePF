@@ -207,15 +207,6 @@ public class DynamoSurveyResponseDaoTest {
         surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), targetIdentifier);
         surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), BridgeUtils.generateGuid());
         
-        // This is *necessary* or this test cannot be made to fail by removing the relevant range query filter.
-        // This probably indicates other tests are not 100% accurate due to eventual consistency.
-        /*
-        try {
-            Thread.sleep(1000);    
-        } catch(InterruptedException e){
-            Thread.currentThread().interrupt();
-        }
-        */
         SurveyResponse response = surveyResponseDao.getSurveyResponse(HEALTH_DATA_CODE, targetIdentifier);
         assertEquals(targetIdentifier, response.getIdentifier());
     }

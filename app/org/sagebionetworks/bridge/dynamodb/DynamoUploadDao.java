@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
@@ -74,7 +75,7 @@ public class DynamoUploadDao implements UploadDao {
         // Fetch upload from DynamoUpload2
         DynamoUpload2 key = new DynamoUpload2();
         key.setUploadId(uploadId);
-        DynamoUpload2 upload = mapper.load(key);
+        DynamoUpload2 upload = mapper.load(key, CONSISTENT_READ_CONFIG);
         if (upload != null) {
             return upload;
         }

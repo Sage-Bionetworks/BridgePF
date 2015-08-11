@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
+
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +45,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
         
-        DynamoParticipantOptions options = mapper.load(keyObject);
+        DynamoParticipantOptions options = mapper.load(keyObject, CONSISTENT_READ_CONFIG);
         if (options == null) {
             options = new DynamoParticipantOptions();
         }
@@ -59,7 +61,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         keyObject.setHealthCode(healthCode);
         
         String value = option.getDefaultValue();
-        DynamoParticipantOptions options = mapper.load(keyObject);
+        DynamoParticipantOptions options = mapper.load(keyObject, CONSISTENT_READ_CONFIG);
         if (options != null && options.getOptions().get(option.name()) != null) {
             value = options.getOptions().get(option.name());
         }
@@ -71,7 +73,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
         
-        DynamoParticipantOptions options = mapper.load(keyObject);
+        DynamoParticipantOptions options = mapper.load(keyObject, CONSISTENT_READ_CONFIG);
         if (options != null) {
             mapper.delete(options);    
         }
@@ -82,7 +84,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         DynamoParticipantOptions keyObject = new DynamoParticipantOptions();
         keyObject.setHealthCode(healthCode);
         
-        DynamoParticipantOptions options = mapper.load(keyObject);
+        DynamoParticipantOptions options = mapper.load(keyObject, CONSISTENT_READ_CONFIG);
         if (options != null) {
             options.getOptions().remove(option.name());
             mapper.save(options);
@@ -95,7 +97,7 @@ public class DynamoParticipantOptionsDao implements ParticipantOptionsDao {
         keyObject.setHealthCode(healthCode);
         
         Map<ParticipantOption,String> map = Maps.newHashMap();
-        DynamoParticipantOptions options = mapper.load(keyObject);
+        DynamoParticipantOptions options = mapper.load(keyObject, CONSISTENT_READ_CONFIG);
         if (options == null) {
             return map;
         }

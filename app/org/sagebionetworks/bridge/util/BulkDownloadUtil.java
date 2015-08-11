@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.util;
 
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -227,7 +229,7 @@ public class BulkDownloadUtil {
             // fetch study from DDB HealthCode table
             DynamoHealthCode key = new DynamoHealthCode();
             key.setCode(oneUploadMetadata.getHealthCode());
-            DynamoHealthCode entry = healthCodeMapper.load(key);
+            DynamoHealthCode entry = healthCodeMapper.load(key, CONSISTENT_READ_CONFIG);
             if (entry == null) {
                 System.out.println(String.format("No study found for uploadId %s, healthcode %s",
                         oneUploadMetadata.getUploadId(), oneUploadMetadata.getHealthCode()));

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
 
 import org.sagebionetworks.bridge.dao.HealthIdDao;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +46,7 @@ public class DynamoHealthIdDao implements HealthIdDao {
     @Override
     public String getCode(String id) {
         checkArgument(isNotBlank(id), "Health ID is blank or null");
-        DynamoHealthId healthId = mapper.load(DynamoHealthId.class, id);
+        DynamoHealthId healthId = mapper.load(DynamoHealthId.class, id, CONSISTENT_READ_CONFIG);
         if (healthId != null) {
             return healthId.getCode();
         }

@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.google.common.collect.Lists;
@@ -78,7 +79,7 @@ public class DynamoTaskDaoMockTest {
             for (final Task task : tasks) {
                 results.add((DynamoTask)task);
             }
-            when(mapper.load(any())).thenAnswer(new Answer<DynamoTask>() {
+            when(mapper.load(any(DynamoTask.class), any(DynamoDBMapperConfig.class))).thenAnswer(new Answer<DynamoTask>() {
                 @Override public DynamoTask answer(InvocationOnMock invocation) throws Throwable {
                     DynamoTask thisTask = (DynamoTask)invocation.getArguments()[0];
                     for (Task task : tasks) {
@@ -221,7 +222,7 @@ public class DynamoTaskDaoMockTest {
         taskDao.updateTasks(HEALTH_CODE, tasks);
 
         // So yeah, those tasks have been updated. Capture them and verify that they were updated
-        verify(mapper, times(2)).load(any());
+        verify(mapper, times(2)).load(any(DynamoTask.class), any(DynamoDBMapperConfig.class));
         verify(mapper).batchSave(argument.capture());
         verifyNoMoreInteractions(mapper);
         

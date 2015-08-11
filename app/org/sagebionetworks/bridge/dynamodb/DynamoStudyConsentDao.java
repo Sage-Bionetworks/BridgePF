@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.dynamodb.DynamoUtils.CONSISTENT_READ_CONFIG;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,7 +48,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyConsent.getStudyKey());
         hashKey.setCreatedOn(studyConsent.getCreatedOn());
-        DynamoStudyConsent1 consent = mapper.load(hashKey);
+        DynamoStudyConsent1 consent = mapper.load(hashKey, CONSISTENT_READ_CONFIG);
         
         StudyIdentifier studyId = new StudyIdentifierImpl(studyConsent.getStudyKey());
         StudyConsent activeConsent = getActiveConsent(studyId);
@@ -100,7 +102,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         DynamoStudyConsent1 consent = new DynamoStudyConsent1();
         consent.setStudyKey(studyIdentifier.getIdentifier());
         consent.setCreatedOn(timestamp);
-        return mapper.load(consent);
+        return mapper.load(consent, CONSISTENT_READ_CONFIG);
     }
 
     @Override
