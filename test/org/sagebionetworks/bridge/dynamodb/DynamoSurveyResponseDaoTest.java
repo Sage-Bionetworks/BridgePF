@@ -87,7 +87,6 @@ public class DynamoSurveyResponseDaoTest {
         response.setData(data);
         
         String string = BridgeObjectMapper.get().writeValueAsString(response);
-        System.out.println(string);
         JsonNode node = BridgeObjectMapper.get().readTree(string);
         
         assertEquals("foo", node.get("identifier").asText());

@@ -63,6 +63,19 @@ public final class Activity implements BridgeEntity {
     public SurveyResponseReference getSurveyResponse() {
         return response;
     }
+    public boolean isPersistentlyRescheduledBy(Schedule schedule) {
+        if (schedule.getEventId() != null && schedule.getScheduleType() == ScheduleType.ONCE) {
+            if (schedule.getEventId().contains(getSelfFinishedEventId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+    private String getSelfFinishedEventId() {
+        return (getActivityType() == ActivityType.SURVEY) ?
+            ("survey:"+getSurvey().getGuid()+":finished") :
+            ("task:"+getTask().getIdentifier()+":finished");
+    }
     /**
      * This property is maintained for backwards compatibility, but clients should now look for 
      * metadata information, including links, in the survey, surveyResponse or task property 

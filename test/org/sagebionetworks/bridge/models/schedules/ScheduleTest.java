@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
@@ -9,6 +11,8 @@ import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -52,6 +56,7 @@ public class ScheduleTest {
         assertEquals("P2D", node.get("expires").asText());
         assertEquals("2015-02-02T10:10:10.000Z", node.get("startsOn").asText());
         assertEquals("2015-01-01T10:10:10.000Z", node.get("endsOn").asText());
+        assertEquals(false, node.get("persistent").asBoolean());
         assertEquals("Schedule", node.get("type").asText());
 
         ArrayNode times = (ArrayNode)node.get("times");
@@ -105,5 +110,33 @@ public class ScheduleTest {
         assertEquals(period, schedule.getExpires());
         assertEquals(period, schedule.getInterval());
         assertEquals(Lists.newArrayList(LocalTime.parse("10:10"), LocalTime.parse("12:10")), schedule.getTimes());
+    }
+    
+    @Test
+    public void scheduleIdentifiesWhenItIsPersistent() {
+        Schedule schedule = new Schedule();
+        assertFalse(schedule.getPersistent()); // safe to do this before anything else.
+        
+        Survey survey = new TestSurvey(false);
+        Activity activity = new Activity.Builder().withLabel("Test").withSurvey(survey.getIdentifier(),
+                        survey.getGuid(), new DateTime(survey.getCreatedOn())).build();
+        schedule.addActivity(activity);
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setEventId("survey:"+survey.getGuid()+":finished,enrollment");
+        assertTrue(schedule.getPersistent());
+        
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        assertFalse(schedule.getPersistent());
+        
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setEventId(null);
+        assertFalse(schedule.getPersistent());
+        
+        schedule = new Schedule();
+        activity = new Activity.Builder().withLabel("Test").withTask("BBB").build();
+        schedule.addActivity(activity);
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setEventId("enrollment,task:BBB:finished");
+        assertTrue(schedule.getPersistent());
     }
 }

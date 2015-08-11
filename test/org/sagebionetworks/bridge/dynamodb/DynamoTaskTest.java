@@ -34,9 +34,11 @@ public class DynamoTaskTest {
         task.setGuid("AAA-BBB-CCC");
         task.setSchedulePlanGuid("DDD-EEE-FFF");
         task.setHealthCode("FFF-GGG-HHH");
+        task.setPersistent(true);
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String output = BridgeObjectMapper.get().writeValueAsString(task);
+        System.out.println(output);
         
         JsonNode node = mapper.readTree(output);
         assertEquals("AAA-BBB-CCC", node.get("guid").asText());
@@ -44,6 +46,7 @@ public class DynamoTaskTest {
         assertEquals(expiresOn.toString(), node.get("expiresOn").asText());
         assertEquals("scheduled", node.get("status").asText());
         assertEquals("Task", node.get("type").asText());
+        assertEquals(true, node.get("persistent").asBoolean());
         
         JsonNode activityNode = node.get("activity");
         assertEquals("Label", activityNode.get("label").asText());

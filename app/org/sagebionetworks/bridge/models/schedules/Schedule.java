@@ -146,6 +146,24 @@ public final class Schedule implements BridgeEntity {
     public void setEventId(String eventId) {
         this.eventId = eventId;
     }
+    /**
+     * A persistent schedule is one that keeps a task alive in the list of tasks, 
+     * recreating it every time it is completed. Persistent schedules are scheduled to 
+     * occur one time, but have an event ID that immediately triggers re-scheduling when 
+     * one of the activities assigned by the schedule is completed.
+     * @return
+     */
+    public boolean getPersistent() {
+        // It must be scheduled once, triggered against an eventId (and of course, there need to be activities)
+        if (activities != null) {
+            for (Activity activity : activities) {
+                if (activity.isPersistentlyRescheduledBy(this)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     public boolean isScheduleFor(GuidCreatedOnVersionHolder keys) {
         for (Activity activity : activities) {
             SurveyReference reference = activity.getSurvey();

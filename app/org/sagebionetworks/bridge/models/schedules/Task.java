@@ -33,4 +33,8 @@ public interface Task {
     
     public Long getHidesOn();
     public void setHidesOn(Long hidesOn);
+    
+    public boolean getPersistent();
+    public void setPersistent(boolean persistent);
+
 }

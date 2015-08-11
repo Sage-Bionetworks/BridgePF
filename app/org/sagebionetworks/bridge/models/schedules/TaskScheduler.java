@@ -75,6 +75,7 @@ public abstract class TaskScheduler {
                     task.setActivity(activity);
                     task.setScheduledOn(scheduledTime.getMillis());
                     task.setGuid(BridgeUtils.generateGuid());
+                    task.setPersistent(activity.isPersistentlyRescheduledBy(schedule));
                     if (expiresOn != null) {
                         task.setExpiresOn(expiresOn.getMillis());
                         task.setHidesOn(expiresOn.getMillis());
