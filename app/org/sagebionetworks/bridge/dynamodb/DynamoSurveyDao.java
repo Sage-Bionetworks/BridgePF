@@ -149,6 +149,7 @@ public class DynamoSurveyDao implements SurveyDao {
             
             DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
             query.withHashKeyValues(hashKey);
+            // DDB will throw an error if you don't set this to eventual consistency.
             query.withConsistentRead(false);
             if (published) {
                 query.withQueryFilterEntry(PUBLISHED_PROPERTY, equalsNumber("1"));

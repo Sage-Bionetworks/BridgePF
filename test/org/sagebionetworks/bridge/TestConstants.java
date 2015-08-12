@@ -34,4 +34,10 @@ public class TestConstants {
     public static final DateTime ENROLLMENT = DateTime.parse("2015-04-10T10:40:34.000-07:00");
     
     public static final Activity TEST_ACTIVITY = new Activity.Builder().withLabel("Label").withTask("tapTest").build();
+    
+    /**
+     * During tests, must sometimes pause because the underlying query uses a DynamoDB global 
+     * secondary index, and this does not currently support consistent reads.
+     */
+    public static final int GSI_WAIT_DURATION = 2000;
 }
