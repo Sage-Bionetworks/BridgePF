@@ -154,7 +154,7 @@ public final class Schedule implements BridgeEntity {
      * @return
      */
     public boolean getPersistent() {
-        if (activities != null && schedulesImmediatelyAfterEvent()) {
+        if (activities != null) {
             for (Activity activity : activities) {
                 if (activity.isPersistentlyRescheduledBy(this)) {
                     return true;
