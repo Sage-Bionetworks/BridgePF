@@ -10,6 +10,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.test.context.ContextConfiguration;
@@ -60,11 +61,15 @@ public class DynamoUserConsentDaoTest {
     }
 
     @Test
-    public void canCountStudyParticipants() throws InterruptedException {
+    public void canCountStudyParticipants() throws Exception {
         final DynamoStudyConsent1 consent = createStudyConsent();
         for (int i=1; i < 6; i++) {
             userConsentDao.giveConsent(HEALTH_CODE+i, consent);
         }
+        
+        // TODO: We shouldn't need to do this. The only eventual read we know of is when 
+        // scanning/querying against a global secondary index, and none is involved here.
+        Thread.sleep(TestConstants.GSI_WAIT_DURATION);
         
         long count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
         assertEquals("Correct number of participants", 5, count);
