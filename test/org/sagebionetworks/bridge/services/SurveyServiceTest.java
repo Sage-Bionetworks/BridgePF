@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestConstants.GSI_WAIT_DURATION;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.HashSet;
@@ -299,7 +300,7 @@ public class SurveyServiceTest {
     }
 
     @Test
-    public void canGetAllSurveys() {
+    public void canGetAllSurveys() throws Exception {
         Set<GuidCreatedOnVersionHolderImpl> mostRecentVersionSurveys = new HashSet<>();
         mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
         mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(surveyService.createSurvey(new TestSurvey(true))));
@@ -313,6 +314,7 @@ public class SurveyServiceTest {
         mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
         surveysToDelete.addAll(mostRecentVersionSurveys);
 
+        Thread.sleep(GSI_WAIT_DURATION);
         // Get all surveys
         // Make sure this returns all surveys that we created
         List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyIdentifier);
@@ -333,7 +335,7 @@ public class SurveyServiceTest {
     // GET PUBLISHED SURVEY
 
     @Test
-    public void canRetrieveMostRecentlyPublishedSurveysWithManyVersions() {
+    public void canRetrieveMostRecentlyPublishedSurveysWithManyVersions() throws Exception {
         // Version 1.
         Survey survey1 = surveyService.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey1));
@@ -349,6 +351,9 @@ public class SurveyServiceTest {
         // Publish one version
         surveyService.publishSurvey(studyIdentifier, survey1);
 
+        // Must pause because the underlying query uses a global secondary index, and
+        // this does not support consistent reads
+        Thread.sleep(GSI_WAIT_DURATION);
         // Find the survey that we created and make sure it's the published version (survey1)
         List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
         boolean foundSurvey1 = false;
@@ -376,7 +381,7 @@ public class SurveyServiceTest {
     }
 
     @Test
-    public void canRetrieveMostRecentPublishedSurveysWithManySurveys() {
+    public void canRetrieveMostRecentPublishedSurveysWithManySurveys() throws Exception {
         Survey survey1 = surveyService.createSurvey(new TestSurvey(true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey1));
         surveyService.publishSurvey(studyIdentifier, survey1);
@@ -389,6 +394,9 @@ public class SurveyServiceTest {
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey3));
         surveyService.publishSurvey(studyIdentifier, survey3);
 
+        // Must pause because the underlying query uses a global secondary index, and
+        // this does not support consistent reads
+        Thread.sleep(GSI_WAIT_DURATION);
         // Make sure this returns all surveys that we created
         List<Survey> published = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
         assertContainsAllKeys(surveysToDelete, published);

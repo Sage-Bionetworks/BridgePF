@@ -91,6 +91,8 @@ public class DynamoUserConsentDao implements UserConsentDao {
         condition.withAttributeValueList(new AttributeValue().withS(studyIdentifier.getIdentifier()));
         scan.addFilterCondition("studyKey", condition);
 
+        // We need the count of unique study participants, users may end up signing 
+        // more than one version of the consent.
         Set<String> healthCodes = Sets.newHashSet();
         List<DynamoUserConsent2> mappings = mapper.scan(DynamoUserConsent2.class, scan);
         for (DynamoUserConsent2 consent : mappings) {
