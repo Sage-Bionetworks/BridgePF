@@ -1,12 +1,11 @@
-@(auth: String, assetsHost: String, assetsBuild: String)
+@(assetsHost: String, assetsBuild: String, studyName: String, studySupportEmail: String)
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>Email Verification</title>
+    <title>@studyName Email Verification</title>
     <script>
-        window._session = @Html(auth);
         window.assetsHost = "@assetsHost";
     </script>
     <link href="//@assetsHost/mobile/styles/normalize.css" type="text/css" rel="stylesheet"/>
@@ -19,24 +18,33 @@
 <div class="message" id="m2"></div>
 
 <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
-<script src="//@assetsHost/mobile/script.js"></script>
 <script>
+var params = {};
+location.search.substr(1).split("&").forEach(function(item) {
+	var k = item.split("=")[0], v = decodeURIComponent(item.split("=")[1]); 
+	params[k] = v;
+});
+
+setTimeout(function() {
+    $("#logo").attr("src", "//" + window.assetsHost + "/mobile/images/"+params.study+".svg");
+}, 1);
+
 function success() {
     $("#m1").text("Your email address has now been verified.");
-    $("#m2").text("You can now leave this web page and go back to the "+titles[host]+" application.");
+    $("#m2").text("You can now leave this web page and go back to the @studyName application.");
 }
 function failure() {
     $("#m1").text("Your email address could not be verified.");
-    $("#m2").html("Please refresh the page; if the problem persists, contact <a href='bridgeit@@sagebase.org'>bridgeit@@sagebase.org</a> to receive further assistance.");
+    $("#m2").html("Please refresh the page; if the problem persists, contact <a href='mailto:@studySupportEmail'>@studySupportEmail</a> to receive further assistance.");
 }
 try {
-    if (!qd.study) {
+    if (!params.study) {
         throw new Error("No study");
     }
     var p = $.ajax({
         type: "POST",
         url: "/v3/auth/verifyEmail",
-        data: JSON.stringify({"sptoken":qd.sptoken[0], "study": host[0]}),
+        data: JSON.stringify({"sptoken":params.sptoken, "study": params.study}),
         contentType: "application/json, charset=utf-8",
         dataType: "json"
     });
@@ -49,7 +57,7 @@ try {
                 var message = response.responseJSON.message;
                 if (message === "Account not found.") {
                     $("#m1").text("It looks like your email address has already been verified.");
-                    $("#m2").text("You can try using the "+titles[host]+" application at this point.");
+                    $("#m2").text("You can try using the @studyName application at this point.");
                 } else {
                     failure();
                 }
