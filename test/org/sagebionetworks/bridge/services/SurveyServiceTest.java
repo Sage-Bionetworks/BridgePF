@@ -367,7 +367,10 @@ public class SurveyServiceTest {
 
         // Publish a later version
         surveyService.publishSurvey(studyIdentifier, survey2);
-
+        
+        // Must pause because the underlying query uses a global secondary index, and
+        // this does not support consistent reads
+        Thread.sleep(GSI_WAIT_DURATION);
         // Now the most recent version of this testSurvey should be survey2.
         surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
         boolean foundSurvey2 = false;
