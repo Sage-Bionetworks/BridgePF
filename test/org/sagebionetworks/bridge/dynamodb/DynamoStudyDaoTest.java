@@ -94,8 +94,6 @@ public class DynamoStudyDaoTest {
                 studyDao.deleteStudy(study);
             }
         }
-        // TODO: Investigating why tests fail often (not always) without this
-        Thread.sleep(5000);        
         List<Study> savedStudies = studyDao.getStudies();
         assertEquals("There should be only one study", 1, savedStudies.size());
         assertEquals("That should be the test study study", "api", savedStudies.get(0).getIdentifier());
