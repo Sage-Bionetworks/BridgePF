@@ -2,12 +2,9 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.ASSETS_HOST;
 
-import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.stereotype.Controller;
 
-import play.libs.Json;
 import play.mvc.Result;
 
 @Controller
