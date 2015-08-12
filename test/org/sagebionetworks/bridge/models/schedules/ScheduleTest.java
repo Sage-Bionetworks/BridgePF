@@ -139,4 +139,27 @@ public class ScheduleTest {
         schedule.setEventId("enrollment,task:BBB:finished");
         assertTrue(schedule.getPersistent());
     }
+    
+    @Test
+    public void scheduleWithDelayNotPersistent() {
+        Schedule schedule = new Schedule();
+        Survey survey = new TestSurvey(false);
+        Activity activity = new Activity.Builder().withLabel("Test").withSurvey(survey.getIdentifier(),
+                        survey.getGuid(), new DateTime(survey.getCreatedOn())).build();
+        schedule.addActivity(activity);
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.setEventId("survey:"+survey.getGuid()+":finished,enrollment");
+        
+        schedule.setDelay("P1D");
+        assertEquals(false, schedule.getPersistent());
+        
+        schedule.setDelay("P1M");
+        assertEquals(false, schedule.getPersistent());
+        
+        schedule.setDelay("P0D");
+        assertEquals(true, schedule.getPersistent());
+        
+        schedule.setDelay((Period)null);
+        assertEquals(true, schedule.getPersistent());
+    }
 }

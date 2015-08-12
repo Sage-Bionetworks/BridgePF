@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
+import org.joda.time.Minutes;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -154,8 +155,7 @@ public final class Schedule implements BridgeEntity {
      * @return
      */
     public boolean getPersistent() {
-        // It must be scheduled once, triggered against an eventId (and of course, there need to be activities)
-        if (activities != null) {
+        if (activities != null && schedulesImmediatelyAfterEvent()) {
             for (Activity activity : activities) {
                 if (activity.isPersistentlyRescheduledBy(this)) {
                     return true;
@@ -163,6 +163,11 @@ public final class Schedule implements BridgeEntity {
             }
         }
         return false;
+    }
+    public boolean schedulesImmediatelyAfterEvent() {
+        return getEventId() != null && 
+               getScheduleType() == ScheduleType.ONCE &&        
+               (getDelay() == null || getDelay().toDurationFrom(DateTime.now()).getMillis() <= 0L);
     }
     public boolean isScheduleFor(GuidCreatedOnVersionHolder keys) {
         for (Activity activity : activities) {
