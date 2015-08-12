@@ -85,6 +85,7 @@ public class DynamoUserConsentDao implements UserConsentDao {
     @Override
     public long getNumberOfParticipants(StudyIdentifier studyIdentifier) {
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
+        scan.setConsistentRead(true);
 
         Condition condition = new Condition();
         condition.withComparisonOperator(ComparisonOperator.EQ);
