@@ -16,10 +16,8 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
-import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -27,24 +25,23 @@ import org.sagebionetworks.bridge.services.UploadValidationService;
 
 /**
  * <p>
- * Re-drives backfills for a list of record IDs. These record IDs live in a file called
- * upload-validation-backfill-recordIds in an S3 bucket called org-sagebridge-backfill-prod (replace prod) with your
+ * Re-drives backfills for a list of upload IDs. These upload IDs live in a file called
+ * upload-validation-backfill-uploadIds in an S3 bucket called org-sagebridge-backfill-prod (replace prod) with your
  * env name.
  * </p>
  * <p>
- * File format is one record ID per line.
+ * File format is one upload ID per line.
  * </p>
  */
 @Component("uploadValidationBackfill")
 public class UploadValidationBackfill extends AsyncBackfillTemplate {
     private static final Logger logger = LoggerFactory.getLogger(UploadValidationBackfill.class);
 
-    private static final String RECORD_ID_BUCKET = "org-sagebridge-backfill-" + BridgeConfigFactory.getConfig()
+    private static final String UPLOAD_ID_BUCKET = "org-sagebridge-backfill-" + BridgeConfigFactory.getConfig()
             .getEnvironment().name().toLowerCase();
-    private static final String RECORD_ID_FILENAME = "upload-validation-backfill-recordIds";
+    private static final String UPLOAD_ID_FILENAME = "upload-validation-backfill-uploadIds";
 
     private HealthCodeDao healthCodeDao;
-    private HealthDataDao healthDataDao;
     private AmazonS3Client s3Client;
     private UploadDao uploadDao;
     private UploadValidationService uploadValidationService;
@@ -55,13 +52,7 @@ public class UploadValidationBackfill extends AsyncBackfillTemplate {
         this.healthCodeDao = healthCodeDao;
     }
 
-    /** Health data DAO, used to get the upload ID from the record ID. This is configured by Spring. */
-    @Autowired
-    public void setHealthDataDao(HealthDataDao healthDataDao) {
-        this.healthDataDao = healthDataDao;
-    }
-
-    /** S3 client for reading file of record IDs. This is configured by Spring. */
+    /** S3 client for reading file of upload IDs. This is configured by Spring. */
     @Resource(name = "s3Client")
     public void setS3Client(AmazonS3Client s3Client) {
         this.s3Client = s3Client;
@@ -81,19 +72,19 @@ public class UploadValidationBackfill extends AsyncBackfillTemplate {
 
     @Override
     int getLockExpireInSeconds() {
-        // We do roughly one record per second. One hour should be enough for most cases.
+        // We do roughly one upload per second. One hour should be enough for most cases.
         return 3600;
     }
 
     @Override
     void doBackfill(BackfillTask task, BackfillCallback callback) {
-        // get file of list of record IDs
-        S3Object recordIdFile = s3Client.getObject(RECORD_ID_BUCKET, RECORD_ID_FILENAME);
-        try (BufferedReader recordIdReader = new BufferedReader(new InputStreamReader(recordIdFile.getObjectContent(),
+        // get file of list of upload IDs
+        S3Object uploadIdFile = s3Client.getObject(UPLOAD_ID_BUCKET, UPLOAD_ID_FILENAME);
+        try (BufferedReader uploadIdReader = new BufferedReader(new InputStreamReader(uploadIdFile.getObjectContent(),
                 Charsets.UTF_8))) {
-            // query and iterate over record IDs
-            String oneRecordId;
-            while ((oneRecordId = recordIdReader.readLine()) != null) {
+            // query and iterate over upload IDs
+            String oneUploadId;
+            while ((oneUploadId = uploadIdReader.readLine()) != null) {
                 // rate limit so we down starve threads or brown out DDB
                 try {
                     Thread.sleep(1000);
@@ -102,12 +93,8 @@ public class UploadValidationBackfill extends AsyncBackfillTemplate {
                 }
 
                 try {
-                    // get upload ID for record ID
-                    HealthDataRecord record = healthDataDao.getRecordById(oneRecordId);
-                    String uploadId = record.getUploadId();
-
                     // Get upload.
-                    Upload oneUpload = uploadDao.getUpload(uploadId);
+                    Upload oneUpload = uploadDao.getUpload(oneUploadId);
 
                     // Get study ID from health code. Upload validation needs this.
                     String studyId = healthCodeDao.getStudyIdentifier(oneUpload.getHealthCode());
@@ -116,11 +103,11 @@ public class UploadValidationBackfill extends AsyncBackfillTemplate {
                     // Kick off upload validation.
                     uploadValidationService.validateUpload(studyIdentifier, oneUpload);
 
-                    recordMessage(task, callback, "Backfilled record ID " + oneRecordId);
-                    logger.info("Backfilled record ID " + oneRecordId);
+                    recordMessage(task, callback, "Backfilled upload ID " + oneUploadId);
+                    logger.info("Backfilled upload ID " + oneUploadId);
                 } catch (RuntimeException ex) {
                     // Ensure that errors won't fail the entire backfill. Log an error and move on.
-                    String errMsg = "Error backfilling record ID " + oneRecordId + ": " + ex.getMessage();
+                    String errMsg = "Error backfilling upload ID " + oneUploadId + ": " + ex.getMessage();
                     logger.error(errMsg, ex);
                     recordMessage(task, callback, errMsg);
                 }
