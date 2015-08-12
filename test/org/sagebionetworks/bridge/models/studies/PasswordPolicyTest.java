@@ -23,10 +23,10 @@ public class PasswordPolicyTest {
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals(8, node.get("minLength").asInt());
-        assertEquals(true, node.get("numericRequired").asBoolean());
-        assertEquals(true, node.get("symbolRequired").asBoolean());
-        assertEquals(true, node.get("lowerCaseRequired").asBoolean());
-        assertEquals(true, node.get("upperCaseRequired").asBoolean());
+        assertTrue(node.get("numericRequired").asBoolean());
+        assertTrue(node.get("symbolRequired").asBoolean());
+        assertTrue(node.get("lowerCaseRequired").asBoolean());
+        assertTrue(node.get("upperCaseRequired").asBoolean());
         assertEquals("PasswordPolicy", node.get("type").asText());
         
         PasswordPolicy policy2 = BridgeObjectMapper.get().readValue(json, PasswordPolicy.class);

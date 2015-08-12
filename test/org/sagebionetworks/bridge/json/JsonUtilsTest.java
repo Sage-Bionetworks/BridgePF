@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.json;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.TEST_USERS;
@@ -138,7 +139,7 @@ public class JsonUtilsTest {
         
         assertFalse(JsonUtils.asBoolean(node, null));
         assertFalse(JsonUtils.asBoolean(node, "badProp"));
-        assertEquals(true, JsonUtils.asBoolean(node, "key"));
+        assertTrue(JsonUtils.asBoolean(node, "key"));
     }
 
     @Test

@@ -56,7 +56,7 @@ public class ScheduleTest {
         assertEquals("P2D", node.get("expires").asText());
         assertEquals("2015-02-02T10:10:10.000Z", node.get("startsOn").asText());
         assertEquals("2015-01-01T10:10:10.000Z", node.get("endsOn").asText());
-        assertEquals(false, node.get("persistent").asBoolean());
+        assertFalse(node.get("persistent").asBoolean());
         assertEquals("Schedule", node.get("type").asText());
 
         ArrayNode times = (ArrayNode)node.get("times");
@@ -151,15 +151,15 @@ public class ScheduleTest {
         schedule.setEventId("survey:"+survey.getGuid()+":finished,enrollment");
         
         schedule.setDelay("P1D");
-        assertEquals(false, schedule.getPersistent());
+        assertFalse(schedule.getPersistent());
         
         schedule.setDelay("P1M");
-        assertEquals(false, schedule.getPersistent());
+        assertFalse(schedule.getPersistent());
         
         schedule.setDelay("P0D");
-        assertEquals(true, schedule.getPersistent());
+        assertTrue(schedule.getPersistent());
         
         schedule.setDelay((Period)null);
-        assertEquals(true, schedule.getPersistent());
+        assertTrue(schedule.getPersistent());
     }
 }

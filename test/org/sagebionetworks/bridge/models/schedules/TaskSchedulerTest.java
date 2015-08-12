@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asLong;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
@@ -241,13 +243,13 @@ public class TaskSchedulerTest {
         tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
         Task task1 = tasks.get(0);
         assertEquals("Foo", task1.getActivity().getLabel());
-        assertEquals(true, task1.getPersistent());
-        assertEquals(true, task1.getActivity().isPersistentlyRescheduledBy(schedule));
+        assertTrue(task1.getPersistent());
+        assertTrue(task1.getActivity().isPersistentlyRescheduledBy(schedule));
         
         Task task2 = tasks.get(1);
         assertEquals("Bar", task2.getActivity().getLabel());
-        assertEquals(false, task2.getPersistent());
-        assertEquals(false, task2.getActivity().isPersistentlyRescheduledBy(schedule));
+        assertFalse(task2.getPersistent());
+        assertFalse(task2.getActivity().isPersistentlyRescheduledBy(schedule));
     }
     
 }

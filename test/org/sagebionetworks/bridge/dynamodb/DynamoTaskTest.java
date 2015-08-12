@@ -45,7 +45,7 @@ public class DynamoTaskTest {
         assertEquals(expiresOn.toString(), node.get("expiresOn").asText());
         assertEquals("scheduled", node.get("status").asText());
         assertEquals("Task", node.get("type").asText());
-        assertEquals(true, node.get("persistent").asBoolean());
+        assertTrue(node.get("persistent").asBoolean());
         
         JsonNode activityNode = node.get("activity");
         assertEquals("Label", activityNode.get("label").asText());

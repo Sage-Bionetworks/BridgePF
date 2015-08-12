@@ -126,25 +126,25 @@ public class DynamoStudyConsentDaoTest {
         // Only one should be active.
         List<StudyConsent> allConsents = studyConsentDao.getConsents(STUDY_ID);
         assertEquals(3, allConsents.size());
-        assertEquals(true, allConsents.get(0).getActive());
-        assertEquals(false, allConsents.get(1).getActive());
-        assertEquals(false, allConsents.get(2).getActive());
+        assertTrue(allConsents.get(0).getActive());
+        assertFalse(allConsents.get(1).getActive());
+        assertFalse(allConsents.get(2).getActive());
         
         // Now move the active flag.
         studyConsentDao.publish(allConsents.get(2));
         allConsents = studyConsentDao.getConsents(STUDY_ID);
         assertEquals(3, allConsents.size());
-        assertEquals(false, allConsents.get(0).getActive());
-        assertEquals(false, allConsents.get(1).getActive());
-        assertEquals(true, allConsents.get(2).getActive());
+        assertFalse(allConsents.get(0).getActive());
+        assertFalse(allConsents.get(1).getActive());
+        assertTrue(allConsents.get(2).getActive());
         
         // Re-activating the same one changes nothing
         studyConsentDao.publish(allConsents.get(2));
         allConsents = studyConsentDao.getConsents(STUDY_ID);
         assertEquals(3, allConsents.size());
-        assertEquals(false, allConsents.get(0).getActive());
-        assertEquals(false, allConsents.get(1).getActive());
-        assertEquals(true, allConsents.get(2).getActive());
+        assertFalse(allConsents.get(0).getActive());
+        assertFalse(allConsents.get(1).getActive());
+        assertTrue(allConsents.get(2).getActive());
     }
     
     private void assertConsentsEqual(StudyConsent existing, StudyConsent newOne, boolean isActive) {

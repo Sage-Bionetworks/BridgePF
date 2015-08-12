@@ -7,7 +7,6 @@ import java.util.Objects;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
-import org.joda.time.Minutes;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
