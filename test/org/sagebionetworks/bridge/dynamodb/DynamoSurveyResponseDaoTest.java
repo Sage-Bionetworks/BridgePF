@@ -19,6 +19,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -118,7 +119,7 @@ public class DynamoSurveyResponseDaoTest {
     }
     
     @Test
-    public void createSurveyResponse() {
+    public void createSurveyResponse() throws Exception {
         assertTrue("Survey is not in use", noResponses(survey));
         
         List<SurveyAnswer> answers = Lists.newArrayList();
@@ -173,11 +174,12 @@ public class DynamoSurveyResponseDaoTest {
     }
     
     @Test
-    public void canTellWhenSurveyHasResponses() {
+    public void canTellWhenSurveyHasResponses() throws Exception {
         assertFalse(surveyResponseDao.surveyHasResponses(survey));
         
         surveyResponseDao.createSurveyResponse(survey, HEALTH_DATA_CODE, Lists.<SurveyAnswer>newArrayList(), SURVEY_RESPONSE_IDENTIFIER);
-        assertTrue(surveyResponseDao.surveyHasResponses(survey));
+        
+        assertFalse(noResponses(survey));
     }
     
     @Test
@@ -210,7 +212,8 @@ public class DynamoSurveyResponseDaoTest {
         assertEquals(targetIdentifier, response.getIdentifier());
     }
     
-    private boolean noResponses(Survey survey) {
+    private boolean noResponses(Survey survey) throws Exception {
+        Thread.sleep(TestConstants.GSI_WAIT_DURATION);
         return !surveyResponseDao.surveyHasResponses(survey);
     }
 
