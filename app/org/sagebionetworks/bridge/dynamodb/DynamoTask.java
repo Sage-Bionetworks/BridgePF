@@ -42,6 +42,7 @@ public final class DynamoTask implements Task, BridgeEntity {
     private Activity activity;
     private String runKey;
     private Long hidesOn;
+    private boolean persistent;
     
     public DynamoTask() {
         setHidesOn(new Long(Long.MAX_VALUE));
@@ -170,6 +171,15 @@ public final class DynamoTask implements Task, BridgeEntity {
     public void setData(ObjectNode data) {
         this.activity = JsonUtils.asEntity(data, ACTIVITY_PROPERTY, Activity.class);
     }
+    @DynamoDBAttribute
+    @Override
+    public boolean getPersistent() {
+        return persistent;
+    }
+    @Override
+    public void setPersistent(boolean persistent) {
+        this.persistent = persistent;
+    }
     
     @Override
     public int hashCode() {
@@ -185,6 +195,7 @@ public final class DynamoTask implements Task, BridgeEntity {
         result = prime * result + Objects.hashCode(healthCode);
         result = prime * result + Objects.hashCode(runKey);
         result = prime * result + Objects.hashCode(hidesOn);
+        result = prime * result + Objects.hashCode(persistent);
         return result;
     }
     @Override
@@ -198,14 +209,15 @@ public final class DynamoTask implements Task, BridgeEntity {
                 Objects.equals(guid, other.guid) && Objects.equals(schedulePlanGuid, other.schedulePlanGuid) &&
                 Objects.equals(startedOn, other.startedOn) && Objects.equals(finishedOn, other.finishedOn) && 
                 Objects.equals(scheduledOn, other.scheduledOn) && Objects.equals(healthCode, other.healthCode) && 
-                Objects.equals(hidesOn,  other.hidesOn) && Objects.equals(runKey, other.runKey));
+                Objects.equals(hidesOn,  other.hidesOn) && Objects.equals(runKey, other.runKey) && 
+                Objects.equals(persistent, other.persistent));
     }
     @Override
     public String toString() {
-        return String.format("DynamoTask [status=%s, healthCode=%s, guid=%s, schedulePlanGuid=%s, scheduledOn=%s, expiresOn=%s, startedOn=%s, finishedOn=%s, activity=%s]",
+        return String.format("DynamoTask [status=%s, healthCode=%s, guid=%s, schedulePlanGuid=%s, scheduledOn=%s, expiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, activity=%s]",
             getStatus().name(), healthCode, guid, schedulePlanGuid, BridgeUtils.toString(scheduledOn),
             BridgeUtils.toString(expiresOn), BridgeUtils.toString(startedOn),
-            BridgeUtils.toString(finishedOn), activity);
+            BridgeUtils.toString(finishedOn), persistent, activity);
     }
 
 }
