@@ -1,8 +1,8 @@
 # Top level views
 GET    /                           @org.sagebionetworks.bridge.play.controllers.ApplicationController.loadApp
 GET    /index.html                 @org.sagebionetworks.bridge.play.controllers.ApplicationController.loadApp
-GET    /mobile/verifyEmail.html    @org.sagebionetworks.bridge.play.controllers.ApplicationController.verifyEmail
-GET    /mobile/resetPassword.html  @org.sagebionetworks.bridge.play.controllers.ApplicationController.resetPassword
+GET    /mobile/verifyEmail.html    @org.sagebionetworks.bridge.play.controllers.ApplicationController.verifyEmail(study: String ?= "api")
+GET    /mobile/resetPassword.html  @org.sagebionetworks.bridge.play.controllers.ApplicationController.resetPassword(study: String ?= "api")
 
 # Authentication
 POST   /v3/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
