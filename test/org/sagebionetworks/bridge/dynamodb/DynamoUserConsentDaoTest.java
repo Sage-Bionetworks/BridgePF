@@ -70,15 +70,20 @@ public class DynamoUserConsentDaoTest {
         // TODO: We shouldn't need to do this. The only eventual read we know of is when 
         // scanning/querying against a global secondary index, and none is involved here.
         Thread.sleep(TestConstants.GSI_WAIT_DURATION);
-        
         long count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
         assertEquals("Correct number of participants", 5, count);
         
         userConsentDao.withdrawConsent(HEALTH_CODE+"5", STUDY_IDENTIFIER);
+        // TODO: We shouldn't need to do this. The only eventual read we know of is when 
+        // scanning/querying against a global secondary index, and none is involved here.
+        Thread.sleep(TestConstants.GSI_WAIT_DURATION);
         count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
         assertEquals("Correct number of participants", 4, count);
         
         userConsentDao.giveConsent(HEALTH_CODE+"5", consent);
+        // TODO: We shouldn't need to do this. The only eventual read we know of is when 
+        // scanning/querying against a global secondary index, and none is involved here.
+        Thread.sleep(TestConstants.GSI_WAIT_DURATION);
         count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
         assertEquals("Correct number of participants", 5, count);
     }
