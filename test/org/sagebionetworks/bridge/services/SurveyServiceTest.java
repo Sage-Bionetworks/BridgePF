@@ -314,8 +314,6 @@ public class SurveyServiceTest {
         mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
         surveysToDelete.addAll(mostRecentVersionSurveys);
 
-        // Must pause because the underlying query uses a global secondary index, and
-        // this does not support consistent reads
         Thread.sleep(GSI_WAIT_DURATION);
         // Get all surveys
         // Make sure this returns all surveys that we created

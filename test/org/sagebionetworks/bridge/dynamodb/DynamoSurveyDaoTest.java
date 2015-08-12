@@ -21,7 +21,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
