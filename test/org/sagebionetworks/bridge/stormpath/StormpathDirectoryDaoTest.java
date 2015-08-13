@@ -55,8 +55,7 @@ public class StormpathDirectoryDaoTest {
     
     @Test
     public void crudDirectory() throws Exception {
-        study = TestUtils.getValidStudy();
-        study.setIdentifier(TestUtils.randomName());
+        study = TestUtils.getValidStudy(StormpathDirectoryDaoTest.class);
         
         String stormpathHref = directoryDao.createDirectoryForStudy(study);
         study.setStormpathHref(stormpathHref);

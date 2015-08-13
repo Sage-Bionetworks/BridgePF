@@ -209,7 +209,7 @@ public class AuthenticationServiceImplTest {
         // Verify that requestResetPassword is called in this case
         authService = spy(authService);
         
-        Study tempStudy = TestUtils.getValidStudy();
+        Study tempStudy = TestUtils.getValidStudy(AuthenticationServiceImplTest.class);
         tempStudy = studyService.createStudy(tempStudy);
 
         TestUser user = helper.createUser(AuthenticationServiceImplTest.class, false, false, null);

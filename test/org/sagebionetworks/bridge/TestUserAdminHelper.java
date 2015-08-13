@@ -98,10 +98,9 @@ public class TestUserAdminHelper {
     }
 
     public String makeRandomUserName(Class<?> cls) {
-        String clsPart = cls.getSimpleName();
         String devPart = BridgeConfigFactory.getConfig().getUser();
-        String rndPart = TestUtils.randomName();
-        return String.format("bridge-testing+%s-%s-%s", devPart, clsPart, rndPart);
+        String rndPart = TestUtils.randomName(cls);
+        return String.format("bridge-testing+%s-%s", devPart, rndPart);
     }
 
     public TestUser createUser(Class<?> cls) {

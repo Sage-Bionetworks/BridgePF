@@ -35,7 +35,7 @@ public class DynamoStudyTest {
 
     @Test
     public void studyFullySerializesForCaching() throws Exception {
-        DynamoStudy study = TestUtils.getValidStudy();
+        DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
         study.setVersion(2L);
         study.setStormpathHref("test");
         

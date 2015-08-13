@@ -65,7 +65,7 @@ public class EmailControllerTest {
         Account account = mock(Account.class);
         when(account.getHealthId()).thenReturn("healthId");
         
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(EmailControllerTest.class);
         study.setIdentifier("api");
         
         accountDao = mock(AccountDao.class);

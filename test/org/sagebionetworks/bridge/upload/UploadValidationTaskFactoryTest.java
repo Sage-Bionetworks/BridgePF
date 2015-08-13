@@ -24,7 +24,7 @@ public class UploadValidationTaskFactoryTest {
         taskFactory.setUploadDao(dao);
 
         // inputs
-        DynamoStudy study = TestUtils.getValidStudy();
+        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskFactoryTest.class);
         DynamoUpload2 upload2 = new DynamoUpload2();
 
         // execute and validate

@@ -50,7 +50,7 @@ public class DynamoStudyDaoTest {
 
     @Test
     public void crudOneStudy() {
-        Study study = TestUtils.getValidStudy();
+        Study study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
         study.setStormpathHref("http://url.com/");
         study.setUserProfileAttributes(EXTRA_USER_PROFILE_ATTRIBUTES);
 
@@ -83,8 +83,8 @@ public class DynamoStudyDaoTest {
     public void canRetrieveAllStudies() throws InterruptedException {
         List<Study> studies = Lists.newArrayList();
         try {
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
+            studies.add(studyDao.createStudy(TestUtils.getValidStudy(DynamoStudyDaoTest.class)));
+            studies.add(studyDao.createStudy(TestUtils.getValidStudy(DynamoStudyDaoTest.class)));
         
             List<Study> savedStudies = studyDao.getStudies();
             // The five studies, plus the API study we refuse to delete...
@@ -104,7 +104,7 @@ public class DynamoStudyDaoTest {
         Study study = null;
         Long version = null;
         try {
-            study = TestUtils.getValidStudy();
+            study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
             study = studyDao.createStudy(study);
             version = study.getVersion();
             study.setVersion(null);
@@ -120,7 +120,7 @@ public class DynamoStudyDaoTest {
 
     @Test(expected = EntityAlreadyExistsException.class)
     public void identifierUniquenessEnforcedByVersionChecks() throws Exception {
-        Study study = TestUtils.getValidStudy();
+        Study study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
         studyDao.createStudy(study);
 
         study.setVersion(null); // This is now a "new study"

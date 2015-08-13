@@ -90,7 +90,7 @@ public class UploadValidationTaskTest {
     private static UploadValidationContext testHelper(List<UploadValidationHandler> handlerList,
             UploadStatus expectedStatus, String expectedRecordId) {
         // input
-        DynamoStudy study = TestUtils.getValidStudy();
+        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
 
         DynamoUpload2 upload2 = new DynamoUpload2();
         upload2.setUploadId("test-upload");

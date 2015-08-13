@@ -28,7 +28,7 @@ public class ViewCacheTest {
     public void before() {
         mapper = BridgeObjectMapper.get();
         
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(ViewCacheTest.class);
     }
     
     @Test
@@ -41,7 +41,7 @@ public class ViewCacheTest {
         
         String json = cache.getView(cacheKey, new Supplier<Study>() {
             @Override public Study get() {
-                Study study = TestUtils.getValidStudy();
+                Study study = TestUtils.getValidStudy(ViewCacheTest.class);
                 study.setName("Test Study 2");
                 return study;
             }
@@ -92,7 +92,7 @@ public class ViewCacheTest {
         });
         
         Study foundStudy = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
-        assertEquals("Test Study [not API]", foundStudy.getName());
+        assertEquals("Test Study [ViewCacheTest]", foundStudy.getName());
     }
     
     @Test
@@ -107,7 +107,7 @@ public class ViewCacheTest {
         
         String json = cache.getView(cacheKey, new Supplier<Study>() {
             @Override public Study get() {
-                Study study = TestUtils.getValidStudy();
+                Study study = TestUtils.getValidStudy(ViewCacheTest.class);
                 study.setName("Test Study 2");
                 return study;
             }

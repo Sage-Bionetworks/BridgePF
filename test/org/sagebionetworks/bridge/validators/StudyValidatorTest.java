@@ -15,7 +15,7 @@ public class StudyValidatorTest {
     
     @Before
     public void createValidStudy() {
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(StudyValidatorTest.class);
     }
     
     @Test
