@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.List;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.S3Object;
@@ -37,6 +38,20 @@ public class S3HelperTest {
         S3Helper testS3Helper = setupWithMockS3(bucket, key, content);
         String retVal = testS3Helper.readS3FileAsString(bucket, key);
         assertEquals(content, retVal);
+    }
+
+    @Test
+    public void readAsLines() throws Exception {
+        String bucket = "bucket-with-lines";
+        String key = "key-with-lines";
+        String content = "foo\nbar\nbaz";
+
+        S3Helper testS3Helper = setupWithMockS3(bucket, key, content);
+        List<String> lineList = testS3Helper.readS3FileAsLines(bucket, key);
+        assertEquals(3, lineList.size());
+        assertEquals("foo", lineList.get(0));
+        assertEquals("bar", lineList.get(1));
+        assertEquals("baz", lineList.get(2));
     }
 
     private static S3Helper setupWithMockS3(String bucket, String key, String content) {

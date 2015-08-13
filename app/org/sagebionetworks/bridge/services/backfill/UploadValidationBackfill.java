@@ -1,11 +1,9 @@
 package org.sagebionetworks.bridge.services.backfill;
 
-import javax.annotation.Resource;
-
 import java.io.IOException;
 import java.util.List;
+import javax.annotation.Resource;
 
-import com.amazonaws.services.s3.AmazonS3Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +14,7 @@ import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
+import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.UploadValidationService;
 
 /**
@@ -26,7 +25,7 @@ public abstract class UploadValidationBackfill extends AsyncBackfillTemplate {
     private static final Logger logger = LoggerFactory.getLogger(UploadValidationBackfill.class);
 
     private HealthCodeDao healthCodeDao;
-    private AmazonS3Client s3Client;
+    private S3Helper s3Helper;
     private UploadDao uploadDao;
     private UploadValidationService uploadValidationService;
 
@@ -36,15 +35,15 @@ public abstract class UploadValidationBackfill extends AsyncBackfillTemplate {
         this.healthCodeDao = healthCodeDao;
     }
 
-    /** @see #setS3Client */
-    protected AmazonS3Client getS3Client() {
-        return s3Client;
+    /** @see #setS3Helper */
+    protected S3Helper getS3Helper() {
+        return s3Helper;
     }
 
-    /** S3 client for reading file of upload IDs. This is configured by Spring. */
-    @Resource(name = "s3Client")
-    public final void setS3Client(AmazonS3Client s3Client) {
-        this.s3Client = s3Client;
+    /** S3 helper for reading file of upload IDs. */
+    @Resource(name = "s3Helper")
+    public final void setS3Helper(S3Helper s3Helper) {
+        this.s3Helper = s3Helper;
     }
 
     /** DAO for manipulating upload objects. This is configured by Spring. */
