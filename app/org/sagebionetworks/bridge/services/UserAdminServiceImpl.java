@@ -193,14 +193,13 @@ public class UserAdminServiceImpl implements UserAdminService {
             if (account.getHealthId() != null) {
                 // This is the fastest way to do this that I know of
                 String healthCode = healthIdDao.getCode(account.getHealthId());
-                User user = new User(account);
-                user.setHealthCode(healthCode);
-
-                consentService.withdrawConsent(study, user);
-
-                // AuthenticationServiceImpl.getHealthCode() ensures that health code will be defined. However, this is
-                // some defensive coding to keep our services robust.
+                // We expect to have health code, but when tests fail, we can get users who have signed in 
+                // and do not have a health code.
                 if (!StringUtils.isBlank(healthCode)) {
+                    User user = new User(account);
+                    user.setHealthCode(healthCode);
+                    consentService.withdrawConsent(study, user);
+                    
                     healthDataService.deleteRecordsForHealthCode(healthCode);
                     taskService.deleteTasks(healthCode);
                     taskEventService.deleteTaskEvents(healthCode);
