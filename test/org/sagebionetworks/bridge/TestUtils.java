@@ -145,7 +145,7 @@ public class TestUtils {
     public static DynamoStudy getValidStudy(Class<?> clazz) {
         // This study will save without further modification.
         DynamoStudy study = new DynamoStudy();
-        study.setName("Test Study [not API]");
+        study.setName("Test Study ["+clazz.getSimpleName()+"]");
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         study.setVerifyEmailTemplate(new EmailTemplate("subject", "body with ${url}", MimeType.TEXT));
         study.setResetPasswordTemplate(new EmailTemplate("subject", "body with ${url}", MimeType.TEXT));
