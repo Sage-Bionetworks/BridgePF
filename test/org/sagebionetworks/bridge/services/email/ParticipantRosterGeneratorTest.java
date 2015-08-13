@@ -46,7 +46,7 @@ public class ParticipantRosterGeneratorTest {
     
     @Before
     public void before() {
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(ParticipantRosterGeneratorTest.class);
         study.setUserProfileAttributes(Sets.newHashSet("phone", "can_recontact"));
         
         @SuppressWarnings("unchecked")

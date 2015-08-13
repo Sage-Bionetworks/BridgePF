@@ -38,7 +38,7 @@ public class ScheduleStrategyTest {
             user.setHealthCode(BridgeUtils.generateGuid());
             users.add(user);
         }
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(ScheduleStrategyTest.class);
     }
 
     @Test

@@ -149,7 +149,7 @@ public class AuthenticationControllerTest {
     
     private void saveSecondStudyWithSchedulePlan() {
         String id = RandomStringUtils.randomAlphabetic(7).toLowerCase();
-        secondStudy = TestUtils.getValidStudy();
+        secondStudy = TestUtils.getValidStudy(AuthenticationControllerTest.class);
         secondStudy.setIdentifier(id);
         studyService.createStudy(secondStudy);
         

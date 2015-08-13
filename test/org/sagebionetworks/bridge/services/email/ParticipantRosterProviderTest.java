@@ -23,7 +23,7 @@ public class ParticipantRosterProviderTest {
 
     @Before
     public void setUp() throws Exception {
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(ParticipantRosterProviderTest.class);
         study.setUserProfileAttributes(Sets.newHashSet("phone", "recontact"));
     }
 

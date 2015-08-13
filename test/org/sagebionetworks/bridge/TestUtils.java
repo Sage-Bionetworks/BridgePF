@@ -77,8 +77,12 @@ public class TestUtils {
         return context;
     }
     
-    public static String randomName() {
-        return "test-" + RandomStringUtils.randomAlphabetic(5).toLowerCase();
+    public static String randomName(Class<?> clazz) {
+        return TestUtils.randomName(clazz.getSimpleName().toLowerCase() + "-");
+    }
+
+    public static String randomName(String midFix) {
+        return "test-" + midFix + RandomStringUtils.randomAlphabetic(5).toLowerCase();
     }
 
     public static List<Task> runSchedulerForTasks(User user, DateTime endsOn) {
@@ -138,14 +142,14 @@ public class TestUtils {
         return strategy;
     }
     
-    public static DynamoStudy getValidStudy() {
+    public static DynamoStudy getValidStudy(Class<?> clazz) {
         // This study will save without further modification.
         DynamoStudy study = new DynamoStudy();
         study.setName("Test Study [not API]");
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         study.setVerifyEmailTemplate(new EmailTemplate("subject", "body with ${url}", MimeType.TEXT));
         study.setResetPasswordTemplate(new EmailTemplate("subject", "body with ${url}", MimeType.TEXT));
-        study.setIdentifier(TestUtils.randomName());
+        study.setIdentifier(TestUtils.randomName(clazz));
         study.setMinAgeOfConsent(18);
         study.setMaxNumOfParticipants(200);
         study.setSponsorName("The Council on Test Studies");

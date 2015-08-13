@@ -59,7 +59,7 @@ public class ConsentServiceImplMockTest {
         consentService.setTaskEventService(taskEventService);
         consentService.setStudyConsentService(studyConsentService);
         
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(ConsentServiceImplMockTest.class);
         user = new User();
         user.setHealthCode("BBB");
         consentSignature = ConsentSignature.create("Test User", "1990-01-01", null, null);

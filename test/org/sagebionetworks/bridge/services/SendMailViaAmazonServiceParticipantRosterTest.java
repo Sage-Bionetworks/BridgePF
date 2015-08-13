@@ -35,7 +35,7 @@ public class SendMailViaAmazonServiceParticipantRosterTest {
 
     @Before
     public void setUp() throws Exception {
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(SendMailViaAmazonServiceParticipantRosterTest.class);
         study.setUserProfileAttributes(Sets.newHashSet("phone","recontact"));
 
         emailClient = mock(AmazonSimpleEmailServiceClient.class);
