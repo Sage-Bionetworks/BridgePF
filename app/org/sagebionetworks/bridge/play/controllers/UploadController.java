@@ -74,7 +74,7 @@ public class UploadController extends BaseController {
         // kick off upload validation
         uploadValidationService.validateUpload(session.getStudyIdentifier(), upload);
 
-        return ok("Upload " + uploadId + " complete!");
+        return okResult("Upload " + uploadId + " complete!");
     }
 
 }

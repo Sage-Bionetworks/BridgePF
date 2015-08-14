@@ -22,7 +22,7 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     public static final ObjectWriter STUDY_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter", 
-        SimpleBeanPropertyFilter.serializeAllExcept("stormpathHref")));
+        SimpleBeanPropertyFilter.serializeAllExcept("stormpathHref", "active")));
 
     public static final ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter",
