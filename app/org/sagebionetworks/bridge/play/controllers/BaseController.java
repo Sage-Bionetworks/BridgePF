@@ -168,6 +168,10 @@ public abstract class BaseController extends Controller {
         return ok((JsonNode)mapper.valueToTree(new ResourceList<T>(list)));
     }
 
+    Result createdResult(String message) throws Exception {
+        return created(Json.toJson(new StatusMessage(message)));
+    }
+    
     Result createdResult(Object obj) throws Exception {
         return created((JsonNode)mapper.valueToTree(obj));
     }
