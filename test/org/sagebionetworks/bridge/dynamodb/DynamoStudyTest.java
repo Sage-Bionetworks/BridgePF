@@ -72,6 +72,10 @@ public class DynamoStudyTest {
         // You do need to create a new instance of the writer from a new mapper, SFAICT. This is stored as 
         // Study.STUDY_WRITER.
         json = Study.STUDY_WRITER.writeValueAsString(study);
+        node = BridgeObjectMapper.get().readTree(json);
+        assertNull(node.get("stormpathHref"));
+        assertNull(node.get("active"));
+        
         study = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
         assertNull(study.getStormpathHref());
         assertEquals("Study", node.get("type").asText());
