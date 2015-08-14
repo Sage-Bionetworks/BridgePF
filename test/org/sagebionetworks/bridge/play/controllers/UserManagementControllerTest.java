@@ -50,8 +50,8 @@ public class UserManagementControllerTest {
         StudyService studyService = mock(StudyService.class);
         UserAdminService userAdminService = mock(UserAdminService.class);
         
-        // We have to spy the controller, even though it's under test, because there's a reference
-        // to Cache which is a Play class with static methods, play framework is evil.
+        // Using a spy on the controller, even though it's under test, because there's a reference
+        // to Cache in BaseController which is a Play class with a static method.
         controller = spy(new UserManagementController());
         controller.setStudyService(studyService);
         controller.setUserAdminService(userAdminService);
@@ -72,6 +72,8 @@ public class UserManagementControllerTest {
         Result result = controller.createUser();
         
         JsonNode node = new ObjectMapper().readTree(contentAsString(result));
+        
+        // This is the one assertion in this test... Play is hard to test.
         assertEquals("User created.", node.get("message").asText());
     }
     
