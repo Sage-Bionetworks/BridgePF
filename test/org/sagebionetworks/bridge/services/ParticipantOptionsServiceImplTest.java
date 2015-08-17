@@ -39,16 +39,6 @@ public class ParticipantOptionsServiceImplTest {
     
     private Study study;
     
-    @BeforeClass
-    public static void initialSetUp() {
-        DynamoTestUtil.clearTable(DynamoParticipantOptions.class);
-    }
-
-    @AfterClass
-    public static void finalCleanUp() {
-        DynamoTestUtil.clearTable(DynamoParticipantOptions.class);
-    }
-
     @Before
     public void before() {
         study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
