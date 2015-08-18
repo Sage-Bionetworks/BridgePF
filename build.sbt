@@ -16,6 +16,7 @@ libraryDependencies ++= Seq(
   "org.jsoup" % "jsoup" % "1.8.2",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.10.10",
+  "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.10",
   "com.amazonaws" % "aws-java-sdk-sts" % "1.10.10",
   "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.10.10",
   "com.amazonaws" % "aws-java-sdk-ses" % "1.10.10",
