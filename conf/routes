@@ -30,11 +30,12 @@ DELETE /v3/users                        @org.sagebionetworks.bridge.play.control
 POST   /v3/users/emailParticipantRoster @org.sagebionetworks.bridge.play.controllers.StudyController.sendStudyParticipantsRoster
 GET    /v3/users/self                   @org.sagebionetworks.bridge.play.controllers.UserProfileController.getUserProfile
 POST   /v3/users/self                   @org.sagebionetworks.bridge.play.controllers.UserProfileController.updateUserProfile
-POST   /v3/users/self/externalId   	    @org.sagebionetworks.bridge.play.controllers.UserProfileController.createExternalIdentifier
+POST   /v3/users/self/externalId        @org.sagebionetworks.bridge.play.controllers.UserProfileController.createExternalIdentifier
+POST   /v3/users/self/emailData         @org.sagebionetworks.bridge.play.controllers.UserDataDownloadController.requestUserData
 GET    /v3/users/self/unsubscribeEmail  @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
 POST   /v3/users/self/unsubscribeEmail  @org.sagebionetworks.bridge.play.controllers.EmailController.unsubscribeFromEmail
 POST   /v3/users/self/dataSharing       @org.sagebionetworks.bridge.play.controllers.ConsentController.changeSharingScope
-          
+
 # Surveys
 GET    /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion
 POST   /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.createSurvey

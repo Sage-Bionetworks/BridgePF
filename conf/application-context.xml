@@ -86,6 +86,10 @@
         <property name="targetName" value="authenticationController"/>
     </bean>
 
+    <bean id="UserDataDownloadControllerProxied" parent="proxiedController">
+        <property name="targetName" value="userDataDownloadController"/>
+    </bean>
+
     <bean id="UserProfileControllerProxied" parent="proxiedController">
         <property name="targetName" value="userProfileController"/>
     </bean>
