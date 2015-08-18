@@ -8,7 +8,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-import org.joda.time.format.ISODateTimeFormat;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import play.mvc.Http;
@@ -59,7 +58,7 @@ public class UserDataDownloadControllerTest {
         verify(mockService).requestUserData(eq(studyIdentifier), same(user), dateRangeCaptor.capture());
 
         DateRange dateRange = dateRangeCaptor.getValue();
-        assertEquals("2015-08-15", dateRange.getStartDate().toString(ISODateTimeFormat.date()));
-        assertEquals("2015-08-19", dateRange.getEndDate().toString(ISODateTimeFormat.date()));
+        assertEquals("2015-08-15", dateRange.getStartDate().toString());
+        assertEquals("2015-08-19", dateRange.getEndDate().toString());
     }
 }

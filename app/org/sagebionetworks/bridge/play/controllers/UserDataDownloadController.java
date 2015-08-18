@@ -18,8 +18,7 @@ public class UserDataDownloadController extends BaseController {
 
     /** Service handler for User Data Download requests. */
     @Autowired
-    public void setUserDataDownloadService(
-            UserDataDownloadService userDataDownloadService) {
+    public void setUserDataDownloadService(UserDataDownloadService userDataDownloadService) {
         this.userDataDownloadService = userDataDownloadService;
     }
 

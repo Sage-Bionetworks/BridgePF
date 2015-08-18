@@ -7,7 +7,6 @@ import javax.annotation.Nonnull;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +23,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
  */
 @Component
 public class UserDataDownloadViaSqsService implements UserDataDownloadService {
-    private static final Logger logger = LoggerFactory.getLogger(SendMailViaAmazonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserDataDownloadViaSqsService.class);
 
     // constants - these are package scoped so unit tests can access them
     static final String CONFIG_KEY_UDD_SQS_QUEUE_URL = "udd.sqs.queue.url";
@@ -54,8 +53,8 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
             @Nonnull DateRange dateRange) throws JsonProcessingException {
         String studyId = studyIdentifier.getIdentifier();
         String username = user.getUsername();
-        String startDateStr = dateRange.getStartDate().toString(ISODateTimeFormat.date());
-        String endDateStr = dateRange.getEndDate().toString(ISODateTimeFormat.date());
+        String startDateStr = dateRange.getStartDate().toString();
+        String endDateStr = dateRange.getEndDate().toString();
 
         // construct message as string-string map
         Map<String, String> requestMap = new HashMap<>();
