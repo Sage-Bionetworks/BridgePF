@@ -104,7 +104,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         String studyId = studyIdentifier.getIdentifier();
         String schemaId = survey.getIdentifier();
         DynamoUploadSchema oldUploadSchema = getUploadSchemaNoThrow(studyId, schemaId);
-        int oldRev;
+        int oldRev = 0;
         if (oldUploadSchema != null) {
             oldRev = oldUploadSchema.getRevision();
 
@@ -118,8 +118,6 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
             if (oldFieldDefSet.equals(newFieldDefSet)) {
                 return oldUploadSchema;
             }
-        } else {
-            oldRev = 0;
         }
 
         // Create schema.
