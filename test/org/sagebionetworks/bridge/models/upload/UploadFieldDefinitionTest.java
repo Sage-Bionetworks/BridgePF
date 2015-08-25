@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.HashMap;
 import java.util.Map;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 import org.springframework.validation.MapBindingResult;
 
@@ -119,5 +120,10 @@ public class UploadFieldDefinitionTest {
         assertEquals("test-field", jsonMap.get("name"));
         assertFalse((boolean) jsonMap.get("required"));
         assertEquals("int", jsonMap.get("type"));
+    }
+
+    @Test
+    public void equalsVerifier() {
+        EqualsVerifier.forClass(DynamoUploadFieldDefinition.class).allFieldsShouldBeUsed().verify();
     }
 }

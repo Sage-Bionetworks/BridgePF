@@ -4,8 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.notNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -336,8 +338,13 @@ public class DynamoUploadSchemaDaoTest {
         survey.setName("Test Survey (Updated)");
         survey.setElements(surveyElementList);
 
+        // old schema - has different questions
+        DynamoUploadSchema oldSchema = makeUploadSchema("survey-study", "test-survey", 2);
+        oldSchema.setFieldDefinitions(ImmutableList.of(new DynamoUploadFieldDefinition.Builder()
+                .withName("different-question").withType(UploadFieldType.STRING).build()));
+
         // Mock DDB mapper - This is only used for rev, so we don't need a fully fleshed out schema.
-        DynamoDBMapper mockMapper = setupMockMapperWithSchema(makeUploadSchema("survey-study", "test-survey", 2));
+        DynamoDBMapper mockMapper = setupMockMapperWithSchema(oldSchema);
 
         // set up test dao and execute
         DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
@@ -361,6 +368,51 @@ public class DynamoUploadSchemaDaoTest {
         ArgumentCaptor<DynamoUploadSchema> arg = ArgumentCaptor.forClass(DynamoUploadSchema.class);
         verify(mockMapper).save(arg.capture(), notNull(DynamoDBSaveExpression.class));
         assertSame(createdSchema, arg.getValue());
+    }
+
+    @Test
+    public void updateUploadSchemaFromSurveySameFields() {
+        // create survey questions - We already tested all the survey question types, so we don't need a big huge list.
+        SurveyQuestion q1 = new DynamoSurveyQuestion();
+        q1.setIdentifier("foo-question");
+        q1.setConstraints(new BooleanConstraints());
+
+        SurveyQuestion q2 = new DynamoSurveyQuestion();
+        q2.setIdentifier("bar-question");
+        q2.setConstraints(new IntegerConstraints());
+
+        List<SurveyElement> surveyElementList = ImmutableList.<SurveyElement>of(q1, q2);
+
+        // make survey
+        Survey survey = new DynamoSurvey();
+        survey.setIdentifier("same-survey");
+        survey.setName("Test Survey (Same Fields)");
+        survey.setElements(surveyElementList);
+
+        // old schema - has same questions, but in the opposite order. (This should still be treated as same schema
+        // fields.)
+        DynamoUploadSchema oldSchema = makeUploadSchema("survey-study", "same-survey", 4);
+        oldSchema.setName("Old Name");
+        oldSchema.setFieldDefinitions(ImmutableList.of(
+                new DynamoUploadFieldDefinition.Builder().withName("bar-question").withType(UploadFieldType.INT)
+                        .build(),
+                new DynamoUploadFieldDefinition.Builder().withName("foo-question").withType(UploadFieldType.BOOLEAN)
+                        .build()));
+
+        // Mock DDB mapper - This is only used for rev, so we don't need a fully fleshed out schema.
+        DynamoDBMapper mockMapper = setupMockMapperWithSchema(oldSchema);
+
+        // set up test dao and execute
+        DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
+        dao.setDdbMapper(mockMapper);
+        DynamoUploadSchema createdSchema = (DynamoUploadSchema) dao.createUploadSchemaFromSurvey(
+                new StudyIdentifierImpl("survey-study"), survey);
+
+        // validate schema - it should be the same as the old one
+        assertSame(oldSchema, createdSchema);
+
+        // Make sure we don't save anything to DDB.
+        verify(mockMapper, never()).save(any());
     }
 
     @Test

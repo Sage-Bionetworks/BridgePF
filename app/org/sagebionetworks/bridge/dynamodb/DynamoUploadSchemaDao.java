@@ -4,12 +4,14 @@ import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
+import com.google.common.collect.ImmutableSet;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -101,7 +103,22 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         // Get the current rev.
         String studyId = studyIdentifier.getIdentifier();
         String schemaId = survey.getIdentifier();
-        int oldRev = getCurrentSchemaRevision(studyId, schemaId);
+        DynamoUploadSchema oldUploadSchema = getUploadSchemaNoThrow(studyId, schemaId);
+        int oldRev = 0;
+        if (oldUploadSchema != null) {
+            oldRev = oldUploadSchema.getRevision();
+
+            // Optimization: If the new schema and the old schema have the same fields, return the old schema instead
+            // of creating a new one.
+            //
+            // Dump the fieldDefLists into a set, because if we have the same fields in a different order, the schemas
+            // are compatible, and we should use the old schema too.
+            Set<UploadFieldDefinition> oldFieldDefSet = ImmutableSet.copyOf(oldUploadSchema.getFieldDefinitions());
+            Set<UploadFieldDefinition> newFieldDefSet = ImmutableSet.copyOf(fieldDefList);
+            if (oldFieldDefSet.equals(newFieldDefSet)) {
+                return oldUploadSchema;
+            }
+        }
 
         // Create schema.
         DynamoUploadSchema schema = new DynamoUploadSchema();
