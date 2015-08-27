@@ -29,17 +29,18 @@ public class UploadUtil {
 
         // Detect if this is iOS non-standard format by checking to see if the 10th char is a space.
         if (timestampStr.charAt(10) == ' ') {
+            // Log something, so we can keep track of how often this happens.
+            logger.warn("Non-standard timestamp in upload data: " + timestampStr);
+
             // Attempt to convert this by replacing the 10th char with a T and then stripping out all spaces.
             timestampStr = timestampStr.substring(0, 10) + 'T' + timestampStr.substring(11);
             timestampStr = timestampStr.replaceAll("\\s+", "");
-
-            // Log something, so we can keep track of how often this happens.
-            logger.info("Non-standard timestamp in upload data: " + timestampStr);
         }
 
         try {
             return DateUtils.parseISODateTime(timestampStr);
         } catch (RuntimeException ex) {
+            logger.warn("Malformatted timestamp in upload data: " + timestampStr);
             return null;
         }
     }
