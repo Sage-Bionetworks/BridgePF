@@ -13,7 +13,7 @@ import org.joda.time.format.PeriodFormatter;
 import org.sagebionetworks.bridge.BridgeConstants;
 
 public final class DateUtils {
-
+    private static final int CALENDAR_DATE_STRLEN = "yyyy-MM-dd".length();
     private static final DateTimeFormatter dateFmt = ISODateTimeFormat.date();
     private static final DateTimeFormatter dateTimeFmt = ISODateTimeFormat.dateTime();
     private static final PeriodFormatter periodFmt = ISOPeriodFormat.standard();
@@ -82,6 +82,11 @@ public final class DateUtils {
 
     /** Parses a string in ISO 8601 date format into a Joda DateTime object. */
     public static DateTime parseISODateTime(String dateTimeStr) {
+        if (dateTimeStr.length() <= CALENDAR_DATE_STRLEN) {
+            // String too short. This can't possibly be an ISO timestamp.
+            throw new IllegalArgumentException("Malformatted timestamp: " + dateTimeStr);
+        }
+
         // We use dateTimeParser() instead of dateTimeFmt because we want to be able to handle non-UTC timezones.
         return ISODateTimeFormat.dateTimeParser().parseDateTime(dateTimeStr);
     }
@@ -111,11 +116,15 @@ public final class DateUtils {
      */
     public static long convertToMillisFromEpoch(String d) {
         DateTime date;
-        if (d.length() == "yyyy-MM-dd".length()) {
+        int strlen = d.length();
+        if (strlen == CALENDAR_DATE_STRLEN) {
             LocalDate localDate = parseCalendarDate(d);
             date = localDate.toDateTimeAtStartOfDay(DateTimeZone.UTC);
-        } else {
+        } else if (strlen > CALENDAR_DATE_STRLEN) {
             date = parseISODateTime(d);
+        } else {
+            // String too short. This can't possibly be an ISO timestamp.
+            throw new IllegalArgumentException("Malformatted timestamp: " + d);
         }
         return date.getMillis();
     }

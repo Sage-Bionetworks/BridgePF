@@ -47,6 +47,17 @@ public class DateUtilsTest {
         assertEquals(16, date.getDayOfMonth());
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void parseCalendarDateMalformattedString() {
+        DateUtils.parseCalendarDate("February 16, 2014");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void parseCalendarDateShortInt() {
+        // Make sure we don't do something dumb, like parse this as year 42.
+        DateUtils.parseCalendarDate("42");
+    }
+
     @Test
     public void getISODateTime() {
         String dateString = DateUtils.getISODateTime(getDateTime());
@@ -70,6 +81,17 @@ public class DateUtilsTest {
 
         DateTime dateTime = DateUtils.parseISODateTime("2014-02-17T23:00-0800");
         assertEquals(expectedMillis, dateTime.getMillis());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void parseISODateTimeMalformattedString() {
+        DateUtils.parseISODateTime("February 17, 2014 at 11:00:00pm");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void parseISODateTimeShortInt() {
+        // Make sure we don't do something dumb, like parse this as year 42.
+        DateUtils.parseISODateTime("42");
     }
 
     @Test
@@ -97,5 +119,22 @@ public class DateUtilsTest {
 
         long millis = DateUtils.convertToMillisFromEpoch("2014-02-17T23:00-0800");
         assertEquals(expectedMillis, millis);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void convertToMillisFromMalformattedDate() {
+        // We detect dates as being 10 chars long.
+        DateUtils.convertToMillisFromEpoch("1234567890");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void convertToMillisFromMalformattedString() {
+        DateUtils.convertToMillisFromEpoch("February 17, 2014 at 11:00:00pm");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void convertToMillisFromShortInt() {
+        // Make sure we don't do something dumb, like parse this as year 42.
+        DateUtils.convertToMillisFromEpoch("42");
     }
 }
