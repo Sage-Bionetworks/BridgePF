@@ -98,9 +98,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
         }
 
         // copy to upload validation context messages
-        for (String oneError : errorList) {
-            context.addMessage(oneError);
-        }
+        errorList.forEach(context::addMessage);
 
         // log warning
         String combinedErrorMessage = "Strict upload validation error in study " + context.getStudy().getIdentifier()
