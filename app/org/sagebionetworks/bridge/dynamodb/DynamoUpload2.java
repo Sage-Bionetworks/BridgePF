@@ -6,6 +6,7 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -24,7 +25,7 @@ import com.google.common.collect.ImmutableList;
  * This DynamoDB table stores metadata for Bridge uploads. This class also defines global secondary indices, which can
  * be used for more efficient queries.
  */
-@DynamoThroughput(readCapacity=75, writeCapacity=50)
+@DynamoThroughput(readCapacity=40, writeCapacity=20)
 @DynamoDBTable(tableName = "Upload2")
 public class DynamoUpload2 implements Upload {
     private long contentLength;
@@ -104,7 +105,7 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** {@inheritDoc} */
-    @DynamoDBIndexHashKey(attributeName = "healthCode", globalSecondaryIndexName = "healthCode-index")
+    @DynamoDBIndexHashKey(attributeName = "healthCode", globalSecondaryIndexName = "healthCode-uploadDate-index")
     @Override
     public String getHealthCode() {
         return healthCode;
@@ -147,6 +148,7 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** {@inheritDoc} */
+    @DynamoDBIndexRangeKey(attributeName = "uploadDate", globalSecondaryIndexName = "healthCode-uploadDate-index")
     @DynamoDBMarshalling(marshallerClass = LocalDateMarshaller.class)
     @Override
     public LocalDate getUploadDate() {
