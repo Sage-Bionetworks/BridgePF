@@ -15,10 +15,11 @@ libraryDependencies ++= Seq(
   filters,
   "org.jsoup" % "jsoup" % "1.8.2",
   // AWS
-  "com.amazonaws" % "aws-java-sdk-s3" % "1.10.2",
-  "com.amazonaws" % "aws-java-sdk-sts" % "1.10.2",
-  "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.10.2",
-  "com.amazonaws" % "aws-java-sdk-ses" % "1.10.2",
+  "com.amazonaws" % "aws-java-sdk-s3" % "1.10.10",
+  "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.10",
+  "com.amazonaws" % "aws-java-sdk-sts" % "1.10.10",
+  "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.10.10",
+  "com.amazonaws" % "aws-java-sdk-ses" % "1.10.10",
   // New Relic
   "com.newrelic.agent.java" % "newrelic-agent" % "3.18.0",
   // Spring
@@ -65,3 +66,5 @@ libraryDependencies ++= Seq(
 lazy val root = (project in file(".")).enablePlugins(PlayJava)
 
 routesGenerator := InjectedRoutesGenerator
+
+testOptions += Tests.Argument(TestFrameworks.JUnit, "-a")

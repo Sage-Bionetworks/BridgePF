@@ -195,7 +195,7 @@ public class CacheProviderTest {
         simpleCacheProvider.setJedisOps(getJedisOps());
         simpleCacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
 
-        final Study study = TestUtils.getValidStudy();
+        final Study study = TestUtils.getValidStudy(CacheProviderTest.class);
         study.setIdentifier("test");
         study.setName("This is a test study");
         String json = BridgeObjectMapper.get().writeValueAsString(study);

@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
@@ -154,7 +154,7 @@ public class StudyServiceImpl implements StudyService {
             
             // The system is broken if the study does not have a consent. Create a default consent so the study is usable.
             StudyConsentView view = studyConsentService.addConsent(study.getStudyIdentifier(), defaultConsentDocument);
-            studyConsentService.activateConsent(study.getStudyIdentifier(), view.getCreatedOn());
+            studyConsentService.publishConsent(study, view.getCreatedOn());
             
             study.setActive(true);
 
@@ -178,21 +178,7 @@ public class StudyServiceImpl implements StudyService {
     public Study updateStudy(Study study, boolean isAdminUpdate) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
-        // do not set defaults for the existing studies that are in use. Throw an error if 
-        // these studies do not already include templates. Once they are migrated, this check 
-        // can be removed.
-        if (studyWhitelist.contains(study.getIdentifier())) {
-            checkNotNull(study.getVerifyEmailTemplate());
-            checkNotNull(study.getVerifyEmailTemplate().getSubject());
-            checkNotNull(study.getVerifyEmailTemplate().getMimeType());
-            checkNotNull(study.getVerifyEmailTemplate().getBody());
-            checkNotNull(study.getResetPasswordTemplate());
-            checkNotNull(study.getResetPasswordTemplate().getSubject());
-            checkNotNull(study.getResetPasswordTemplate().getMimeType());
-            checkNotNull(study.getResetPasswordTemplate().getBody());
-        } else {
-            setDefaultsIfAbsent(study);    
-        }
+        setDefaultsIfAbsent(study);    
         sanitizeHTML(study);
 
         // These cannot be set through the API and will be null here, so they are set on update

@@ -87,7 +87,7 @@ public class StormpathAccountIteratorTest {
     }
     
     private Study createStudy(String href) {
-        Study study = TestUtils.getValidStudy();
+        Study study = TestUtils.getValidStudy(StormpathAccountIteratorTest.class);
         study.setStormpathHref(href);
         return study;
     }

@@ -42,7 +42,7 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
     }
 
     @Override
-    public StudyConsent activate(StudyConsent studyConsent) {
+    public StudyConsent publish(StudyConsent studyConsent) {
         DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
         hashKey.setStudyKey(studyConsent.getStudyKey());
         hashKey.setCreatedOn(studyConsent.getCreatedOn());

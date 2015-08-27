@@ -98,10 +98,9 @@ public class TestUserAdminHelper {
     }
 
     public String makeRandomUserName(Class<?> cls) {
-        String clsPart = cls.getSimpleName();
         String devPart = BridgeConfigFactory.getConfig().getUser();
-        String rndPart = TestUtils.randomName();
-        return String.format("%s-%s-%s", devPart, clsPart, rndPart);
+        String rndPart = TestUtils.randomName(cls);
+        return String.format("bridge-testing+%s-%s", devPart, rndPart);
     }
 
     public TestUser createUser(Class<?> cls) {
@@ -118,7 +117,7 @@ public class TestUserAdminHelper {
         checkNotNull(cls, "Class must not be null");
 
         String name = makeRandomUserName(cls);
-        SignUp signUp = new SignUp(name, name + "@sagebridge.org", PASSWORD, roles);
+        SignUp signUp = new SignUp(name, name + "@sagebase.org", PASSWORD, roles);
         Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         return createUser(signUp, study, signIn, consent);
     }

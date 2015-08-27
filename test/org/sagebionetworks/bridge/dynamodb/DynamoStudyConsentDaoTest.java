@@ -54,7 +54,7 @@ public class DynamoStudyConsentDaoTest {
         assertNull(studyConsentDao.getActiveConsent(new StudyIdentifierImpl(consent1.getStudyKey())));
         
         // Make version1 active
-        StudyConsent consent = studyConsentDao.activate(consent1);
+        StudyConsent consent = studyConsentDao.publish(consent1);
         assertConsentsEqual(consent1, consent, true);
         
         datetime = DateUtils.getCurrentDateTime();
@@ -72,7 +72,7 @@ public class DynamoStudyConsentDaoTest {
         assertConsentsEqual(consent1, consent, true);
         
         // Now make consent 2 the active consent. It should be retrieved by active consent call
-        studyConsentDao.activate(consent2);
+        studyConsentDao.publish(consent2);
         consent = studyConsentDao.getActiveConsent(STUDY_ID);
         assertConsentsEqual(consent2, consent, true);
         
@@ -106,7 +106,7 @@ public class DynamoStudyConsentDaoTest {
         assertNull(studyConsentDao.getActiveConsent(new StudyIdentifierImpl(consent.getStudyKey())));
 
         // Now activate the consent
-        consent = studyConsentDao.activate(consent);
+        consent = studyConsentDao.publish(consent);
         StudyConsent newConsent = studyConsentDao.getActiveConsent(new StudyIdentifierImpl(consent.getStudyKey()));
         assertConsentsEqual(consent, newConsent, true);
         assertEquals(key, newConsent.getStoragePath());
@@ -120,31 +120,31 @@ public class DynamoStudyConsentDaoTest {
             String key = STUDY_ID.getIdentifier() + "." + createdOn.getMillis();
             
             StudyConsent consent = studyConsentDao.addConsent(STUDY_ID, key, createdOn);
-            studyConsentDao.activate(consent);
+            studyConsentDao.publish(consent);
         }
         
         // Only one should be active.
         List<StudyConsent> allConsents = studyConsentDao.getConsents(STUDY_ID);
         assertEquals(3, allConsents.size());
-        assertEquals(true, allConsents.get(0).getActive());
-        assertEquals(false, allConsents.get(1).getActive());
-        assertEquals(false, allConsents.get(2).getActive());
+        assertTrue(allConsents.get(0).getActive());
+        assertFalse(allConsents.get(1).getActive());
+        assertFalse(allConsents.get(2).getActive());
         
         // Now move the active flag.
-        studyConsentDao.activate(allConsents.get(2));
+        studyConsentDao.publish(allConsents.get(2));
         allConsents = studyConsentDao.getConsents(STUDY_ID);
         assertEquals(3, allConsents.size());
-        assertEquals(false, allConsents.get(0).getActive());
-        assertEquals(false, allConsents.get(1).getActive());
-        assertEquals(true, allConsents.get(2).getActive());
+        assertFalse(allConsents.get(0).getActive());
+        assertFalse(allConsents.get(1).getActive());
+        assertTrue(allConsents.get(2).getActive());
         
         // Re-activating the same one changes nothing
-        studyConsentDao.activate(allConsents.get(2));
+        studyConsentDao.publish(allConsents.get(2));
         allConsents = studyConsentDao.getConsents(STUDY_ID);
         assertEquals(3, allConsents.size());
-        assertEquals(false, allConsents.get(0).getActive());
-        assertEquals(false, allConsents.get(1).getActive());
-        assertEquals(true, allConsents.get(2).getActive());
+        assertFalse(allConsents.get(0).getActive());
+        assertFalse(allConsents.get(1).getActive());
+        assertTrue(allConsents.get(2).getActive());
     }
     
     private void assertConsentsEqual(StudyConsent existing, StudyConsent newOne, boolean isActive) {

@@ -22,7 +22,7 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     public static final ObjectWriter STUDY_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter", 
-        SimpleBeanPropertyFilter.serializeAllExcept("stormpathHref")));
+        SimpleBeanPropertyFilter.serializeAllExcept("stormpathHref", "active")));
 
     public static final ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter",
@@ -154,4 +154,16 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      */
     public boolean isActive();
     public void setActive(boolean active);
+    
+    /**
+     * URL for retrieving the HTML version of the published consent for this study.
+     * @return
+     */
+    public String getConsentHTML();
+    
+    /**
+     * URL for retrieving the PDF version of the published consent for this study.
+     * @return
+     */
+    public String getConsentPDF();
 }

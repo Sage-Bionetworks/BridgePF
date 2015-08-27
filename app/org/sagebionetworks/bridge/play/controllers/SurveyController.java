@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
+import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -157,19 +158,24 @@ public class SurveyController extends BaseController {
         return ok(json).as(JSON_MIME_TYPE);
     }
     
-    public Result getMostRecentPublishedSurveyVersionByIdentifier(String identifier) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+    /**
+     * Administrators can pass the ?physical=true flag to this endpoint to physicall delete a survey and all its 
+     * survey elements, rather than only marking it deleted to maintain referential integrity. This should only be 
+     * used as part of testing.
+     * @param surveyGuid
+     * @param createdOnString
+     * @param physical
+     * @return
+     * @throws Exception
+     */
+    public Result deleteSurvey(String surveyGuid, String createdOnString, String physical) throws Exception {
+        UserSession session = getAuthenticatedSession();
+        User user = session.getUser();
         
-        // Do not cache this. It's only used by researchers and without the GUID, you cannot
-        // cache it properly.
-        Survey survey = surveyService.getSurveyMostRecentlyPublishedVersionByIdentifier(studyId, identifier);
-        verifySurveyIsInStudy(session, studyId, survey);
-        return okResult(survey);
-    }
-    
-    public Result deleteSurvey(String surveyGuid, String createdOnString) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        // If not in either of these roles, don't do the work of getting the survey
+        if (!user.isInRole(DEVELOPER) && !user.isInRole(ADMIN)) {
+            throw new UnauthorizedException();
+        }
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
@@ -178,9 +184,15 @@ public class SurveyController extends BaseController {
         Survey survey = surveyService.getSurvey(keys);
         verifySurveyIsInStudy(session, studyId, survey);
         
-        surveyService.deleteSurvey(survey);
+        if ("true".equals(physical) && user.isInRole(ADMIN)) {
+            surveyService.deleteSurveyPermanently(survey);
+        } else if (user.isInRole(DEVELOPER)) {
+            surveyService.deleteSurvey(survey);    
+        } else {
+            // An admin calling for a logical delete. That wasn't allowed before so we don't allow it now.
+            throw new UnauthorizedException();
+        }
         expireCache(surveyGuid, createdOnString);
-        
         return okResult("Survey deleted.");
     }
     

@@ -97,7 +97,7 @@ public class StudyController extends BaseController {
         }
         getAuthenticatedSession(ADMIN);
         
-        return ok(Study.STUDY_WRITER.writeValueAsString(studies));
+        return ok(Study.STUDY_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
     }
 
     public Result createStudy() throws Exception {

@@ -63,6 +63,15 @@ public final class Activity implements BridgeEntity {
     public SurveyResponseReference getSurveyResponse() {
         return response;
     }
+    public boolean isPersistentlyRescheduledBy(Schedule schedule) {
+        return schedule.schedulesImmediatelyAfterEvent() && 
+               schedule.getEventId().contains(getSelfFinishedEventId());
+    }
+    private String getSelfFinishedEventId() {
+        return (getActivityType() == ActivityType.SURVEY) ?
+            ("survey:"+getSurvey().getGuid()+":finished") :
+            ("task:"+getTask().getIdentifier()+":finished");
+    }
     /**
      * This property is maintained for backwards compatibility, but clients should now look for 
      * metadata information, including links, in the survey, surveyResponse or task property 
@@ -107,8 +116,8 @@ public final class Activity implements BridgeEntity {
             this.survey = new SurveyReference(identifier, guid, createdOn);
             return this;
         }
-        public Builder withSurveyResponse(String guid) {
-            this.response = new SurveyResponseReference(guid);
+        public Builder withSurveyResponse(String identifier) {
+            this.response = new SurveyResponseReference(identifier);
             return this;
         }
         public Activity build() {

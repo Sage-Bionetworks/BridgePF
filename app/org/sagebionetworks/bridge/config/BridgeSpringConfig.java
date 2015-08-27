@@ -4,8 +4,33 @@ import java.util.List;
 import java.util.MissingResourceException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import javax.annotation.Resource;
+
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
+import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
+import com.stormpath.sdk.api.ApiKey;
+import com.stormpath.sdk.api.ApiKeys;
+import com.stormpath.sdk.application.Application;
+import com.stormpath.sdk.client.Client;
+import com.stormpath.sdk.client.ClientBuilder;
+import com.stormpath.sdk.client.Clients;
+import com.stormpath.sdk.impl.client.DefaultClientBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
@@ -33,32 +58,6 @@ import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
 import org.sagebionetworks.bridge.upload.UnzipHandler;
 import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
 import org.sagebionetworks.bridge.upload.UploadValidationHandler;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
-
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
-import com.stormpath.sdk.api.ApiKey;
-import com.stormpath.sdk.api.ApiKeys;
-import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.client.ClientBuilder;
-import com.stormpath.sdk.client.Clients;
-import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 
 @ComponentScan({"org.sagebionetworks.bridge"})
 @Configuration
@@ -212,6 +211,12 @@ public class BridgeSpringConfig {
         return new AmazonSimpleEmailServiceClient(awsCredentials);
     }
 
+    @Bean(name = "sqsClient")
+    @Resource(name = "awsCredentials")
+    public AmazonSQSClient sqsClient(BasicAWSCredentials awsCredentials) {
+        return new AmazonSQSClient(awsCredentials);
+    }
+
     @Bean(name = "asyncExecutorService")
     @Resource(name = "bridgeConfig")
     public ExecutorService asyncExecutorService(BridgeConfig bridgeConfig) {
@@ -298,7 +303,7 @@ public class BridgeSpringConfig {
     @Bean(name = "uploadSchemaDdbMapper")
     @Autowired
     public DynamoDBMapper uploadSchemaDdbMapper(AmazonDynamoDB client) {
-        return DynamoUtils.getMapperEventually(DynamoUploadSchema.class, client);
+        return DynamoUtils.getMapper(DynamoUploadSchema.class, client);
     }
 
     @Bean(name = "taskDdbMapper")

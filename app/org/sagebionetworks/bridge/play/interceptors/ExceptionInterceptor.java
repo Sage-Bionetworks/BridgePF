@@ -6,11 +6,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NoStackTraceException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ExceptionMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import play.libs.Json;
 import play.mvc.Http;
@@ -22,7 +25,7 @@ import play.mvc.Results;
 public class ExceptionInterceptor implements MethodInterceptor {
 
     private final Logger logger = LoggerFactory.getLogger(ExceptionInterceptor.class);
-
+    
     @Override
     public Object invoke(MethodInvocation method) throws Throwable {
         try {
@@ -44,14 +47,16 @@ public class ExceptionInterceptor implements MethodInterceptor {
         logger.error(msg, throwable);
     }
 
-    private Result getResult(final Throwable throwable) {
+    private Result getResult(final Throwable throwable) throws JsonProcessingException {
         final int status = getStatusCode(throwable);
         // Consent exceptions return a session payload (you are signed in),
         // but a 412 error status code.
         if (throwable instanceof ConsentRequiredException) {
             ConsentRequiredException cre = (ConsentRequiredException)throwable;
             UserSessionInfo session = new UserSessionInfo(cre.getUserSession());
-            return Results.status(cre.getStatusCode(), Json.toJson(session));
+            // The session object contains elements like enums that need BridgeObjectMapper's 
+            // serialization strategies, to be consistent with the rest of the API.
+            return Results.status(cre.getStatusCode(), BridgeObjectMapper.get().writeValueAsString(session));
         }
         String message = getMessage(throwable, status);
         final ExceptionMessage exceptionMessage = new ExceptionMessage(throwable, message);

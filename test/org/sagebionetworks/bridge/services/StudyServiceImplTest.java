@@ -24,7 +24,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
@@ -45,8 +45,6 @@ public class StudyServiceImplTest {
     
     private Study study;
     
-    private String identifier;
-    
     @Before
     public void before() {
         cache = mock(CacheProvider.class);
@@ -55,23 +53,21 @@ public class StudyServiceImplTest {
     
     @After
     public void after() {
-        if (identifier != null) {
-            studyService.deleteStudy(identifier);
+        if (study != null) {
+            studyService.deleteStudy(study.getIdentifier());
         }
     }
     
     @Test(expected=InvalidEntityException.class)
     public void studyIsValidated() {
-        study = new DynamoStudy();
-        study.setName("Belgian Waffles [Test]");
-        study = studyService.createStudy(study);
+        Study testStudy = new DynamoStudy();
+        testStudy.setName("Belgian Waffles [Test]");
+        studyService.createStudy(testStudy);
     }
     
     @Test
     public void cannotCreateAnExistingStudyWithAVersion() {
-        study = TestUtils.getValidStudy();
-        identifier = TestUtils.randomName();
-        study.setIdentifier(identifier);
+        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
         study = studyService.createStudy(study);
         try {
             study = studyService.createStudy(study);
@@ -82,17 +78,16 @@ public class StudyServiceImplTest {
     
     @Test(expected=EntityAlreadyExistsException.class)
     public void cannotCreateAStudyWithAVersion() {
-        study = TestUtils.getValidStudy();
-        study.setVersion(1L);
-        study = studyService.createStudy(study);
+        Study testStudy = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        testStudy.setVersion(1L);
+        testStudy = studyService.createStudy(testStudy);
     }
     
     @Test
     public void crudStudy() {
-        study = TestUtils.getValidStudy();
-        identifier = study.getIdentifier();
-        
+        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
         study = studyService.createStudy(study);
+        
         assertNotNull("Version has been set", study.getVersion());
         assertTrue(study.isActive());
         verify(cache).setStudy(study);
@@ -104,20 +99,20 @@ public class StudyServiceImplTest {
         assertTrue(view.getDocumentContent().contains("This is a placeholder for your consent document."));
         assertTrue(view.getActive());
         
-        study = studyService.getStudy(identifier);
-        assertTrue(study.isActive());
-        assertEquals(identifier, study.getIdentifier());
-        assertEquals("Test Study [not API]", study.getName());
-        assertEquals(200, study.getMaxNumOfParticipants());
-        assertEquals(18, study.getMinAgeOfConsent());
+        Study newStudy = studyService.getStudy(study.getIdentifier());
+        assertTrue(newStudy.isActive());
+        assertEquals(study.getIdentifier(), newStudy.getIdentifier());
+        assertEquals("Test Study [StudyServiceImplTest]", newStudy.getName());
+        assertEquals(200, newStudy.getMaxNumOfParticipants());
+        assertEquals(18, newStudy.getMinAgeOfConsent());
         // these should have been changed
-        assertNotEquals("http://local-test-junk", study.getStormpathHref());
-        verify(cache).getStudy(study.getIdentifier());
-        verify(cache).setStudy(study);
+        assertNotEquals("http://local-test-junk", newStudy.getStormpathHref());
+        verify(cache).getStudy(newStudy.getIdentifier());
+        verify(cache).setStudy(newStudy);
         verifyNoMoreInteractions(cache);
         reset(cache);
 
-        studyService.deleteStudy(identifier);
+        studyService.deleteStudy(study.getIdentifier());
         verify(cache).getStudy(study.getIdentifier());
         verify(cache).setStudy(study);
         verify(cache).removeStudy(study.getIdentifier());
@@ -126,19 +121,18 @@ public class StudyServiceImplTest {
             fail("Should have thrown an exception");
         } catch(EntityNotFoundException e) {
         }
-        identifier = null;
+        study = null;
     }
     
     @Test
     public void canUpdatePasswordPolicyAndEmailTemplates() {
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
         study.setPasswordPolicy(null);
         study.setVerifyEmailTemplate(null);
         study.setResetPasswordTemplate(null);
-        identifier = study.getIdentifier();
-        
-        // First, verify that defaults are set...
         study = studyService.createStudy(study);
+
+        // First, verify that defaults are set...
         PasswordPolicy policy = study.getPasswordPolicy();
         assertNotNull(policy);
         assertEquals(8, policy.getMinLength());
@@ -182,12 +176,10 @@ public class StudyServiceImplTest {
     
     @Test
     public void defaultsAreUsedWhenNotProvided() {
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
         study.setPasswordPolicy(null);
         study.setVerifyEmailTemplate(null);
         study.setResetPasswordTemplate(null);
-        identifier = study.getIdentifier();
-        
         study = studyService.createStudy(study);
         
         assertEquals(PasswordPolicy.DEFAULT_PASSWORD_POLICY, study.getPasswordPolicy());
@@ -207,11 +199,9 @@ public class StudyServiceImplTest {
     
     @Test
     public void problematicHtmlIsRemovedFromTemplates() {
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
         study.setVerifyEmailTemplate(new EmailTemplate("<b>This is not allowed [ve]</b>", "<p>Test [ve] ${url}</p><script></script>", MimeType.HTML));
         study.setResetPasswordTemplate(new EmailTemplate("<b>This is not allowed [rp]</b>", "<p>Test [rp] ${url}</p>", MimeType.TEXT));
-        identifier = study.getIdentifier();
-        
         study = studyService.createStudy(study);
         
         EmailTemplate template = study.getVerifyEmailTemplate();
@@ -227,7 +217,7 @@ public class StudyServiceImplTest {
     
     @Test
     public void adminsCanChangeMaxNumParticipantsResearchersCannot() {
-        study = TestUtils.getValidStudy(); // it's 200.
+        study = TestUtils.getValidStudy(StudyServiceImplTest.class); // it's 200.
         study = studyService.createStudy(study);
         
         // Okay, not that it's set, researchers can change it to no effect

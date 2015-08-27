@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.StudyLimitExceededException;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -148,7 +149,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void signUp(Study study, SignUp signUp, boolean sendEmail) {
+    public void signUp(Study study, SignUp signUp, boolean isAnonSignUp) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
         
@@ -160,8 +161,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             if (consentService.isStudyAtEnrollmentLimit(study)) {
                 throw new StudyLimitExceededException(study);
             }
-            accountDao.signUp(study, signUp, sendEmail);
-
+            accountDao.signUp(study, signUp, isAnonSignUp);
+        } catch(EntityAlreadyExistsException e) {
+            // Suppress this. Otherwise it the response reveals that the email has already been taken, 
+            // and you can infer who is in the study from the response. Instead send a reset password 
+            // request to the email address in case user has forgotten password and is trying to sign 
+            // up again. Non-anonymous sign ups (sign ups done by admins on behalf of users) still get a 404
+            if (isAnonSignUp) {
+                Email email = new Email(study.getIdentifier(), signUp.getEmail());
+                requestResetPassword(study, email);
+                logger.info("Sign up attempt for existing email address in study '"+study.getIdentifier()+"'");
+            } else {
+                throw e;
+            }
         } finally {
             lockDao.releaseLock(SignUp.class, signUp.getEmail(), lockId);
         }
@@ -189,8 +201,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(email, "Email object cannnot be null");
         
         Validate.entityThrowingException(emailValidator, email);
-        
-        accountDao.resendEmailVerificationToken(studyIdentifier, email);
+        try {
+            accountDao.resendEmailVerificationToken(studyIdentifier, email);    
+        } catch(EntityNotFoundException e) {
+            // Suppress this. Otherwise it reveals if the account does not exist
+            logger.info("Resend email verification for unregistered email in study '"+studyIdentifier.getIdentifier()+"'");
+        }
     }
 
     @Override
@@ -199,8 +215,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(email);
         
         Validate.entityThrowingException(emailValidator, email);
-
-        accountDao.requestResetPassword(study, email);
+        try {
+            accountDao.requestResetPassword(study, email);    
+        } catch(EntityNotFoundException e) {
+            // Suppress this. Otherwise it reveals if the account does not exist
+            logger.info("Request reset password request for unregistered email in study '"+study.getIdentifier()+"'");
+        }
     }
 
     @Override

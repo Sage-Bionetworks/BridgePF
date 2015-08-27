@@ -10,6 +10,7 @@ import java.util.Set;
 import javax.annotation.Resource;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUtils;
@@ -31,9 +32,13 @@ public class DynamoStudyDaoTest {
     @Resource
     DynamoStudyDao studyDao;
 
-    @Before
-    public void before() {
+    @BeforeClass
+    public static void beforeClass() {
         DynamoInitializer.init(DynamoStudy.class);
+    }
+    
+    @Before
+    public void before() throws Exception {
         // We need to leave the test study in the database.
         List<Study> studies = studyDao.getStudies();
         for (Study study : studies) {
@@ -45,7 +50,7 @@ public class DynamoStudyDaoTest {
 
     @Test
     public void crudOneStudy() {
-        Study study = TestUtils.getValidStudy();
+        Study study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
         study.setStormpathHref("http://url.com/");
         study.setUserProfileAttributes(EXTRA_USER_PROFILE_ATTRIBUTES);
 
@@ -75,19 +80,15 @@ public class DynamoStudyDaoTest {
     }
 
     @Test
-    public void canRetrieveAllStudies() {
+    public void canRetrieveAllStudies() throws InterruptedException {
         List<Study> studies = Lists.newArrayList();
         try {
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-            studies.add(studyDao.createStudy(TestUtils.getValidStudy()));
-
+            studies.add(studyDao.createStudy(TestUtils.getValidStudy(DynamoStudyDaoTest.class)));
+            studies.add(studyDao.createStudy(TestUtils.getValidStudy(DynamoStudyDaoTest.class)));
+        
             List<Study> savedStudies = studyDao.getStudies();
             // The five studies, plus the API study we refuse to delete...
-            assertEquals("There are six studies", 6, savedStudies.size());
-
+            assertEquals("There are three studies", 3, savedStudies.size());
         } finally {
             for (Study study : studies) {
                 studyDao.deleteStudy(study);
@@ -103,7 +104,7 @@ public class DynamoStudyDaoTest {
         Study study = null;
         Long version = null;
         try {
-            study = TestUtils.getValidStudy();
+            study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
             study = studyDao.createStudy(study);
             version = study.getVersion();
             study.setVersion(null);
@@ -119,7 +120,7 @@ public class DynamoStudyDaoTest {
 
     @Test(expected = EntityAlreadyExistsException.class)
     public void identifierUniquenessEnforcedByVersionChecks() throws Exception {
-        Study study = TestUtils.getValidStudy();
+        Study study = TestUtils.getValidStudy(DynamoStudyDaoTest.class);
         studyDao.createStudy(study);
 
         study.setVersion(null); // This is now a "new study"

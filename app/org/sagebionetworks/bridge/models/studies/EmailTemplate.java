@@ -13,19 +13,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public final class EmailTemplate {
     
-    public enum MimeType {
-        TEXT("text/plain"),
-        HTML("text/html");
-        
-        private MimeType(String type){
-            this.type = type;
-        }
-        private final String type;
-        @Override public String toString() {
-            return type;
-        }
-    }
-
     private final String subject;
     private final MimeType mimeType;
     private final String body;

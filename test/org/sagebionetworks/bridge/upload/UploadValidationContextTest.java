@@ -23,7 +23,7 @@ public class UploadValidationContextTest {
     @Test
     public void shallowCopy() {
         // dummy objects to test against
-        Study study = TestUtils.getValidStudy();
+        Study study = TestUtils.getValidStudy(UploadValidationContextTest.class);
         Upload upload = new DynamoUpload2();
         byte[] data = "test-data".getBytes(Charsets.UTF_8);
         byte[] decryptedData = "test-decrypted-data".getBytes(Charsets.UTF_8);

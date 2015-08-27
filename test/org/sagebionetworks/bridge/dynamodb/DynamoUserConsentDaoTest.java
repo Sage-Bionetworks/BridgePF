@@ -60,19 +60,19 @@ public class DynamoUserConsentDaoTest {
     }
 
     @Test
-    public void canCountStudyParticipants() {
+    public void canCountStudyParticipants() throws Exception {
         final DynamoStudyConsent1 consent = createStudyConsent();
         for (int i=1; i < 6; i++) {
             userConsentDao.giveConsent(HEALTH_CODE+i, consent);
         }
-
+        
         long count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
         assertEquals("Correct number of participants", 5, count);
-
+        
         userConsentDao.withdrawConsent(HEALTH_CODE+"5", STUDY_IDENTIFIER);
         count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
         assertEquals("Correct number of participants", 4, count);
-
+        
         userConsentDao.giveConsent(HEALTH_CODE+"5", consent);
         count = userConsentDao.getNumberOfParticipants(STUDY_IDENTIFIER);
         assertEquals("Correct number of participants", 5, count);

@@ -75,7 +75,7 @@ public class ConsentServiceImplTest {
 
     @Before
     public void before() {
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
         studyService.createStudy(study);
         
         testUser = helper.createUser(ConsentServiceImplTest.class, study, false, null);
@@ -187,7 +187,7 @@ public class ConsentServiceImplTest {
         try {
             jedisOps.del(key);
             
-            Study study = TestUtils.getValidStudy();
+            Study study = TestUtils.getValidStudy(ConsentServiceImplTest.class);
             study.setMaxNumOfParticipants(2);
 
             // Set the cache so we avoid going to DynamoDB. We're testing the caching layer
@@ -232,8 +232,7 @@ public class ConsentServiceImplTest {
                 consentService.hasUserSignedMostRecentConsent(testUser.getStudy(), testUser.getUser()));
 
         // Activate new study consent. User is consented and but has not signed most recent consent.
-        newStudyConsent = studyConsentService.activateConsent(testUser.getStudyIdentifier(),
-                        newStudyConsent.getCreatedOn()).getStudyConsent();
+        newStudyConsent = studyConsentService.publishConsent(study, newStudyConsent.getCreatedOn()).getStudyConsent();
 
         assertTrue("Should still be consented.",
                 consentService.hasUserConsentedToResearch(testUser.getStudy(), testUser.getUser()));

@@ -21,7 +21,7 @@ public class UploadValidationServiceTest {
         // test strategy is to verify that execution flows through to these dependencies.
 
         // inputs
-        Study study = TestUtils.getValidStudy();
+        Study study = TestUtils.getValidStudy(UploadValidationServiceTest.class);
         Upload upload = new DynamoUpload2();
 
         // mock task

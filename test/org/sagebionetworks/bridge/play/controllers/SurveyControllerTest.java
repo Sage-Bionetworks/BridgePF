@@ -342,37 +342,7 @@ public class SurveyControllerTest {
     }
     
     @Test
-    public void getMostRecentPublishedSurveyVersionByIdentifier() throws Exception {
-        StudyIdentifier studyId = new StudyIdentifierImpl("api");
-        String identifier = BridgeUtils.generateGuid();
-        setContext();
-        when(service.getSurveyMostRecentlyPublishedVersionByIdentifier(eq(studyId), eq(identifier))).thenReturn(getSurvey(false));
-        
-        controller.getMostRecentPublishedSurveyVersionByIdentifier(identifier);
-        
-        verify(service).getSurveyMostRecentlyPublishedVersionByIdentifier(eq(studyId), eq(identifier));
-        verifyNoMoreInteractions(service);
-    }
-    
-    @Test
-    public void cannotGetMostRecentPublishedSurveyVersionByIdentifierFromOtherStudy() throws Exception {
-        StudyIdentifier studyId = new StudyIdentifierImpl("secondstudy");
-        String identifier = BridgeUtils.generateGuid();
-        setContext();
-        when(service.getSurveyMostRecentlyPublishedVersionByIdentifier(eq(studyId), eq(identifier))).thenReturn(getSurvey(false));
-        setUserSession("secondstudy");
-        
-        try {
-            controller.getMostRecentPublishedSurveyVersionByIdentifier(identifier);
-            fail("Should have thrown exception");
-        } catch(UnauthorizedException e) {
-            verify(service).getSurveyMostRecentlyPublishedVersionByIdentifier(eq(studyId), eq(identifier));
-            verifyNoMoreInteractions(service);
-        }
-    }
-    
-    @Test
-    public void deleteSurvey() throws Exception {
+    public void deleteSurveyAllowedForDeveloper() throws Exception {
         String guid = BridgeUtils.generateGuid();
         DateTime date = DateTime.now();
         Survey survey = getSurvey(false);
@@ -380,11 +350,64 @@ public class SurveyControllerTest {
         when(service.getSurvey(eq(keys))).thenReturn(survey);
         setContext();
         
-        controller.deleteSurvey(guid, date.toString());
+        controller.deleteSurvey(guid, date.toString(), "false");
 
         verify(service).getSurvey(eq(keys));
         verify(service).deleteSurvey(eq(survey));
         verifyNoMoreInteractions(service);
+    }
+    
+    @Test
+    public void physicalDeleteOfSurveyNotAllowedForDeveloper() throws Exception {
+        String guid = BridgeUtils.generateGuid();
+        DateTime date = DateTime.now();
+        Survey survey = getSurvey(false);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(guid, date.getMillis());
+        when(service.getSurvey(eq(keys))).thenReturn(survey);
+        setContext();
+        
+        controller.deleteSurvey(guid, date.toString(), "true");
+        
+        verify(service).getSurvey(eq(keys));
+        verify(service).deleteSurvey(eq(survey));
+        verifyNoMoreInteractions(service);
+    }
+    
+    @Test
+    public void physicalDeleteAllowedForAdmin() throws Exception {
+        String guid = BridgeUtils.generateGuid();
+        DateTime date = DateTime.now();
+        Survey survey = getSurvey(false);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(guid, date.getMillis());
+        when(service.getSurvey(eq(keys))).thenReturn(survey);
+        setContext();
+        
+        session.getUser().getRoles().add(ADMIN);
+        controller.deleteSurvey(guid, date.toString(), "true");
+        
+        verify(service).getSurvey(eq(keys));
+        verify(service).deleteSurveyPermanently(eq(survey));
+        verifyNoMoreInteractions(service);
+    }
+    
+    @Test
+    public void deleteBlockedForAdminThatDoesntAskForPhysicalDelete() throws Exception {
+        String guid = BridgeUtils.generateGuid();
+        DateTime date = DateTime.now();
+        Survey survey = getSurvey(false);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(guid, date.getMillis());
+        when(service.getSurvey(eq(keys))).thenReturn(survey);
+        setContext();
+        
+        session.getUser().getRoles().remove(DEVELOPER);
+        session.getUser().getRoles().add(ADMIN);
+        try {
+            controller.deleteSurvey(guid, date.toString(), "false");
+            fail("This should have thrown an exception");
+        } catch(UnauthorizedException e) {
+            verify(service).getSurvey(eq(keys));
+            verifyNoMoreInteractions(service);
+        }
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -395,7 +418,7 @@ public class SurveyControllerTest {
         when(service.getSurvey(eq(keys))).thenThrow(new EntityNotFoundException(Survey.class));
         setContext();
         
-        controller.deleteSurvey(guid, date.toString());
+        controller.deleteSurvey(guid, date.toString(), "false");
     }
     
     @Test
@@ -409,7 +432,7 @@ public class SurveyControllerTest {
         setUserSession("secondstudy");
         
         try {
-            controller.deleteSurvey(guid, date.toString());
+            controller.deleteSurvey(guid, date.toString(), "false");
             fail("Should have thrown exception");
         } catch(UnauthorizedException e) {
             verify(service).getSurvey(eq(keys));
@@ -571,7 +594,7 @@ public class SurveyControllerTest {
         setUserSession("secondstudy");
         
         try {
-            controller.deleteSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString());
+            controller.deleteSurvey(keys.getGuid(), new DateTime(keys.getCreatedOn()).toString(), "false");
             fail("Exception should have been thrown.");
         } catch(UnauthorizedException e) {
             verify(service).getSurvey(keys);

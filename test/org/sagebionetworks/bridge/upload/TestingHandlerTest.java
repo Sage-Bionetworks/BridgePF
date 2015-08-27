@@ -162,7 +162,7 @@ public class TestingHandlerTest {
         // Testing handler may call context.getStudy().getIdentifier(), context.getUpload().getUploadId(), and
         // context.getUpload().getFilename(), so get those ready
 
-        DynamoStudy study = TestUtils.getValidStudy();
+        DynamoStudy study = TestUtils.getValidStudy(TestingHandlerTest.class);
         study.setIdentifier(TEST_STUDY_ID);
 
         DynamoUpload2 upload = new DynamoUpload2();

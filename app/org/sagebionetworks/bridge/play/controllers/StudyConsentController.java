@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsentForm;
 import org.sagebionetworks.bridge.models.studies.StudyConsentView;
@@ -63,11 +64,11 @@ public class StudyConsentController extends BaseController {
         return createdResult(studyConsent);
     }
 
-    public Result setActiveConsent(String createdOn) throws Exception {
+    public Result publishConsent(String createdOn) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        Study study = studyService.getStudy(session.getStudyIdentifier());
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
-        studyConsentService.activateConsent(studyId, timestamp);
+        studyConsentService.publishConsent(study, timestamp);
         return okResult("Consent document set as active.");
     }
 }

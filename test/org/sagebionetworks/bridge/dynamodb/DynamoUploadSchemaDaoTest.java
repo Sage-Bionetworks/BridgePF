@@ -4,8 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.notNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -133,6 +135,18 @@ public class DynamoUploadSchemaDaoTest {
             surveyElementList.add(q);
         }
 
+        // multi value string don't allow multiple
+        {
+            MultiValueConstraints constraints = new MultiValueConstraints();
+            constraints.setDataType(DataType.STRING);
+            constraints.setAllowMultiple(false);
+
+            SurveyQuestion q = new DynamoSurveyQuestion();
+            q.setIdentifier("multi-value-single-choice-string");
+            q.setConstraints(constraints);
+            surveyElementList.add(q);
+        }
+
         // multi value int don't allow multiple
         {
             MultiValueConstraints constraints = new MultiValueConstraints();
@@ -140,7 +154,7 @@ public class DynamoUploadSchemaDaoTest {
             constraints.setAllowMultiple(false);
 
             SurveyQuestion q = new DynamoSurveyQuestion();
-            q.setIdentifier("multi-value-single-choice");
+            q.setIdentifier("multi-value-single-choice-int");
             q.setConstraints(constraints);
             surveyElementList.add(q);
         }
@@ -257,7 +271,7 @@ public class DynamoUploadSchemaDaoTest {
         assertEquals("survey-study", createdSchema.getStudyId());
 
         List<UploadFieldDefinition> fieldDefList = createdSchema.getFieldDefinitions();
-        assertEquals(14, fieldDefList.size());
+        assertEquals(15, fieldDefList.size());
 
         assertEquals("no-constraints", fieldDefList.get(0).getName());
         assertEquals(UploadFieldType.INLINE_JSON_BLOB, fieldDefList.get(0).getType());
@@ -268,38 +282,41 @@ public class DynamoUploadSchemaDaoTest {
         assertEquals("multi-value-int", fieldDefList.get(2).getName());
         assertEquals(UploadFieldType.INLINE_JSON_BLOB, fieldDefList.get(2).getType());
 
-        assertEquals("multi-value-single-choice", fieldDefList.get(3).getName());
-        assertEquals(UploadFieldType.INT, fieldDefList.get(3).getType());
+        assertEquals("multi-value-single-choice-string", fieldDefList.get(3).getName());
+        assertEquals(UploadFieldType.INLINE_JSON_BLOB, fieldDefList.get(3).getType());
 
-        assertEquals("duration", fieldDefList.get(4).getName());
-        assertEquals(UploadFieldType.STRING, fieldDefList.get(4).getType());
+        assertEquals("multi-value-single-choice-int", fieldDefList.get(4).getName());
+        assertEquals(UploadFieldType.INLINE_JSON_BLOB, fieldDefList.get(4).getType());
 
-        assertEquals("unbounded-string", fieldDefList.get(5).getName());
-        assertEquals(UploadFieldType.ATTACHMENT_BLOB, fieldDefList.get(5).getType());
+        assertEquals("duration", fieldDefList.get(5).getName());
+        assertEquals(UploadFieldType.STRING, fieldDefList.get(5).getType());
 
-        assertEquals("long-string", fieldDefList.get(6).getName());
+        assertEquals("unbounded-string", fieldDefList.get(6).getName());
         assertEquals(UploadFieldType.ATTACHMENT_BLOB, fieldDefList.get(6).getType());
 
-        assertEquals("short-string", fieldDefList.get(7).getName());
-        assertEquals(UploadFieldType.STRING, fieldDefList.get(7).getType());
+        assertEquals("long-string", fieldDefList.get(7).getName());
+        assertEquals(UploadFieldType.ATTACHMENT_BLOB, fieldDefList.get(7).getType());
 
-        assertEquals("int", fieldDefList.get(8).getName());
-        assertEquals(UploadFieldType.INT, fieldDefList.get(8).getType());
+        assertEquals("short-string", fieldDefList.get(8).getName());
+        assertEquals(UploadFieldType.STRING, fieldDefList.get(8).getType());
 
-        assertEquals("decimal", fieldDefList.get(9).getName());
-        assertEquals(UploadFieldType.FLOAT, fieldDefList.get(9).getType());
+        assertEquals("int", fieldDefList.get(9).getName());
+        assertEquals(UploadFieldType.INT, fieldDefList.get(9).getType());
 
-        assertEquals("boolean", fieldDefList.get(10).getName());
-        assertEquals(UploadFieldType.BOOLEAN, fieldDefList.get(10).getType());
+        assertEquals("decimal", fieldDefList.get(10).getName());
+        assertEquals(UploadFieldType.FLOAT, fieldDefList.get(10).getType());
 
-        assertEquals("calendar-date", fieldDefList.get(11).getName());
-        assertEquals(UploadFieldType.CALENDAR_DATE, fieldDefList.get(11).getType());
+        assertEquals("boolean", fieldDefList.get(11).getName());
+        assertEquals(UploadFieldType.BOOLEAN, fieldDefList.get(11).getType());
 
-        assertEquals("local-time", fieldDefList.get(12).getName());
-        assertEquals(UploadFieldType.STRING, fieldDefList.get(12).getType());
+        assertEquals("calendar-date", fieldDefList.get(12).getName());
+        assertEquals(UploadFieldType.CALENDAR_DATE, fieldDefList.get(12).getType());
 
-        assertEquals("timestamp", fieldDefList.get(13).getName());
-        assertEquals(UploadFieldType.TIMESTAMP, fieldDefList.get(13).getType());
+        assertEquals("local-time", fieldDefList.get(13).getName());
+        assertEquals(UploadFieldType.STRING, fieldDefList.get(13).getType());
+
+        assertEquals("timestamp", fieldDefList.get(14).getName());
+        assertEquals(UploadFieldType.TIMESTAMP, fieldDefList.get(14).getType());
 
         // Validate call to DDB - make sure returned schema same as the one sent to DDB.
         ArgumentCaptor<DynamoUploadSchema> arg = ArgumentCaptor.forClass(DynamoUploadSchema.class);
@@ -321,8 +338,13 @@ public class DynamoUploadSchemaDaoTest {
         survey.setName("Test Survey (Updated)");
         survey.setElements(surveyElementList);
 
+        // old schema - has different questions
+        DynamoUploadSchema oldSchema = makeUploadSchema("survey-study", "test-survey", 2);
+        oldSchema.setFieldDefinitions(ImmutableList.of(new DynamoUploadFieldDefinition.Builder()
+                .withName("different-question").withType(UploadFieldType.STRING).build()));
+
         // Mock DDB mapper - This is only used for rev, so we don't need a fully fleshed out schema.
-        DynamoDBMapper mockMapper = setupMockMapperWithSchema(makeUploadSchema("survey-study", "test-survey", 2));
+        DynamoDBMapper mockMapper = setupMockMapperWithSchema(oldSchema);
 
         // set up test dao and execute
         DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
@@ -346,6 +368,51 @@ public class DynamoUploadSchemaDaoTest {
         ArgumentCaptor<DynamoUploadSchema> arg = ArgumentCaptor.forClass(DynamoUploadSchema.class);
         verify(mockMapper).save(arg.capture(), notNull(DynamoDBSaveExpression.class));
         assertSame(createdSchema, arg.getValue());
+    }
+
+    @Test
+    public void updateUploadSchemaFromSurveySameFields() {
+        // create survey questions - We already tested all the survey question types, so we don't need a big huge list.
+        SurveyQuestion q1 = new DynamoSurveyQuestion();
+        q1.setIdentifier("foo-question");
+        q1.setConstraints(new BooleanConstraints());
+
+        SurveyQuestion q2 = new DynamoSurveyQuestion();
+        q2.setIdentifier("bar-question");
+        q2.setConstraints(new IntegerConstraints());
+
+        List<SurveyElement> surveyElementList = ImmutableList.<SurveyElement>of(q1, q2);
+
+        // make survey
+        Survey survey = new DynamoSurvey();
+        survey.setIdentifier("same-survey");
+        survey.setName("Test Survey (Same Fields)");
+        survey.setElements(surveyElementList);
+
+        // old schema - has same questions, but in the opposite order. (This should still be treated as same schema
+        // fields.)
+        DynamoUploadSchema oldSchema = makeUploadSchema("survey-study", "same-survey", 4);
+        oldSchema.setName("Old Name");
+        oldSchema.setFieldDefinitions(ImmutableList.of(
+                new DynamoUploadFieldDefinition.Builder().withName("bar-question").withType(UploadFieldType.INT)
+                        .build(),
+                new DynamoUploadFieldDefinition.Builder().withName("foo-question").withType(UploadFieldType.BOOLEAN)
+                        .build()));
+
+        // Mock DDB mapper - This is only used for rev, so we don't need a fully fleshed out schema.
+        DynamoDBMapper mockMapper = setupMockMapperWithSchema(oldSchema);
+
+        // set up test dao and execute
+        DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
+        dao.setDdbMapper(mockMapper);
+        DynamoUploadSchema createdSchema = (DynamoUploadSchema) dao.createUploadSchemaFromSurvey(
+                new StudyIdentifierImpl("survey-study"), survey);
+
+        // validate schema - it should be the same as the old one
+        assertSame(oldSchema, createdSchema);
+
+        // Make sure we don't save anything to DDB.
+        verify(mockMapper, never()).save(any());
     }
 
     @Test

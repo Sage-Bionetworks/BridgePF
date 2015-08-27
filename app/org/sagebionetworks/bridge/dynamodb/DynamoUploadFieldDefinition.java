@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import javax.annotation.Nonnull;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Objects;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -15,7 +16,7 @@ import org.sagebionetworks.bridge.validators.Validate;
  * class exists to distinguish itself from potential other implementations.
  */
 @JsonDeserialize(builder = DynamoUploadFieldDefinition.Builder.class)
-public class DynamoUploadFieldDefinition implements UploadFieldDefinition {
+public final class DynamoUploadFieldDefinition implements UploadFieldDefinition {
     private final @Nonnull String name;
     private final boolean required;
     private final @Nonnull UploadFieldType type;
@@ -43,6 +44,27 @@ public class DynamoUploadFieldDefinition implements UploadFieldDefinition {
     @Override
     public @Nonnull UploadFieldType getType() {
         return type;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        DynamoUploadFieldDefinition that = (DynamoUploadFieldDefinition) o;
+        return Objects.equal(required, that.required) &&
+                Objects.equal(name, that.name) &&
+                Objects.equal(type, that.type);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(name, required, type);
     }
 
     /** Builder for DynamoUploadFieldDefinition */

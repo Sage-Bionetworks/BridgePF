@@ -18,7 +18,7 @@ public class DecryptHandlerTest {
         // to the service as expected.
 
         // inputs
-        DynamoStudy study = TestUtils.getValidStudy();
+        DynamoStudy study = TestUtils.getValidStudy(DecryptHandlerTest.class);
 
         UploadValidationContext ctx = new UploadValidationContext();
         ctx.setStudy(study);

@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_HOST_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_STUDY_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -25,8 +23,6 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import play.cache.Cache;
@@ -41,8 +37,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 
 public abstract class BaseController extends Controller {
-
-    private static Logger logger = LoggerFactory.getLogger(BaseController.class);
 
     private static ObjectMapper mapper = BridgeObjectMapper.get();
 
@@ -150,54 +144,6 @@ public abstract class BaseController extends Controller {
         cacheProvider.setUserSession(session);
     }
 
-    /**
-     * Retrieving the study (domain) from a header or the server host name has been deprecated in favor 
-     * of including it directly in the JSON for calls where declaring the study is required. We continue 
-     * to support the retrieval of the study from the header, host name, or other locations for backwards 
-     * compatibility.
-     */
-    @Deprecated
-    String getStudyIdentifier() {
-        // Bridge-Study header: api
-        String value = request().getHeader(BRIDGE_STUDY_HEADER);
-        if (value != null) {
-            logger.debug("Study identifier retrieved from Bridge-Study header ("+value+")");
-            return value;
-        }
-        // @Deprecated Bridge-Host header: api-develop.sagebridge.org 
-        value = request().getHeader(BRIDGE_HOST_HEADER);
-        if (value != null) {
-            logger.debug("Study identifier parsed from Bridge-Host header ("+value+")");
-            return getIdentifierFromHostname(value);
-        }
-        // Query string: ?study=api
-        String[] params = request().queryString().get("study");
-        if (params != null && params.length > 0) {
-            value = params[0];
-            logger.debug("Study identifier parsed from query string ("+value+")");
-            return value;
-        }
-        // bridge.conf:
-        // host = api-local.sagebridge.org
-        value = bridgeConfig.getHost();
-        if (bridgeConfig.isLocal() && value != null) {
-            logger.debug("Study identifier parsed from host property in config file ("+value+")");
-            return getIdentifierFromHostname(value);
-        }
-        // Host: api-develop.sagebridge.org
-        value = request().host();
-        logger.warn("Study identifier retrieved from Host header ("+value+")");
-        return getIdentifierFromHostname(value);
-    }
-
-    private String getIdentifierFromHostname(String hostname) {
-        if (hostname.indexOf(":") > -1) {
-            hostname = hostname.split(":")[0];
-        }
-        String postfix = bridgeConfig.getStudyHostnamePostfix();
-        return (postfix == null) ? "api" : hostname.split(postfix)[0];
-    }
-
     private String getSessionToken() {
         String[] session = request().headers().get(SESSION_TOKEN_HEADER);
         if (session == null || session.length == 0 || session[0].isEmpty()) {
@@ -222,6 +168,10 @@ public abstract class BaseController extends Controller {
         return ok((JsonNode)mapper.valueToTree(new ResourceList<T>(list)));
     }
 
+    Result createdResult(String message) throws Exception {
+        return created(Json.toJson(new StatusMessage(message)));
+    }
+    
     Result createdResult(Object obj) throws Exception {
         return created((JsonNode)mapper.valueToTree(obj));
     }

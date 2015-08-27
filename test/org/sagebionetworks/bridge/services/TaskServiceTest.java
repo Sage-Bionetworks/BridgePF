@@ -98,7 +98,7 @@ public class TaskServiceTest {
         SurveyResponseView surveyResponse = new SurveyResponseView(response, survey);
         SurveyResponseService surveyResponseService = mock(SurveyResponseService.class);
         when(surveyResponseService.createSurveyResponse(
-            any(GuidCreatedOnVersionHolder.class), anyString(), any(List.class))).thenReturn(surveyResponse);
+            any(GuidCreatedOnVersionHolder.class), anyString(), any(List.class), anyString())).thenReturn(surveyResponse);
         
         service.setSchedulePlanService(schedulePlanService);
         service.setUserConsentDao(userConsentDao);
@@ -151,7 +151,7 @@ public class TaskServiceTest {
         verifyNoMoreInteractions(taskDao);
     }
 
-    @SuppressWarnings({"unchecked","rawtypes"})
+    @SuppressWarnings({"unchecked","rawtypes","deprecation"})
     @Test
     public void changePublishedAndAbsoluteSurveyActivity() {
         service.getTasks(user, endsOn.plusDays(2));

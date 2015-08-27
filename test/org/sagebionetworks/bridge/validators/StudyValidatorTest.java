@@ -6,7 +6,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate.MimeType;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 
 public class StudyValidatorTest {
@@ -15,7 +15,7 @@ public class StudyValidatorTest {
     
     @Before
     public void createValidStudy() {
-        study = TestUtils.getValidStudy();
+        study = TestUtils.getValidStudy(StudyValidatorTest.class);
     }
     
     @Test
