@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.models.upload;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 /**
  * Represents field types in upload data. This is used for parsing the data from the upload buckets and to write the
  * data to the export data.
@@ -54,5 +57,10 @@ public enum UploadFieldType {
     STRING,
 
     /** A timestamp in ISO 8601 format (YYYY-MM-DDThhhh:mm:ss+/-zz:zz) */
-    TIMESTAMP,
+    TIMESTAMP;
+
+    /** A set of upload field types that are considered attachment types. */
+    public static final Set<UploadFieldType> ATTACHMENT_TYPE_SET = EnumSet.of(UploadFieldType.ATTACHMENT_BLOB,
+            UploadFieldType.ATTACHMENT_CSV, UploadFieldType.ATTACHMENT_JSON_BLOB,
+            UploadFieldType.ATTACHMENT_JSON_TABLE);
 }

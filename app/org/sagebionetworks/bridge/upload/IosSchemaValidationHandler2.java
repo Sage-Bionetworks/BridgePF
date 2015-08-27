@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.upload;
 
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -62,10 +61,6 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 @Component
 public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     private static final Logger logger = LoggerFactory.getLogger(IosSchemaValidationHandler2.class);
-
-    private static final Set<UploadFieldType> ATTACHMENT_TYPE_SET = EnumSet.of(UploadFieldType.ATTACHMENT_BLOB,
-            UploadFieldType.ATTACHMENT_CSV, UploadFieldType.ATTACHMENT_JSON_BLOB,
-            UploadFieldType.ATTACHMENT_JSON_TABLE);
 
     private static final String FILENAME_INFO_JSON = "info.json";
     private static final Pattern FILENAME_TIMESTAMP_PATTERN = Pattern.compile("-\\d{8,}");
@@ -317,7 +312,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
                 context.addMessage(String.format("upload ID %s filename %s has no timestamp", uploadId,
                         filename));
             } else {
-                DateTime timestamp = parseTimestampHelper(context, uploadId, filename, timestampNode.textValue());
+                DateTime timestamp = UploadUtil.parseIosTimestamp(timestampNode.textValue());
                 if (createdOn == null || timestamp.isAfter(createdOn)) {
                     createdOn = timestamp;
                 }
@@ -458,9 +453,6 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             } else if (jsonFieldnameSet.contains(fieldName)) {
                 copyJsonField(context, uploadId, flattenedJsonDataMap.get(fieldName), oneFieldDef, dataMap,
                         attachmentMap);
-            } else if (oneFieldDef.isRequired()) {
-                // log a message only if the field is required (but missing)
-                context.addMessage(String.format("Upload ID %s is missing required field %s", uploadId, fieldName));
             }
         }
     }
@@ -494,7 +486,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             return;
         }
 
-        if (ATTACHMENT_TYPE_SET.contains(fieldDef.getType())) {
+        if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(fieldDef.getType())) {
             try {
                 attachmentMap.put(fieldName, BridgeObjectMapper.get().writeValueAsBytes(fieldValue));
             } catch (JsonProcessingException ex) {
@@ -504,37 +496,6 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             }
         } else {
             dataMap.set(fieldName, fieldValue);
-        }
-    }
-
-    // For some reason, the iOS apps are sending timestamps in form "YYYY-MM-DD hh:mm:ss +ZZZZ", which is
-    // non-ISO-compliant and can't be parsed by JodaTime. We'll need to convert these to ISO format, generally
-    // "YYYY-MM-DDThh:mm:ss+ZZZZ".
-    // TODO: Remove this hack when it's no longer needed.
-    private static DateTime parseTimestampHelper(UploadValidationContext context, String uploadId, String filename,
-            String timestampStr) {
-        if (StringUtils.isBlank(timestampStr)) {
-            context.addMessage(String.format("upload ID %s filename %s has blank time stamp", uploadId,
-                    filename));
-            return null;
-        }
-
-        // Detect if this is iOS non-standard format by checking to see if the 10th char is a space.
-        if (timestampStr.charAt(10) == ' ') {
-            context.addMessage(String.format("upload ID %s filename %s has non-standard timestamp format %s",
-                    uploadId, filename, timestampStr));
-
-            // Attempt to convert this by replacing the 10th char with a T and then stripping out all spaces.
-            timestampStr = timestampStr.substring(0, 10) + 'T' + timestampStr.substring(11);
-            timestampStr = timestampStr.replaceAll("\\s+", "");
-        }
-
-        try {
-            return DateUtils.parseISODateTime(timestampStr);
-        } catch (RuntimeException ex) {
-            context.addMessage(String.format("upload ID %s filename %s has invalid timestamp %s", uploadId,
-                    filename, timestampStr));
-            return null;
         }
     }
 }
