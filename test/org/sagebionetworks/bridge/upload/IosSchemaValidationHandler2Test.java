@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.upload;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -19,16 +20,19 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
+import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 public class IosSchemaValidationHandler2Test {
@@ -250,6 +254,104 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(2, blobNode.size());
         assertEquals("survey", blobNode.get(0).textValue());
         assertEquals("blob", blobNode.get(1).textValue());
+
+        // We should have no messages.
+        assertTrue(context.getMessageList().isEmpty());
+    }
+
+    @Test
+    public void surveyGuidAndCreatedOn() throws Exception {
+        // mock survey service
+        long expectedCreatedOn = DateTime.parse("2015-08-27T13:38:55-07:00").getMillis();
+
+        DynamoSurvey survey = new DynamoSurvey();
+        survey.setIdentifier("test-survey");
+        survey.setSchemaRevision(1);
+
+        SurveyService mockSurveyService = mock(SurveyService.class);
+        when(mockSurveyService.getSurvey(eq(new GuidCreatedOnVersionHolderImpl("test-guid", expectedCreatedOn))))
+                .thenReturn(survey);
+        handler.setSurveyService(mockSurveyService);
+
+        // fill in context with survey data
+        String infoJsonText = "{\n" +
+                "   \"files\":[{\n" +
+                "       \"filename\":\"foo.json\",\n" +
+                "       \"timestamp\":\"2015-08-22T03:26:59-07:00\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"bar.json\",\n" +
+                "       \"timestamp\":\"2015-08-22T03:27:09-07:00\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"baz.json\",\n" +
+                "       \"timestamp\":\"2015-08-22T03:24:01-07:00\"\n" +
+                "   }],\n" +
+                "   \"surveyGuid\":\"test-guid\",\n" +
+                "   \"surveyCreatedOn\":\"2015-08-27T13:38:55-07:00\"\n" +
+                "}";
+        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+
+        String fooAnswerJsonText = "{\n" +
+                "   \"questionType\":0,\n" +
+                "   \"textAnswer\":\"foo answer from guid\",\n" +
+                "   \"startDate\":\"2015-08-22T03:26:57-07:00\",\n" +
+                "   \"questionTypeName\":\"Text\",\n" +
+                "   \"item\":\"foo\",\n" +
+                "   \"endDate\":\"2015-04-02T03:26:59-07:00\"\n" +
+                "}";
+        JsonNode fooAnswerJsonNode = BridgeObjectMapper.get().readTree(fooAnswerJsonText);
+
+        String barAnswerJsonText = "{\n" +
+                "   \"questionType\":0,\n" +
+                "   \"numericAnswer\":47,\n" +
+                "   \"unit\":\"lb\",\n" +
+                "   \"startDate\":\"2015-08-22T03:27:05-07:00\",\n" +
+                "   \"questionTypeName\":\"Integer\",\n" +
+                "   \"item\":\"bar\",\n" +
+                "   \"endDate\":\"2015-04-02T03:27:09-07:00\"\n" +
+                "}";
+        JsonNode barAnswerJsonNode = BridgeObjectMapper.get().readTree(barAnswerJsonText);
+
+        String bazAnswerJsonText = "{\n" +
+                "   \"questionType\":0,\n" +
+                "   \"choiceAnswers\":[\"survey\", \"guid\", \"createdOn\"],\n" +
+                "   \"startDate\":\"2015-08-22T03:23:59-07:00\",\n" +
+                "   \"questionTypeName\":\"MultipleChoice\",\n" +
+                "   \"item\":\"baz\",\n" +
+                "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "}";
+        JsonNode bazAnswerJsonNode = BridgeObjectMapper.get().readTree(bazAnswerJsonText);
+
+        context.setJsonDataMap(ImmutableMap.of(
+                "info.json", infoJsonNode,
+                "foo.json", fooAnswerJsonNode,
+                "bar.json", barAnswerJsonNode,
+                "baz.json", bazAnswerJsonNode));
+        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
+
+        // execute
+        handler.handle(context);
+
+        // validate
+        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
+        validateCommonRecordProps(recordBuilder);
+        assertEquals(DateTime.parse("2015-08-22T03:27:09-07:00").getMillis(),
+                recordBuilder.getCreatedOn().longValue());
+        assertEquals("test-survey", recordBuilder.getSchemaId());
+        assertEquals(1, recordBuilder.getSchemaRevision());
+
+        JsonNode dataNode = recordBuilder.getData();
+        assertEquals(3, dataNode.size());
+        assertEquals("foo answer from guid", dataNode.get("foo").textValue());
+        assertEquals(47, dataNode.get("bar").intValue());
+        assertEquals("lb", dataNode.get("bar_unit").textValue());
+
+        Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
+        assertEquals(1, attachmentMap.size());
+        JsonNode blobNode = BridgeObjectMapper.get().readTree(attachmentMap.get("baz"));
+        assertEquals(3, blobNode.size());
+        assertEquals("survey", blobNode.get(0).textValue());
+        assertEquals("guid", blobNode.get(1).textValue());
+        assertEquals("createdOn", blobNode.get(2).textValue());
 
         // We should have no messages.
         assertTrue(context.getMessageList().isEmpty());

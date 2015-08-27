@@ -19,22 +19,26 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
+import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 /**
@@ -57,6 +61,8 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
  */
 @Component
 public class IosSchemaValidationHandler2 implements UploadValidationHandler {
+    private static final Logger logger = LoggerFactory.getLogger(IosSchemaValidationHandler2.class);
+
     private static final Set<UploadFieldType> ATTACHMENT_TYPE_SET = EnumSet.of(UploadFieldType.ATTACHMENT_BLOB,
             UploadFieldType.ATTACHMENT_CSV, UploadFieldType.ATTACHMENT_JSON_BLOB,
             UploadFieldType.ATTACHMENT_JSON_TABLE);
@@ -68,6 +74,8 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     private static final String KEY_IDENTIFIER = "identifier";
     private static final String KEY_ITEM = "item";
     private static final String KEY_SCHEMA_REV = "schemaRevision";
+    private static final String KEY_SURVEY_GUID = "surveyGuid";
+    private static final String KEY_SURVEY_CREATED_ON = "surveyCreatedOn";
     private static final String KEY_TIMESTAMP = "timestamp";
 
     private static final Map<String, String> SURVEY_TYPE_TO_ANSWER_KEY_MAP = ImmutableMap.<String, String>builder()
@@ -87,22 +95,29 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
 
     private Map<String, Map<String, Integer>> defaultSchemaRevisionMap;
     private HealthDataDao healthDataDao;
+    private SurveyService surveyService;
     private UploadSchemaService uploadSchemaService;
 
     @Resource(name = "defaultSchemaRevisionMap")
-    public void setDefaultSchemaRevisionMap(Map<String, Map<String, Integer>> defaultSchemaRevisionMap) {
+    public final void setDefaultSchemaRevisionMap(Map<String, Map<String, Integer>> defaultSchemaRevisionMap) {
         this.defaultSchemaRevisionMap = defaultSchemaRevisionMap;
     }
 
     /** Health Data DAO, used solely to get the record builder. This is configured by Spring. */
     @Autowired
-    public void setHealthDataDao(HealthDataDao healthDataDao) {
+    public final void setHealthDataDao(HealthDataDao healthDataDao) {
         this.healthDataDao = healthDataDao;
+    }
+
+    /** Survey service, to get the survey if this upload is a survey. Configured by Spring. */
+    @Autowired
+    public final void setSurveyService(SurveyService surveyService) {
+        this.surveyService = surveyService;
     }
 
     /** Upload Schema Service, used to get the schema corresponding to the upload. This is configured by Spring. */
     @Autowired
-    public void setUploadSchemaService(UploadSchemaService uploadSchemaService) {
+    public final void setUploadSchemaService(UploadSchemaService uploadSchemaService) {
         this.uploadSchemaService = uploadSchemaService;
     }
 
@@ -170,41 +185,56 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
 
     // Determines the UploadSchema from the info.json. The schema ID is the "item" field and must be specified. The
     // schema revision is the "schemaRevision" field, which defaults to 1 if not specified.
+    // Alternatively, surveyGuid and surveyCreatedOn are used to map the upload to a survey.
     //
     // This is package-scoped to facilitate unit tests.
     UploadSchema getUploadSchema(StudyIdentifier study, JsonNode infoJson) throws UploadValidationException {
-        // extract item (schema ID) from info.json
-        JsonNode itemNode = infoJson.get(KEY_ITEM);
-        if (itemNode == null) {
-            // Old versions of YML apps sometimes send "identifier" instead of "item". This isn't officially supported,
-            // but we have to do it anyway for backwards compatibility.
-            itemNode = infoJson.get(KEY_IDENTIFIER);
+        // get relevant params from info.json
+        String item = JsonUtils.asText(infoJson, KEY_ITEM);
+        Integer schemaRev = JsonUtils.asInt(infoJson, KEY_SCHEMA_REV);
+        String surveyGuid = JsonUtils.asText(infoJson, KEY_SURVEY_GUID);
+        String surveyCreatedOn = JsonUtils.asText(infoJson, KEY_SURVEY_CREATED_ON);
+
+        // Old versions of YML apps sometimes send "identifier" instead of "item". This isn't officially supported,
+        // but we have to do it anyway for backwards compatibility.
+        String identifier = JsonUtils.asText(infoJson, KEY_IDENTIFIER);
+
+        if (StringUtils.isNotBlank(surveyGuid) && StringUtils.isNotBlank(surveyCreatedOn)) {
+            // First try getting the schema by survey.
+            return getUploadSchemaBySurvey(study, surveyGuid, surveyCreatedOn);
+        } else if (StringUtils.isNotBlank(item)) {
+            // Fall back to item field.
+            return getUploadSchemaByItemAndRev(study, item, schemaRev);
+        } else if (StringUtils.isNotBlank(identifier)) {
+            // Fall back to identifier field. Log a warning that we're using this non-standard field.
+            logger.warn("info.json missing item field, falling back to identifier field, identifier=" + identifier);
+            return getUploadSchemaByItemAndRev(study, identifier, schemaRev);
+        } else {
+            throw new UploadValidationException(
+                    "info.json must contain either item or surveyGuid and surveyCreatedOn");
         }
-        if (itemNode == null || itemNode.isNull()) {
-            throw new UploadValidationException("info.json is missing \"item\" field");
-        }
-        if (!itemNode.isTextual()) {
-            throw new UploadValidationException("info.json \"item\" field is not a string");
-        }
-        String item = itemNode.textValue();
-        if (StringUtils.isBlank(item)) {
-            throw new UploadValidationException("info.json \"item\" field is blank");
+    }
+
+    private UploadSchema getUploadSchemaBySurvey(StudyIdentifier study, String surveyGuid, String surveyCreatedOn)
+            throws UploadValidationException {
+        // surveyCreatedOn is a timestamp. SurveyService takes long epoch millis. Convert.
+        long surveyCreatedOnMillis= DateUtils.convertToMillisFromEpoch(surveyCreatedOn);
+
+        // Get survey. We use the survey identifier as the schema ID and the schema revision. Both of these must be
+        // specified.
+        Survey survey = surveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(surveyGuid, surveyCreatedOnMillis));
+        String schemaId = survey.getIdentifier();
+        Integer schemaRev = survey.getSchemaRevision();
+        if (StringUtils.isBlank(schemaId) || schemaRev == null) {
+            throw new UploadValidationException("Schema not found for survey " + surveyGuid + ":" +
+                    surveyCreatedOnMillis);
         }
 
-        // extract schema rev
-        Integer schemaRev = null;
-        JsonNode schemaRevNode = infoJson.get(KEY_SCHEMA_REV);
-        if (schemaRevNode != null) {
-            if (schemaRevNode.isNull()) {
-                throw new UploadValidationException("info.json has null \"schemaRevision\" field");
-            }
-            if (!schemaRevNode.isIntegralNumber()) {
-                throw new UploadValidationException("info.json \"schemaRevision\" is not an integer: "
-                        + schemaRevNode.toString());
-            }
-            schemaRev = schemaRevNode.intValue();
-        }
+        // Get the schema with the schema ID and rev.
+        return uploadSchemaService.getUploadSchemaByIdAndRev(study, schemaId, schemaRev);
+    }
 
+    private UploadSchema getUploadSchemaByItemAndRev(StudyIdentifier study, String item, Integer schemaRev) {
         if (schemaRev == null && defaultSchemaRevisionMap != null) {
             // Fall back to the legacy default schema rev map. This map exists because some schemas had their versions
             // bumped before the apps started sending schemaRevision.
@@ -220,11 +250,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         }
 
         // get schema
-        try {
-            return uploadSchemaService.getUploadSchemaByIdAndRev(study, item, schemaRev);
-        } catch (BadRequestException | EntityNotFoundException ex) {
-            throw new UploadValidationException(String.format("Schema %s rev %d not found", item, schemaRev), ex);
-        }
+        return uploadSchemaService.getUploadSchemaByIdAndRev(study, item, schemaRev);
     }
 
     private static JsonNode getInfoJsonFile(UploadValidationContext context, String uploadId,
