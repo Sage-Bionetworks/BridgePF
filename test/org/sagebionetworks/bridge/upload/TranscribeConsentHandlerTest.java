@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.upload;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -19,7 +20,7 @@ public class TranscribeConsentHandlerTest {
     private static final String TEST_EXTERNAL_ID = "test-external-id";
 
     @Test
-    public void test() throws Exception {
+    public void test() {
         // mock options service
         ParticipantOptionsService mockOptionsService = mock(ParticipantOptionsService.class);
         when(mockOptionsService.getAllParticipantOptions(TEST_HEALTHCODE)).thenReturn(ImmutableMap.of(
@@ -47,5 +48,34 @@ public class TranscribeConsentHandlerTest {
         assertSame(recordBuilder, outputRecordBuilder);
         assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, outputRecordBuilder.getUserSharingScope());
         assertEquals(TEST_EXTERNAL_ID, outputRecordBuilder.getUserExternalId());
+    }
+
+    @Test
+    public void testNoParticipantOptions() {
+        // mock options service
+        ParticipantOptionsService mockOptionsService = mock(ParticipantOptionsService.class);
+        when(mockOptionsService.getAllParticipantOptions(TEST_HEALTHCODE)).thenReturn(ImmutableMap.of());
+
+        TranscribeConsentHandler handler = new TranscribeConsentHandler();
+        handler.setOptionsService(mockOptionsService);
+
+        // set up context - handler expects Upload and RecordBuilder
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setHealthCode(TEST_HEALTHCODE);
+
+        HealthDataRecordBuilder recordBuilder = new DynamoHealthDataRecord.Builder();
+
+        UploadValidationContext context = new UploadValidationContext();
+        context.setUpload(upload);
+        context.setHealthDataRecordBuilder(recordBuilder);
+
+        // execute
+        handler.handle(context);
+
+        // validate
+        HealthDataRecordBuilder outputRecordBuilder = context.getHealthDataRecordBuilder();
+        assertSame(recordBuilder, outputRecordBuilder);
+        assertEquals(ParticipantOption.SharingScope.NO_SHARING, outputRecordBuilder.getUserSharingScope());
+        assertNull(outputRecordBuilder.getUserExternalId());
     }
 }
