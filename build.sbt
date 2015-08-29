@@ -4,15 +4,16 @@ version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.11.6"
 
-// The Typesafe repository
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-// Make sure the Heroku repository is at the very beginning
 resolvers += "Heroku Maven repository" at "http://s3pository.heroku.com/maven-central/"
+
+resolvers += "Bridge Maven repository" at "https://repo-maven.sagebridge.org/"
 
 libraryDependencies ++= Seq(
   cache,
   filters,
+  "org.sagebionetworks" % "bridge-base" % "0.1.201508282331",
   "org.jsoup" % "jsoup" % "1.8.2",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.10.10",

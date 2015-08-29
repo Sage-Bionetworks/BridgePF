@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.BcCertificateFactory;
 import org.sagebionetworks.bridge.crypto.CertificateFactory;
+import org.sagebionetworks.bridge.crypto.CertificateInfo;
 import org.sagebionetworks.bridge.crypto.KeyPairFactory;
 import org.sagebionetworks.bridge.crypto.PemUtils;
 import org.springframework.stereotype.Component;
@@ -42,11 +43,19 @@ public class UploadCertificateServiceImpl implements UploadCertificateService {
     }
 
     @Override
-    public void createCmsKeyPair(String studyIdentifier) {
+    public void createCmsKeyPair(final String studyIdentifier) {
         checkNotNull(studyIdentifier);
         final KeyPair keyPair = KeyPairFactory.newRsa2048();
-        final String studyFqdn = CONFIG.getWebservicesURL();
-        final X509Certificate cert = certificateFactory.newCertificate(keyPair, studyFqdn);
+        final CertificateInfo certInfo = new CertificateInfo.Builder()
+                .country(CONFIG.getProperty("upload.cms.certificate.country"))
+                .state(CONFIG.getProperty("upload.cms.certificate.state"))
+                .city(CONFIG.getProperty("upload.cms.certificate.city"))
+                .organization(CONFIG.getProperty("upload.cms.certificate.organization"))
+                .team(CONFIG.getProperty("upload.cms.certificate.team"))
+                .email(CONFIG.getProperty("upload.cms.certificate.email"))
+                .fqdn(CONFIG.getWebservicesURL())
+                .build();
+        final X509Certificate cert = certificateFactory.newCertificate(keyPair, certInfo);
         final String name = studyIdentifier + ".pem";
         try {
             s3Put(PRIVATE_KEY_BUCKET, name,  PemUtils.toPem(keyPair.getPrivate()));

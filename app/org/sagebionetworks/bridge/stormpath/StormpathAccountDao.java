@@ -12,7 +12,7 @@ import java.util.SortedMap;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.crypto.Encryptor;
+import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -60,7 +60,7 @@ public class StormpathAccountDao implements AccountDao {
     private Application application;
     private Client client;
     private StudyService studyService;
-    private SortedMap<Integer,Encryptor> encryptors = Maps.newTreeMap();
+    private SortedMap<Integer, BridgeEncryptor> encryptors = Maps.newTreeMap();
 
     @Resource(name = "stormpathApplication")
     public void setStormpathApplication(Application application) {
@@ -75,8 +75,8 @@ public class StormpathAccountDao implements AccountDao {
         this.studyService = studyService;
     }
     @Resource(name="encryptorList")
-    public void setEncryptors(List<Encryptor> list) {
-        for (Encryptor encryptor : list) {
+    public void setEncryptors(List<BridgeEncryptor> list) {
+        for (BridgeEncryptor encryptor : list) {
             encryptors.put(encryptor.getVersion(), encryptor);
         }
     }

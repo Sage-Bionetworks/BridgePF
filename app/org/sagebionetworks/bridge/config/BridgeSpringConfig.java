@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.MissingResourceException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 import javax.annotation.Resource;
 
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -24,15 +25,18 @@ import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
 import com.stormpath.sdk.impl.client.DefaultClientBuilder;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
+import org.sagebionetworks.bridge.crypto.BridgeAesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
@@ -113,8 +117,8 @@ public class BridgeSpringConfig {
 
     @Bean(name = "healthCodeEncryptor")
     @Resource(name = "bridgeConfig")
-    public AesGcmEncryptor healthCodeEncryptor(BridgeConfig bridgeConfig) {
-        return new AesGcmEncryptor(bridgeConfig.getHealthCodeKey());
+    public BridgeAesGcmEncryptor healthCodeEncryptor(BridgeConfig bridgeConfig) {
+        return new BridgeAesGcmEncryptor(new AesGcmEncryptor(bridgeConfig.getHealthCodeKey()));
     }
 
     @Bean(name = "awsCredentials")
