@@ -13,8 +13,8 @@ resolvers += "Bridge Maven repository" at "https://repo-maven.sagebridge.org/"
 libraryDependencies ++= Seq(
   cache,
   filters,
+  // Sage packages
   "org.sagebionetworks" % "bridge-base" % "0.1.201508282331",
-  "org.jsoup" % "jsoup" % "1.8.2",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.10.10",
   "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.10",
@@ -54,8 +54,9 @@ libraryDependencies ++= Seq(
   "org.apache.httpcomponents" % "httpclient" % "4.5",
   // Redis
   "redis.clients" % "jedis" % "2.7.2",
-  // PDF
+  // PDF, HTML
   "org.xhtmlrenderer" % "flying-saucer-pdf" % "9.0.7",
+  "org.jsoup" % "jsoup" % "1.8.2",
   // Test
   javaWs % Test,
   "junit" % "junit" % "4.12" % Test,
