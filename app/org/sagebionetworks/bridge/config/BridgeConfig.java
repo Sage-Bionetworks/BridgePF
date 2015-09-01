@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.config;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -13,11 +14,11 @@ public class BridgeConfig {
     private static final String TEMPLATE_CONFIG = CONFIG_FILE;
     private static final String LOCAL_CONFIG = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
 
-    private static final String ENTERPRISE_STORMPATH_ID =  "enterprise.stormpath.id";
-    private static final String ENTERPRISE_STORMPATH_SECRET =  "enterprise.stormpath.secret";
-    private static final String ENTERPRISE_STORMPATH_APPLICATION_HREF =  "enterprise.stormpath.application.href";
+    private static final String ENTERPRISE_STORMPATH_ID = "enterprise.stormpath.id";
+    private static final String ENTERPRISE_STORMPATH_SECRET = "enterprise.stormpath.secret";
+    private static final String ENTERPRISE_STORMPATH_APPLICATION_HREF = "enterprise.stormpath.application.href";
 
-    private static final String CONSENTS_BUCKET =  "consents.bucket";
+    private static final String CONSENTS_BUCKET = "consents.bucket";
 
     // Property for a token that is checked before user is unsubscribed from further emails
     private static final String EMAIL_UNSUBSCRIBE_TOKEN = "email.unsubscribe.token";
@@ -35,7 +36,8 @@ public class BridgeConfig {
         final Path templateConfig = Paths.get(classLoader.getResource(TEMPLATE_CONFIG).getPath());
         final Path localConfig = Paths.get(LOCAL_CONFIG);
         try {
-            config = new PropertiesConfig(templateConfig, localConfig);
+            config = Files.exists(localConfig) ? new PropertiesConfig(templateConfig, localConfig)
+                    : new PropertiesConfig(templateConfig);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
