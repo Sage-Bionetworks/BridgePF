@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -60,7 +59,10 @@ public class DynamoTaskDaoMockTest {
         
         // This is the part that will need to be expanded per test.
         mapper = mock(DynamoDBMapper.class);
-        when(mapper.query(eq(DynamoTask.class), any(DynamoDBQueryExpression.class))).thenReturn(null);
+        when(mapper.query(
+            (Class<DynamoTask>)any(Class.class), 
+            (DynamoDBQueryExpression<DynamoTask>)any(DynamoDBQueryExpression.class)
+        )).thenReturn(null);
         
         taskDao = new DynamoTaskDao();
         taskDao.setDdbMapper(mapper);
@@ -95,7 +97,10 @@ public class DynamoTaskDaoMockTest {
         final PaginatedQueryList<DynamoTask> queryResults = (PaginatedQueryList<DynamoTask>)mock(PaginatedQueryList.class);
         when(queryResults.iterator()).thenReturn(results.iterator());
         when(queryResults.toArray()).thenReturn(results.toArray());
-        when(mapper.query(any(Class.class), any(DynamoDBQueryExpression.class))).thenReturn(queryResults);
+        when(mapper.query(
+            (Class<DynamoTask>)any(Class.class), 
+            (DynamoDBQueryExpression<DynamoTask>)any(DynamoDBQueryExpression.class)
+        )).thenReturn(queryResults);
     }
     
     @SuppressWarnings("unchecked")
@@ -116,7 +121,10 @@ public class DynamoTaskDaoMockTest {
         assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(3));
         assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_1_REF, tasks2.get(4));
         
-        verify(mapper).query(any(Class.class), any(DynamoDBQueryExpression.class));
+        verify(mapper).query(
+            (Class<DynamoTask>)any(Class.class), 
+            (DynamoDBQueryExpression<DynamoTask>)any(DynamoDBQueryExpression.class)
+        );
         verifyNoMoreInteractions(mapper);
     }
     
@@ -140,7 +148,10 @@ public class DynamoTaskDaoMockTest {
         assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(6));
         assertTask("2015-04-16T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(7));
         
-        verify(mapper).query(any(Class.class), any(DynamoDBQueryExpression.class));
+        verify(mapper).query(
+            (Class<DynamoTask>)any(Class.class), 
+            (DynamoDBQueryExpression<DynamoTask>)any(DynamoDBQueryExpression.class)
+        );
         verifyNoMoreInteractions(mapper);
     }
     
@@ -168,7 +179,10 @@ public class DynamoTaskDaoMockTest {
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         taskDao.deleteTasks("AAA");
         
-        verify(mapper).query(any(Class.class), any(DynamoDBQueryExpression.class));
+        verify(mapper).query(
+            (Class<DynamoTask>)any(Class.class), 
+            (DynamoDBQueryExpression<DynamoTask>)any(DynamoDBQueryExpression.class)
+        );
         verify(mapper).batchDelete(argument.capture());
         verifyNoMoreInteractions(mapper);
         

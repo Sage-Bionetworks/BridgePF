@@ -664,8 +664,10 @@ public class DynamoUploadSchemaDaoTest {
 
         // mock DDB mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
-        when(mockMapper.query(eq(DynamoUploadSchema.class), notNull(DynamoDBQueryExpression.class))).thenReturn(
-                mockGetResult);
+        when(mockMapper.query(
+            (Class<DynamoUploadSchema>)eq(DynamoUploadSchema.class), 
+            (DynamoDBQueryExpression<DynamoUploadSchema>)notNull(DynamoDBQueryExpression.class)
+        )).thenReturn(mockGetResult);
         return mockMapper;
     }
 
