@@ -28,7 +28,7 @@ public class TaskEventService {
         this.taskEventDao = taskEventDao;
     }
     
-    public void publishEvent(String healthCode, UserConsent consent) {
+    public void publishEnrollmentEvent(String healthCode, UserConsent consent) {
         checkNotNull(consent);
         
         TaskEvent event = new DynamoTaskEvent.Builder()
@@ -38,7 +38,7 @@ public class TaskEventService {
         taskEventDao.publishEvent(event);    
     }
     
-    public void publishEvent(String healthCode, SurveyAnswer answer) {
+    public void publishQuestionAnsweredEvent(String healthCode, SurveyAnswer answer) {
         checkNotNull(healthCode);
         checkNotNull(answer);
         
@@ -52,7 +52,7 @@ public class TaskEventService {
         taskEventDao.publishEvent(event);
     }
     
-    public void publishEvent(SurveyResponse response) {
+    public void publishSurveyFinishedEvent(SurveyResponse response) {
         checkNotNull(response);
         
         TaskEvent event = new DynamoTaskEvent.Builder()
@@ -65,11 +65,24 @@ public class TaskEventService {
         taskEventDao.publishEvent(event);
     }
     
-    public void publishEvent(TaskEvent event) {
+    /**
+     * TaskEvents can be published directly, although all supported events have a more 
+     * specific service method that should be preferred. This method can be used for 
+     * edge cases (like answering a question or finishing a survey through the bulk import 
+     * system, which does not generate SurveyResponse objects).
+     * 
+     * @param event
+     */
+    public void publishTaskEvent(TaskEvent event) {
         checkNotNull(event);
         taskEventDao.publishEvent(event);
     }
 
+    /**
+     * Gets the task events times for a specific user in order to schedule against them.
+     * @param healthCode
+     * @return
+     */
     public Map<String, DateTime> getTaskEventMap(String healthCode) {
         checkNotNull(healthCode);
         return taskEventDao.getTaskEventMap(healthCode);

@@ -123,11 +123,11 @@ public class SurveyResponseServiceImpl implements SurveyResponseService {
         for (SurveyAnswer answer : answers) {
             SurveyQuestion question = questions.get(answer.getQuestionGuid());
             if (question != null && question.getFireEvent()) {
-                taskEventService.publishEvent(response.getHealthCode(), answer);
+                taskEventService.publishQuestionAnsweredEvent(response.getHealthCode(), answer);
             }
         }
         if (response.getStatus() == SurveyResponse.Status.FINISHED) {
-            taskEventService.publishEvent(response);
+            taskEventService.publishSurveyFinishedEvent(response);
         }
     }
 

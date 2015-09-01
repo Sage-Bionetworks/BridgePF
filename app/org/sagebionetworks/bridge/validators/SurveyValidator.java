@@ -37,6 +37,9 @@ public class SurveyValidator implements Validator {
     @Override
     public void validate(Object object, Errors errors) {
         Survey survey = (Survey)object;
+        if (StringUtils.isBlank(survey.getName())) {
+            errors.reject("missing a name");
+        }
         if (StringUtils.isBlank(survey.getIdentifier())) {
             errors.reject("missing an identifier");
         }

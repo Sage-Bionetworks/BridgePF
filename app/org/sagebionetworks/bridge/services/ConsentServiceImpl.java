@@ -119,7 +119,7 @@ public class ConsentServiceImpl implements ConsentService {
         try {
             UserConsent userConsent = userConsentDao.giveConsent(user.getHealthCode(), studyConsent.getStudyConsent());
             if (userConsent != null){
-                taskEventService.publishEvent(user.getHealthCode(), userConsent);
+                taskEventService.publishEnrollmentEvent(user.getHealthCode(), userConsent);
             }
         } catch (Throwable e) {
             decrementStudyEnrollment(study);
