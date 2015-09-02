@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.List;
 import java.util.Objects;
 
-import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -105,7 +105,7 @@ public class DynamoSurvey implements Survey {
     }
 
     @Override
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
     public void setCreatedOn(long createdOn) {
         this.createdOn = createdOn;
     }
@@ -129,7 +129,7 @@ public class DynamoSurvey implements Survey {
     }
 
     @Override
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
     public void setModifiedOn(long modifiedOn) {
         this.modifiedOn = modifiedOn;
     }

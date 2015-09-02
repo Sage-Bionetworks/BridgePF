@@ -49,6 +49,9 @@ public class SurveyValidator implements Validator {
         if (StringUtils.isBlank(survey.getGuid())) {
             errors.reject("missing a GUID");
         }
+        
+        // Validate that no identifier has been duplicated.
+        Set<String> foundIdentifiers = Sets.newHashSet();
         for (int i=0; i < survey.getElements().size(); i++) {
             SurveyElement element = survey.getElements().get(i);
             errors.pushNestedPath("element"+i);
@@ -57,8 +60,11 @@ public class SurveyValidator implements Validator {
             } else if (SURVEY_INFO_SCREEN_TYPE.equals(element.getType())) {
                 doValidateInfoScreen((SurveyInfoScreen)element, i, errors);
             }
+            if (foundIdentifiers.contains(element.getIdentifier())) {
+                errors.rejectValue("identifier", "exists in an earlier survey element");
+            }
+            foundIdentifiers.add(element.getIdentifier());
             errors.popNestedPath();
-            
         }
         // You can get all sorts of NPEs if survey is not valid and you look at the rules.
         // So don't.
@@ -150,7 +156,7 @@ public class SurveyValidator implements Validator {
             return; // will have been validated above, skip this
         }
         if (!con.getSupportedHints().contains(hint)) {
-            rejectField(errors, "dataType", "(%s) doesn't match the UI hint of '%s'", con.getDataType().name()
+            rejectField(errors, "dataType", "data type '%s' doesn't match the UI hint of '%s'", con.getDataType().name()
                     .toLowerCase(), hint.name().toLowerCase());
         } else if (con instanceof MultiValueConstraints) {
             // Multiple values have a few odd UI constraints

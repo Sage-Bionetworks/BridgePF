@@ -58,7 +58,9 @@ public class BridgeObjectMapper extends ObjectMapper {
     public BridgeObjectMapper() {
         super();
         this.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         this.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        
         // This suppresses a failure if a class is found with a "filter" filter declared on it,
         // when you are trying to serialize without the filter. It's a Jackson oddity they may fix.
         FilterProvider filter = new SimpleFilterProvider().setFailOnUnknownId(false);
