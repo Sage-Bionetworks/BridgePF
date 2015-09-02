@@ -36,7 +36,7 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
-import org.sagebionetworks.bridge.crypto.BridgeAesGcmEncryptor;
+import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
@@ -117,8 +117,8 @@ public class BridgeSpringConfig {
 
     @Bean(name = "healthCodeEncryptor")
     @Resource(name = "bridgeConfig")
-    public BridgeAesGcmEncryptor healthCodeEncryptor(BridgeConfig bridgeConfig) {
-        return new BridgeAesGcmEncryptor(new AesGcmEncryptor(bridgeConfig.getHealthCodeKey()));
+    public BridgeEncryptor healthCodeEncryptor(BridgeConfig bridgeConfig) {
+        return new BridgeEncryptor(new AesGcmEncryptor(bridgeConfig.getHealthCodeKey()));
     }
 
     @Bean(name = "awsCredentials")
