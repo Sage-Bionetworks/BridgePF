@@ -13,6 +13,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.network :forwarded_port, host: 9999, guest: 9999
   config.vm.network "private_network", ip: "192.168.55.123"
   config.vm.synced_folder "~/.sbt", "/home/vagrant/.sbt", nfs: true
+  config.vm.synced_folder "~/.bridge", "/home/vagrant/.bridge", nfs: true
 
   config.vm.provider "virtualbox" do |v|
     v.customize ["modifyvm", :id, "--cpus", 2]
