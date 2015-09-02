@@ -5,17 +5,17 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Iterator;
 import java.util.SortedMap;
 
-import org.sagebionetworks.bridge.crypto.Encryptor;
+import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 public final class StormpathAccountIterator implements Iterator<Account> {
 
     private final Study study;
-    private final SortedMap<Integer,Encryptor> encryptors;
+    private final SortedMap<Integer, BridgeEncryptor> encryptors;
     private final Iterator<com.stormpath.sdk.account.Account> iterator;
     
-    public StormpathAccountIterator(Study study, SortedMap<Integer,Encryptor> encryptors, Iterator<com.stormpath.sdk.account.Account> iterator) {
+    public StormpathAccountIterator(Study study, SortedMap<Integer, BridgeEncryptor> encryptors, Iterator<com.stormpath.sdk.account.Account> iterator) {
         checkNotNull(study);
         checkNotNull(encryptors);
         checkNotNull(iterator);

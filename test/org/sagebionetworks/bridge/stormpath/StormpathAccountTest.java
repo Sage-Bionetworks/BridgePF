@@ -13,6 +13,7 @@ import java.util.TreeMap;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.studies.ConsentSignature;
@@ -52,13 +53,13 @@ public class StormpathAccountTest {
 
         String json = "{\"name\":\"Test\",\"birthdate\":\"1970-01-01\",\"imageData\":\"test\",\"imageMimeType\":\"image/png\"}";
 
-        Encryptor encryptor1 = mock(Encryptor.class);
+        BridgeEncryptor encryptor1 = mock(BridgeEncryptor.class);
         when(encryptor1.getVersion()).thenReturn(1);
         encryptDecryptValues(encryptor1, "111-222-3333", "111-222-3333-encryptor1encrypted");
         encryptDecryptValues(encryptor1, "aHealthId", "aHealthId-encryptor1encrypted");
         encryptDecryptValues(encryptor1, json, "json-encryptor1encrypted");
         
-        Encryptor encryptor2 = mock(Encryptor.class);
+        BridgeEncryptor encryptor2 = mock(BridgeEncryptor.class);
         when(encryptor2.getVersion()).thenReturn(2);
         encryptDecryptValues(encryptor2, "111-222-3333", "111-222-3333-encryptor2encrypted");
         encryptDecryptValues(encryptor2, json, "json-encryptor2encrypted");
@@ -72,7 +73,7 @@ public class StormpathAccountTest {
         legacySignature = new ObjectMapper().writeValueAsString(sig);
         encryptDecryptValues(encryptor2, legacySignature, legacySignature);
         
-        SortedMap<Integer,Encryptor> encryptors = new TreeMap<>();
+        SortedMap<Integer, BridgeEncryptor> encryptors = new TreeMap<>();
         encryptors.put(1, encryptor1);
         encryptors.put(2, encryptor2);
         
