@@ -38,10 +38,6 @@ libraryDependencies ++= Seq(
   "com.google.guava" % "guava" % "18.0",
   // Guice
   "com.google.inject" % "guice" % "4.0",
-  // Security
-  "org.apache.shiro" % "shiro-core" % "1.2.3",
-  "org.bouncycastle" % "bcprov-jdk15on" % "1.52",
-  "org.bouncycastle" % "bcpkix-jdk15on" % "1.52",
   // Quartz
   "org.quartz-scheduler" % "quartz" % "2.2.1",
   // Mail

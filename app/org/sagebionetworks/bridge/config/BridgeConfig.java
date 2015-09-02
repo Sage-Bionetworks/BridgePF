@@ -10,9 +10,9 @@ import java.util.List;
 
 public class BridgeConfig {
 
-    private static final String CONFIG_FILE = "bridge.conf";
+    private static final String CONFIG_FILE = "bridge-server.conf";
     private static final String TEMPLATE_CONFIG = CONFIG_FILE;
-    private static final String LOCAL_CONFIG = System.getProperty("user.home") + "/" + ".sbt" + "/" + CONFIG_FILE;
+    private static final String LOCAL_CONFIG = System.getProperty("user.home") + "/" + ".bridge" + "/" + CONFIG_FILE;
 
     private static final String ENTERPRISE_STORMPATH_ID = "enterprise.stormpath.id";
     private static final String ENTERPRISE_STORMPATH_SECRET = "enterprise.stormpath.secret";
