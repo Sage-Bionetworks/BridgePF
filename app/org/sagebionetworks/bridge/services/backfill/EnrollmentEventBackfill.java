@@ -6,7 +6,7 @@ import java.util.SortedMap;
 
 import javax.annotation.Resource;
 
-import org.sagebionetworks.bridge.crypto.Encryptor;
+import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -28,7 +28,7 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
     private TaskEventService taskEventService;
     private UserConsentDao userConsentDao;
     private HealthCodeService healthCodeService;
-    private SortedMap<Integer,Encryptor> encryptors = Maps.newTreeMap();
+    private SortedMap<Integer,BridgeEncryptor> encryptors = Maps.newTreeMap();
 
     @Autowired
     public void setAccountDao(AccountDao accountDao) {
@@ -47,8 +47,8 @@ public class EnrollmentEventBackfill extends AsyncBackfillTemplate {
         this.healthCodeService = healthCodeService;
     }
     @Resource(name="encryptorList")
-    public void setEncryptors(List<Encryptor> list) {
-        for (Encryptor encryptor : list) {
+    public void setEncryptors(List<BridgeEncryptor> list) {
+        for (BridgeEncryptor encryptor : list) {
             encryptors.put(encryptor.getVersion(), encryptor);
         }
     }

@@ -9,7 +9,7 @@ import java.util.SortedMap;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.crypto.Encryptor;
+import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -46,7 +46,7 @@ class StormpathAccount implements Account {
     
     private final com.stormpath.sdk.account.Account acct;
     private final StudyIdentifier studyIdentifier;
-    private final SortedMap<Integer,Encryptor> encryptors;
+    private final SortedMap<Integer, BridgeEncryptor> encryptors;
     private final String healthIdKey;
     private final String consentSignatureKey;
     private final String oldHealthIdVersionKey;
@@ -54,7 +54,7 @@ class StormpathAccount implements Account {
     private final Set<Roles> roles;
     
     StormpathAccount(StudyIdentifier studyIdentifier, com.stormpath.sdk.account.Account acct,
-            SortedMap<Integer, Encryptor> encryptors) {
+            SortedMap<Integer, BridgeEncryptor> encryptors) {
         checkNotNull(studyIdentifier);
         checkNotNull(acct);
         checkNotNull(encryptors);
@@ -206,7 +206,7 @@ class StormpathAccount implements Account {
         }
         // Encryption is always done with the most recent encryptor, which is last in the list (most revent version #)
         Integer encryptorKey = encryptors.lastKey();
-        Encryptor encryptor = encryptors.get(encryptorKey);
+        BridgeEncryptor encryptor = encryptors.get(encryptorKey);
 
         String encrypted = encryptor.encrypt(value);
         acct.getCustomData().put(key, encrypted);
@@ -220,7 +220,7 @@ class StormpathAccount implements Account {
         }
         // Decryption is always done with the version that was used for encryption.
         Integer version = getVersionAccountingForExceptions(key);
-        Encryptor encryptor = encryptors.get(version);
+        BridgeEncryptor encryptor = encryptors.get(version);
         if (encryptor == null) {
             throw new BridgeServiceException("No encryptor can be found for version " + version);
         }

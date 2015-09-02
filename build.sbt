@@ -4,16 +4,17 @@ version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.11.6"
 
-// The Typesafe repository
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-// Make sure the Heroku repository is at the very beginning
 resolvers += "Heroku Maven repository" at "http://s3pository.heroku.com/maven-central/"
+
+resolvers += "Bridge Maven repository" at "https://repo-maven.sagebridge.org/"
 
 libraryDependencies ++= Seq(
   cache,
   filters,
-  "org.jsoup" % "jsoup" % "1.8.2",
+  // Sage packages
+  "org.sagebionetworks" % "bridge-base" % "0.1.201508282331",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.10.10",
   "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.10",
@@ -37,10 +38,6 @@ libraryDependencies ++= Seq(
   "com.google.guava" % "guava" % "18.0",
   // Guice
   "com.google.inject" % "guice" % "4.0",
-  // Security
-  "org.apache.shiro" % "shiro-core" % "1.2.3",
-  "org.bouncycastle" % "bcprov-jdk15on" % "1.52",
-  "org.bouncycastle" % "bcpkix-jdk15on" % "1.52",
   // Quartz
   "org.quartz-scheduler" % "quartz" % "2.2.1",
   // Mail
@@ -53,8 +50,9 @@ libraryDependencies ++= Seq(
   "org.apache.httpcomponents" % "httpclient" % "4.5",
   // Redis
   "redis.clients" % "jedis" % "2.7.2",
-  // PDF
+  // PDF, HTML
   "org.xhtmlrenderer" % "flying-saucer-pdf" % "9.0.7",
+  "org.jsoup" % "jsoup" % "1.8.2",
   // Test
   javaWs % Test,
   "junit" % "junit" % "4.12" % Test,
