@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.models.surveys;
 import java.util.List;
 import java.util.UUID;
 
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
@@ -10,6 +12,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
 
 /**
@@ -84,8 +88,8 @@ public class TestSurvey extends DynamoSurvey {
     private DynamoSurveyQuestion dateQuestion = new DynamoSurveyQuestion() {
         {
             DateConstraints c = new DateConstraints();
-            c.setEarliestValue(DateUtils.convertToMillisFromEpoch("2010-10-10T00:00:00.000Z"));
-            c.setLatestValue(DateUtils.getCurrentMillisFromEpoch());
+            c.setEarliestValue(LocalDate.parse("2010-10-10"));
+            c.setLatestValue(new LocalDate(DateUtils.getCurrentMillisFromEpoch()));
             setPrompt("When did you last have a medical check-up?");
             setIdentifier("last_checkup");
             setUiHint(UIHint.DATEPICKER);
@@ -98,8 +102,8 @@ public class TestSurvey extends DynamoSurvey {
         {
             DateTimeConstraints c = new DateTimeConstraints();
             c.setAllowFuture(true);
-            c.setEarliestValue(DateUtils.convertToMillisFromEpoch("2010-10-10T00:00:00.000Z"));
-            c.setLatestValue(DateUtils.getCurrentMillisFromEpoch());
+            c.setEarliestValue(new DateTime(DateUtils.convertToMillisFromEpoch("2010-10-10T00:00:00.000Z")));
+            c.setLatestValue(new DateTime());
             setPrompt("When is your next medical check-up scheduled?");
             setIdentifier("last_reading");
             setUiHint(UIHint.DATETIMEPICKER);
@@ -192,10 +196,14 @@ public class TestSurvey extends DynamoSurvey {
         }
     }
     
+    @DynamoDBIgnore
+    @JsonIgnore
     public SurveyQuestion getMultiValueQuestion() {
         return multiValueQuestion;
     }
     
+    @DynamoDBIgnore
+    @JsonIgnore
     public SurveyQuestion getStringQuestion() {
         return stringQuestion;
     }

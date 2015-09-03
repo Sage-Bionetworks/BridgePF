@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Objects;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
-import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
@@ -101,7 +101,7 @@ public final class DynamoSurveyResponse implements SurveyResponse {
     }
     @DynamoDBIgnore
     @Override
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getSurveyCreatedOn() {
         return surveyCreatedOn;
     }
@@ -122,23 +122,23 @@ public final class DynamoSurveyResponse implements SurveyResponse {
     }
     @Override
     @DynamoDBAttribute
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public Long getStartedOn() {
         return startedOn;
     }
     @Override
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     public void setStartedOn(Long startedOn) {
         this.startedOn = startedOn;
     }
     @Override
     @DynamoDBAttribute
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public Long getCompletedOn() {
         return completedOn;
     }
     @Override
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     public void setCompletedOn(Long completedOn) {
         this.completedOn = completedOn;
     }

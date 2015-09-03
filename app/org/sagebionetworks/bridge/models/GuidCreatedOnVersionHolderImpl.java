@@ -7,8 +7,8 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.Objects;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
-import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
@@ -49,7 +49,7 @@ public final class GuidCreatedOnVersionHolderImpl implements GuidCreatedOnVersio
     
     @JsonCreator
     public GuidCreatedOnVersionHolderImpl(@JsonProperty("guid") String guid,
-            @JsonProperty("createdOn") @JsonDeserialize(using = DateTimeJsonDeserializer.class) long createdOn) {
+            @JsonProperty("createdOn") @JsonDeserialize(using = DateTimeToLongDeserializer.class) long createdOn) {
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "guid");
         checkArgument(createdOn != 0, "createdOn cannot be zero");
         this.guid = guid;
@@ -63,7 +63,7 @@ public final class GuidCreatedOnVersionHolderImpl implements GuidCreatedOnVersio
     }
 
     @Override
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getCreatedOn() {
         return createdOn;
     }

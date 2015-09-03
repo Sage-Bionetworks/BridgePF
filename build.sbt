@@ -30,10 +30,10 @@ libraryDependencies ++= Seq(
   "commons-validator" % "commons-validator" % "1.4.1",
   "commons-io" % "commons-io" % "2.4",
   // Jackson
-  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.5.4",
-  "com.fasterxml.jackson.core" % "jackson-core" % "2.5.4",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.5.4",
-  "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.5.4",
+  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.6.1",
+  "com.fasterxml.jackson.core" % "jackson-core" % "2.6.1",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.1",
+  "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.6.1",
   // Guava
   "com.google.guava" % "guava" % "18.0",
   // Guice

@@ -5,8 +5,8 @@ import java.util.Objects;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
-import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -118,45 +118,45 @@ public final class DynamoTask implements Task, BridgeEntity {
     public void setActivity(Activity activity) {
         this.activity = activity;
     }
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
     public Long getScheduledOn() {
         return scheduledOn;
     }
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     @Override
     public void setScheduledOn(Long scheduledOn) {
         this.scheduledOn = scheduledOn;
     }
     @DynamoDBAttribute
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
     public Long getExpiresOn() {
         return expiresOn;
     }
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     @Override
     public void setExpiresOn(Long expiresOn) {
         this.expiresOn = expiresOn;
     }
     @DynamoDBAttribute
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
     public Long getStartedOn() {
         return startedOn;
     }
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     @Override
     public void setStartedOn(Long startedOn) {
         this.startedOn = startedOn;
     }
     @DynamoDBAttribute
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
     public Long getFinishedOn() {
         return finishedOn;
     }
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     @Override
     public void setFinishedOn(Long finishedOn) {
         this.finishedOn = finishedOn;

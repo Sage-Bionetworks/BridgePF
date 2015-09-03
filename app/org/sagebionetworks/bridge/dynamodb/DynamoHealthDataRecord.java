@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.dynamodb;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
-import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.LocalDateToStringSerializer;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
@@ -39,14 +39,14 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private Long version;
 
     /** {@inheritDoc} */
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
     public Long getCreatedOn() {
         return createdOn;
     }
 
     /** @see #getCreatedOn */
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     public void setCreatedOn(Long createdOn) {
         this.createdOn = createdOn;
     }

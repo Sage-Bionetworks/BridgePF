@@ -4,12 +4,14 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.BooleanConstraints;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
+import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.DecimalConstraints;
 import org.sagebionetworks.bridge.models.surveys.DurationConstraints;
 import org.sagebionetworks.bridge.models.surveys.DurationToIntegerConverter;
@@ -102,8 +104,10 @@ public class SurveyAnswerValidator implements Validator {
                     validateType(errors, (BooleanConstraints) con, firstAnswer);
                     break;
                 case DATE:
+                    validateType(errors, (DateConstraints) con, firstAnswer);
+                    break;
                 case DATETIME:
-                    validateType(errors, (TimeBasedConstraints) con, firstAnswer);
+                    validateType(errors, (DateTimeConstraints) con, firstAnswer);
                     break;
                 case TIME:
                     validateType(errors, (TimeConstraints) con, firstAnswer);
@@ -134,7 +138,7 @@ public class SurveyAnswerValidator implements Validator {
         }
     }
 
-    private void validateType(Errors errors, TimeBasedConstraints con, String answer) {
+    private void validateType(Errors errors, DateConstraints con, String answer) {
         long time = 0;
         try {
             time = DateUtils.convertToMillisFromEpoch(answer);
@@ -149,14 +153,38 @@ public class SurveyAnswerValidator implements Validator {
         if (!con.getAllowFuture() && time > now) {
             rejectField(errors, "constraints", "%s is not allowed to have a future value after %s", time, now);
         }
-        if (con.getEarliestValue() != null && time < con.getEarliestValue()) {
+        // LocalDate has no idea of timezone, so here we're using UTC. This may be surprising to researchers.
+        if (con.getEarliestValue() != null && con.getEarliestValue().toDateTimeAtStartOfDay(DateTimeZone.UTC).isAfter(time)) {
             rejectField(errors, "constraints", "%s is not allowed to have a date before %s", time, con.getEarliestValue());
         }
-        if (con.getLatestValue() != null && time > con.getLatestValue()) {
+        if (con.getLatestValue() != null && con.getLatestValue().toDateTimeAtStartOfDay(DateTimeZone.UTC).isBefore(time)) {
             rejectField(errors, "constraints", "%s is not allowed to have a date after %s", time, con.getLatestValue());
         }
     }
     
+    private void validateType(Errors errors, DateTimeConstraints con, String answer) {
+        long time = 0;
+        try {
+            time = DateUtils.convertToMillisFromEpoch(answer);
+        } catch(Throwable t) {
+            rejectField(errors, "constraints", "%s is not a valid 8601 date/datetime string", answer);
+            return;
+        }
+        // add 5 minutes of leniency to this test because different machines may 
+        // report different times, we're really trying to catch user input at a 
+        // coarser level of time reporting than milliseconds.
+        long now = (DateUtils.getCurrentMillisFromEpoch()+FIVE_MINUTES);
+        if (!con.getAllowFuture() && time > now) {
+            rejectField(errors, "constraints", "%s is not allowed to have a future value after %s", time, now);
+        }
+        if (con.getEarliestValue() != null && con.getEarliestValue().isAfter(time)) {
+            rejectField(errors, "constraints", "%s is not allowed to have a date before %s", time, con.getEarliestValue());
+        }
+        if (con.getLatestValue() != null && con.getLatestValue().isBefore(time)) {
+            rejectField(errors, "constraints", "%s is not allowed to have a date after %s", time, con.getLatestValue());
+        }
+    }
+
     private void validateType(Errors errors, NumericalConstraints con, String answer, String typeName) {
         try {
             if (answer != null) {

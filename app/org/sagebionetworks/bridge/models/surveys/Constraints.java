@@ -34,6 +34,8 @@ public class Constraints {
     public void setSupportedHints(EnumSet<UIHint> hints) {
         this.hints = hints;
     }
+    // Jackson is serializing "dataType" twice due to the subtype mapping above. So ignore this.
+    // @JsonIgnore
     public DataType getDataType() {
         return dataType;
     };

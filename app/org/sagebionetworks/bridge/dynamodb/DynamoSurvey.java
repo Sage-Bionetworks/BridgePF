@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
-import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
@@ -99,7 +99,7 @@ public class DynamoSurvey implements Survey {
 
     @Override
     @DynamoDBRangeKey(attributeName="versionedOn")
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getCreatedOn() {
         return createdOn;
     }
@@ -123,7 +123,7 @@ public class DynamoSurvey implements Survey {
     
     @Override
     @DynamoDBAttribute
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getModifiedOn() {
         return modifiedOn;
     }

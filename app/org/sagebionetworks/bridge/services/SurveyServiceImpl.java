@@ -46,8 +46,7 @@ public class SurveyServiceImpl implements SurveyService {
     @Override
     public Survey createSurvey(Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
-        // You can be sent a guid of "" in JSON and this should be treated like sending a null
-        checkArgument(StringUtils.isBlank(survey.getGuid()), "Survey has a GUID; it may already exist");
+        checkNewEntity(survey, survey.getGuid(), "Survey has a GUID; it may already exist");
         checkNewEntity(survey, survey.getVersion(), "Survey has a version value; it may already exist");
         
         survey.setGuid(BridgeUtils.generateGuid());
