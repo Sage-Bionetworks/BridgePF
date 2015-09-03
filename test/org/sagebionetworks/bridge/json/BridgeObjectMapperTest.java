@@ -69,5 +69,8 @@ public class BridgeObjectMapperTest {
         survey = new BridgeObjectMapper().readValue(json, Survey.class);
         assertEquals(0, survey.getCreatedOn());
         assertEquals(0, survey.getModifiedOn());
+        
+        // If you were to supply zeroes, you do get a deserialization error, as you would any other 
+        // value not recognizable as a date.
     }
 }

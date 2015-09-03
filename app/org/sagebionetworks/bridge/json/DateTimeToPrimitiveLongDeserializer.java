@@ -8,15 +8,13 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
 /**
- * The normal DateTimeJsonDeserializer will treat JSON empty and null values as null Longs, 
- * which is fine. But when these are sent for fields that are primitive longs, a JSON deserialization 
- * exception occurs. To the JSON producer, this makes no sense (it's strictly because of the internal 
- * Java type system). 
+ * The normal DateTimeJsonDeserializer will treat JSON empty and null values as null Longs. But when 
+ * these are sent for fields that are primitive longs, a JSON deserialization exception occurs. 
+ * To the JSON producer, this makes no sense (it's strictly because of the internal Java type system). 
  * 
- * This deserializer uses the default primitive long value (0L); the system should validate that this 
- * value is acceptable. In our system, in all places where we set primitive long timestamps, 
- * values from the client are ignored and instead set on the server. With this deserializer, they 
- * are properly ignored during deserialization, instead of throwing an error.
+ * This deserializer uses the default primitive long value (0L) which does not throw an exception; the 
+ * system should validate that this value is acceptable. In our system, in all places where we set 
+ * primitive long timestamps, values from the client are ignored and instead set on the server. 
  */
 public class DateTimeToPrimitiveLongDeserializer extends JsonDeserializer<Long> {
 
