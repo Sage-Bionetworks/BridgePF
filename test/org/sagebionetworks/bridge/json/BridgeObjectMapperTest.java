@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.json;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -52,17 +50,23 @@ public class BridgeObjectMapperTest {
         
     /**
      * It should be possible to send a null for any field, including fields that are deserialized into 
-     * primitive longs, but this sets off a series of misadventures in Jackson deserialization that lead 
-     * to deserialization exceptions. Instead, use the default field value of 0L and then validate whether 
-     * or not this value is valid (it never is where we use a primitive long, but in all cases we set the 
-     * value internally, ignoring what is sent from the client, so explicit validation is never needed).
+     * primitive longs, but this causes an exception in Jackson during deserialization. Instead, use the 
+     * default field value of 0L and then validate whether or not this value is valid (in the case of 
+     * our system, we ignore all such values sent from clients in favor of setting the value on the server, 
+     * but that doesn't mean the client won't send them, set to null even).
      * @throws Exception
      */
     @Test
-    public void canDeserializePrimitiveLongsExpressedAsNulls() throws Exception {
+    public void canDeserializeTimestampNullsForPrimitiveLongFields() throws Exception {
         String json = "{\"createdOn\":null,\"modifiedOn\":null}";
         
         Survey survey = new BridgeObjectMapper().readValue(json, Survey.class);
+        assertEquals(0, survey.getCreatedOn());
+        assertEquals(0, survey.getModifiedOn());
+        
+        // No field works as well
+        json = "{}";
+        survey = new BridgeObjectMapper().readValue(json, Survey.class);
         assertEquals(0, survey.getCreatedOn());
         assertEquals(0, survey.getModifiedOn());
     }

@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb.test;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoThroughput;
 import org.sagebionetworks.bridge.dynamodb.JsonNodeMarshaller;
-import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 

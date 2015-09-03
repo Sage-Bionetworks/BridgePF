@@ -5,7 +5,6 @@ import java.util.Objects;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;

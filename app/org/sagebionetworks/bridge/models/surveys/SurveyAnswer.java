@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models.surveys;
 import java.util.List;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.BridgeEntity;

@@ -14,6 +14,10 @@ import java.util.List;
  */
 public class MultiValueConstraints extends Constraints {
 
+    public static final EnumSet<UIHint> ONE_ONLY = EnumSet.of(UIHint.COMBOBOX, UIHint.RADIOBUTTON, UIHint.SELECT, UIHint.SLIDER);
+    
+    public static final EnumSet<UIHint> MANY_ONLY = EnumSet.of(UIHint.CHECKBOX);
+    
     private List<SurveyQuestionOption> enumeration;
     private boolean allowOther = false;
     private boolean allowMultiple = false;

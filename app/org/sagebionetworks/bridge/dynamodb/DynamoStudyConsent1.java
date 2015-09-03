@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.Objects;
 
-import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
