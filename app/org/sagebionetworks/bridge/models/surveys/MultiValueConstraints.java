@@ -30,7 +30,7 @@ public class MultiValueConstraints extends Constraints {
      * These UI hints represent controls that really require the ability to enter an "other" value. 
      * For other hints, if allowOther == true, you would need additional controls to implement. 
      */
-    public static final EnumSet<UIHint> OTHER_ONLY = EnumSet.of(UIHint.COMBOBOX);
+    public static final EnumSet<UIHint> OTHER_ALWAYS_ALLOWED = EnumSet.of(UIHint.COMBOBOX);
     
     private List<SurveyQuestionOption> enumeration;
     private boolean allowOther = false;
