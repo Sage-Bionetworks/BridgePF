@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 import java.util.List;
 
@@ -27,6 +28,7 @@ public class StudyValidatorTest {
     public void assertCorrectMessage(Study study, String fieldName, String message) {
         try {
             Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+            fail("should have thrown an exception");
         } catch(InvalidEntityException e) {
             List<String> errors = e.getErrors().get(fieldName);
             assertFalse(errors == null || errors.isEmpty());
