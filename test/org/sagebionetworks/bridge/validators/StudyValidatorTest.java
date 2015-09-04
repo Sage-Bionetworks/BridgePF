@@ -1,5 +1,10 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+import java.util.List;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
@@ -8,6 +13,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 public class StudyValidatorTest {
 
@@ -18,41 +24,63 @@ public class StudyValidatorTest {
         study = TestUtils.getValidStudy(StudyValidatorTest.class);
     }
     
+    public void assertCorrectMessage(Study study, String fieldName, String message) {
+        try {
+            Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        } catch(InvalidEntityException e) {
+            List<String> errors = e.getErrors().get(fieldName);
+            assertFalse(errors == null || errors.isEmpty());
+            String error = errors.get(0);
+            assertEquals(message, error);
+        }
+    }
+    
     @Test
     public void acceptsValidStudy() {
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
     
     // While 2 is not a good length, we must allow it for legacy reasons.
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void minLengthCannotBeLessThan2() {
         study.setPasswordPolicy(new PasswordPolicy(1, false, false, false, false));
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "passwordPolicy.minLength", "passwordPolicy.minLength must be 2-999 characters");
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
+    public void sponsorNameRequired() {
+        study.setSponsorName("");
+        assertCorrectMessage(study, "sponsorName", "sponsorName is required");
+    }
+    
+    @Test
     public void minLengthCannotBeMoreThan999() {
         study.setPasswordPolicy(new PasswordPolicy(1000, false, false, false, false));
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "passwordPolicy.minLength", "passwordPolicy.minLength must be 2-999 characters");
     }
     
-    @Test(expected = InvalidEntityException.class)
-    public void templatesMustHaveUrlVariable() {
-        study.setVerifyEmailTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
+    @Test
+    public void resetPasswordMustHaveUrlVariable() {
         study.setResetPasswordTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "resetPasswordTemplate.body", "resetPasswordTemplate.body must contain the ${url} template variable");
+    }
+    
+    @Test
+    public void verifyEmailMustHaveUrlVariable() {
+        study.setVerifyEmailTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
+        assertCorrectMessage(study, "verifyEmailTemplate.body", "verifyEmailTemplate.body must contain the ${url} template variable");
     }
 
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void cannotCreateIdentifierWithUppercase() {
         study.setIdentifier("Test");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "identifier", "identifier must contain only lower-case letters and/or numbers with optional dashes");
     }
 
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void cannotCreateInvalidIdentifierWithSpaces() {
         study.setIdentifier("test test");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "identifier", "identifier must contain only lower-case letters and/or numbers with optional dashes");
     }
 
     @Test
@@ -67,22 +95,22 @@ public class StudyValidatorTest {
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void rejectsInvalidSupportEmailAddresses() {
         study.setSupportEmail("test@test.com,asdf,test2@test.com");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "supportEmail", "supportEmail 'asdf' is not a valid email address");
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void rejectsInvalidSupportEmailAddresses2() {
         study.setSupportEmail("test@test.com,,,test2@test.com");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "supportEmail", "supportEmail '' is not a valid email address");
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void requiresMissingSupportEmail() {
         study.setSupportEmail(null);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "supportEmail", "supportEmail is required");
     }
     
     @Test
@@ -91,115 +119,94 @@ public class StudyValidatorTest {
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void rejectsInvalidTechnicalEmailAddresses() {
         study.setTechnicalEmail("test@test.com,asdf,test2@test.com");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "technicalEmail", "technicalEmail 'asdf' is not a valid email address");
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void rejectsInvalidTechnicalEmailAddresses2() {
         study.setTechnicalEmail("test@test.com,,,test2@test.com");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "technicalEmail", "technicalEmail '' is not a valid email address");
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void requiresMissingTechnicalEmail() {
         study.setTechnicalEmail(null);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "technicalEmail", "technicalEmail is required");
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void rejectsInvalidConsentEmailAddresses() {
         study.setConsentNotificationEmail("test@test.com,asdf,test2@test.com");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "consentNotificationEmail", "consentNotificationEmail 'asdf' is not a valid email address");
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void cannotAddConflictingUserProfileAttribute() {
         study.getUserProfileAttributes().add("username");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "userProfileAttributes", "userProfileAttributes 'username' conflicts with existing user profile property");
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void requiresMissingConsentNotificationEmail() {
         study.setConsentNotificationEmail(null);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "consentNotificationEmail", "consentNotificationEmail is required");
     }
     
-    @Test(expected = InvalidEntityException.class)
-    public void requiresValidSupportEmail() {
-        study.setSupportEmail("asdf");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
-    }
-    
-    @Test(expected = InvalidEntityException.class)
-    public void requiresValidConsentNotificationEmail() {
-        study.setConsentNotificationEmail("aaa@aaa");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
-    }
-    
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void requiresPasswordPolicy() {
         study.setPasswordPolicy(null);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "passwordPolicy", "passwordPolicy is required");
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void requiresVerifyEmailTemplate() {
         study.setVerifyEmailTemplate(null);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "verifyEmailTemplate", "verifyEmailTemplate is required");
     }
 
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void requiresVerifyEmailTemplateWithSubject() {
         study.setVerifyEmailTemplate(new EmailTemplate("  ", "body", MimeType.HTML));
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "verifyEmailTemplate.subject", "verifyEmailTemplate.subject is required");
     }
 
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void requiresVerifyEmailTemplateWithBody() {
         study.setVerifyEmailTemplate(new EmailTemplate("subject", null, MimeType.HTML));
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "verifyEmailTemplate.body", "verifyEmailTemplate.body is required");
     }
 
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void requiresResetPasswordTemplate() {
         study.setResetPasswordTemplate(null);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "resetPasswordTemplate", "resetPasswordTemplate is required");
     }
 
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void requiresResetPasswordTemplateWithSubject() {
         study.setResetPasswordTemplate(new EmailTemplate("  ", "body", MimeType.TEXT));
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "resetPasswordTemplate.subject", "resetPasswordTemplate.subject is required");
     }
 
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void requiresResetPasswordTemplateWithBody() {
         study.setResetPasswordTemplate(new EmailTemplate("subject", null, MimeType.TEXT));
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "resetPasswordTemplate.body", "resetPasswordTemplate.body is required");
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void cannotSetMinAgeOfConsentLessThanZero() {
         study.setMinAgeOfConsent(-100);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "minAgeOfConsent", "minAgeOfConsent must be zero (no minimum age of consent) or higher");
     }
     
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void cannotSetMaxNumOfParticipantsLessThanZero() {
         study.setMaxNumOfParticipants(-100);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        assertCorrectMessage(study, "maxNumOfParticipants", "maxNumOfParticipants must be zero (no limit on enrollees) or higher");
     }
-    
-    /*
-    if (study.getMinAgeOfConsent() < 0) {
-        errors.rejectValue("minAgeOfConsent", "must be zero (no minimum age of consent) or higher");
-    }
-    if (study.getMaxNumOfParticipants() < 0) {
-        errors.rejectValue("maxNumOfParticipants", "must be zero (no limit on enrollees) or higher");
-    }
-    */
 
 }

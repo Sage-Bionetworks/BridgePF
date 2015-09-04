@@ -25,7 +25,7 @@ public class StudyValidator implements Validator {
     public void validate(Object obj, Errors errors) {
         Study study = (Study)obj;
         if (StringUtils.isBlank(study.getIdentifier())) {
-            errors.rejectValue("identifier", "is null or blank");
+            errors.rejectValue("identifier", "is required");
         } else {
             if (!study.getIdentifier().matches("^[a-z0-9-]+$")) {
                 errors.rejectValue("identifier", "must contain only lower-case letters and/or numbers with optional dashes");
@@ -35,25 +35,28 @@ public class StudyValidator implements Validator {
             }
         }
         if (StringUtils.isBlank(study.getName())) {
-            errors.rejectValue("name", "is null or blank");
+            errors.rejectValue("name", "is required");
+        }
+        if (StringUtils.isBlank(study.getSponsorName())) {
+            errors.rejectValue("sponsorName", "is required");
         }
         if (StringUtils.isBlank(study.getSupportEmail())) {
-            errors.rejectValue("supportEmail", "is null or blank");
+            errors.rejectValue("supportEmail", "is required");
         }
         if (StringUtils.isBlank(study.getTechnicalEmail())) {
-            errors.rejectValue("technicalEmail", "is null or blank");
+            errors.rejectValue("technicalEmail", "is required");
         }
         if (StringUtils.isBlank(study.getConsentNotificationEmail())) {
-            errors.rejectValue("consentNotificationEmail", "is null or blank");
+            errors.rejectValue("consentNotificationEmail", "is required");
         }
         // These *should* be set if they are null, with defaults
         if (study.getPasswordPolicy() == null) {
-            errors.rejectValue("passwordPolicy", "is null");
+            errors.rejectValue("passwordPolicy", "is required");
         } else {
             errors.pushNestedPath("passwordPolicy");
             PasswordPolicy policy = study.getPasswordPolicy();
             if (!isInRange(policy.getMinLength(), 2)) {
-                errors.rejectValue("minLength", "must be at least 2 and no more than " + PasswordPolicy.FIXED_MAX_LENGTH);
+                errors.rejectValue("minLength", "must be 2-"+PasswordPolicy.FIXED_MAX_LENGTH+" characters");
             }
             errors.popNestedPath();
         }
@@ -86,7 +89,7 @@ public class StudyValidator implements Validator {
         if (!emails.isEmpty()) {
             for (String email : emails) {
                 if (!EmailValidator.getInstance().isValid(email)) {
-                    errors.rejectValue(fieldName, "'%s' is not a valid email address", email);
+                    errors.rejectValue(fieldName, fieldName + " '%s' is not a valid email address", new Object[]{email}, null);
                 }
             }
         }
@@ -94,14 +97,14 @@ public class StudyValidator implements Validator {
     
     private void validateTemplate(Errors errors, EmailTemplate template, String fieldName) {
         if (template == null) {
-            errors.rejectValue(fieldName, "is null");
+            errors.rejectValue(fieldName, "is required");
         } else {
             errors.pushNestedPath(fieldName);
             if (StringUtils.isBlank(template.getSubject())) {
-                errors.rejectValue("subject", "is null or blank");
+                errors.rejectValue("subject", "is required");
             }
             if (StringUtils.isBlank(template.getBody())) {
-                errors.rejectValue("body", "is null or blank");
+                errors.rejectValue("body", "is required");
             } else {
                 if (!template.getBody().contains("${url}")) {
                     errors.rejectValue("body", "must contain the ${url} template variable");
