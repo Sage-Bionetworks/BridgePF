@@ -162,7 +162,7 @@ public class SurveyValidator implements Validator {
             MultiValueConstraints mcon = (MultiValueConstraints)con;
             String hintName = hint.name().toLowerCase();
             
-            if ((mcon.getAllowMultiple() || !mcon.getAllowOther()) && MultiValueConstraints.OTHER_ONLY.contains(hint)) {
+            if ((mcon.getAllowMultiple() || !mcon.getAllowOther()) && MultiValueConstraints.OTHER_ALWAYS_ALLOWED.contains(hint)) {
                 rejectField(errors, "uiHint", "'%s' is only valid when multiple = false and other = true", hintName);
             } else if (mcon.getAllowMultiple() && MultiValueConstraints.ONE_ONLY.contains(hint)) {
                 rejectField(errors, "uiHint",
