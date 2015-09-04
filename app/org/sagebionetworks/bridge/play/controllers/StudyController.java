@@ -78,6 +78,7 @@ public class StudyController extends BaseController {
         getAuthenticatedSession(ADMIN);
 
         Study studyUpdate = parseJson(request(), Study.class);
+        studyUpdate.setIdentifier(identifier);
         studyUpdate = studyService.updateStudy(studyUpdate, true);
         return okResult(new VersionHolder(studyUpdate.getVersion()));
     }

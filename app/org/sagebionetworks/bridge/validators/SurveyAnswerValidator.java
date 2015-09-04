@@ -22,7 +22,6 @@ import org.sagebionetworks.bridge.models.surveys.StringConstraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
-import org.sagebionetworks.bridge.models.surveys.TimeBasedConstraints;
 import org.sagebionetworks.bridge.models.surveys.TimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.Unit;
 import org.springframework.validation.Errors;
@@ -235,7 +234,7 @@ public class SurveyAnswerValidator implements Validator {
         }
     }
     
-    private void validateType(Errors errors, BooleanConstraints con, String answer) {
+    private void validateType(Errors errors, BooleanConstraints constraints, String answer) {
         if (!BOOLEAN_VALUES.contains(answer)) {
             rejectField(errors, "constraints", "%s is not a boolean", answer);
         }

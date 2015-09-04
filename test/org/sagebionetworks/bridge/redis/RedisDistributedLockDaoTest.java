@@ -70,8 +70,7 @@ public class RedisDistributedLockDaoTest {
         lockDao.releaseLock(getClass(), id, lockId);
     }
 
-    private String getRedisKey(String uuid) {
-        return RedisKey.LOCK.getRedisKey(
-                id + RedisKey.SEPARATOR + getClass().getCanonicalName());
+    private String getRedisKey(String id) {
+        return RedisKey.LOCK.getRedisKey(id + RedisKey.SEPARATOR + getClass().getCanonicalName());
     }
 }

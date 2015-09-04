@@ -181,7 +181,7 @@ public abstract class BaseController extends Controller {
     // because the root object in the JSON is an array (which is legal). 
     JsonNode requestToJSON(Request request) {
         try {
-            JsonNode node = request().body().asJson();
+            JsonNode node = request.body().asJson();
             if (node == null) {
                 node = mapper.readTree(request().body().asText());
             }
