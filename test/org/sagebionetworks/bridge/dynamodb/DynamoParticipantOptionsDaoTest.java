@@ -96,14 +96,20 @@ public class DynamoParticipantOptionsDaoTest {
         when(results.iterator()).thenReturn(new ArrayList<DynamoParticipantOptions>().iterator());
         
         DynamoDBMapper mapper = mock(DynamoDBMapper.class);
-        when(mapper.scan(any(Class.class), any(DynamoDBScanExpression.class))).thenReturn(results);
+        when(mapper.scan(
+            (Class<DynamoParticipantOptions>)any(Class.class), 
+            any(DynamoDBScanExpression.class)
+        )).thenReturn(results);
 
         DynamoParticipantOptionsDao optionsDao = new DynamoParticipantOptionsDao();
         optionsDao.setMapper(mapper);
         
         optionsDao.getOptionForAllStudyParticipants(new StudyIdentifierImpl("api"), ParticipantOption.SHARING_SCOPE);
         
-        verify(mapper).scan(any(Class.class), any(DynamoDBScanExpression.class));
+        verify(mapper).scan(
+            (Class<DynamoParticipantOptions>)any(Class.class), 
+            any(DynamoDBScanExpression.class)
+        );
         verifyNoMoreInteractions(mapper);
     }
 

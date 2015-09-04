@@ -192,4 +192,11 @@ public class TestSurvey extends DynamoSurvey {
         }
     }
     
+    public SurveyQuestion getMultiValueQuestion() {
+        return multiValueQuestion;
+    }
+    
+    public SurveyQuestion getStringQuestion() {
+        return stringQuestion;
+    }
 }

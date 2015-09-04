@@ -37,15 +37,21 @@ public class SurveyValidator implements Validator {
     @Override
     public void validate(Object object, Errors errors) {
         Survey survey = (Survey)object;
+        if (StringUtils.isBlank(survey.getName())) {
+            errors.rejectValue("name", "is required");
+        }
         if (StringUtils.isBlank(survey.getIdentifier())) {
-            errors.reject("missing an identifier");
+            errors.rejectValue("identifier", "is required");
         }
         if (StringUtils.isBlank(survey.getStudyIdentifier())) {
-            errors.reject("missing a study key");
+            errors.rejectValue("studyIdentifier", "is required");
         }
         if (StringUtils.isBlank(survey.getGuid())) {
-            errors.reject("missing a GUID");
+            errors.rejectValue("guid", "is required");
         }
+        
+        // Validate that no identifier has been duplicated.
+        Set<String> foundIdentifiers = Sets.newHashSet();
         for (int i=0; i < survey.getElements().size(); i++) {
             SurveyElement element = survey.getElements().get(i);
             errors.pushNestedPath("element"+i);
@@ -54,8 +60,11 @@ public class SurveyValidator implements Validator {
             } else if (SURVEY_INFO_SCREEN_TYPE.equals(element.getType())) {
                 doValidateInfoScreen((SurveyInfoScreen)element, i, errors);
             }
+            if (foundIdentifiers.contains(element.getIdentifier())) {
+                errors.rejectValue("identifier", "exists in an earlier survey element");
+            }
+            foundIdentifiers.add(element.getIdentifier());
             errors.popNestedPath();
-            
         }
         // You can get all sorts of NPEs if survey is not valid and you look at the rules.
         // So don't.
@@ -97,8 +106,7 @@ public class SurveyValidator implements Validator {
             Image image = screen.getImage();
             if (isBlank(image.getSource())) {
                 errors.rejectValue("source", "is required");
-            }
-            if (!image.getSource().startsWith("http://") && !image.getSource().startsWith("https://")) {
+            } else if (!image.getSource().startsWith("http://") && !image.getSource().startsWith("https://")) {
                 errors.rejectValue("source", "must be a valid URL to an image");
             }
             if (image.getWidth() == 0) {
@@ -139,7 +147,7 @@ public class SurveyValidator implements Validator {
     }
     private void doValidateConstraints(SurveyQuestion question, Constraints con, Errors errors) {
         if (con.getDataType() == null) {
-            errors.reject("has no dataType");
+            errors.rejectValue("dataType", "is required");
             return;
         }
         UIHint hint = question.getUiHint();
@@ -147,19 +155,19 @@ public class SurveyValidator implements Validator {
             return; // will have been validated above, skip this
         }
         if (!con.getSupportedHints().contains(hint)) {
-            rejectField(errors, "dataType", "(%s) doesn't match the UI hint of '%s'", con.getDataType().name()
+            rejectField(errors, "dataType", "data type '%s' doesn't match the UI hint of '%s'", con.getDataType().name()
                     .toLowerCase(), hint.name().toLowerCase());
         } else if (con instanceof MultiValueConstraints) {
             // Multiple values have a few odd UI constraints
             MultiValueConstraints mcon = (MultiValueConstraints)con;
             String hintName = hint.name().toLowerCase();
             
-            if (hint == UIHint.COMBOBOX && (mcon.getAllowMultiple() || !mcon.getAllowOther())) {
+            if ((mcon.getAllowMultiple() || !mcon.getAllowOther()) && MultiValueConstraints.OTHER_ALWAYS_ALLOWED.contains(hint)) {
                 rejectField(errors, "uiHint", "'%s' is only valid when multiple = false and other = true", hintName);
-            } else if (mcon.getAllowMultiple() && hint != UIHint.CHECKBOX && hint != UIHint.LIST) {
+            } else if (mcon.getAllowMultiple() && MultiValueConstraints.ONE_ONLY.contains(hint)) {
                 rejectField(errors, "uiHint",
                         "allows multiples but the '%s' UI hint doesn't gather more than one answer", hintName);
-            } else if (!mcon.getAllowMultiple() && (hint == UIHint.CHECKBOX || hint == UIHint.LIST)) {
+            } else if (!mcon.getAllowMultiple() && MultiValueConstraints.MANY_ONLY.contains(hint)) {
                 rejectField(errors, "uiHint",
                         "doesn't allow multiples but the '%s' UI hint gathers more than one answer", hintName);
             }
@@ -170,11 +178,12 @@ public class SurveyValidator implements Validator {
                 try {
                     Pattern.compile(scon.getPattern());
                 } catch (PatternSyntaxException exception) {
-                    rejectField(errors, "pattern", "is not a valid regular expression: %s", scon.getPattern());
+                    rejectField(errors, "pattern", "pattern is not a valid regular expression: %s", scon.getPattern());
                 }
             }
         }
     }
+    // This is more confusing than helpful.
     private void rejectField(Errors errors, String field, String message, Object... args) {
         if (args != null && args.length > 0) {
             errors.rejectValue(field, message, args, message);    

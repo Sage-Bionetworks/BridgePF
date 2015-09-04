@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.models.surveys;
 import java.util.List;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
@@ -39,7 +39,7 @@ public class SurveyAnswer implements BridgeEntity {
     public long getAnsweredOn() {
         return answeredOn;
     }
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
     public void setAnsweredOn(long answeredOn) {
         this.answeredOn = answeredOn;
     }

@@ -45,7 +45,7 @@ public class TaskEventServiceTest {
         TaskEvent event = new Builder().withHealthCode("BBB")
             .withObjectType(TaskEventObjectType.ENROLLMENT).withTimestamp(DateTime.now()).build();
         
-        service.publishEvent(event);
+        service.publishTaskEvent(event);
         
         verify(taskEventDao).publishEvent(eq(event));
         verifyNoMoreInteractions(taskEventDao);
@@ -78,7 +78,7 @@ public class TaskEventServiceTest {
     @Test
     public void badPublicDoesntCallDao() {
         try {
-            service.publishEvent((TaskEvent)null);    
+            service.publishTaskEvent((TaskEvent)null);    
             fail("Exception should have been thrown");
         } catch(NullPointerException e) {}
         verifyNoMoreInteractions(taskEventDao);
@@ -111,7 +111,7 @@ public class TaskEventServiceTest {
         consent.setHealthCode("AAA-BBB-CCC");
         consent.setSignedOn(now.getMillis());
         
-        service.publishEvent(consent.getHealthCode(), (UserConsent)consent);
+        service.publishEnrollmentEvent(consent.getHealthCode(), (UserConsent)consent);
         
         ArgumentCaptor<TaskEvent> argument = ArgumentCaptor.forClass(TaskEvent.class);
         verify(taskEventDao).publishEvent(argument.capture());
@@ -131,7 +131,7 @@ public class TaskEventServiceTest {
         answer.setQuestionGuid("BBB-CCC-DDD");
         answer.setAnswers(Lists.newArrayList("belgium"));
         
-        service.publishEvent("healthCode", answer);
+        service.publishQuestionAnsweredEvent("healthCode", answer);
         
         ArgumentCaptor<TaskEvent> argument = ArgumentCaptor.forClass(TaskEvent.class);
         verify(taskEventDao).publishEvent(argument.capture());
@@ -150,7 +150,7 @@ public class TaskEventServiceTest {
         response.setHealthCode("healthCode");
         response.setSurveyKey("BBB-CCC-DDD:123123123");
         
-        service.publishEvent(response);
+        service.publishSurveyFinishedEvent(response);
         
         ArgumentCaptor<TaskEvent> argument = ArgumentCaptor.forClass(TaskEvent.class);
         verify(taskEventDao).publishEvent(argument.capture());

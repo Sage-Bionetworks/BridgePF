@@ -150,7 +150,7 @@ public class SurveyResponseServiceImplTest {
         assertEquals("healthCode", response.getResponse().getHealthCode());
         assertEquals((Long)2L, (Long)response.getVersion());
         
-        verify(taskEventService).publishEvent(any(String.class), any(SurveyAnswer.class));
+        verify(taskEventService).publishQuestionAnsweredEvent(any(String.class), any(SurveyAnswer.class));
         verifyNoMoreInteractions(taskEventService);
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
         verify(surveyResponseDao).createSurveyResponse(
@@ -175,7 +175,7 @@ public class SurveyResponseServiceImplTest {
         assertEquals("belgium", response.getIdentifier());
         assertEquals((Long)2L, (Long)response.getVersion());
 
-        verify(taskEventService).publishEvent(any(String.class), any(SurveyAnswer.class));
+        verify(taskEventService).publishQuestionAnsweredEvent(any(String.class), any(SurveyAnswer.class));
         verifyNoMoreInteractions(taskEventService);
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
         verify(surveyResponseDao).createSurveyResponse(
@@ -266,7 +266,7 @@ public class SurveyResponseServiceImplTest {
         
         verify(surveyResponseDao).appendSurveyAnswers(response, answers);
         verify(surveyDao).getSurvey(any(GuidCreatedOnVersionHolder.class));
-        verify(taskEventService).publishEvent(any(String.class), any(SurveyAnswer.class));
+        verify(taskEventService).publishQuestionAnsweredEvent(any(String.class), any(SurveyAnswer.class));
         verifyNoMoreInteractions(taskEventService);
         verifyNoMoreInteractions(surveyDao);
         verifyNoMoreInteractions(surveyResponseDao);
@@ -306,7 +306,7 @@ public class SurveyResponseServiceImplTest {
         List<SurveyAnswer> answers = response.getAnswers();
         
         service.appendSurveyAnswers(response, answers);
-        verify(taskEventService).publishEvent(any(SurveyResponse.class));
+        verify(taskEventService).publishSurveyFinishedEvent(any(SurveyResponse.class));
         verifyNoMoreInteractions(taskEventService);
     }
     

@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
@@ -103,7 +103,7 @@ public class DynamoUserConsent2 implements UserConsent {
     public long getConsentCreatedOn() {
         return consentCreatedOn;
     }
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
     public void setConsentCreatedOn(long consentCreatedOn) {
         this.consentCreatedOn = consentCreatedOn;
     }

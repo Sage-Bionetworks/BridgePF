@@ -21,7 +21,6 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
-@SuppressWarnings("unchecked")
 public class IosSchemaValidationHandler2GetSchemaTest {
     private static final Map<String, Map<String, Integer>> DEFAULT_SCHEMA_REV_MAP =
             ImmutableMap.<String, Map<String, Integer>>of(TestConstants.TEST_STUDY_IDENTIFIER,

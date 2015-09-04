@@ -74,7 +74,7 @@ public class StormpathAccountIteratorTest {
         Directory dir3 = createDirectoryMock(study3, 110);
         
         Client client = mock(Client.class);
-        when(client.getResource(any(String.class),any(Class.class))).thenReturn(dir1, dir2, dir3);
+        when(client.getResource(any(String.class),(Class<Directory>)any(Class.class))).thenReturn(dir1, dir2, dir3);
 
         List<Study> studyList = Lists.newArrayList(study1, study2, study3);
         

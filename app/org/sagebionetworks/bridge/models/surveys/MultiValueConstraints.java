@@ -14,6 +14,24 @@ import java.util.List;
  */
 public class MultiValueConstraints extends Constraints {
 
+    /**
+     * These UI hints represent controls that will only accept one value, so they shouldn't be declared
+     * when allowMultiple == true.
+     */
+    public static final EnumSet<UIHint> ONE_ONLY = EnumSet.of(UIHint.COMBOBOX, UIHint.RADIOBUTTON, UIHint.SELECT, UIHint.SLIDER);
+    
+    /**
+     * These UI hints represent controls that will accept multiple values, so they shouldn't be declared
+     * when allowMultiple == false.
+     */
+    public static final EnumSet<UIHint> MANY_ONLY = EnumSet.of(UIHint.CHECKBOX);
+    
+    /**
+     * These UI hints represent controls that really require the ability to enter an "other" value. 
+     * For other hints, if allowOther == true, you would need additional controls to implement. 
+     */
+    public static final EnumSet<UIHint> OTHER_ALWAYS_ALLOWED = EnumSet.of(UIHint.COMBOBOX);
+    
     private List<SurveyQuestionOption> enumeration;
     private boolean allowOther = false;
     private boolean allowMultiple = false;

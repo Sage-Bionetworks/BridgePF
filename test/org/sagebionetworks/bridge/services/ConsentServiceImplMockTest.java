@@ -78,7 +78,7 @@ public class ConsentServiceImplMockTest {
         
         consentService.consentToResearch(study, user, consentSignature, SharingScope.NO_SHARING, false);
         
-        verify(taskEventService).publishEvent(user.getHealthCode(), consent);
+        verify(taskEventService).publishEnrollmentEvent(user.getHealthCode(), consent);
     }
 
     @Test

@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateTimeJsonDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -105,7 +106,7 @@ public final class DynamoSurveyResponse implements SurveyResponse {
         return surveyCreatedOn;
     }
     @Override
-    @JsonDeserialize(using = DateTimeJsonDeserializer.class)
+    @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
     public void setSurveyCreatedOn(long surveyCreatedOn) {
         this.surveyCreatedOn = surveyCreatedOn;
     }

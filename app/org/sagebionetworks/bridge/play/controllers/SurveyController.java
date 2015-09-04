@@ -159,7 +159,7 @@ public class SurveyController extends BaseController {
     }
     
     /**
-     * Administrators can pass the ?physical=true flag to this endpoint to physicall delete a survey and all its 
+     * Administrators can pass the ?physical=true flag to this endpoint to physically delete a survey and all its 
      * survey elements, rather than only marking it deleted to maintain referential integrity. This should only be 
      * used as part of testing.
      * @param surveyGuid
