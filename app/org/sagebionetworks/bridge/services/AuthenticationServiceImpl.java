@@ -55,7 +55,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private HealthCodeService healthCodeService;
     private EmailVerificationValidator verificationValidator;
     private SignInValidator signInValidator;
-    private SignUpValidator signUpValidator;
     private PasswordResetValidator passwordResetValidator;
     private EmailValidator emailValidator;
 
@@ -94,10 +93,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Autowired
     public void setSignInValidator(SignInValidator validator) {
         this.signInValidator = validator;
-    }
-    @Autowired
-    public void setSignUpValidator(SignUpValidator validator) {
-        this.signUpValidator = validator;
     }
     @Autowired
     public void setPasswordResetValidator(PasswordResetValidator validator) {
@@ -153,7 +148,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(signUp, "Sign up cannot be null");
         
-        Validate.entityThrowingException(signUpValidator, signUp);
+        Validate.entityThrowingException(new SignUpValidator(study.getPasswordPolicy()), signUp);
         
         String lockId = null;
         try {
