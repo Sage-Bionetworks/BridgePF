@@ -3,11 +3,9 @@ package org.sagebionetworks.bridge.validators;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.junit.Before;
@@ -28,6 +26,18 @@ public class SignUpValidatorTest {
         validator = new SignUpValidator(new PasswordPolicy(8, true, true, true, true));
     }
     
+    public void assertCorrectMessage(SignUp signUp, String fieldName, String message) {
+        try {
+            Validate.entityThrowingException(validator, signUp);
+            fail("should have thrown exception");
+        } catch(InvalidEntityException e) {
+            List<String> errors = e.getErrors().get(fieldName);
+            assertFalse(errors == null || errors.isEmpty());
+            String error = errors.get(0);
+            assertEquals(message, error);
+        }
+    }
+    
     private SignUp withPassword(String password) {
         return new SignUp("username", "email@email.com", password, EMPTY_ROLES);
     }
@@ -40,14 +50,6 @@ public class SignUpValidatorTest {
         return new SignUp(username, "email@email.com", "aAz1%_aAz1%", EMPTY_ROLES);
     }
     
-    private String errorFor(InvalidEntityException e, String fieldName) {
-        Map<String,List<String>> errors = e.getErrors();
-        assertNotNull(errors);
-        List<String> messages = errors.get(fieldName);
-        assertFalse(messages == null || messages.isEmpty());
-        return messages.get(0);
-    }
-    
     @Test
     public void validPasses() {
         Validate.entityThrowingException(validator, withEmail("email@email.com"));
@@ -55,91 +57,47 @@ public class SignUpValidatorTest {
     
     @Test
     public void emailRequired() {
-        try {
-            Validate.entityThrowingException(validator, withEmail(null));
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("email is required", errorFor(e, "email"));
-        }
+        assertCorrectMessage(withEmail(null), "email", "email is required");
     }
     
     @Test
     public void usernameRequired() {
-        try {
-            Validate.entityThrowingException(validator, withUsername(""));
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("username is required", errorFor(e, "username"));
-        }
+        assertCorrectMessage(withUsername(""), "username", "username is required");
     }
     
     @Test
     public void passwordRequired() {
-        try {
-            Validate.entityThrowingException(validator, withPassword(""));
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("password is required", errorFor(e, "password"));
-        }
+        assertCorrectMessage(withPassword(""), "password", "password is required");
     }
     
     @Test
     public void validEmail() {
-        try {
-            Validate.entityThrowingException(validator, withEmail("belgium"));
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("email must be a valid email address", errorFor(e, "email"));
-        }
+        assertCorrectMessage(withEmail("belgium"), "email", "email must be a valid email address");
     }
     
     @Test
     public void minLength() {
-        try {
-            Validate.entityThrowingException(validator, withPassword("a1A~"));
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("password must be at least 8 characters", errorFor(e, "password"));
-        }
+        assertCorrectMessage(withPassword("a1A~"), "password", "password must be at least 8 characters");
     }
     
     @Test
     public void numberRequired() {
-        try {
-            Validate.entityThrowingException(validator, withPassword("aaaaaaaaA~"));
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("password must contain at least one number (0-9)", errorFor(e, "password"));
-        }
+        assertCorrectMessage(withPassword("aaaaaaaaA~"), "password", "password must contain at least one number (0-9)");
     }
     
     @Test
     public void symbolRequired() {
-        try {
-            Validate.entityThrowingException(validator, withPassword("aaaaaaaaA1"));
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("password must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )", errorFor(e, "password"));
-        }
+        assertCorrectMessage(withPassword("aaaaaaaaA1"), "password", 
+            "password must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )");
     }
     
     @Test
     public void lowerCaseRequired() {
-        try {
-            Validate.entityThrowingException(validator, withPassword("AAAAA!A1"));
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("password must contain at least one lowercase letter (a-z)", errorFor(e, "password"));
-        }
+        assertCorrectMessage(withPassword("AAAAA!A1"), "password", "password must contain at least one lowercase letter (a-z)");
     }
     
     @Test
     public void upperCaseRequired() {
-        try {
-            Validate.entityThrowingException(validator, withPassword("aaaaa!a1"));
-            fail("Should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals("password must contain at least one uppercase letter (A-Z)", errorFor(e, "password"));
-        }
+        assertCorrectMessage(withPassword("aaaaa!a1"), "password", "password must contain at least one uppercase letter (A-Z)");
     }
 }
