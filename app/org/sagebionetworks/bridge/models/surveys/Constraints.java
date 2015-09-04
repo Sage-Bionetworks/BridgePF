@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.Lists;
 
-@JsonTypeInfo( use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "dataType")
+@JsonTypeInfo( use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "dataType")
 @JsonSubTypes({
     @Type(name="multivalue", value=MultiValueConstraints.class),
     @Type(name="boolean", value=BooleanConstraints.class),
@@ -34,6 +34,9 @@ public class Constraints {
     public void setSupportedHints(EnumSet<UIHint> hints) {
         this.hints = hints;
     }
+    // Jackson is serializing "dataType" twice due to the subtype mapping above. According to 
+    // docs, this should be used in preference to @@JsonTypeInfo, but that doesn't seem to happen.
+    // @JsonIgnore
     public DataType getDataType() {
         return dataType;
     };

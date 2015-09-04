@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.Objects;
 
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
-import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.studies.StudyConsent;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
@@ -36,7 +36,7 @@ public final class DynamoStudyConsent1 implements StudyConsent {
 
     @Override
     @DynamoDBRangeKey
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getCreatedOn() {
         return createdOn;
     }

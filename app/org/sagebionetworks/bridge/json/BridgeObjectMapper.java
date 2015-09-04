@@ -61,6 +61,10 @@ public class BridgeObjectMapper extends ObjectMapper {
         // This is a default, but I wanted to note explicitly
         this.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         this.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        // This changes the Joda Module to include the time zone, but in an odd format:
+        // 2015-01-01T17:10:10.000Z[-07:00]. Doesn't appear you can have the module just 
+        // use the declared timezone of the datetime as sent by the client.
+        // this.configure(SerializationFeature.WRITE_DATES_WITH_ZONE_ID, true);
         
         // This suppresses a failure if a class is found with a "filter" filter declared on it,
         // when you are trying to serialize without the filter. It's a Jackson oddity they may fix.

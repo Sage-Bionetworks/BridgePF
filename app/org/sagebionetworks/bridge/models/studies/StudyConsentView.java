@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.models.studies;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -26,7 +26,7 @@ public class StudyConsentView {
         this.documentContent = documentContent;
     }
 
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getCreatedOn() {
         return consent.getCreatedOn();
     }

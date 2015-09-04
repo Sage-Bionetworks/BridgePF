@@ -1,11 +1,9 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import java.util.EnumSet;
 import java.util.List;
 
 import org.junit.Before;

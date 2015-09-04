@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -430,7 +431,7 @@ public class SurveyAnswerValidatorTest {
     @Test(expected = InvalidEntityException.class)
     public void validateTimeBasedEarliestConstraints() {
         DateConstraints constraints = new DateConstraints();
-        constraints.setEarliestValue(DateUtils.convertToMillisFromEpoch("2010-10-10"));
+        constraints.setEarliestValue(LocalDate.parse("2010-10-10"));
 
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         SurveyAnswer answer = createAnswer("2008-08-08"); // Earlier than earliest date
@@ -440,7 +441,7 @@ public class SurveyAnswerValidatorTest {
     public void validateTimeBasedLatestConstraints() {
         DateTimeConstraints constraints = new DateTimeConstraints();
         constraints.setAllowFuture(true);
-        constraints.setLatestValue(DateUtils.convertToMillisFromEpoch("2010-10-10T00:00:00.000Z"));
+        constraints.setLatestValue(DateTime.parse("2010-10-10T00:00:00.000Z"));
 
         validator = new SurveyAnswerValidator(createQuestion(constraints));
         SurveyAnswer answer = createAnswer(DateUtils.getCurrentISODateTime()); // later than latest date

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -118,7 +119,13 @@ public class BridgeUtils {
         }
     }
     
-    public static void checkNewEntity(BridgeEntity entity, Object field, String message) {
+    public static void checkNewEntity(BridgeEntity entity, String field, String message) {
+        if (StringUtils.isNotBlank(field)) {
+            throw new EntityAlreadyExistsException(entity, message);
+        }
+    }
+    
+    public static void checkNewEntity(BridgeEntity entity, Long field, String message) {
         if (field != null) {
             throw new EntityAlreadyExistsException(entity, message);
         }

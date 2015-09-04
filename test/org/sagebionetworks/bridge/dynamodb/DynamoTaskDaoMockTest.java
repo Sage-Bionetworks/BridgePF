@@ -74,7 +74,7 @@ public class DynamoTaskDaoMockTest {
     }
     
     @SuppressWarnings("unchecked")
-    private void mockQuery(DateTime until, final List<Task> tasks) {
+    private void mockQuery(final List<Task> tasks) {
         List<DynamoTask> results = Lists.newArrayList();
         if (tasks != null) {
             for (final Task task : tasks) {
@@ -109,7 +109,7 @@ public class DynamoTaskDaoMockTest {
         DateTime endsOn = NOW.plus(Period.parse("P2D"));
         
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, endsOn);
-        mockQuery(endsOn, tasks);
+        mockQuery(tasks);
         
         List<Task> tasks2 = taskDao.getTasks(HEALTH_CODE, endsOn);
         
@@ -134,7 +134,7 @@ public class DynamoTaskDaoMockTest {
         DateTime endsOn = NOW.plus(Period.parse("P4D"));
         
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, endsOn);
-        mockQuery(endsOn, tasks);
+        mockQuery(tasks);
         
         List<Task> tasks2 = taskDao.getTasks(HEALTH_CODE, endsOn);
 
@@ -174,7 +174,7 @@ public class DynamoTaskDaoMockTest {
         task2.setFinishedOn(DateTime.parse("2015-04-12T18:34:01.113-07:00").getMillis());
         task2.setGuid(BridgeUtils.generateGuid());
         
-        mockQuery(NOW.plusDays(2), Lists.newArrayList(task1, task2));
+        mockQuery(Lists.newArrayList(task1, task2));
         
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         taskDao.deleteTasks("AAA");
@@ -211,7 +211,7 @@ public class DynamoTaskDaoMockTest {
         task2.setStartedOn(DateTime.parse("2015-04-12T18:30:23.334-07:00").getMillis());
         task2.setGuid(guid2);
         
-        mockQuery(NOW.plusDays(2), Lists.newArrayList(task1, task2));
+        mockQuery(Lists.newArrayList(task1, task2));
         
         Task task3 = new DynamoTask();
         task3.setSchedulePlanGuid("BBB");

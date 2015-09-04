@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.dynamodb.test;
 import org.sagebionetworks.bridge.dynamodb.DynamoThroughput;
 import org.sagebionetworks.bridge.dynamodb.JsonNodeMarshaller;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
-import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -58,7 +58,7 @@ public class HealthDataRecordTest {
 
     @DynamoDBAttribute
     @DynamoDBIndexRangeKey(attributeName = "startDate", localSecondaryIndexName = "startDate-index")
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getStartDate() {
         return startDate;
     }
@@ -70,7 +70,7 @@ public class HealthDataRecordTest {
 
     @DynamoDBAttribute
     @DynamoDBIndexRangeKey(attributeName = "endDate", localSecondaryIndexName = "endDate-index")
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getEndDate() {
         return endDate;
     }

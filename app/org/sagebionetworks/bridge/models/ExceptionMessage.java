@@ -15,7 +15,7 @@ public class ExceptionMessage {
     private final Map<String,List<String>> errors;
     
     public ExceptionMessage(Throwable throwable, String message) {
-        this.message = throwable.getMessage();
+        this.message = (message != null) ? message : throwable.getMessage();
         if (throwable instanceof InvalidEntityException) {
             this.errors = ((InvalidEntityException)throwable).getErrors();    
         } else {

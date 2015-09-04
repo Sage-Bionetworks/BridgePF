@@ -57,6 +57,7 @@ public class SchedulePlanController extends BaseController {
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(requestToJSON(request()));
         planForm.setStudyKey(studyId.getIdentifier());
+        planForm.setGuid(guid);
         SchedulePlan plan = schedulePlanService.updateSchedulePlan(planForm);
         
         return okResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));

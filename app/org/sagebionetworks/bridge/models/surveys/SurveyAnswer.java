@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
-import org.sagebionetworks.bridge.json.DateTimeJsonSerializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -35,7 +35,7 @@ public class SurveyAnswer implements BridgeEntity {
     public void addAnswer(String answer) {
         this.answers.add(answer);
     }
-    @JsonSerialize(using = DateTimeJsonSerializer.class)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getAnsweredOn() {
         return answeredOn;
     }

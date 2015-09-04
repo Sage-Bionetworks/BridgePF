@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
-public final class DateTimeJsonDeserializer extends JsonDeserializer<Long> {
+public final class DateTimeToLongDeserializer extends JsonDeserializer<Long> {
 
     @Override
     public Long deserialize(JsonParser jp, DeserializationContext dc) throws IOException, JsonProcessingException {

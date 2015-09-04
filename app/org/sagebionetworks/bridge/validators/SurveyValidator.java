@@ -56,9 +56,9 @@ public class SurveyValidator implements Validator {
             SurveyElement element = survey.getElements().get(i);
             errors.pushNestedPath("element"+i);
             if (SURVEY_QUESTION_TYPE.equals(element.getType())) {
-                doValidateQuestion((SurveyQuestion)element, i, errors);    
+                doValidateQuestion((SurveyQuestion)element, errors);    
             } else if (SURVEY_INFO_SCREEN_TYPE.equals(element.getType())) {
-                doValidateInfoScreen((SurveyInfoScreen)element, i, errors);
+                doValidateInfoScreen((SurveyInfoScreen)element, errors);
             }
             if (foundIdentifiers.contains(element.getIdentifier())) {
                 errors.rejectValue("identifier", "exists in an earlier survey element");
@@ -73,7 +73,7 @@ public class SurveyValidator implements Validator {
             validateRules(errors, questions);    
         }
     }
-    private void doValidateQuestion(SurveyQuestion question, int pos, Errors errors) {
+    private void doValidateQuestion(SurveyQuestion question, Errors errors) {
         if (isBlank(question.getIdentifier())) {
             errors.rejectValue("identifier", "is required");
         }
@@ -91,7 +91,7 @@ public class SurveyValidator implements Validator {
             errors.popNestedPath();
         }
     }
-    private void doValidateInfoScreen(SurveyInfoScreen screen, int i, Errors errors) {
+    private void doValidateInfoScreen(SurveyInfoScreen screen, Errors errors) {
         if (isBlank(screen.getIdentifier())) {
             errors.rejectValue("identifier", "is required");
         }
