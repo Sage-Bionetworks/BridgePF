@@ -3,14 +3,19 @@ package org.sagebionetworks.bridge.validators;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.models.accounts.SignUp;
-import org.springframework.stereotype.Component;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-@Component
 public class SignUpValidator implements Validator {
     
-    private EmailValidator emailValidator = EmailValidator.getInstance();
+    private final EmailValidator emailValidator = EmailValidator.getInstance();
+    
+    private final PasswordPolicy passwordPolicy;
+    
+    public SignUpValidator(PasswordPolicy passwordPolicy) {
+        this.passwordPolicy = passwordPolicy;
+    }
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -22,15 +27,33 @@ public class SignUpValidator implements Validator {
         SignUp signUp = (SignUp) object;
 
         if (StringUtils.isBlank(signUp.getEmail())) {
-            errors.rejectValue("email", "null or blank");
+            errors.rejectValue("email", "is required");
         } else if (!emailValidator.isValid(signUp.getEmail())){
-            errors.rejectValue("email", "not a valid email address");
+            errors.rejectValue("email", "must be a valid email address");
         }
         if (StringUtils.isBlank(signUp.getUsername())) {
-            errors.rejectValue("username", "null or blank");
+            errors.rejectValue("username", "is required");
         }
         if (StringUtils.isBlank(signUp.getPassword())) {
-            errors.rejectValue("password", "null or blank");
+            errors.rejectValue("password", "is required");
+            return;
+        }
+        // validate password
+        String password = signUp.getPassword();
+        if (passwordPolicy.getMinLength() > 0 && password.length() < passwordPolicy.getMinLength()) {
+            errors.rejectValue("password", "must be at least "+passwordPolicy.getMinLength()+" characters");
+        }
+        if (passwordPolicy.isNumericRequired() && !password.matches(".*\\d+.*")) {
+            errors.rejectValue("password", "must contain at least one number (0-9)");
+        }
+        if (passwordPolicy.isSymbolRequired() && !password.matches(".*\\p{Punct}+.*")) {
+            errors.rejectValue("password", "must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )");
+        }
+        if (passwordPolicy.isLowerCaseRequired() && !password.matches(".*[a-z]+.*")) {
+            errors.rejectValue("password", "must contain at least one lowercase letter (a-z)");
+        }
+        if (passwordPolicy.isUpperCaseRequired() && !password.matches(".*[A-Z]+.*")) {
+            errors.rejectValue("password", "must contain at least one uppercase letter (A-Z)");
         }
     }
 
