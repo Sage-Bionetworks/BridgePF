@@ -352,6 +352,6 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
             }
         }
         // Do we care if it's sorted? What would it be sorted by?
-        return new ArrayList<>(schemaMap.values());
+        return ImmutableList.copyOf(schemaMap.values());
     }
 }
