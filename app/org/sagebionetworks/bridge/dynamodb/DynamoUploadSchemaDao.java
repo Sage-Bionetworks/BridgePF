@@ -2,8 +2,11 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -12,8 +15,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
 import com.google.common.collect.ImmutableSet;
-import org.springframework.stereotype.Component;
 
+import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -313,6 +316,17 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     /** {@inheritDoc} */
     @Override
     public @Nonnull List<UploadSchema> getUploadSchemasForStudy(@Nonnull StudyIdentifier studyId) {
-        return studyIdIndex.query(UploadSchema.class, "studyId", studyId.getIdentifier());
+        List<UploadSchema> allSchemasAllRevisions = studyIdIndex.query(UploadSchema.class, "studyId", studyId.getIdentifier());
+        
+        // Find the most recent version of each schema with a unique schemaId
+        Map<String,UploadSchema> schemaMap = new HashMap<>();
+        for (UploadSchema schema : allSchemasAllRevisions) {
+            UploadSchema existing = schemaMap.get(schema.getSchemaId());
+            if (existing == null || schema.getRevision() > existing.getRevision()) {
+                schemaMap.put(schema.getSchemaId(), schema);
+            }
+        }
+        // Do we care if it's sorted? What would it be sorted by?
+        return new ArrayList<>(schemaMap.values());
     }
 }

@@ -151,8 +151,8 @@ public class UploadSchemaService {
 
     /**
      * <p>
-     * Service handler for fetching all revisions of all upload schemas in a study. This is used by upload unpacking
-     * and validation to match up the data to the schema.
+     * Service handler for fetching the most recent revision of all upload schemas in a study. This is used by 
+     * upload unpacking and validation to match up the data to the schema.
      * </p>
      * <p>
      * This method does not validate the study ID, as that is not user input.

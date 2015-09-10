@@ -634,7 +634,34 @@ public class DynamoUploadSchemaDaoTest {
 
     @Test
     public void getUploadSchemasForStudy() {
-        // mock result
+        // mock result. Create two upload schemas with the same schemaId but different revisions. Only the 
+        // highest revision should be returned.
+        DynamoUploadSchema schema1 = new DynamoUploadSchema();
+        schema1.setSchemaId("AAA");
+        schema1.setRevision(1);
+        DynamoUploadSchema schema2 = new DynamoUploadSchema();
+        schema2.setSchemaId("AAA");
+        schema2.setRevision(2);
+        
+        List<UploadSchema> mockResult = ImmutableList.<UploadSchema>of(schema2, schema1);
+
+        // mock study ID index
+        DynamoIndexHelper mockStudyIdIndex = mock(DynamoIndexHelper.class);
+        when(mockStudyIdIndex.query(UploadSchema.class, "studyId", "test-study")).thenReturn(mockResult);
+
+        // set up test dao
+        DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
+        dao.setStudyIdIndex(mockStudyIdIndex);
+
+        // execute and validate
+        List<UploadSchema> outputSchemaList = dao.getUploadSchemasForStudy(new StudyIdentifierImpl("test-study"));
+        assertEquals(1, outputSchemaList.size());
+        assertEquals(schema2, outputSchemaList.get(0));
+    }
+
+    @Test
+    public void getUploadSchemasForStudyWithOneSchema() {
+        // mock result. 
         List<UploadSchema> mockResult = ImmutableList.<UploadSchema>of(new DynamoUploadSchema());
 
         // mock study ID index
@@ -647,9 +674,10 @@ public class DynamoUploadSchemaDaoTest {
 
         // execute and validate
         List<UploadSchema> outputSchemaList = dao.getUploadSchemasForStudy(new StudyIdentifierImpl("test-study"));
-        assertSame(mockResult, outputSchemaList);
+        // No longer assertSame, as the DAO filters the list it gets from DDB mapper.
+        assertEquals(mockResult, outputSchemaList);
     }
-
+    
     private static DynamoDBMapper setupMockMapperWithSchema(DynamoUploadSchema schema) {
         // mock get result
         PaginatedQueryList<DynamoUploadSchema> mockGetResult = mock(PaginatedQueryList.class);

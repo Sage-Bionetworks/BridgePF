@@ -112,8 +112,8 @@ public class UploadSchemaController extends BaseController {
     }
 
     /**
-     * Play controller for GET /researcher/v1/uploadSchema/forStudy. This API fetches all revisions of all upload
-     * schemas in the current study. This is generally used by worker apps to validate uploads against schemas.
+     * Play controller for GET /m3/uploadschemas. This API fetches the most recent revision of all upload 
+     * schemas for the current study. 
      * 
      * @return Play result with list of schemas for this study
      */

@@ -204,6 +204,7 @@ public class UploadSchemaServiceTest {
     public void getSchemasForStudy() {
         // mock dao
         StudyIdentifier studyIdentifier = makeTestStudy();
+        
         List<UploadSchema> daoRetVal = ImmutableList.<UploadSchema>of(new DynamoUploadSchema());
         UploadSchemaDao mockDao = mock(UploadSchemaDao.class);
         when(mockDao.getUploadSchemasForStudy(studyIdentifier)).thenReturn(daoRetVal);
