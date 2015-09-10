@@ -14,6 +14,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import org.springframework.stereotype.Component;
@@ -270,11 +271,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
             throw new EntityNotFoundException(UploadSchema.class, String.format(
                 "Upload schema not found for study %s, schema ID %s", studyIdentifier.getIdentifier(), schemaId));
         }
-        List<UploadSchema> schemas = new ArrayList<>();
-        for (DynamoUploadSchema schema : uploadSchemas) {
-            schemas.add(schema);
-        }
-        return schemas;
+        return ImmutableList.<UploadSchema>copyOf(uploadSchemas);
     }
 
     /** {@inheritDoc} */
