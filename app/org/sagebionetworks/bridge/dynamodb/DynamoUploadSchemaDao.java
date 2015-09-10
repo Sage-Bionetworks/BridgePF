@@ -98,8 +98,10 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         for (SurveyQuestion oneQuestion : survey.getUnmodifiableQuestionList()) {
             String name = oneQuestion.getIdentifier();
             UploadFieldType type = getFieldTypeFromConstraints(oneQuestion.getConstraints());
+
+            // All survey questions are skippable, so mark the field as optional (not required)
             UploadFieldDefinition oneFieldDef = new DynamoUploadFieldDefinition.Builder().withName(name)
-                    .withType(type).build();
+                    .withType(type).withRequired(false).build();
             fieldDefList.add(oneFieldDef);
         }
 

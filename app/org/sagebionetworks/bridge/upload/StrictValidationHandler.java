@@ -76,7 +76,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
 
         List<String> errorList = validateAllFields(fieldDefList, attachmentFieldNameSet, recordDataNode);
 
-        handleErrors(context, errorList);
+        handleErrors(context, schemaId, schemaRev, errorList);
     }
 
     /**
@@ -85,12 +85,17 @@ public class StrictValidationHandler implements UploadValidationHandler {
      *
      * @param context
      *         upload validation context
+     * @param schemaId
+     *         schema ID, used for logging
+     * @param schemaRev
+     *         schema revision, used for logging
      * @param errorList
      *         list of errors, may be empty if there are no errors
      * @throws UploadValidationException
      *         representing the error with the specified message, if shouldThrow is true
      */
-    private void handleErrors(@Nonnull UploadValidationContext context, @Nonnull List<String> errorList)
+    private void handleErrors(@Nonnull UploadValidationContext context, @Nonnull String schemaId, int schemaRev,
+            @Nonnull List<String> errorList)
             throws UploadValidationException {
         if (errorList.isEmpty()) {
             // no errors, trivial return
@@ -102,7 +107,8 @@ public class StrictValidationHandler implements UploadValidationHandler {
 
         // log warning
         String combinedErrorMessage = "Strict upload validation error in study " + context.getStudy().getIdentifier()
-                + ", upload " + context.getUpload().getUploadId() + ": " + ERROR_MESSAGE_JOINER.join(errorList);
+                + ", schema " + schemaId + "-v" + schemaRev + ", upload " + context.getUpload().getUploadId() + ": " +
+                ERROR_MESSAGE_JOINER.join(errorList);
         logger.warn(combinedErrorMessage);
 
         // throw error, if configured to do so

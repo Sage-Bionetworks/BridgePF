@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
@@ -341,7 +342,7 @@ public class DynamoUploadSchemaDaoTest {
         // old schema - has different questions
         DynamoUploadSchema oldSchema = makeUploadSchema("survey-study", "test-survey", 2);
         oldSchema.setFieldDefinitions(ImmutableList.of(new DynamoUploadFieldDefinition.Builder()
-                .withName("different-question").withType(UploadFieldType.STRING).build()));
+                .withName("different-question").withType(UploadFieldType.STRING).withRequired(false).build()));
 
         // Mock DDB mapper - This is only used for rev, so we don't need a fully fleshed out schema.
         DynamoDBMapper mockMapper = setupMockMapperWithSchema(oldSchema);
@@ -395,9 +396,9 @@ public class DynamoUploadSchemaDaoTest {
         oldSchema.setName("Old Name");
         oldSchema.setFieldDefinitions(ImmutableList.of(
                 new DynamoUploadFieldDefinition.Builder().withName("bar-question").withType(UploadFieldType.INT)
-                        .build(),
+                        .withRequired(false).build(),
                 new DynamoUploadFieldDefinition.Builder().withName("foo-question").withType(UploadFieldType.BOOLEAN)
-                        .build()));
+                        .withRequired(false).build()));
 
         // Mock DDB mapper - This is only used for rev, so we don't need a fully fleshed out schema.
         DynamoDBMapper mockMapper = setupMockMapperWithSchema(oldSchema);
@@ -413,6 +414,48 @@ public class DynamoUploadSchemaDaoTest {
 
         // Make sure we don't save anything to DDB.
         verify(mockMapper, never()).save(any());
+    }
+
+    @Test
+    public void surveySchemasHaveOptionalFields() {
+        // create survey questions - We already tested all the survey question types, so we don't need a big huge list.
+        SurveyQuestion q = new DynamoSurveyQuestion();
+        q.setIdentifier("always-optional");
+        q.setConstraints(new DecimalConstraints());
+        List<SurveyElement> surveyElementList = ImmutableList.<SurveyElement>of(q);
+
+        // make survey
+        Survey survey = new DynamoSurvey();
+        survey.setIdentifier("test-survey");
+        survey.setName("Optional Question Survey");
+        survey.setElements(surveyElementList);
+
+        // Mock DDB mapper - This is the new schema case, so setting up the mock mapper with null is fine.
+        DynamoDBMapper mockMapper = setupMockMapperWithSchema(null);
+
+        // set up test dao and execute
+        DynamoUploadSchemaDao dao = new DynamoUploadSchemaDao();
+        dao.setDdbMapper(mockMapper);
+        DynamoUploadSchema createdSchema = (DynamoUploadSchema) dao.createUploadSchemaFromSurvey(
+                new StudyIdentifierImpl("survey-study"), survey);
+
+        // validate schema
+        assertEquals("Optional Question Survey", createdSchema.getName());
+        assertEquals(1, createdSchema.getRevision());
+        assertEquals("test-survey", createdSchema.getSchemaId());
+        assertEquals(UploadSchemaType.IOS_SURVEY, createdSchema.getSchemaType());
+        assertEquals("survey-study", createdSchema.getStudyId());
+
+        List<UploadFieldDefinition> fieldDefList = createdSchema.getFieldDefinitions();
+        assertEquals(1, fieldDefList.size());
+        assertEquals("always-optional", fieldDefList.get(0).getName());
+        assertEquals(UploadFieldType.FLOAT, fieldDefList.get(0).getType());
+        assertFalse(fieldDefList.get(0).isRequired());
+
+        // Validate call to DDB - make sure returned schema same as the one sent to DDB.
+        ArgumentCaptor<DynamoUploadSchema> arg = ArgumentCaptor.forClass(DynamoUploadSchema.class);
+        verify(mockMapper).save(arg.capture(), notNull(DynamoDBSaveExpression.class));
+        assertSame(createdSchema, arg.getValue());
     }
 
     @Test
