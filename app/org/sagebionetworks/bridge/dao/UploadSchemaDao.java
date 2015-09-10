@@ -74,6 +74,16 @@ public interface UploadSchemaDao {
     @Nonnull UploadSchema getUploadSchema(@Nonnull String studyId, @Nonnull String schemaId);
 
     /**
+     * Fetch all revisions of a single upload schema. Throws EntityNotFoundException if no records are found. 
+     * @param studyIdentifier
+     *         study to fetch the schema from, must be non-null and non-empty
+     * @param schemaId
+     *         ID of the schema to fetch, must be non-null and non-empty
+     * @return a list of all revisions of a schema
+     */
+    @Nonnull List<UploadSchema> getUploadSchemaAllRevisions(@Nonnull StudyIdentifier studyIdentifier, @Nonnull String schemaId);
+    
+    /**
      * Fetches the upload schema for the specified study, schema ID, and revision. If no schema is found, this API
      * throws an EntityNotFoundException
      *

@@ -261,6 +261,21 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         }
         return uploadSchema;
     }
+    
+    /** {@inheritDoc} */
+    @Override
+    public @Nonnull List<UploadSchema> getUploadSchemaAllRevisions(@Nonnull StudyIdentifier studyIdentifier, @Nonnull String schemaId) {
+        List<DynamoUploadSchema> uploadSchemas = getUploadSchemaAllRevisionsNoThrow(studyIdentifier.getIdentifier(), schemaId);
+        if (uploadSchemas.isEmpty()) {
+            throw new EntityNotFoundException(UploadSchema.class, String.format(
+                "Upload schema not found for study %s, schema ID %s", studyIdentifier.getIdentifier(), schemaId));
+        }
+        List<UploadSchema> schemas = new ArrayList<>();
+        for (DynamoUploadSchema schema : uploadSchemas) {
+            schemas.add(schema);
+        }
+        return schemas;
+    }
 
     /** {@inheritDoc} */
     @Override
@@ -300,6 +315,17 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         } else {
             return schemaList.get(0);
         }
+    }
+    
+    private List<DynamoUploadSchema> getUploadSchemaAllRevisionsNoThrow(@Nonnull String studyId, @Nonnull String schemaId) {
+        DynamoUploadSchema key = new DynamoUploadSchema();
+        key.setStudyId(studyId);
+        key.setSchemaId(schemaId);
+
+        // Get all revisions, in reverse sort order (highest first)
+        DynamoDBQueryExpression<DynamoUploadSchema> ddbQuery = new DynamoDBQueryExpression<DynamoUploadSchema>()
+                .withHashKeyValues(key).withScanIndexForward(false);
+        return mapper.query(DynamoUploadSchema.class, ddbQuery);
     }
 
     /**
