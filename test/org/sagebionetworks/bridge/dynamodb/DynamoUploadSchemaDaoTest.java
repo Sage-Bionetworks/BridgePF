@@ -677,18 +677,13 @@ public class DynamoUploadSchemaDaoTest {
 
     @Test
     public void getUploadSchemasForStudy() {
-        // mock result. Create three upload schemas with the same schemaId but different revisions. 
-        // Only the highest revision should be returned (rev 3).
-        DynamoUploadSchema schema1 = new DynamoUploadSchema();
-        schema1.setSchemaId("AAA");
-        schema1.setRevision(1);
-        DynamoUploadSchema schema2 = new DynamoUploadSchema();
-        schema2.setSchemaId("AAA");
-        schema2.setRevision(2);
-        DynamoUploadSchema schema3 = new DynamoUploadSchema();
-        schema3.setSchemaId("AAA");
-        schema3.setRevision(3);
-        List<UploadSchema> mockResult = ImmutableList.<UploadSchema>of(schema1, schema2, schema3);
+        // mock result. Create four upload schemas with two different IDs with two revisions each. Should 
+        // see the highest of each revision returned. (AAA=2 and BBB=3).
+        List<UploadSchema> mockResult = ImmutableList.<UploadSchema>of(
+            makeUploadSchema("test-study", "AAA", 1), 
+            makeUploadSchema("test-study", "AAA", 2),
+            makeUploadSchema("test-study", "BBB", 2),
+            makeUploadSchema("test-study", "BBB", 3));
 
         // mock study ID index
         DynamoIndexHelper mockStudyIdIndex = mock(DynamoIndexHelper.class);
@@ -701,9 +696,13 @@ public class DynamoUploadSchemaDaoTest {
         // execute and validate
         List<UploadSchema> outputSchemaList = dao.getUploadSchemasForStudy(new StudyIdentifierImpl("test-study"));
         
-        assertEquals(1, outputSchemaList.size());
-        assertEquals(3, outputSchemaList.get(0).getRevision());
+        assertEquals(2, outputSchemaList.size());
+        
         assertEquals("AAA", outputSchemaList.get(0).getSchemaId());
+        assertEquals(2, outputSchemaList.get(0).getRevision());
+        
+        assertEquals("BBB", outputSchemaList.get(1).getSchemaId());
+        assertEquals(3, outputSchemaList.get(1).getRevision());
     }
 
     @Test
@@ -727,8 +726,6 @@ public class DynamoUploadSchemaDaoTest {
     
     @Test
     public void getUploadSchemasAllRevisions() {
-        // I want to test the actual sort order sent back by DDB, but all the tests here are mocks, so I'll
-        // continue down that path.
         DynamoDBMapper mockMapper = setupMockMapperWithListResults();
 
         // set up test dao
@@ -739,9 +736,9 @@ public class DynamoUploadSchemaDaoTest {
         List<UploadSchema> outputSchemaList = dao.getUploadSchemaAllRevisions(new StudyIdentifierImpl("test-study"), "AAA");
 
         assertEquals(3, outputSchemaList.size());
-        assertEquals(1, outputSchemaList.get(0).getRevision());
+        assertEquals(3, outputSchemaList.get(0).getRevision());
         assertEquals(2, outputSchemaList.get(1).getRevision());
-        assertEquals(3, outputSchemaList.get(2).getRevision());
+        assertEquals(1, outputSchemaList.get(2).getRevision());
     }
     
     private static DynamoDBMapper setupMockMapperWithSchema(DynamoUploadSchema schema) {
@@ -768,16 +765,11 @@ public class DynamoUploadSchemaDaoTest {
     private DynamoDBMapper setupMockMapperWithListResults() {
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
         
-        DynamoUploadSchema schema1 = new DynamoUploadSchema();
-        schema1.setSchemaId("AAA");
-        schema1.setRevision(1);
-        DynamoUploadSchema schema2 = new DynamoUploadSchema();
-        schema2.setSchemaId("AAA");
-        schema2.setRevision(2);
-        DynamoUploadSchema schema3 = new DynamoUploadSchema();
-        schema3.setSchemaId("AAA");
-        schema3.setRevision(3);
-        List<DynamoUploadSchema> results = ImmutableList.<DynamoUploadSchema>of(schema1, schema2, schema3);
+        // Reverse order, as queried
+        List<DynamoUploadSchema> results = ImmutableList.<DynamoUploadSchema>of(
+            makeUploadSchema("test-study", "AAA", 3), 
+            makeUploadSchema("test-study", "AAA", 2), 
+            makeUploadSchema("test-study", "AAA", 1));
         
         final PaginatedQueryList<DynamoUploadSchema> queryResults = (PaginatedQueryList<DynamoUploadSchema>)mock(PaginatedQueryList.class);
         when(queryResults.iterator()).thenReturn(results.iterator());
@@ -788,7 +780,7 @@ public class DynamoUploadSchemaDaoTest {
         )).thenReturn(queryResults);
         return mockMapper;
     }
-
+    
     private static DynamoUploadSchema makeUploadSchema(String studyId, String schemaId, int rev) {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setStudyId(studyId);

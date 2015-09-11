@@ -127,7 +127,7 @@ public class UploadSchemaController extends BaseController {
     }
 
     /**
-     * Play controller for GET /m3/uploadschemas. This API fetches the most recent revision of all upload 
+     * Play controller for GET /v3/uploadschemas. This API fetches the most recent revision of all upload 
      * schemas for the current study. 
      * 
      * @return Play result with list of schemas for this study
