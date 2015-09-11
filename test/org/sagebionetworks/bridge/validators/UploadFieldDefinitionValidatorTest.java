@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.List;
@@ -26,16 +27,16 @@ public class UploadFieldDefinitionValidatorTest {
         assertEquals(1, errors.size());
         return errors.get(0);
     }
-    
-    private void assertErrorExists(UploadFieldDefinition def, String error, String fieldName) {
+
+    public void assertError(UploadFieldDefinition def, String error, String fieldName) {
         try {
             Validate.entityThrowingException(validator, def);
-            fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
+            fail("Should have thrown exception");
+        } catch (InvalidEntityException e) {
             assertEquals(error, errorFor(e, fieldName));
         }
     }
-
+    
     @Test
     public void requiresObject() {
         MapBindingResult errors = new MapBindingResult(Maps.newHashMap(), "UploadFieldDefinition");
@@ -52,9 +53,9 @@ public class UploadFieldDefinitionValidatorTest {
         assertEquals("UploadFieldDefinition is invalid: uploadFieldDefinition is the wrong type", error);
     }
     
-    // The problem illustrated in the next two tests is that the deserialization of upload field definitions
-    // throws a JsonMappingException, not an InvalidEntityException. This translates into the impression 
-    // that the JSON was malformed, when it wasn't, it was just that a required field is missing.
+    // The deserialization of upload field definitions throws a JsonMappingException, wrapping an 
+    // an InvalidEntityException. So we can verify this happening, but to return a complete and correct
+    // error to the user, we need to use a custom UploadSchema deserializer.
     
     @Test
     public void requiresName() throws Exception {
@@ -72,7 +73,10 @@ public class UploadFieldDefinitionValidatorTest {
             String json = "{\"name\":\"foo\",\"required\":true}";
             BridgeObjectMapper.get().readValue(json, UploadFieldDefinition.class);
         } catch(JsonMappingException e) {
-            assertEquals("type is required", errorFor((InvalidEntityException)e.getCause(), "type"));
+            // Verify as well that we have the right type name (doesn't start with "Dynamo")
+            InvalidEntityException iee = (InvalidEntityException)e.getCause();
+            assertTrue(iee.getMessage().startsWith("UploadFieldDefinition is invalid: "));
+            assertEquals("type is required", errorFor(iee, "type"));
         }
     }
 
