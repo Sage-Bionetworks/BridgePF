@@ -40,9 +40,9 @@ public class UploadSchemaValidator implements Validator {
     @Override
     public void validate(Object target, Errors errors) {
         if (target == null) {
-            errors.rejectValue("uploadSchema", Validate.CANNOT_BE_NULL);
+            errors.rejectValue("uploadSchema", "cannot be null");
         } else if (!(target instanceof UploadSchema)) {
-            errors.rejectValue("uploadSchema", Validate.WRONG_TYPE);
+            errors.rejectValue("uploadSchema", "is the wrong type");
         } else {
             UploadSchema uploadSchema = (UploadSchema) target;
 
@@ -52,28 +52,28 @@ public class UploadSchemaValidator implements Validator {
             // permit null values.
             List<UploadFieldDefinition> fieldDefList = uploadSchema.getFieldDefinitions();
             if (fieldDefList == null || fieldDefList.isEmpty()) {
-                errors.rejectValue("fieldDefinitions", Validate.CANNOT_BE_NULL_OR_EMPTY);
+                errors.rejectValue("fieldDefinitions", "requires at least one definition");
             }
 
             // name
             if (Strings.isNullOrEmpty(uploadSchema.getName())) {
-                errors.rejectValue("name", Validate.CANNOT_BE_BLANK);
+                errors.rejectValue("name", "is required");
             }
 
             // revision must be non-negative. (0 is allowed if it's a new schema. revisions 1 and above are saved
             // schemas)
             if (uploadSchema.getRevision() < 0) {
-                errors.rejectValue("revision", Validate.CANNOT_BE_NEGATIVE);
+                errors.rejectValue("revision", "must be a positive integer");
             }
 
             // schema ID
             if (Strings.isNullOrEmpty(uploadSchema.getSchemaId())) {
-                errors.rejectValue("schemaId", Validate.CANNOT_BE_BLANK);
+                errors.rejectValue("schemaId", "is required");
             }
 
             // schema type
             if (uploadSchema.getSchemaType() == null) {
-                errors.rejectValue("schemaType", Validate.CANNOT_BE_NULL);
+                errors.rejectValue("schemaType", "is required");
             }
         }
     }

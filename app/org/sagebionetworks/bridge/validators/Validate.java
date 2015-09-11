@@ -53,7 +53,6 @@ public class Validate {
         
         validator.validate(object, errors);
     }
-    
     public static void throwException(BindingResult errors, BridgeEntity entity) {
         if (errors.hasErrors()) {
             String message = convertBindingResultToMessage(errors);
@@ -62,18 +61,7 @@ public class Validate {
             throw new InvalidEntityException(entity, message, map);
         }
     }
-    
-    private static String convertBindingResultToMessage(BindingResult errors) {
-        List<String> messages = Lists.newArrayListWithCapacity(errors.getErrorCount());
-        for (ObjectError error : errors.getGlobalErrors()) {
-            messages.add(errorToString(error.getObjectName(), error));    
-        }
-        for (FieldError error : errors.getFieldErrors()) {
-            messages.add(errorToString(error.getField(), error));
-        }
-        return String.format("%s is invalid: %s", errors.getObjectName(), Joiner.on("; ").join(messages));
-    }
-    private static Map<String,List<String>> convertBindingResultToSimpleMap(BindingResult errors) {
+    public static Map<String,List<String>> convertBindingResultToSimpleMap(BindingResult errors) {
         Map<String,List<String>> map = Maps.newHashMap();
         
         if (errors.hasGlobalErrors()) {
@@ -93,6 +81,16 @@ public class Validate {
             }
         }
         return map;
+    }
+    public static String convertBindingResultToMessage(BindingResult errors) {
+        List<String> messages = Lists.newArrayListWithCapacity(errors.getErrorCount());
+        for (ObjectError error : errors.getGlobalErrors()) {
+            messages.add(errorToString(error.getObjectName(), error));    
+        }
+        for (FieldError error : errors.getFieldErrors()) {
+            messages.add(errorToString(error.getField(), error));
+        }
+        return String.format("%s is invalid: %s", errors.getObjectName(), Joiner.on("; ").join(messages));
     }
     private static String errorToString(String name, ObjectError error) {
         if (error.getArguments() != null) {

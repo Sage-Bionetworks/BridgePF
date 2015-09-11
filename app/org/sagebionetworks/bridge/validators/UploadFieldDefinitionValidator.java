@@ -26,18 +26,18 @@ public class UploadFieldDefinitionValidator implements Validator {
     @Override
     public void validate(Object target, Errors errors) {
         if (target == null) {
-            errors.rejectValue("uploadFieldDefinition", Validate.CANNOT_BE_NULL);
+            errors.rejectValue("uploadFieldDefinition", "cannot be null");
         } else if (!(target instanceof UploadFieldDefinition)) {
-            errors.rejectValue("uploadFieldDefinition", Validate.WRONG_TYPE);
+            errors.rejectValue("uploadFieldDefinition", "is the wrong type");
         } else {
             UploadFieldDefinition fieldDef = (UploadFieldDefinition) target;
 
             if (Strings.isNullOrEmpty(fieldDef.getName())) {
-                errors.rejectValue("name", Validate.CANNOT_BE_BLANK);
+                errors.rejectValue("name", "is required");
             }
 
             if (fieldDef.getType() == null) {
-                errors.rejectValue("type", Validate.CANNOT_BE_NULL);
+                errors.rejectValue("type", "is required");
             }
         }
     }
