@@ -291,12 +291,17 @@ public class StudyServiceImpl implements StudyService {
     }
     
     private EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {
-        String subject = Jsoup.clean(template.getSubject(), Whitelist.none());
-        String body = null;
-        if (template.getMimeType() == MimeType.TEXT) {
-            body = Jsoup.clean(template.getBody(), Whitelist.none());
-        } else {
-            body = Jsoup.clean(template.getBody(), Whitelist.relaxed());
+        String subject = template.getSubject();
+        if (StringUtils.isNotBlank(subject)) {
+            subject = Jsoup.clean(subject, Whitelist.none());
+        }
+        String body = template.getBody();
+        if (StringUtils.isNotBlank(body)) {
+            if (template.getMimeType() == MimeType.TEXT) {
+                body = Jsoup.clean(body, Whitelist.none());
+            } else {
+                body = Jsoup.clean(body, Whitelist.relaxed());
+            }
         }
         return new EmailTemplate(subject, body, template.getMimeType());
     }
