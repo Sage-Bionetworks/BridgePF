@@ -92,6 +92,15 @@ public class Validate {
         }
         return String.format("%s is invalid: %s", errors.getObjectName(), Joiner.on("; ").join(messages));
     }
+    public static String convertSimpleMapResultToMessage(String entityTypeName, Map<String,List<String>> map) {
+        List<String> messages = Lists.newArrayList();
+        for (Map.Entry<String, List<String>> entry : map.entrySet()) {
+            for (String message : entry.getValue()) {
+                messages.add(message);
+            }
+        }
+        return String.format("%s is invalid: %s", entityTypeName, Joiner.on("; ").join(messages));
+    }
     private static String errorToString(String name, ObjectError error) {
         if (error.getArguments() != null) {
             String base = (error.getCode() != null) ? error.getCode() : error.getDefaultMessage();

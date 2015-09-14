@@ -1,7 +1,10 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
@@ -15,15 +18,22 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
+import org.sagebionetworks.bridge.validators.UploadFieldDefinitionValidator;
+import org.sagebionetworks.bridge.validators.UploadSchemaValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /**
@@ -33,6 +43,10 @@ import org.sagebionetworks.bridge.validators.Validate;
 @DynamoThroughput(readCapacity=50, writeCapacity=25)
 @DynamoDBTable(tableName = "UploadSchema")
 public class DynamoUploadSchema implements UploadSchema {
+    
+    private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
+    private static final String FIELD_DEFINITIONS = "fieldDefinitions";
+    
     private List<UploadFieldDefinition> fieldDefList;
     private String name;
     private int rev;
@@ -40,6 +54,87 @@ public class DynamoUploadSchema implements UploadSchema {
     private UploadSchemaType schemaType;
     private String studyId;
 
+    /**
+     * Bypass all the object construction restrictions to return a complete validation error when the JSON sent from the
+     * server is syntactically valid but incorrect. We have two competing models in our system: object construction code
+     * that prevents server-side developers from creating invalid objects, and a user input system that depends on the
+     * ability of users to create invalid objects from JSON, which we then validate.
+     * 
+     * This is the disaster that results when we have to harmonize the two. It may not always be possible, but here it
+     * is.
+     * 
+     * @param node
+     * @return
+     */
+    public static UploadSchema fromJson(JsonNode node) {
+        ArrayNode fieldDefinitionsNode = null;
+        List<UploadFieldDefinition> fieldDefinitions = new ArrayList<>(); 
+        Map<String,List<String>> errors = new HashMap<>();
+        
+        // Remove field definitions.
+        if (node.has(FIELD_DEFINITIONS)) {
+            fieldDefinitionsNode = (ArrayNode)node.get(FIELD_DEFINITIONS);
+            ((ObjectNode)node).remove(FIELD_DEFINITIONS);
+        }
+        
+        // Validate them separately, storing their errors
+        if (fieldDefinitionsNode != null) {
+            for (int i=0; i < fieldDefinitionsNode.size(); i++) {
+                JsonNode defNode = fieldDefinitionsNode.get(i);
+                try {
+                    UploadFieldDefinition definition = MAPPER.convertValue(defNode, UploadFieldDefinition.class);
+                    fieldDefinitions.add(definition);
+                } catch(IllegalArgumentException iae) {
+                    Throwable cause = Throwables.getRootCause(iae);
+                    if (cause instanceof InvalidEntityException) {
+                        InvalidEntityException e = (InvalidEntityException)cause;
+                        for (Map.Entry<String, List<String>> entry: e.getErrors().entrySet()) {
+                            String fieldName = FIELD_DEFINITIONS+i+"."+entry.getKey();
+                            errors.put(fieldName, entry.getValue());
+                            // We need to adjust the errors which now reference a field that is nested
+                            for (int j=0; j < entry.getValue().size(); j++) {
+                                String message = entry.getValue().get(j);
+                                String replacedMessage = message.replaceFirst(entry.getKey(), fieldName);
+                                entry.getValue().set(j, replacedMessage);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Validate the entity which will always be invalid with at least one error (no field
+        // definitions); we're looking for additional errors
+        try {
+            UploadSchema schema = MAPPER.convertValue(node, UploadSchema.class);
+            Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+        } catch(IllegalArgumentException iae) {
+            Throwable cause = Throwables.getRootCause(iae);
+            if (cause instanceof InvalidEntityException) {
+                InvalidEntityException e = (InvalidEntityException)cause;
+                for (Map.Entry<String, List<String>> entry: e.getErrors().entrySet()) {
+                    if (!FIELD_DEFINITIONS.equals(entry.getKey())) {
+                        errors.put(entry.getKey(), entry.getValue());    
+                    }
+                }
+            }
+        } catch(InvalidEntityException e) {
+            for (Map.Entry<String, List<String>> entry: e.getErrors().entrySet()) {
+                
+                if (!FIELD_DEFINITIONS.equals(entry.getKey())) {
+                    errors.put(entry.getKey(), entry.getValue());    
+                }
+            }
+        }
+        if (!errors.isEmpty()) {
+            String msg = Validate.convertSimpleMapResultToMessage("UploadSchema", errors);
+            throw new InvalidEntityException(null, msg, errors);
+        }
+        // Object is valid in its parts, restore field definitions and convert.
+        ((ObjectNode)node).putPOJO(FIELD_DEFINITIONS, fieldDefinitionsNode);
+        return MAPPER.convertValue(node, UploadSchema.class);
+    }
+    
     /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = FieldDefinitionListMarshaller.class)
     @Override

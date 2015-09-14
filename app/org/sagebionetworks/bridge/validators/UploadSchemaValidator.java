@@ -3,9 +3,9 @@ package org.sagebionetworks.bridge.validators;
 import java.util.List;
 
 import com.google.common.base.Strings;
+
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 

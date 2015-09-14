@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -36,7 +37,7 @@ public class UploadSchemaController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
-        UploadSchema uploadSchema = parseJson(request(), UploadSchema.class);
+        UploadSchema uploadSchema = DynamoUploadSchema.fromJson(requestToJSON(request()));
         UploadSchema createdSchema = uploadSchemaService.createOrUpdateUploadSchema(studyId, uploadSchema);
         return okResult(createdSchema);
     }
