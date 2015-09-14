@@ -204,6 +204,7 @@ public class UploadSchemaServiceTest {
     public void getSchemasForStudy() {
         // mock dao
         StudyIdentifier studyIdentifier = makeTestStudy();
+        
         List<UploadSchema> daoRetVal = ImmutableList.<UploadSchema>of(new DynamoUploadSchema());
         UploadSchemaDao mockDao = mock(UploadSchemaDao.class);
         when(mockDao.getUploadSchemasForStudy(studyIdentifier)).thenReturn(daoRetVal);
@@ -212,6 +213,31 @@ public class UploadSchemaServiceTest {
         UploadSchemaService svc = new UploadSchemaService();
         svc.setUploadSchemaDao(mockDao);
         List<UploadSchema> svcRetVal = svc.getUploadSchemasForStudy(studyIdentifier);
+        assertSame(daoRetVal, svcRetVal);
+    }
+    
+    @Test
+    public void getSchemaAllRevisions() {
+        String schemaId = "test-schema";
+        
+        // mock dao
+        StudyIdentifier studyIdentifier = makeTestStudy();
+        
+        DynamoUploadSchema schema1 = new DynamoUploadSchema();
+        schema1.setRevision(3);
+        DynamoUploadSchema schema2 = new DynamoUploadSchema();
+        schema1.setRevision(2);
+        DynamoUploadSchema schema3 = new DynamoUploadSchema();
+        schema1.setRevision(1);
+        
+        List<UploadSchema> daoRetVal = ImmutableList.<UploadSchema>of(schema1, schema2, schema3);
+        UploadSchemaDao mockDao = mock(UploadSchemaDao.class);
+        when(mockDao.getUploadSchemaAllRevisions(studyIdentifier, schemaId)).thenReturn(daoRetVal);
+
+        // execute and validate
+        UploadSchemaService svc = new UploadSchemaService();
+        svc.setUploadSchemaDao(mockDao);
+        List<UploadSchema> svcRetVal = svc.getUploadSchemaAllRevisions(studyIdentifier, schemaId);
         assertSame(daoRetVal, svcRetVal);
     }
 

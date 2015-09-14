@@ -124,6 +124,28 @@ public class UploadSchemaService {
 
     /**
      * <p>
+     * Service handler for fetching upload schemas. This method fetches all revisions of an an upload schema for 
+     * the specified study and schema ID. If the schema doesn't exist, this handler throws an InvalidEntityException.
+     * </p>
+     * <p>
+     * This method validates the schema ID. However, it does not validate the study, as that is not user input.
+     * </p>
+     *
+     * @param studyIdentifier
+     *         study to fetch the schema from, provided by the controller
+     * @param schemaId
+     *         ID of the schema to fetch, must be non-null and non-empty
+     * @return the fetched schema, will be non-null
+     */
+    public List<UploadSchema> getUploadSchemaAllRevisions(StudyIdentifier studyIdentifier, String schemaId) {
+        if (StringUtils.isBlank(schemaId)) {
+            throw new BadRequestException(String.format("Invalid schema ID %s", schemaId));
+        }
+        return uploadSchemaDao.getUploadSchemaAllRevisions(studyIdentifier, schemaId);
+    }
+    
+    /**
+     * <p>
      * Fetches the upload schema for the specified study, schema ID, and revision. If no schema is found, this API
      * throws an EntityNotFoundException
      * </p>
@@ -151,8 +173,8 @@ public class UploadSchemaService {
 
     /**
      * <p>
-     * Service handler for fetching all revisions of all upload schemas in a study. This is used by upload unpacking
-     * and validation to match up the data to the schema.
+     * Service handler for fetching the most recent revision of all upload schemas in a study. This is used by 
+     * upload unpacking and validation to match up the data to the schema.
      * </p>
      * <p>
      * This method does not validate the study ID, as that is not user input.

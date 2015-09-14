@@ -2,8 +2,11 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -11,9 +14,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.springframework.stereotype.Component;
 
+import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -258,6 +262,17 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         }
         return uploadSchema;
     }
+    
+    /** {@inheritDoc} */
+    @Override
+    public @Nonnull List<UploadSchema> getUploadSchemaAllRevisions(@Nonnull StudyIdentifier studyIdentifier, @Nonnull String schemaId) {
+        List<DynamoUploadSchema> uploadSchemas = getUploadSchemaAllRevisionsNoThrow(studyIdentifier.getIdentifier(), schemaId);
+        if (uploadSchemas.isEmpty()) {
+            throw new EntityNotFoundException(UploadSchema.class, String.format(
+                "Upload schema not found for study %s, schema ID %s", studyIdentifier.getIdentifier(), schemaId));
+        }
+        return ImmutableList.<UploadSchema>copyOf(uploadSchemas);
+    }
 
     /** {@inheritDoc} */
     @Override
@@ -298,6 +313,17 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
             return schemaList.get(0);
         }
     }
+    
+    private List<DynamoUploadSchema> getUploadSchemaAllRevisionsNoThrow(@Nonnull String studyId, @Nonnull String schemaId) {
+        DynamoUploadSchema key = new DynamoUploadSchema();
+        key.setStudyId(studyId);
+        key.setSchemaId(schemaId);
+
+        // Get all revisions, in reverse sort order (highest first)
+        DynamoDBQueryExpression<DynamoUploadSchema> ddbQuery = new DynamoDBQueryExpression<DynamoUploadSchema>()
+                .withHashKeyValues(key).withScanIndexForward(false);
+        return mapper.query(DynamoUploadSchema.class, ddbQuery);
+    }
 
     /**
      * Private helper function to get the current schema revision of the specified schema ID. Returns 0 if the schema
@@ -315,6 +341,17 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     /** {@inheritDoc} */
     @Override
     public @Nonnull List<UploadSchema> getUploadSchemasForStudy(@Nonnull StudyIdentifier studyId) {
-        return studyIdIndex.query(UploadSchema.class, "studyId", studyId.getIdentifier());
+        List<UploadSchema> allSchemasAllRevisions = studyIdIndex.query(UploadSchema.class, "studyId", studyId.getIdentifier());
+        
+        // Find the most recent version of each schema with a unique schemaId
+        Map<String,UploadSchema> schemaMap = new HashMap<>();
+        for (UploadSchema schema : allSchemasAllRevisions) {
+            UploadSchema existing = schemaMap.get(schema.getSchemaId());
+            if (existing == null || schema.getRevision() > existing.getRevision()) {
+                schemaMap.put(schema.getSchemaId(), schema);
+            }
+        }
+        // Do we care if it's sorted? What would it be sorted by?
+        return ImmutableList.copyOf(schemaMap.values());
     }
 }

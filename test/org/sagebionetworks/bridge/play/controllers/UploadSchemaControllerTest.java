@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 
 import org.junit.Test;
@@ -205,6 +206,46 @@ public class UploadSchemaControllerTest {
         UploadSchema resultSchema = BridgeObjectMapper.get().treeToValue(itemListNode.get(0), UploadSchema.class);
         assertEquals(TEST_SCHEMA_ID, resultSchema.getSchemaId());
     }
+    
+    @Test
+    public void getAllRevisionsOfASchema() throws Exception {
+        String schemaId = "controller-test-schema";
+        
+        // mock session
+        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("get-schema-study");
+        UserSession mockSession = new UserSession();
+        mockSession.setStudyIdentifier(studyIdentifier);
+
+        // Create a couple of revisions
+        UploadSchema schema1 = makeUploadSchema(1);
+        UploadSchema schema2 = makeUploadSchema(2);
+        UploadSchema schema3 = makeUploadSchema(3);
+        
+        // mock UploadSchemaService
+        UploadSchemaService mockSvc = mock(UploadSchemaService.class);
+        when(mockSvc.getUploadSchemaAllRevisions(studyIdentifier, schemaId)).thenReturn(ImmutableList.of(schema3, schema2, schema1));
+
+        // spy controller
+        UploadSchemaController controller = spy(new UploadSchemaController());
+        controller.setUploadSchemaService(mockSvc);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
+
+        // execute and validate
+        Result result = controller.getUploadSchemaAllRevisions(schemaId);
+        assertEquals(200, result.status());
+
+        String resultJson = Helpers.contentAsString(result);
+        JsonNode resultNode = BridgeObjectMapper.get().readTree(resultJson);
+        assertEquals("ResourceList", resultNode.get("type").textValue());
+        assertEquals(3, resultNode.get("total").intValue());
+
+        JsonNode itemsNode = resultNode.get("items");
+        assertEquals(3, itemsNode.size());
+
+        assertEquals(3, itemsNode.get(0).get("revision").asInt());
+        assertEquals(2, itemsNode.get(1).get("revision").asInt());
+        assertEquals(1, itemsNode.get(2).get("revision").asInt());
+    }
 
     @Test
     public void invalidSchemaThrowsCompleteValidationException() throws Exception {
@@ -235,6 +276,12 @@ public class UploadSchemaControllerTest {
     }
 
     private static UploadSchema makeUploadSchema() throws Exception {
-        return BridgeObjectMapper.get().readValue(TEST_SCHEMA_JSON, UploadSchema.class);
+        return makeUploadSchema(3);
+    }
+    
+    private static UploadSchema makeUploadSchema(int revision) throws Exception {
+        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().readTree(TEST_SCHEMA_JSON);
+        node.put("revision", revision);
+        return BridgeObjectMapper.get().convertValue(node, UploadSchema.class);
     }
 }

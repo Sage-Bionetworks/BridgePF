@@ -93,6 +93,21 @@ public class UploadSchemaController extends BaseController {
         UploadSchema uploadSchema = uploadSchemaService.getUploadSchema(studyId, schemaId);
         return okResult(uploadSchema);
     }
+    
+    /**
+     * Play controller for GET /v3/uploadschemas/:schemaId. Returns all revisions of this upload schema. If the 
+     * schema doesn't exist, this API throws a 404 exception.
+     * @param schemaId
+     *         schema ID to fetch
+     * @return Play result with an array of all revisions of the fetched schema in JSON format
+     */
+    public Result getUploadSchemaAllRevisions(String schemaId) {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        StudyIdentifier studyId = session.getStudyIdentifier();
+        
+        List<UploadSchema> uploadSchemas = uploadSchemaService.getUploadSchemaAllRevisions(studyId, schemaId);
+        return okResult(uploadSchemas);
+    }
 
     /**
      * Fetches the upload schema for the specified study, schema ID, and revision. If no schema is found, this API
@@ -113,8 +128,8 @@ public class UploadSchemaController extends BaseController {
     }
 
     /**
-     * Play controller for GET /researcher/v1/uploadSchema/forStudy. This API fetches all revisions of all upload
-     * schemas in the current study. This is generally used by worker apps to validate uploads against schemas.
+     * Play controller for GET /v3/uploadschemas. This API fetches the most recent revision of all upload 
+     * schemas for the current study. 
      * 
      * @return Play result with list of schemas for this study
      */
