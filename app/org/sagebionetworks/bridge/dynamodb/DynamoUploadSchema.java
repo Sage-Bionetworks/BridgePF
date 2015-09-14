@@ -108,16 +108,6 @@ public class DynamoUploadSchema implements UploadSchema {
         try {
             UploadSchema schema = MAPPER.convertValue(node, UploadSchema.class);
             Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-        } catch(IllegalArgumentException iae) {
-            Throwable cause = Throwables.getRootCause(iae);
-            if (cause instanceof InvalidEntityException) {
-                InvalidEntityException e = (InvalidEntityException)cause;
-                for (Map.Entry<String, List<String>> entry: e.getErrors().entrySet()) {
-                    if (!FIELD_DEFINITIONS.equals(entry.getKey())) {
-                        errors.put(entry.getKey(), entry.getValue());    
-                    }
-                }
-            }
         } catch(InvalidEntityException e) {
             for (Map.Entry<String, List<String>> entry: e.getErrors().entrySet()) {
                 
