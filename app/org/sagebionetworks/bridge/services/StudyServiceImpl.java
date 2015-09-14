@@ -178,7 +178,6 @@ public class StudyServiceImpl implements StudyService {
     public Study updateStudy(Study study, boolean isAdminUpdate) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         
-        setDefaultsIfAbsent(study);    
         sanitizeHTML(study);
 
         // These cannot be set through the API and will be null here, so they are set on update
