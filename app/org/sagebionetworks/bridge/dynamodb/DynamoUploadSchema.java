@@ -33,13 +33,14 @@ import org.sagebionetworks.bridge.validators.Validate;
 @DynamoThroughput(readCapacity=50, writeCapacity=25)
 @DynamoDBTable(tableName = "UploadSchema")
 public class DynamoUploadSchema implements UploadSchema {
+    
     private List<UploadFieldDefinition> fieldDefList;
     private String name;
     private int rev;
     private String schemaId;
     private UploadSchemaType schemaType;
     private String studyId;
-
+    
     /** {@inheritDoc} */
     @DynamoDBMarshalling(marshallerClass = FieldDefinitionListMarshaller.class)
     @Override

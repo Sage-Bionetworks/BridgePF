@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.upload;
 import javax.annotation.Nonnull;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
  * raw JSON, or to a column in a Synapse table.
  */
 @JsonDeserialize(as = DynamoUploadFieldDefinition.class)
+@BridgeTypeName("UploadFieldDefinition")
 public interface UploadFieldDefinition extends BridgeEntity {
     /** The field name. */
     @Nonnull String getName();

@@ -22,6 +22,7 @@ import play.test.Helpers;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -32,17 +33,18 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 public class UploadSchemaControllerTest {
     private static final String TEST_SCHEMA_ID = "controller-test-schema";
     private static final String TEST_SCHEMA_JSON = "{\n" +
-            "   \"name\":\"Controller Test Schema\",\n" +
-            "   \"revision\":3,\n" +
-            "   \"schemaId\":\"controller-test-schema\",\n" +
-            "   \"fieldDefinitions\":[\n" +
-            "       {\n" +
-            "           \"name\":\"field-name\",\n" +
-            "           \"required\":true,\n" +
-            "           \"type\":\"STRING\"\n" +
-            "       }\n" +
-            "   ]\n" +
-            "}";
+                    "   \"name\":\"Controller Test Schema\",\n" +
+                    "   \"revision\":3,\n" +
+                    "   \"schemaId\":\"controller-test-schema\",\n" +
+                    "   \"schemaType\":\"ios_data\",\n" +
+                    "   \"fieldDefinitions\":[\n" +
+                    "       {\n" +
+                    "           \"name\":\"field-name\",\n" +
+                    "           \"required\":true,\n" +
+                    "           \"type\":\"STRING\"\n" +
+                    "       }\n" +
+                    "   ]\n" +
+                    "}";
 
     @Test
     public void createSchema() throws Exception {
@@ -58,7 +60,7 @@ public class UploadSchemaControllerTest {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
         ArgumentCaptor<UploadSchema> createdSchemaArgCaptor = ArgumentCaptor.forClass(UploadSchema.class);
         when(mockSvc.createOrUpdateUploadSchema(eq(studyIdentifier), createdSchemaArgCaptor.capture())).thenReturn(
-                makeUploadSchema());
+                        makeUploadSchema());
 
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
@@ -243,6 +245,34 @@ public class UploadSchemaControllerTest {
         assertEquals(3, itemsNode.get(0).get("revision").asInt());
         assertEquals(2, itemsNode.get(1).get("revision").asInt());
         assertEquals(1, itemsNode.get(2).get("revision").asInt());
+    }
+
+    @Test
+    public void invalidSchemaThrowsCompleteValidationException() throws Exception {
+        // mock session
+        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("create-schema-study");
+        UserSession mockSession = new UserSession();
+        mockSession.setStudyIdentifier(studyIdentifier);
+
+        // mock request JSON; this is pretty bad JSON. We want an error message back 
+        // that should practically tell the caller how to construct this object.
+        Http.Context.current.set(TestUtils.mockPlayContextWithJson("{\"fieldDefinitions\":[{\"name\":\"foo\"}]}"));
+
+        // spy controller
+        UploadSchemaController controller = spy(new UploadSchemaController());
+        // We need the real service because it throws the InvalidEntityException we're testing here.
+        controller.setUploadSchemaService(new UploadSchemaService());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
+
+        // execute and validate
+        try {
+            controller.createOrUpdateUploadSchema();
+        } catch(InvalidEntityException e) {
+            assertEquals("schemaId is required", e.getErrors().get("schemaId").get(0));
+            assertEquals("name is required", e.getErrors().get("name").get(0));
+            assertEquals("schemaType is required", e.getErrors().get("schemaType").get(0));
+            assertEquals("fieldDefinitions0.type is required", e.getErrors().get("fieldDefinitions0.type").get(0));
+        }
     }
 
     private static UploadSchema makeUploadSchema() throws Exception {

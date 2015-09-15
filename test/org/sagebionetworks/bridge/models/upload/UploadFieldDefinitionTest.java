@@ -4,18 +4,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
-import org.springframework.validation.MapBindingResult;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadFieldDefinition;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.validators.UploadFieldDefinitionValidator;
 
 public class UploadFieldDefinitionTest {
     @Test
@@ -25,21 +21,6 @@ public class UploadFieldDefinitionTest {
         assertEquals("test-field", fieldDef.getName());
         assertTrue(fieldDef.isRequired());
         assertEquals(UploadFieldType.ATTACHMENT_BLOB, fieldDef.getType());
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void testNullName() {
-        new DynamoUploadFieldDefinition.Builder().withType(UploadFieldType.ATTACHMENT_BLOB).build();
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void testEmptyName() {
-        new DynamoUploadFieldDefinition.Builder().withName("").withType(UploadFieldType.ATTACHMENT_BLOB).build();
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void testNullType() {
-        new DynamoUploadFieldDefinition.Builder().withName("test-field").build();
     }
 
     @Test
@@ -58,42 +39,6 @@ public class UploadFieldDefinitionTest {
         assertEquals("test-field", fieldDef.getName());
         assertFalse(fieldDef.isRequired());
         assertEquals(UploadFieldType.ATTACHMENT_BLOB, fieldDef.getType());
-    }
-
-    // branch coverage
-    @Test
-    public void validatorSupportsClass() {
-        assertTrue(UploadFieldDefinitionValidator.INSTANCE.supports(UploadFieldDefinition.class));
-    }
-
-    // branch coverage
-    @Test
-    public void validatorSupportsSubclass() {
-        assertTrue(UploadFieldDefinitionValidator.INSTANCE.supports(DynamoUploadFieldDefinition.class));
-    }
-
-    // branch coverage
-    @Test
-    public void validatorDoesntSupport() {
-        assertFalse(UploadFieldDefinitionValidator.INSTANCE.supports(String.class));
-    }
-
-    // branch coverage
-    // we call the validator directly, since Validate.validateThrowingException filters out nulls and wrong types
-    @Test
-    public void validateNull() {
-        MapBindingResult errors = new MapBindingResult(new HashMap<>(), "UploadFieldDefinition");
-        UploadFieldDefinitionValidator.INSTANCE.validate(null, errors);
-        assertTrue(errors.hasErrors());
-    }
-
-    // branch coverage
-    // we call the validator directly, since Validate.validateThrowingException filters out nulls and wrong types
-    @Test
-    public void validateWrongClass() {
-        MapBindingResult errors = new MapBindingResult(new HashMap<>(), "UploadFieldDefinition");
-        UploadFieldDefinitionValidator.INSTANCE.validate("this is the wrong class", errors);
-        assertTrue(errors.hasErrors());
     }
 
     @Test

@@ -8,8 +8,6 @@ import com.google.common.base.Objects;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
-import org.sagebionetworks.bridge.validators.UploadFieldDefinitionValidator;
-import org.sagebionetworks.bridge.validators.Validate;
 
 /**
  * Dynamo DB implementation of UploadFieldDefinition. While there is nothing specific to Dynamo DB in this class, this
@@ -104,10 +102,7 @@ public final class DynamoUploadFieldDefinition implements UploadFieldDefinition 
             if (required == null) {
                 required = true;
             }
-
-            DynamoUploadFieldDefinition fieldDef = new DynamoUploadFieldDefinition(name, required, type);
-            Validate.entityThrowingException(UploadFieldDefinitionValidator.INSTANCE, fieldDef);
-            return fieldDef;
+            return new DynamoUploadFieldDefinition(name, required, type);
         }
     }
 }
