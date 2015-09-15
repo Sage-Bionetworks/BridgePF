@@ -218,7 +218,7 @@ public abstract class BaseController extends Controller {
                 return mapper.convertValue(jsonNode, clazz);
             }
         } catch (Throwable ex) {
-            throw new InvalidEntityException("Error parsing JSON in request body");
+            throw new InvalidEntityException("Error parsing JSON in request body: " + ex.getMessage());
         }
         throw new InvalidEntityException("Expected JSON in the request body is missing");
     }
