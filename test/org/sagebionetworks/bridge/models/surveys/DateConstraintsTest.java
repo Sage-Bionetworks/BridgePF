@@ -17,7 +17,6 @@ public class DateConstraintsTest {
         constraints.setLatestValue(LocalDate.parse("2015-12-31"));
         
         String json = BridgeObjectMapper.get().writeValueAsString(constraints);
-        System.out.println(json);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals("2015-01-01", node.get("earliestValue").asText());
