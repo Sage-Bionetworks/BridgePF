@@ -175,6 +175,29 @@ public class StudyServiceImplTest {
     }
     
     @Test
+    public void defaultsAreUsedWhenNotProvided() {
+        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        study.setPasswordPolicy(null);
+        study.setVerifyEmailTemplate(null);
+        study.setResetPasswordTemplate(null);
+        study = studyService.createStudy(study);
+        
+        assertEquals(PasswordPolicy.DEFAULT_PASSWORD_POLICY, study.getPasswordPolicy());
+        assertNotNull(study.getVerifyEmailTemplate());
+        assertNotNull(study.getResetPasswordTemplate());
+
+        // Even if partial values are submitted in the JSON, we don't get exceptions, we get defaults
+        study.setVerifyEmailTemplate(new EmailTemplate(null, "body ${url}", MimeType.TEXT));
+        study.setResetPasswordTemplate(new EmailTemplate("subject", null, MimeType.TEXT));
+
+        study = studyService.updateStudy(study, true);
+        
+        assertEquals("Verify your account", study.getVerifyEmailTemplate().getSubject());
+        assertNotNull(study.getResetPasswordTemplate().getBody());
+        assertTrue(study.getResetPasswordTemplate().getBody().contains("To reset your password please click on this link"));
+    }
+    
+    @Test
     public void problematicHtmlIsRemovedFromTemplates() {
         study = TestUtils.getValidStudy(StudyServiceImplTest.class);
         study.setVerifyEmailTemplate(new EmailTemplate("<b>This is not allowed [ve]</b>", "<p>Test [ve] ${url}</p><script></script>", MimeType.HTML));

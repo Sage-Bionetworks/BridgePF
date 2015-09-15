@@ -46,15 +46,6 @@ public class UploadSchemaValidator implements Validator {
         } else {
             UploadSchema uploadSchema = (UploadSchema) target;
 
-            // fieldDefinitions
-            // We do not need to validate inside the elements of fieldDefinitions, because (1)
-            // UploadFieldDefinition is self-validating and (2) we copy this to an ImmutableList, which does not
-            // permit null values.
-            List<UploadFieldDefinition> fieldDefList = uploadSchema.getFieldDefinitions();
-            if (fieldDefList == null || fieldDefList.isEmpty()) {
-                errors.rejectValue("fieldDefinitions", "requires at least one definition");
-            }
-
             // name
             if (Strings.isNullOrEmpty(uploadSchema.getName())) {
                 errors.rejectValue("name", "is required");
@@ -63,7 +54,7 @@ public class UploadSchemaValidator implements Validator {
             // revision must be non-negative. (0 is allowed if it's a new schema. revisions 1 and above are saved
             // schemas)
             if (uploadSchema.getRevision() < 0) {
-                errors.rejectValue("revision", "must be a positive integer");
+                errors.rejectValue("revision", "must be equal to or greater than zero");
             }
 
             // schema ID
@@ -74,6 +65,28 @@ public class UploadSchemaValidator implements Validator {
             // schema type
             if (uploadSchema.getSchemaType() == null) {
                 errors.rejectValue("schemaType", "is required");
+            }
+            
+            // fieldDefinitions
+            // We do not need to validate inside the elements of fieldDefinitions, because (1)
+            // UploadFieldDefinition is self-validating and (2) we copy this to an ImmutableList, which does not
+            // permit null values.
+            List<UploadFieldDefinition> fieldDefList = uploadSchema.getFieldDefinitions();
+            if (fieldDefList == null || fieldDefList.isEmpty()) {
+                errors.rejectValue("fieldDefinitions", "requires at least one definition");
+            } else {
+                for (int i=0; i < fieldDefList.size(); i++) {
+                    errors.pushNestedPath("fieldDefinitions" + i);
+                    UploadFieldDefinition fieldDef = fieldDefList.get(i);
+                    if (Strings.isNullOrEmpty(fieldDef.getName())) {
+                        errors.rejectValue("name", "is required");
+                    }
+                    if (fieldDef.getType() == null) {
+                        errors.rejectValue("type", "is required");
+                    }
+                    // type, being a boolean, will default to false
+                    errors.popNestedPath();
+                }
             }
         }
     }

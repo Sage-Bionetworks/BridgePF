@@ -8,8 +8,6 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 public class DynamoUploadSchemaTest {
 
     private static final String TEST_SCHEMA_JSON = "{" +
@@ -38,8 +36,7 @@ public class DynamoUploadSchemaTest {
     
     @Test
     public void canDeserializeJson() throws Exception {
-        JsonNode node = BridgeObjectMapper.get().readTree(TEST_SCHEMA_JSON);
-        UploadSchema schema = DynamoUploadSchema.fromJson(node);
+        UploadSchema schema = BridgeObjectMapper.get().readValue(TEST_SCHEMA_JSON, UploadSchema.class);
         
         assertEquals("Controller Test Schema", schema.getName());
         assertEquals(3, schema.getRevision());
@@ -49,9 +46,8 @@ public class DynamoUploadSchemaTest {
     
     @Test
     public void jsonWithMultipleErrorsCapturesAllErrors() throws Exception {
-        JsonNode node = BridgeObjectMapper.get().readTree(INVALID_TEST_SCHEMA_JSON);
         try {
-            DynamoUploadSchema.fromJson(node);
+            BridgeObjectMapper.get().readValue(INVALID_TEST_SCHEMA_JSON, UploadSchema.class);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals("name is required", e.getErrors().get("name").get(0));
