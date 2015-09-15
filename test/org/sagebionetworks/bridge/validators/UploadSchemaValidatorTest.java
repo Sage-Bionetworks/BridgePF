@@ -22,8 +22,6 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 import org.springframework.validation.MapBindingResult;
 
-import com.google.common.collect.Maps;
-
 public class UploadSchemaValidatorTest {
 
     private UploadSchemaValidator validator = UploadSchemaValidator.INSTANCE;
@@ -262,22 +260,6 @@ public class UploadSchemaValidatorTest {
 
     // These tests are redundant, but I wrote them specifically to test the messages that are sent
     // back, and some use JSON to test what happens when properties are missing
-    
-    @Test
-    public void requiresObject() {
-        MapBindingResult errors = new MapBindingResult(Maps.newHashMap(), "UploadSchema");
-        validator.validate(null, errors);
-        String error = Validate.convertBindingResultToMessage(errors);
-        assertEquals("UploadSchema is invalid: uploadSchema cannot be null", error);
-    }
-    
-    @Test
-    public void requiresUploadSchema() {
-        MapBindingResult errors = new MapBindingResult(Maps.newHashMap(), "UploadSchema");
-        validator.validate(new String("not the right object type"), errors);
-        String error = Validate.convertBindingResultToMessage(errors);
-        assertEquals("UploadSchema is invalid: uploadSchema is the wrong type", error);
-    }
     
     @Test
     public void requiresAtLeastOneFieldDefinition() throws Exception {

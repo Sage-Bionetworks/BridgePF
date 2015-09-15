@@ -68,24 +68,26 @@ public class UploadSchemaValidator implements Validator {
             }
             
             // fieldDefinitions
-            // We do not need to validate inside the elements of fieldDefinitions, because (1)
-            // UploadFieldDefinition is self-validating and (2) we copy this to an ImmutableList, which does not
-            // permit null values.
             List<UploadFieldDefinition> fieldDefList = uploadSchema.getFieldDefinitions();
             if (fieldDefList == null || fieldDefList.isEmpty()) {
                 errors.rejectValue("fieldDefinitions", "requires at least one definition");
             } else {
                 for (int i=0; i < fieldDefList.size(); i++) {
-                    errors.pushNestedPath("fieldDefinitions" + i);
                     UploadFieldDefinition fieldDef = fieldDefList.get(i);
-                    if (Strings.isNullOrEmpty(fieldDef.getName())) {
-                        errors.rejectValue("name", "is required");
+                    if (fieldDef == null) {
+                        errors.rejectValue("fieldDefinitions" + i, "is required");
+                    } else {
+                        errors.pushNestedPath("fieldDefinitions" + i);
+                        if (Strings.isNullOrEmpty(fieldDef.getName())) {
+                            errors.rejectValue("name", "is required");
+                        }
+                        if (fieldDef.getType() == null) {
+                            errors.rejectValue("type", "is required");
+                        }
+                        // type, being a boolean, will default to false
+                        errors.popNestedPath();
                     }
-                    if (fieldDef.getType() == null) {
-                        errors.rejectValue("type", "is required");
-                    }
-                    // type, being a boolean, will default to false
-                    errors.popNestedPath();
+                    
                 }
             }
         }

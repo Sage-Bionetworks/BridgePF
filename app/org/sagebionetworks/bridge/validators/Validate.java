@@ -61,7 +61,7 @@ public class Validate {
             throw new InvalidEntityException(entity, message, map);
         }
     }
-    public static Map<String,List<String>> convertBindingResultToSimpleMap(BindingResult errors) {
+    private static Map<String,List<String>> convertBindingResultToSimpleMap(BindingResult errors) {
         Map<String,List<String>> map = Maps.newHashMap();
         
         if (errors.hasGlobalErrors()) {
@@ -82,7 +82,7 @@ public class Validate {
         }
         return map;
     }
-    public static String convertBindingResultToMessage(BindingResult errors) {
+    private static String convertBindingResultToMessage(BindingResult errors) {
         List<String> messages = Lists.newArrayListWithCapacity(errors.getErrorCount());
         for (ObjectError error : errors.getGlobalErrors()) {
             messages.add(errorToString(error.getObjectName(), error));    
@@ -91,15 +91,6 @@ public class Validate {
             messages.add(errorToString(error.getField(), error));
         }
         return String.format("%s is invalid: %s", errors.getObjectName(), Joiner.on("; ").join(messages));
-    }
-    public static String convertSimpleMapResultToMessage(String entityTypeName, Map<String,List<String>> map) {
-        List<String> messages = Lists.newArrayList();
-        for (Map.Entry<String, List<String>> entry : map.entrySet()) {
-            for (String message : entry.getValue()) {
-                messages.add(message);
-            }
-        }
-        return String.format("%s is invalid: %s", entityTypeName, Joiner.on("; ").join(messages));
     }
     private static String errorToString(String name, ObjectError error) {
         if (error.getArguments() != null) {
