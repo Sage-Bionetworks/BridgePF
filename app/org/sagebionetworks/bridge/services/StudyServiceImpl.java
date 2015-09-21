@@ -291,6 +291,11 @@ public class StudyServiceImpl implements StudyService {
     }
     
     private EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {
+        // Skip sanitization if there's no template. This can happen now as we'd rather see an error if the caller
+        // doesn't include a template when updating.
+        if (template == null) {
+            return template;
+        }
         String subject = template.getSubject();
         if (StringUtils.isNotBlank(subject)) {
             subject = Jsoup.clean(subject, Whitelist.none());

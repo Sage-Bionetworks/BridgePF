@@ -221,5 +221,14 @@ public class StudyServiceImplTest {
         study = studyService.updateStudy(study, true);
         assertEquals(1000, study.getMaxNumOfParticipants()); // yep
     }
+    
+    @Test(expected=InvalidEntityException.class)
+    public void updateWithNoTemplatesIsInvalid() {
+        study = TestUtils.getValidStudy(StudyServiceImplTest.class);
+        study = studyService.createStudy(study);
+        
+        study.setVerifyEmailTemplate(null);
+        studyService.updateStudy(study, false);
+    }
 
 }
