@@ -11,11 +11,12 @@ import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.schedules.Task;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -57,10 +58,18 @@ public class BridgeUtils {
         return UUID.randomUUID().toString();
     }
     
-    public static String generateTaskRunKey(Task task) {
-        checkNotNull(task.getSchedulePlanGuid());
-        checkNotNull(task.getScheduledOn());
-        return String.format("%s:%s", task.getSchedulePlanGuid(), Long.toString(task.getScheduledOn()));
+    /**
+     * Identifies a set of tasks from a single run of a schedule. This may only be used to optimize looping 
+     * through schedules with multiple activities, in which case it can probably be removed. But that would 
+     * have to be confirmed with further testing.
+     * @param task
+     * @return
+     */
+    public static String generateTaskRunKey(DynamoTask task, ScheduleContext context) {
+        checkNotNull(task);
+        checkNotNull(context);
+        return String.format("%s:%s", context.getSchedulePlanGuid(),
+                        task.getLocalScheduledOn().toDateTime(context.getZone()).toString());
     }
     
     /**
@@ -131,10 +140,6 @@ public class BridgeUtils {
         }
     }
 
-    public static String toString(Long datetime) {
-        return (datetime == null) ? null : new DateTime(datetime).toString();
-    }
-    
     public static Set<Roles> convertRolesQuietly(GroupList groups) {
         Set<Roles> roleSet = new HashSet<>();
         if (groups != null) {

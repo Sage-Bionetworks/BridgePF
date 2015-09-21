@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
 
 public interface TaskDao {
@@ -13,10 +13,10 @@ public interface TaskDao {
      * not necessarily saved in the database, however.
      * 
      * @param healthCode
-     * @param endsOn
+     * @param context
      * @return
      */
-    public List<Task> getTasks(String healthCode, DateTime endsOn);
+    public List<Task> getTasks(String healthCode, ScheduleContext context);
     
     /**
      * Have any of the tasks for this run key been created?

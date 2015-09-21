@@ -158,4 +158,25 @@ public final class DateUtils {
         return null;
     }
 
+    /**
+     * Convert at 8601 time zone offset string (e.g. "-07:00") to a DateTimeZone 
+     * object. 
+     * @param offsetString
+     * @return
+     */
+    public static DateTimeZone parseZoneFromOffsetString(String offsetString) {
+        DateTimeZone zone = null;
+        if (StringUtils.isNotBlank(offsetString)) {
+            try {
+                String[] zoneParts = offsetString.split(":");
+                int hours = Integer.parseInt(zoneParts[0]);
+                int minutes = Integer.parseInt(zoneParts[1]);
+                zone = DateTimeZone.forOffsetHoursMinutes(hours, minutes);
+            } catch(Throwable throwable) {
+                throw new IllegalArgumentException("Cannot not parse timezone offset '"+offsetString+"' (use format ±HH:MM)");
+            }
+        }
+        return zone;
+    }
+    
 }

@@ -11,6 +11,8 @@ import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 
@@ -162,6 +164,14 @@ public final class Schedule implements BridgeEntity {
             }
         }
         return false;
+    }
+    @JsonIgnore
+    @DynamoDBIgnore
+    public TaskScheduler getScheduler() {
+        if (getCronTrigger() != null) {
+            return new CronTaskScheduler(this);
+        }
+        return new IntervalTaskScheduler(this);
     }
     public boolean schedulesImmediatelyAfterEvent() {
         return getEventId() != null && 

@@ -12,6 +12,8 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -22,6 +24,7 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.play.controllers.TaskController;
 import org.sagebionetworks.bridge.services.TaskService;
@@ -38,12 +41,13 @@ public class TaskControllerTest {
     
     @Before
     public void before() throws Exception {
-        Task task = new DynamoTask();
+        ScheduleContext scheduleContext = new ScheduleContext(DateTimeZone.UTC, null, null, BridgeUtils.generateGuid());
+        
+        DynamoTask task = new DynamoTask();
         task.setGuid(BridgeUtils.generateGuid());
-        task.setSchedulePlanGuid(BridgeUtils.generateGuid());
-        task.setScheduledOn(DateTime.now().minusDays(1).getMillis());
+        task.setLocalScheduledOn(LocalDateTime.now(DateTimeZone.UTC).minusDays(1));
         task.setActivity(TestConstants.TEST_ACTIVITY);
-        task.setRunKey(BridgeUtils.generateTaskRunKey(task));
+        task.setRunKey(BridgeUtils.generateTaskRunKey(task, scheduleContext));
         List<Task> list = Lists.newArrayList(task);
         
         String json = BridgeObjectMapper.get().writeValueAsString(list);
@@ -56,7 +60,7 @@ public class TaskControllerTest {
         session.setUser(user);
         
         taskService = mock(TaskService.class);
-        when(taskService.getTasks(any(User.class), any(DateTime.class))).thenReturn(list);
+        when(taskService.getTasks(any(User.class), any(ScheduleContext.class))).thenReturn(list);
         
         controller = spy(new TaskController());
         controller.setTaskService(taskService);
@@ -65,8 +69,8 @@ public class TaskControllerTest {
     
     @Test
     public void getTasks() throws Exception {
-        controller.getTasks(DateTime.now().toString());
-        verify(taskService).getTasks(any(User.class), any(DateTime.class));
+        controller.getTasks(DateTime.now().toString(), null, null);
+        verify(taskService).getTasks(any(User.class), any(ScheduleContext.class));
         verifyNoMoreInteractions(taskService);
     }
     
@@ -81,7 +85,7 @@ public class TaskControllerTest {
     @Test(expected = NotAuthenticatedException.class)
     public void mustBeAuthenticated() throws Exception {
         controller = new TaskController();
-        controller.getTasks(DateTime.now().toString());
+        controller.getTasks(DateTime.now().toString(), null, null);
     }
     
 }

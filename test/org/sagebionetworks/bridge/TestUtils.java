@@ -2,29 +2,27 @@ package org.sagebionetworks.bridge;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.dynamodb.DynamoTask;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
-import org.sagebionetworks.bridge.models.schedules.SchedulerFactory;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Task;
-import org.sagebionetworks.bridge.models.schedules.TaskScheduler;
+import org.sagebionetworks.bridge.models.schedules.TaskWithZone;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import play.mvc.Http;
@@ -32,7 +30,6 @@ import play.mvc.Http;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class TestUtils {
@@ -85,20 +82,20 @@ public class TestUtils {
         return "test-" + midFix + RandomStringUtils.randomAlphabetic(5).toLowerCase();
     }
 
-    public static List<Task> runSchedulerForTasks(User user, DateTime endsOn) {
-        Map<String,DateTime> events = Maps.newHashMap();
-        events.put("enrollment", ENROLLMENT);
-
-        List<Task> tasks = Lists.newArrayList();
+    @SuppressWarnings("unchecked")
+    public static List<Task> runSchedulerForTasks(User user, ScheduleContext context) {
+        StudyIdentifier studyId = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
         List<SchedulePlan> plans = getSchedulePlans();
+        
+        List<TaskWithZone> tasks = Lists.newArrayList();
         for (SchedulePlan plan : plans) {
-            TaskScheduler scheduler = SchedulerFactory.getScheduler("",
-                plan.getStrategy().getScheduleForUser(new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER), plan, user));
-            for (Task dTask : scheduler.getTasks(events, endsOn)) {
-                tasks.add((DynamoTask)dTask);
+            Schedule schedule = plan.getStrategy().getScheduleForUser(studyId, plan, user);
+            for (Task task : schedule.getScheduler().getTasks(context)) {
+                tasks.add((TaskWithZone)task);
             }
         }
-        return tasks;
+        Collections.sort(tasks, TaskWithZone.TASK_COMPARATOR);
+        return (List<Task>)(List<?>)tasks;
     }
     
     public static List<SchedulePlan> getSchedulePlans() {

@@ -3,8 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.joda.time.LocalDateTime;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -26,178 +25,184 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-@BridgeTypeName("Task")
 @DynamoDBTable(tableName = "Task")
-public final class DynamoTask implements Task, BridgeEntity {
+public final class DynamoTask implements BridgeEntity, Task {
 
     private static final String ACTIVITY_PROPERTY = "activity";
-    
+
     private String healthCode;
     private String guid;
-    private String schedulePlanGuid;
-    private Long scheduledOn;
-    private Long expiresOn;
     private Long startedOn;
     private Long finishedOn;
+    private LocalDateTime localScheduledOn;
+    private LocalDateTime localExpiresOn;
     private Activity activity;
     private String runKey;
     private Long hidesOn;
     private boolean persistent;
-    
+
     public DynamoTask() {
         setHidesOn(new Long(Long.MAX_VALUE));
     }
     
-    @DynamoDBIgnore
-    public TaskStatus getStatus() {
-        if (finishedOn != null && startedOn == null) {
-            return TaskStatus.DELETED;
-        } else if (finishedOn != null && startedOn != null) {
-            return TaskStatus.FINISHED;
-        } else if (startedOn != null) {
-            return TaskStatus.STARTED;
-        } else if (expiresOn != null && DateTime.now().isAfter(expiresOn)) {
-            return TaskStatus.EXPIRED;
-        } else if (scheduledOn != null && DateTime.now().isBefore(scheduledOn)) {
-            return TaskStatus.SCHEDULED;
-        }
-        return TaskStatus.AVAILABLE;
+    public DynamoTask(Task task) {
+        setLocalScheduledOn(task.getScheduledOn().toLocalDateTime());
+        setLocalExpiresOn(task.getExpiresOn().toLocalDateTime());
+        setHidesOn(task.getHidesOn());
+        setRunKey(task.getRunKey());
+        setHealthCode(healthCode);
+        setGuid(task.getGuid());
+        setStartedOn(task.getStartedOn());
+        setFinishedOn(task.getFinishedOn());
+        setActivity(task.getActivity());
+        setPersistent(task.getPersistent());
     }
+
+    @Override
+    @DynamoDBIgnore
     @JsonIgnore
+    public TaskStatus getStatus() {
+        throw new UnsupportedOperationException("DynamoTask not implemented with a known time zone.");
+    }
+    
+    @Override
+    @DynamoDBIgnore
+    @JsonIgnore
+    public DateTime getScheduledOn() {
+        throw new UnsupportedOperationException("DynamoTask not implemented with a known time zone.");
+    }
+    
+    @Override
+    @DynamoDBIgnore
+    @JsonIgnore
+    public DateTime getExpiresOn() {
+        throw new UnsupportedOperationException("DynamoTask not implemented with a known time zone.");
+    }
+
+    /**
+     * The scheduled time without a time zone. This value is stored, but not returned in the JSON of the API. It is
+     * localized using the caller's time zone.
+     */
     @DynamoDBAttribute
+    @DynamoDBMarshalling(marshallerClass = LocalDateTimeMarshaller.class)
+    public LocalDateTime getLocalScheduledOn() {
+        return localScheduledOn;
+    }
+
+    public void setLocalScheduledOn(LocalDateTime localScheduledOn) {
+        this.localScheduledOn = localScheduledOn;
+    }
+
+    /**
+     * The expiration time without a time zone. This value is stored, but not returned in the JSON of the API. It is
+     * localized using the caller's time zone.
+     */
+    @DynamoDBAttribute
+    @DynamoDBMarshalling(marshallerClass = LocalDateTimeMarshaller.class)
+    public LocalDateTime getLocalExpiresOn() {
+        return localExpiresOn;
+    }
+
+    public void setLocalExpiresOn(LocalDateTime localExpiresOn) {
+        this.localExpiresOn = localExpiresOn;
+    }
+
+    @DynamoDBAttribute
+    @Override
     public Long getHidesOn() {
         return this.hidesOn;
     }
+
+    @Override
     public void setHidesOn(Long hidesOn) {
         this.hidesOn = hidesOn;
     }
-    @JsonIgnore
+
     @DynamoDBAttribute
     @DynamoDBIndexRangeKey(localSecondaryIndexName = "hashKey-runKey-index")
     public String getRunKey() {
         return this.runKey;
     }
+
     public void setRunKey(String runKey) {
         this.runKey = runKey;
     }
-    @JsonIgnore
+
     @DynamoDBHashKey
-    @Override
     public String getHealthCode() {
         return healthCode;
     }
-    @Override
+
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
     }
+
     @DynamoDBRangeKey
-    @Override
     public String getGuid() {
         return guid;
     }
-    @Override
+
     public void setGuid(String guid) {
         this.guid = guid;
     }
-    @JsonIgnore
-    @DynamoDBAttribute
-    @Override
-    public String getSchedulePlanGuid() {
-        return schedulePlanGuid;
-    }
-    @Override
-    public void setSchedulePlanGuid(String schedulePlanGuid) {
-        this.schedulePlanGuid = schedulePlanGuid;
-    }
-    @DynamoDBIgnore
-    @Override
-    public Activity getActivity() {
-        return activity;
-    }
-    @Override
-    public void setActivity(Activity activity) {
-        this.activity = activity;
-    }
-    @JsonSerialize(using = DateTimeToLongSerializer.class)
-    @Override
-    public Long getScheduledOn() {
-        return scheduledOn;
-    }
-    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
-    @Override
-    public void setScheduledOn(Long scheduledOn) {
-        this.scheduledOn = scheduledOn;
-    }
+
     @DynamoDBAttribute
     @JsonSerialize(using = DateTimeToLongSerializer.class)
-    @Override
-    public Long getExpiresOn() {
-        return expiresOn;
-    }
-    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
-    @Override
-    public void setExpiresOn(Long expiresOn) {
-        this.expiresOn = expiresOn;
-    }
-    @DynamoDBAttribute
-    @JsonSerialize(using = DateTimeToLongSerializer.class)
-    @Override
     public Long getStartedOn() {
         return startedOn;
     }
+
     @JsonDeserialize(using = DateTimeToLongDeserializer.class)
-    @Override
     public void setStartedOn(Long startedOn) {
         this.startedOn = startedOn;
     }
+
     @DynamoDBAttribute
     @JsonSerialize(using = DateTimeToLongSerializer.class)
-    @Override
     public Long getFinishedOn() {
         return finishedOn;
     }
+
     @JsonDeserialize(using = DateTimeToLongDeserializer.class)
-    @Override
     public void setFinishedOn(Long finishedOn) {
         this.finishedOn = finishedOn;
     }
+
+    @DynamoDBIgnore
+    public Activity getActivity() {
+        return activity;
+    }
+
+    public void setActivity(Activity activity) {
+        this.activity = activity;
+    }
+
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
-    @JsonIgnore
     public ObjectNode getData() {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.putPOJO(ACTIVITY_PROPERTY, activity);
         return node;
     }
+
     public void setData(ObjectNode data) {
         this.activity = JsonUtils.asEntity(data, ACTIVITY_PROPERTY, Activity.class);
     }
+
     @DynamoDBAttribute
-    @Override
     public boolean getPersistent() {
         return persistent;
     }
-    @Override
+
     public void setPersistent(boolean persistent) {
         this.persistent = persistent;
     }
-    
+
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Objects.hashCode(activity);
-        result = prime * result + Objects.hashCode(expiresOn);
-        result = prime * result + Objects.hashCode(guid);
-        result = prime * result + Objects.hashCode(schedulePlanGuid);
-        result = prime * result + Objects.hashCode(scheduledOn);
-        result = prime * result + Objects.hashCode(startedOn);
-        result = prime * result + Objects.hashCode(finishedOn);
-        result = prime * result + Objects.hashCode(healthCode);
-        result = prime * result + Objects.hashCode(runKey);
-        result = prime * result + Objects.hashCode(hidesOn);
-        result = prime * result + Objects.hashCode(persistent);
-        return result;
+        return Objects.hash(activity, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, healthCode,
+                        runKey, hidesOn, persistent);
     }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -205,19 +210,17 @@ public final class DynamoTask implements Task, BridgeEntity {
         if (obj == null || getClass() != obj.getClass())
             return false;
         DynamoTask other = (DynamoTask) obj;
-        return (Objects.equals(activity, other.activity) && Objects.equals(expiresOn, other.expiresOn) && 
-                Objects.equals(guid, other.guid) && Objects.equals(schedulePlanGuid, other.schedulePlanGuid) &&
-                Objects.equals(startedOn, other.startedOn) && Objects.equals(finishedOn, other.finishedOn) && 
-                Objects.equals(scheduledOn, other.scheduledOn) && Objects.equals(healthCode, other.healthCode) && 
-                Objects.equals(hidesOn,  other.hidesOn) && Objects.equals(runKey, other.runKey) && 
-                Objects.equals(persistent, other.persistent));
+        return (Objects.equals(activity, other.activity) && Objects.equals(localExpiresOn, other.localExpiresOn)
+                        && Objects.equals(localScheduledOn, other.localScheduledOn) && Objects.equals(guid, other.guid)
+                        && Objects.equals(startedOn, other.startedOn) && Objects.equals(finishedOn, other.finishedOn)
+                        && Objects.equals(healthCode, other.healthCode) && Objects.equals(hidesOn, other.hidesOn)
+                        && Objects.equals(runKey, other.runKey) && Objects.equals(persistent, other.persistent));
     }
+
     @Override
     public String toString() {
-        return String.format("DynamoTask [status=%s, healthCode=%s, guid=%s, schedulePlanGuid=%s, scheduledOn=%s, expiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, activity=%s]",
-            getStatus().name(), healthCode, guid, schedulePlanGuid, BridgeUtils.toString(scheduledOn),
-            BridgeUtils.toString(expiresOn), BridgeUtils.toString(startedOn),
-            BridgeUtils.toString(finishedOn), persistent, activity);
+        return String.format("DynamoTask [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, activity=%s]",
+            healthCode, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, persistent, activity);
     }
 
 }

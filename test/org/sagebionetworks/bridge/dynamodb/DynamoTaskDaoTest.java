@@ -4,12 +4,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
 import org.junit.After;
 import org.junit.Before;
@@ -21,6 +24,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
@@ -31,6 +35,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -88,17 +93,20 @@ public class DynamoTaskDaoTest {
     @Test
     public void createUpdateDeleteTasks() throws Exception {
         DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
+        Map<String,DateTime> events = Maps.newHashMap();
+        events.put("enrollment", ENROLLMENT);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, endsOn, events, null);
         
-        List<Task> tasksToSchedule = TestUtils.runSchedulerForTasks(user, endsOn);
+        List<Task> tasksToSchedule = TestUtils.runSchedulerForTasks(user, context);
         
         taskDao.saveTasks(user.getHealthCode(), tasksToSchedule);
         
-        List<Task> tasks = taskDao.getTasks(user.getHealthCode(), endsOn);
+        List<Task> tasks = taskDao.getTasks(user.getHealthCode(), context);
         int collectionSize = tasks.size();
         assertFalse("tasks were created", tasks.isEmpty());
         
         // Should not increase the number of tasks
-        tasks = taskDao.getTasks(user.getHealthCode(), endsOn);
+        tasks = taskDao.getTasks(user.getHealthCode(), context);
         assertEquals("tasks did not grow afer repeated getTask()", collectionSize, tasks.size());
 
         // Delete most information in tasks and delete one by finishing it
@@ -108,19 +116,17 @@ public class DynamoTaskDaoTest {
         assertEquals("task deleted", TaskStatus.DELETED, task.getStatus());
         taskDao.updateTasks(user.getHealthCode(), Lists.newArrayList(task));
         
-        tasks = taskDao.getTasks(user.getHealthCode(), endsOn);
+        tasks = taskDao.getTasks(user.getHealthCode(), context);
         assertEquals("deleted task not returned from server", collectionSize-1, tasks.size());
         taskDao.deleteTasks(user.getHealthCode());
         
-        tasks = taskDao.getTasks(user.getHealthCode(), endsOn);
+        tasks = taskDao.getTasks(user.getHealthCode(), context);
         assertEquals("all tasks deleted", 0, tasks.size());
     }
 
     private void cleanTasks(List<Task> tasks) {
         for (Task task : tasks) {
-            task.setHealthCode(null);
             task.setActivity(null);
-            task.setSchedulePlanGuid(null);
             task.setStartedOn(null);
             task.setFinishedOn(null);
         }

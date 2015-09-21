@@ -11,7 +11,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +25,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
-import com.google.common.collect.Lists;
 
 @Component
 public class DynamoSchedulePlanDao implements SchedulePlanDao {
@@ -105,18 +103,6 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         
         SchedulePlan plan = getSchedulePlan(studyIdentifier, guid);
         mapper.delete(plan);
-    }
-    
-    @Override
-    public List<SchedulePlan> getSchedulePlansForSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
-        List<SchedulePlan> results = Lists.newArrayList();
-        
-        for (SchedulePlan plan : getSchedulePlans(studyIdentifier)) {
-            if (plan.getStrategy().doesScheduleSurvey(keys)) {
-                results.add(plan);
-            }
-        }
-        return results;
     }
 
 }

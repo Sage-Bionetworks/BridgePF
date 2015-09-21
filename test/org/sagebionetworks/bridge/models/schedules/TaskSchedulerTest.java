@@ -15,6 +15,7 @@ import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +32,7 @@ public class TaskSchedulerTest {
     private static final DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
     private static final DateTime NOW = DateTime.parse("2015-03-26T14:40:00Z");
     
-    List<Task> tasks;
+    private List<Task> tasks;
     private Map<String,DateTime> events;
     
     @Before
@@ -60,10 +61,12 @@ public class TaskSchedulerTest {
         
         Map<String,DateTime> empty = Maps.newHashMap();
         
-        tasks = SchedulerFactory.getScheduler("schedulePlanGuid", schedule).getTasks(empty, NOW.plusWeeks(1));
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, NOW.plusWeeks(1), empty, null);
+        tasks = schedule.getScheduler().getTasks(context);
         assertEquals(0, tasks.size());
         
-        tasks = SchedulerFactory.getScheduler("schedulePlanGuid", schedule).getTasks(null, NOW.plusWeeks(1));
+        context = new ScheduleContext(DateTimeZone.UTC, NOW.plusWeeks(1), null, null);
+        tasks = schedule.getScheduler().getTasks(context);
         assertEquals(0, tasks.size());
     }
     
@@ -76,10 +79,10 @@ public class TaskSchedulerTest {
         schedule.addActivity(TestConstants.TEST_ACTIVITY);
         schedule.setExpires("P3Y");
         
-        tasks = SchedulerFactory.getScheduler("schedulePlanGuid", schedule).getTasks(events, NOW.plusWeeks(1));
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, NOW.plusWeeks(1), events, "schedulePlanGuid");
+        tasks = schedule.getScheduler().getTasks(context);
         Task task = tasks.get(0);
 
-        assertEquals("schedulePlanGuid", task.getSchedulePlanGuid());
         assertNotNull(task.getGuid());
         assertEquals("Label", task.getActivity().getLabel());
         assertEquals("tapTest", task.getActivity().getRef());
@@ -104,10 +107,11 @@ public class TaskSchedulerTest {
         schedule2.setScheduleType(ONCE);
         schedule2.setEventId("task:task1");
 
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusMonths(2));
-        assertEquals(asLong("2015-04-23 10:00"), tasks.get(0).getScheduledOn());
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, NOW.plusMonths(2), events, null);
+        tasks = schedule.getScheduler().getTasks(context);
+        assertEquals(asLong("2015-04-23 10:00"), tasks.get(0).getScheduledOn().getMillis());
 
-        tasks = SchedulerFactory.getScheduler("", schedule2).getTasks(events, NOW.plusMonths(2));
+        tasks = schedule2.getScheduler().getTasks(context);
         assertEquals(0, tasks.size());
         
         DateTime TASK1_EVENT = asDT("2015-04-25 15:32");
@@ -115,8 +119,9 @@ public class TaskSchedulerTest {
         // Now say that task was finished a couple of days after that:
         events.put("task:task1", TASK1_EVENT);
         
-        tasks = SchedulerFactory.getScheduler("", schedule2).getTasks(events, NOW.plusMonths(2));
-        assertEquals(new Long(TASK1_EVENT.getMillis()), tasks.get(0).getScheduledOn());
+        context = new ScheduleContext(DateTimeZone.UTC, NOW.plusMonths(2), events, null);
+        tasks = schedule2.getScheduler().getTasks(context);
+        assertEquals(TASK1_EVENT, tasks.get(0).getScheduledOn());
     }
     
     @Test
@@ -130,12 +135,14 @@ public class TaskSchedulerTest {
 
         // Event is recorded in PDT. And when we get the task back, it is scheduled in PDT. 
         events.put("foo", DateTime.parse("2015-03-25T07:00:00.000-07:00"));
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusMonths(1));
-        assertEquals(new Long(DateTime.parse("2015-03-27T07:00:00.000-07:00").getMillis()), tasks.get(0).getScheduledOn());
+        DateTimeZone zone = DateTimeZone.forOffsetHours(-7);
+        ScheduleContext context = new ScheduleContext(zone, NOW.plusMonths(1), events, null);
+        tasks = schedule.getScheduler().getTasks(context);
+        assertEquals(DateTime.parse("2015-03-27T07:00:00.000-07:00"), tasks.get(0).getScheduledOn());
         
         // Add an endsOn value in GMT, it shouldn't matter, it'll prevent event from firing
         schedule.setEndsOn("2015-03-25T13:00:00.000Z"); // one hour before the event
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusMonths(1));
+        tasks = schedule.getScheduler().getTasks(context);
         assertEquals(0, tasks.size());
     }
     
@@ -151,11 +158,12 @@ public class TaskSchedulerTest {
         schedule.setInterval("P1D");
         schedule.addTimes("10:00");
         
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, until, events, null);
+        tasks = schedule.getScheduler().getTasks(context);
         assertDates(tasks, "2015-04-12 10:00", "2015-04-13 10:00", "2015-04-14 10:00", "2015-04-15 10:00");
         
         events.put("now", asDT("2015-04-13 08:00"));
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
+        tasks = schedule.getScheduler().getTasks(context);
         assertDates(tasks, "2015-04-12 10:00", "2015-04-13 10:00", "2015-04-14 10:00", "2015-04-15 10:00");
     }
     
@@ -170,11 +178,12 @@ public class TaskSchedulerTest {
         schedule.setEventId("anEvent");
         schedule.setCronTrigger("0 0 10 ? * MON,TUE,WED,THU,FRI,SAT,SUN *");
 
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, until, events, null);
+        tasks = schedule.getScheduler().getTasks(context);
         assertDates(tasks, "2015-04-12 10:00", "2015-04-13 10:00", "2015-04-14 10:00", "2015-04-15 10:00");
         
         events.put("now", asDT("2015-04-07 08:00"));
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, until);
+        tasks = schedule.getScheduler().getTasks(context);
         assertDates(tasks, "2015-04-12 10:00", "2015-04-13 10:00", "2015-04-14 10:00", "2015-04-15 10:00");
     }
     
@@ -186,7 +195,8 @@ public class TaskSchedulerTest {
         schedule.getActivities().add(new Activity.Builder().withLabel("Label2").withTask("tapTest").build());
         schedule.setScheduleType(ONCE);
 
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(7));
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, NOW.plusDays(7), events, null);
+        tasks = schedule.getScheduler().getTasks(context);
         assertEquals(2, tasks.size());
         assertNotEquals(tasks.get(0), tasks.get(1));
     }
@@ -204,12 +214,14 @@ public class TaskSchedulerTest {
         schedule.setScheduleType(ONCE);
         
         events.put("scheduledOn:task:foo", NOW.minusHours(3));
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
-        assertEquals(new Long(NOW.minusHours(3).getMillis()), tasks.get(0).getScheduledOn());
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, NOW.plusDays(1), events, null);
+        tasks = schedule.getScheduler().getTasks(context);
+        assertEquals(NOW.minusHours(3), tasks.get(0).getScheduledOn());
 
         events.put("scheduledOn:task:foo", NOW.plusHours(8));
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
-        assertEquals(new Long(NOW.plusHours(8).getMillis()), tasks.get(0).getScheduledOn());
+        context = new ScheduleContext(DateTimeZone.UTC, NOW.plusDays(1), events, null);
+        tasks = schedule.getScheduler().getTasks(context);
+        assertEquals(NOW.plusHours(8), tasks.get(0).getScheduledOn());
     }
     
     @Test
@@ -219,16 +231,18 @@ public class TaskSchedulerTest {
         schedule.addActivity(TestConstants.TEST_ACTIVITY);
         schedule.setScheduleType(ONCE);
         
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
-        assertEquals(new Long(ENROLLMENT.plusDays(2).getMillis()), tasks.get(0).getScheduledOn());
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, NOW.plusDays(1), events, null);
+        tasks = schedule.getScheduler().getTasks(context);
+        assertEquals(ENROLLMENT.plusDays(2), tasks.get(0).getScheduledOn());
         
         events.remove("survey:event");
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
-        assertEquals(new Long(ENROLLMENT.getMillis()), tasks.get(0).getScheduledOn());
+        context = new ScheduleContext(DateTimeZone.UTC, NOW.plusDays(1), events, null);
+        tasks = schedule.getScheduler().getTasks(context);
+        assertEquals(ENROLLMENT, tasks.get(0).getScheduledOn());
         
         // BUT this produces nothing because the system doesn't fallback to enrollment if an event has been set
         schedule.setEventId("survey:event");
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
+        tasks = schedule.getScheduler().getTasks(context);
         assertEquals(0, tasks.size());
     }
     
@@ -240,7 +254,8 @@ public class TaskSchedulerTest {
         schedule.addActivity(new Activity.Builder().withLabel("Foo").withTask("foo").build());
         schedule.addActivity(new Activity.Builder().withLabel("Bar").withTask("bar").build());
         
-        tasks = SchedulerFactory.getScheduler("", schedule).getTasks(events, NOW.plusDays(1));
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, NOW.plusDays(1), events, null);
+        tasks = schedule.getScheduler().getTasks(context);
         Task task1 = tasks.get(0);
         assertEquals("Foo", task1.getActivity().getLabel());
         assertTrue(task1.getPersistent());

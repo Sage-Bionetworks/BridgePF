@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.quartz.CronScheduleBuilder;
@@ -12,28 +11,31 @@ import com.google.common.collect.Lists;
 
 class CronTaskScheduler extends TaskScheduler {
 
-    CronTaskScheduler(String schedulePlanGuid, Schedule schedule) {
-        super(schedulePlanGuid, schedule);
+    CronTaskScheduler(Schedule schedule) {
+        super(schedule);
     }
     
     @Override
-    public List<Task> getTasks(Map<String, DateTime> events, DateTime until) {
+    public List<Task> getTasks(ScheduleContext context) {
         List<Task> tasks = Lists.newArrayList();
-        DateTime scheduledTime = getScheduledTimeBasedOnEvent(schedule, events);
+        DateTime scheduledTime = getScheduledTimeBasedOnEvent(context);
+        
         if (scheduledTime != null) {
-            MutableTrigger trigger = parseTrigger(scheduledTime);
-            while (scheduledTime.isBefore(until)) {
+            MutableTrigger trigger = parseTrigger(schedule, scheduledTime);
+            
+            while (scheduledTime.isBefore(context.getEndsOn())) {
                 Date next = trigger.getFireTimeAfter(scheduledTime.toDate());
                 scheduledTime = new DateTime(next, scheduledTime.getZone());
-                if (scheduledTime.isBefore(until)) {
-                    addTaskForEachTime(tasks, scheduledTime);    
+                
+                if (scheduledTime.isBefore(context.getEndsOn())) {
+                    addTaskForEachTime(tasks, context, scheduledTime);    
                 }
             }
         }
-        return trimTasks(tasks);
+        return trimTasks(tasks, schedule);
     }
     
-    private MutableTrigger parseTrigger(DateTime scheduledTime) {
+    private MutableTrigger parseTrigger(Schedule schedule, DateTime scheduledTime) {
         MutableTrigger mutable = CronScheduleBuilder
             .cronSchedule(schedule.getCronTrigger())
             .inTimeZone(scheduledTime.getZone().toTimeZone()).build();

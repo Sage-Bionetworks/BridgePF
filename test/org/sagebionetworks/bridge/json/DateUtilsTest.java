@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.json;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -136,5 +138,35 @@ public class DateUtilsTest {
     public void convertToMillisFromShortInt() {
         // Make sure we don't do something dumb, like parse this as year 42.
         DateUtils.convertToMillisFromEpoch("42");
+    }
+    
+    @Test
+    public void canParseTimeISOZoneString() {
+        DateTimeZone compareTo = DateTimeZone.forOffsetHours(-7);
+        DateTimeZone zone = DateUtils.parseZoneFromOffsetString("-07:00");
+        
+        assertEquals(compareTo, zone);
+    }
+    
+    @Test
+    public void emptyOrNullReturnUll() {
+        DateTimeZone zone = DateUtils.parseZoneFromOffsetString(null);
+        assertNull(zone);
+        
+        zone = DateUtils.parseZoneFromOffsetString("");
+        assertNull(zone);
+        
+        zone = DateUtils.parseZoneFromOffsetString(" ");
+        assertNull(zone);
+    }
+    
+    @Test
+    public void anyDeviationThrowsCorrectException() {
+        try {
+            DateUtils.parseZoneFromOffsetString("7");
+            fail("Should have thrown exception");
+        } catch(IllegalArgumentException e) {
+            assertEquals("Cannot not parse timezone offset '7' (use format ±HH:MM)", e.getMessage()); 
+        }
     }
 }

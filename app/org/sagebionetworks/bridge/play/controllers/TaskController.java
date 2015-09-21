@@ -3,10 +3,14 @@ package org.sagebionetworks.bridge.play.controllers;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.dynamodb.DynamoTask;
+import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.services.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +23,7 @@ import play.mvc.Result;
 @Controller
 public class TaskController extends BaseController {
 
-    private static final TypeReference<ArrayList<DynamoTask>> taskTypeRef = new TypeReference<ArrayList<DynamoTask>>() {};
+    private static final TypeReference<ArrayList<Task>> taskTypeRef = new TypeReference<ArrayList<Task>>() {};
     
     private static final BridgeObjectMapper mapper = BridgeObjectMapper.get();
     
@@ -30,14 +34,26 @@ public class TaskController extends BaseController {
         this.taskService = taskService;
     }
     
-    public Result getTasks(String untilString) throws Exception {
+    public Result getTasks(String untilString, String offset, String daysAhead) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        DateTime endsOn = (untilString == null) ? 
-            DateTime.now().plusDays(TaskService.DEFAULT_EXPIRES_ON_DAYS) :
-            DateTime.parse(untilString);
+        DateTime endsOn = null;
+        DateTimeZone zone = null;
         
-        List<Task> tasks = taskService.getTasks(session.getUser(), endsOn);
+        if (StringUtils.isNotBlank(untilString)) {
+            // Old API, infer time zone from the until parameter. This is not ideal.
+            endsOn = DateTime.parse(untilString);
+            zone = endsOn.getZone();
+        } else if (StringUtils.isNotBlank(daysAhead) && StringUtils.isNotBlank(offset)) {
+            zone = DateUtils.parseZoneFromOffsetString(offset);
+            int numDays = Integer.parseInt(daysAhead);
+            endsOn = DateTime.now(zone).plusDays(numDays);
+        } else {
+            throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' and 'offset' parameters.");
+        }
+        
+        ScheduleContext context = new ScheduleContext(zone, endsOn, null, null);
+        List<Task> tasks = taskService.getTasks(session.getUser(), context);
         return okResult(tasks);
     }
     

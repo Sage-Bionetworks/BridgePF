@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -27,12 +28,14 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
+
 import com.google.common.collect.Maps;
 
 public class TaskServiceTest {
@@ -58,10 +61,11 @@ public class TaskServiceTest {
     @SuppressWarnings("unchecked")
     @Before
     public void before() {
-        endsOn = DateTime.now().plusDays(2);
         user = new User();
         user.setStudyKey(STUDY_IDENTIFIER.getIdentifier());
         user.setHealthCode(HEALTH_CODE);
+        
+        endsOn = DateTime.now().plusDays(2);
         
         service = new TaskService();
         
@@ -78,10 +82,11 @@ public class TaskServiceTest {
         TaskEventService taskEventService = mock(TaskEventService.class);
         when(taskEventService.getTaskEventMap(anyString())).thenReturn(map);
         
-        List<Task> tasks = TestUtils.runSchedulerForTasks(user, endsOn);
+        ScheduleContext context = createScheduleContest(endsOn);
+        List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
 
         taskDao = mock(DynamoTaskDao.class);
-        when(taskDao.getTasks(HEALTH_CODE, endsOn)).thenReturn(tasks);
+        when(taskDao.getTasks(HEALTH_CODE, context)).thenReturn(tasks);
         when(taskDao.taskRunHasNotOccurred(anyString(), anyString())).thenReturn(true);
 
         Survey survey = new DynamoSurvey();
@@ -108,19 +113,28 @@ public class TaskServiceTest {
         service.setTaskEventService(taskEventService);
     }
    
+    private ScheduleContext createScheduleContest(DateTime endsOn) {
+        Map<String,DateTime> events = Maps.newHashMap();
+        events.put("enrollment", ENROLLMENT);
+        
+        return new ScheduleContext(DateTimeZone.UTC, endsOn, events, null);
+    }
+    
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
-        service.getTasks(user, DateTime.now().minusSeconds(1));
+        service.getTasks(user, new ScheduleContext(DateTimeZone.UTC, DateTime.now().minusSeconds(1), null, null));
     }
     
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnTooFarInFuture() {
-        service.getTasks(user, DateTime.now().plusDays(TaskService.MAX_EXPIRES_ON_DAYS).plusSeconds(1));
+        service.getTasks(user, new ScheduleContext(DateTimeZone.UTC, 
+            DateTime.now().plusDays(TaskService.MAX_EXPIRES_ON_DAYS).plusSeconds(1), null, null));
     }
 
     @Test(expected = BadRequestException.class)
     public void rejectsListOfTasksWithNullElement() {
-        List<Task> tasks = TestUtils.runSchedulerForTasks(user, endsOn);
+        ScheduleContext context = createScheduleContest(endsOn);
+        List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         tasks.set(0, (DynamoTask)null);
         
         service.updateTasks("AAA", tasks);
@@ -128,7 +142,8 @@ public class TaskServiceTest {
     
     @Test(expected = BadRequestException.class)
     public void rejectsListOfTasksWithTaskThatLacksGUID() {
-        List<Task> tasks = TestUtils.runSchedulerForTasks(user, endsOn);
+        ScheduleContext context = createScheduleContest(endsOn);
+        List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         tasks.get(0).setGuid(null);
         
         service.updateTasks("AAA", tasks);
@@ -136,7 +151,8 @@ public class TaskServiceTest {
     
     @Test
     public void updateTasksWorks() {
-        List<Task> tasks = TestUtils.runSchedulerForTasks(user, endsOn);
+        ScheduleContext context = createScheduleContest(endsOn);
+        List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         
         service.updateTasks("BBB", tasks);
         verify(taskDao).updateTasks("BBB", tasks);
@@ -154,7 +170,7 @@ public class TaskServiceTest {
     @SuppressWarnings({"unchecked","rawtypes","deprecation"})
     @Test
     public void changePublishedAndAbsoluteSurveyActivity() {
-        service.getTasks(user, endsOn.plusDays(2));
+        service.getTasks(user, new ScheduleContext(DateTimeZone.UTC, endsOn.plusDays(2), null, null));
 
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         verify(taskDao).saveTasks(anyString(), argument.capture());

@@ -1,15 +1,15 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.TaskDao;
+import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
+import org.sagebionetworks.bridge.models.schedules.TaskWithZone;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -24,17 +24,6 @@ import com.google.common.collect.Lists;
 @Component
 public class DynamoTaskDao implements TaskDao {
     
-    private static final Comparator<Task> TASK_COMPARATOR = new Comparator<Task>() {
-        @Override 
-        public int compare(Task task1, Task task2) {
-            int result = (int)(task1.getScheduledOn() - task2.getScheduledOn());
-            if (result == 0) {
-                result = task1.getActivity().getLabel().compareTo(task2.getActivity().getLabel());
-            }
-            return result;
-        }
-    };
-    
     private DynamoDBMapper mapper;
 
     @Resource(name = "taskDdbMapper")
@@ -43,13 +32,14 @@ public class DynamoTaskDao implements TaskDao {
     }
     
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override
-    public List<Task> getTasks(String healthCode, DateTime endsOn) {
+    public List<Task> getTasks(String healthCode, ScheduleContext context) {
         DynamoTask hashKey = new DynamoTask();
         hashKey.setHealthCode(healthCode);
 
         // Exclude everything hidden before *now*
-        AttributeValue attribute = new AttributeValue().withN(Long.toString(DateTime.now().getMillis()));
+        AttributeValue attribute = new AttributeValue().withN(Long.toString(context.getNow().getMillis()));
         Condition condition = new Condition()
             .withComparisonOperator(ComparisonOperator.GT)
             .withAttributeValueList(attribute);
@@ -59,10 +49,13 @@ public class DynamoTaskDao implements TaskDao {
             .withHashKeyValues(hashKey);
 
         PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
-        List<Task> tasks = Lists.newArrayList();
-        tasks.addAll(queryResults);
-        Collections.sort(tasks, TASK_COMPARATOR);
-        return tasks;
+        
+        List<TaskWithZone> tasks = Lists.newArrayList();
+        for (DynamoTask task : queryResults) {
+            tasks.add(new TaskWithZone(task, context.getZone()));
+        }
+        Collections.sort(tasks, TaskWithZone.TASK_COMPARATOR);
+        return (List<Task>)(List<?>)tasks;
     }
     
     /** {@inheritDoc} */
@@ -82,8 +75,8 @@ public class DynamoTaskDao implements TaskDao {
     @Override
     public void saveTasks(String healthCode, List<Task> tasks) {
         if (!tasks.isEmpty()) {
-            for (Task task : tasks) {
-                task.setHealthCode(healthCode);
+            for (int i=0; i < tasks.size(); i++) {
+                tasks.set(i,  new DynamoTask(tasks.get(i)));
             }
             List<FailedBatch> failures = mapper.batchSave(tasks);
             BridgeUtils.ifFailuresThrowException(failures);
@@ -99,7 +92,7 @@ public class DynamoTaskDao implements TaskDao {
                 DynamoTask hashKey = new DynamoTask();
                 hashKey.setHealthCode(healthCode);
                 hashKey.setGuid(task.getGuid());
-                Task dbTask = mapper.load(hashKey);
+                DynamoTask dbTask = mapper.load(hashKey);
                 
                 if (dbTask != null) {
                     if (task.getStartedOn() != null) {
