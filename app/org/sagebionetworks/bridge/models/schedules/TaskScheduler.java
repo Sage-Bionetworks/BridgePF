@@ -105,7 +105,7 @@ public abstract class TaskScheduler {
     protected DateTime getFirstEventDateTime(ScheduleContext context, String eventIdsString) {
         DateTime eventDateTime = null;
         if (eventIdsString != null) {
-            List<String> eventIds = Arrays.asList(eventIdsString.trim().split("\\s*,\\s*"));
+            String[] eventIds = eventIdsString.trim().split("\\s*,\\s*");
             for (String thisEventId : eventIds) {
                 if (context.getEvent(thisEventId) != null) {
                     eventDateTime = context.getEvent(thisEventId).withZone(context.getZone());

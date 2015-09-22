@@ -81,7 +81,6 @@ public class TestUtils {
         return "test-" + midFix + RandomStringUtils.randomAlphabetic(5).toLowerCase();
     }
 
-    @SuppressWarnings("unchecked")
     public static List<Task> runSchedulerForTasks(User user, ScheduleContext context) {
         StudyIdentifier studyId = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
         List<SchedulePlan> plans = getSchedulePlans();
@@ -92,7 +91,7 @@ public class TestUtils {
             tasks.addAll(schedule.getScheduler().getTasks(context));
         }
         Collections.sort(tasks, Task.TASK_COMPARATOR);
-        return (List<Task>)(List<?>)tasks;
+        return tasks;
     }
     
     public static List<SchedulePlan> getSchedulePlans() {

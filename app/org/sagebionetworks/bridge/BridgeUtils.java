@@ -58,15 +58,16 @@ public class BridgeUtils {
     }
     
     /**
-     * Identifies a set of tasks from a single run of a schedule. This may only be used to optimize looping 
-     * through schedules with multiple activities, in which case it can probably be removed. But that would 
-     * have to be confirmed with further testing.
+     * Identifies a set of tasks from a single run of a schedule. 
      * @param task
      * @return
      */
     public static String generateTaskRunKey(DynamoTask task, ScheduleContext context) {
         checkNotNull(task);
+        checkNotNull(task.getLocalScheduledOn());
         checkNotNull(context);
+        checkNotNull(context.getSchedulePlanGuid());
+        checkNotNull(context.getZone());
         return String.format("%s:%s", context.getSchedulePlanGuid(),
                         task.getLocalScheduledOn().toDateTime(context.getZone()).toString());
     }

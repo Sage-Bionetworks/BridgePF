@@ -147,7 +147,7 @@ public class DynamoTaskDaoMockTest {
         List<Task> tasks2 = taskDao.getTasks(context);
 
         // These also show that stuff is getting sorted by label
-        // assertTask("2015-04-12T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(0));
+        assertTask("2015-04-12T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(0));
         assertTask("2015-04-13T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(1));
         assertTask("tapTest", TestConstants.ACTIVITY_3_REF, tasks2.get(2));
         assertTask("2015-04-14T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(3));

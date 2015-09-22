@@ -62,18 +62,18 @@ public final class DynamoTask implements Task, BridgeEntity {
     @Override
     @DynamoDBIgnore
     public TaskStatus getStatus() {
-        if (getFinishedOn() != null && getStartedOn() == null) {
+        if (finishedOn != null && startedOn == null) {
             return TaskStatus.DELETED;
-        } else if (getFinishedOn() != null && getStartedOn() != null) {
+        } else if (finishedOn != null && startedOn != null) {
             return TaskStatus.FINISHED;
-        } else if (getStartedOn() != null) {
+        } else if (startedOn != null) {
             return TaskStatus.STARTED;
         }
         if (timeZone != null) {
             DateTime now = DateTime.now(timeZone);
-            if (getLocalExpiresOn() != null && now.isAfter(getExpiresOn())) {
+            if (localExpiresOn != null && now.isAfter(getExpiresOn())) {
                 return TaskStatus.EXPIRED;
-            } else if (getLocalScheduledOn() != null && now.isBefore(getScheduledOn())) {
+            } else if (localScheduledOn != null && now.isBefore(getScheduledOn())) {
                 return TaskStatus.SCHEDULED;
             }
         }
@@ -173,6 +173,17 @@ public final class DynamoTask implements Task, BridgeEntity {
         this.guid = guid;
     }
 
+    @DynamoDBIgnore
+    @Override
+    public Activity getActivity() {
+        return activity;
+    }
+
+    @Override
+    public void setActivity(Activity activity) {
+        this.activity = activity;
+    }
+
     @DynamoDBAttribute
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
@@ -197,17 +208,6 @@ public final class DynamoTask implements Task, BridgeEntity {
     @Override
     public void setFinishedOn(Long finishedOn) {
         this.finishedOn = finishedOn;
-    }
-
-    @DynamoDBIgnore
-    @Override
-    public Activity getActivity() {
-        return activity;
-    }
-
-    @Override
-    public void setActivity(Activity activity) {
-        this.activity = activity;
     }
 
     @DynamoDBMarshalling(marshallerClass = JsonNodeMarshaller.class)
@@ -251,7 +251,7 @@ public final class DynamoTask implements Task, BridgeEntity {
             && Objects.equals(startedOn, other.startedOn) && Objects.equals(finishedOn, other.finishedOn)
             && Objects.equals(healthCode, other.healthCode) && Objects.equals(hidesOn, other.hidesOn)
             && Objects.equals(runKey, other.runKey) && Objects.equals(persistent, other.persistent)
-            && Objects.equals(timeZone, this.timeZone));
+            && Objects.equals(timeZone, other.timeZone));
     }
 
     @Override

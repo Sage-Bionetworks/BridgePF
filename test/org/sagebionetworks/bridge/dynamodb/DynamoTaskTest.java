@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
@@ -32,6 +33,7 @@ public class DynamoTaskTest {
         String expiresOnString = expiresOn.toDateTime(DateTimeZone.UTC).toString();
         
         DynamoTask task = new DynamoTask();
+        task.setTimeZone(DateTimeZone.UTC);
         task.setActivity(TestConstants.TEST_ACTIVITY);
         task.setLocalScheduledOn(scheduledOn);
         task.setLocalExpiresOn(expiresOn);
@@ -62,8 +64,12 @@ public class DynamoTaskTest {
         DynamoTask newTask = mapper.readValue(output, DynamoTask.class);
         // The local schedule values are not serialized and the calculated values aren't deserialized, 
         // but they are verified above.
+        newTask.setTimeZone(DateTimeZone.UTC);
         newTask.setLocalScheduledOn(scheduledOn);
         newTask.setLocalExpiresOn(expiresOn);
+        
+        // Also works without having to reset the timezone.
+        //EqualsBuilder.reflectionEquals(task, newTask, "localScheduledOn", "localExpiresOn", "scheduledOn", "expiresOn");
         assertEquals(task, newTask);
     }
     
@@ -72,6 +78,7 @@ public class DynamoTaskTest {
         LocalDateTime now = LocalDateTime.now(DateTimeZone.UTC);
         
         DynamoTask task = new DynamoTask();
+        task.setTimeZone(DateTimeZone.UTC);
         
         assertEquals(TaskStatus.AVAILABLE, task.getStatus());
 

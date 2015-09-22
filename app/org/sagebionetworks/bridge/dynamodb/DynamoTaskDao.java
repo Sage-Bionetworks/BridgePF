@@ -31,7 +31,6 @@ public class DynamoTaskDao implements TaskDao {
     }
     
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override
     public List<Task> getTasks(ScheduleContext context) {
         DynamoTask hashKey = new DynamoTask();
@@ -49,13 +48,13 @@ public class DynamoTaskDao implements TaskDao {
 
         PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
         
-        List<DynamoTask> tasks = Lists.newArrayList();
+        List<Task> tasks = Lists.newArrayList();
         for (DynamoTask task : queryResults) {
             task.setTimeZone(context.getZone());
             tasks.add(task);
         }
         Collections.sort(tasks, Task.TASK_COMPARATOR);
-        return (List<Task>)(List<?>)tasks;
+        return tasks;
     }
     
     /** {@inheritDoc} */
@@ -75,6 +74,7 @@ public class DynamoTaskDao implements TaskDao {
     @Override
     public void saveTasks(String healthCode, List<Task> tasks) {
         if (!tasks.isEmpty()) {
+            // Health code is (now) set during construction in the scheduler.
             List<FailedBatch> failures = mapper.batchSave(tasks);
             BridgeUtils.ifFailuresThrowException(failures);
         }
