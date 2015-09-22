@@ -82,7 +82,7 @@ public class TaskServiceTest {
         TaskEventService taskEventService = mock(TaskEventService.class);
         when(taskEventService.getTaskEventMap(anyString())).thenReturn(map);
         
-        ScheduleContext context = createScheduleContest(endsOn);
+        ScheduleContext context = createScheduleContext(endsOn);
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
 
         taskDao = mock(DynamoTaskDao.class);
@@ -112,13 +112,6 @@ public class TaskServiceTest {
         service.setTaskDao(taskDao);
         service.setTaskEventService(taskEventService);
     }
-   
-    private ScheduleContext createScheduleContest(DateTime endsOn) {
-        Map<String,DateTime> events = Maps.newHashMap();
-        events.put("enrollment", ENROLLMENT);
-        
-        return new ScheduleContext(DateTimeZone.UTC, endsOn, HEALTH_CODE, events, null);
-    }
     
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
@@ -133,7 +126,7 @@ public class TaskServiceTest {
 
     @Test(expected = BadRequestException.class)
     public void rejectsListOfTasksWithNullElement() {
-        ScheduleContext context = createScheduleContest(endsOn);
+        ScheduleContext context = createScheduleContext(endsOn);
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         tasks.set(0, (DynamoTask)null);
         
@@ -142,7 +135,7 @@ public class TaskServiceTest {
     
     @Test(expected = BadRequestException.class)
     public void rejectsListOfTasksWithTaskThatLacksGUID() {
-        ScheduleContext context = createScheduleContest(endsOn);
+        ScheduleContext context = createScheduleContext(endsOn);
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         tasks.get(0).setGuid(null);
         
@@ -151,7 +144,7 @@ public class TaskServiceTest {
     
     @Test
     public void updateTasksWorks() {
-        ScheduleContext context = createScheduleContest(endsOn);
+        ScheduleContext context = createScheduleContext(endsOn);
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         
         service.updateTasks("BBB", tasks);
@@ -186,6 +179,13 @@ public class TaskServiceTest {
             }
         }
         assertTrue("Found task with tapTest ref", foundTask3);
+    }
+    
+    private ScheduleContext createScheduleContext(DateTime endsOn) {
+        Map<String,DateTime> events = Maps.newHashMap();
+        events.put("enrollment", ENROLLMENT);
+        
+        return new ScheduleContext(DateTimeZone.UTC, endsOn, HEALTH_CODE, events, null);
     }
     
 }
