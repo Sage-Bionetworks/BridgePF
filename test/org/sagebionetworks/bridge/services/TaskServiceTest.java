@@ -86,7 +86,7 @@ public class TaskServiceTest {
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
 
         taskDao = mock(DynamoTaskDao.class);
-        when(taskDao.getTasks(HEALTH_CODE, context)).thenReturn(tasks);
+        when(taskDao.getTasks(context)).thenReturn(tasks);
         when(taskDao.taskRunHasNotOccurred(anyString(), anyString())).thenReturn(true);
 
         Survey survey = new DynamoSurvey();
@@ -117,18 +117,18 @@ public class TaskServiceTest {
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         
-        return new ScheduleContext(DateTimeZone.UTC, endsOn, events, null);
+        return new ScheduleContext(DateTimeZone.UTC, endsOn, HEALTH_CODE, events, null);
     }
     
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
-        service.getTasks(user, new ScheduleContext(DateTimeZone.UTC, DateTime.now().minusSeconds(1), null, null));
+        service.getTasks(user, new ScheduleContext(DateTimeZone.UTC, DateTime.now().minusSeconds(1), null, null, null));
     }
     
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnTooFarInFuture() {
         service.getTasks(user, new ScheduleContext(DateTimeZone.UTC, 
-            DateTime.now().plusDays(TaskService.MAX_EXPIRES_ON_DAYS).plusSeconds(1), null, null));
+            DateTime.now().plusDays(TaskService.MAX_EXPIRES_ON_DAYS).plusSeconds(1), null, null, null));
     }
 
     @Test(expected = BadRequestException.class)
@@ -170,7 +170,7 @@ public class TaskServiceTest {
     @SuppressWarnings({"unchecked","rawtypes","deprecation"})
     @Test
     public void changePublishedAndAbsoluteSurveyActivity() {
-        service.getTasks(user, new ScheduleContext(DateTimeZone.UTC, endsOn.plusDays(2), null, null));
+        service.getTasks(user, new ScheduleContext(DateTimeZone.UTC, endsOn.plusDays(2), null, null, null));
 
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         verify(taskDao).saveTasks(anyString(), argument.capture());

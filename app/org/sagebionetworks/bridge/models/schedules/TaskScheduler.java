@@ -62,6 +62,8 @@ public abstract class TaskScheduler {
             if (expiresOn == null || expiresOn.isAfter(context.getNow())) {
                 for (Activity activity : schedule.getActivities()) {
                     DynamoTask task = new DynamoTask();
+                    task.setTimeZone(context.getZone());
+                    task.setHealthCode(context.getHealthCode());
                     task.setActivity(activity);
                     task.setLocalScheduledOn(scheduledTime.toLocalDateTime());
                     task.setGuid(BridgeUtils.generateGuid());
@@ -73,7 +75,7 @@ public abstract class TaskScheduler {
                     if (context.getSchedulePlanGuid() != null) {
                         task.setRunKey(BridgeUtils.generateTaskRunKey(task, context));
                     }
-                    tasks.add(new TaskWithZone(task, context.getZone()));
+                    tasks.add(task);
                 }
             }
         }

@@ -33,7 +33,6 @@ import org.sagebionetworks.bridge.models.accounts.User;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.schedules.TaskStatus;
-import org.sagebionetworks.bridge.models.schedules.TaskWithZone;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
@@ -86,19 +85,11 @@ public class DynamoTaskDaoMockTest {
 
     @SuppressWarnings("unchecked")
     private void mockQuery(final List<Task> tasks) {
-        List<DynamoTask> convertedTasks = Lists.newArrayList();
-        for (Task task : tasks) {
-            if (task instanceof DynamoTask) {
-                convertedTasks.add((DynamoTask) task);
-            } else {
-                convertedTasks.add(new DynamoTask(task));
-            }
-        }
         when(mapper.load(any())).thenAnswer(new Answer<DynamoTask>() {
             @Override
             public DynamoTask answer(InvocationOnMock invocation) throws Throwable {
                 DynamoTask thisTask = (DynamoTask) invocation.getArguments()[0];
-                for (DynamoTask task : convertedTasks) {
+                for (Task task : tasks) {
                     if (thisTask.getGuid().equals(task.getGuid())
                                     && thisTask.getHealthCode().equals(task.getHealthCode())) {
                         return thisTask;
@@ -109,12 +100,11 @@ public class DynamoTaskDaoMockTest {
 
         });
         final PaginatedQueryList<DynamoTask> queryResults = (PaginatedQueryList<DynamoTask>) mock(PaginatedQueryList.class);
-        when(queryResults.iterator()).thenReturn(convertedTasks.iterator());
-        when(queryResults.toArray()).thenReturn(convertedTasks.toArray());
-        when(
-                        mapper.query((Class<DynamoTask>) any(Class.class),
-                                        (DynamoDBQueryExpression<DynamoTask>) any(DynamoDBQueryExpression.class)))
-                        .thenReturn(queryResults);
+        when(queryResults.iterator()).thenReturn(((List<DynamoTask>)(List<?>)tasks).iterator());
+        when(queryResults.toArray()).thenReturn(tasks.toArray());
+        when(mapper.query((Class<DynamoTask>) any(Class.class),
+            (DynamoDBQueryExpression<DynamoTask>) any(DynamoDBQueryExpression.class)))
+            .thenReturn(queryResults);
     }
 
     @SuppressWarnings("unchecked")
@@ -123,11 +113,11 @@ public class DynamoTaskDaoMockTest {
         DateTime endsOn = NOW.plus(Period.parse("P2D"));
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
-        ScheduleContext context = new ScheduleContext(PACIFIC_TIME_ZONE, endsOn, events, null);
+        ScheduleContext context = new ScheduleContext(PACIFIC_TIME_ZONE, endsOn, HEALTH_CODE, events, null);
 
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         mockQuery(tasks);
-        List<Task> tasks2 = taskDao.getTasks(HEALTH_CODE, context);
+        List<Task> tasks2 = taskDao.getTasks(context);
 
         // These also show that stuff is getting sorted by label
         // Expired tasks are not returned, so this starts on the 12th */
@@ -149,12 +139,12 @@ public class DynamoTaskDaoMockTest {
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
 
-        ScheduleContext context = new ScheduleContext(PACIFIC_TIME_ZONE, endsOn, events, null);
+        ScheduleContext context = new ScheduleContext(PACIFIC_TIME_ZONE, endsOn, HEALTH_CODE, events, null);
 
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         mockQuery(tasks);
 
-        List<Task> tasks2 = taskDao.getTasks(HEALTH_CODE, context);
+        List<Task> tasks2 = taskDao.getTasks(context);
 
         // These also show that stuff is getting sorted by label
         // assertTask("2015-04-12T13:00:00.000-07:00", TestConstants.ACTIVITY_2_REF, tasks2.get(0));
@@ -248,8 +238,8 @@ public class DynamoTaskDaoMockTest {
         List<DynamoTask> list = new ArrayList<>(argument.getValue());
         DynamoTask savedTask1 = list.get(0);
         DynamoTask savedTask2 = list.get(1);
-        assertEquals(TaskStatus.STARTED, new TaskWithZone(savedTask1, DateTimeZone.UTC).getStatus());
-        assertEquals(TaskStatus.FINISHED, new TaskWithZone(savedTask2, DateTimeZone.UTC).getStatus());
+        assertEquals(TaskStatus.STARTED, savedTask1.getStatus());
+        assertEquals(TaskStatus.FINISHED, savedTask2.getStatus());
     }
 
     @SuppressWarnings("deprecation")

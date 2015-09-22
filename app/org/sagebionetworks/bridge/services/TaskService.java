@@ -124,7 +124,7 @@ public class TaskService {
         taskDao.saveTasks(user.getHealthCode(), tasksToSave);
         
         // Now read back the tasks from the database to pick up persisted startedOn, finishedOn values
-        return taskDao.getTasks(user.getHealthCode(), context);
+        return taskDao.getTasks(context);
     }
     
     public void updateTasks(String healthCode, List<Task> tasks) {

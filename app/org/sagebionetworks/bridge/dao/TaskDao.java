@@ -12,11 +12,10 @@ public interface TaskDao {
      * or finished, as well as future tasks that are scheduled but should not be started yet. Tasks are 
      * not necessarily saved in the database, however.
      * 
-     * @param healthCode
      * @param context
      * @return
      */
-    public List<Task> getTasks(String healthCode, ScheduleContext context);
+    public List<Task> getTasks(ScheduleContext context);
     
     /**
      * Have any of the tasks for this run key been created?

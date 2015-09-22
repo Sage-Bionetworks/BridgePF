@@ -17,10 +17,12 @@ public final class ScheduleContext {
     private final DateTime endsOn;
     private final Map<String,DateTime> events;
     private final String schedulePlanGuid;
+    private final String healthCode;
     
-    public ScheduleContext(DateTimeZone zone, DateTime endsOn, Map<String,DateTime> events, String schedulePlanGuid) {
+    public ScheduleContext(DateTimeZone zone, DateTime endsOn, String healthCode, Map<String,DateTime> events, String schedulePlanGuid) {
         this.zone = zone;
         this.endsOn = endsOn;
+        this.healthCode = healthCode;
         this.events = (events == null) ? null : ImmutableMap.copyOf(events);
         this.schedulePlanGuid = schedulePlanGuid; 
     }
@@ -31,7 +33,7 @@ public final class ScheduleContext {
      * @return
      */
     public ScheduleContext withEvents(Map<String,DateTime> events) {
-        return new ScheduleContext(this.zone, this.endsOn, events, this.schedulePlanGuid);
+        return new ScheduleContext(this.zone, this.endsOn, this.healthCode, events, this.schedulePlanGuid);
     }
     
     /**
@@ -40,7 +42,7 @@ public final class ScheduleContext {
      * @return
      */
     public ScheduleContext withSchedulePlan(String schedulePlanGuid) {
-        return new ScheduleContext(this.zone, this.endsOn, this.events, schedulePlanGuid);
+        return new ScheduleContext(this.zone, this.endsOn, this.healthCode, this.events, schedulePlanGuid);
     }
     
     /**
@@ -60,6 +62,14 @@ public final class ScheduleContext {
         return endsOn;
     }
 
+    /**
+     * The current user's health code.
+     * @return
+     */
+    public String getHealthCode() {
+        return healthCode;
+    }
+    
     /**
      * The schedule plan providing the schedule, used to keep track of individual runs of the 
      * scheduler to generate a set of tasks.
@@ -97,7 +107,7 @@ public final class ScheduleContext {
     
     @Override
     public int hashCode() {
-        return Objects.hash(zone, endsOn, events, schedulePlanGuid);
+        return Objects.hash(zone, endsOn, healthCode, events, schedulePlanGuid);
     }
 
     @Override
@@ -107,8 +117,9 @@ public final class ScheduleContext {
         if (obj == null || getClass() != obj.getClass())
             return false;
         ScheduleContext other = (ScheduleContext) obj;
-        return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) && 
-                Objects.equals(events, other.events) && Objects.equals(schedulePlanGuid, other.schedulePlanGuid));
+        return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) &&
+                Objects.equals(healthCode, other.healthCode) && Objects.equals(events, other.events) && 
+                Objects.equals(schedulePlanGuid, other.schedulePlanGuid));
     }
 
     @Override

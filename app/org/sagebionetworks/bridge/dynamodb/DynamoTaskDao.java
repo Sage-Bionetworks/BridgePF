@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.TaskDao;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.Task;
-import org.sagebionetworks.bridge.models.schedules.TaskWithZone;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -34,9 +33,9 @@ public class DynamoTaskDao implements TaskDao {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override
-    public List<Task> getTasks(String healthCode, ScheduleContext context) {
+    public List<Task> getTasks(ScheduleContext context) {
         DynamoTask hashKey = new DynamoTask();
-        hashKey.setHealthCode(healthCode);
+        hashKey.setHealthCode(context.getHealthCode());
 
         // Exclude everything hidden before *now*
         AttributeValue attribute = new AttributeValue().withN(Long.toString(context.getNow().getMillis()));
@@ -50,11 +49,12 @@ public class DynamoTaskDao implements TaskDao {
 
         PaginatedQueryList<DynamoTask> queryResults = mapper.query(DynamoTask.class, query);
         
-        List<TaskWithZone> tasks = Lists.newArrayList();
+        List<DynamoTask> tasks = Lists.newArrayList();
         for (DynamoTask task : queryResults) {
-            tasks.add(new TaskWithZone(task, context.getZone()));
+            task.setTimeZone(context.getZone());
+            tasks.add(task);
         }
-        Collections.sort(tasks, TaskWithZone.TASK_COMPARATOR);
+        Collections.sort(tasks, Task.TASK_COMPARATOR);
         return (List<Task>)(List<?>)tasks;
     }
     
@@ -75,9 +75,6 @@ public class DynamoTaskDao implements TaskDao {
     @Override
     public void saveTasks(String healthCode, List<Task> tasks) {
         if (!tasks.isEmpty()) {
-            for (int i=0; i < tasks.size(); i++) {
-                tasks.set(i,  new DynamoTask(tasks.get(i)));
-            }
             List<FailedBatch> failures = mapper.batchSave(tasks);
             BridgeUtils.ifFailuresThrowException(failures);
         }

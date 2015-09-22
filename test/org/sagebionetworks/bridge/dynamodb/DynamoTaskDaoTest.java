@@ -95,32 +95,31 @@ public class DynamoTaskDaoTest {
         DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
-        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, endsOn, events, null);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, endsOn, user.getHealthCode(), events, null);
         
         List<Task> tasksToSchedule = TestUtils.runSchedulerForTasks(user, context);
-        
         taskDao.saveTasks(user.getHealthCode(), tasksToSchedule);
         
-        List<Task> tasks = taskDao.getTasks(user.getHealthCode(), context);
+        List<Task> tasks = taskDao.getTasks(context);
         int collectionSize = tasks.size();
         assertFalse("tasks were created", tasks.isEmpty());
         
         // Should not increase the number of tasks
-        tasks = taskDao.getTasks(user.getHealthCode(), context);
+        tasks = taskDao.getTasks(context);
         assertEquals("tasks did not grow afer repeated getTask()", collectionSize, tasks.size());
 
         // Delete most information in tasks and delete one by finishing it
         cleanTasks(tasks);
         Task task = tasks.get(1);
-        task.setFinishedOn(new DateTime().getMillis());
+        task.setFinishedOn(context.getNow().getMillis());
         assertEquals("task deleted", TaskStatus.DELETED, task.getStatus());
         taskDao.updateTasks(user.getHealthCode(), Lists.newArrayList(task));
         
-        tasks = taskDao.getTasks(user.getHealthCode(), context);
+        tasks = taskDao.getTasks(context);
         assertEquals("deleted task not returned from server", collectionSize-1, tasks.size());
         taskDao.deleteTasks(user.getHealthCode());
         
-        tasks = taskDao.getTasks(user.getHealthCode(), context);
+        tasks = taskDao.getTasks(context);
         assertEquals("all tasks deleted", 0, tasks.size());
     }
 

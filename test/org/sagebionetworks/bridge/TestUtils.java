@@ -18,7 +18,6 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Task;
-import org.sagebionetworks.bridge.models.schedules.TaskWithZone;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -87,14 +86,12 @@ public class TestUtils {
         StudyIdentifier studyId = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
         List<SchedulePlan> plans = getSchedulePlans();
         
-        List<TaskWithZone> tasks = Lists.newArrayList();
+        List<Task> tasks = Lists.newArrayList();
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(studyId, plan, user);
-            for (Task task : schedule.getScheduler().getTasks(context)) {
-                tasks.add((TaskWithZone)task);
-            }
+            tasks.addAll(schedule.getScheduler().getTasks(context));
         }
-        Collections.sort(tasks, TaskWithZone.TASK_COMPARATOR);
+        Collections.sort(tasks, Task.TASK_COMPARATOR);
         return (List<Task>)(List<?>)tasks;
     }
     

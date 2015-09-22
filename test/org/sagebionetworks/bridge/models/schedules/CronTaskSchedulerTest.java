@@ -40,7 +40,7 @@ public class CronTaskSchedulerTest {
     public void onceCronScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
 
-        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(1), events, null);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(1), null, events, null);
         tasks = schedule.getScheduler().getTasks(context);
         assertDates(tasks, "2015-03-25 09:15");
     }
@@ -49,7 +49,7 @@ public class CronTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setStartsOn(asDT("2015-03-31 00:00"));
         
-        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(2), events, null);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(2), null, events, null);
         tasks = schedule.getScheduler().getTasks(context);
         assertEquals(0, tasks.size());
     }
@@ -58,7 +58,7 @@ public class CronTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setEndsOn(asDT("2015-03-31 00:00"));
         
-        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(2), events, null);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(2), null, events, null);
         tasks = schedule.getScheduler().getTasks(context);
         assertDates(tasks, "2015-03-25 09:15");
     }
@@ -68,7 +68,7 @@ public class CronTaskSchedulerTest {
         schedule.setStartsOn(asDT("2015-03-23 00:00"));
         schedule.setEndsOn(asDT("2015-03-31 00:00"));
         
-        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(2), events, null);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(2), null, events, null);
         tasks = schedule.getScheduler().getTasks(context);
         assertDates(tasks, "2015-03-25 09:15");
     }
@@ -77,7 +77,7 @@ public class CronTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setDelay("P2D");
         
-        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(2), events, null);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(2), null, events, null);
         tasks = schedule.getScheduler().getTasks(context);
         assertDates(tasks, "2015-03-28 09:15");
     }
@@ -85,7 +85,7 @@ public class CronTaskSchedulerTest {
     public void recurringCronScheduleWorks() {
         Schedule schedule = createScheduleWith(RECURRING);
         
-        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(3), events, null);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(3), null, events, null);
         tasks = schedule.getScheduler().getTasks(context);
         assertDates(tasks, "2015-03-25 09:15", "2015-03-28 09:15", 
             "2015-04-01 09:15", "2015-04-04 09:15", "2015-04-08 09:15", "2015-04-11 09:15");
@@ -95,7 +95,7 @@ public class CronTaskSchedulerTest {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setEndsOn(asDT("2015-03-31 00:00"));
         
-        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(2), events, null);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(2), null, events, null);
         tasks = schedule.getScheduler().getTasks(context);
         assertDates(tasks, "2015-03-25 09:15", "2015-03-28 9:15");
     }
@@ -104,7 +104,7 @@ public class CronTaskSchedulerTest {
         Schedule schedule = createScheduleWith(ONCE);
         schedule.setCronTrigger("0 0 10,13,20 ? * MON-FRI *");
         
-        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(1), events, null);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusWeeks(1), null, events, null);
         tasks = schedule.getScheduler().getTasks(context);
         assertDates(tasks, "2015-03-23 13:00");
         
@@ -114,7 +114,7 @@ public class CronTaskSchedulerTest {
         Schedule schedule = createScheduleWith(RECURRING);
         schedule.setCronTrigger("0 0 10,13,20 ? * MON-FRI *");
         
-        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusDays(2), events, null);
+        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusDays(2), null, events, null);
         tasks = schedule.getScheduler().getTasks(context);
         assertDates(tasks, "2015-03-23 13:00", "2015-03-23 20:00", "2015-03-24 10:00", "2015-03-24 13:00", "2015-03-24 20:00");
     }
