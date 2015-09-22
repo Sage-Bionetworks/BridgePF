@@ -52,6 +52,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
 import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler2;
@@ -113,6 +114,12 @@ public class BridgeSpringConfig {
         }));
 
         return jedisPool;
+    }
+
+    @Bean(name = "jedisOps")
+    @Resource(name = "jedisPool")
+    public JedisOps jedisOps(final JedisPool jedisPool) {
+        return new JedisOps(jedisPool);
     }
 
     @Bean(name = "healthCodeEncryptor")

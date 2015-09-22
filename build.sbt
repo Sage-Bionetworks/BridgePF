@@ -14,13 +14,13 @@ libraryDependencies ++= Seq(
   cache,
   filters,
   // Sage packages
-  "org.sagebionetworks" % "bridge-base" % "0.1.201508282331",
+  "org.sagebionetworks" % "bridge-base" % "0.1.201509221809",
   // AWS
-  "com.amazonaws" % "aws-java-sdk-s3" % "1.10.10",
-  "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.10",
-  "com.amazonaws" % "aws-java-sdk-sts" % "1.10.10",
-  "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.10.10",
-  "com.amazonaws" % "aws-java-sdk-ses" % "1.10.10",
+  "com.amazonaws" % "aws-java-sdk-s3" % "1.10.20",
+  "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.20",
+  "com.amazonaws" % "aws-java-sdk-sts" % "1.10.20",
+  "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.10.20",
+  "com.amazonaws" % "aws-java-sdk-ses" % "1.10.20",
   // New Relic
   "com.newrelic.agent.java" % "newrelic-agent" % "3.18.0",
   // Spring
@@ -43,7 +43,7 @@ libraryDependencies ++= Seq(
   // Mail
   "javax.mail" % "mail" % "1.4.7",
   // Joda-Time
-  "joda-time" % "joda-time" % "2.8.1",
+  "joda-time" % "joda-time" % "2.8.2",
   // Stormpath
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC4.5",
   "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC4.5",
