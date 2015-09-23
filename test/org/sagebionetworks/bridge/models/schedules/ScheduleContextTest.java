@@ -19,11 +19,11 @@ public class ScheduleContextTest {
     
     @Test
     public void quietlyReturnsFalseForEvents() {
-        ScheduleContext context = new ScheduleContext(null, null, null, null, null);
+        ScheduleContext context = new ScheduleContext(null, null, null, null, null, null);
         assertNull(context.getEvent("enrollment"));
         assertFalse(context.hasEvents());
         
-        context = new ScheduleContext(null, null, null, new HashMap<String,DateTime>(), null);
+        context = new ScheduleContext(null, null, null, null, new HashMap<String,DateTime>(), null);
         assertNull(context.getEvent("enrollment"));
         assertFalse(context.hasEvents());
     }

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -113,7 +114,7 @@ public class DynamoTaskDaoMockTest {
         DateTime endsOn = NOW.plus(Period.parse("P2D"));
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
-        ScheduleContext context = new ScheduleContext(PACIFIC_TIME_ZONE, endsOn, HEALTH_CODE, events, null);
+        ScheduleContext context = new ScheduleContext(TEST_STUDY, PACIFIC_TIME_ZONE, endsOn, HEALTH_CODE, events, null);
 
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         mockQuery(tasks);
@@ -139,7 +140,7 @@ public class DynamoTaskDaoMockTest {
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
 
-        ScheduleContext context = new ScheduleContext(PACIFIC_TIME_ZONE, endsOn, HEALTH_CODE, events, null);
+        ScheduleContext context = new ScheduleContext(TEST_STUDY, PACIFIC_TIME_ZONE, endsOn, HEALTH_CODE, events, null);
 
         List<Task> tasks = TestUtils.runSchedulerForTasks(user, context);
         mockQuery(tasks);

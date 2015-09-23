@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -13,13 +14,15 @@ import com.google.common.collect.ImmutableMap;
  */
 public final class ScheduleContext {
     
+    private final StudyIdentifier studyId;
     private final DateTimeZone zone;
     private final DateTime endsOn;
     private final Map<String,DateTime> events;
     private final String schedulePlanGuid;
     private final String healthCode;
     
-    public ScheduleContext(DateTimeZone zone, DateTime endsOn, String healthCode, Map<String,DateTime> events, String schedulePlanGuid) {
+    public ScheduleContext(StudyIdentifier studyId, DateTimeZone zone, DateTime endsOn, String healthCode, Map<String,DateTime> events, String schedulePlanGuid) {
+        this.studyId = studyId;
         this.zone = zone;
         this.endsOn = endsOn;
         this.healthCode = healthCode;
@@ -33,7 +36,7 @@ public final class ScheduleContext {
      * @return
      */
     public ScheduleContext withEvents(Map<String,DateTime> events) {
-        return new ScheduleContext(this.zone, this.endsOn, this.healthCode, events, this.schedulePlanGuid);
+        return new ScheduleContext(this.studyId, this.zone, this.endsOn, this.healthCode, events, this.schedulePlanGuid);
     }
     
     /**
@@ -42,7 +45,15 @@ public final class ScheduleContext {
      * @return
      */
     public ScheduleContext withSchedulePlan(String schedulePlanGuid) {
-        return new ScheduleContext(this.zone, this.endsOn, this.healthCode, this.events, schedulePlanGuid);
+        return new ScheduleContext(this.studyId, this.zone, this.endsOn, this.healthCode, this.events, schedulePlanGuid);
+    }
+    
+    /**
+     * The study identifier for this participant.
+     * @return
+     */
+    public StudyIdentifier getStudyIdentifier() {
+        return studyId;
     }
     
     /**
@@ -107,7 +118,7 @@ public final class ScheduleContext {
     
     @Override
     public int hashCode() {
-        return Objects.hash(zone, endsOn, healthCode, events, schedulePlanGuid);
+        return Objects.hash(studyId, zone, endsOn, healthCode, events, schedulePlanGuid);
     }
 
     @Override
@@ -119,12 +130,13 @@ public final class ScheduleContext {
         ScheduleContext other = (ScheduleContext) obj;
         return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) &&
                 Objects.equals(healthCode, other.healthCode) && Objects.equals(events, other.events) && 
-                Objects.equals(schedulePlanGuid, other.schedulePlanGuid));
+                Objects.equals(schedulePlanGuid, other.schedulePlanGuid) &&
+                Objects.equals(studyId, other.studyId));
     }
 
     @Override
     public String toString() {
-        return "ScheduleContext [zone=" + zone + ", endsOn=" + endsOn + ", events=" + events + 
+        return "ScheduleContext [studyId=" + studyId + ", zone=" + zone + ", endsOn=" + endsOn + ", events=" + events + 
             ", schedulePlanGuid=" + schedulePlanGuid + "]";
     }
 }

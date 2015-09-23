@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 
@@ -25,7 +25,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Task;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -57,7 +56,7 @@ public class TaskServiceTest {
     
     @Before
     public void before() {
-        study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
+        study = studyService.getStudy(TEST_STUDY.getIdentifier());
         testUser = helper.createUser(ParticipantOptionsServiceImplTest.class);
         
         Schedule schedule = new Schedule();
@@ -73,7 +72,7 @@ public class TaskServiceTest {
         
         schedulePlan = new DynamoSchedulePlan();
         schedulePlan.setLabel("Label");
-        schedulePlan.setStudyKey(TEST_STUDY_IDENTIFIER);
+        schedulePlan.setStudyKey(TEST_STUDY.getIdentifier());
         schedulePlan.setStrategy(strategy);
         schedulePlan = schedulePlanService.createSchedulePlan(schedulePlan);
     }
@@ -81,8 +80,7 @@ public class TaskServiceTest {
     @After
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
-        schedulePlanService.deleteSchedulePlan(
-            new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER), schedulePlan.getGuid());
+        schedulePlanService.deleteSchedulePlan(TEST_STUDY, schedulePlan.getGuid());
         if (testUser != null) {
             helper.deleteUser(study, testUser.getEmail());
         }
@@ -153,7 +151,7 @@ public class TaskServiceTest {
     
     private ScheduleContext getContext(DateTimeZone zone) {
         // Setting the endsOn value to the end of the day, as we do in the controller.
-        return new ScheduleContext(zone, DateTime.now(zone).plusDays(2).withHourOfDay(23).withMinuteOfHour(59)
+        return new ScheduleContext(TEST_STUDY, zone, DateTime.now(zone).plusDays(2).withHourOfDay(23).withMinuteOfHour(59)
             .withSecondOfMinute(59), testUser.getUser().getHealthCode(), null, null);
     }
     

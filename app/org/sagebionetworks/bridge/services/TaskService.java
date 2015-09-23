@@ -88,26 +88,25 @@ public class TaskService {
         
         Validate.nonEntityThrowingException(VALIDATOR, context);
         
-        StudyIdentifier studyId = new StudyIdentifierImpl(user.getStudyKey());
-        Map<String, DateTime> events = createEventsMap(user);
+        Map<String, DateTime> events = createEventsMap(context);
         
         // Get tasks from the scheduler. None of these tasks have been saved, some may be new,
-        // and some may have already been persisted.
+        // and some may have already been persisted. They are identified by their runKey.
         List<Task> scheduledTasks = scheduleTasksForPlans(user, context.withEvents(events));
         
         List<Task> tasksToSave = Lists.newArrayList();
         for (Task task : scheduledTasks) {
-            if (taskDao.taskRunHasNotOccurred(user.getHealthCode(), task.getRunKey())) {
+            if (taskDao.taskRunHasNotOccurred(context.getHealthCode(), task.getRunKey())) {
                 // If they have not been persisted yet, get each task one by one, create a survey 
                 // response for survey tasks, and add the tasks to the list of tasks to save.
                 Activity activity = createResponseActivityIfNeeded(
-                    studyId, user.getHealthCode(), task.getActivity());
+                    context.getStudyIdentifier(), context.getHealthCode(), task.getActivity());
                 task.setActivity(activity);
                 tasksToSave.add(task);
             }
         }
         // Finally, save these new tasks
-        taskDao.saveTasks(user.getHealthCode(), tasksToSave);
+        taskDao.saveTasks(context.getHealthCode(), tasksToSave);
         
         // Now read back the tasks from the database to pick up persisted startedOn, finishedOn values
         return taskDao.getTasks(context);
@@ -138,10 +137,10 @@ public class TaskService {
      * @param user
      * @return
      */
-    private Map<String, DateTime> createEventsMap(User user) {
-        Map<String,DateTime> events = taskEventService.getTaskEventMap(user.getHealthCode());
+    private Map<String, DateTime> createEventsMap(ScheduleContext context) {
+        Map<String,DateTime> events = taskEventService.getTaskEventMap(context.getHealthCode());
         if (!events.containsKey("enrollment")) {
-            return createEnrollmentEventFromConsent(user, events);
+            return createEnrollmentEventFromConsent(context, events);
         }
         return events;
     }
@@ -153,8 +152,8 @@ public class TaskService {
      * @param events
      * @return
      */
-    private Map<String, DateTime> createEnrollmentEventFromConsent(User user, Map<String, DateTime> events) {
-        UserConsent consent = userConsentDao.getUserConsent(user.getHealthCode(), new StudyIdentifierImpl(user.getStudyKey()));
+    private Map<String, DateTime> createEnrollmentEventFromConsent(ScheduleContext context, Map<String, DateTime> events) {
+        UserConsent consent = userConsentDao.getUserConsent(context.getHealthCode(), context.getStudyIdentifier());
         Map<String,DateTime> newEvents = Maps.newHashMap();
         newEvents.putAll(events);
         newEvents.put("enrollment", new DateTime(consent.getSignedOn()));

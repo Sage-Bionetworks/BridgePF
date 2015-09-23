@@ -8,6 +8,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 
@@ -41,7 +42,7 @@ public class TaskControllerTest {
     
     @Before
     public void before() throws Exception {
-        ScheduleContext scheduleContext = new ScheduleContext(DateTimeZone.UTC, null, null, null, BridgeUtils.generateGuid());
+        ScheduleContext scheduleContext = new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, null, null, null, BridgeUtils.generateGuid());
         
         DynamoTask task = new DynamoTask();
         task.setGuid(BridgeUtils.generateGuid());

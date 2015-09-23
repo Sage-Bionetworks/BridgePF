@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 import java.util.Map;
@@ -95,7 +96,7 @@ public class DynamoTaskDaoTest {
         DateTime endsOn = DateTime.now().plus(Period.parse("P4D"));
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
-        ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, endsOn, user.getHealthCode(), events, null);
+        ScheduleContext context = new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, endsOn, user.getHealthCode(), events, null);
         
         List<Task> tasksToSchedule = TestUtils.runSchedulerForTasks(user, context);
         taskDao.saveTasks(user.getHealthCode(), tasksToSchedule);

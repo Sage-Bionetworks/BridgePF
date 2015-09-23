@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 import java.util.Map;
@@ -116,12 +117,12 @@ public class TaskServiceMockTest {
     
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
-        service.getTasks(user, new ScheduleContext(DateTimeZone.UTC, DateTime.now().minusSeconds(1), null, null, null));
+        service.getTasks(user, new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, DateTime.now().minusSeconds(1), null, null, null));
     }
     
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnTooFarInFuture() {
-        service.getTasks(user, new ScheduleContext(DateTimeZone.UTC, 
+        service.getTasks(user, new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, 
             DateTime.now().plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS).plusSeconds(1), null, null, null));
     }
 
@@ -164,7 +165,7 @@ public class TaskServiceMockTest {
     @SuppressWarnings({"unchecked","rawtypes","deprecation"})
     @Test
     public void changePublishedAndAbsoluteSurveyActivity() {
-        service.getTasks(user, new ScheduleContext(DateTimeZone.UTC, endsOn.plusDays(2), null, null, null));
+        service.getTasks(user, new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, endsOn.plusDays(2), null, null, null));
 
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         verify(taskDao).saveTasks(anyString(), argument.capture());
@@ -186,7 +187,7 @@ public class TaskServiceMockTest {
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         
-        return new ScheduleContext(DateTimeZone.UTC, endsOn, HEALTH_CODE, events, null);
+        return new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, endsOn, HEALTH_CODE, events, null);
     }
     
 }
