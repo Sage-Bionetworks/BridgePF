@@ -248,56 +248,56 @@ public class BridgeSpringConfig {
 
     @Bean(name = "healthDataAttachmentDdbMapper")
     @Autowired
-    public DynamoDBMapper healthDataAttachmentDdbMapper(AmazonDynamoDB client) {
-        return DynamoUtils.getMapper(DynamoHealthDataAttachment.class, client);
+    public DynamoDBMapper healthDataAttachmentDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoHealthDataAttachment.class, bridgeConfig, client);
     }
 
     @Bean(name = "healthDataDdbMapper")
     @Autowired
-    public DynamoDBMapper healthDataDdbMapper(AmazonDynamoDB client) {
-        return DynamoUtils.getMapper(DynamoHealthDataRecord.class, client);
+    public DynamoDBMapper healthDataDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoHealthDataRecord.class, bridgeConfig, client);
     }
 
     @Bean(name = "taskEventDdbMapper")
     @Autowired
-    public DynamoDBMapper taskEventDdbMapper(AmazonDynamoDB client) {
-        return DynamoUtils.getMapper(DynamoTaskEvent.class, client);
+    public DynamoDBMapper taskEventDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoTaskEvent.class, bridgeConfig, client);
     }
 
     @Bean(name = "studyConsentDdbMapper")
     @Autowired
-    public DynamoDBMapper studyConsentDdbMapper(AmazonDynamoDB client) {
-        return DynamoUtils.getMapper(DynamoStudyConsent1.class, client);
+    public DynamoDBMapper studyConsentDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoStudyConsent1.class, bridgeConfig, client);
     }
 
     @Bean(name = "surveyMapper")
     @Autowired
-    public DynamoDBMapper surveyDdbMapper(AmazonDynamoDB client) {
-        return DynamoUtils.getMapper(DynamoSurvey.class, client);
+    public DynamoDBMapper surveyDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoSurvey.class, bridgeConfig, client);
     }
 
     @Bean(name = "surveyElementMapper")
     @Autowired
-    public DynamoDBMapper surveyElementDdbMapper(AmazonDynamoDB client) {
-        return DynamoUtils.getMapper(DynamoSurveyElement.class, client);
+    public DynamoDBMapper surveyElementDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoSurveyElement.class, bridgeConfig, client);
     }
 
     @Bean(name = "healthDataHealthCodeIndex")
     @Autowired
-    public DynamoIndexHelper healthDataHealthCodeIndex(AmazonDynamoDB client) {
-        return DynamoUtils.getDynamoIndexHelper(DynamoHealthDataRecord.class, "healthCode-index", client);
+    public DynamoIndexHelper healthDataHealthCodeIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoIndexHelper.getDynamoIndexHelper(DynamoHealthDataRecord.class, "healthCode-index", bridgeConfig, client);
     }
 
     @Bean(name = "healthDataUploadDateIndex")
     @Autowired
-    public DynamoIndexHelper healthDataUploadDateIndex(AmazonDynamoDB client) {
-        return DynamoUtils.getDynamoIndexHelper(DynamoHealthDataRecord.class, "uploadDate-index", client);
+    public DynamoIndexHelper healthDataUploadDateIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoIndexHelper.getDynamoIndexHelper(DynamoHealthDataRecord.class, "uploadDate-index", bridgeConfig, client);
     }
 
     @Bean(name = "uploadDdbMapper")
     @Autowired
-    public DynamoDBMapper uploadDdbMapper(AmazonDynamoDB client) {
-        return DynamoUtils.getMapper(DynamoUpload2.class, client);
+    public DynamoDBMapper uploadDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoUpload2.class, bridgeConfig, client);
     }
 
     @Bean(name = "uploadValidationHandlerList")
@@ -313,26 +313,26 @@ public class BridgeSpringConfig {
 
     @Bean(name = "uploadSchemaDdbMapper")
     @Autowired
-    public DynamoDBMapper uploadSchemaDdbMapper(AmazonDynamoDB client) {
-        return DynamoUtils.getMapper(DynamoUploadSchema.class, client);
+    public DynamoDBMapper uploadSchemaDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoUploadSchema.class, bridgeConfig, client);
     }
 
     @Bean(name = "taskDdbMapper")
     @Autowired
-    public DynamoDBMapper taskDdbMapper(AmazonDynamoDB client) {
-        return DynamoUtils.getMapper(DynamoTask.class, client);
+    public DynamoDBMapper taskDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoTask.class, bridgeConfig, client);
     }
 
     @Bean(name = "surveyResponseDdbMapper")
     @Autowired
-    public DynamoDBMapper surveyResponseDdbMapper(AmazonDynamoDB client) {
-        return DynamoUtils.getMapper(DynamoSurveyResponse.class, client);
+    public DynamoDBMapper surveyResponseDdbMapper(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoUtils.getMapper(DynamoSurveyResponse.class, bridgeConfig, client);
     }
 
     @Bean(name = "uploadSchemaStudyIdIndex")
     @Autowired
-    public DynamoIndexHelper uploadSchemaStudyIdIndex(AmazonDynamoDB client) {
-        return DynamoUtils.getDynamoIndexHelper(DynamoUploadSchema.class, "studyId-index", client);
+    public DynamoIndexHelper uploadSchemaStudyIdIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
+        return DynamoIndexHelper.getDynamoIndexHelper(DynamoUploadSchema.class, "studyId-index", bridgeConfig, client);
     }
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.

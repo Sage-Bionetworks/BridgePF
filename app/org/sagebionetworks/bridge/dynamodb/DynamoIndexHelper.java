@@ -6,10 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.Table;
 
+import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
@@ -19,6 +23,18 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
  * class also encapsulates logic to re-query tables to get full table entries.
  */
 public class DynamoIndexHelper {
+
+    public static DynamoIndexHelper getDynamoIndexHelper(final Class<?> dynamoTable,
+            final String indexName, final Config config, final AmazonDynamoDB client) {
+        final DynamoDB ddb = new DynamoDB(client);
+        final Table ddbTable = ddb.getTable(DynamoUtils.getFullyQualifiedTableName(dynamoTable, config));
+        final Index ddbIndex = ddbTable.getIndex(indexName);
+        final DynamoIndexHelper indexHelper = new DynamoIndexHelper();
+        indexHelper.setIndex(ddbIndex);
+        indexHelper.setMapper(DynamoUtils.getMapper(dynamoTable, config, client));
+        return indexHelper;
+    }
+
     private Index index;
     private DynamoDBMapper mapper;
 

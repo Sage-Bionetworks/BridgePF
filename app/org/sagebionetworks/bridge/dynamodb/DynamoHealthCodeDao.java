@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,10 +21,10 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
     private DynamoDBMapper mapper;
 
     @Autowired
-    public void setDynamoDbClient(AmazonDynamoDB client) {
+    public void setDynamoDbClient(BridgeConfig bridgeConfig, AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoHealthCode.class)).build();
+                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoHealthCode.class, bridgeConfig)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 
