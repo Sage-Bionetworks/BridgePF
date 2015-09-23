@@ -7,6 +7,8 @@ import java.util.concurrent.Executors;
 
 import javax.annotation.Resource;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.PredefinedClientConfigurations;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
@@ -129,8 +131,8 @@ public class BridgeSpringConfig {
     }
 
     @Bean(name = "awsCredentials")
-    @Resource(name = "bridgeConfig")
-    public BasicAWSCredentials awsCredentials(BridgeConfig bridgeConfig) {
+    public BasicAWSCredentials awsCredentials() {
+        BridgeConfig bridgeConfig = bridgeConfig();
         return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key"),
                 bridgeConfig.getProperty("aws.secret.key"));
     }
@@ -150,9 +152,11 @@ public class BridgeSpringConfig {
     }
 
     @Bean(name = "dynamoDbClient")
-    @Resource(name = "awsCredentials")
-    public AmazonDynamoDBClient dynamoDbClient(BasicAWSCredentials awsCredentials) {
-        return new AmazonDynamoDBClient(awsCredentials);
+    public AmazonDynamoDBClient dynamoDbClient() {
+        int maxRetries = bridgeConfig().getPropertyAsInt("ddb.max.retries");
+        ClientConfiguration awsClientConfig = PredefinedClientConfigurations.dynamoDefault()
+                .withMaxErrorRetry(maxRetries);
+        return new AmazonDynamoDBClient(awsCredentials(), awsClientConfig);
     }
 
     @Bean(name = "s3Client")
