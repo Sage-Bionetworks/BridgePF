@@ -11,6 +11,10 @@ import com.google.common.collect.ImmutableMap;
 
 /**
  * All the information necessary to convert a schedule into a set of tasks, on a given request. 
+ * Because some of these values derive from the user, there is a validator that is run on this object 
+ * that verifies the four required values (studyId, zone, endsOn and healthCode) are present.
+ * 
+ * @see org.sagebionetworks.bridge.validators.ScheduleContextValidator
  */
 public final class ScheduleContext {
     
@@ -109,7 +113,9 @@ public final class ScheduleContext {
     }
     
     /**
-     * Returns now in the user's time zone. 
+     * Returns now in the user's time zone. Practically this is not that important but 
+     * it allows you to calculate all time calculations in one time zone, which is easier 
+     * to reason about.
      * @return
      */
     public DateTime getNow() {
