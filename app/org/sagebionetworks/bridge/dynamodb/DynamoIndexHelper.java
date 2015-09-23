@@ -143,7 +143,7 @@ public class DynamoIndexHelper {
      * Iterable, it overrides iterator() to return an IteratorSupport, which is not publicly exposed. This makes
      * index.query() nearly impossible to mock. So we abstract it away into a method that we can mock.
      */
-    protected Iterable<Item> queryHelper(String indexKeyName, Object indexKeyValue, RangeKeyCondition rangeKeyCondition) {
+    protected Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue, RangeKeyCondition rangeKeyCondition) {
         if (rangeKeyCondition != null) {
             return index.query(indexKeyName, indexKeyValue, rangeKeyCondition);
         } else {
