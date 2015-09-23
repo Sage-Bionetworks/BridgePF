@@ -65,7 +65,7 @@ public class DynamoHealthDataDao implements HealthDataDao {
     public int deleteRecordsForHealthCode(@Nonnull String healthCode) {
         // query for the keys we need to delete
         List<HealthDataRecord> keysToDelete = healthCodeIndex.queryKeys(HealthDataRecord.class, "healthCode",
-                healthCode);
+                healthCode, null);
 
         // and then delete
         List<DynamoDBMapper.FailedBatch> failureList = mapper.batchDelete(keysToDelete);

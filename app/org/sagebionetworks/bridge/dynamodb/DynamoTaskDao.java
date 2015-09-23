@@ -15,6 +15,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
@@ -24,10 +25,16 @@ import com.google.common.collect.Lists;
 public class DynamoTaskDao implements TaskDao {
     
     private DynamoDBMapper mapper;
-
+    private DynamoIndexHelper index;
+    
     @Resource(name = "taskDdbMapper")
     public void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
+    }
+    
+    @Resource(name = "taskIndex")
+    public void setTaskIndex(DynamoIndexHelper index) {
+        this.index = index;
     }
     
     /** {@inheritDoc} */
@@ -64,10 +71,9 @@ public class DynamoTaskDao implements TaskDao {
         hashKey.setHealthCode(healthCode);
         hashKey.setRunKey(runKey);
         
-        DynamoDBQueryExpression<DynamoTask> query = new DynamoDBQueryExpression<DynamoTask>()
-            .withHashKeyValues(hashKey);
-
-        return (mapper.count(DynamoTask.class, query) == 0);
+        RangeKeyCondition rangeKeyCondition = new RangeKeyCondition("runKey").eq(runKey);
+        int count = index.queryKeyCount("healthCode", healthCode, rangeKeyCondition);
+        return (count == 0);
     }
     
     /** {@inheritDoc} */

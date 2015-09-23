@@ -13,8 +13,10 @@ import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -50,7 +52,7 @@ public class DynamoIndexHelperTest {
         }
 
         @Override
-        protected Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue) {
+        protected Iterable<Item> queryHelper(@Nonnull String indexKeyName, @Nonnull Object indexKeyValue, RangeKeyCondition rangeKeyCondition) {
             assertEquals(expectedKey, indexKeyName);
             assertEquals(expectedValue, indexKeyValue);
             return itemIterable;
@@ -79,7 +81,7 @@ public class DynamoIndexHelperTest {
         helper.setMapper(mockMapper);
 
         // execute query keys and validate
-        List<Thing> keyList = helper.queryKeys(Thing.class, "test key", "test value");
+        List<Thing> keyList = helper.queryKeys(Thing.class, "test key", "test value", null);
         validateKeyObjects(keyList);
 
         // execute

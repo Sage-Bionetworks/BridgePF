@@ -20,6 +20,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.validators.ScheduleValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 import com.newrelic.agent.deps.com.google.common.collect.Maps;
 
@@ -266,5 +268,35 @@ public class TaskSchedulerTest {
         assertFalse(task2.getPersistent());
         assertFalse(task2.getActivity().isPersistentlyRescheduledBy(schedule));
     }
+    
+    
+    @Test
+    public void scheduleIsTranslatedToTimeZoneWhenCreatedAndPersisted() {
+        // 10am every morning from the time of enrollment
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setInterval("P1D");
+        schedule.setExpires("P1D");
+        schedule.addTimes("10:00");
+        schedule.addActivity(new Activity.Builder().withLabel("Foo").withTask("foo").build());
+        Validate.entityThrowingException(new ScheduleValidator(), schedule);
+        
+        // User is in Moscow, however.
+        DateTimeZone zone = DateTimeZone.forOffsetHours(3);
+        DateTime endsOn = DateTime.now().plusDays(1);
+        
+        ScheduleContext context = new ScheduleContext(zone, endsOn, "AAA", events, null);
+        List<Task> tasks = schedule.getScheduler().getTasks(context);
+        assertEquals("2015-04-06T10:00:00.000+03:00", tasks.get(0).getScheduledOn().toString());
+        assertEquals("2015-04-07T10:00:00.000+03:00", tasks.get(1).getScheduledOn().toString());
+        
+        // Now the user flies across the planet, and retrieves the tasks again, they are in the new timezone
+        zone = DateTimeZone.forOffsetHours(-7);
+        context = new ScheduleContext(zone, endsOn, "AAA", events, null);
+        tasks = schedule.getScheduler().getTasks(context);
+        assertEquals("2015-04-06T10:00:00.000-07:00", tasks.get(0).getScheduledOn().toString());
+        assertEquals("2015-04-07T10:00:00.000-07:00", tasks.get(1).getScheduledOn().toString());
+    }
+
     
 }

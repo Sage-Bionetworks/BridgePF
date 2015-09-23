@@ -67,9 +67,7 @@ public class BridgeUtils {
         checkNotNull(task.getLocalScheduledOn());
         checkNotNull(context);
         checkNotNull(context.getSchedulePlanGuid());
-        checkNotNull(context.getZone());
-        return String.format("%s:%s", context.getSchedulePlanGuid(),
-                        task.getLocalScheduledOn().toDateTime(context.getZone()).toString());
+        return String.format("%s:%s", context.getSchedulePlanGuid(), task.getLocalScheduledOn());
     }
     
     /**

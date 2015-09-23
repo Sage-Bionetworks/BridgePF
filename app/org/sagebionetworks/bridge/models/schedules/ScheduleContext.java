@@ -21,7 +21,8 @@ public final class ScheduleContext {
     
     public ScheduleContext(DateTimeZone zone, DateTime endsOn, String healthCode, Map<String,DateTime> events, String schedulePlanGuid) {
         this.zone = zone;
-        this.endsOn = endsOn;
+        // This value is submitted in days, so be sure you're counting all the way through the given day.
+        this.endsOn = (endsOn == null) ? null : endsOn.withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59);
         this.healthCode = healthCode;
         this.events = (events == null) ? null : ImmutableMap.copyOf(events);
         this.schedulePlanGuid = schedulePlanGuid; 

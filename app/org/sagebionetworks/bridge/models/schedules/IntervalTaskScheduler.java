@@ -26,7 +26,7 @@ class IntervalTaskScheduler extends TaskScheduler {
                 addTaskForEachTime(tasks, context, datetime);
                 // A one-time task with no interval (for example); don't loop
                 if (schedule.getInterval() == null) {
-                    return trimTasks(tasks ,schedule);
+                    return trimTasks(tasks, schedule);
                 }
                 datetime = datetime.plus(schedule.getInterval());
             }

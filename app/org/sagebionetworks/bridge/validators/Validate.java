@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.springframework.validation.BindingResult;
@@ -30,6 +31,36 @@ public class Validate {
     public static final String CANNOT_BE_ZERO_OR_NEGATIVE = "%s cannot be negative";
     public static final String WRONG_TYPE = "%s is the wrong type";
     
+    /**
+     * This method will validate an object (not an entity, that is, not an object that is 
+     * defined in the API and usually represented by a JSON payload), throwing a 
+     * BadRequestException if validation fails.
+     * @param validator
+     * @param object
+     * @throws BadRequestException
+     */
+    public static void nonEntityThrowingException(Validator validator, Object object) {
+        checkNotNull(validator);
+        checkArgument(validator.supports(object.getClass()), "Invalid validator");
+        checkNotNull(object);
+        
+        String entityName = BridgeUtils.getTypeName(object.getClass());
+        MapBindingResult errors = new MapBindingResult(Maps.newHashMap(), entityName);
+        
+        validator.validate(object, errors);
+        
+        if (errors.hasErrors()) {
+            String message = convertBindingResultToMessage(errors);
+            throw new BadRequestException(message);
+        }
+    }
+    
+    /**
+     * This method validates an entity (an object that is defined in the API), and throws an 
+     * InvalidEntityException when validation fails.
+     * @param validator
+     * @param object
+     */
     public static void entityThrowingException(Validator validator, Object object) {
         checkNotNull(validator);
         checkArgument(object instanceof BridgeEntity);

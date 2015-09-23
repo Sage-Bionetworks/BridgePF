@@ -4,7 +4,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertFalse;
 
 import java.util.HashMap;
-import java.util.Map;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 

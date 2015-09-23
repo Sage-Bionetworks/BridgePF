@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.joda.time.DateTime;

@@ -51,7 +51,7 @@ public class DynamoHealthDataDaoTest {
         List<HealthDataRecord> mockResult = Collections.<HealthDataRecord>singletonList(record);
 
         DynamoIndexHelper mockIndex = mock(DynamoIndexHelper.class);
-        when(mockIndex.queryKeys(HealthDataRecord.class, "healthCode", "test health code")).thenReturn(mockResult);
+        when(mockIndex.queryKeys(HealthDataRecord.class, "healthCode", "test health code", null)).thenReturn(mockResult);
 
         // set up and execute
         DynamoHealthDataDao dao = new DynamoHealthDataDao();
@@ -87,7 +87,7 @@ public class DynamoHealthDataDaoTest {
         List<HealthDataRecord> mockResult = Collections.<HealthDataRecord>singletonList(record);
 
         DynamoIndexHelper mockIndex = mock(DynamoIndexHelper.class);
-        when(mockIndex.queryKeys(HealthDataRecord.class, "healthCode", "test health code")).thenReturn(mockResult);
+        when(mockIndex.queryKeys(HealthDataRecord.class, "healthCode", "test health code", null)).thenReturn(mockResult);
 
         // set up
         DynamoHealthDataDao dao = new DynamoHealthDataDao();
