@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-public class BridgeConfig {
+public class BridgeConfig implements Config {
 
     private static final String CONFIG_FILE = "bridge-server.conf";
     private static final String TEMPLATE_CONFIG = CONFIG_FILE;
@@ -43,12 +43,29 @@ public class BridgeConfig {
         }
     }
 
+    @Override
     public String getUser() {
         return config.getUser();
     }
 
+    @Override
     public Environment getEnvironment() {
         return config.getEnvironment();
+    }
+
+    @Override
+    public String get(String key) {
+        return config.get(key);
+    }
+
+    @Override
+    public int getInt(String key) {
+        return config.getInt(key);
+    }
+
+    @Override
+    public List<String> getList(String key) {
+        return config.getList(key);
     }
 
     public boolean isLocal() {

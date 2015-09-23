@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UserConsentDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.accounts.UserConsent;
@@ -35,10 +36,10 @@ public class DynamoUserConsentDao implements UserConsentDao {
     private DynamoDBMapper mapper;
 
     @Autowired
-    public void setDynamoDbClient(AmazonDynamoDB client) {
+    public void setDynamoDbClient(BridgeConfig bridgeConfig, AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoUserConsent2.class)).build();
+                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoUserConsent2.class, bridgeConfig)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 

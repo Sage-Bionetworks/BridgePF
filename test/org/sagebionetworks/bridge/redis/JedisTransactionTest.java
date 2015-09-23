@@ -75,19 +75,4 @@ public class JedisTransactionTest {
         assertNull(jedisOps.get(key1));
         assertNull(jedisOps.get(key2));
     }
-
-    @Test
-    public void testTransaction() throws Exception {
-        Jedis jedis = mock(Jedis.class);
-        Transaction transaction = mock(Transaction.class);
-        when(jedis.multi()).thenReturn(transaction);
-        try (JedisTransaction jt = new JedisTransaction(jedis)) {
-            jt.setex(key1, 10, val1);
-            verify(transaction, times(1)).setex(key1, 10, val1);
-            jt.expire(key1, 15);
-            verify(transaction, times(1)).expire(key1, 15);
-            jt.del(key2);
-            verify(transaction, times(1)).del(key2);
-        }
-    }
 }

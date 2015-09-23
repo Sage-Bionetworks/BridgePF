@@ -7,6 +7,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -30,10 +31,10 @@ public class DynamoStudyDao implements StudyDao {
     private DynamoDBMapper mapper;
 
     @Autowired
-    public void setDynamoDbClient(AmazonDynamoDB client) {
+    public void setDynamoDbClient(BridgeConfig bridgeConfig, AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoStudy.class)).build();
+                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoStudy.class, bridgeConfig)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 

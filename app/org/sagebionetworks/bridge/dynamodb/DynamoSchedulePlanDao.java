@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -34,10 +35,10 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     private DynamoDBMapper mapper;
 
     @Autowired
-    public void setDynamoDbClient(AmazonDynamoDB client) {
+    public void setDynamoDbClient(BridgeConfig bridgeConfig, AmazonDynamoDB client) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoSchedulePlan.class)).build();
+                .withTableNameOverride(DynamoUtils.getTableNameOverride(DynamoSchedulePlan.class, bridgeConfig)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
 
