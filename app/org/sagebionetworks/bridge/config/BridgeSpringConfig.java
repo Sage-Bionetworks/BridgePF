@@ -285,13 +285,13 @@ public class BridgeSpringConfig {
     @Bean(name = "healthDataHealthCodeIndex")
     @Autowired
     public DynamoIndexHelper healthDataHealthCodeIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
-        return DynamoIndexHelper.getDynamoIndexHelper(DynamoHealthDataRecord.class, "healthCode-index", bridgeConfig, client);
+        return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "healthCode-index", bridgeConfig, client);
     }
 
     @Bean(name = "healthDataUploadDateIndex")
     @Autowired
     public DynamoIndexHelper healthDataUploadDateIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
-        return DynamoIndexHelper.getDynamoIndexHelper(DynamoHealthDataRecord.class, "uploadDate-index", bridgeConfig, client);
+        return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "uploadDate-index", bridgeConfig, client);
     }
 
     @Bean(name = "uploadDdbMapper")
@@ -332,7 +332,7 @@ public class BridgeSpringConfig {
     @Bean(name = "uploadSchemaStudyIdIndex")
     @Autowired
     public DynamoIndexHelper uploadSchemaStudyIdIndex(final BridgeConfig bridgeConfig, final AmazonDynamoDB client) {
-        return DynamoIndexHelper.getDynamoIndexHelper(DynamoUploadSchema.class, "studyId-index", bridgeConfig, client);
+        return DynamoIndexHelper.create(DynamoUploadSchema.class, "studyId-index", bridgeConfig, client);
     }
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.

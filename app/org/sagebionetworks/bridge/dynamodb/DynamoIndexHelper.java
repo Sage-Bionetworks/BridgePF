@@ -24,8 +24,8 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
  */
 public class DynamoIndexHelper {
 
-    public static DynamoIndexHelper getDynamoIndexHelper(final Class<?> dynamoTable,
-            final String indexName, final Config config, final AmazonDynamoDB client) {
+    public static DynamoIndexHelper create(final Class<?> dynamoTable, final String indexName,
+            final Config config, final AmazonDynamoDB client) {
         final DynamoDB ddb = new DynamoDB(client);
         final Table ddbTable = ddb.getTable(DynamoUtils.getFullyQualifiedTableName(dynamoTable, config));
         final Index ddbIndex = ddbTable.getIndex(indexName);
