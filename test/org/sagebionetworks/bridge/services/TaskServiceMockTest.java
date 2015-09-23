@@ -78,7 +78,7 @@ public class TaskServiceMockTest {
         when(consent.getSignedOn()).thenReturn(ENROLLMENT.getMillis()); 
         
         userConsentDao = mock(UserConsentDao.class);
-        when(userConsentDao.getUserConsent(HEALTH_CODE, STUDY_IDENTIFIER)).thenReturn(consent);
+        when(userConsentDao.getUserConsent(any(String.class), any(StudyIdentifier.class))).thenReturn(consent);
         
         Map<String,DateTime> map = Maps.newHashMap();
         TaskEventService taskEventService = mock(TaskEventService.class);
@@ -165,7 +165,7 @@ public class TaskServiceMockTest {
     @SuppressWarnings({"unchecked","rawtypes","deprecation"})
     @Test
     public void changePublishedAndAbsoluteSurveyActivity() {
-        service.getTasks(user, new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, endsOn.plusDays(2), null, null, null));
+        service.getTasks(user, new ScheduleContext(TEST_STUDY, DateTimeZone.UTC, endsOn.plusDays(2), HEALTH_CODE, null, null));
 
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         verify(taskDao).saveTasks(anyString(), argument.capture());
