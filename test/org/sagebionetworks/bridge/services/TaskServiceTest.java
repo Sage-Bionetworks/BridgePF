@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.List;
@@ -11,7 +10,6 @@ import javax.annotation.Resource;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -154,7 +152,9 @@ public class TaskServiceTest {
     }
     
     private ScheduleContext getContext(DateTimeZone zone) {
-        return new ScheduleContext(zone, DateTime.now(zone).plusDays(2), testUser.getUser().getHealthCode(), null, null);
+        // Setting the endsOn value to the end of the day, as we do in the controller.
+        return new ScheduleContext(zone, DateTime.now(zone).plusDays(2).withHourOfDay(23).withMinuteOfHour(59)
+            .withSecondOfMinute(59), testUser.getUser().getHealthCode(), null, null);
     }
     
 }

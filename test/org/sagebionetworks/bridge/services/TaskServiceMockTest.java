@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponse;
 import org.sagebionetworks.bridge.models.surveys.SurveyResponseView;
+import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 
 import com.google.common.collect.Maps;
 
@@ -121,7 +122,7 @@ public class TaskServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnTooFarInFuture() {
         service.getTasks(user, new ScheduleContext(DateTimeZone.UTC, 
-            DateTime.now().plusDays(ScheduleContext.MAX_EXPIRES_ON_DAYS).plusSeconds(1), null, null, null));
+            DateTime.now().plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS).plusSeconds(1), null, null, null));
     }
 
     @Test(expected = BadRequestException.class)

@@ -47,11 +47,12 @@ public class TaskController extends BaseController {
         } else if (StringUtils.isNotBlank(daysAhead) && StringUtils.isNotBlank(offset)) {
             zone = DateUtils.parseZoneFromOffsetString(offset);
             int numDays = Integer.parseInt(daysAhead);
-            endsOn = DateTime.now(zone).plusDays(numDays);
+            // When querying for days, we ignore the time of day of the request and query to then end of the day.
+            endsOn = DateTime.now(zone).plusDays(numDays)
+                .withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59);
         } else {
             throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' and 'offset' parameters.");
         }
-        
         ScheduleContext context = new ScheduleContext(zone, endsOn, session.getUser().getHealthCode(), null, null);
         List<Task> tasks = taskService.getTasks(session.getUser(), context);
         return okResult(tasks);

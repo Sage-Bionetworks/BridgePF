@@ -338,6 +338,10 @@ public class IntervalTaskSchedulerTest {
         ScheduleContext context = new ScheduleContext(DateTimeZone.UTC, ENROLLMENT.plusDays(4), null, events, null);
         tasks = schedule.getScheduler().getTasks(context);
 
+        for (Task task : tasks) {
+            System.out.println(task.getScheduledOn());
+        }
+        
         assertDates(tasks, "2015-03-23 09:40", "2015-03-23 13:40", "2015-03-25 09:40", "2015-03-25 13:40");
     }
     @Test
