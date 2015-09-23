@@ -140,6 +140,7 @@ public final class DynamoTask implements Task, BridgeEntity {
 
     @DynamoDBAttribute
     @Override
+    @JsonIgnore
     @DynamoDBIndexRangeKey(localSecondaryIndexName = "hashKey-runKey-index")
     public String getRunKey() {
         return this.runKey;

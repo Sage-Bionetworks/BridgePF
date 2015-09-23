@@ -7,7 +7,13 @@ import org.springframework.validation.Validator;
 
 public class ScheduleContextValidator implements Validator {
     
-    public static final int MAX_EXPIRES_ON_DAYS = 4;
+    /**
+     * We allow up to four days and that's what we document. Unfortunately, we also adjust endsOn
+     * in the controller to the end of the day, so if you pass in 4 days, it is not valid. Add 
+     * one day for now... the exact amount is not that critical, we're just trying to prevent
+     * something like daysAhead=10000.
+     */
+    public static final int MAX_EXPIRES_ON_DAYS = 5;
 
     @Override
     public boolean supports(Class<?> cls) {
@@ -36,7 +42,6 @@ public class ScheduleContextValidator implements Validator {
         } else if (context.getEndsOn().minusDays(MAX_EXPIRES_ON_DAYS).isAfter(now)) {
             errors.rejectValue("endsOn", "must be "+MAX_EXPIRES_ON_DAYS+" days or less");
         }
-
     }
 
 }
